@@ -1,5 +1,6 @@
 """Retention & Loyalty API Router."""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
@@ -27,8 +28,8 @@ router = APIRouter(prefix="/{business_id}/retention", tags=["Retention & Loyalty
 async def create_referral_program(
     business_id: UUID,
     prog_in: ReferralProgramCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     prog = ReferralProgram(business_id=business_id, **prog_in.model_dump())
     db.add(prog)
@@ -40,8 +41,8 @@ async def create_referral_program(
 @router.get("/referral-programs", response_model=list[ReferralProgramResponse])
 async def list_referral_programs(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await db.execute(select(ReferralProgram).where(ReferralProgram.business_id == business_id, ReferralProgram.is_active == True))
     return result.scalars().all()
@@ -51,8 +52,8 @@ async def list_referral_programs(
 async def create_nps_campaign(
     business_id: UUID,
     camp_in: NpsCampaignCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = RetentionService(db)
     camp = await service.create_nps_campaign(business_id=business_id, **camp_in.model_dump())
@@ -62,9 +63,9 @@ async def create_nps_campaign(
 @router.get("/nps-score", response_model=NpsScoreResponse)
 async def get_nps_score(
     business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     campaign_id: UUID | None = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     service = RetentionService(db)
     return await service.get_nps_score(business_id, campaign_id)
@@ -73,8 +74,8 @@ async def get_nps_score(
 @router.get("/segments", response_model=list[CustomerSegmentResponse])
 async def get_customer_segments(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await db.execute(select(CustomerSegment).where(CustomerSegment.business_id == business_id, CustomerSegment.is_active == True))
     return result.scalars().all()
@@ -83,8 +84,8 @@ async def get_customer_segments(
 @router.post("/calculate-rfm")
 async def calculate_rfm(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = RetentionService(db)
     await service.calculate_rfm_for_business(business_id)

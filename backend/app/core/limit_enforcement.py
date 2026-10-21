@@ -9,7 +9,7 @@ Usage:
         ...
 """
 
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,8 +28,8 @@ def require_limit(metric_type: str, quantity: int = 1, track_after: bool = True)
     For simplicity, set track_after=False and call track_usage manually in the endpoint.
     """
     async def _check_limit(
-        db: AsyncSession = Depends(get_db),
-        current_user: User = Depends(get_current_active_user),
+        db: Annotated[AsyncSession, Depends(get_db)],
+        current_user: Annotated[User, Depends(get_current_active_user)],
     ):
         result = await check_subscription_limit(db, current_user.id, metric_type, quantity)
         if not result["allowed"]:

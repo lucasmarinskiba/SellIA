@@ -1,4 +1,6 @@
 """Feedback loop API: Conversion data improves X9 profiles."""
+from typing import Annotated
+
 from fastapi import APIRouter, Body, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,12 +12,12 @@ router = APIRouter(prefix="/api/v1/feedback-loop", tags=["feedback-loop"])
 
 @router.post("/update-profile-from-conversion")
 async def update_profile_from_conversion(
-    user_id: str = Body(...),
-    deal_closed: bool = Body(...),
-    deal_value: float = Body(...),
-    which_touch_converted: int = Body(...),
-    conversion_attributed_to: str = Body(...),
-    db: AsyncSession = Depends(get_db),
+    user_id: Annotated[str, Body()],
+    deal_closed: Annotated[bool, Body()],
+    deal_value: Annotated[float, Body()],
+    which_touch_converted: Annotated[int, Body()],
+    conversion_attributed_to: Annotated[str, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Update X9 profile based on X12 conversion attribution."""
     return await FeedbackLoopAgent.update_profile_from_conversion(
@@ -25,9 +27,9 @@ async def update_profile_from_conversion(
 
 @router.post("/recalculate-segment-profiles")
 async def recalculate_segment_profiles(
-    personality_type: str = Body(...),
-    num_conversions: int = Body(...),
-    num_attempts: int = Body(...),
+    personality_type: Annotated[str, Body()],
+    num_conversions: Annotated[int, Body()],
+    num_attempts: Annotated[int, Body()],
 ) -> dict:
     """Recalculate conversion benchmarks by personality type."""
     return await FeedbackLoopAgent.recalculate_segment_profiles(
@@ -37,8 +39,8 @@ async def recalculate_segment_profiles(
 
 @router.get("/feedback-metrics")
 async def get_feedback_metrics(
+    db: Annotated[AsyncSession, Depends(get_db)],
     days: int = 7,
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Get system-wide feedback loop metrics."""
     return await FeedbackLoopAgent.get_feedback_metrics(db, days)
@@ -46,10 +48,10 @@ async def get_feedback_metrics(
 
 @router.post("/correlate-fomo-effectiveness")
 async def correlate_fomo_effectiveness(
-    fomo_campaign_id: str = Body(...),
-    conversions: int = Body(...),
-    impressions: int = Body(...),
-    db: AsyncSession = Depends(get_db),
+    fomo_campaign_id: Annotated[str, Body()],
+    conversions: Annotated[int, Body()],
+    impressions: Annotated[int, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Correlate FOMO types with personality conversion rates."""
     return await FeedbackLoopAgent.correlate_fomo_effectiveness(

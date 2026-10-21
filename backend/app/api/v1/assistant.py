@@ -6,7 +6,7 @@ agentes y ejecuta acciones basadas en lenguaje natural.
 
 import json
 from datetime import UTC, datetime
-from typing import Any
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -32,8 +32,8 @@ router = APIRouter()
 
 @router.get("/conversations", response_model=list[dict])
 async def list_assistant_conversations(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """List all SellIA Assistant conversations for the current user."""
     result = await db.execute(
@@ -60,8 +60,8 @@ async def list_assistant_conversations(
 @router.get("/conversations/{conversation_id}", response_model=dict)
 async def get_assistant_conversation(
     conversation_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Get a single SellIA conversation with all messages."""
     result = await db.execute(
@@ -85,9 +85,9 @@ async def get_assistant_conversation(
 
 @router.post("/conversations", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_assistant_conversation(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
     title: str | None = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
 ):
     """Create a new SellIA conversation."""
     conv = SellIAConversation(
@@ -110,8 +110,8 @@ async def create_assistant_conversation(
 @router.delete("/conversations/{conversation_id}", response_model=dict)
 async def delete_assistant_conversation(
     conversation_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Soft-delete a SellIA conversation."""
     result = await db.execute(
@@ -180,12 +180,12 @@ async def _stream_unless_answered(orchestrator, rotation, message, user, busines
 @router.post("/chat", response_model=dict)
 async def assistant_chat(
     message: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
     business_id: UUID | None = None,
     context: dict[str, Any] | None = None,
     conversation_history: list[dict[str, str]] | None = None,
     conversation_id: UUID | None = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
 ):
     """Chat with SellIA Assistant to get agent suggestions and actions.
 
@@ -283,12 +283,12 @@ async def assistant_chat(
 @router.post("/chat/stream")
 async def assistant_chat_stream(
     message: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
     business_id: UUID | None = None,
     context: dict[str, Any] | None = None,
     conversation_history: list[dict[str, str]] | None = None,
     conversation_id: UUID | None = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
 ):
     """Stream chat with SellIA Assistant using Server-Sent Events.
 
@@ -378,8 +378,8 @@ async def assistant_chat_stream(
 
 @router.get("/agents-summary", response_model=list[AgentPersonalityResponse])
 async def get_agents_summary(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Get a compact summary of all available agents for the assistant context."""
     service = AgentService(db)

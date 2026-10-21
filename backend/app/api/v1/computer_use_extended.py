@@ -7,6 +7,7 @@ export, replay, y analytics.
 
 import secrets
 from datetime import UTC, datetime, timedelta
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -82,8 +83,8 @@ webhook_service = WebhookService()
 @router.post("/templates", response_model=ComputerUseTemplateResponse, status_code=status.HTTP_201_CREATED)
 async def create_template(
     data: ComputerUseTemplateCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     template = ComputerUseTemplate(
         user_id=current_user.id,
@@ -103,11 +104,11 @@ async def create_template(
 
 @router.get("/templates", response_model=ComputerUseTemplateListResponse)
 async def list_templates(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
     search: str | None = None,
     limit: int = 20,
     offset: int = 0,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
 ):
     query = select(ComputerUseTemplate).where(
         and_(
@@ -137,8 +138,8 @@ async def list_templates(
 @router.post("/templates/{template_id}/use")
 async def use_template(
     template_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseTemplate).where(
@@ -165,8 +166,8 @@ async def use_template(
 @router.post("/scheduled-tasks", response_model=ComputerUseScheduledTaskResponse, status_code=status.HTTP_201_CREATED)
 async def create_scheduled_task(
     data: ComputerUseScheduledTaskCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     task = ComputerUseScheduledTask(
         user_id=current_user.id,
@@ -186,8 +187,8 @@ async def create_scheduled_task(
 
 @router.get("/scheduled-tasks", response_model=ComputerUseScheduledTaskListResponse)
 async def list_scheduled_tasks(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseScheduledTask)
@@ -211,8 +212,8 @@ async def list_scheduled_tasks(
 async def create_annotation(
     session_id: UUID,
     data: ComputerUseAnnotationCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSession).where(
@@ -241,8 +242,8 @@ async def create_annotation(
 @router.get("/sessions/{session_id}/annotations", response_model=list[ComputerUseAnnotationResponse])
 async def list_annotations(
     session_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSession).where(
@@ -267,8 +268,8 @@ async def list_annotations(
 @router.post("/browser-profiles", response_model=ComputerUseBrowserProfileResponse, status_code=status.HTTP_201_CREATED)
 async def create_browser_profile(
     data: ComputerUseBrowserProfileCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     if data.is_default:
         await db.execute(
@@ -300,8 +301,8 @@ async def create_browser_profile(
 
 @router.get("/browser-profiles", response_model=list[ComputerUseBrowserProfileResponse])
 async def list_browser_profiles(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseBrowserProfile)
@@ -317,8 +318,8 @@ async def list_browser_profiles(
 @router.post("/proxy-configs", response_model=ComputerUseProxyConfigResponse, status_code=status.HTTP_201_CREATED)
 async def create_proxy_config(
     data: ComputerUseProxyConfigCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     from app.core.encryption import encrypt_value
     password_encrypted = encrypt_value(data.password) if data.password else None
@@ -341,8 +342,8 @@ async def create_proxy_config(
 
 @router.get("/proxy-configs", response_model=list[ComputerUseProxyConfigResponse])
 async def list_proxy_configs(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseProxyConfig)
@@ -359,8 +360,8 @@ async def list_proxy_configs(
 async def share_session(
     session_id: UUID,
     data: ComputerUseSessionShareCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSession).where(
@@ -392,8 +393,8 @@ async def share_session(
 @router.get("/sessions/{session_id}/shares", response_model=list[ComputerUseSessionShareResponse])
 async def list_session_shares(
     session_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSessionShare)
@@ -408,7 +409,7 @@ async def list_session_shares(
 @router.get("/shared-sessions/{token}")
 async def get_shared_session(
     token: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     result = await db.execute(
         select(ComputerUseSessionShare).where(
@@ -440,8 +441,8 @@ async def get_shared_session(
 @router.post("/batch-jobs", response_model=ComputerUseBatchJobResponse, status_code=status.HTTP_201_CREATED)
 async def create_batch_job(
     data: ComputerUseBatchJobCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     job = ComputerUseBatchJob(
         user_id=current_user.id,
@@ -461,8 +462,8 @@ async def create_batch_job(
 
 @router.get("/batch-jobs", response_model=list[ComputerUseBatchJobResponse])
 async def list_batch_jobs(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseBatchJob)
@@ -479,8 +480,8 @@ async def list_batch_jobs(
 async def add_session_tag(
     session_id: UUID,
     data: ComputerUseSessionTagCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSession).where(
@@ -505,8 +506,8 @@ async def add_session_tag(
 @router.get("/sessions/{session_id}/tags", response_model=list[ComputerUseSessionTagResponse])
 async def list_session_tags(
     session_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSession).where(
@@ -529,8 +530,8 @@ async def list_session_tags(
 @router.get("/tags/search")
 async def search_sessions_by_tag(
     tag: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSession)
@@ -551,8 +552,8 @@ async def search_sessions_by_tag(
 async def create_bookmark(
     session_id: UUID,
     data: ComputerUseSessionBookmarkCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSession).where(
@@ -580,8 +581,8 @@ async def create_bookmark(
 @router.get("/sessions/{session_id}/bookmarks", response_model=list[ComputerUseSessionBookmarkResponse])
 async def list_bookmarks(
     session_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSession).where(
@@ -607,8 +608,8 @@ async def list_bookmarks(
 @router.post("/sessions/{session_id}/clone")
 async def clone_session(
     session_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Clona una sesión completada como punto de partida."""
     result = await db.execute(
@@ -661,8 +662,8 @@ async def list_mobile_presets():
 
 @router.post("/config/export")
 async def export_config(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Exporta toda la configuración de Computer Use del usuario."""
     config = {
@@ -732,8 +733,8 @@ async def export_config(
 @router.post("/config/import")
 async def import_config(
     config: dict,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Importa configuración de Computer Use."""
     imported = {"templates": 0, "profiles": 0, "proxies": 0, "webhooks": 0}
@@ -772,8 +773,8 @@ async def import_config(
 async def create_session_note(
     session_id: UUID,
     data: ComputerUseSessionNoteCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSession).where(
@@ -800,8 +801,8 @@ async def create_session_note(
 @router.get("/sessions/{session_id}/notes")
 async def list_session_notes(
     session_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSession).where(
@@ -827,8 +828,8 @@ async def list_session_notes(
 @router.post("/sessions/{session_id}/export/markdown")
 async def export_markdown(
     session_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSession).where(
@@ -881,8 +882,8 @@ async def export_markdown(
 @router.post("/webhooks", response_model=ComputerUseWebhookResponse, status_code=status.HTTP_201_CREATED)
 async def create_webhook(
     data: ComputerUseWebhookCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     webhook = ComputerUseWebhook(
         user_id=current_user.id,
@@ -899,8 +900,8 @@ async def create_webhook(
 
 @router.get("/webhooks", response_model=list[ComputerUseWebhookResponse])
 async def list_webhooks(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseWebhook)
@@ -917,8 +918,8 @@ async def list_webhooks(
 async def export_session(
     session_id: UUID,
     data: ComputerUseExportRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSession).where(
@@ -995,8 +996,8 @@ async def export_session(
 @router.get("/sessions/{session_id}/replay", response_model=ComputerUseReplayResponse)
 async def get_session_replay(
     session_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSession).where(
@@ -1151,8 +1152,8 @@ async def get_analytics_summary(
 
 @router.get("/active-sessions")
 async def list_active_sessions(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Lista todas las sesiones activas del usuario para el grid de monitoreo."""
     result = await db.execute(
@@ -1183,7 +1184,7 @@ async def list_active_sessions(
 
 @router.get("/browser-pool/stats")
 async def get_browser_pool_stats(
-    current_user: User = Depends(get_current_active_user),
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Estadísticas del pool de navegadores."""
     from app.domains.computer_use.services.browser_pool import get_browser_pool

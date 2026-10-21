@@ -10,6 +10,7 @@ Endpoints:
 import json
 import logging
 from datetime import datetime
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
@@ -39,7 +40,10 @@ class CheckoutRequest(BaseModel):
 
 
 @router.post("/create-checkout")
-async def create_checkout(request: CheckoutRequest, db: Session = Depends(get_db)):
+async def create_checkout(
+    request: CheckoutRequest,
+    db: Annotated[Session, Depends(get_db)],
+):
     """
     Crea checkout Stripe.
 
@@ -101,7 +105,10 @@ async def create_checkout(request: CheckoutRequest, db: Session = Depends(get_db
 
 
 @router.post("/webhook/stripe")
-async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
+async def stripe_webhook(
+    request: Request,
+    db: Annotated[Session, Depends(get_db)],
+):
     """
     Webhook Stripe → Confirma pago → Actualiza DB → Envía email.
     """
@@ -158,7 +165,10 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
 
 
 @router.get("/order/{order_id}")
-async def get_order(order_id: str, db: Session = Depends(get_db)):
+async def get_order(
+    order_id: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Obtiene estado orden."""
 
     order = db.query(Order).filter(Order.id == order_id).first()

@@ -1,6 +1,7 @@
 """Credential API"""
 
 import uuid
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,15 +16,17 @@ from .service import CredentialService
 router = APIRouter(prefix="/credentials", tags=["Credentials"])
 
 
-def get_service(db: AsyncSession = Depends(get_db)) -> CredentialService:
+def get_service(
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> CredentialService:
     return CredentialService(db)
 
 
 @router.post("")
 async def store_credential(
     data: dict,
-    user: User = Depends(get_current_user),
-    service: CredentialService = Depends(get_service),
+    user: Annotated[User, Depends(get_current_user)],
+    service: Annotated[CredentialService, Depends(get_service)],
 ):
     """Store or update credentials for a domain."""
     cred = await service.store(
@@ -42,8 +45,8 @@ async def store_credential(
 
 @router.get("")
 async def list_credentials(
-    user: User = Depends(get_current_user),
-    service: CredentialService = Depends(get_service),
+    user: Annotated[User, Depends(get_current_user)],
+    service: Annotated[CredentialService, Depends(get_service)],
 ):
     """List all stored credentials for the user."""
     creds = await service.list_for_user(user.id)
@@ -64,8 +67,8 @@ async def list_credentials(
 @router.get("/{domain}")
 async def get_credential(
     domain: str,
-    user: User = Depends(get_current_user),
-    service: CredentialService = Depends(get_service),
+    user: Annotated[User, Depends(get_current_user)],
+    service: Annotated[CredentialService, Depends(get_service)],
 ):
     """Get decrypted credentials for a domain."""
     cred = await service.get(user.id, domain)
@@ -77,8 +80,8 @@ async def get_credential(
 @router.delete("/{credential_id}")
 async def delete_credential(
     credential_id: uuid.UUID,
-    user: User = Depends(get_current_user),
-    service: CredentialService = Depends(get_service),
+    user: Annotated[User, Depends(get_current_user)],
+    service: Annotated[CredentialService, Depends(get_service)],
 ):
     """Soft-delete a credential."""
     success = await service.delete(user.id, credential_id)

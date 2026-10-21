@@ -1,5 +1,6 @@
 """Intelligence API Router."""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -25,8 +26,8 @@ router = APIRouter(prefix="/intelligence", tags=["Intelligence"])
 @router.get("/message-analysis/{message_id}", response_model=MessageAnalysisResponse)
 async def get_message_analysis(
     message_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await db.execute(
         select(MessageAnalysis).where(MessageAnalysis.message_id == message_id)
@@ -40,8 +41,8 @@ async def get_message_analysis(
 @router.get("/conversation/{conversation_id}", response_model=ConversationIntelligenceResponse)
 async def get_conversation_intelligence(
     conversation_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = ConversationIntelligenceService(db)
     intel = await service.get_by_conversation(conversation_id)
@@ -53,9 +54,9 @@ async def get_conversation_intelligence(
 @router.get("/hot-leads/{business_id}", response_model=list[ConversationIntelligenceResponse])
 async def get_hot_leads(
     business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     min_readiness: int = 60,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     service = ConversationIntelligenceService(db)
     leads = await service.get_hot_leads(business_id, min_readiness)
@@ -65,8 +66,8 @@ async def get_hot_leads(
 @router.get("/at-risk/{business_id}", response_model=list[ConversationIntelligenceResponse])
 async def get_at_risk_conversations(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = ConversationIntelligenceService(db)
     conversations = await service.get_at_risk_conversations(business_id)
@@ -76,8 +77,8 @@ async def get_at_risk_conversations(
 @router.post("/analyze/{message_id}", response_model=MessageAnalysisResponse)
 async def analyze_message_manual(
     message_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = MessageIntelligenceService(db)
     analysis = await service.analyze_message(message_id)

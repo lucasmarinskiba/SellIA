@@ -12,7 +12,7 @@ This file demonstrates production-ready integration patterns for:
 import logging
 import time
 from datetime import datetime
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -116,9 +116,9 @@ async def performance_tracking_middleware(app: FastAPI, performance: dict[str, A
 # ============================================================================
 
 async def get_agents_with_optimization(
-    db: AsyncSession = Depends(get_db),
-    cache: CacheLayer = Depends(lambda: Depends(get_cache_layer)),
-    db_optimizer: DatabaseOptimizer = Depends(lambda: Depends(get_db_optimizer)),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    cache: Annotated[CacheLayer, Depends(lambda: Depends(get_cache_layer))],
+    db_optimizer: Annotated[DatabaseOptimizer, Depends(lambda: Depends(get_db_optimizer))],
 ) -> list:
     """
     Example endpoint that uses caching and database optimization.
@@ -167,8 +167,8 @@ async def get_agents_with_optimization(
 async def enqueue_agent_import(
     file_path: str,
     user_id: str,
-    job_queue: AsyncJobQueue = Depends(lambda: Depends(get_job_queue)),
-    background_tasks: BackgroundTasks = Depends(),
+    job_queue: Annotated[AsyncJobQueue, Depends(lambda: Depends(get_job_queue))],
+    background_tasks: Annotated[BackgroundTasks, Depends()],
 ) -> dict[str, str]:
     """
     Example: Enqueue long-running import task.
@@ -199,7 +199,7 @@ async def enqueue_agent_import(
 
 async def get_import_status(
     job_id: str,
-    job_queue: AsyncJobQueue = Depends(lambda: Depends(get_job_queue)),
+    job_queue: Annotated[AsyncJobQueue, Depends(lambda: Depends(get_job_queue))],
 ) -> dict[str, Any]:
     """
     GET /api/jobs/{job_id}
@@ -226,7 +226,7 @@ async def process_agent_csv_import(file_path: str, user_id: str) -> None:
 # ============================================================================
 
 async def get_performance_dashboard(
-    monitor: PerformanceMonitor = Depends(lambda: Depends(get_monitor)),
+    monitor: Annotated[PerformanceMonitor, Depends(lambda: Depends(get_monitor))],
 ) -> dict[str, Any]:
     """
     GET /api/performance/dashboard
@@ -247,7 +247,7 @@ async def get_performance_dashboard(
 
 
 async def get_slow_queries(
-    db_optimizer: DatabaseOptimizer = Depends(lambda: Depends(get_db_optimizer)),
+    db_optimizer: Annotated[DatabaseOptimizer, Depends(lambda: Depends(get_db_optimizer))],
     limit: int = 50,
 ) -> dict[str, Any]:
     """
@@ -270,9 +270,9 @@ async def get_slow_queries(
 # ============================================================================
 
 async def run_load_test(
+    load_tester: Annotated[LoadTestRunner, Depends(lambda: Depends(get_load_tester))],
     concurrent_users: int = 100,
     duration_seconds: int = 60,
-    load_tester: LoadTestRunner = Depends(lambda: Depends(get_load_tester)),
 ) -> dict[str, Any]:
     """
     POST /api/testing/load-test
@@ -355,7 +355,7 @@ def setup_performance_routes(app: FastAPI) -> None:
 
     @app.get("/health/performance")
     async def health_check(
-        monitor: PerformanceMonitor = Depends(get_monitor),
+        monitor: Annotated[PerformanceMonitor, Depends(get_monitor)],
     ) -> dict[str, Any]:
         """Health check including performance metrics."""
         health = monitor.get_system_health()
@@ -367,8 +367,8 @@ def setup_performance_routes(app: FastAPI) -> None:
     @app.get("/api/performance/metrics")
     async def get_metrics(
         metric_name: str,
+        monitor: Annotated[PerformanceMonitor, Depends(get_monitor)],
         limit: int = 100,
-        monitor: PerformanceMonitor = Depends(get_monitor),
     ) -> dict[str, Any]:
         """Get specific performance metric."""
         stats = monitor.get_metric_stats(metric_name)
@@ -382,14 +382,14 @@ def setup_performance_routes(app: FastAPI) -> None:
 
     @app.get("/api/performance/cache-stats")
     async def get_cache_stats(
-        cache: CacheLayer = Depends(get_cache_layer),
+        cache: Annotated[CacheLayer, Depends(get_cache_layer)],
     ) -> dict[str, Any]:
         """Get cache statistics."""
         return cache.get_stats()
 
     @app.get("/api/performance/queue-status")
     async def get_queue_status(
-        job_queue: AsyncJobQueue = Depends(get_job_queue),
+        job_queue: Annotated[AsyncJobQueue, Depends(get_job_queue)],
     ) -> dict[str, Any]:
         """Get job queue status."""
         return {

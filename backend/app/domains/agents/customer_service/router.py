@@ -52,9 +52,9 @@ async def handle_message(
 
 @router.get("/interactions", response_model=list[ServiceInteractionOut])
 async def list_interactions(
-    bot_config_id: UUID | None = Query(None),
-    limit: int = Query(50, ge=1, le=200),
-    offset: int = Query(0, ge=0),
+    bot_config_id: Annotated[UUID | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
     db: Annotated[AsyncSession, Depends(get_db)] = None,
     current_user: Annotated[User, Depends(get_current_user)] = None,
 ):

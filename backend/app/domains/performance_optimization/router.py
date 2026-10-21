@@ -1,4 +1,5 @@
 """Phase 5: Performance Optimization Endpoints."""
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
@@ -13,6 +14,7 @@ router = APIRouter(prefix="/api/v1/performance-optimization", tags=["performance
 @router.post("/record-metrics")
 async def record_metrics(
     business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
     total_requests: int = 0,
     total_errors: int = 0,
     avg_response_time_ms: float = 0,
@@ -23,7 +25,6 @@ async def record_metrics(
     cache_hit_rate: float = 0,
     memory_usage_mb: float = 0,
     cpu_usage_percent: float = 0,
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Record system performance metrics."""
     result = await PerformanceOptimizationService.record_performance_metrics(
@@ -48,9 +49,9 @@ async def identify_slow_query(
     business_id: UUID,
     query_signature: str,
     avg_execution_time_ms: float,
+    db: Annotated[AsyncSession, Depends(get_db)],
     execution_count: int = 1,
     max_execution_time_ms: float | None = None,
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Identify and log slow query."""
     result = await PerformanceOptimizationService.identify_slow_queries(
@@ -69,9 +70,9 @@ async def recommend_index(
     business_id: UUID,
     table_name: str,
     column_names: list[str],
+    db: Annotated[AsyncSession, Depends(get_db)],
     estimated_queries_improved: int = 0,
     estimated_improvement_percent: float = 0,
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Recommend database index."""
     result = await PerformanceOptimizationService.recommend_indexes(
@@ -88,11 +89,11 @@ async def recommend_index(
 @router.post("/configure-cache")
 async def configure_cache(
     business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
     cache_type: str = "redis",
     ttl_seconds: int = 3600,
     max_size_mb: float = 256,
     cache_patterns: list[str] | None = None,
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Configure caching strategy."""
     result = await PerformanceOptimizationService.configure_cache_strategy(
@@ -109,7 +110,7 @@ async def configure_cache(
 @router.get("/opportunities")
 async def find_opportunities(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Identify optimization opportunities."""
     result = await PerformanceOptimizationService.identify_optimization_opportunities(
@@ -122,7 +123,7 @@ async def find_opportunities(
 @router.get("/report")
 async def get_report(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Get comprehensive performance report."""
     result = await PerformanceOptimizationService.get_performance_report(

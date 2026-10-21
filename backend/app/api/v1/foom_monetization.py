@@ -1,6 +1,8 @@
 """FOOM Monetization API - Convert free users to paid + Enable user FOOM selling."""
 
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -72,7 +74,10 @@ class OptimizationResponse(BaseModel):
 
 
 @router.post("/upgrade-trigger/{user_id}", response_model=UpgradeTriggerResponse)
-def get_upgrade_trigger(user_id: str, db: Session = Depends(get_db)):
+def get_upgrade_trigger(
+    user_id: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Get optimal upgrade trigger for user."""
     try:
         # Mock user data
@@ -105,7 +110,10 @@ def get_upgrade_trigger(user_id: str, db: Session = Depends(get_db)):
 
 
 @router.post("/user-foom-strategy", response_model=UserFOOMStrategyResponse)
-def generate_user_foom_strategy(request: UserFOOMStrategyRequest, db: Session = Depends(get_db)):
+def generate_user_foom_strategy(
+    request: UserFOOMStrategyRequest,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Generate complete FOOM selling strategy for user's product."""
     try:
         product_data = {
@@ -133,7 +141,10 @@ def generate_user_foom_strategy(request: UserFOOMStrategyRequest, db: Session = 
 
 
 @router.post("/optimize-foom", response_model=OptimizationResponse)
-def optimize_foom_strategy(request: ABTestRequest, db: Session = Depends(get_db)):
+def optimize_foom_strategy(
+    request: ABTestRequest,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Get optimized FOOM strategy based on A/B tests."""
     try:
         ab_test_results = {
@@ -157,7 +168,10 @@ def optimize_foom_strategy(request: ABTestRequest, db: Session = Depends(get_db)
 
 
 @router.get("/referral-program/{user_id}")
-def get_referral_foom(user_id: str, db: Session = Depends(get_db)):
+def get_referral_foom(
+    user_id: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Get FOOM-based referral program strategy."""
     try:
         user_metrics = {

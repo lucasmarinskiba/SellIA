@@ -10,6 +10,7 @@ esa misma fila.
 """
 import uuid
 from datetime import UTC, datetime
+from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy import select
@@ -90,8 +91,8 @@ async def _get_or_create_program(db: AsyncSession, user_id: str, email: str | No
 @router.post("/enroll-loyalty/{user_id}")
 async def enroll_loyalty_program(
     user_id: str,
-    email: str = Body(...),
-    db: AsyncSession = Depends(get_db),
+    email: Annotated[str, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Enroll customer in loyalty program - crea la fila real, idempotente."""
     program = await _get_or_create_program(db, user_id, email)
@@ -115,7 +116,7 @@ async def enroll_loyalty_program(
 async def trigger_retention_sequence(
     user_id: str,
     sequence_type: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Trigger automated retention sequence - persiste la secuencia real."""
     steps = RETENTION_SEQUENCES.get(sequence_type, {})
@@ -150,7 +151,7 @@ async def trigger_retention_sequence(
 @router.get("/loyalty-status/{user_id}")
 async def get_loyalty_status(
     user_id: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Get customer loyalty tier + progress - lee la fila real, 404 si nunca se inscribió."""
     result = await db.execute(select(LoyaltyProgram).where(LoyaltyProgram.user_id == user_id))
@@ -176,7 +177,7 @@ async def get_loyalty_status(
 @router.post("/unlock-vip/{user_id}")
 async def unlock_vip_tier(
     user_id: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Upgrade high-value customer to VIP - actualiza la fila real a platinum."""
     program = await _get_or_create_program(db, user_id)

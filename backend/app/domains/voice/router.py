@@ -1,6 +1,7 @@
 """Voice Agent API Router"""
 
 from datetime import UTC
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
@@ -33,8 +34,8 @@ router = APIRouter(prefix="/voice", tags=["voice"])
 @router.post("/calls", response_model=VoiceCallResponse, status_code=status.HTTP_201_CREATED)
 async def create_call(
     data: VoiceCallCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = VoiceService(db)
     call = await service.create_call(
@@ -48,10 +49,10 @@ async def create_call(
 
 @router.get("/calls", response_model=list[VoiceCallResponse])
 async def list_calls(
-    business_id: UUID = Query(...),
-    status: str | None = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    status: Annotated[str | None, Query()] = None,
 ):
     query = select(VoiceCall).where(VoiceCall.business_id == business_id)
     if status:
@@ -64,8 +65,8 @@ async def list_calls(
 @router.get("/calls/{call_id}", response_model=VoiceCallResponse)
 async def get_call(
     call_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await db.execute(select(VoiceCall).where(VoiceCall.id == call_id))
     call = result.scalar_one_or_none()
@@ -77,9 +78,9 @@ async def get_call(
 @router.post("/calls/{call_id}/transcribe", response_model=TranscriptionResponse)
 async def transcribe_call_audio(
     call_id: UUID,
-    audio: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    audio: Annotated[UploadFile, File(...)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = VoiceService(db)
     result = await db.execute(select(VoiceCall).where(VoiceCall.id == call_id))
@@ -99,8 +100,8 @@ async def transcribe_call_audio(
 async def generate_call_speech(
     call_id: UUID,
     req: SpeechRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = VoiceService(db)
     result = await db.execute(select(VoiceCall).where(VoiceCall.id == call_id))
@@ -116,9 +117,9 @@ async def generate_call_speech(
 @router.post("/calls/{call_id}/process-segment", response_model=CallSegmentResponse)
 async def process_call_segment(
     call_id: UUID,
-    audio: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    audio: Annotated[UploadFile, File(...)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = VoiceService(db)
     audio_bytes = await audio.read()
@@ -133,8 +134,8 @@ async def process_call_segment(
 async def update_call(
     call_id: UUID,
     data: VoiceCallUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await db.execute(select(VoiceCall).where(VoiceCall.id == call_id))
     call = result.scalar_one_or_none()
@@ -151,9 +152,9 @@ async def update_call(
 @router.post("/calls/{call_id}/end", response_model=VoiceCallResponse)
 async def end_call(
     call_id: UUID,
-    outcome: str | None = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    outcome: Annotated[str | None, Query()] = None,
 ):
     service = VoiceService(db)
     try:
@@ -167,9 +168,9 @@ async def end_call(
 
 @router.get("/config", response_model=VoiceConfigResponse)
 async def get_voice_config(
-    business_id: UUID = Query(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await db.execute(select(VoiceConfig).where(VoiceConfig.business_id == business_id))
     config = result.scalar_one_or_none()
@@ -181,8 +182,8 @@ async def get_voice_config(
 @router.post("/config", response_model=VoiceConfigResponse, status_code=status.HTTP_201_CREATED)
 async def upsert_voice_config(
     data: VoiceConfigCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = VoiceService(db)
     config = await service.upsert_config(data.model_dump())
@@ -193,8 +194,8 @@ async def upsert_voice_config(
 async def update_voice_config(
     config_id: UUID,
     data: VoiceConfigUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await db.execute(select(VoiceConfig).where(VoiceConfig.id == config_id))
     config = result.scalar_one_or_none()
@@ -214,7 +215,7 @@ async def update_voice_config(
 
 @router.post("/webhook/twilio")
 async def twilio_webhook(
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Twilio webhook placeholder — implement call status & media URL handling."""
     return {"status": "received", "provider": "twilio"}

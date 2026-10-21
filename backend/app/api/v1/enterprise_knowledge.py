@@ -10,6 +10,7 @@ ones that didn't. No ML/embeddings, per the product decision this replaces
 (simple pattern counts, not real learning).
 """
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -36,8 +37,8 @@ async def _get_business_for_user(business_id: UUID, user: User, db: AsyncSession
 @router.get("/knowledge/patterns/{business_id}")
 async def get_win_loss_patterns(
     business_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Compare conversations that led to a won deal vs a lost one: message
     volume, time to close, and win rate by which sales-agent voice/personality
@@ -50,9 +51,9 @@ async def get_win_loss_patterns(
 @router.get("/knowledge/winning-phrases/{business_id}")
 async def get_winning_phrases(
     business_id: UUID,
-    limit: int = Query(20, ge=1, le=100),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
 ):
     """Word-frequency count of the sales agent's own messages in won vs lost
     conversations -- what words show up more often in conversations that
@@ -65,8 +66,8 @@ async def get_winning_phrases(
 @router.get("/knowledge/summary/{business_id}")
 async def get_summary(
     business_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Combined dashboard view: win/loss patterns + top winning/losing phrases."""
     await _get_business_for_user(business_id, current_user, db)

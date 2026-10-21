@@ -1,4 +1,5 @@
 """Phase 3: Channel Routing Endpoints."""
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
@@ -15,8 +16,8 @@ async def route_message(
     business_id: UUID,
     customer_id: UUID,
     message_template_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
     force_channel: str | None = None,
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Route message to optimal channel based on customer affinity."""
     result = await ChannelRoutingService.route_message(
@@ -31,10 +32,10 @@ async def update_affinity(
     customer_id: UUID,
     channel: str,
     was_delivered: bool,
+    db: Annotated[AsyncSession, Depends(get_db)],
     was_opened: bool = False,
     was_clicked: bool = False,
     response_time_seconds: int | None = None,
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Update channel affinity based on message performance."""
     affinity = await ChannelRoutingService.update_channel_affinity(
@@ -54,7 +55,7 @@ async def update_affinity(
 async def get_channel_performance(
     business_id: UUID,
     channel: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Get channel performance metrics."""
     return await ChannelRoutingService.get_channel_performance(db, business_id, channel)
@@ -63,7 +64,7 @@ async def get_channel_performance(
 @router.get("/strategy-recommendation")
 async def recommend_channel_strategy(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Recommend optimal channel strategy for business."""
     return await ChannelRoutingService.recommend_channel_strategy(db, business_id)

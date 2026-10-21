@@ -2,6 +2,7 @@
 Content Calendar, Entity Signals, Multi-Location SEO, Topical Clusters,
 and the cross-domain Audit Orchestrator."""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
@@ -54,8 +55,8 @@ router = APIRouter(prefix="/{business_id}/seo-agents", tags=["SEO Agents"])
 async def generate_seo_content(
     business_id: UUID,
     body: GenerateContentRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Generate AI-optimized SEO content for product/service."""
     svc = ContentGenerationService(db)
@@ -85,9 +86,9 @@ async def generate_seo_content(
 @cached(ttl_seconds=3600, key_prefix="seo_content")
 async def list_generated_content(
     business_id: UUID,
-    status: str | None = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    status: Annotated[str | None, Query()] = None,
 ):
     """List generated content."""
     svc = ContentGenerationService(db)
@@ -113,8 +114,8 @@ async def list_generated_content(
 async def get_generated_content(
     business_id: UUID,
     content_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get full generated content (including body + structure)."""
     result = await db.execute(
@@ -142,8 +143,8 @@ async def get_generated_content(
 async def analyze_keyword_gap(
     business_id: UUID,
     body: CompetitorKeywordGapIn,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Analyze keyword gap vs competitors."""
     svc = CompetitorKeywordService(db)
@@ -176,9 +177,9 @@ async def analyze_keyword_gap(
 @cached(ttl_seconds=900, key_prefix="keyword_gaps")
 async def list_keyword_gaps(
     business_id: UUID,
-    min_opportunity: float = Query(50.0),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    min_opportunity: Annotated[float, Query()] = 50.0,
 ):
     """List keyword gaps ranked by opportunity."""
     svc = CompetitorKeywordService(db)
@@ -201,8 +202,8 @@ async def list_keyword_gaps(
 @router.post("/keywords/identify-opportunities", response_model=list[KeywordOpportunityOut])
 async def identify_keyword_opportunities(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Identify high-opportunity keywords from gaps."""
     gap_svc = CompetitorKeywordService(db)
@@ -226,8 +227,8 @@ async def identify_keyword_opportunities(
 @cached(ttl_seconds=3600, key_prefix="seo_agents_dashboard")
 async def seo_agents_dashboard(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """SEO Agents dashboard — content stats + keyword opportunities."""
     # Content stats
@@ -267,8 +268,8 @@ async def seo_agents_dashboard(
 async def add_backlink_opportunity(
     business_id: UUID,
     body: BacklinkOpportunityIn,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Identify + score a backlink outreach opportunity."""
     svc = BacklinkStrategyService(db)
@@ -299,10 +300,10 @@ async def add_backlink_opportunity(
 @cached(ttl_seconds=3600, key_prefix="backlink_opps")
 async def list_backlink_opportunities(
     business_id: UUID,
-    status: str | None = Query(None),
-    min_priority: float = Query(0.0),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    status: Annotated[str | None, Query()] = None,
+    min_priority: Annotated[float, Query()] = 0.0,
 ):
     """List backlink opportunities ranked by priority (cached 1h)."""
     svc = BacklinkStrategyService(db)
@@ -326,10 +327,10 @@ async def list_backlink_opportunities(
 async def update_backlink_status(
     business_id: UUID,
     opportunity_id: UUID,
-    status: str = Query(..., pattern="^(identified|contacted|negotiating|acquired|rejected)$"),
-    acquired_url: str | None = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    status: Annotated[str, Query(pattern="^(identified|contacted|negotiating|acquired|rejected)$")],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    acquired_url: Annotated[str | None, Query()] = None,
 ):
     """Update backlink outreach status."""
     svc = BacklinkStrategyService(db)
@@ -351,8 +352,8 @@ async def update_backlink_status(
 async def create_review_campaign(
     business_id: UUID,
     body: ReviewCampaignIn,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create a review solicitation campaign."""
     svc = ReviewOrchestrationService(db)
@@ -378,10 +379,10 @@ async def create_review_campaign(
 async def record_review_result(
     business_id: UUID,
     campaign_id: UUID,
-    rating: int = Query(..., ge=1, le=5),
-    review_text: str | None = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    rating: Annotated[int, Query(ge=1, le=5)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    review_text: Annotated[str | None, Query()] = None,
 ):
     """Record a completed review + refresh the business rating aggregate."""
     svc = ReviewOrchestrationService(db)
@@ -399,9 +400,9 @@ async def record_review_result(
 @router.get("/reviews/campaigns", response_model=list[ReviewCampaignOut])
 async def list_review_campaigns(
     business_id: UUID,
-    status: str | None = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    status: Annotated[str | None, Query()] = None,
 ):
     """List review campaigns."""
     svc = ReviewOrchestrationService(db)
@@ -423,8 +424,8 @@ async def list_review_campaigns(
 @cached(ttl_seconds=3600, key_prefix="review_aggregate")
 async def get_review_aggregate(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get AggregateRating rollup (cached 1h) — feeds schema.org markup."""
     svc = ReviewOrchestrationService(db)
@@ -455,8 +456,8 @@ async def get_review_aggregate(
 async def generate_content_calendar(
     business_id: UUID,
     body: GenerateCalendarRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Generate a content calendar spaced across a rolling window."""
     svc = ContentCalendarService(db)
@@ -486,9 +487,9 @@ async def generate_content_calendar(
 @cached(ttl_seconds=1800, key_prefix="content_calendar")
 async def list_content_calendar(
     business_id: UUID,
-    status: str | None = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    status: Annotated[str | None, Query()] = None,
 ):
     """List calendar entries in publication order (cached 30min)."""
     svc = ContentCalendarService(db)
@@ -511,9 +512,9 @@ async def list_content_calendar(
 @router.get("/calendar/upcoming", response_model=list[ContentCalendarEntryOut])
 async def upcoming_calendar_entries(
     business_id: UUID,
-    within_days: int = Query(7),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    within_days: Annotated[int, Query()] = 7,
 ):
     """Entries due within the next N days."""
     svc = ContentCalendarService(db)
@@ -537,10 +538,10 @@ async def upcoming_calendar_entries(
 async def update_calendar_entry(
     business_id: UUID,
     entry_id: UUID,
-    status: str = Query(..., pattern="^(planned|in_progress|published|skipped)$"),
-    content_id: UUID | None = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    status: Annotated[str, Query(pattern="^(planned|in_progress|published|skipped)$")],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    content_id: Annotated[UUID | None, Query()] = None,
 ):
     """Update a calendar entry's status, optionally linking generated content."""
     svc = ContentCalendarService(db)
@@ -562,8 +563,8 @@ async def update_calendar_entry(
 async def create_entity_signal(
     business_id: UUID,
     body: CreateEntityRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create + generate schema.org markup for an entity."""
     svc = EntityOptimizationService(db)
@@ -589,9 +590,9 @@ async def create_entity_signal(
 @cached(ttl_seconds=3600, key_prefix="entity_signals")
 async def list_entity_signals(
     business_id: UUID,
-    entity_type: str | None = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    entity_type: Annotated[str | None, Query()] = None,
 ):
     """List entity signals (cached 1h)."""
     svc = EntityOptimizationService(db)
@@ -614,12 +615,12 @@ async def list_entity_signals(
 async def update_entity_signal(
     business_id: UUID,
     entity_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     external_links: list[str] | None = None,
     co_mention_targets: list[str] | None = None,
-    status: str | None = Query(None, pattern="^(draft|published)$"),
-    published_url: str | None = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    status: Annotated[str | None, Query(pattern="^(draft|published)$")] = None,
+    published_url: Annotated[str | None, Query()] = None,
 ):
     """Update entity links/targets/status; regenerates schema if links change."""
     svc = EntityOptimizationService(db)
@@ -640,8 +641,8 @@ async def update_entity_signal(
 async def create_location_profile(
     business_id: UUID,
     body: CreateLocationRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create a location profile with LocalBusiness schema + location keywords."""
     svc = MultiLocationSEOService(db)
@@ -671,8 +672,8 @@ async def create_location_profile(
 @cached(ttl_seconds=3600, key_prefix="seo_locations")
 async def list_location_profiles(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """List location profiles (cached 1h)."""
     svc = MultiLocationSEOService(db)
@@ -695,10 +696,10 @@ async def list_location_profiles(
 async def update_location_citation(
     business_id: UUID,
     profile_id: UUID,
-    platform: str = Query(..., pattern="^(google_business|yelp|facebook|bing_places|apple_maps)$"),
-    confirmed: bool = Query(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    platform: Annotated[str, Query(pattern="^(google_business|yelp|facebook|bing_places|apple_maps)$")],
+    confirmed: Annotated[bool, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Mark a directory citation confirmed/unconfirmed; recomputes NAP consistency."""
     svc = MultiLocationSEOService(db)
@@ -718,8 +719,8 @@ async def update_location_citation(
 @cached(ttl_seconds=3600, key_prefix="citation_report")
 async def get_citation_consistency_report(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """NAP citation coverage rollup across all locations (cached 1h)."""
     svc = MultiLocationSEOService(db)
@@ -732,8 +733,8 @@ async def get_citation_consistency_report(
 async def create_topical_cluster(
     business_id: UUID,
     body: CreateClusterRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create a pillar + cluster topic group with a generated internal-linking map."""
     svc = TopicalClusterService(db)
@@ -756,8 +757,8 @@ async def create_topical_cluster(
 @cached(ttl_seconds=3600, key_prefix="topical_clusters")
 async def list_topical_clusters(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """List topical clusters ranked by authority score (cached 1h)."""
     svc = TopicalClusterService(db)
@@ -778,9 +779,9 @@ async def list_topical_clusters(
 async def add_cluster_topic(
     business_id: UUID,
     cluster_id: UUID,
-    topic: str = Query(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    topic: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Add a subtopic to an existing cluster; regenerates the linking map + authority score."""
     svc = TopicalClusterService(db)
@@ -798,8 +799,8 @@ async def add_cluster_topic(
 async def get_cluster_linking_map(
     business_id: UUID,
     cluster_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get the internal-linking map for a cluster."""
     svc = TopicalClusterService(db)
@@ -814,8 +815,8 @@ async def get_cluster_linking_map(
 @cached(ttl_seconds=1800, key_prefix="seo_audit")
 async def run_seo_audit(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Run a full cross-domain SEO audit (seo_intelligence + fomo_seo +
     seo_optimization + every seo_agents service) and return a prioritized

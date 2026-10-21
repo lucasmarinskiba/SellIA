@@ -1,5 +1,7 @@
 """Phase 31 Psychology Sales API endpoints."""
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -99,7 +101,7 @@ class CloseResponse(BaseModel):
 @router.post("/discovery-questions", response_model=DiscoveryQuestionResponse)
 def get_discovery_questions(
     request: DiscoveryQuestionRequest,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Get contextual discovery questions for prospect."""
 
@@ -133,7 +135,7 @@ def get_discovery_questions(
 @router.post("/record-response", response_model=RecordResponseResponse)
 def record_discovery_response(
     request: RecordResponseRequest,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Record prospect's response to discovery question."""
 
@@ -153,7 +155,7 @@ def record_discovery_response(
 @router.post("/create-need-narrative", response_model=NeedNarrativeResponse)
 def create_need_narrative(
     request: NeedNarrativeRequest,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Create need narrative from discovery responses."""
 
@@ -173,7 +175,7 @@ def create_need_narrative(
 @router.post("/urgency-triggers", response_model=UrgencyTriggersResponse)
 def get_urgency_triggers(
     request: UrgencyTriggersRequest,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Get FOMO/urgency triggers for deal."""
 
@@ -191,7 +193,7 @@ def get_urgency_triggers(
 @router.post("/handle-objection", response_model=ObjectionResponse)
 def handle_objection(
     request: ObjectionRequest,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Get psychology-based objection response."""
 
@@ -213,7 +215,7 @@ def handle_objection(
 @router.post("/close", response_model=CloseResponse)
 def get_close(
     request: CloseRequest,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Get assumptive close for current step."""
 

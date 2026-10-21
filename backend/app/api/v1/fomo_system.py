@@ -13,6 +13,8 @@ Routes:
 """
 
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -112,7 +114,10 @@ class CompetitorIntelResponse(BaseModel):
 
 
 @router.get("/deal/{deal_id}")
-def get_deal_foom_status(deal_id: str, db: Session = Depends(get_db)):
+def get_deal_foom_status(
+    deal_id: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Get real-time FOOM status for a deal."""
     try:
         dashboard = RealTimeFOMODashboard(db)
@@ -127,7 +132,9 @@ def get_deal_foom_status(deal_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/platform")
-def get_platform_foom_metrics(db: Session = Depends(get_db)):
+def get_platform_foom_metrics(
+    db: Annotated[Session, Depends(get_db)],
+):
     """Get FOOM metrics for SellIA platform itself."""
     try:
         dashboard = RealTimeFOMODashboard(db)
@@ -138,7 +145,10 @@ def get_platform_foom_metrics(db: Session = Depends(get_db)):
 
 
 @router.post("/triggers", response_model=TriggersResponse)
-def generate_all_triggers(request: TriggersRequest, db: Session = Depends(get_db)):
+def generate_all_triggers(
+    request: TriggersRequest,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Generate all FOOM triggers for deal."""
     try:
         from app.domains.crm.models import (
@@ -197,7 +207,10 @@ def generate_all_triggers(request: TriggersRequest, db: Session = Depends(get_db
 
 
 @router.post("/cost-of-delay", response_model=CostOfDelayResponse)
-def calculate_cost_of_delay(request: CostOfDelayRequest, db: Session = Depends(get_db)):
+def calculate_cost_of_delay(
+    request: CostOfDelayRequest,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Calculate cost of delaying decision."""
     try:
         calculator = CostOfDelayCalculator(db)
@@ -214,7 +227,10 @@ def calculate_cost_of_delay(request: CostOfDelayRequest, db: Session = Depends(g
 
 
 @router.post("/social-post", response_model=SocialPostResponse)
-def generate_social_post(request: SocialPostRequest, db: Session = Depends(get_db)):
+def generate_social_post(
+    request: SocialPostRequest,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Generate shareable social media post."""
     try:
         dashboard = RealTimeFOMODashboard(db)
@@ -261,7 +277,10 @@ def generate_social_post(request: SocialPostRequest, db: Session = Depends(get_d
 
 
 @router.post("/email-subject", response_model=EmailSubjectResponse)
-def generate_email_subject(request: EmailSubjectRequest, db: Session = Depends(get_db)):
+def generate_email_subject(
+    request: EmailSubjectRequest,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Generate high-open-rate email subject."""
     try:
         dashboard = RealTimeFOMODashboard(db)
@@ -301,7 +320,10 @@ def generate_email_subject(request: EmailSubjectRequest, db: Session = Depends(g
 
 
 @router.post("/video-script", response_model=VideoScriptResponse)
-def generate_video_script(request: VideoScriptRequest, db: Session = Depends(get_db)):
+def generate_video_script(
+    request: VideoScriptRequest,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Generate short-form video script."""
     try:
         dashboard = RealTimeFOMODashboard(db)
@@ -340,7 +362,10 @@ def generate_video_script(request: VideoScriptRequest, db: Session = Depends(get
 
 
 @router.get("/micro-commitments/{step}")
-def get_micro_commitment(step: int, db: Session = Depends(get_db)):
+def get_micro_commitment(
+    step: int,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Get next micro-commitment in 7-step sequence."""
     try:
         if step < 1 or step > 7:
@@ -361,7 +386,10 @@ def get_micro_commitment(step: int, db: Session = Depends(get_db)):
 
 
 @router.post("/competitor-intel", response_model=CompetitorIntelResponse)
-def get_competitor_intelligence(request: CompetitorIntelRequest, db: Session = Depends(get_db)):
+def get_competitor_intelligence(
+    request: CompetitorIntelRequest,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Get competitive intelligence."""
     try:
         tracker = CompetitiveIntelligenceTracker(db)

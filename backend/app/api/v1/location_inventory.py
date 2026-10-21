@@ -1,5 +1,6 @@
 """Location inventory API endpoints."""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -62,8 +63,8 @@ class OrderReservationRequest(BaseModel):
 @router.get("/locations/{location_id}/inventory")
 async def get_location_inventory(
     location_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Get all inventory at location."""
     await get_owned_location(db, location_id, current_user)
@@ -103,8 +104,8 @@ async def get_location_inventory(
 async def get_product_stock(
     location_id: UUID,
     product_id: str,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Get stock level for specific product."""
     await get_owned_location(db, location_id, current_user)
@@ -138,8 +139,8 @@ async def get_product_stock(
 @router.post("/inventory/update-stock")
 async def update_stock(
     request: StockUpdateRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Update stock level (restock, manual adjustment, demo usage)."""
     await get_owned_location(db, request.location_id, current_user)
@@ -164,8 +165,8 @@ async def update_stock(
 async def check_demo_stock(
     location_id: UUID,
     request: DemoCheckRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Check if product available for demo during visitor checkin."""
     await get_owned_location(db, location_id, current_user)
@@ -188,10 +189,10 @@ async def check_demo_stock(
 @router.get("/locations/{location_id}/stock-movements")
 async def get_stock_history(
     location_id: UUID,
-    product_id: str | None = Query(None),
-    days: int = Query(30, ge=1, le=365),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    product_id: Annotated[str | None, Query()] = None,
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ) -> dict:
     """Get stock movement audit trail."""
     await get_owned_location(db, location_id, current_user)
@@ -233,9 +234,9 @@ async def get_stock_history(
 @router.get("/locations/{location_id}/low-stock-alerts")
 async def get_low_stock_alerts(
     location_id: UUID,
-    acknowledged: bool | None = Query(None),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    acknowledged: Annotated[bool | None, Query()] = None,
 ) -> dict:
     """Get low-stock alerts for location."""
     await get_owned_location(db, location_id, current_user)
@@ -277,8 +278,8 @@ async def get_low_stock_alerts(
 @router.post("/inventory/acknowledge-alert")
 async def acknowledge_alert(
     alert_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Mark low-stock alert as acknowledged."""
     alert = await db.get(LowStockAlert, alert_id)
@@ -301,8 +302,8 @@ async def acknowledge_alert(
 @router.post("/fulfillment/find-location")
 async def find_fulfillment_location(
     request: FulfillmentRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Find best location to fulfill online order."""
     await get_owned_business(db, request.business_id, current_user)
@@ -331,8 +332,8 @@ async def find_fulfillment_location(
 @router.post("/orders/reserve-inventory")
 async def reserve_inventory(
     request: OrderReservationRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Reserve inventory for online order."""
     await get_owned_location(db, request.location_id, current_user)
@@ -356,8 +357,8 @@ async def mark_order_shipped(
     order_id: str,
     location_id: UUID,
     product_id: str,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Mark order as shipped from location."""
     await get_owned_location(db, location_id, current_user)

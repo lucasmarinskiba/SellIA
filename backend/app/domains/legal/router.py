@@ -1,5 +1,6 @@
 """Legal API — /api/v1/businesses/{business_id}/legal/*"""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
@@ -33,8 +34,8 @@ router = APIRouter(prefix="/{business_id}/legal", tags=["Legal"])
 async def add_compliance_requirement(
     business_id: UUID,
     body: ComplianceChecklistItemCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Add compliance requirement."""
     svc = ComplianceService(db)
@@ -45,8 +46,8 @@ async def add_compliance_requirement(
 async def get_compliance_requirement(
     business_id: UUID,
     item_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get compliance requirement."""
     svc = ComplianceService(db)
@@ -58,8 +59,8 @@ async def update_compliance_status(
     business_id: UUID,
     item_id: UUID,
     body: ComplianceChecklistItemUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Update compliance requirement status."""
     svc = ComplianceService(db)
@@ -69,8 +70,8 @@ async def update_compliance_status(
 @router.get("/compliance/status", response_model=ComplianceStatusResponse)
 async def get_compliance_status(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get compliance overview."""
     svc = ComplianceService(db)
@@ -83,8 +84,8 @@ async def get_compliance_status(
 async def create_contract_template(
     business_id: UUID,
     body: ContractTemplateCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create contract template."""
     svc = ContractService(db)
@@ -94,8 +95,8 @@ async def create_contract_template(
 @router.get("/contracts", response_model=list[ContractTemplateOut])
 async def list_contract_templates(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """List contract templates."""
     svc = ContractService(db)
@@ -107,8 +108,8 @@ async def render_contract(
     business_id: UUID,
     template_id: UUID,
     body: ContractRenderRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Render contract with variables."""
     svc = ContractService(db)
@@ -119,9 +120,9 @@ async def render_contract(
 @router.get("/audit", response_model=list[AuditLogOut])
 async def get_audit_logs(
     business_id: UUID,
-    limit: int = Query(100, ge=1, le=1000),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    limit: Annotated[int, Query(ge=1, le=1000)] = 100,
 ):
     """Get audit logs."""
     svc = AuditLogService(db)

@@ -1,5 +1,7 @@
 """User Memory API - Minimal implementation"""
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,7 +13,9 @@ from app.domains.user_memory.service import UserMemoryService
 router = APIRouter()
 
 
-async def get_user_from_token(authorization: str = Header(None)) -> str:
+async def get_user_from_token(
+    authorization: Annotated[str, Header()] = None,
+) -> str:
     """Extract user_id from Bearer token"""
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing or invalid token")
@@ -27,8 +31,8 @@ async def get_user_from_token(authorization: str = Header(None)) -> str:
 
 @router.get("/me")
 async def get_my_memory(
-    user_id: str = Depends(get_user_from_token),
-    db: AsyncSession = Depends(get_db),
+    user_id: Annotated[str, Depends(get_user_from_token)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Get user memory"""
     try:
@@ -69,8 +73,8 @@ async def get_my_memory(
 @router.patch("/me")
 async def update_my_memory(
     data: dict,
-    user_id: str = Depends(get_user_from_token),
-    db: AsyncSession = Depends(get_db),
+    user_id: Annotated[str, Depends(get_user_from_token)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Update user memory"""
     try:

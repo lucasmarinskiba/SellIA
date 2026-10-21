@@ -7,6 +7,8 @@ Endpoints para evaluar leads:
 """
 
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -73,8 +75,8 @@ class LeadScoreResponse(BaseModel):
 @router.post("/leads/score", response_model=LeadScoreResponse)
 async def score_lead(
     request: LeadScoringRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """
     Calcula score automático de un lead.
@@ -120,8 +122,8 @@ async def score_lead(
 @router.post("/leads/batch-score", response_model=list[LeadScoreResponse])
 async def batch_score_leads(
     requests: list[LeadScoringRequest],
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """
     Calcula scores para múltiples leads de una vez.
@@ -175,9 +177,9 @@ async def batch_score_leads(
 
 @router.get("/leads/by-temperature")
 async def get_leads_by_temperature(
-    temperature: str = Query(..., description="hot | warm | cold"),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    temperature: Annotated[str, Query(description="hot | warm | cold")],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """
     Retorna info sobre acciones recomendadas por temperatura.
@@ -239,7 +241,7 @@ async def get_leads_by_temperature(
 
 @router.get("/leads/scoring-factors")
 async def get_scoring_factors(
-    current_user: User = Depends(get_current_active_user),
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """
     Retorna explicación de factores de scoring.

@@ -10,6 +10,7 @@ Endpoints de gestión de seguridad:
 
 import hashlib
 from datetime import UTC, datetime, timedelta
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -54,8 +55,8 @@ router = APIRouter()
 @router.post("/webhooks", response_model=SecurityWebhookResponse, status_code=status.HTTP_201_CREATED)
 async def create_webhook(
     data: SecurityWebhookCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     if not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
@@ -69,8 +70,8 @@ async def create_webhook(
 
 @router.get("/webhooks", response_model=list[SecurityWebhookResponse])
 async def list_webhooks(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     if not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
@@ -82,8 +83,8 @@ async def list_webhooks(
 @router.delete("/webhooks/{webhook_id}")
 async def delete_webhook(
     webhook_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     if not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
@@ -102,8 +103,8 @@ async def delete_webhook(
 
 @router.get("/config", response_model=SecurityConfigResponse)
 async def get_security_config(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     if not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
@@ -121,8 +122,8 @@ async def get_security_config(
 @router.put("/config", response_model=SecurityConfigResponse)
 async def update_security_config(
     data: SecurityConfigUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     if not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
@@ -145,8 +146,8 @@ async def update_security_config(
 
 @router.get("/login-logs", response_model=list[LoginLogResponse])
 async def get_my_login_logs(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(UserLoginLog)
@@ -184,8 +185,8 @@ async def get_vapid_key():
 @router.post("/push/subscribe", response_model=PushSubscriptionResponse)
 async def subscribe_push(
     data: PushSubscriptionCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(PushSubscription).where(
@@ -219,8 +220,8 @@ async def subscribe_push(
 @router.post("/push/unsubscribe")
 async def unsubscribe_push(
     endpoint: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(PushSubscription).where(
@@ -237,8 +238,8 @@ async def unsubscribe_push(
 
 @router.post("/push/test")
 async def test_push(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     try:
         await send_security_push(
@@ -260,8 +261,8 @@ async def test_push(
 @router.get("/sessions", response_model=list[UserSessionResponse])
 async def get_my_sessions(
     request: Request,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     token = None
     auth_header = request.headers.get("Authorization", "")
@@ -309,8 +310,8 @@ async def get_my_sessions(
 async def revoke_session(
     session_id: UUID,
     request: Request,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(UserSession).where(
@@ -342,8 +343,8 @@ async def revoke_session(
 @router.post("/sessions/revoke-all")
 async def revoke_all_sessions(
     request: Request,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     token = None
     auth_header = request.headers.get("Authorization", "")
@@ -435,8 +436,8 @@ async def get_audit_logs(
 
 @router.get("/audit-stats", response_model=SecurityStatsResponse)
 async def get_security_stats(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Estadísticas de seguridad del día (solo admin)."""
     if not current_user.is_superuser:
@@ -497,8 +498,8 @@ async def get_security_stats(
 @router.post("/check-breach/{user_id}", response_model=BreachCheckResponse)
 async def check_user_breach(
     user_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Verifica si el email de un usuario aparece en HIBP (solo admin)."""
     if not current_user.is_superuser:
@@ -540,8 +541,8 @@ async def check_user_breach(
 
 @router.get("/metrics")
 async def get_security_metrics(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Dashboard metrics: logins, countries, devices, timeline (admin only)."""
     if not current_user.is_superuser:
@@ -645,8 +646,8 @@ async def get_security_metrics(
 
 @router.get("/audit-report")
 async def get_audit_report(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Reporte de auditoría de seguridad de los últimos 7 días (solo admin)."""
     if not current_user.is_superuser:

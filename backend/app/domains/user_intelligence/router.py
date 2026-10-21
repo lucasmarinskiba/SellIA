@@ -1,4 +1,6 @@
 """Phase X9: AI User Intelligence Agent API."""
+from typing import Annotated
+
 from fastapi import APIRouter, Body, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,12 +12,12 @@ router = APIRouter(prefix="/api/v1/user-intelligence", tags=["user-intelligence"
 
 @router.post("/profile-user")
 async def profile_user(
-    user_id: str = Body(...),
-    email: str = Body(...),
-    company_name: str = Body(...),
-    engagement_data: dict = Body(...),
-    company_data: dict = Body(...),
-    db: AsyncSession = Depends(get_db),
+    user_id: Annotated[str, Body()],
+    email: Annotated[str, Body()],
+    company_name: Annotated[str, Body()],
+    engagement_data: Annotated[dict, Body()],
+    company_data: Annotated[dict, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Create comprehensive AI user profile."""
     profile = await UserIntelligenceAgent.profile_user(
@@ -36,7 +38,7 @@ async def profile_user(
 @router.get("/get-personalized-messaging/{user_id}")
 async def get_personalized_messaging(
     user_id: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Get personalized messaging strategy for user."""
     # In real implementation: fetch profile from DB, generate messaging

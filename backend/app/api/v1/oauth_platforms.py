@@ -1,5 +1,7 @@
 """OAuth endpoints for platform integrations."""
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,9 +29,9 @@ async def mercado_libre_auth_url():
 
 @router.get("/mercado-libre/callback")
 async def mercado_libre_callback(
-    code: str = Query(...),
-    seller_id: str = Query(...),
-    db: AsyncSession = Depends(get_db),
+    code: Annotated[str, Query()],
+    seller_id: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Handle Mercado Libre OAuth callback."""
     try:
@@ -66,9 +68,9 @@ async def amazon_auth_url():
 
 @router.get("/amazon/callback")
 async def amazon_callback(
-    code: str = Query(...),
-    seller_id: str = Query(...),
-    db: AsyncSession = Depends(get_db),
+    code: Annotated[str, Query()],
+    seller_id: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Handle Amazon SP-API callback."""
     try:
@@ -94,9 +96,9 @@ async def hotmart_auth_url():
 
 @router.get("/hotmart/callback")
 async def hotmart_callback(
-    code: str = Query(...),
-    seller_id: str = Query(...),
-    db: AsyncSession = Depends(get_db),
+    code: Annotated[str, Query()],
+    seller_id: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Handle Hotmart OAuth callback."""
     try:
@@ -124,8 +126,8 @@ async def hotmart_callback(
 @router.get("/platforms/status/{seller_id}")
 async def get_platform_status(
     seller_id: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get connection status for all platforms.
 
@@ -155,8 +157,8 @@ async def get_platform_status(
 async def disconnect_platform(
     seller_id: str,
     platform: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Disconnect platform. Same missing-auth issue as get_platform_status above -- anyone could disconnect any seller's live marketplace integration with zero authentication."""
     cred = await get_platform_credential(db, seller_id, platform)

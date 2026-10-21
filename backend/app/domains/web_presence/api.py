@@ -7,7 +7,7 @@ variant, because there is no such thing as "the platform's links".
 from __future__ import annotations
 
 import uuid
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -48,8 +48,8 @@ async def list_platforms() -> dict[str, Any]:
 
 @router.get("/suggested-links")
 async def suggested_links(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """Platforms already connected in /dashboard/platforms that don't have a
     matching link here yet -- with a real, ready-to-add URL for the ones we
@@ -62,8 +62,8 @@ async def suggested_links(
 
 @router.get("/links")
 async def get_links(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     links = await service.list_links(db, user.id)
     return {"links": [service.serialize_link(link) for link in links]}
@@ -72,8 +72,8 @@ async def get_links(
 @router.post("/links")
 async def add_link(
     payload: LinkIn,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     try:
         link = await service.upsert_link(
@@ -92,8 +92,8 @@ async def add_link(
 @router.delete("/links/{link_id}")
 async def remove_link(
     link_id: uuid.UUID,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, bool]:
     deleted = await service.delete_link(db, user.id, link_id)
     if not deleted:
@@ -104,8 +104,8 @@ async def remove_link(
 @router.post("/links/{link_id}/audit")
 async def audit_one(
     link_id: uuid.UUID,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     result = await db.execute(
         select(BusinessLink).where(
@@ -120,15 +120,18 @@ async def audit_one(
 
 @router.post("/audit-all")
 async def audit_everything(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     links = await service.audit_all(db, user.id)
     return {"links": [service.serialize_link(link) for link in links]}
 
 
 @router.post("/analyze-url")
-async def analyze_any_url(payload: UrlIn, _: User = Depends(get_current_user)) -> dict[str, Any]:
+async def analyze_any_url(
+    payload: UrlIn,
+    _: Annotated[User, Depends(get_current_user)],
+) -> dict[str, Any]:
     """One-off audit of any public URL (a competitor's page, a listing you are
     about to publish). Not stored -- use POST /links to keep it."""
     result = await fetcher.fetch(payload.url)
@@ -156,8 +159,8 @@ async def analyze_any_url(payload: UrlIn, _: User = Depends(get_current_user)) -
 @router.post("/compare")
 async def compare_with_competitor(
     payload: UrlIn,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """Your main page against a competitor's, on the signals that can actually
     be read from both pages -- plus which topics their page covers that yours
@@ -222,24 +225,24 @@ async def compare_with_competitor(
 
 @router.get("/seo-report")
 async def get_seo_report(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     return await service.seo_report(db, user.id)
 
 
 @router.get("/authority-report")
 async def get_authority_report(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     return await service.authority_report(db, user.id)
 
 
 @router.get("/structured-data")
 async def get_structured_data(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """The exact JSON-LD this account should paste into its site, built from its
     own real business data and its own real profile URLs."""

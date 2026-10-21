@@ -12,7 +12,7 @@ Endpoints para recibir webhooks de plataformas:
 Webhooks sin autenticación (validar con tokens en headers).
 """
 
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -32,7 +32,7 @@ router = APIRouter()
 
 
 async def _verify_webhook_token(
-    x_webhook_token: str = Header(None),
+    x_webhook_token: Annotated[str, Header()] = None,
     platform: str = None,
 ) -> str:
     """Verifica token de webhook."""
@@ -54,9 +54,9 @@ async def _verify_webhook_token(
 @router.post("/webhooks/whatsapp")
 async def whatsapp_webhook(
     payload: dict[str, Any],
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _token: Annotated[str, Depends(lambda: _verify_webhook_token(platform="whatsapp"))],
     background_tasks: BackgroundTasks = None,
-    _token: str = Depends(lambda: _verify_webhook_token(platform="whatsapp")),
 ):
     """
     Webhook de WhatsApp Business API.
@@ -108,9 +108,9 @@ async def whatsapp_webhook(
 @router.post("/webhooks/instagram")
 async def instagram_webhook(
     payload: dict[str, Any],
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _token: Annotated[str, Depends(lambda: _verify_webhook_token(platform="instagram"))],
     background_tasks: BackgroundTasks = None,
-    _token: str = Depends(lambda: _verify_webhook_token(platform="instagram")),
 ):
     """Webhook de Instagram (DMs + comments)."""
     try:
@@ -138,9 +138,9 @@ async def instagram_webhook(
 @router.post("/webhooks/tiktok")
 async def tiktok_webhook(
     payload: dict[str, Any],
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _token: Annotated[str, Depends(lambda: _verify_webhook_token(platform="tiktok"))],
     background_tasks: BackgroundTasks = None,
-    _token: str = Depends(lambda: _verify_webhook_token(platform="tiktok")),
 ):
     """Webhook de TikTok (comments)."""
     try:
@@ -168,9 +168,9 @@ async def tiktok_webhook(
 @router.post("/webhooks/facebook")
 async def facebook_webhook(
     payload: dict[str, Any],
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _token: Annotated[str, Depends(lambda: _verify_webhook_token(platform="facebook"))],
     background_tasks: BackgroundTasks = None,
-    _token: str = Depends(lambda: _verify_webhook_token(platform="facebook")),
 ):
     """Webhook de Facebook (Messenger + comments)."""
     try:
@@ -198,9 +198,9 @@ async def facebook_webhook(
 @router.post("/webhooks/mercadolibre")
 async def mercadolibre_webhook(
     payload: dict[str, Any],
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _token: Annotated[str, Depends(lambda: _verify_webhook_token(platform="mercadolibre"))],
     background_tasks: BackgroundTasks = None,
-    _token: str = Depends(lambda: _verify_webhook_token(platform="mercadolibre")),
 ):
     """Webhook de Mercado Libre (mensajes)."""
     try:
@@ -228,9 +228,9 @@ async def mercadolibre_webhook(
 @router.post("/webhooks/amazon")
 async def amazon_webhook(
     payload: dict[str, Any],
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _token: Annotated[str, Depends(lambda: _verify_webhook_token(platform="amazon"))],
     background_tasks: BackgroundTasks = None,
-    _token: str = Depends(lambda: _verify_webhook_token(platform="amazon")),
 ):
     """Webhook de Amazon (mensajes)."""
     try:
@@ -258,9 +258,9 @@ async def amazon_webhook(
 @router.post("/webhooks/hotmart")
 async def hotmart_webhook(
     payload: dict[str, Any],
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _token: Annotated[str, Depends(lambda: _verify_webhook_token(platform="hotmart"))],
     background_tasks: BackgroundTasks = None,
-    _token: str = Depends(lambda: _verify_webhook_token(platform="hotmart")),
 ):
     """Webhook de Hotmart (mensajes)."""
     try:

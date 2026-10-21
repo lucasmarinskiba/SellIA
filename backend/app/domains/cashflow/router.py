@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -19,9 +20,9 @@ router = APIRouter(prefix="/{business_id}/cashflow", tags=["Cash Flow"])
 @router.post("/forecast", response_model=CashFlowForecastOut)
 async def forecast_cashflow(
     business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     body: CashFlowRequest = CashFlowRequest(),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     try:
         cf = await CashFlowService(db).forecast(

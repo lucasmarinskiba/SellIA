@@ -1,4 +1,6 @@
 """Phase X10: FOMO Generation Agent API."""
+from typing import Annotated
+
 from fastapi import APIRouter, Body, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,12 +12,12 @@ router = APIRouter(prefix="/api/v1/fomo-generation", tags=["fomo-generation"])
 
 @router.post("/generate-scarcity")
 async def generate_scarcity_fomo(
-    user_id: str = Body(...),
-    email: str = Body(...),
-    personality_type: str = Body(...),
-    available_slots: int = Body(3),
-    product_name: str = Body("SellIA Pro"),
-    db: AsyncSession = Depends(get_db),
+    user_id: Annotated[str, Body()],
+    email: Annotated[str, Body()],
+    personality_type: Annotated[str, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    available_slots: Annotated[int, Body()] = 3,
+    product_name: Annotated[str, Body()] = "SellIA Pro",
 ) -> dict:
     """Generate scarcity-based FOMO campaign personalized by personality."""
     campaign = await FOMOGenerationAgent.generate_scarcity_fomo(
@@ -33,12 +35,12 @@ async def generate_scarcity_fomo(
 
 @router.post("/generate-social-proof")
 async def generate_social_proof_fomo(
-    user_id: str = Body(...),
-    email: str = Body(...),
-    personality_type: str = Body(...),
-    total_customers: int = Body(150),
-    product_name: str = Body("SellIA"),
-    db: AsyncSession = Depends(get_db),
+    user_id: Annotated[str, Body()],
+    email: Annotated[str, Body()],
+    personality_type: Annotated[str, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    total_customers: Annotated[int, Body()] = 150,
+    product_name: Annotated[str, Body()] = "SellIA",
 ) -> dict:
     """Generate social-proof FOMO based on company adoption."""
     campaign = await FOMOGenerationAgent.generate_social_proof_fomo(
@@ -55,12 +57,12 @@ async def generate_social_proof_fomo(
 
 @router.post("/generate-price-increase")
 async def generate_price_increase_fomo(
-    user_id: str = Body(...),
-    email: str = Body(...),
-    current_price: float = Body(99),
-    future_price: float = Body(299),
-    days_until_increase: int = Body(2),
-    db: AsyncSession = Depends(get_db),
+    user_id: Annotated[str, Body()],
+    email: Annotated[str, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_price: Annotated[float, Body()] = 99,
+    future_price: Annotated[float, Body()] = 299,
+    days_until_increase: Annotated[int, Body()] = 2,
 ) -> dict:
     """Generate loss-aversion FOMO from upcoming price increase."""
     campaign = await FOMOGenerationAgent.generate_price_increase_fomo(
@@ -80,10 +82,10 @@ async def generate_price_increase_fomo(
 
 @router.post("/create-countdown-sequence")
 async def create_countdown_sequence(
-    user_id: str = Body(...),
-    trigger_event: str = Body(...),
-    deadline_hours: int = Body(48),
-    db: AsyncSession = Depends(get_db),
+    user_id: Annotated[str, Body()],
+    trigger_event: Annotated[str, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    deadline_hours: Annotated[int, Body()] = 48,
 ) -> dict:
     """Create multi-touch countdown sequence (24h, 6h, 1h reminders)."""
     countdown = await FOMOGenerationAgent.create_countdown_sequence(

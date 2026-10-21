@@ -1,6 +1,7 @@
 """Loyalty program API — customer retention + rewards."""
 
 from decimal import Decimal
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
@@ -48,7 +49,7 @@ class CreateRewardRequest(BaseModel):
 def create_loyalty_program(
     business_id: UUID,
     request: CreateProgramRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Create loyalty program."""
     return LoyaltyProgramService.create_loyalty_program(
@@ -62,9 +63,9 @@ def create_loyalty_program(
 
 @router.post("/loyalty-program/enroll")
 def enroll_member(
-    business_id: UUID = Query(...),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[Session, Depends(get_db)],
     request: EnrollMemberRequest = None,
-    db: Session = Depends(get_db)
 ):
     """Enroll customer in loyalty program."""
     return LoyaltyProgramService.enroll_member(
@@ -77,9 +78,9 @@ def enroll_member(
 
 @router.post("/loyalty/points/award")
 def award_points(
-    business_id: UUID = Query(...),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[Session, Depends(get_db)],
     request: AwardPointsRequest = None,
-    db: Session = Depends(get_db)
 ):
     """Award points to member."""
     return LoyaltyProgramService.award_points(
@@ -95,9 +96,9 @@ def award_points(
 
 @router.post("/loyalty/rewards/redeem")
 def redeem_reward(
-    business_id: UUID = Query(...),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[Session, Depends(get_db)],
     request: RedeemRewardRequest = None,
-    db: Session = Depends(get_db)
 ):
     """Redeem reward for member."""
     return LoyaltyProgramService.redeem_reward(
@@ -111,9 +112,9 @@ def redeem_reward(
 @router.post("/loyalty-program/{program_id}/rewards")
 def create_reward_offer(
     program_id: UUID,
-    business_id: UUID = Query(...),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[Session, Depends(get_db)],
     request: CreateRewardRequest = None,
-    db: Session = Depends(get_db)
 ):
     """Create reward offer."""
     return LoyaltyProgramService.create_reward_offer(
@@ -130,7 +131,7 @@ def create_reward_offer(
 @router.get("/loyalty/members/{member_id}")
 def get_member_details(
     member_id: UUID,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Get member profile + points balance."""
     return LoyaltyProgramService.get_member_details(
@@ -142,8 +143,8 @@ def get_member_details(
 @router.get("/businesses/{business_id}/loyalty-metrics")
 def get_loyalty_metrics(
     business_id: UUID,
-    date: str | None = Query(None, description="YYYY-MM-DD"),
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
+    date: Annotated[str | None, Query(description="YYYY-MM-DD")] = None,
 ):
     """Get loyalty program metrics."""
     return LoyaltyProgramService.calculate_loyalty_metrics(

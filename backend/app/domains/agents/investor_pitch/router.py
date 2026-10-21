@@ -1,4 +1,5 @@
 import os
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -15,8 +16,8 @@ router = APIRouter(prefix="/investor-pitch", tags=["investor-pitch"])
 
 @router.post("/decks", status_code=status.HTTP_201_CREATED)
 async def generate_deck(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = InvestorPitchService(db)
     try:
@@ -37,10 +38,10 @@ async def generate_deck(
 
 @router.get("/decks")
 async def list_decks(
-    limit: int = Query(50, ge=1, le=200),
-    offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ):
     service = InvestorPitchService(db)
     result = await service.list_decks(
@@ -67,8 +68,8 @@ async def list_decks(
 @router.get("/decks/{deck_id}")
 async def get_deck(
     deck_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = InvestorPitchService(db)
     data = await service.get_deck_with_slides(deck_id, current_user.business_id)
@@ -102,8 +103,8 @@ async def get_deck(
 @router.get("/decks/{deck_id}/html")
 async def get_html(
     deck_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = InvestorPitchService(db)
     deck = await service.get_deck(deck_id, current_user.business_id)
@@ -119,8 +120,8 @@ async def get_html(
 @router.get("/decks/{deck_id}/pdf")
 async def get_pdf(
     deck_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = InvestorPitchService(db)
     deck = await service.get_deck(deck_id, current_user.business_id)

@@ -1,6 +1,7 @@
 """Services API Router"""
 
 from datetime import UTC, datetime
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -30,8 +31,8 @@ router = APIRouter()
 @router.get("/deliveries/by-order/{order_id}", response_model=dict)
 async def get_delivery_by_order(
     order_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Get service delivery and appointments for a specific order."""
     result = await db.execute(
@@ -51,12 +52,12 @@ async def get_delivery_by_order(
 @router.get("/deliveries", response_model=dict)
 async def list_deliveries(
     business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
     status: str | None = None,
     order_id: UUID | None = None,
-    limit: int = Query(50, ge=1, le=200),
-    offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ):
     items, total = await service_services.list_service_deliveries(db, business_id, status, order_id, limit, offset)
     return {"items": items, "total": total, "limit": limit, "offset": offset}
@@ -65,8 +66,8 @@ async def list_deliveries(
 @router.post("/deliveries", response_model=ServiceDeliveryResponse, status_code=status.HTTP_201_CREATED)
 async def create_delivery(
     data: ServiceDeliveryCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     try:
         return await service_services.create_service_delivery(db, data.order_id, data.model_dump())
@@ -79,8 +80,8 @@ async def create_delivery(
 @router.get("/deliveries/{delivery_id}", response_model=ServiceDeliveryResponse)
 async def get_delivery(
     delivery_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     delivery = await service_services.get_service_delivery(db, delivery_id)
     if not delivery:
@@ -92,8 +93,8 @@ async def get_delivery(
 async def update_delivery(
     delivery_id: UUID,
     data: ServiceDeliveryUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     delivery = await service_services.get_service_delivery(db, delivery_id)
     if not delivery:
@@ -104,8 +105,8 @@ async def update_delivery(
 @router.post("/deliveries/{delivery_id}/complete", response_model=ServiceDeliveryActionResponse)
 async def complete_delivery(
     delivery_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     delivery = await service_services.get_service_delivery(db, delivery_id)
     if not delivery:
@@ -117,8 +118,8 @@ async def complete_delivery(
 @router.post("/deliveries/{delivery_id}/cancel", response_model=ServiceDeliveryActionResponse)
 async def cancel_delivery(
     delivery_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     delivery = await service_services.get_service_delivery(db, delivery_id)
     if not delivery:
@@ -132,13 +133,13 @@ async def cancel_delivery(
 @router.get("/appointments", response_model=dict)
 async def list_appointments(
     business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
     status: str | None = None,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
-    limit: int = Query(50, ge=1, le=200),
-    offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ):
     items, total = await service_services.list_appointments(db, business_id, status, from_date, to_date, limit, offset)
     return {"items": items, "total": total, "limit": limit, "offset": offset}
@@ -149,8 +150,8 @@ async def get_calendar(
     business_id: UUID,
     from_date: datetime,
     to_date: datetime,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     items, total = await service_services.list_appointments(db, business_id, from_date=from_date, to_date=to_date, limit=500)
     return {"items": items, "total": total}
@@ -159,8 +160,8 @@ async def get_calendar(
 @router.post("/appointments", response_model=AppointmentResponse, status_code=status.HTTP_201_CREATED)
 async def create_appointment(
     data: AppointmentCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     try:
         return await service_services.create_appointment(db, current_user.businesses[0].id if hasattr(current_user, 'businesses') else data.order_id, data.model_dump())
@@ -173,8 +174,8 @@ async def create_appointment(
 @router.get("/appointments/{appointment_id}", response_model=AppointmentResponse)
 async def get_appointment(
     appointment_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     appt = await service_services.get_appointment(db, appointment_id)
     if not appt:
@@ -186,8 +187,8 @@ async def get_appointment(
 async def update_appointment(
     appointment_id: UUID,
     data: AppointmentUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     appt = await service_services.get_appointment(db, appointment_id)
     if not appt:
@@ -198,8 +199,8 @@ async def update_appointment(
 @router.post("/appointments/{appointment_id}/confirm", response_model=AppointmentActionResponse)
 async def confirm_appointment(
     appointment_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     appt = await service_services.get_appointment(db, appointment_id)
     if not appt:
@@ -211,8 +212,8 @@ async def confirm_appointment(
 @router.post("/appointments/{appointment_id}/complete", response_model=AppointmentActionResponse)
 async def complete_appointment(
     appointment_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     appt = await service_services.get_appointment(db, appointment_id)
     if not appt:
@@ -224,8 +225,8 @@ async def complete_appointment(
 @router.post("/appointments/{appointment_id}/cancel", response_model=AppointmentActionResponse)
 async def cancel_appointment(
     appointment_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     appt = await service_services.get_appointment(db, appointment_id)
     if not appt:
@@ -237,8 +238,8 @@ async def cancel_appointment(
 @router.post("/appointments/{appointment_id}/no-show", response_model=AppointmentActionResponse)
 async def mark_no_show(
     appointment_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     appt = await service_services.get_appointment(db, appointment_id)
     if not appt:
@@ -250,9 +251,9 @@ async def mark_no_show(
 @router.post("/appointments/{appointment_id}/send-reminder")
 async def send_reminder(
     appointment_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
     channel: str | None = "whatsapp",
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
 ):
     appt = await service_services.get_appointment(db, appointment_id)
     if not appt:
@@ -263,9 +264,9 @@ async def send_reminder(
 @router.post("/appointments/{appointment_id}/request-confirmation")
 async def request_confirmation(
     appointment_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
     channel: str | None = "whatsapp",
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
 ):
     appt = await service_services.get_appointment(db, appointment_id)
     if not appt:
@@ -276,9 +277,9 @@ async def request_confirmation(
 @router.post("/appointments/{appointment_id}/request-feedback")
 async def request_feedback(
     appointment_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
     channel: str | None = "whatsapp",
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
 ):
     appt = await service_services.get_appointment(db, appointment_id)
     if not appt:
@@ -291,8 +292,8 @@ async def request_feedback(
 @router.post("/appointments/run-checks")
 async def run_appointment_checks(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Manually trigger automated checks (reminders, no-shows, confirmations)."""
     reminders = await service_services.check_upcoming_appointments(db)
@@ -312,9 +313,9 @@ async def run_appointment_checks(
 @router.get("/analytics")
 async def get_service_analytics(
     business_id: UUID,
-    days: int = Query(30, ge=1, le=365),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ):
     """Get service delivery and appointment analytics."""
     from datetime import timedelta

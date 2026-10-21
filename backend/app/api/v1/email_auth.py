@@ -1,6 +1,8 @@
 """Email authentication API endpoints."""
 
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
@@ -74,7 +76,7 @@ class ApprovalStatusResponse(BaseModel):
 @router.post("/verify-email", response_model=EmailVerificationResponse)
 def verify_email(
     request: EmailVerificationRequest,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Verify email with token."""
     email_auth = EmailAuthManager(db)
@@ -93,7 +95,7 @@ def verify_email(
 @router.post("/request-approval", response_model=ApprovalResponse)
 def request_approval(
     request: ApprovalRequestBody,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Request account approval after email verification."""
     email_auth = EmailAuthManager(db)
@@ -118,7 +120,7 @@ def request_approval(
 @router.get("/approval-status/{user_id}", response_model=ApprovalStatusResponse)
 def get_approval_status(
     user_id: str,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Get account approval status for user."""
     email_auth = EmailAuthManager(db)

@@ -1,6 +1,7 @@
 """Phase 3 Authority Building endpoints - E-E-A-T signals, testimonials, awards."""
 
 from datetime import datetime
+from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, Query
 from sqlalchemy import select
@@ -14,11 +15,11 @@ router = APIRouter(prefix="/authority", tags=["authority"])
 
 @router.post("/testimonials")
 async def create_testimonial(
-    seller_id: str = Query(...),
-    customer_name: str = Body(...),
-    title: str = Body(...),
-    content: str = Body(...),
-    db: AsyncSession = Depends(get_db),
+    seller_id: Annotated[str, Query()],
+    customer_name: Annotated[str, Body()],
+    title: Annotated[str, Body()],
+    content: Annotated[str, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Add customer testimonial (manual or from video)."""
     testimonial = Testimonial(
@@ -38,8 +39,8 @@ async def create_testimonial(
 @router.get("/testimonials/{seller_id}")
 async def list_testimonials(
     seller_id: str,
-    featured_only: bool = Query(False),
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    featured_only: Annotated[bool, Query()] = False,
 ):
     """List testimonials for seller."""
     stmt = select(Testimonial).where(Testimonial.seller_id == seller_id)
@@ -56,11 +57,11 @@ async def list_testimonials(
 
 @router.post("/awards")
 async def add_award(
-    seller_id: str = Query(...),
-    name: str = Body(...),
-    issuer: str = Body(...),
-    category: str = Body(...),
-    db: AsyncSession = Depends(get_db),
+    seller_id: Annotated[str, Query()],
+    name: Annotated[str, Body()],
+    issuer: Annotated[str, Body()],
+    category: Annotated[str, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Register award/certification."""
     award = Award(
@@ -78,7 +79,10 @@ async def add_award(
 
 
 @router.get("/awards/{seller_id}")
-async def list_awards(seller_id: str, db: AsyncSession = Depends(get_db)):
+async def list_awards(
+    seller_id: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """List active awards for seller."""
     stmt = select(Award).where(
         Award.seller_id == seller_id,
@@ -96,9 +100,9 @@ async def list_awards(seller_id: str, db: AsyncSession = Depends(get_db)):
 @router.get("/reviews/{seller_id}")
 async def get_seller_reviews(
     seller_id: str,
-    platform: str = Query(None),
-    min_rating: int = Query(1),
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    platform: Annotated[str, Query()] = None,
+    min_rating: Annotated[int, Query()] = 1,
 ):
     """Aggregated reviews across platforms."""
     stmt = select(Review).where(
@@ -135,7 +139,10 @@ async def get_seller_reviews(
 
 
 @router.get("/trust-score/{seller_id}")
-async def calculate_trust_score(seller_id: str, db: AsyncSession = Depends(get_db)):
+async def calculate_trust_score(
+    seller_id: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """E-E-A-T trust score computed from this seller's REAL rows.
 
     This used to be five random.uniform()/randint() calls dressed up as a
@@ -271,10 +278,10 @@ async def get_authority_insights(seller_id: str):
 @router.post("/seller-bio/{seller_id}")
 async def update_seller_bio(
     seller_id: str,
-    full_name: str = Body(...),
-    bio: str = Body(...),
-    years_in_business: int = Body(...),
-    db: AsyncSession = Depends(get_db),
+    full_name: Annotated[str, Body()],
+    bio: Annotated[str, Body()],
+    years_in_business: Annotated[int, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Create/update seller bio (E-E-A-T: Expertise + Authoritativeness + Trustworthiness)."""
     stmt = select(SellerBio).where(SellerBio.seller_id == seller_id)

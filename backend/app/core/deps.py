@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import os
+from typing import Annotated
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
@@ -49,7 +50,7 @@ async def get_token_from_request(request: Request) -> str | None:
 
 async def get_current_user(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -102,7 +103,7 @@ async def get_current_user(
 
 async def get_current_user_optional(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> User | None:
     """Identify the caller when it is signed in, without ever rejecting.
 
@@ -120,7 +121,7 @@ async def get_current_user_optional(
 
 
 async def get_current_active_user(
-    current_user: User = Depends(get_current_user),
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> User:
     if not current_user.is_active:
         raise HTTPException(
@@ -137,7 +138,10 @@ from fastapi_limiter.depends import RateLimiter
 RateLimit = RateLimiter
 
 
-async def get_current_user_ws(token: str | None, db: AsyncSession = Depends(get_db)) -> User | None:
+async def get_current_user_ws(
+    token: str | None,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> User | None:
     """Validate user from JWT token for WebSocket connections (no HTTP Request)."""
     if not token:
         return None

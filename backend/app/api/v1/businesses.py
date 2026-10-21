@@ -1,4 +1,5 @@
 import logging
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -51,8 +52,8 @@ def _require_superuser(current_user: User) -> None:
 @router.get("/debug/conversation-state/{business_id}", tags=["debug"])
 async def debug_conversation_state(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Temporary: raw dump of conversations/messages/qualifications for a business."""
     _require_superuser(current_user)
@@ -83,7 +84,9 @@ async def debug_conversation_state(
 
 
 @router.post("/debug/llm-test", tags=["debug"])
-async def debug_llm_test(current_user: User = Depends(get_current_user)):
+async def debug_llm_test(
+    current_user: Annotated[User, Depends(get_current_user)],
+):
     """Temporary: isolate whether the crash is in imports, LLM call, or DB."""
     _require_superuser(current_user)
     steps = []
@@ -122,8 +125,8 @@ async def debug_llm_test(current_user: User = Depends(get_current_user)):
 async def debug_qualify(
     conversation_id: UUID,
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Temporary: directly call qualify_lead and return the result or raw error."""
     _require_superuser(current_user)
@@ -137,7 +140,11 @@ async def debug_qualify(
 
 
 @router.get("/debug/enum-values/{type_name}", tags=["debug"])
-async def debug_enum_values(type_name: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def debug_enum_values(
+    type_name: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+):
     """Temporary: list actual pg enum labels for a given type name."""
     _require_superuser(current_user)
     from sqlalchemy import text
@@ -148,7 +155,10 @@ async def debug_enum_values(type_name: str, db: AsyncSession = Depends(get_db), 
 
 
 @router.post("/debug/add-type-column", tags=["debug"])
-async def debug_add_type_column(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def debug_add_type_column(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+):
     """Temporary: force-apply the businesses.type schema patch immediately."""
     _require_superuser(current_user)
     from sqlalchemy import text
@@ -169,7 +179,10 @@ async def debug_add_type_column(db: AsyncSession = Depends(get_db), current_user
 
 
 @router.post("/debug/add-config-column", tags=["debug"])
-async def debug_add_config_column(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def debug_add_config_column(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+):
     """Temporary: force-apply the businesses.config schema patch immediately."""
     _require_superuser(current_user)
     from sqlalchemy import text
@@ -185,7 +198,10 @@ async def debug_add_config_column(db: AsyncSession = Depends(get_db), current_us
 
 
 @router.post("/debug/create-table/{table_name}", tags=["debug"])
-async def debug_create_table(table_name: str, current_user: User = Depends(get_current_user)):
+async def debug_create_table(
+    table_name: str,
+    current_user: Annotated[User, Depends(get_current_user)],
+):
     """Temporary: attempt to create one CoreBase table and return the raw error."""
     _require_superuser(current_user)
     from app.core.database import Base as CoreBase
@@ -204,8 +220,8 @@ async def debug_create_table(table_name: str, current_user: User = Depends(get_c
 @router.post("/")
 async def create_business(
     business_in: BusinessCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create business."""
     config = business_in.config or {}
@@ -237,8 +253,8 @@ async def create_business(
 
 @router.get("/")
 async def list_businesses(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """List user's businesses."""
     result = await db.execute(
@@ -251,8 +267,8 @@ async def list_businesses(
 @router.get("/{business_id}", response_model=BusinessResponse)
 async def get_business(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await db.execute(
         select(Business).where(
@@ -270,8 +286,8 @@ async def get_business(
 async def update_business(
     business_id: UUID,
     business_in: BusinessUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await db.execute(
         select(Business).where(
@@ -298,8 +314,8 @@ async def update_business(
 @router.delete("/{business_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_business(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await db.execute(
         select(Business).where(

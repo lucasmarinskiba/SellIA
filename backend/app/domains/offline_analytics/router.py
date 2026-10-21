@@ -1,5 +1,6 @@
 """Phase 5D: Offline Analytics & Re-engagement Endpoints."""
 from datetime import datetime
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
@@ -15,6 +16,7 @@ router = APIRouter(prefix="/api/v1/offline-analytics", tags=["offline-analytics"
 async def create_attribution(
     business_id: UUID,
     user_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
     first_online_channel: str | None = None,
     first_online_date: datetime | None = None,
     location_visited_id: UUID | None = None,
@@ -22,7 +24,6 @@ async def create_attribution(
     post_visit_order_date: datetime | None = None,
     post_visit_order_value: float = 0,
     conversion_type: str = "online_to_offline",
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Create online-offline attribution record."""
     attribution = OfflineAnalyticsService.create_attribution(
@@ -46,7 +47,10 @@ async def create_attribution(
 
 
 @router.get("/metrics")
-async def get_offline_metrics(business_id: UUID, db: AsyncSession = Depends(get_db)) -> dict:
+async def get_offline_metrics(
+    business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict:
     """Get offline analytics metrics."""
     metrics = OfflineAnalyticsService.calculate_offline_metrics(db, business_id)
     return {
@@ -68,8 +72,8 @@ async def get_offline_metrics(business_id: UUID, db: AsyncSession = Depends(get_
 @router.get("/attribution-report")
 async def get_attribution_report(
     business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
     days: int = 30,
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Get online-to-offline-to-online attribution report."""
     report = OfflineAnalyticsService.get_attribution_report(db, business_id, days)
@@ -81,8 +85,8 @@ async def create_post_visit_sequence(
     business_id: UUID,
     sequence_name: str,
     trigger_type: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
     location_id: UUID | None = None,
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Create post-visit re-engagement sequence."""
     seq = OfflineAnalyticsService.create_post_visit_sequence(
@@ -105,8 +109,8 @@ async def execute_post_visit_sequence(
     business_id: UUID,
     sequence_id: UUID,
     user_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
     offline_conversion_id: UUID | None = None,
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Execute post-visit sequence for user."""
     execution = OfflineAnalyticsService.execute_post_visit_sequence(

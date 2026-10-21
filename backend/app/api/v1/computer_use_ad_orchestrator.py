@@ -6,7 +6,7 @@ Endpoints para lanzar campaigns:
 - POST /ads/campaigns/{id}/optimize — optimizar basado en performance
 """
 
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -77,8 +77,8 @@ class CampaignPerformanceResponse(BaseModel):
 @router.post("/ads/campaigns", response_model=list[CampaignResponse])
 async def create_ad_campaign(
     request: CreateCampaignRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """
     Crea + lanza campaign multi-platform con ad copy auto-generated.
@@ -143,8 +143,8 @@ async def create_ad_campaign(
 @router.get("/ads/campaigns/{campaign_id}/performance", response_model=CampaignPerformanceResponse)
 async def get_campaign_performance(
     campaign_id: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Obtiene metrics de performance de campaign."""
     try:
@@ -166,8 +166,8 @@ async def get_campaign_performance(
 @router.post("/ads/campaigns/optimize")
 async def optimize_campaigns(
     campaign_ids: list[str],
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """
     Optimiza campaigns automáticamente.
@@ -196,7 +196,7 @@ async def optimize_campaigns(
 
 @router.get("/ads/copy-templates")
 async def get_copy_templates(
-    current_user: User = Depends(get_current_active_user),
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """
     Retorna templates de copy disponibles.

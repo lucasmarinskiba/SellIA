@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from typing import Annotated
 from uuid import UUID
 
 import httpx
@@ -85,9 +86,9 @@ settings = get_settings()
 
 @router.get("/plans", response_model=list[SubscriptionPlanResponse])
 async def list_plans(
-    region: str = Query(None, description="AR | LATAM | INTL"),
-    cycle: str = Query("monthly", description="monthly | yearly"),
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    region: Annotated[str, Query(description="AR | LATAM | INTL")] = None,
+    cycle: Annotated[str, Query(description="monthly | yearly")] = "monthly",
 ):
     result = await db.execute(
         select(SubscriptionPlan).where(SubscriptionPlan.is_active == True).order_by(SubscriptionPlan.display_order)
@@ -106,8 +107,8 @@ async def list_plans(
 
 @router.get("/my-subscription", response_model=SubscriptionWithPlanResponse)
 async def get_my_subscription(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     sub = await get_or_create_subscription(db, current_user.id)
     # Eager load plan
@@ -128,8 +129,8 @@ async def get_my_subscription(
 
 @router.get("/my-usage")
 async def get_my_usage(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get current usage for all limited metrics."""
     from datetime import datetime
@@ -176,9 +177,9 @@ async def get_my_usage(
 @router.get("/check-limit/{metric_type}", response_model=CheckLimitResponse)
 async def check_limit(
     metric_type: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     quantity: int = 1,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     result = await check_subscription_limit(db, current_user.id, metric_type, quantity)
     return CheckLimitResponse(**result)
@@ -189,8 +190,8 @@ async def check_limit(
 @router.post("/create-checkout", response_model=CheckoutResponse)
 async def create_checkout(
     data: CheckoutRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create a checkout session for upgrading to a plan."""
     result = await db.execute(
@@ -268,8 +269,8 @@ async def create_checkout(
 @router.post("/preapproval", response_model=PreapprovalResponse)
 async def create_preapproval_subscription(
     data: PreapprovalCreateRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create a MercadoPago preapproval for automatic recurring billing (ARS only)."""
     result = await db.execute(
@@ -321,8 +322,8 @@ async def create_preapproval_subscription(
 @router.get("/preapproval/{preapproval_id}/status", response_model=PreapprovalStatusResponse)
 async def get_preapproval(
     preapproval_id: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get MercadoPago preapproval status."""
     try:
@@ -360,8 +361,8 @@ async def get_preapproval(
 @router.delete("/preapproval/{preapproval_id}")
 async def delete_preapproval(
     preapproval_id: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Cancel a MercadoPago preapproval."""
     sub_result = await db.execute(
@@ -393,8 +394,8 @@ async def delete_preapproval(
 @router.post("/create-crypto-payment", response_model=CryptoPaymentResponse)
 async def create_crypto_payment(
     data: CryptoPaymentRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await db.execute(
         select(SubscriptionPlan).where(SubscriptionPlan.slug == data.plan_slug, SubscriptionPlan.is_active == True)
@@ -458,8 +459,8 @@ async def create_crypto_payment(
 @router.get("/crypto-payment/{transaction_id}/status", response_model=CryptoPaymentStatusResponse)
 async def get_crypto_payment_status(
     transaction_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await db.execute(
         select(PaymentTransaction).where(
@@ -509,7 +510,7 @@ from app.core.integrations.mercadopago_webhook import (
 @router.post("/webhook/mercadopago")
 async def mercadopago_webhook(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Receive MercadoPago IPN/webhook notifications."""
     try:
@@ -670,7 +671,7 @@ async def mercadopago_webhook(
 @router.post("/webhook/stripe")
 async def stripe_webhook(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Receive Stripe webhook notifications."""
     payload = await request.body()
@@ -747,8 +748,8 @@ async def stripe_webhook(
 @router.post("/create-bank-transfer", response_model=BankTransferOrderResponse)
 async def create_bank_transfer_order(
     data: BankTransferOrderCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create a bank transfer payment order."""
     from app.domains.subscriptions.services import generate_bank_transfer_order
@@ -781,8 +782,8 @@ async def create_bank_transfer_order(
 async def confirm_bank_transfer(
     order_id: UUID,
     data: BankTransferConfirmRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """User confirms they have made the bank transfer."""
     result = await db.execute(
@@ -825,8 +826,8 @@ async def confirm_bank_transfer(
 async def approve_bank_transfer(
     order_id: UUID,
     data: BankTransferAdminApproveRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Admin approves a bank transfer payment."""
     if not current_user.is_superuser:
@@ -895,8 +896,8 @@ async def approve_bank_transfer(
 
 @router.get("/admin/pending-transfers", response_model=list[BankTransferOrderResponse])
 async def list_pending_transfers(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """List all pending bank transfers (admin only)."""
     if not current_user.is_superuser:
@@ -917,8 +918,8 @@ async def list_pending_transfers(
 @router.post("/cancel", response_model=CancellationFeedbackResponse)
 async def cancel_subscription(
     data: CancellationRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Cancel subscription with mandatory feedback."""
     sub = await get_or_create_subscription(db, current_user.id)
@@ -966,8 +967,8 @@ async def cancel_subscription(
 
 @router.get("/admin/retention", response_model=RetentionSummary)
 async def get_retention_dashboard(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get cancellation analytics (admin only)."""
     if not current_user.is_superuser:
@@ -1040,8 +1041,8 @@ async def get_retention_dashboard(
 
 @router.get("/admin/feedbacks", response_model=list[CancellationFeedbackResponse])
 async def list_cancellation_feedbacks(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """List all cancellation feedbacks (admin only)."""
     if not current_user.is_superuser:
@@ -1055,8 +1056,8 @@ async def list_cancellation_feedbacks(
 
 @router.get("/admin/revenue", response_model=RevenueSummary)
 async def get_admin_revenue(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get revenue metrics (admin only)."""
     if not current_user.is_superuser:
@@ -1145,13 +1146,13 @@ async def get_admin_revenue(
 
 @router.get("/admin/bank-transfers", response_model=list[BankTransferOrderResponse])
 async def list_admin_bank_transfers(
-    status: str = Query(None),
-    date_from: str = Query(None),
-    date_to: str = Query(None),
-    page: int = Query(1, ge=1),
-    limit: int = Query(50, ge=1, le=200),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    status: Annotated[str, Query()] = None,
+    date_from: Annotated[str, Query()] = None,
+    date_to: Annotated[str, Query()] = None,
+    page: Annotated[int, Query(ge=1)] = 1,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
 ):
     """List all bank transfers with filters (admin only)."""
     if not current_user.is_superuser:
@@ -1183,13 +1184,13 @@ async def list_admin_bank_transfers(
 
 @router.get("/admin/subscriptions", response_model=list[AdminSubscriptionResponse])
 async def list_admin_subscriptions(
-    plan_slug: str = Query(None),
-    provider: str = Query(None),
-    status: str = Query(None),
-    page: int = Query(1, ge=1),
-    limit: int = Query(50, ge=1, le=200),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    plan_slug: Annotated[str, Query()] = None,
+    provider: Annotated[str, Query()] = None,
+    status: Annotated[str, Query()] = None,
+    page: Annotated[int, Query(ge=1)] = 1,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
 ):
     """List all subscriptions with user info (admin only)."""
     if not current_user.is_superuser:
@@ -1237,8 +1238,8 @@ async def list_admin_subscriptions(
 
 @router.get("/invoices", response_model=list[InvoiceResponse])
 async def list_invoices(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await db.execute(
         select(Invoice).where(Invoice.user_id == current_user.id).order_by(Invoice.created_at.desc())
@@ -1249,8 +1250,8 @@ async def list_invoices(
 @router.get("/invoices/{invoice_id}/download")
 async def download_invoice(
     invoice_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await db.execute(
         select(Invoice).where(Invoice.id == invoice_id, Invoice.user_id == current_user.id)
@@ -1270,8 +1271,8 @@ async def download_invoice(
 @router.put("/billing-details", response_model=BillingDetailsResponse)
 async def update_billing_details(
     data: BillingDetailsUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     if data.tax_id is not None:
         current_user.tax_id = data.tax_id
@@ -1326,8 +1327,8 @@ async def detect_region(request: Request):
 @router.put("/user-region", response_model=BillingDetailsResponse)
 async def update_user_region(
     data: UserRegionUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     current_user.country_code = data.country_code
     current_user.preferred_currency = data.preferred_currency
@@ -1351,8 +1352,8 @@ async def update_user_region(
 @router.post("/api-keys", response_model=UserAPIKeyResponse, status_code=status.HTTP_201_CREATED)
 async def create_api_key(
     key_in: UserAPIKeyCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     encrypted_hash = get_password_hash(key_in.api_key)[:255]
     encrypted_fernet = encrypt_value(key_in.api_key)
@@ -1371,8 +1372,8 @@ async def create_api_key(
 
 @router.get("/api-keys", response_model=list[UserAPIKeyResponse])
 async def list_api_keys(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await db.execute(
         select(UserAPIKey).where(
@@ -1386,8 +1387,8 @@ async def list_api_keys(
 @router.delete("/api-keys/{key_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_api_key(
     key_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await db.execute(
         select(UserAPIKey).where(

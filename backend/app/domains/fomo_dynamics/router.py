@@ -1,5 +1,6 @@
 """Phase X6: FOMO Dynamics API Endpoints."""
 from datetime import datetime
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
@@ -18,10 +19,10 @@ async def create_fomo_offer(
     product_id: str,
     strategy: FOMOStrategy,
     base_price: float,
+    db: Annotated[AsyncSession, Depends(get_db)],
     total_stock: int | None = None,
     ends_at: datetime | None = None,
     headline: str = "",
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Create psychology-driven FOMO offer with auto-optimization."""
     offer = await FOMODynamicsService.create_dynamic_offer(
@@ -40,7 +41,7 @@ async def create_fomo_offer(
 async def update_dynamic_price(
     offer_id: str,
     purchases_count: int,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Update price based on demand (scarcity psychology)."""
     new_price = await FOMODynamicsService.update_price_based_on_demand(db, offer_id, purchases_count)
@@ -54,7 +55,7 @@ async def update_dynamic_price(
 @router.get("/badges/urgency/{offer_id}")
 async def get_urgency_badge(
     offer_id: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Get psychological urgency badge for product."""
     badge = await FOMODynamicsService.get_urgency_badge(db, offer_id)
@@ -74,9 +75,9 @@ async def get_urgency_badge(
 @router.post("/social-proof/update")
 async def update_social_proof(
     offer_id: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
     new_purchase: bool = False,
     viewer_increment: int = 1,
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Update real-time social proof signals."""
     proof = await FOMODynamicsService.update_social_proof(db, offer_id, new_purchase, viewer_increment)
@@ -94,8 +95,8 @@ async def get_personalized_fomo(
     business_id: UUID,
     user_id: str,
     product_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
     browse_count: int = 1,
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Get personalized FOMO message based on user behavior."""
     fomo = await FOMODynamicsService.get_personalized_fomo(
@@ -115,7 +116,7 @@ async def get_conversion_probability(
     user_id: str,
     product_id: str,
     offer_id: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Calculate purchase probability based on FOMO signals."""
     probability = await FOMODynamicsService.calculate_conversion_probability(

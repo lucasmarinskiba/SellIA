@@ -20,6 +20,7 @@ app/api/v1/enterprise_deal_intelligence.py's record_deal_outcome.
 """
 
 from datetime import UTC, datetime
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -55,18 +56,18 @@ async def _get_owned_experiment(test_id: UUID, user: User, db: AsyncSession):
 
 @router.post("/testing/create")
 async def create_test(
-    business_id: UUID = Query(...),
-    test_name: str = Query(...),
-    agent_type: str = Query(..., description="Personality slug being tested, e.g. 'vendedor', 'captador'"),
-    hypothesis: str = Query(""),
-    variant_a_name: str = Query(...),
-    variant_a_prompt: str = Query(..., description="Full system prompt text for variant A"),
-    variant_b_name: str = Query(...),
-    variant_b_prompt: str = Query(..., description="Full system prompt text for variant B"),
-    confidence_threshold: float = Query(0.95, ge=0.5, le=0.999),
-    min_samples: int = Query(50, ge=10),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    business_id: Annotated[UUID, Query()],
+    test_name: Annotated[str, Query()],
+    agent_type: Annotated[str, Query(description="Personality slug being tested, e.g. 'vendedor', 'captador'")],
+    variant_a_name: Annotated[str, Query()],
+    variant_a_prompt: Annotated[str, Query(description="Full system prompt text for variant A")],
+    variant_b_name: Annotated[str, Query()],
+    variant_b_prompt: Annotated[str, Query(description="Full system prompt text for variant B")],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    hypothesis: Annotated[str, Query()] = "",
+    confidence_threshold: Annotated[float, Query(ge=0.5, le=0.999)] = 0.95,
+    min_samples: Annotated[int, Query(ge=10)] = 50,
 ):
     """Create a new A/B test on the sales agent's messages/prompt for this business."""
     await _get_business_for_user(business_id, current_user, db)
@@ -105,8 +106,8 @@ async def create_test(
 @router.post("/testing/{test_id}/start")
 async def start_test(
     test_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Start an A/B test -- new conversations for this agent_type will begin being split."""
     await _get_owned_experiment(test_id, current_user, db)
@@ -120,8 +121,8 @@ async def start_test(
 @router.post("/testing/{test_id}/pause")
 async def pause_test(
     test_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Pause a running test -- existing assignments are kept, no new conversations enrolled."""
     await _get_owned_experiment(test_id, current_user, db)
@@ -135,8 +136,8 @@ async def pause_test(
 @router.post("/testing/{test_id}/end")
 async def end_test(
     test_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """End the test and compute the real winner from recorded deal outcomes."""
     experiment = await _get_owned_experiment(test_id, current_user, db)
@@ -164,9 +165,9 @@ async def end_test(
 @router.get("/testing/tests/{business_id}")
 async def list_tests(
     business_id: UUID,
-    status: str = Query(None, description="draft, running, paused, completed, auto_promoted"),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    status: Annotated[str, Query(description="draft, running, paused, completed, auto_promoted")] = None,
 ):
     """List A/B tests for this business."""
     await _get_business_for_user(business_id, current_user, db)
@@ -192,8 +193,8 @@ async def list_tests(
 @router.get("/testing/active/{business_id}")
 async def get_active_tests(
     business_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Get currently running tests for this business."""
     await _get_business_for_user(business_id, current_user, db)
@@ -219,8 +220,8 @@ async def get_active_tests(
 async def get_test_results(
     business_id: UUID,
     test_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Get real test results computed from recorded deal outcomes."""
     await _get_business_for_user(business_id, current_user, db)
@@ -247,8 +248,8 @@ async def get_test_results(
 @router.get("/testing/portfolio/{business_id}")
 async def get_portfolio_status(
     business_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Overall testing portfolio health for this business, from real recorded outcomes."""
     await _get_business_for_user(business_id, current_user, db)

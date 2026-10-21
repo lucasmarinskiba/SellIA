@@ -1,3 +1,4 @@
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -41,8 +42,8 @@ async def _get_website_for_user(
 @router.get("/businesses/{business_id}/seo/meta")
 async def get_seo_metadata(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get SEO metadata (meta tags) for website."""
     business, website = await _get_website_for_user(business_id, current_user, db)
@@ -59,8 +60,8 @@ async def get_seo_metadata(
 async def update_seo_metadata(
     business_id: UUID,
     data: dict,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Update SEO metadata."""
     business, website = await _get_website_for_user(business_id, current_user, db)
@@ -83,8 +84,8 @@ async def update_seo_metadata(
 @router.get("/businesses/{business_id}/seo/schema")
 async def get_schema_markup(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get Schema.org markup for website."""
     business, website = await _get_website_for_user(business_id, current_user, db)
@@ -149,8 +150,8 @@ async def get_schema_markup(
 @router.get("/businesses/{business_id}/seo/sitemap.xml", response_class=PlainTextResponse)
 async def get_sitemap(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Generate dynamic XML sitemap."""
     business, website = await _get_website_for_user(business_id, current_user, db)
@@ -192,8 +193,8 @@ async def get_sitemap(
 @router.get("/businesses/{business_id}/seo/robots.txt", response_class=PlainTextResponse)
 async def get_robots_txt(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Generate dynamic robots.txt."""
     business, website = await _get_website_for_user(business_id, current_user, db)
@@ -223,8 +224,8 @@ Disallow: /api/
 @router.get("/businesses/{business_id}/seo/audit")
 async def get_seo_audit(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get SEO audit checklist."""
     business, website = await _get_website_for_user(business_id, current_user, db)

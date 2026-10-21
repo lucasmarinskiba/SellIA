@@ -8,6 +8,7 @@ Mounted at /api/v1/businesses/{business_id}/brand-transformation
 from __future__ import annotations
 
 import logging
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
@@ -57,7 +58,10 @@ logger = logging.getLogger(__name__)
 # --------------------------------------------------------------- reference
 
 @router.get("/health")
-async def domain_health(business_id: UUID, current_user: User = Depends(get_current_user)):
+async def domain_health(
+    business_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+):
     """Whether the agents run on real AI or templated fallback.
 
     `llm_available` false => every agent returns deterministic fallback output
@@ -75,23 +79,35 @@ async def domain_health(business_id: UUID, current_user: User = Depends(get_curr
 
 
 @router.get("/stages", response_model=list[StageInfoOut])
-async def list_stages(business_id: UUID, current_user: User = Depends(get_current_user)):
+async def list_stages(
+    business_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+):
     """The 8 etapas of the transformation program."""
     return [StageInfoOut(**s) for s in K.TRANSFORMATION_STAGES]
 
 
 @router.get("/knowledge/fomo-levers")
-async def fomo_levers(business_id: UUID, current_user: User = Depends(get_current_user)):
+async def fomo_levers(
+    business_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+):
     return K.FOMO_LEVERS
 
 
 @router.get("/knowledge/brand-origins")
-async def brand_origins(business_id: UUID, current_user: User = Depends(get_current_user)):
+async def brand_origins(
+    business_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+):
     return K.BRAND_ORIGIN_PLAYBOOKS
 
 
 @router.get("/knowledge/frameworks")
-async def frameworks(business_id: UUID, current_user: User = Depends(get_current_user)):
+async def frameworks(
+    business_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+):
     return K.FRAMEWORKS
 
 
@@ -101,8 +117,8 @@ async def frameworks(business_id: UUID, current_user: User = Depends(get_current
 async def run_diagnosis(
     business_id: UUID,
     body: DiagnosisIn,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     return await DiagnosisAgent(db).run(business_id, body.model_dump())
 
@@ -110,8 +126,8 @@ async def run_diagnosis(
 @router.get("/agents/diagnosis/latest", response_model=DiagnosisOut | None)
 async def latest_diagnosis(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     return await DiagnosisAgent(db).latest(business_id)
 
@@ -119,9 +135,9 @@ async def latest_diagnosis(
 @router.get("/agents/diagnosis/history", response_model=list[DiagnosisOut])
 async def diagnosis_history(
     business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     limit: int = 12,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Score trend over time — newest first. Feeds the rediagnosis automation."""
     return await DiagnosisAgent(db).history(business_id, min(limit, 50))
@@ -131,8 +147,8 @@ async def diagnosis_history(
 async def run_positioning(
     business_id: UUID,
     body: StageRunIn,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     profile = (body.profile or _require_profile()).model_dump()
     return await PositioningAgent(db).run(business_id, profile, extra=body.extra_instructions)
@@ -141,9 +157,9 @@ async def run_positioning(
 @router.get("/agents/positioning/competitive-preview")
 async def positioning_competitive_preview(
     business_id: UUID,
-    statement_id: UUID | None = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    statement_id: Annotated[UUID | None, Query()] = None,
 ):
     """Proposed competitive monitors + battlecards from the positioning. Read-only."""
     from app.domains.brand_transformation.positioning_bridge import PositioningBridge
@@ -159,8 +175,8 @@ async def positioning_competitive_preview(
 async def positioning_deploy_competitive(
     business_id: UUID,
     body: DeployCompetitiveIn,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create competitive-intelligence monitors + battlecards from the positioning.
     Battlecards are pre-filled; monitors need a competitor URL. Links are written
@@ -182,8 +198,8 @@ async def positioning_deploy_competitive(
 async def run_brand_identity(
     business_id: UUID,
     body: StageRunIn,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     profile = (body.profile or _require_profile()).model_dump()
     return await BrandIdentityAgent(db).run(business_id, profile, extra=body.extra_instructions)
@@ -192,9 +208,9 @@ async def run_brand_identity(
 @router.get("/agents/brand-identity/assets-preview")
 async def brand_identity_assets_preview(
     business_id: UUID,
-    identity_id: UUID | None = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    identity_id: Annotated[UUID | None, Query()] = None,
 ):
     """Proposed voice template + copy assets from the brand identity. Read-only."""
     from app.domains.brand_transformation.identity_bridge import IdentityBridge
@@ -210,8 +226,8 @@ async def brand_identity_assets_preview(
 async def brand_identity_deploy_assets(
     business_id: UUID,
     body: DeployAssetsIn,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create a reusable brand-voice ContentTemplate + draft GeneratedContent rows
     (manifesto, taglines, sample rewrites, story spine, visual brief) in the
@@ -229,8 +245,8 @@ async def brand_identity_deploy_assets(
 async def run_business_model(
     business_id: UUID,
     body: StageRunIn,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     profile = (body.profile or _require_profile()).model_dump()
     return await BusinessModelAgent(db).run(business_id, profile, extra=body.extra_instructions)
@@ -240,8 +256,8 @@ async def run_business_model(
 async def run_fomo_engine(
     business_id: UUID,
     body: StageRunIn,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     profile = (body.profile or _require_profile()).model_dump()
     return await FOMOEngineAgent(db).run(business_id, profile, extra=body.extra_instructions)
@@ -258,9 +274,9 @@ async def _resolve_playbook(db: AsyncSession, business_id: UUID, playbook_id: UU
 @router.get("/agents/fomo-engine/campaign-preview")
 async def fomo_campaign_preview(
     business_id: UUID,
-    playbook_id: UUID | None = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    playbook_id: Annotated[UUID | None, Query()] = None,
 ):
     """Map the latest (or a given) FOMO playbook's mechanisms to proposed
     on-site `fomo` campaigns. Read-only — nothing is created."""
@@ -274,8 +290,8 @@ async def fomo_campaign_preview(
 async def fomo_deploy_campaigns(
     business_id: UUID,
     body: DeployCampaignsIn,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create real `fomo` campaigns from a FOMO playbook's mechanisms. Campaigns
     are created as drafts unless `activate` is true. `dry_run` returns the plan
@@ -296,8 +312,8 @@ async def fomo_deploy_campaigns(
 async def run_gtm(
     business_id: UUID,
     body: StageRunIn,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     profile = (body.profile or _require_profile()).model_dump()
     return await GoToMarketAgent(db).run(business_id, profile, extra=body.extra_instructions)
@@ -307,8 +323,8 @@ async def run_gtm(
 async def run_restructuring(
     business_id: UUID,
     body: StageRunIn,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     profile = (body.profile or _require_profile()).model_dump()
     return await RestructuringAgent(db).run(business_id, profile, extra=body.extra_instructions)
@@ -324,8 +340,8 @@ def _require_profile() -> BusinessProfileIn:
 async def create_program(
     business_id: UUID,
     body: ProgramCreateIn,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     orch = TransformationOrchestrator(db)
     prog = await orch.create_program(
@@ -346,8 +362,8 @@ async def set_program_auto_bridges(
     business_id: UUID,
     program_id: UUID,
     body: AutoBridgesIn,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Toggle which bridges fire automatically when their stage completes."""
     orch = TransformationOrchestrator(db)
@@ -360,8 +376,8 @@ async def set_program_auto_bridges(
 @router.get("/programs", response_model=list[ProgramOut])
 async def list_programs(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     return await TransformationOrchestrator(db).list_programs(business_id)
 
@@ -370,8 +386,8 @@ async def list_programs(
 async def get_program(
     business_id: UUID,
     program_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     prog = await TransformationOrchestrator(db).get_program(program_id)
     if not prog or prog.business_id != business_id:
@@ -383,8 +399,8 @@ async def get_program(
 async def get_program_roadmap(
     business_id: UUID,
     program_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Etapa 7 output — roadmap + execution plan (dependency graph, decision
     gates, kill switches, leading-indicator dashboard). Run the `roadmap` stage
@@ -408,9 +424,9 @@ async def run_program_stage(
     business_id: UUID,
     program_id: UUID,
     stage_key: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     body: StageRunIn | None = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     orch = TransformationOrchestrator(db)
     prog = await orch.get_program(program_id)
@@ -456,9 +472,9 @@ async def run_program_all(
     business_id: UUID,
     program_id: UUID,
     background: BackgroundTasks,
-    inline: bool = Query(False, description="block until done (scripts/tests only — ~15 LLM calls)"),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    inline: Annotated[bool, Query(description="block until done (scripts/tests only — ~15 LLM calls)")] = False,
 ):
     """Run every etapa. A full run is ~15 real LLM calls (~15-45 min) — far past
     any HTTP timeout — so by default it runs as a background task and this
@@ -482,8 +498,8 @@ async def run_program_all(
 async def program_coherence_audit(
     business_id: UUID,
     program_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Cross-stage consistency check: do the 7 artifacts actually agree?
     Catches internal drift (three different enemies, an offer that can't fund
@@ -502,8 +518,8 @@ async def program_coherence_audit(
 async def create_automation(
     business_id: UUID,
     body: AutomationIn,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     return await TransformationOrchestrator(db).create_automation(
         business_id, body.automation_type, body.schedule, body.config
@@ -513,8 +529,8 @@ async def create_automation(
 @router.get("/automations", response_model=list[AutomationOut])
 async def list_automations(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     return await TransformationOrchestrator(db).list_automations(business_id)
 
@@ -522,8 +538,8 @@ async def list_automations(
 @router.get("/automations/alerts")
 async def automation_alerts(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Every standing automation currently flagging warn/critical."""
     return await TransformationOrchestrator(db).automation_alerts(business_id)
@@ -533,8 +549,8 @@ async def automation_alerts(
 async def automation_history(
     business_id: UUID,
     automation_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     from sqlalchemy import select
 
@@ -551,8 +567,8 @@ async def automation_history(
 async def run_automation(
     business_id: UUID,
     automation_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     from sqlalchemy import select
 

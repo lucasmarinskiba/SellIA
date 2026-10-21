@@ -29,8 +29,8 @@ async def get_db():
 @router.post("/qualify/{conversation_id}", response_model=QualifyLeadOut)
 async def qualify_lead(
     conversation_id: UUID,
-    business_id: UUID = Query(...),
-    customer_id: UUID | None = Query(None),
+    business_id: Annotated[UUID, Query()],
+    customer_id: Annotated[UUID | None, Query()] = None,
     db: Annotated[AsyncSession, Depends(get_db)] = None,
     current_user: Annotated[User, Depends(get_current_user)] = None,
 ):
@@ -49,9 +49,9 @@ async def qualify_lead(
 
 @router.get("/leads", response_model=list[LeadQualificationOut])
 async def list_leads(
-    business_id: UUID = Query(...),
-    min_score: float = Query(70.0, ge=0.0, le=100.0),
-    limit: int = Query(100, ge=1, le=500),
+    business_id: Annotated[UUID, Query()],
+    min_score: Annotated[float, Query(ge=0.0, le=100.0)] = 70.0,
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
     db: Annotated[AsyncSession, Depends(get_db)] = None,
     current_user: Annotated[User, Depends(get_current_user)] = None,
 ):

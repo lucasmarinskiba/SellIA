@@ -1,6 +1,7 @@
 """Fraud detection API — order + account fraud scoring."""
 
 from decimal import Decimal
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
@@ -37,7 +38,7 @@ class AddBlacklistRequest(BaseModel):
 def score_order_fraud(
     business_id: UUID,
     request: ScoreOrderFraudRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Score fraud risk for order."""
     return FraudDetectionService.score_order_fraud(
@@ -57,7 +58,7 @@ def score_order_fraud(
 def score_account_fraud(
     business_id: UUID,
     request: ScoreAccountFraudRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Score fraud risk for customer account."""
     return FraudDetectionService.score_account_fraud(
@@ -71,7 +72,7 @@ def score_account_fraud(
 def add_to_blacklist(
     business_id: UUID,
     request: AddBlacklistRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Add entity to fraud blacklist."""
     return FraudDetectionService.add_to_blacklist(
@@ -86,8 +87,8 @@ def add_to_blacklist(
 @router.get("/businesses/{business_id}/fraud-summary")
 def get_fraud_summary(
     business_id: UUID,
-    date: str | None = Query(None, description="YYYY-MM-DD"),
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
+    date: Annotated[str | None, Query(description="YYYY-MM-DD")] = None,
 ):
     """Get fraud detection summary."""
     return FraudDetectionService.get_fraud_summary(

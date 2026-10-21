@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -40,8 +40,8 @@ async def _get_business_for_user(
 async def create_catalog_item(
     business_id: UUID,
     item_in: CatalogItemCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
 
@@ -69,8 +69,8 @@ async def create_catalog_item(
 @router.post("/{business_id}/catalog/sync-push")
 async def sync_catalog_push(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Push local catalog items to all connected external platforms."""
     await _get_business_for_user(business_id, current_user, db)
@@ -97,8 +97,8 @@ async def sync_catalog_push(
 @router.post("/{business_id}/catalog/sync-pull")
 async def sync_catalog_pull(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Pull products from all connected external platforms into local catalog."""
     await _get_business_for_user(business_id, current_user, db)
@@ -126,8 +126,8 @@ async def sync_catalog_pull(
 @router.get("/{business_id}/items", response_model=list[CatalogItemResponse])
 async def list_catalog_items(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
     result = await db.execute(
@@ -144,8 +144,8 @@ async def list_catalog_items(
 async def get_catalog_item(
     business_id: UUID,
     item_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
     result = await db.execute(
@@ -165,8 +165,8 @@ async def update_catalog_item(
     business_id: UUID,
     item_id: UUID,
     item_in: CatalogItemUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
     result = await db.execute(
@@ -196,8 +196,8 @@ async def update_catalog_item(
 async def delete_catalog_item(
     business_id: UUID,
     item_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
     result = await db.execute(
@@ -217,8 +217,8 @@ async def delete_catalog_item(
 
 @router.post("/debug/add-listing-columns", tags=["debug"])
 async def debug_add_listing_columns(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Temporary: force-apply the catalog_items schema patch (category,
     source_platform, external_id + the dedup unique constraint) immediately.
@@ -251,8 +251,8 @@ async def debug_add_listing_columns(
 async def enhance_catalog_description(
     business_id: UUID,
     item_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Use AI to enhance a catalog item's description for better sales conversion."""
     await _get_business_for_user(business_id, current_user, db)
@@ -317,8 +317,8 @@ Responde SOLO con la descripción mejorada, sin explicaciones."""
 async def seo_optimize_catalog_item(
     business_id: UUID,
     item_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Generate real per-item SEO: an optimized title, a meta description,
     and a schema.org Product/Service JSON-LD block. The only SEO that
@@ -421,8 +421,8 @@ DESCRIPCIÓN: {item.description or 'sin descripción'}
 async def fomo_generate_catalog_item(
     business_id: UUID,
     item_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Generate urgency/value copy for one listing, grounded only in real
     data (price, real stock if any, availability). This codebase already

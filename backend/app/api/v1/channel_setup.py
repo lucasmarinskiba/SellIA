@@ -12,7 +12,7 @@ definition) and whether the webhook has ever received anything.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
@@ -34,8 +34,8 @@ logger = get_logger(__name__)
 
 @router.get("/catalog")
 async def get_catalog(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """Every connectable platform, merged with this account's real state."""
     from app.domains.businesses.models import Business

@@ -1,6 +1,6 @@
 """Phase 29 Voice Sales API endpoints."""
 
-from typing import Optional
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -80,7 +80,7 @@ class CallMetricsResponse(BaseModel):
 @router.post("/initiate-call", response_model=InitiateCallResponse)
 def initiate_call(
     request: InitiateCallRequest,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Initiate AI voice call with prospect."""
 
@@ -102,7 +102,7 @@ def initiate_call(
 @router.post("/call/input", response_model=CallInputResponse)
 def handle_call_input(
     request: CallInputRequest,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Send voice input to AI call handler."""
 
@@ -121,7 +121,7 @@ def handle_call_input(
 @router.post("/call/end", response_model=EndCallResponse)
 def end_call(
     request: EndCallRequest,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """End voice call, analyze outcome."""
 
@@ -145,7 +145,7 @@ def end_call(
 @router.get("/playbooks/recommend/{deal_id}", response_model=Optional[PlaybookResponse])
 def recommend_playbook(
     deal_id: str,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Get recommended playbook for deal."""
 
@@ -171,7 +171,7 @@ def recommend_playbook(
 
 @router.get("/metrics", response_model=CallMetricsResponse)
 def get_voice_metrics(
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Get voice call metrics."""
 

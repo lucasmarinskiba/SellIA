@@ -1,5 +1,6 @@
 """API endpoints for location check-in/checkout + feedback."""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -54,7 +55,7 @@ class StaffCheckoutRequest(BaseModel):
 @router.post("/locations/checkin")
 async def visitor_checkin(
     request: VisitorCheckinRequest,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Visitor check-in (walk-in, QR, geofence, appointment)."""
     try:
@@ -80,7 +81,7 @@ async def visitor_checkin(
 @router.post("/locations/checkout")
 async def visitor_checkout(
     request: VisitorCheckoutRequest,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Visitor check-out, record dwell time."""
     try:
@@ -101,7 +102,7 @@ async def visitor_checkout(
 @router.post("/locations/feedback")
 async def submit_feedback(
     request: FeedbackRequest,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Submit visitor feedback (NPS, sentiment, topics)."""
     try:
@@ -127,8 +128,8 @@ async def submit_feedback(
 @router.post("/staff/checkin")
 async def staff_checkin(
     request: StaffCheckinRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Staff shift start."""
     try:
@@ -152,8 +153,8 @@ async def staff_checkin(
 @router.post("/staff/checkout")
 async def staff_checkout(
     request: StaffCheckoutRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Staff shift end, record performance."""
     try:
@@ -179,8 +180,8 @@ async def staff_checkout(
 @router.get("/locations/{location_id}/checkin-summary")
 async def get_checkin_summary(
     location_id: UUID,
-    hours: int = Query(24, ge=1, le=168),
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    hours: Annotated[int, Query(ge=1, le=168)] = 24,
 ) -> dict:
     """Get real-time check-in activity for location."""
     try:
@@ -197,10 +198,10 @@ async def get_checkin_summary(
 @router.get("/staff/{staff_id}/performance")
 async def get_staff_performance(
     staff_id: UUID,
-    location_id: UUID = Query(...),
-    days: int = Query(30, ge=1, le=365),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    location_id: Annotated[UUID, Query()],
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ) -> dict:
     """Get staff member's performance metrics."""
     try:

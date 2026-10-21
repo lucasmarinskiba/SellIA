@@ -1,6 +1,7 @@
 """Customer journey API endpoints."""
 
 from datetime import UTC
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -35,7 +36,7 @@ class RecordTouchpointRequest(BaseModel):
 @router.post("/journeys/start")
 async def start_journey(
     request: StartJourneyRequest,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Start new customer journey."""
     try:
@@ -56,7 +57,7 @@ async def start_journey(
 @router.post("/journeys/touchpoint")
 async def record_touchpoint(
     request: RecordTouchpointRequest,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Record touchpoint in journey."""
     try:
@@ -78,7 +79,7 @@ async def record_touchpoint(
 @router.get("/journeys/{journey_id}")
 async def get_journey(
     journey_id: UUID,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Get complete journey details."""
     try:
@@ -91,8 +92,8 @@ async def get_journey(
 @router.post("/businesses/{business_id}/journey-metrics")
 async def calculate_journey_metrics(
     business_id: UUID,
-    days: int = Query(30, ge=1, le=365),
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ) -> dict:
     """Calculate aggregate journey metrics."""
     try:
@@ -109,8 +110,8 @@ async def calculate_journey_metrics(
 @router.get("/businesses/{business_id}/journey-funnel")
 async def get_journey_funnel(
     business_id: UUID,
-    days: int = Query(30, ge=1, le=365),
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ) -> dict:
     """Get journey funnel visualization data."""
     try:

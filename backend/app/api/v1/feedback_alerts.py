@@ -1,5 +1,6 @@
 """Real-time feedback alerts API endpoints."""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -37,7 +38,7 @@ class AlertActionRequest(BaseModel):
 @router.post("/feedback/evaluate")
 async def evaluate_feedback(
     request: EvaluateFeedbackRequest,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Evaluate feedback. Alert if NPS < 6."""
     try:
@@ -62,8 +63,8 @@ async def evaluate_feedback(
 @router.post("/alerts/{alert_id}/acknowledge")
 async def acknowledge_alert(
     alert_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Manager acknowledges alert."""
     try:
@@ -80,10 +81,10 @@ async def acknowledge_alert(
 @router.post("/alerts/{alert_id}/escalate")
 async def escalate_alert(
     alert_id: UUID,
-    assigned_to_staff_id: UUID = Query(...),
-    resolution_plan: str | None = Query(None),
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    assigned_to_staff_id: Annotated[UUID, Query()],
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    resolution_plan: Annotated[str | None, Query()] = None,
 ) -> dict:
     """Assign staff to resolve alert."""
     try:
@@ -101,9 +102,9 @@ async def escalate_alert(
 @router.post("/alerts/{alert_id}/resolve")
 async def resolve_alert(
     alert_id: UUID,
-    resolution_notes: str | None = Query(None),
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    resolution_notes: Annotated[str | None, Query()] = None,
 ) -> dict:
     """Mark alert as resolved."""
     try:
@@ -120,9 +121,9 @@ async def resolve_alert(
 @router.get("/locations/{location_id}/alerts")
 async def get_location_alerts(
     location_id: UUID,
-    status: str | None = Query(None),
-    days: int = Query(30, ge=1, le=365),
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
+    status: Annotated[str | None, Query()] = None,
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ) -> dict:
     """Get NPS alerts for location."""
     try:
@@ -140,8 +141,8 @@ async def get_location_alerts(
 @router.post("/locations/{location_id}/nps-metrics/update")
 async def update_nps_metrics(
     location_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Update hourly NPS snapshot."""
     try:
@@ -158,8 +159,8 @@ async def update_nps_metrics(
 @router.get("/locations/{location_id}/nps-dashboard")
 async def get_nps_dashboard(
     location_id: UUID,
-    days: int = Query(30, ge=1, le=365),
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ) -> dict:
     """Get NPS dashboard data."""
     try:
@@ -195,7 +196,7 @@ async def calculate_sentiment_trend(
 @router.get("/staff/{staff_id}/assigned-alerts")
 async def get_staff_assigned_alerts(
     staff_id: UUID,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Get alerts assigned to staff for follow-up."""
     try:

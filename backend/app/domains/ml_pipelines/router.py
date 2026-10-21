@@ -1,4 +1,5 @@
 """Phase 2: ML Pipeline Endpoints."""
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
@@ -15,6 +16,7 @@ async def score_lead(
     business_id: UUID,
     customer_id: UUID,
     engagement_score: float,
+    db: Annotated[AsyncSession, Depends(get_db)],
     email_opens: int = 0,
     email_clicks: int = 0,
     phone_calls: int = 0,
@@ -22,7 +24,6 @@ async def score_lead(
     website_visits: int = 0,
     pages_viewed: int = 0,
     time_on_site_minutes: float = 0,
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Calculate lead score using ML model."""
     lead = await MLPipelineService.score_lead(
@@ -54,9 +55,9 @@ async def predict_churn(
     days_since_last_purchase: int,
     total_lifetime_value: float,
     purchase_frequency_per_month: float,
+    db: Annotated[AsyncSession, Depends(get_db)],
     support_tickets: int = 0,
     nps_score: int | None = None,
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Predict churn probability."""
     churn = await MLPipelineService.predict_churn(
@@ -85,7 +86,7 @@ async def calculate_clv(
     total_spent: float,
     total_orders: int,
     customer_lifespan_days: int,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Calculate Customer Lifetime Value."""
     clv = await MLPipelineService.calculate_clv(

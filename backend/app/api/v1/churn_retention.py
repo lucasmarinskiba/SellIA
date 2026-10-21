@@ -1,6 +1,8 @@
 """Phase 30 Churn Prevention API endpoints."""
 
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -92,7 +94,10 @@ class HealthScoreResponse(BaseModel):
 
 
 @router.post("/predictions/{customer_id}", response_model=ChurnPredictionResponse)
-def predict_churn(customer_id: str, db: Session = Depends(get_db)):
+def predict_churn(
+    customer_id: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Get churn prediction for customer."""
     try:
         from app.domains.crm.models import (
@@ -128,7 +133,10 @@ def predict_churn(customer_id: str, db: Session = Depends(get_db)):
 
 
 @router.post("/expansion-opportunities/{customer_id}", response_model=ExpansionOpportunitiesResponse)
-def get_expansion_opportunities(customer_id: str, db: Session = Depends(get_db)):
+def get_expansion_opportunities(
+    customer_id: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Get expansion opportunities for customer."""
     try:
         from app.domains.crm.models import (
@@ -171,7 +179,10 @@ def get_expansion_opportunities(customer_id: str, db: Session = Depends(get_db))
 
 
 @router.post("/abm-intent/{account_id}", response_model=ABMIntentResponse)
-def get_abm_intent(account_id: str, db: Session = Depends(get_db)):
+def get_abm_intent(
+    account_id: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Get ABM intent score for account."""
     try:
         from app.domains.crm.models import (
@@ -211,7 +222,7 @@ def get_abm_intent(account_id: str, db: Session = Depends(get_db)):
 def launch_retention_campaign(
     customer_id: str,
     request: RetentionCampaignRequest,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Launch retention campaign for at-risk customer."""
     try:
@@ -248,7 +259,10 @@ def launch_retention_campaign(
 
 
 @router.post("/healthcheck/{customer_id}", response_model=HealthScoreResponse)
-def get_customer_health(customer_id: str, db: Session = Depends(get_db)):
+def get_customer_health(
+    customer_id: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Get comprehensive customer health scorecard."""
     try:
         from app.domains.crm.models import (

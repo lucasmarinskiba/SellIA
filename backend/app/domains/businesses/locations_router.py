@@ -9,6 +9,7 @@ Endpoints:
 """
 
 import logging
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
@@ -39,10 +40,10 @@ router = APIRouter(tags=["locations"])
     status_code=status.HTTP_201_CREATED,
 )
 async def create_location(
-    business_id: UUID = Path(...),
+    business_id: Annotated[UUID, Path()],
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     location_data: LocationCreate = ...,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
 ) -> LocationResponse:
     """Create new physical location for business."""
 
@@ -95,10 +96,10 @@ async def create_location(
     response_model=list[LocationResponse],
 )
 async def list_locations(
-    business_id: UUID = Path(...),
-    active_only: bool = Query(True),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    business_id: Annotated[UUID, Path()],
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    active_only: Annotated[bool, Query()] = True,
 ) -> list[LocationResponse]:
     """List all locations for a business."""
 
@@ -133,9 +134,9 @@ async def list_locations(
     response_model=LocationProfileResponse,
 )
 async def get_location(
-    location_id: UUID = Path(...),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    location_id: Annotated[UUID, Path()],
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> LocationProfileResponse:
     """Get location with traffic metrics."""
 
@@ -169,10 +170,10 @@ async def get_location(
     response_model=LocationResponse,
 )
 async def update_location(
-    location_id: UUID = Path(...),
+    location_id: Annotated[UUID, Path()],
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     location_data: LocationUpdate = ...,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
 ) -> LocationResponse:
     """Update location details."""
 
@@ -213,9 +214,9 @@ async def update_location(
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_location(
-    location_id: UUID = Path(...),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    location_id: Annotated[UUID, Path()],
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Soft-delete location (mark inactive)."""
 

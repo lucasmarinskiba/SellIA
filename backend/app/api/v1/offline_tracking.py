@@ -1,5 +1,6 @@
 """API endpoints for offline conversion tracking and analytics."""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
@@ -26,8 +27,8 @@ router = APIRouter(prefix="", tags=["offline-tracking"])
 @router.post("/offline-conversions", response_model=OfflineConversionResponse, status_code=status.HTTP_201_CREATED)
 async def log_offline_visit(
     conversion_data: OfflineConversionCreate,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> OfflineConversionResponse:
     """Log a visitor to physical location."""
 
@@ -75,10 +76,10 @@ async def log_offline_visit(
 @router.patch("/offline-conversions/{conversion_id}", response_model=OfflineConversionResponse)
 async def end_offline_visit(
     conversion_id: UUID,
-    purchased: bool = Query(False),
-    purchase_amount: float = Query(None),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    purchased: Annotated[bool, Query()] = False,
+    purchase_amount: Annotated[float, Query()] = None,
 ) -> OfflineConversionResponse:
     """Mark end of visit or update purchase info."""
 
@@ -120,8 +121,8 @@ async def end_offline_visit(
 @router.post("/proximity-events", response_model=ProximityEventResponse, status_code=status.HTTP_201_CREATED)
 async def log_proximity_event(
     event_data: ProximityEventCreate,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> ProximityEventResponse:
     """Log proximity trigger event."""
 
@@ -167,9 +168,9 @@ async def log_proximity_event(
 @router.get("/locations/{location_id}/foot-traffic-heatmap", response_model=FootTrafficHeatmapResponse)
 async def get_foot_traffic_heatmap(
     location_id: UUID,
-    days: int = Query(30, ge=1, le=365),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ) -> FootTrafficHeatmapResponse:
     """Get hourly foot traffic heatmap for location."""
 
@@ -205,9 +206,9 @@ async def get_foot_traffic_heatmap(
 @router.get("/businesses/{business_id}/conversion-funnel", response_model=ConversionFunnelResponse)
 async def get_conversion_funnel(
     business_id: UUID,
-    days: int = Query(30, ge=1, le=365),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ) -> ConversionFunnelResponse:
     """Get online→offline→purchase funnel for business."""
 
@@ -232,11 +233,11 @@ async def get_conversion_funnel(
     response_model=ProximityEffectivenessResponse
 )
 async def get_trigger_effectiveness(
-    trigger_name: str = Path(...),
-    business_id: UUID = Query(...),
-    days: int = Query(30, ge=1, le=365),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    trigger_name: Annotated[str, Path()],
+    business_id: Annotated[UUID, Query()],
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ) -> ProximityEffectivenessResponse:
     """Get effectiveness of proximity trigger."""
 

@@ -1,4 +1,6 @@
 """Instagram automation API: @sell_.ia + FOMO Intelligence + FeedIA synergy."""
+from typing import Annotated
+
 from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,16 +28,16 @@ async def get_publisher_status() -> dict:
 
 @router.post("/create-feedia-post")
 async def create_feedia_powered_post(
-    business_id: str = Body(...),
-    campaign_id: str = Body(...),
-    content_type: str = Body(..., description="reel | carousel | story | static"),
-    strategy_type: str = Body(..., description="escasez_real | prueba_social | exclusividad | transparencia"),
-    real_data_source: str = Body(..., description="De dónde sale el dato real del post"),
-    data_snapshot: dict = Body(..., description="El dato real requerido por la estrategia elegida"),
-    media_url: str = Body(...),
-    target_personality: str = Body("pragmatist"),
-    publish_live: bool = Body(False, description="Si true, publica de verdad en @sell_.ia (requiere credenciales)"),
-    db: AsyncSession = Depends(get_db),
+    business_id: Annotated[str, Body()],
+    campaign_id: Annotated[str, Body()],
+    content_type: Annotated[str, Body(description="reel | carousel | story | static")],
+    strategy_type: Annotated[str, Body(description="escasez_real | prueba_social | exclusividad | transparencia")],
+    real_data_source: Annotated[str, Body(description="De dónde sale el dato real del post")],
+    data_snapshot: Annotated[dict, Body(description="El dato real requerido por la estrategia elegida")],
+    media_url: Annotated[str, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    target_personality: Annotated[str, Body()] = "pragmatist",
+    publish_live: Annotated[bool, Body(description="Si true, publica de verdad en @sell_.ia (requiere credenciales)")] = False,
 ) -> dict:
     """Registra la estrategia FOMO con dato real y arma/publica el post en @sell_.ia.
 
@@ -69,11 +71,11 @@ async def create_feedia_powered_post(
 
 @router.post("/schedule-campaign")
 async def schedule_instagram_campaign(
-    campaign_name: str = Body(...),
-    num_days: int = Body(...),
-    target_audience: str = Body(...),
-    theme: str = Body(...),
-    db: AsyncSession = Depends(get_db),
+    campaign_name: Annotated[str, Body()],
+    num_days: Annotated[int, Body()],
+    target_audience: Annotated[str, Body()],
+    theme: Annotated[str, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Schedule multi-post Instagram campaign."""
     campaign = await InstagramAutomationAgent.schedule_campaign(
@@ -92,11 +94,11 @@ async def schedule_instagram_campaign(
 
 @router.post("/track-conversion")
 async def track_instagram_conversion(
-    user_id: str = Body(...),
-    instagram_post_id: str = Body(...),
-    campaign_id: str = Body(...),
-    interaction_type: str = Body(...),
-    db: AsyncSession = Depends(get_db),
+    user_id: Annotated[str, Body()],
+    instagram_post_id: Annotated[str, Body()],
+    campaign_id: Annotated[str, Body()],
+    interaction_type: Annotated[str, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Track Instagram interaction → SellIA funnel conversion."""
     path = await InstagramAutomationAgent.track_conversion_path(
@@ -113,11 +115,11 @@ async def track_instagram_conversion(
 
 @router.post("/calculate-roi")
 async def calculate_campaign_roi(
-    campaign_id: str = Body(...),
-    impressions: int = Body(...),
-    clicks: int = Body(...),
-    conversions: int = Body(...),
-    avg_deal_value: float = Body(2999),
+    campaign_id: Annotated[str, Body()],
+    impressions: Annotated[int, Body()],
+    clicks: Annotated[int, Body()],
+    conversions: Annotated[int, Body()],
+    avg_deal_value: Annotated[float, Body()] = 2999,
 ) -> dict:
     """Calculate Instagram campaign ROI."""
     # Mock campaign object
@@ -133,7 +135,7 @@ async def calculate_campaign_roi(
 @router.get("/audience-segments/{campaign_id}")
 async def get_audience_segments(
     campaign_id: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Get audience segments for campaign targeting."""
     return await InstagramAutomationAgent.get_audience_segments(db, campaign_id)

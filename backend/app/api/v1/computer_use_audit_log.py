@@ -10,6 +10,7 @@ Endpoints para ver actividad REAL de agents:
 """
 
 from datetime import datetime, timedelta
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -35,15 +36,15 @@ router = APIRouter()
 
 @router.get("/audit-logs", response_model=AuditLogListResponse)
 async def list_audit_logs(
-    platform: str = Query(None, description="Filter by platform"),
-    action_type: str = Query(None, description="Filter by action type"),
-    agent_name: str = Query(None, description="Filter by agent"),
-    status: str = Query(None, description="Filter by status"),
-    days: int = Query(default=7, ge=1, le=90, description="Last N days"),
-    limit: int = Query(default=50, ge=1, le=500),
-    offset: int = Query(default=0, ge=0),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    platform: Annotated[str, Query(description="Filter by platform")] = None,
+    action_type: Annotated[str, Query(description="Filter by action type")] = None,
+    agent_name: Annotated[str, Query(description="Filter by agent")] = None,
+    status: Annotated[str, Query(description="Filter by status")] = None,
+    days: Annotated[int, Query(ge=1, le=90, description="Last N days")] = 7,
+    limit: Annotated[int, Query(ge=1, le=500)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ):
     """
     Lista audit logs del usuario.
@@ -77,8 +78,8 @@ async def list_audit_logs(
 
 @router.get("/audit-logs/pending", response_model=list[AuditLogResponse])
 async def get_pending_approvals(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Acciones pendientes de aprobación del usuario."""
     audit_service = get_audit_log_service(db)
@@ -89,9 +90,9 @@ async def get_pending_approvals(
 
 @router.get("/audit-logs/summary", response_model=AuditLogSummaryResponse)
 async def get_audit_log_summary(
-    days: int = Query(default=7, ge=1, le=90),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    days: Annotated[int, Query(ge=1, le=90)] = 7,
 ):
     """
     Resumen estadístico de actividades.
@@ -107,8 +108,8 @@ async def get_audit_log_summary(
 @router.get("/audit-logs/{log_id}", response_model=AuditLogResponse)
 async def get_audit_log(
     log_id: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Obtiene detalles de una actividad del audit log."""
     audit_service = get_audit_log_service(db)
@@ -126,8 +127,8 @@ async def get_audit_log(
 @router.post("/audit-logs/{log_id}/approve", response_model=AuditLogResponse)
 async def approve_audit_log(
     log_id: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Aprueba una acción pendiente."""
     audit_service = get_audit_log_service(db)
@@ -153,8 +154,8 @@ async def approve_audit_log(
 async def reject_audit_log(
     log_id: str,
     request: AuditLogApprovalRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Rechaza una acción pendiente."""
     audit_service = get_audit_log_service(db)

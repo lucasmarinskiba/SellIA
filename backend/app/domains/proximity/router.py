@@ -1,4 +1,5 @@
 """Phase 5B: Proximity Detection Endpoints."""
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
@@ -15,8 +16,8 @@ async def check_nearby_locations(
     business_id: UUID,
     user_lat: float,
     user_lon: float,
+    db: Annotated[Session, Depends(get_db)],
     user_id: UUID | None = None,
-    db: Session = Depends(get_db),
 ) -> dict:
     nearby = await ProximityEngine.check_proximity_to_locations(db, business_id, user_lat, user_lon)
     result = []
@@ -36,8 +37,8 @@ async def check_nearby_locations(
 async def get_nearby_users(
     business_id: UUID,
     location_id: UUID,
+    db: Annotated[Session, Depends(get_db)],
     max_distance_km: float = 5,
-    db: Session = Depends(get_db),
 ) -> dict:
     users = await ProximityEngine.get_nearby_users(db, business_id, location_id, max_distance_km)
     return {"location_id": location_id, "nearby_users": users, "count": len(users)}
@@ -47,7 +48,7 @@ async def get_nearby_users(
 async def get_user_proximity_history(
     business_id: UUID,
     user_id: UUID,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     history = await ProximityEngine.get_proximity_history(db, business_id, user_id)
     return {"user_id": user_id, "proximity_events": history, "total_events": len(history)}

@@ -1,5 +1,6 @@
 """Invoicing API — /api/v1/businesses/{business_id}/invoicing/*"""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
@@ -32,8 +33,8 @@ router = APIRouter(prefix="/{business_id}/invoicing", tags=["Invoicing"])
 async def create_invoice(
     business_id: UUID,
     body: InvoiceCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create invoice."""
     svc = InvoicingService(db)
@@ -52,10 +53,10 @@ async def create_invoice(
 @router.get("/invoices", response_model=list[InvoiceOut])
 async def list_invoices(
     business_id: UUID,
-    status: str | None = Query(None),
-    limit: int = Query(100, ge=1, le=1000),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    status: Annotated[str | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=1000)] = 100,
 ):
     """List invoices."""
     svc = InvoicingService(db)
@@ -66,8 +67,8 @@ async def list_invoices(
 async def get_invoice(
     business_id: UUID,
     invoice_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get invoice."""
     svc = InvoicingService(db)
@@ -79,8 +80,8 @@ async def update_invoice(
     business_id: UUID,
     invoice_id: UUID,
     body: InvoiceUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Update invoice."""
     svc = InvoicingService(db)
@@ -91,8 +92,8 @@ async def update_invoice(
 async def send_invoice(
     business_id: UUID,
     invoice_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Send invoice."""
     svc = InvoicingService(db)
@@ -103,8 +104,8 @@ async def send_invoice(
 async def mark_viewed(
     business_id: UUID,
     invoice_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Mark invoice as viewed."""
     svc = InvoicingService(db)
@@ -114,8 +115,8 @@ async def mark_viewed(
 @router.get("/invoices/stats", response_model=InvoiceStatsResponse)
 async def get_stats(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get invoice statistics."""
     svc = InvoicingService(db)
@@ -129,8 +130,8 @@ async def record_payment(
     business_id: UUID,
     invoice_id: UUID,
     body: PaymentCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Record payment."""
     svc = PaymentService(db)
@@ -140,9 +141,9 @@ async def record_payment(
 @router.get("/payments", response_model=list[PaymentOut])
 async def list_payments(
     business_id: UUID,
-    limit: int = Query(100, ge=1, le=1000),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    limit: Annotated[int, Query(ge=1, le=1000)] = 100,
 ):
     """List payments."""
     svc = PaymentService(db)
@@ -154,8 +155,8 @@ async def list_payments(
 async def create_template(
     business_id: UUID,
     body: InvoiceTemplateCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create invoice template."""
     svc = InvoiceTemplateService(db)
@@ -167,8 +168,8 @@ async def create_template(
 @router.get("/templates", response_model=list[InvoiceTemplateOut])
 async def list_templates(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """List templates."""
     svc = InvoiceTemplateService(db)

@@ -4,6 +4,7 @@ Endpoints para CRUD leads y cálculo automático de score
 """
 import logging
 from datetime import datetime
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr, field_validator
@@ -197,7 +198,11 @@ def _generate_score_reasons(lead_data: dict, breakdown: dict) -> list[str]:
 # ENDPOINTS
 # ============================================================
 @router.post("/", response_model=Lead)
-async def create_lead(lead_data: LeadCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def create_lead(
+    lead_data: LeadCreate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+):
     """Crear nuevo lead."""
     # Calcular score
     lead_dict = lead_data.dict()
@@ -230,12 +235,12 @@ async def create_lead(lead_data: LeadCreate, db: AsyncSession = Depends(get_db),
 
 @router.get("/", response_model=list[Lead])
 async def list_leads(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     skip: int = 0,
     limit: int = 50,
     min_score: float = 0,
     status: str | None = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ) -> list:
     """Listar leads con filtros (excluye deleted). Solo los del propio usuario."""
     query = select(LeadModel).where(
@@ -254,7 +259,11 @@ async def list_leads(
     return leads
 
 @router.get("/{lead_id}", response_model=Lead)
-async def get_lead(lead_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def get_lead(
+    lead_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+):
     """Obtener detalles de un lead."""
     result = await db.execute(select(LeadModel).where(
         LeadModel.id == lead_id, LeadModel.user_id == current_user.id
@@ -266,7 +275,12 @@ async def get_lead(lead_id: int, db: AsyncSession = Depends(get_db), current_use
     return lead
 
 @router.put("/{lead_id}", response_model=Lead)
-async def update_lead(lead_id: int, lead_update: LeadUpdate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def update_lead(
+    lead_id: int,
+    lead_update: LeadUpdate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+):
     """Actualizar lead."""
     from sqlalchemy import select as sa_select
     # Row-level lock to prevent concurrent updates
@@ -303,7 +317,11 @@ async def update_lead(lead_id: int, lead_update: LeadUpdate, db: AsyncSession = 
     return lead
 
 @router.post("/{lead_id}/score", response_model=LeadScore)
-async def rescore_lead(lead_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def rescore_lead(
+    lead_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+):
     """Recalcular score de un lead (útil después de engagement)."""
     result = await db.execute(select(LeadModel).where(
         LeadModel.id == lead_id, LeadModel.user_id == current_user.id
@@ -330,7 +348,11 @@ async def rescore_lead(lead_id: int, db: AsyncSession = Depends(get_db), current
     }
 
 @router.post("/{lead_id}/contact")
-async def mark_contacted(lead_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def mark_contacted(
+    lead_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+):
     """Marcar lead como contactado."""
     result = await db.execute(select(LeadModel).where(
         LeadModel.id == lead_id, LeadModel.user_id == current_user.id
@@ -361,7 +383,11 @@ async def mark_contacted(lead_id: int, db: AsyncSession = Depends(get_db), curre
     return lead
 
 @router.delete("/{lead_id}")
-async def delete_lead(lead_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def delete_lead(
+    lead_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+):
     """Soft delete a lead (mark as deleted, don't remove data)."""
     result = await db.execute(select(LeadModel).where(
         LeadModel.id == lead_id, LeadModel.user_id == current_user.id
@@ -377,7 +403,10 @@ async def delete_lead(lead_id: int, db: AsyncSession = Depends(get_db), current_
     return {"status": "deleted", "lead_id": lead_id}
 
 @router.get("/stats/summary")
-async def get_stats(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def get_stats(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+):
     """Resumen de leads (solo activos)."""
     # Only count non-deleted leads
     result = await db.execute(select(LeadModel).where(

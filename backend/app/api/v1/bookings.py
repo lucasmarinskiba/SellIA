@@ -15,7 +15,7 @@ tool's webhook config.
 import hashlib
 import hmac
 from datetime import datetime
-from typing import Any
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -42,8 +42,8 @@ def _webhook_token(business_id: UUID) -> str:
 
 @router.get("/webhook-token")
 async def get_webhook_token(
-    business_id: UUID = Query(...),
-    current_user: User = Depends(get_current_user),
+    business_id: Annotated[UUID, Query()],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Returns the URL a business pastes into Calendly/cal.com's webhook config."""
     token = _webhook_token(business_id)
@@ -57,8 +57,8 @@ async def get_webhook_token(
 async def receive_booking_webhook(
     business_id: UUID,
     request: Request,
-    token: str = Query(...),
-    db: AsyncSession = Depends(get_db),
+    token: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Generic inbound booking webhook (Calendly 'invitee.created' shape or similar)."""
     expected = _webhook_token(business_id)
@@ -113,9 +113,9 @@ async def receive_booking_webhook(
 
 @router.get("/metrics")
 async def booking_metrics(
-    business_id: UUID = Query(...),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    business_id: Annotated[UUID, Query()],
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Real booking-rate metric computed from DB rows (no mocked numbers)."""
     qualified_result = await db.execute(

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import re
 from datetime import UTC, datetime
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel, Field
@@ -35,7 +36,10 @@ from app.core.database import get_db
 router = APIRouter()
 
 
-async def _optional_user(request: Request, db: AsyncSession = Depends(get_db)):
+async def _optional_user(
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """Best-effort auth for the one mutating endpoint in this otherwise-public,
     unauthenticated router (see module docstring). Returns None on any missing/
     invalid/absent token -- callers must treat that as "anonymous/demo visitor"
@@ -76,7 +80,10 @@ async def _disabled_brain_ids(business_id, db: AsyncSession) -> list[str]:
 
 
 @router.get("/brain/toggles")
-async def brain_get_toggles(request: Request, db: AsyncSession = Depends(get_db)) -> dict:
+async def brain_get_toggles(
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict:
     """Server-persisted ON/OFF state of the Brain Interaction Map for the
     logged-in user's business. Anonymous visitors get an empty set -- the
     frontend falls back to its existing localStorage-only behavior for them.
@@ -89,7 +96,11 @@ async def brain_get_toggles(request: Request, db: AsyncSession = Depends(get_db)
 
 
 @router.post("/brain/toggles")
-async def brain_set_toggle(body: ToggleUpdate, request: Request, db: AsyncSession = Depends(get_db)) -> dict:
+async def brain_set_toggle(
+    body: ToggleUpdate,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict:
     """Flip one Brain Map node ON/OFF for the logged-in user's business.
 
     This is real enforcement, not just a UI preference: the resulting
@@ -168,8 +179,8 @@ async def brain_graph() -> dict:
 
 @router.get("/brain/activity")
 async def brain_activity(
-    limit: int = Query(default=40, ge=1, le=200),
-    since_seq: int = Query(default=0, ge=0),
+    limit: Annotated[int, Query(ge=1, le=200)] = 40,
+    since_seq: Annotated[int, Query(ge=0)] = 0,
 ) -> dict:
     """Telemetría REAL de interacciones recientes (idle si no hubo actividad).
 
@@ -187,7 +198,9 @@ async def brain_flows() -> dict:
 
 
 @router.get("/brain/cua/flows")
-async def brain_cua_flows(limit: int = Query(default=20, ge=1, le=30)) -> dict:
+async def brain_cua_flows(
+    limit: Annotated[int, Query(ge=1, le=30)] = 20,
+) -> dict:
     """Sesiones de Computer Use despachadas (flujos en vivo desde indicaciones)."""
     return {"flows": get_cua_store().recent(limit=limit)}
 
@@ -242,7 +255,11 @@ _FALLBACK_INTENT: dict = {
 
 
 @router.post("/brain/cua/dispatch")
-async def brain_cua_dispatch(body: CuaDispatch, request: Request, db: AsyncSession = Depends(get_db)) -> dict:
+async def brain_cua_dispatch(
+    body: CuaDispatch,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict:
     """Recibe una indicación del usuario y la convierte en un flujo de Computer Use.
 
     Construye pasos planificados (trigger → agente → tools → plataformas) según el
@@ -369,8 +386,8 @@ async def brain_overview() -> dict:
 
 @router.get("/brain/capabilities")
 async def brain_capabilities(
-    kind: CapabilityKind | None = Query(default=None, description="Filtra por tipo: agent|skill|automation"),
-    q: str | None = Query(default=None, description="Búsqueda libre por nombre/descripción/tag"),
+    kind: Annotated[CapabilityKind | None, Query(description="Filtra por tipo: agent|skill|automation")] = None,
+    q: Annotated[str | None, Query(description="Búsqueda libre por nombre/descripción/tag")] = None,
 ) -> dict:
     """Full or filtered capability list."""
     caps = get_brain_registry().find(kind=kind, query=q)

@@ -14,6 +14,8 @@ proponen ni aprueban operaciones.
 
 from __future__ import annotations
 
+from typing import Annotated
+
 import redis.asyncio as redis
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
@@ -79,8 +81,8 @@ class TradeProposalCreate(BaseModel):
     dependencies=[Depends(RateLimit(times=60, seconds=60))],
 )
 async def trade_heartbeat(
-    user: User = Depends(get_current_active_user),
-    store: RedisCopyTradeStore = Depends(get_store),
+    user: Annotated[User, Depends(get_current_active_user)],
+    store: Annotated[RedisCopyTradeStore, Depends(get_store)],
 ) -> dict:
     """Registra presencia activa del usuario (debe latir periódicamente).
 
@@ -100,8 +102,8 @@ async def trade_heartbeat(
     dependencies=[Depends(RateLimit(times=60, seconds=60))],
 )
 async def trade_presence(
-    user: User = Depends(get_current_active_user),
-    store: RedisCopyTradeStore = Depends(get_store),
+    user: Annotated[User, Depends(get_current_active_user)],
+    store: Annotated[RedisCopyTradeStore, Depends(get_store)],
 ) -> dict:
     return {"active": await store.is_active(str(user.id)), "window_sec": store.window_sec}
 
@@ -113,8 +115,8 @@ async def trade_presence(
 )
 async def submit_proposal(
     body: TradeProposalCreate,
-    user: User = Depends(get_current_active_user),
-    store: RedisCopyTradeStore = Depends(get_store),
+    user: Annotated[User, Depends(get_current_active_user)],
+    store: Annotated[RedisCopyTradeStore, Depends(get_store)],
 ) -> dict:
     """Encola una propuesta. Requiere usuario ACTIVO (heartbeat reciente)."""
     kwargs = body.model_dump(exclude_none=True)
@@ -130,8 +132,8 @@ async def submit_proposal(
     dependencies=[Depends(RateLimit(times=60, seconds=60))],
 )
 async def list_pending(
-    user: User = Depends(get_current_active_user),
-    store: RedisCopyTradeStore = Depends(get_store),
+    user: Annotated[User, Depends(get_current_active_user)],
+    store: Annotated[RedisCopyTradeStore, Depends(get_store)],
 ) -> dict:
     """Propuestas pendientes. Vacío si el usuario está inactivo."""
     items = await store.pending(str(user.id))
@@ -144,8 +146,8 @@ async def list_pending(
 )
 async def approve_proposal(
     proposal_id: str,
-    user: User = Depends(get_current_active_user),
-    store: RedisCopyTradeStore = Depends(get_store),
+    user: Annotated[User, Depends(get_current_active_user)],
+    store: Annotated[RedisCopyTradeStore, Depends(get_store)],
 ) -> dict:
     """Aprueba una propuesta y devuelve el handoff de ejecución para el USUARIO.
 
@@ -163,8 +165,8 @@ async def approve_proposal(
 )
 async def reject_proposal(
     proposal_id: str,
-    user: User = Depends(get_current_active_user),
-    store: RedisCopyTradeStore = Depends(get_store),
+    user: Annotated[User, Depends(get_current_active_user)],
+    store: Annotated[RedisCopyTradeStore, Depends(get_store)],
 ) -> dict:
     res = await store.reject(str(user.id), proposal_id)
     if not res["ok"]:

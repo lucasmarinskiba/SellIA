@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -18,8 +19,8 @@ router = APIRouter(prefix="/{business_id}/orchestrator", tags=["Orchestrator"])
 @router.get("/analyze")
 async def analyze(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Analyze current business state across all domains → recommendations."""
     try:
@@ -59,8 +60,8 @@ async def analyze(
 @router.get("/scenarios")
 async def scenarios(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Generate what-if scenarios based on current state."""
     try:

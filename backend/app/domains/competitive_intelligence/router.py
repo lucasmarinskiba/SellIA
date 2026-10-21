@@ -1,4 +1,5 @@
 """Phase 4: Competitive Intelligence Endpoints."""
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
@@ -15,12 +16,12 @@ async def track_competitor(
     business_id: UUID,
     competitor_name: str,
     industry: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
     market_segment: str | None = None,
     price_point: float | None = None,
     strength_areas: list[str] | None = None,
     weakness_areas: list[str] | None = None,
     feature_set: list[str] | None = None,
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Register or update competitor profile."""
     result = await CompetitiveIntelligenceService.track_competitor(
@@ -34,10 +35,10 @@ async def analyze_price(
     business_id: UUID,
     product_id: UUID,
     current_price: float,
+    db: Annotated[AsyncSession, Depends(get_db)],
     competitor_prices: list[float] | None = None,
     target_margin: float = 0.4,
     market_position: str = "competitive",
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Recommend optimal price based on competitive analysis."""
     result = await CompetitiveIntelligenceService.analyze_price_positioning(
@@ -49,8 +50,8 @@ async def analyze_price(
 @router.get("/landscape")
 async def get_landscape(
     business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
     market_segment: str | None = None,
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Analyze competitive landscape."""
     result = await CompetitiveIntelligenceService.get_competitive_landscape(
@@ -62,7 +63,7 @@ async def get_landscape(
 @router.get("/opportunities")
 async def find_opportunities(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Identify market opportunities and threats."""
     result = await CompetitiveIntelligenceService.identify_market_opportunities(db, business_id)
@@ -75,10 +76,10 @@ async def add_feed(
     feed_type: str,
     competitor_name: str,
     event_title: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
     event_description: str | None = None,
     threat_level: str = "medium",
     source_url: str | None = None,
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Log competitive intelligence event."""
     result = await CompetitiveIntelligenceService.add_intelligence_feed(
@@ -90,7 +91,7 @@ async def add_feed(
 @router.get("/dashboard")
 async def get_dashboard(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Get competitive intelligence dashboard."""
     result = await CompetitiveIntelligenceService.get_intelligence_dashboard(db, business_id)

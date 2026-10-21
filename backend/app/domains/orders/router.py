@@ -3,6 +3,7 @@
 import csv
 import io
 from datetime import UTC, datetime, timedelta
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -39,11 +40,11 @@ router = APIRouter(prefix="/orders", tags=["orders"])
 
 @router.get("", response_model=list[OrderResponse])
 async def list_orders(
-    business_id: UUID = Query(...),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
     status: str | None = None,
     search: str | None = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
 ):
     query = select(Order).where(Order.business_id == business_id, Order.is_active == True)
     if status:
@@ -67,8 +68,8 @@ async def list_orders(
 @router.post("", response_model=OrderResponse, status_code=status.HTTP_201_CREATED)
 async def create_order(
     data: OrderCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     payload = data.model_dump()
     # items arrive as OrderItem models; JSONB needs plain dicts.
@@ -203,9 +204,11 @@ def _table_query(
 
 @router.get("/table")
 async def orders_spreadsheet(
-    business_id: UUID = Query(...),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
     search: str | None = None,
-    status_in: str | None = Query(None, description="Lista separada por comas"),
+    status_in: Annotated[str | None, Query(description="Lista separada por comas")] = None,
     payment_status: str | None = None,
     platform: str | None = None,
     channel: str | None = None,
@@ -217,10 +220,8 @@ async def orders_spreadsheet(
     has_tracking: bool | None = None,
     sort_by: str = "created_at",
     sort_dir: str = "desc",
-    page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=500),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=500)] = 50,
 ):
     """A page of the orders sheet, with totals and facets over the whole filter."""
     query = _table_query(
@@ -239,7 +240,9 @@ async def orders_spreadsheet(
 
 @router.get("/export.csv")
 async def export_orders_csv(
-    business_id: UUID = Query(...),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
     search: str | None = None,
     status_in: str | None = None,
     payment_status: str | None = None,
@@ -253,9 +256,7 @@ async def export_orders_csv(
     has_tracking: bool | None = None,
     sort_by: str = "created_at",
     sort_dir: str = "desc",
-    limit: int = Query(5000, ge=1, le=20000),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    limit: Annotated[int, Query(ge=1, le=20000)] = 5000,
 ):
     """The same filtered sheet as a CSV Excel opens directly.
 
@@ -301,8 +302,8 @@ class BulkStatusRequest(BaseModel):
 @router.post("/bulk-status")
 async def bulk_update_status(
     data: BulkStatusRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Move many orders at once, one verdict per order.
 
@@ -353,8 +354,8 @@ async def bulk_update_status(
 @router.get("/{order_id}", response_model=OrderResponse)
 async def get_order(
     order_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(select(Order).where(Order.id == order_id))
     order = result.scalar_one_or_none()
@@ -367,8 +368,8 @@ async def get_order(
 async def update_order(
     order_id: UUID,
     data: OrderUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(select(Order).where(Order.id == order_id))
     order = result.scalar_one_or_none()
@@ -405,8 +406,8 @@ async def update_order(
 @router.delete("/{order_id}")
 async def delete_order(
     order_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(select(Order).where(Order.id == order_id))
     order = result.scalar_one_or_none()
@@ -421,10 +422,10 @@ async def delete_order(
 
 @router.get("/revenue/summary", response_model=RevenueSummary)
 async def get_revenue_summary(
-    business_id: UUID = Query(...),
-    days: int = Query(30, ge=1, le=365),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ):
     since = datetime.now(UTC) - timedelta(days=days)
 
@@ -509,10 +510,10 @@ async def get_revenue_summary(
 
 @router.get("/revenue/attribution", response_model=AttributionSummary)
 async def get_attribution_summary(
-    business_id: UUID = Query(...),
-    days: int = Query(30, ge=1, le=365),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ):
     since = datetime.now(UTC) - timedelta(days=days)
 
@@ -591,8 +592,8 @@ async def get_attribution_summary(
 @router.get("/{order_id}/service-delivery", response_model=dict)
 async def get_order_service_delivery(
     order_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Get service delivery and appointments linked to an order."""
     result = await db.execute(
@@ -618,8 +619,8 @@ async def get_order_service_delivery(
 async def schedule_service_for_order(
     order_id: UUID,
     data: dict,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Schedule a service delivery + appointment for a service order."""
     order = await db.get(Order, order_id)
@@ -687,8 +688,8 @@ async def schedule_service_for_order(
 @router.post("/{order_id}/start-service", response_model=dict)
 async def start_service_for_order(
     order_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Mark service as in-progress for an order."""
     result = await db.execute(
@@ -709,8 +710,8 @@ async def start_service_for_order(
 @router.post("/{order_id}/complete-service", response_model=dict)
 async def complete_service_for_order(
     order_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Mark service as completed for an order."""
     result = await db.execute(
@@ -737,8 +738,8 @@ async def complete_service_for_order(
 async def add_service_notes(
     order_id: UUID,
     data: dict,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Add provider notes, diagnosis, materials to a service delivery."""
     result = await db.execute(

@@ -1,6 +1,7 @@
 """Phase 33 Multi-Platform Seller API (12 endpoints)."""
 
 from datetime import datetime, timedelta
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -91,7 +92,10 @@ class KeywordResearchResponse(BaseModel):
 # ENDPOINT 1: Create Product Across Platforms
 # ============================================================================
 @router.post("/products/create", response_model=ProductResponse)
-def create_multiplatform_product(request: ProductRequest, db: Session = Depends(get_db)):
+def create_multiplatform_product(
+    request: ProductRequest,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Create product on multiple platforms simultaneously."""
     try:
         platforms = [Platform(p.lower()) for p in request.platforms]
@@ -129,7 +133,11 @@ def create_multiplatform_product(request: ProductRequest, db: Session = Depends(
 # ENDPOINT 2: Sync Inventory Across Platforms
 # ============================================================================
 @router.post("/inventory/sync/{product_id}", response_model=InventorySyncResponse)
-def sync_inventory(product_id: str, new_stock: int, db: Session = Depends(get_db)):
+def sync_inventory(
+    product_id: str,
+    new_stock: int,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Real-time inventory sync (prevent overselling)."""
     try:
         sync_engine = PlatformSyncEngine(db)
@@ -168,7 +176,9 @@ def sync_inventory(product_id: str, new_stock: int, db: Session = Depends(get_db
 # ============================================================================
 @router.get("/pricing/recommend/{product_id}/{platform}")
 def get_pricing_recommendation(
-    product_id: str, platform: str, db: Session = Depends(get_db)
+    product_id: str,
+    platform: str,
+    db: Annotated[Session, Depends(get_db)],
 ) -> PricingRecommendationResponse:
     """Get AI-optimized price recommendation."""
     try:
@@ -234,7 +244,10 @@ def get_pricing_recommendation(
 # ENDPOINT 4: Batch Reprice All Products
 # ============================================================================
 @router.post("/pricing/reprice-all/{platform}")
-def reprice_all_products(platform: str, db: Session = Depends(get_db)):
+def reprice_all_products(
+    platform: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Hourly batch repricing across entire catalog."""
     try:
         platform_enum = Platform(platform.lower())
@@ -250,7 +263,12 @@ def reprice_all_products(platform: str, db: Session = Depends(get_db)):
 # ============================================================================
 @router.get("/foom/triggers/{product_id}/{platform}", response_model=URGENCYResponse)
 def get_foom_triggers(
-    product_id: str, platform: str, inventory: int = 10, sales_velocity: float = 30, rank: int | None = 1, db: Session = Depends(get_db)
+    product_id: str,
+    platform: str,
+    db: Annotated[Session, Depends(get_db)],
+    inventory: int = 10,
+    sales_velocity: float = 30,
+    rank: int | None = 1,
 ):
     """Get platform-specific urgency/FOOM messages."""
     try:
@@ -288,7 +306,11 @@ def get_foom_triggers(
 # ENDPOINT 6: Research Keywords
 # ============================================================================
 @router.get("/seo/keywords/{category}/{platform}")
-def research_keywords(category: str, platform: str, db: Session = Depends(get_db)):
+def research_keywords(
+    category: str,
+    platform: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Research high-volume keywords for category."""
     try:
         platform_enum = Platform(platform.lower())
@@ -303,7 +325,12 @@ def research_keywords(category: str, platform: str, db: Session = Depends(get_db
 # ENDPOINT 7: Optimize Listing
 # ============================================================================
 @router.post("/seo/optimize/{product_id}/{platform}")
-def optimize_listing(product_id: str, platform: str, keywords: list[str], db: Session = Depends(get_db)):
+def optimize_listing(
+    product_id: str,
+    platform: str,
+    keywords: list[str],
+    db: Annotated[Session, Depends(get_db)],
+):
     """Generate optimized title, bullets, description."""
     try:
         platform_enum = Platform(platform.lower())
@@ -334,7 +361,11 @@ def optimize_listing(product_id: str, platform: str, keywords: list[str], db: Se
 # ENDPOINT 8: Track Rankings
 # ============================================================================
 @router.get("/seo/rankings/{product_id}/{platform}")
-def track_rankings(product_id: str, platform: str, db: Session = Depends(get_db)):
+def track_rankings(
+    product_id: str,
+    platform: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Track daily keyword rankings + conversion by keyword."""
     try:
         platform_enum = Platform(platform.lower())
@@ -349,7 +380,9 @@ def track_rankings(product_id: str, platform: str, db: Session = Depends(get_db)
 # ENDPOINT 9: Multi-Platform Dashboard
 # ============================================================================
 @router.get("/dashboard/overview")
-def get_dashboard_overview(db: Session = Depends(get_db)):
+def get_dashboard_overview(
+    db: Annotated[Session, Depends(get_db)],
+):
     """High-level overview: all platforms, all products (real data from DB)."""
     from app.models.platform_integration import Order, PlatformListing, SellerMetrics
 
@@ -406,7 +439,9 @@ def get_dashboard_overview(db: Session = Depends(get_db)):
 # ENDPOINT 10: Best Seller Status Tracker
 # ============================================================================
 @router.get("/bestseller/status")
-def get_bestseller_status(db: Session = Depends(get_db)):
+def get_bestseller_status(
+    db: Annotated[Session, Depends(get_db)],
+):
     """Real-time best seller ranking across platforms."""
     return {
         "timestamp": datetime.utcnow().isoformat(),
@@ -433,7 +468,11 @@ def get_bestseller_status(db: Session = Depends(get_db)):
 # ENDPOINT 11: Competitor Analysis
 # ============================================================================
 @router.get("/competitors/analysis/{product_id}/{platform}")
-def analyze_competitors(product_id: str, platform: str, db: Session = Depends(get_db)):
+def analyze_competitors(
+    product_id: str,
+    platform: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Competitive intelligence: top 10 competitors."""
     return {
         "product_id": product_id,
@@ -477,7 +516,10 @@ def analyze_competitors(product_id: str, platform: str, db: Session = Depends(ge
 # ENDPOINT 12: Performance Analytics
 # ============================================================================
 @router.get("/analytics/performance/{platform}")
-def get_platform_performance(platform: str, db: Session = Depends(get_db)):
+def get_platform_performance(
+    platform: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Detailed performance metrics per platform."""
     try:
         platform_name = platform.lower()

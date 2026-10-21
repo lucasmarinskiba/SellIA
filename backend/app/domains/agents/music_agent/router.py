@@ -1,6 +1,7 @@
 """Music Agent API Router"""
 
 import os
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -22,8 +23,8 @@ router = APIRouter(prefix="/agents/music-agent", tags=["music-agent"])
 @router.post("/generate", response_model=MusicTrackResponse, status_code=status.HTTP_201_CREATED)
 async def generate_track(
     req: MusicGenerateRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = MusicService(db)
     track = await service.generate_music(
@@ -38,8 +39,8 @@ async def generate_track(
 @router.get("/tracks", response_model=list[MusicTrackResponse])
 async def list_tracks(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = MusicService(db)
     return await service.list_tracks(business_id)
@@ -48,8 +49,8 @@ async def list_tracks(
 @router.get("/tracks/{track_id}", response_model=MusicTrackResponse)
 async def get_track(
     track_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = MusicService(db)
     track = await service.get_track(track_id)
@@ -61,8 +62,8 @@ async def get_track(
 @router.get("/tracks/{track_id}/download")
 async def download_track(
     track_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = MusicService(db)
     track = await service.get_track(track_id)

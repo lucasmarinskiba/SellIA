@@ -1,6 +1,7 @@
 """Competitive intelligence API — competitor tracking + market analysis."""
 
 from decimal import Decimal
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
@@ -48,7 +49,7 @@ class AddOfferingRequest(BaseModel):
 def add_competitor(
     business_id: UUID,
     request: AddCompetitorRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Add competitor to tracking."""
     return CompetitiveIntelligenceService.add_competitor(
@@ -66,9 +67,9 @@ def add_competitor(
 
 @router.post("/competitors/pricing")
 def log_competitor_pricing(
-    business_id: UUID = Query(...),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[Session, Depends(get_db)],
     request: LogPricingRequest = None,
-    db: Session = Depends(get_db)
 ):
     """Log competitor product pricing."""
     return CompetitiveIntelligenceService.log_competitor_pricing(
@@ -86,9 +87,9 @@ def log_competitor_pricing(
 
 @router.post("/competitors/offering")
 def add_competitor_offering(
-    business_id: UUID = Query(...),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[Session, Depends(get_db)],
     request: AddOfferingRequest = None,
-    db: Session = Depends(get_db)
 ):
     """Log competitor product/service offering."""
     return CompetitiveIntelligenceService.add_competitor_offering(
@@ -108,8 +109,8 @@ def add_competitor_offering(
 @router.get("/businesses/{business_id}/competitive-position")
 def get_competitive_position(
     business_id: UUID,
-    date: str | None = Query(None, description="YYYY-MM-DD"),
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
+    date: Annotated[str | None, Query(description="YYYY-MM-DD")] = None,
 ):
     """Get competitive position summary."""
     return CompetitiveIntelligenceService.get_competitive_position(
@@ -122,9 +123,9 @@ def get_competitive_position(
 @router.get("/businesses/{business_id}/price-benchmark")
 def get_price_benchmark(
     business_id: UUID,
-    product_name: str = Query(...),
-    days: int = Query(30, ge=1, le=365),
-    db: Session = Depends(get_db)
+    product_name: Annotated[str, Query()],
+    db: Annotated[Session, Depends(get_db)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ):
     """Get price benchmarking for product."""
     return CompetitiveIntelligenceService.get_price_benchmarking(
@@ -138,7 +139,7 @@ def get_price_benchmark(
 @router.get("/businesses/{business_id}/offering-gaps")
 def get_offering_gaps(
     business_id: UUID,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Identify feature/offering gaps vs competitors."""
     return CompetitiveIntelligenceService.get_offering_gaps(
@@ -150,9 +151,9 @@ def get_offering_gaps(
 @router.get("/businesses/{business_id}/competitors")
 def get_competitors(
     business_id: UUID,
-    threat_level: str | None = Query(None, description="low, medium, high, critical"),
-    limit: int = Query(20, ge=1, le=100),
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
+    threat_level: Annotated[str | None, Query(description="low, medium, high, critical")] = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
 ):
     """Get list of tracked competitors."""
     return CompetitiveIntelligenceService.get_competitor_list(

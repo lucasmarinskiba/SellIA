@@ -1,6 +1,7 @@
 """Checkout & payment processing endpoints."""
 
 import os
+from typing import Annotated
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
@@ -41,7 +42,7 @@ PLAN_NAMES = {
 @router.post("/session")
 async def create_checkout_session(
     req: CheckoutRequest,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Create MercadoPago checkout session."""
 

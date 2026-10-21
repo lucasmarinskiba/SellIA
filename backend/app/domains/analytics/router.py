@@ -1,6 +1,7 @@
 """Analytics & BI API Router."""
 
 from datetime import UTC
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -35,8 +36,8 @@ router = APIRouter(prefix="/{business_id}/analytics", tags=["Analytics & BI"])
 async def calculate_funnel(
     business_id: UUID,
     period: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = BusinessIntelligenceService(db)
     metric = await service.calculate_funnel(business_id, period)
@@ -46,8 +47,8 @@ async def calculate_funnel(
 @router.get("/funnel", response_model=list[FunnelMetricResponse])
 async def list_funnel_metrics(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await db.execute(select(FunnelMetric).where(FunnelMetric.business_id == business_id).order_by(FunnelMetric.period.desc()).limit(12))
     return result.scalars().all()
@@ -57,8 +58,8 @@ async def list_funnel_metrics(
 async def predict_churn(
     business_id: UUID,
     conversation_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = BusinessIntelligenceService(db)
     prediction = await service.predict_churn(business_id, conversation_id)
@@ -71,8 +72,8 @@ async def predict_churn(
 async def predict_ltv(
     business_id: UUID,
     conversation_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = BusinessIntelligenceService(db)
     prediction = await service.predict_ltv(business_id, conversation_id)
@@ -84,8 +85,8 @@ async def predict_ltv(
 @router.get("/insights", response_model=list[InsightAlertResponse])
 async def list_insights(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await db.execute(select(InsightAlert).where(InsightAlert.business_id == business_id, InsightAlert.is_active == True).order_by(InsightAlert.created_at.desc()).limit(50))
     return result.scalars().all()
@@ -94,8 +95,8 @@ async def list_insights(
 @router.get("/dashboard", response_model=DashboardSummaryResponse)
 async def get_dashboard(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = BusinessIntelligenceService(db)
     retention = RetentionService(db)

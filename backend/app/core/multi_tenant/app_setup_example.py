@@ -3,6 +3,8 @@ Example: How to integrate multi-tenant system into FastAPI app.
 Copy these patterns into your app/main.py
 """
 
+from typing import Annotated
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -151,7 +153,7 @@ def create_app() -> FastAPI:
 # ============================================================================
 
 async def get_current_tenant_id(
-    tenant_context: "TenantContext" = Depends(get_tenant_context),
+    tenant_context: Annotated["TenantContext", Depends(get_tenant_context)],
 ) -> str:
     """
     Dependency: Get current tenant_id from context.
@@ -169,7 +171,7 @@ async def get_current_tenant_id(
 
 
 async def get_current_tenant_isolation(
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> TenantIsolation:
     """
     Dependency: Get tenant isolation service.
@@ -202,8 +204,8 @@ def add_multi_tenant_endpoints(app: FastAPI):
     @router.get("/tenants/{tenant_id}/data")
     async def get_tenant_data(
         tenant_id: str,
-        tenant_context: TenantContext = Depends(require_tenant_context),
-        db: AsyncSession = Depends(get_db),
+        tenant_context: Annotated[TenantContext, Depends(require_tenant_context)],
+        db: Annotated[AsyncSession, Depends(get_db)],
     ):
         """
         Get data for current tenant.
@@ -230,7 +232,7 @@ def add_multi_tenant_endpoints(app: FastAPI):
     async def update_tenant_settings(
         tenant_id: str,
         settings: dict,
-        tenant_context: TenantContext = Depends(require_admin_access),
+        tenant_context: Annotated[TenantContext, Depends(require_admin_access)],
     ):
         """
         Update tenant settings (admin only).
@@ -250,7 +252,7 @@ def add_multi_tenant_endpoints(app: FastAPI):
     async def query_endpoint(
         query: dict,
         request: "Request",
-        db: AsyncSession = Depends(get_db),
+        db: Annotated[AsyncSession, Depends(get_db)],
     ):
         """
         API endpoint: Accept either Bearer token or API key.

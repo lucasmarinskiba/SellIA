@@ -1,6 +1,7 @@
 """Payment API endpoints."""
 
 from decimal import Decimal
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -74,8 +75,8 @@ class ReconcileTransactionRequest(BaseModel):
 async def create_transaction(
     business_id: UUID,
     request: CreateTransactionRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create payment transaction."""
     await _get_business_for_user(business_id, current_user, db)
@@ -98,8 +99,8 @@ async def create_transaction(
 async def create_mercadopago_checkout(
     business_id: UUID,
     request: CreateCheckoutRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create MercadoPago checkout."""
     await _get_business_for_user(business_id, current_user, db)
@@ -120,7 +121,7 @@ async def create_mercadopago_checkout(
 async def handle_mercadopago_webhook(
     business_id: UUID,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Handle MercadoPago webhook notification.
 
@@ -152,8 +153,8 @@ async def handle_mercadopago_webhook(
 async def create_refund(
     business_id: UUID,
     request: CreateRefundRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create refund request."""
     await _get_business_for_user(business_id, current_user, db)
@@ -170,8 +171,8 @@ async def create_refund(
 async def reconcile_transaction(
     business_id: UUID,
     request: ReconcileTransactionRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Reconcile order with payment transaction."""
     await _get_business_for_user(business_id, current_user, db)
@@ -186,11 +187,11 @@ async def reconcile_transaction(
 @router.get("/businesses/{business_id}/transactions")
 async def get_transactions(
     business_id: UUID,
-    status: str | None = Query(None),
-    location_id: UUID | None = Query(None),
-    limit: int = Query(50, ge=1, le=200),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    status: Annotated[str | None, Query()] = None,
+    location_id: Annotated[UUID | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
 ):
     """Get transactions."""
     await _get_business_for_user(business_id, current_user, db)
@@ -206,9 +207,9 @@ async def get_transactions(
 @router.get("/businesses/{business_id}/settlements/metrics")
 async def get_settlement_metrics(
     business_id: UUID,
-    period_days: int = Query(30, ge=1, le=365),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    period_days: Annotated[int, Query(ge=1, le=365)] = 30,
 ):
     """Get settlement metrics."""
     await _get_business_for_user(business_id, current_user, db)
@@ -222,8 +223,8 @@ async def get_settlement_metrics(
 @router.get("/businesses/{business_id}/payments/metrics")
 async def get_payment_metrics(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get payment metrics."""
     await _get_business_for_user(business_id, current_user, db)

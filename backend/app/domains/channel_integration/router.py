@@ -1,5 +1,6 @@
 """Phase 5C: Channel Integration Endpoints."""
 from datetime import datetime
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
@@ -46,7 +47,7 @@ async def connect_google_business(
     google_business_id: str,
     account_name: str,
     access_token: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Connect Google Business Profile to location."""
     conn = ChannelIntegrationService.connect_google_business_profile(
@@ -70,7 +71,7 @@ async def create_location_message(
     business_id: UUID,
     location_id: UUID,
     req: LocationMessageCreateRequest,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Create location-triggered message template."""
     msg = ChannelIntegrationService.create_location_message(
@@ -94,7 +95,7 @@ async def send_location_message(
     business_id: UUID,
     location_id: UUID,
     req: LocationMessageExecuteRequest,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Execute location message send."""
     execution = ChannelIntegrationService.send_location_message(
@@ -122,7 +123,7 @@ async def send_location_message(
 async def get_location_reviews(
     business_id: UUID,
     location_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Get all reviews for location."""
     reviews = ChannelIntegrationService.get_location_reviews(db, business_id, location_id)
@@ -140,11 +141,11 @@ async def sync_google_maps(
     business_id: UUID,
     location_id: UUID,
     place_id: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
     rating: float = 0,
     review_count: int = 0,
     phone: str | None = None,
     website: str | None = None,
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Sync Google Maps location data."""
     maps_loc = ChannelIntegrationService.sync_google_maps_location(
@@ -172,9 +173,9 @@ async def add_review(
     location_id: UUID,
     reviewer_name: str,
     rating: float,
+    db: Annotated[AsyncSession, Depends(get_db)],
     review_text: str | None = None,
     platform: str = "google",
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Add location review."""
     review = ChannelIntegrationService.add_location_review(

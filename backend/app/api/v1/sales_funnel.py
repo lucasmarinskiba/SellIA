@@ -1,6 +1,6 @@
 """Sales Funnel API — REST endpoints para pipeline completo."""
 
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,7 +28,7 @@ router = APIRouter(prefix="/sales-funnel", tags=["Sales Funnel"])
 async def run_complete_pipeline(
     leads: list[dict[str, Any]],
     product_info: dict[str, Any],
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """
     Ejecuta pipeline completo: Find → Contact → Respond → Close → Pay → Grow → Loyalty
@@ -235,7 +235,7 @@ async def send_email_sequence(
 @router.get("/pipeline-status/{campaign_id}")
 async def get_pipeline_status(
     campaign_id: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """Obtiene status de campaign."""
     try:

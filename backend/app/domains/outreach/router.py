@@ -1,5 +1,6 @@
 """Outreach Cadence API Router."""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -31,8 +32,8 @@ router = APIRouter(prefix="/outreach", tags=["Outreach Cadence"])
 @router.get("/rules/{business_id}", response_model=OutreachCadenceRuleResponse)
 async def get_cadence_rule(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = FatigueScoringService(db)
     rule = await service.get_or_create_rule(business_id)
@@ -43,8 +44,8 @@ async def get_cadence_rule(
 async def update_cadence_rule(
     business_id: UUID,
     update: OutreachCadenceRuleUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = FatigueScoringService(db)
     rule = await service.get_or_create_rule(business_id)
@@ -64,11 +65,11 @@ async def update_cadence_rule(
 @router.get("/fatigue/{business_id}", response_model=list[ContactFatigueScoreResponse])
 async def list_fatigue_scores(
     business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     level: str | None = None,
     limit: int = 50,
     offset: int = 0,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     query = select(ContactFatigueScore).where(ContactFatigueScore.business_id == business_id)
     if level:
@@ -83,8 +84,8 @@ async def list_fatigue_scores(
 async def get_fatigue_score(
     business_id: UUID,
     conversation_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = FatigueScoringService(db)
     score = await service.get_or_create_score(business_id, conversation_id)
@@ -98,8 +99,8 @@ async def get_fatigue_score(
 @router.post("/can-contact", response_model=CanContactResponse)
 async def can_contact(
     req: CanContactRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = FatigueScoringService(db)
     # Need business_id from conversation
@@ -129,8 +130,8 @@ async def can_contact(
 async def get_next_action(
     business_id: UUID,
     conversation_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     engine = CadenceEngine(db)
     result = await engine.get_next_action_for_lead(business_id, conversation_id)
@@ -152,10 +153,10 @@ async def get_next_action(
 @router.get("/logs/{business_id}", response_model=list[OutreachLogResponse])
 async def list_outreach_logs(
     business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     conversation_id: UUID | None = None,
     limit: int = 50,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     query = select(OutreachLog).where(OutreachLog.business_id == business_id)
     if conversation_id:

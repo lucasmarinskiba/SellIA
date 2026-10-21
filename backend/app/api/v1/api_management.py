@@ -1,6 +1,7 @@
 """API management — rate limiting, caching, metrics."""
 
 from datetime import datetime
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
@@ -30,7 +31,7 @@ class SetCachePolicyRequest(BaseModel):
 def create_api_key(
     business_id: UUID,
     request: CreateApiKeyRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Create new API key."""
     expires = None
@@ -50,7 +51,7 @@ def create_api_key(
 @router.get("/api-keys/{api_key_id}/rate-limit-status")
 def get_rate_limit_status(
     api_key_id: UUID,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Get current rate limit status."""
     return RateLimitService.get_rate_limit_status(
@@ -63,7 +64,7 @@ def get_rate_limit_status(
 def set_cache_policy(
     business_id: UUID,
     request: SetCachePolicyRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Set cache policy for endpoint."""
     return RateLimitService.set_cache_policy(
@@ -78,8 +79,8 @@ def set_cache_policy(
 @router.get("/businesses/{business_id}/api-metrics")
 def get_api_metrics(
     business_id: UUID,
-    date: str | None = Query(None, description="YYYY-MM-DD"),
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
+    date: Annotated[str | None, Query(description="YYYY-MM-DD")] = None,
 ):
     """Get API performance metrics."""
     return RateLimitService.get_api_metrics(

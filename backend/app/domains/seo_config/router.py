@@ -1,5 +1,6 @@
 """SEO Config API endpoints."""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import (
@@ -75,8 +76,8 @@ logger = get_logger(__name__)
 
 async def verify_business_access(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> Business:
     """Every endpoint on `router` below takes a `business_id` straight from the
     URL with no other proof it belongs to the caller — this was a plain IDOR:
@@ -247,8 +248,8 @@ class ABTestMetricsResponse(BaseModel):
 @router.get("", response_model=SEOConfigResponse)
 async def get_seo_config(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get SEO configuration for a business."""
     svc = SEOConfigService(db)
@@ -259,9 +260,9 @@ async def get_seo_config(
 @router.patch("/global-toggle")
 async def toggle_global_seo(
     business_id: UUID,
-    enabled: bool = Query(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    enabled: Annotated[bool, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Toggle global SEO on/off for a business."""
     svc = SEOConfigService(db)
@@ -279,8 +280,8 @@ async def toggle_global_seo(
 @router.get("/platforms", response_model=PlatformSEOListResponse)
 async def get_platforms_seo_status(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get SEO status for all connected platforms."""
     config_svc = SEOConfigService(db)
@@ -297,9 +298,9 @@ async def get_platforms_seo_status(
 async def toggle_platform_seo(
     business_id: UUID,
     connection_id: UUID,
-    enabled: bool = Query(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    enabled: Annotated[bool, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Toggle SEO on/off for a specific platform."""
     svc = SEOConfigService(db)
@@ -322,8 +323,8 @@ async def toggle_platform_seo(
 @router.get("/publication-links", response_model=list[PublicationLinkResponse])
 async def list_publication_links(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get all publication links for SEO positioning."""
     svc = PublicationLinkService(db)
@@ -335,8 +336,8 @@ async def list_publication_links(
 async def create_publication_link(
     business_id: UUID,
     data: CreatePublicationLinkRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Add a new publication link for SEO positioning."""
     svc = PublicationLinkService(db)
@@ -354,9 +355,9 @@ async def create_publication_link(
 async def toggle_publication_link_seo(
     business_id: UUID,
     link_id: UUID,
-    enabled: bool = Query(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    enabled: Annotated[bool, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Toggle SEO for a specific publication link."""
     svc = PublicationLinkService(db)
@@ -380,8 +381,8 @@ async def toggle_publication_link_seo(
 async def delete_publication_link(
     business_id: UUID,
     link_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Delete a publication link."""
     svc = PublicationLinkService(db)
@@ -400,8 +401,8 @@ async def delete_publication_link(
 @router.post("/generate-fomo-all", response_model=FOOMGenerationResponse)
 async def generate_fomo_all(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Generate FOMO copy for all active publication links."""
     generator = PublicationFOMOGenerator(db)
@@ -413,8 +414,8 @@ async def generate_fomo_all(
 async def generate_fomo_for_link(
     business_id: UUID,
     link_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Generate FOMO copy for a specific publication link."""
     svc = PublicationLinkService(db)
@@ -442,8 +443,8 @@ async def generate_fomo_for_link(
 async def get_link_fomo(
     business_id: UUID,
     link_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get latest FOMO copy for a publication link."""
     generator = PublicationFOMOGenerator(db)
@@ -455,8 +456,8 @@ async def get_link_fomo(
 @router.post("/sync-all", response_model=PlatformSyncResponse)
 async def sync_all_links(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Sync FOMO copy for all active publication links to their platforms."""
     sync_service = PlatformListingSyncService(db)
@@ -468,8 +469,8 @@ async def sync_all_links(
 async def sync_link(
     business_id: UUID,
     link_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Sync FOMO copy for a specific link to its platform."""
     svc = PublicationLinkService(db)
@@ -511,9 +512,9 @@ async def sync_link(
 @router.get("/sync-history")
 async def get_sync_history(
     business_id: UUID,
-    limit: int = Query(50, ge=1, le=500),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    limit: Annotated[int, Query(ge=1, le=500)] = 50,
 ):
     """Get sync history for a business."""
     result = await db.execute(
@@ -544,8 +545,8 @@ async def get_sync_history(
 async def bulk_import_listings(
     business_id: UUID,
     data: BulkImportListingRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Bulk import listings from a platform.
 
@@ -564,9 +565,9 @@ async def bulk_import_listings(
 @router.post("/analytics/refresh")
 async def refresh_analytics(
     business_id: UUID,
-    link_id: UUID | None = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    link_id: Annotated[UUID | None, Query()] = None,
 ):
     """Refresh analytics metrics from platforms.
 
@@ -620,9 +621,9 @@ async def refresh_analytics(
 async def get_link_daily_metrics(
     business_id: UUID,
     link_id: UUID,
-    days: int = Query(7, ge=1, le=90),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    days: Annotated[int, Query(ge=1, le=90)] = 7,
 ):
     """Get daily metrics for a publication link (last N days)."""
     from datetime import date, timedelta
@@ -663,8 +664,8 @@ async def get_link_daily_metrics(
 async def get_link_performance_summary(
     business_id: UUID,
     link_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get aggregated performance summaries for a publication link."""
     result = await db.execute(
@@ -697,8 +698,8 @@ async def get_link_performance_summary(
 @router.get("/analytics", response_model=dict)
 async def get_business_analytics_overview(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get analytics overview for all publication links (today's metrics)."""
     from datetime import date
@@ -738,12 +739,12 @@ async def get_business_analytics_overview(
 @router.post("/conversions/track")
 async def track_conversion(
     business_id: UUID,
-    link_id: UUID = Query(...),
-    platform_name: str = Query(...),
-    conversion_type: str = Query("purchase"),
-    conversion_value: float = Query(0.0),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    link_id: Annotated[UUID, Query()],
+    platform_name: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    conversion_type: Annotated[str, Query()] = "purchase",
+    conversion_value: Annotated[float, Query()] = 0.0,
 ):
     """Track a conversion event from platform webhook."""
     link = await db.get(PublicationLink, link_id)
@@ -771,10 +772,10 @@ async def track_conversion(
 @router.get("/conversions/recent", response_model=list[ConversionEventResponse])
 async def get_recent_conversions(
     business_id: UUID,
-    limit: int = Query(10, ge=1, le=50),
-    hours_back: int = Query(24, ge=1, le=168),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    limit: Annotated[int, Query(ge=1, le=50)] = 10,
+    hours_back: Annotated[int, Query(ge=1, le=168)] = 24,
 ):
     """Get recent conversions for real-time ticker."""
     svc = FOMAConversionService(db)
@@ -800,8 +801,8 @@ async def get_recent_conversions(
 @router.get("/analytics/urgency-metrics", response_model=UrgencyMetricsResponse)
 async def get_urgency_metrics(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get CTR breakdown by urgency trigger type."""
     svc = FOMAConversionService(db)
@@ -813,8 +814,8 @@ async def get_urgency_metrics(
 async def get_fomo_preview(
     business_id: UUID,
     link_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get FOMO preview: original vs FOMO copy side-by-side."""
     svc = FOMAConversionService(db)
@@ -835,8 +836,8 @@ async def get_fomo_preview(
 async def create_ab_test(
     business_id: UUID,
     data: CreateABTestRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create A/B test for FOMO variants."""
     svc = FOMABTestService(db)
@@ -863,8 +864,8 @@ async def create_ab_test(
 async def get_ab_test_metrics(
     business_id: UUID,
     test_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get A/B test metrics and status."""
     svc = FOMABTestService(db)
@@ -880,8 +881,8 @@ async def get_ab_test_metrics(
 async def apply_ab_test_winner(
     business_id: UUID,
     test_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Apply winning variant to publication link."""
     svc = FOMABTestService(db)
@@ -910,8 +911,8 @@ async def apply_ab_test_winner(
 @router.get("/fomo-ab-tests/running", response_model=list[dict])
 async def list_running_tests(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """List all running A/B tests for business."""
     svc = FOMABTestService(db)
@@ -930,9 +931,9 @@ async def list_running_tests(
 @router.get("/fomo-decay/detect", response_model=list[dict])
 async def detect_fomo_decay(
     business_id: UUID,
-    decay_threshold: float = Query(30.0, ge=1, le=100),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    decay_threshold: Annotated[float, Query(ge=1, le=100)] = 30.0,
 ):
     """Detect FOMO copy decay (CTR drop > threshold)."""
     svc = FOMADecayService(db)
@@ -946,9 +947,9 @@ async def detect_fomo_decay(
 @router.get("/fomo-decay/history", response_model=list[dict])
 async def get_decay_history(
     business_id: UUID,
-    limit: int = Query(50, ge=1, le=500),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    limit: Annotated[int, Query(ge=1, le=500)] = 50,
 ):
     """Get decay detection history."""
     svc = FOMADecayService(db)
@@ -975,8 +976,8 @@ async def predict_fomo_conversion(
     business_id: UUID,
     link_id: UUID,
     fomo_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Predict conversion probability for FOMO copy.
 
@@ -996,8 +997,8 @@ async def predict_fomo_conversion(
 async def get_fomo_effectiveness_score(
     business_id: UUID,
     fomo_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get FOMO copy effectiveness score (0-100).
 
@@ -1024,8 +1025,8 @@ async def get_fomo_effectiveness_score(
 async def assess_fomo_credibility(
     business_id: UUID,
     fomo_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Assess if FOMO copy sounds credible or manipulative.
 
@@ -1053,9 +1054,9 @@ async def assess_fomo_credibility(
 @router.get("/fomo-patterns/by-platform", response_model=dict)
 async def get_trigger_performance(
     business_id: UUID,
-    days: int = Query(30, ge=1, le=90),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    days: Annotated[int, Query(ge=1, le=90)] = 30,
 ):
     """Get avg CTR by urgency trigger per platform."""
     synthesizer = FOMAPatternSynthesizer(db)
@@ -1071,9 +1072,9 @@ async def get_trigger_performance(
 @router.get("/fomo-patterns/best-triggers", response_model=dict)
 async def get_best_triggers(
     business_id: UUID,
-    days: int = Query(30, ge=1, le=90),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    days: Annotated[int, Query(ge=1, le=90)] = 30,
 ):
     """Get best-performing trigger per platform."""
     synthesizer = FOMAPatternSynthesizer(db)
@@ -1089,9 +1090,9 @@ async def get_best_triggers(
 @router.get("/fomo-patterns/recommendations", response_model=list[dict])
 async def get_cross_platform_recommendations(
     business_id: UUID,
-    days: int = Query(30, ge=1, le=90),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    days: Annotated[int, Query(ge=1, le=90)] = 30,
 ):
     """Get recommendations to apply winning patterns across platforms."""
     synthesizer = FOMAPatternSynthesizer(db)
@@ -1104,8 +1105,8 @@ async def get_cross_platform_recommendations(
 async def get_trigger_streak(
     business_id: UUID,
     trigger: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get how well a trigger performs across all platforms."""
     synthesizer = FOMAPatternSynthesizer(db)
@@ -1119,9 +1120,9 @@ async def get_trigger_streak(
 @router.get("/fomo-learning/prediction-accuracy", response_model=dict)
 async def get_prediction_accuracy(
     business_id: UUID,
-    days: int = Query(30, ge=1, le=90),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    days: Annotated[int, Query(ge=1, le=90)] = 30,
 ):
     """Get prediction accuracy (predicted vs actual conversions)."""
     feedback_loop = FOMAFeedbackLoop(db)
@@ -1136,8 +1137,8 @@ async def get_prediction_accuracy(
 @router.get("/fomo-learning/velocity", response_model=dict)
 async def get_learning_velocity(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get system learning velocity (how fast is it improving)."""
     feedback_loop = FOMAFeedbackLoop(db)
@@ -1153,9 +1154,9 @@ async def get_learning_velocity(
 async def get_link_effectiveness_trend(
     business_id: UUID,
     link_id: UUID,
-    days: int = Query(30, ge=1, le=90),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    days: Annotated[int, Query(ge=1, le=90)] = 30,
 ):
     """Get FOMO effectiveness trend for a specific link."""
     feedback_loop = FOMAFeedbackLoop(db)
@@ -1171,8 +1172,8 @@ async def ingest_conversion_webhook(
     business_id: UUID,
     payload: ConversionWebhookPayload,
     request: Request,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Ingest conversion event from any platform."""
     webhook_service = WebhookService(db)
@@ -1193,8 +1194,8 @@ async def ingest_mercado_libre_webhook(
     business_id: UUID,
     request: Request,
     background_tasks: BackgroundTasks,
-    token: str | None = Query(None),
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    token: Annotated[str | None, Query()] = None,
 ):
     """Mercado Libre order notifications (orders_v2) -> FOMO conversions.
 
@@ -1231,8 +1232,8 @@ async def ingest_mercado_libre_webhook(
 @router.get("/webhooks/events/stream")
 async def stream_fomo_events(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Server-Sent Events stream for real-time FOMO updates."""
     webhook_service = WebhookService(db)
@@ -1257,8 +1258,8 @@ async def stream_fomo_events(
 @router.post("/fomo-auto-rotation/trigger", response_model=dict)
 async def trigger_auto_rotation(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Manually trigger smart auto-rotation (regenerate + A/B test decayed links)."""
     rotator = FOMAAutoRotator(db)
@@ -1274,9 +1275,9 @@ async def trigger_auto_rotation(
 @router.get("/fomo-auto-rotation/history", response_model=list[dict])
 async def get_rotation_history(
     business_id: UUID,
-    days: int = Query(7, ge=1, le=90),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    days: Annotated[int, Query(ge=1, le=90)] = 7,
 ):
     """Get recent auto-rotation history."""
     rotator = FOMAAutoRotator(db)
@@ -1290,10 +1291,10 @@ async def get_rotation_history(
 @router.post("/fomo-multilingual/generate", response_model=dict)
 async def generate_multilingual_fomo(
     business_id: UUID,
-    link_id: UUID = Query(...),
-    platform: str = Query(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    link_id: Annotated[UUID, Query()],
+    platform: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Generate FOMO copy in all supported languages (ES/EN/PT)."""
     lang_gen = FOMALanguageGenerator(db)
@@ -1310,12 +1311,12 @@ async def generate_multilingual_fomo(
 @router.post("/fomo-multilingual/generate-single", response_model=dict)
 async def generate_fomo_single_language(
     business_id: UUID,
-    link_id: UUID = Query(...),
-    platform: str = Query(...),
-    language: str = Query('es', regex='^(es|en|pt)$'),
-    urgency: str | None = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    link_id: Annotated[UUID, Query()],
+    platform: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    language: Annotated[str, Query(regex='^(es|en|pt)$')] = 'es',
+    urgency: Annotated[str | None, Query()] = None,
 ):
     """Generate FOMO copy for a specific language."""
     lang_gen = FOMALanguageGenerator(db)
@@ -1333,10 +1334,10 @@ async def generate_fomo_single_language(
 @router.get("/fomo-multilingual/comparison", response_model=dict)
 async def get_language_comparison(
     business_id: UUID,
-    link_id: UUID = Query(...),
-    platform: str = Query(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    link_id: Annotated[UUID, Query()],
+    platform: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get FOMO copy comparison across all languages for a link."""
     lang_gen = FOMALanguageGenerator(db)
@@ -1348,8 +1349,8 @@ async def get_language_comparison(
 @router.get("/fomo-multilingual/supported-languages", response_model=dict)
 async def get_supported_languages(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get list of supported languages for FOMO generation."""
     return {
@@ -1364,8 +1365,8 @@ async def get_supported_languages(
 async def compute_positioning_score(
     business_id: UUID,
     link_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Compute a fresh platform-algorithm-aware positioning score for one link."""
     result = await db.execute(
@@ -1414,8 +1415,8 @@ async def compute_positioning_score(
 async def get_positioning_score(
     business_id: UUID,
     link_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get the most recently computed positioning score + open recommendations for a link."""
     service = PositioningScoreService(db)
@@ -1449,9 +1450,9 @@ async def get_positioning_score(
 async def get_positioning_history(
     business_id: UUID,
     link_id: UUID,
-    days: int = Query(30, ge=1, le=90),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    days: Annotated[int, Query(ge=1, le=90)] = 30,
 ):
     """Get positioning score history for a link (for trend charts)."""
     service = PositioningScoreService(db)
@@ -1470,8 +1471,8 @@ async def get_positioning_history(
 @router.get("/positioning/summary", response_model=dict)
 async def get_positioning_summary(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Unified per-business positioning dashboard: latest score per platform link,
     plus a generic_web overlay from the web_presence on-page audit."""
@@ -1483,8 +1484,8 @@ async def get_positioning_summary(
 async def dismiss_positioning_recommendation(
     business_id: UUID,
     recommendation_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Dismiss an open positioning recommendation."""
     service = PositioningScoreService(db)
@@ -1501,8 +1502,8 @@ async def dismiss_positioning_recommendation(
 @router.get("/positioning/algorithm-guide", response_model=dict)
 async def get_algorithm_guide(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """How each platform ranks sellers, with every factor tagged as documented by the
     platform or reported by the seller community. Platforms this business actually
@@ -1523,7 +1524,7 @@ async def get_algorithm_guide(
 async def get_platform_algorithm_guide(
     business_id: UUID,
     platform: str,
-    current_user: User = Depends(get_current_user),
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """One platform's algorithm guide (any spelling of the name works)."""
     profile = get_profile(platform)
@@ -1561,8 +1562,8 @@ def _store_score_payload(score, recommendations) -> dict:
 async def compute_store_positioning_score(
     business_id: UUID,
     data: ComputeStorePositioningRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Compute a fresh store-level positioning score (e.g. Amazon Brand Store)."""
     service = StorePositioningScoreService(db)
@@ -1587,8 +1588,8 @@ async def compute_store_positioning_score(
 async def get_store_positioning_score(
     business_id: UUID,
     platform: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Latest store-level score + open recommendations + declared-storefront overlay."""
     service = StorePositioningScoreService(db)
@@ -1606,9 +1607,9 @@ async def get_store_positioning_score(
 async def get_store_positioning_history(
     business_id: UUID,
     platform: str,
-    days: int = Query(30, ge=1, le=90),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    days: Annotated[int, Query(ge=1, le=90)] = 30,
 ):
     """Store-level score history (for trend charts)."""
     service = StorePositioningScoreService(db)

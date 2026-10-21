@@ -4,7 +4,7 @@ TenantContext: Request context middleware, dependency injection.
 """
 
 from contextvars import ContextVar
-from typing import Optional
+from typing import Annotated, Optional
 
 from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -227,7 +227,7 @@ class TenantContextMiddleware:
 
 async def inject_tenant_context(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> TenantContext | None:
     """
     Dependency: load tenant context if needed.

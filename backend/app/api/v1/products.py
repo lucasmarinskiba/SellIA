@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -53,8 +54,8 @@ async def _get_website_for_user(business_id: UUID, user: User, db: AsyncSession)
 async def create_product(
     business_id: UUID,
     data: ProductCreateRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create new product."""
     website = await _get_website_for_user(business_id, current_user, db)
@@ -88,8 +89,8 @@ async def create_product(
 async def get_product(
     business_id: UUID,
     product_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get product details."""
     website = await _get_website_for_user(business_id, current_user, db)
@@ -110,11 +111,11 @@ async def get_product(
 @router.get("/businesses/{business_id}/products")
 async def list_products(
     business_id: UUID,
-    status: str = Query(None),
-    skip: int = Query(0),
-    limit: int = Query(50),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    status: Annotated[str, Query()] = None,
+    skip: Annotated[int, Query()] = 0,
+    limit: Annotated[int, Query()] = 50,
 ):
     """List products."""
     website = await _get_website_for_user(business_id, current_user, db)
@@ -144,8 +145,8 @@ async def update_product(
     business_id: UUID,
     product_id: UUID,
     data: ProductUpdateRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Update product."""
     website = await _get_website_for_user(business_id, current_user, db)
@@ -192,8 +193,8 @@ async def update_product(
 async def delete_product(
     business_id: UUID,
     product_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Delete product."""
     website = await _get_website_for_user(business_id, current_user, db)
@@ -222,8 +223,8 @@ async def delete_product(
 async def add_to_cart(
     website_id: UUID,
     data: CartItemRequest,
-    session_id: str = Query(...),
-    db: AsyncSession = Depends(get_db),
+    session_id: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Add product to cart (public endpoint)."""
     # Get or create cart
@@ -299,8 +300,8 @@ async def add_to_cart(
 @router.get("/websites/{website_id}/cart")
 async def get_cart(
     website_id: UUID,
-    session_id: str = Query(...),
-    db: AsyncSession = Depends(get_db),
+    session_id: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Get cart (public endpoint)."""
     result = await db.execute(
@@ -322,8 +323,8 @@ async def get_cart(
 async def remove_from_cart(
     website_id: UUID,
     item_id: UUID,
-    session_id: str = Query(...),
-    db: AsyncSession = Depends(get_db),
+    session_id: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Remove item from cart."""
     result = await db.execute(
@@ -365,8 +366,8 @@ async def remove_from_cart(
 async def checkout(
     website_id: UUID,
     data: CartCheckoutRequest,
-    session_id: str = Query(...),
-    db: AsyncSession = Depends(get_db),
+    session_id: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Create order from cart."""
     # Get cart
@@ -440,12 +441,12 @@ async def checkout(
 @router.get("/businesses/{business_id}/orders")
 async def list_orders(
     business_id: UUID,
-    status: str = Query(None),
-    payment_status: str = Query(None),
-    skip: int = Query(0),
-    limit: int = Query(50),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    status: Annotated[str, Query()] = None,
+    payment_status: Annotated[str, Query()] = None,
+    skip: Annotated[int, Query()] = 0,
+    limit: Annotated[int, Query()] = 50,
 ):
     """List orders for business."""
     website = await _get_website_for_user(business_id, current_user, db)
@@ -476,8 +477,8 @@ async def list_orders(
 async def get_order(
     business_id: UUID,
     order_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get order details."""
     website = await _get_website_for_user(business_id, current_user, db)
@@ -500,8 +501,8 @@ async def update_order(
     business_id: UUID,
     order_id: UUID,
     data: dict,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Update order status or payment status."""
     website = await _get_website_for_user(business_id, current_user, db)

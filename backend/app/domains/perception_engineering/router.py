@@ -1,5 +1,7 @@
 """Phase X7: Perception Engineering Agent API."""
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,7 +20,7 @@ async def analyze_perception_gap(
     business_id: str,
     product_id: str,
     current_perception: dict[str, float],
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Analyze gap between current and desired customer perception."""
     perception = await PerceptionEngineeringAgent.analyze_perception_gap(
@@ -53,8 +55,8 @@ async def generate_shift_campaign(
     target_dimension: PerceptionDimension,
     current_score: float,
     target_score: float,
+    db: Annotated[AsyncSession, Depends(get_db)],
     customer_segment: str = "general",
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Generate AI-powered perception shift campaign."""
     campaign = await PerceptionEngineeringAgent.generate_perception_shift_campaign(
@@ -82,7 +84,7 @@ async def optimize_value_perception(
     base_price: float,
     current_perceived_value: float,
     competitor_prices: list[float],
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Optimize perceived value using psychological techniques."""
     optimizer = await PerceptionEngineeringAgent.optimize_value_perception(
@@ -108,7 +110,7 @@ async def generate_narrative(
     product_id: str,
     product_name: str,
     customer_transformation: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Generate compelling narrative that shifts perception."""
     narrative = await PerceptionEngineeringAgent.generate_perception_narrative(

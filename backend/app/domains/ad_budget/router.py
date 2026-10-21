@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -27,8 +28,8 @@ router = APIRouter(prefix="/{business_id}/ad-budget", tags=["Ad Budget Autopilot
 @router.get("/config", response_model=ConfigResponse)
 async def get_config(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     return await AdBudgetService(db).get_or_create_config(business_id)
 
@@ -37,8 +38,8 @@ async def get_config(
 async def update_config(
     business_id: UUID,
     body: ConfigUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     return await AdBudgetService(db).update_config(business_id, **body.model_dump(exclude_unset=True))
 
@@ -46,8 +47,8 @@ async def update_config(
 @router.get("/channels", response_model=list[ChannelResponse])
 async def list_channels(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     return await AdBudgetService(db).list_channels(business_id)
 
@@ -56,8 +57,8 @@ async def list_channels(
 async def create_channel(
     business_id: UUID,
     body: ChannelCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     return await AdBudgetService(db).create_channel(business_id, **body.model_dump(exclude_none=True))
 
@@ -67,8 +68,8 @@ async def update_channel(
     business_id: UUID,
     channel_id: UUID,
     body: ChannelUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     try:
         return await AdBudgetService(db).update_channel(
@@ -82,8 +83,8 @@ async def update_channel(
 async def delete_channel(
     business_id: UUID,
     channel_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     try:
         await AdBudgetService(db).delete_channel(business_id, channel_id)
@@ -94,8 +95,8 @@ async def delete_channel(
 @router.get("/dashboard")
 async def dashboard(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     return await AdBudgetService(db).dashboard(business_id)
 
@@ -103,9 +104,9 @@ async def dashboard(
 @router.post("/run")
 async def run_cycle(
     business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     body: RunCycleRequest = RunCycleRequest(),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     return await AdBudgetService(db).run_cycle(
         business_id, force=body.force, auto_apply=body.auto_apply
@@ -115,9 +116,9 @@ async def run_cycle(
 @router.get("/reallocations", response_model=list[ReallocationResponse])
 async def list_reallocations(
     business_id: UUID,
-    limit: int = Query(50, ge=1, le=200),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
 ):
     return await AdBudgetService(db).history(business_id, limit=limit)
 
@@ -126,8 +127,8 @@ async def list_reallocations(
 async def apply_reallocation(
     business_id: UUID,
     realloc_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     try:
         return await AdBudgetService(db).apply_reallocation(
@@ -141,8 +142,8 @@ async def apply_reallocation(
 async def reject_reallocation(
     business_id: UUID,
     realloc_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     try:
         return await AdBudgetService(db).reject_reallocation(business_id, realloc_id)

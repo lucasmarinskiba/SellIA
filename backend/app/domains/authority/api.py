@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -45,8 +45,8 @@ async def _get_action(db: AsyncSession, user_id: uuid.UUID, action_id: uuid.UUID
 
 @router.get("/dashboard")
 async def dashboard(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """Score, six pillars, trend, chart analysis and the work queue.
 
@@ -59,8 +59,8 @@ async def dashboard(
 
 @router.post("/measure")
 async def measure_now(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """Force a fresh measurement — used after the user says they did the work."""
     snapshot = await service.capture_snapshot(db, user, force=True)
@@ -74,8 +74,8 @@ async def measure_now(
 async def update_action(
     action_id: uuid.UUID,
     payload: StatusIn,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     action = await service.set_action_status(db, user.id, action_id, payload.status)
     if action is None:
@@ -86,8 +86,8 @@ async def update_action(
 @router.get("/actions/{action_id}/preview")
 async def preview_action(
     action_id: uuid.UUID,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """What running this action would actually do, with the real rows involved.
 
@@ -129,8 +129,8 @@ async def preview_action(
 async def run_action(
     action_id: uuid.UUID,
     payload: RunIn,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """Execute a real automation.
 
@@ -171,8 +171,8 @@ async def run_action(
 @router.post("/actions/{action_id}/personalize")
 async def personalize(
     action_id: uuid.UUID,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """Rewrite this action's message in the account's own voice with the real
     LLM. Answers with `source` so the UI can say whether it was written by the

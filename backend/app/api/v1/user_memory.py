@@ -1,6 +1,6 @@
 """User Memory API — Endpoints para gestionar memoria persistente del usuario"""
 
-from typing import Optional
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,8 +23,8 @@ router = APIRouter()
 
 @router.get("/me", response_model=UserMemoryResponse)
 async def get_my_memory(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Get memoria del usuario actual"""
     service = UserMemoryService(db)
@@ -62,8 +62,8 @@ async def get_my_memory(
 @router.patch("/me", response_model=UserMemoryResponse)
 async def update_my_memory(
     update_data: UserMemoryUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Update memoria del usuario actual"""
     service = UserMemoryService(db)
@@ -101,8 +101,8 @@ async def update_my_memory(
 @router.post("/events", response_model=UserMemoryEventResponse, status_code=status.HTTP_201_CREATED)
 async def log_memory_event(
     event: UserMemoryEventCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Log un evento de memoria (mensaje enviado, acción tomada, etc.)"""
     service = UserMemoryService(db)
@@ -123,8 +123,8 @@ async def log_memory_event(
 @router.post("/interests/{interest}", response_model=UserMemoryResponse)
 async def add_interest(
     interest: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Agregar un interés a la memoria del usuario"""
     service = UserMemoryService(db)
@@ -162,8 +162,8 @@ async def add_interest(
 @router.post("/challenges/{challenge}", response_model=UserMemoryResponse)
 async def add_challenge(
     challenge: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Agregar un desafío a la memoria del usuario"""
     service = UserMemoryService(db)
@@ -201,8 +201,8 @@ async def add_challenge(
 @router.post("/preferences", response_model=UserPreferenceResponse, status_code=status.HTTP_201_CREATED)
 async def set_preference(
     pref_data: UserPreferenceUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Guardar una preferencia granular del usuario"""
     service = UserMemoryService(db)
@@ -221,8 +221,8 @@ async def set_preference(
 @router.get("/preferences/{preference_key}", response_model=Optional[UserPreferenceResponse])
 async def get_preference(
     preference_key: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Obtener una preferencia granular del usuario"""
     service = UserMemoryService(db)
@@ -243,9 +243,9 @@ async def get_preference(
 
 @router.get("/events", response_model=list[UserMemoryEventResponse])
 async def get_recent_events(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
     limit: int = 50,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
 ):
     """Obtener eventos recientes de la memoria del usuario"""
     service = UserMemoryService(db)

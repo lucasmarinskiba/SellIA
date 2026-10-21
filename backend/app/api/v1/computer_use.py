@@ -7,6 +7,7 @@ para streaming en tiempo real de screenshots y acciones.
 import asyncio
 import json
 import os
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import (
@@ -81,8 +82,8 @@ async def _auth_ws_token(token: str) -> dict | None:
 @router.post("/sessions", response_model=ComputerUseSessionResponse, status_code=status.HTTP_201_CREATED)
 async def create_session(
     data: ComputerUseSessionCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Crea una nueva sesión de Computer Use."""
     if not settings.COMPUTER_USE_ENABLED:
@@ -126,10 +127,10 @@ async def create_session(
 
 @router.get("/sessions", response_model=ComputerUseSessionListResponse)
 async def list_sessions(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
     limit: int = 20,
     offset: int = 0,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
 ):
     """Lista las sesiones de Computer Use del usuario actual."""
     result = await db.execute(
@@ -155,8 +156,8 @@ async def list_sessions(
 @router.get("/sessions/{session_id}", response_model=ComputerUseSessionResponse)
 async def get_session(
     session_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Obtiene detalle de una sesión."""
     session = await _get_session_or_404(db, session_id, current_user.id)
@@ -166,8 +167,8 @@ async def get_session(
 @router.get("/sessions/{session_id}/steps", response_model=list[ComputerUseStepResponse])
 async def list_session_steps(
     session_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Lista los pasos de una sesión."""
     session = await _get_session_or_404(db, session_id, current_user.id)
@@ -183,8 +184,8 @@ async def list_session_steps(
 @router.get("/sessions/{session_id}/messages", response_model=list[ComputerUseMessageResponse])
 async def list_session_messages(
     session_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Lista los mensajes de chat de supervisión de una sesión."""
     session = await _get_session_or_404(db, session_id, current_user.id)
@@ -200,8 +201,8 @@ async def list_session_messages(
 @router.delete("/sessions/{session_id}")
 async def delete_session(
     session_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Elimina una sesión y sus datos asociados."""
     session = await _get_session_or_404(db, session_id, current_user.id)
@@ -219,8 +220,8 @@ async def delete_session(
 @router.post("/sessions/{session_id}/start")
 async def start_session(
     session_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Inicia una sesión de Computer Use (debe conectarse vía WebSocket después)."""
     session = await _get_session_or_404(db, session_id, current_user.id)
@@ -393,8 +394,8 @@ from fastapi.responses import FileResponse
 async def get_screenshot(
     session_id: UUID,
     step_number: int,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Sirve un screenshot de un paso específico."""
     session = await _get_session_or_404(db, session_id, current_user.id)
@@ -412,8 +413,8 @@ async def get_screenshot(
 async def computer_use_websocket(
     websocket: WebSocket,
     session_id: UUID,
-    token: str = Query(...),
-    db: AsyncSession = Depends(get_db),
+    token: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """WebSocket bidireccional para supervisión en tiempo real de Computer Use.
 

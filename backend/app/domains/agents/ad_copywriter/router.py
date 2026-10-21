@@ -1,3 +1,4 @@
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -22,8 +23,8 @@ class AdCampaignCreate(BaseModel):
 @router.post("/campaigns", status_code=status.HTTP_201_CREATED)
 async def create_campaign(
     payload: AdCampaignCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = AdCopywriterService(db)
     try:
@@ -51,10 +52,10 @@ async def create_campaign(
 
 @router.get("/campaigns")
 async def list_campaigns(
-    limit: int = Query(50, ge=1, le=200),
-    offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ):
     service = AdCopywriterService(db)
     result = await service.list_campaigns(
@@ -81,8 +82,8 @@ async def list_campaigns(
 @router.get("/campaigns/{campaign_id}")
 async def get_campaign(
     campaign_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = AdCopywriterService(db)
     data = await service.get_campaign_with_variants(campaign_id, current_user.business_id)
@@ -121,8 +122,8 @@ async def get_campaign(
 async def export_campaign(
     campaign_id: UUID,
     platform: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = AdCopywriterService(db)
     try:

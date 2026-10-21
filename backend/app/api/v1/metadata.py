@@ -4,7 +4,7 @@ Generates dynamic JSON-LD schemas for each entity type.
 """
 
 from datetime import datetime
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
@@ -86,7 +86,7 @@ async def get_software_application_metadata() -> dict[str, Any]:
 @router.get("/business/{business_id}")
 async def get_business_metadata(
     business_id: str,
-    session: AsyncSession = Depends(get_db),
+    session: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """Get Business entity metadata as LocalBusiness schema"""
     try:
@@ -174,7 +174,7 @@ async def get_faq_metadata() -> dict[str, Any]:
 
 @router.get("/breadcrumb")
 async def get_breadcrumb_metadata(
-    path: str = Query(..., description="Current page path"),
+    path: Annotated[str, Query(description="Current page path")],
 ) -> dict[str, Any]:
     """Get BreadcrumbList schema for current page"""
     # Parse path into breadcrumbs
