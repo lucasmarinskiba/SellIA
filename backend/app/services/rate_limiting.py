@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -29,9 +31,9 @@ class RateLimit:
 
     def __post_init__(self):
         if self.minute_reset_at is None:
-            self.minute_reset_at = datetime.utcnow() + timedelta(minutes=1)
+            self.minute_reset_at = utc_now() + timedelta(minutes=1)
         if self.day_reset_at is None:
-            self.day_reset_at = datetime.utcnow() + timedelta(days=1)
+            self.day_reset_at = utc_now() + timedelta(days=1)
 
 
 @dataclass
@@ -81,7 +83,7 @@ class RateLimiter:
             self.limits[user_id] = limit
 
         # Reset counters if windows expired
-        now = datetime.utcnow()
+        now = utc_now()
         if now > limit.minute_reset_at:
             limit.requests_this_minute = 0
             limit.minute_reset_at = now + timedelta(minutes=1)
@@ -180,7 +182,7 @@ class RequestDeduplicator:
         """
 
         signature = self.get_signature(request_id, user_id, endpoint, method, payload)
-        now = datetime.utcnow()
+        now = utc_now()
 
         # Clean up expired signatures
         self._cleanup_expired()
@@ -219,7 +221,7 @@ class RequestDeduplicator:
             payload_hash=hashlib.sha256(
                 __import__("json").dumps(payload, sort_keys=True).encode()
             ).hexdigest(),
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
             response=response,
             response_time_ms=response_time_ms,
         )
@@ -229,7 +231,7 @@ class RequestDeduplicator:
     def _cleanup_expired(self) -> None:
         """Remove expired signatures."""
 
-        now = datetime.utcnow()
+        now = utc_now()
         expired = [
             sig
             for sig, sig_obj in self.signatures.items()
@@ -286,7 +288,7 @@ class CircuitBreaker:
 
         if self.state == self.State.OPEN:
             # Check if timeout expired
-            if datetime.utcnow() - self.last_failure_at > timedelta(seconds=self.timeout_seconds):
+            if utc_now() - self.last_failure_at > timedelta(seconds=self.timeout_seconds):
                 self.state = self.State.HALF_OPEN
                 logger.info(f"CircuitBreaker {self.name}: OPEN → HALF_OPEN")
             else:
@@ -304,7 +306,7 @@ class CircuitBreaker:
         """Handle successful call."""
 
         self.failure_count = 0
-        self.last_success_at = datetime.utcnow()
+        self.last_success_at = utc_now()
 
         if self.state == self.State.HALF_OPEN:
             self.state = self.State.CLOSED
@@ -314,7 +316,7 @@ class CircuitBreaker:
         """Handle failed call."""
 
         self.failure_count += 1
-        self.last_failure_at = datetime.utcnow()
+        self.last_failure_at = utc_now()
 
         if self.failure_count >= self.failure_threshold and self.state != self.State.OPEN:
             self.state = self.State.OPEN

@@ -4,9 +4,10 @@ Orquesta: trending detection → content generation → scheduling → analytics
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Any
 
+from app.core.clock import utc_now
 from app.domains.computer_use.services.content_generator import (
     ContentStyle,
     get_content_generator,
@@ -141,7 +142,7 @@ class GrowthAutomationEngine:
                 },
                 "top_posts": top_posts,
                 "recommendations": recommendations["recommendations"],
-                "next_cycle": (datetime.utcnow() + timedelta(hours=6)).isoformat(),
+                "next_cycle": (utc_now() + timedelta(hours=6)).isoformat(),
             }
 
             self.logger.info(f"Daily growth cycle completed: {len(posts_to_publish)} posts created")

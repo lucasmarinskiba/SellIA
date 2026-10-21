@@ -1,12 +1,12 @@
 """Phase 3 Authority Building endpoints - E-E-A-T signals, testimonials, awards."""
 
-from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import utc_now
 from app.core.database import get_db
 from app.models.authority_building import Award, Review, SellerBio, Testimonial
 
@@ -69,7 +69,7 @@ async def add_award(
         name=name,
         issuer=issuer,
         category=category,
-        awarded_date=datetime.utcnow(),
+        awarded_date=utc_now(),
         is_active=True,
     )
     db.add(award)

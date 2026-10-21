@@ -12,10 +12,11 @@ Integración bidireccional:
 """
 
 import logging
-from datetime import datetime
 from typing import Any
 
 import httpx
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -245,7 +246,7 @@ class FeedIAPartnerIntegration:
                     "status": "success",
                     "post_id": result.get("post_id"),
                     "url": result.get("post_url"),
-                    "published_at": datetime.utcnow().isoformat(),
+                    "published_at": utc_now().isoformat(),
                 }
             else:
                 return {"status": "error"}
@@ -374,7 +375,7 @@ class FeedIAPartnerIntegration:
                 "content_id": content_id,
                 "sale_amount": sale_amount,
                 "product_id": product_id,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": utc_now().isoformat(),
             }
 
             response = await self.http_client.post(

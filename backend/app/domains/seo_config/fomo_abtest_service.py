@@ -1,11 +1,11 @@
 """A/B testing service for FOMO copy variants."""
 
-from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import utc_now
 from app.core.logger import get_logger
 from app.domains.seo_config.fomo_models import ConversionEvent, FOMABTest
 from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO
@@ -108,8 +108,8 @@ class FOMABTestService:
 
         test.winner_variant_id = winner_id
         test.status = "completed"
-        test.winner_announced_at = datetime.utcnow()
-        test.ended_at = datetime.utcnow()
+        test.winner_announced_at = utc_now()
+        test.ended_at = utc_now()
 
         self.db.add(test)
         await self.db.commit()

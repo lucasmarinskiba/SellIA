@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 
+from app.core.clock import utc_now
+
 
 class RiskLevel(str, Enum):
     LOW = "low"
@@ -79,7 +81,7 @@ class DealScorer:
                 "proposal_score": proposal_score,
                 "historical_close_rate": factors.historical_close_rate,
             },
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
         )
 
     def _calculate_engagement_score(self, factors: DealScoreFactors) -> float:

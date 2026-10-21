@@ -1,6 +1,5 @@
 """Voice Sales + Playbook models for Phase 29."""
 
-from datetime import datetime
 from uuid import uuid4
 
 from sqlalchemy import (
@@ -16,6 +15,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
+from app.core.clock import utc_now
 from app.core.database import Base
 
 
@@ -31,7 +31,7 @@ class VoiceCall(Base):
     call_sid = Column(String(255), unique=True)  # Twilio call ID
     script_used = Column(Text)
 
-    started_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    started_at = Column(DateTime, nullable=False, default=utc_now)
     ended_at = Column(DateTime)
     duration_seconds = Column(Integer)
 
@@ -57,7 +57,7 @@ class CallTranscript(Base):
 
     speaker = Column(String(50), nullable=False)  # prospect, ai
     text = Column(Text, nullable=False)
-    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    timestamp = Column(DateTime, default=utc_now, nullable=False)
 
     __table_args__ = (
         Index("idx_call_timestamp", "call_id", "timestamp"),
@@ -98,8 +98,8 @@ class SalesPlaybook(Base):
     steps = Column(JSONB)  # [{step: 1, name: "Opening", script: "..."}]
     extracted_from_calls = Column(Integer)  # How many calls analyzed
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     __table_args__ = (
         Index("idx_industry_stage", "industry", "deal_stage"),
@@ -147,7 +147,7 @@ class SalesRepPerformance(Base):
     calls_with_recommendations = Column(Integer, default=0)
     recommendations_accepted = Column(Integer, default=0)
 
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     __table_args__ = (
         Index("idx_rep_id", "rep_id"),
@@ -164,7 +164,7 @@ class AICallScript(Base):
 
     script_template = Column(Text)  # Base script
     personalization_level = Column(String(50))  # high, medium, low
-    generated_at = Column(DateTime, default=datetime.utcnow)
+    generated_at = Column(DateTime, default=utc_now)
 
     used_in_calls = Column(Integer, default=0)
     call_success_rate = Column(Float)  # % of calls using this script that succeeded
@@ -190,7 +190,7 @@ class MeetingBooking(Base):
     confirmed_at = Column(DateTime)
     attended = Column(Boolean)
 
-    booked_at = Column(DateTime, default=datetime.utcnow)
+    booked_at = Column(DateTime, default=utc_now)
 
     __table_args__ = (
         Index("idx_deal_scheduled", "deal_id", "scheduled_for"),

@@ -11,9 +11,10 @@ Debug toolkit for vision-based automation.
 
 import json
 import logging
-from datetime import datetime
 from pathlib import Path
 from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -266,7 +267,7 @@ class VisionDebugLogger:
     ) -> None:
         """Registra análisis de screenshot."""
         entry = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "step": step,
             "session_id": self.session_id,
             "screenshot_path": screenshot_path,
@@ -291,7 +292,7 @@ class VisionDebugLogger:
     ) -> None:
         """Registra búsqueda de elemento."""
         entry = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "step": step,
             "session_id": self.session_id,
             "event_type": "element_search",
@@ -313,7 +314,7 @@ class VisionDebugLogger:
     ) -> None:
         """Registra ejecución de acción."""
         entry = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "step": step,
             "session_id": self.session_id,
             "event_type": "action_execution",
@@ -334,7 +335,7 @@ class VisionDebugLogger:
     ) -> None:
         """Registra confirmación de acción."""
         entry = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "step": step,
             "session_id": self.session_id,
             "event_type": "confirmation",

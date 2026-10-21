@@ -11,6 +11,8 @@ from datetime import datetime
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from app.core.clock import utc_now
+
 router = APIRouter(prefix="/api/v1/health", tags=["health"])
 logger = logging.getLogger(__name__)
 
@@ -42,28 +44,28 @@ async def health_check():
                 name="autonomous_agent",
                 status="OK",
                 latency_ms=45.2,
-                last_check=datetime.utcnow(),
+                last_check=utc_now(),
                 error_message=None
             ),
             ComponentHealth(
                 name="analytics_dashboard",
                 status="OK",
                 latency_ms=120.5,
-                last_check=datetime.utcnow(),
+                last_check=utc_now(),
                 error_message=None
             ),
             ComponentHealth(
                 name="crm_sync",
                 status="DEGRADED",  # Ej: API lenta
                 latency_ms=2500.0,
-                last_check=datetime.utcnow(),
+                last_check=utc_now(),
                 error_message="Salesforce API latency high (>2s)"
             ),
             ComponentHealth(
                 name="knowledge_engine",
                 status="OK",
                 latency_ms=12.1,
-                last_check=datetime.utcnow(),
+                last_check=utc_now(),
                 error_message=None
             ),
         ]
@@ -102,7 +104,7 @@ async def readiness_check():
 
     return {
         "ready": True,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
         "checks": {
             "knowledge_loaded": True,
             "brain_graph_ready": True,
@@ -118,5 +120,5 @@ async def liveness_check():
 
     return {
         "alive": True,
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": utc_now().isoformat()
     }

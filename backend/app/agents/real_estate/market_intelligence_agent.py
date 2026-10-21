@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -61,7 +63,7 @@ class MarketIntelligenceAgent:
 
         report = MarketReport(
             market_area=location,
-            report_date=datetime.utcnow(),
+            report_date=utc_now(),
             median_price=median_price,
             average_price_per_sqft=avg_price_sqft,
             active_listings=active_listings,
@@ -199,7 +201,7 @@ class MarketIntelligenceAgent:
             self.competitor_tracking[competitor_id] = []
 
         self.competitor_tracking[competitor_id].append({
-            "timestamp": datetime.utcnow(),
+            "timestamp": utc_now(),
             "property_data": property_data,
         })
 

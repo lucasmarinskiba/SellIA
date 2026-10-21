@@ -12,9 +12,10 @@ Soporta:
 import logging
 import os
 from dataclasses import dataclass
-from datetime import datetime
 from enum import Enum
 from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -310,7 +311,7 @@ class SMSService:
             return {
                 "status": "success",
                 "message_id": msg.sid,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": utc_now().isoformat(),
             }
 
         except Exception as e:
@@ -341,7 +342,7 @@ class SMSService:
             return {
                 "status": "success",
                 "message_id": response.get("MessageId"),
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": utc_now().isoformat(),
             }
 
         except Exception as e:

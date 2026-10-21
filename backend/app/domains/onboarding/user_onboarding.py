@@ -6,6 +6,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -28,7 +30,7 @@ class UserOnboardingSession:
     campaign_created: bool = False
     first_leads_generated: bool = False
     estimated_monthly_leads: int = 0
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utc_now)
     completed_at: datetime | None = None
 
 
@@ -64,7 +66,7 @@ class OnboardingEngine:
 
     def create_session(self, user_id: str) -> UserOnboardingSession:
         """Create onboarding session"""
-        session_id = f"onb_{user_id}_{datetime.utcnow().timestamp()}"
+        session_id = f"onb_{user_id}_{utc_now().timestamp()}"
         return UserOnboardingSession(user_id=user_id, session_id=session_id)
 
     def get_step_content(self, step: OnboardingStep) -> dict[str, Any]:
@@ -156,7 +158,7 @@ class OnboardingEngine:
         """Complete onboarding"""
 
         session.current_step = OnboardingStep.COMPLETE
-        session.completed_at = datetime.utcnow()
+        session.completed_at = utc_now()
 
         return {
             "status": "success",

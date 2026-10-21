@@ -3,10 +3,12 @@ Analytics & Monitoring API v1 — Phase 5
 Real-time dashboards, conversion funnels, A/B testing, anomaly detection
 """
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Any
 
 from fastapi import APIRouter, Query
+
+from app.core.clock import utc_now
 
 router = APIRouter(tags=["analytics"])
 
@@ -26,11 +28,11 @@ async def track_event(
     """
     return {
         "status": "tracked",
-        "event_id": f"evt_{datetime.utcnow().timestamp()}",
+        "event_id": f"evt_{utc_now().timestamp()}",
         "event": event_name,
         "user_id": user_id or "anonymous",
         "page": page,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
         "metadata": {
             "tracked_properties": len(properties or {}),
             "data_warehouse": "clickhouse-ready",
@@ -151,7 +153,7 @@ async def get_conversion_funnel(
         "@type": "Dataset",
         "name": funnel["name"],
         "description": f"Conversion funnel data for last {days} days",
-        "dateModified": datetime.utcnow().isoformat(),
+        "dateModified": utc_now().isoformat(),
         "funnel": funnel_name,
         "time_period_days": days,
         "stages": funnel["stages"],
@@ -174,7 +176,7 @@ async def get_active_ab_tests() -> dict[str, Any]:
         "@context": "https://schema.org",
         "@type": "Dataset",
         "name": "Active A/B Tests",
-        "dateModified": datetime.utcnow().isoformat(),
+        "dateModified": utc_now().isoformat(),
         "tests": [
             {
                 "id": "test-cta-color",
@@ -240,12 +242,12 @@ async def create_ab_test(
     """Create new A/B test"""
     return {
         "status": "created",
-        "test_id": f"test_{datetime.utcnow().timestamp()}",
+        "test_id": f"test_{utc_now().timestamp()}",
         "name": test_name,
         "control": control_url,
         "variant": variant_url,
         "traffic_split_percent": traffic_split,
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": utc_now().isoformat(),
         "expected_duration_days": 14,
     }
 
@@ -257,7 +259,7 @@ async def detect_seo_anomalies() -> dict[str, Any]:
         "@context": "https://schema.org",
         "@type": "Dataset",
         "name": "SEO Anomaly Detection",
-        "dateModified": datetime.utcnow().isoformat(),
+        "dateModified": utc_now().isoformat(),
         "anomalies": [
             {
                 "type": "indexing_drop",
@@ -266,7 +268,7 @@ async def detect_seo_anomalies() -> dict[str, Any]:
                 "description": "2 URLs lost Google index status in last 24h",
                 "affected_urls": ["/api/endpoint-1", "/old-page"],
                 "recommended_action": "Check robots.txt, resubmit sitemap",
-                "timestamp": (datetime.utcnow() - timedelta(hours=3)).isoformat(),
+                "timestamp": (utc_now() - timedelta(hours=3)).isoformat(),
             },
             {
                 "type": "traffic_spike",
@@ -275,7 +277,7 @@ async def detect_seo_anomalies() -> dict[str, Any]:
                 "description": "Traffic surge from 'sales automation' keywords",
                 "data": {"current": 1245, "previous": 860, "lift_percent": 45},
                 "recommended_action": "Analyze keyword rankings, update content",
-                "timestamp": (datetime.utcnow() - timedelta(hours=1)).isoformat(),
+                "timestamp": (utc_now() - timedelta(hours=1)).isoformat(),
             },
             {
                 "type": "ranking_movement",
@@ -291,7 +293,7 @@ async def detect_seo_anomalies() -> dict[str, Any]:
                     },
                 ],
                 "recommended_action": "Content update, backlink building",
-                "timestamp": (datetime.utcnow() - timedelta(hours=6)).isoformat(),
+                "timestamp": (utc_now() - timedelta(hours=6)).isoformat(),
             },
         ],
         "summary": {
@@ -310,7 +312,7 @@ async def get_core_web_vitals() -> dict[str, Any]:
         "@context": "https://schema.org",
         "@type": "Dataset",
         "name": "Core Web Vitals",
-        "dateModified": datetime.utcnow().isoformat(),
+        "dateModified": utc_now().isoformat(),
         "metrics": {
             "LCP": {
                 "name": "Largest Contentful Paint",
@@ -335,7 +337,7 @@ async def get_core_web_vitals() -> dict[str, Any]:
             },
         },
         "overall_status": "good",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     }
 
 
@@ -386,7 +388,7 @@ async def get_seo_dashboard() -> dict[str, Any]:
         "@context": "https://schema.org",
         "@type": "Dataset",
         "name": "SEO Metrics Dashboard",
-        "dateModified": datetime.utcnow().isoformat(),
+        "dateModified": utc_now().isoformat(),
         "metrics": {
             "organic_traffic": {
                 "value": 2847,
@@ -448,7 +450,7 @@ async def get_marketing_dashboard() -> dict[str, Any]:
         "@context": "https://schema.org",
         "@type": "Dataset",
         "name": "Marketing Metrics Dashboard",
-        "dateModified": datetime.utcnow().isoformat(),
+        "dateModified": utc_now().isoformat(),
         "metrics": {
             "total_visits": {
                 "value": 15234,

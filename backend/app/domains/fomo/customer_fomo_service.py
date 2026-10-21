@@ -2,10 +2,10 @@
 
 import json
 import uuid
-from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
+from app.core.clock import utc_now
 from app.domains.fomo.customer_fomo_models import (
     AutomationType,
     CampaignType,
@@ -255,7 +255,7 @@ class CustomerFOMOCampaignService:
             "expected_conversion_lift": f"{template.expected_conversion_lift * 100:.0f}%",
             "setup_time_minutes": template.setup_time_minutes,
             "status": "draft",
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": utc_now().isoformat(),
         }
 
     @staticmethod
@@ -282,7 +282,7 @@ class CustomerFOMOCampaignService:
         return {
             "campaign_id": campaign_id,
             "status": "active",
-            "activated_at": datetime.utcnow().isoformat(),
+            "activated_at": utc_now().isoformat(),
             "tracking_enabled": True,
             "widgets_active": 3,
             "automations_active": 2,
@@ -433,7 +433,7 @@ class CustomerFOMOCampaignService:
         elif format == "json":
             return json.dumps({
                 "campaign_id": campaign_id,
-                "export_date": datetime.utcnow().isoformat(),
+                "export_date": utc_now().isoformat(),
                 "data": []
             })
         else:

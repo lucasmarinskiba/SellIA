@@ -6,6 +6,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -88,7 +90,7 @@ class EscalationQueue:
             priority=priority,
             deal_size=deal_size,
             agent_notes=agent_notes,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
 
         self.tickets[ticket_id] = ticket
@@ -149,7 +151,7 @@ class EscalationQueue:
 
         ticket = self.tickets[ticket_id]
         ticket.status = "resolved"
-        ticket.resolved_at = datetime.utcnow()
+        ticket.resolved_at = utc_now()
         ticket.resolution_notes = resolution_notes
 
         # Update rep load
@@ -174,7 +176,7 @@ class EscalationQueue:
             if ticket.status == "resolved":
                 continue
 
-            age_hours = (datetime.utcnow() - ticket.created_at).total_seconds() / 3600
+            age_hours = (utc_now() - ticket.created_at).total_seconds() / 3600
             sla_hours = sla_targets[ticket.priority]
 
             if age_hours > sla_hours:

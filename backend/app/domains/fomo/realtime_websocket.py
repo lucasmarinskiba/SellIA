@@ -1,9 +1,10 @@
 """Real-time WebSocket Manager - Live FOMO widget updates"""
 
 import asyncio
-from datetime import datetime
 from enum import Enum
 from typing import Any
+
+from app.core.clock import utc_now
 
 
 class WebSocketEventType(str, Enum):
@@ -99,11 +100,11 @@ class RealtimeDataStreamer:
         return {
             "type": WebSocketEventType.VISITOR_COUNT_UPDATED.value,
             "campaign_id": campaign_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "data": {
                 "visitor_count": visitor_count,
                 "trend": trend,
-                "updated_at": datetime.utcnow().isoformat(),
+                "updated_at": utc_now().isoformat(),
             }
         }
 
@@ -119,7 +120,7 @@ class RealtimeDataStreamer:
         return {
             "type": WebSocketEventType.PURCHASE_NOTIFICATION.value,
             "campaign_id": campaign_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "data": {
                 "customer_name": customer_name,
                 "product_name": product_name,
@@ -143,7 +144,7 @@ class RealtimeDataStreamer:
         return {
             "type": WebSocketEventType.COUNTDOWN_TICK.value,
             "campaign_id": campaign_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "data": {
                 "time_remaining_seconds": time_remaining_seconds,
                 "time_display": f"{hours}h {minutes}m {seconds}s",
@@ -165,7 +166,7 @@ class RealtimeDataStreamer:
         return {
             "type": WebSocketEventType.STOCK_UPDATED.value,
             "campaign_id": campaign_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "data": {
                 "current_stock": current_stock,
                 "original_stock": original_stock,
@@ -189,12 +190,12 @@ class RealtimeDataStreamer:
         return {
             "type": WebSocketEventType.CONVERSION_MILESTONE.value,
             "campaign_id": campaign_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "data": {
                 "milestone_conversions": milestone_number,
                 "total_revenue": total_revenue,
                 "message": f"🎉 {milestone_number} conversions reached!",
-                "milestone_reached_at": datetime.utcnow().isoformat(),
+                "milestone_reached_at": utc_now().isoformat(),
             }
         }
 
@@ -207,7 +208,7 @@ class RealtimeDataStreamer:
         return {
             "type": WebSocketEventType.ANALYTICS_SYNC.value,
             "campaign_id": campaign_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "data": {
                 "impressions": analytics_snapshot.get("impressions", 0),
                 "clicks": analytics_snapshot.get("clicks", 0),
@@ -240,7 +241,7 @@ class RealtimeMetricsAggregator:
             "conversion_rate": conversions / clicks if clicks > 0 else 0,
             "aov": revenue / conversions if conversions > 0 else 0,
             "revenue_per_impression": revenue / impressions if impressions > 0 else 0,
-            "updated_at": datetime.utcnow().isoformat(),
+            "updated_at": utc_now().isoformat(),
         }
 
     @staticmethod
@@ -271,7 +272,7 @@ class RealtimeMetricsAggregator:
         return {
             "type": "dashboard_update",
             "campaign_id": campaign_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "current_hour": current_hour_metrics,
             "top_3_products": top_products[:3],
             "top_3_locations": top_locations[:3],
@@ -298,7 +299,7 @@ class WebSocketHeartbeat:
         heartbeat = {
             "type": "heartbeat",
             "campaign_id": campaign_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "connection_duration_seconds": connection_duration_seconds,
             "status": "alive"
         }
@@ -314,10 +315,10 @@ class WebSocketHeartbeat:
         interval_seconds: int = 30
     ):
         """Start periodic heartbeat"""
-        start_time = datetime.utcnow()
+        start_time = utc_now()
         while True:
             try:
-                duration = (datetime.utcnow() - start_time).total_seconds()
+                duration = (utc_now() - start_time).total_seconds()
                 await WebSocketHeartbeat.send_heartbeat(
                     connection,
                     campaign_id,

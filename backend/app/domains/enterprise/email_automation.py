@@ -8,6 +8,7 @@ from typing import Any
 import numpy as np
 from sqlalchemy.orm import Session
 
+from app.core.clock import utc_now
 from app.models.email_automation import (
     EmailOpenTracking,
     ProposalDraft,
@@ -68,7 +69,7 @@ class SendTimeOptimizer:
         """Predict optimal send time for email."""
 
         # Generate candidate times (next 72 hours, hourly)
-        now = datetime.utcnow()
+        now = utc_now()
         candidates = [now + timedelta(hours=i) for i in range(1, 73)]
 
         # Extract features for each candidate time
@@ -202,7 +203,7 @@ class ProposalGenerator:
             prompt = self._build_proposal_prompt(deal, options or {})
 
             # Call Claude
-            start_time = datetime.utcnow()
+            start_time = utc_now()
             message = self.claude.messages.create(
                 model="claude-opus",
                 max_tokens=3000,
@@ -213,7 +214,7 @@ class ProposalGenerator:
                     }
                 ]
             )
-            generation_time = (datetime.utcnow() - start_time).total_seconds()
+            generation_time = (utc_now() - start_time).total_seconds()
 
             proposal_html = message.content[0].text
 
@@ -223,7 +224,7 @@ class ProposalGenerator:
                 html_content=proposal_html,
                 word_count=len(proposal_html.split()),
                 generation_method="claude_opus",
-                generated_at=datetime.utcnow(),
+                generated_at=utc_now(),
             )
             self.db.add(draft)
             self.db.commit()
@@ -290,7 +291,7 @@ class ProposalGenerator:
             html_content=template_html,
             word_count=20,
             generation_method="template",
-            generated_at=datetime.utcnow(),
+            generated_at=utc_now(),
         )
         self.db.add(draft)
         self.db.commit()
@@ -311,7 +312,7 @@ class ProposalGenerator:
         view = ProposalView(
             draft_id=draft_id,
             viewed_by=viewed_by,
-            viewed_at=datetime.utcnow(),
+            viewed_at=utc_now(),
             duration_seconds=duration_seconds,
         )
         self.db.add(view)

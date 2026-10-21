@@ -10,9 +10,10 @@ Analyzes incoming comments to understand:
 """
 
 import logging
-from datetime import datetime
 from enum import Enum
 from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -453,7 +454,7 @@ class CommentAnalyzer:
         )
 
         return {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "comment_text": comment_text[:500],  # Truncate for summary
             "sentiment": sentiment,
             "intent": intent,

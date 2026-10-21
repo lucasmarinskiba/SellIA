@@ -21,9 +21,10 @@ import hashlib
 import logging
 import os
 import re
-from datetime import datetime
 from enum import Enum
 from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -214,7 +215,7 @@ class ComplianceChecker:
                 "risk_score": risk_score,
                 "risk_level": risk_level.value,
                 "flags": flags,
-                "timestamp": datetime.utcnow(),
+                "timestamp": utc_now(),
             }
 
         except Exception as e:
@@ -280,7 +281,7 @@ class ComplianceChecker:
         """
         try:
             event_id = hashlib.sha256(
-                f"{customer_email}{transaction_id}{datetime.utcnow().isoformat()}".encode()
+                f"{customer_email}{transaction_id}{utc_now().isoformat()}".encode()
             ).hexdigest()[:16]
 
             logger.log(
@@ -297,7 +298,7 @@ class ComplianceChecker:
                 "event_id": event_id,
                 "event_type": event_type,
                 "severity": severity,
-                "timestamp": datetime.utcnow(),
+                "timestamp": utc_now(),
             }
 
         except Exception as e:
@@ -416,7 +417,7 @@ class PciDssCompliance:
             "status": "compliant" if critical_issues == 0 else "non_compliant",
             "checks": checks,
             "critical_issues": critical_issues,
-            "last_audit": datetime.utcnow(),
+            "last_audit": utc_now(),
         }
 
     @staticmethod

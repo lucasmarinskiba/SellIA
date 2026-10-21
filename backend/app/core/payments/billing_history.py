@@ -19,6 +19,8 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -82,7 +84,7 @@ class BillingHistoryManager:
             # Create billing record
             # Note: Using JSON column to store flexible metadata
             record_data = {
-                "id": f"billing_{order_id}_{datetime.utcnow().timestamp()}",
+                "id": f"billing_{order_id}_{utc_now().timestamp()}",
                 "account_id": account_id,
                 "order_id": order_id,
                 "transaction_type": transaction_type,
@@ -91,7 +93,7 @@ class BillingHistoryManager:
                 "provider": provider,
                 "description": description,
                 "metadata": metadata or {},
-                "created_at": datetime.utcnow().isoformat(),
+                "created_at": utc_now().isoformat(),
             }
 
             logger.info(
@@ -106,7 +108,7 @@ class BillingHistoryManager:
                 "order_id": order_id,
                 "transaction_type": transaction_type,
                 "amount": amount_usd,
-                "timestamp": datetime.utcnow(),
+                "timestamp": utc_now(),
             }
 
         except Exception as e:
@@ -143,7 +145,7 @@ class BillingHistoryManager:
                 Payment,  # NOTE: same unreachable-package issue as Account above
             )
 
-            as_of = as_of_date or datetime.utcnow()
+            as_of = as_of_date or utc_now()
 
             # Query payments for account
             payments = db.query(Payment).filter(
@@ -316,7 +318,7 @@ class BillingHistoryManager:
         """
         try:
             summaries = []
-            end_date = datetime.utcnow().replace(day=1)
+            end_date = utc_now().replace(day=1)
 
             for i in range(months):
                 # Move back one month

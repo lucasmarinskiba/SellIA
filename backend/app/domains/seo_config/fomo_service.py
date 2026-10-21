@@ -1,12 +1,13 @@
 """FOMO testing, preview, and conversion tracking service."""
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from uuid import UUID
 
 from sqlalchemy import desc, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import utc_now
 from app.core.logger import get_logger
 from app.domains.seo_config.analytics_models import PublicationLinkMetrics
 from app.domains.seo_config.fomo_models import ConversionEvent
@@ -80,7 +81,7 @@ class FOMAConversionService:
         hours_back: int = 24,
     ) -> list[ConversionEvent]:
         """Get recent conversions for ticker."""
-        cutoff = datetime.utcnow() - timedelta(hours=hours_back)
+        cutoff = utc_now() - timedelta(hours=hours_back)
 
         result = await self.db.execute(
             select(ConversionEvent)

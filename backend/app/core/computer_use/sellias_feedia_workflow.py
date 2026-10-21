@@ -11,8 +11,9 @@ Flujo:
 """
 
 import logging
-from datetime import datetime
 from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ class SellIAFeedIAWorkflow:
             "account_id": account_id,
             "platforms": platforms,
             "steps": [],
-            "started_at": datetime.utcnow().isoformat(),
+            "started_at": utc_now().isoformat(),
         }
 
         try:
@@ -79,7 +80,7 @@ class SellIAFeedIAWorkflow:
             workflow_result["steps"].append({"step": 4, "action": "publish_content", "status": publish_result["status"]})
 
             workflow_result["status"] = "success"
-            workflow_result["completed_at"] = datetime.utcnow().isoformat()
+            workflow_result["completed_at"] = utc_now().isoformat()
 
             return workflow_result
 

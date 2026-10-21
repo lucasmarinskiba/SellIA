@@ -3,11 +3,11 @@
 import json
 import logging
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Any
 
 from sqlalchemy.orm import Session
 
+from app.core.clock import utc_now
 from app.models.voice_sales import (
     CallTranscript,
     MeetingBooking,
@@ -93,7 +93,7 @@ class VoiceCallManager:
                 deal_id=deal_id,
                 call_sid=call_sid,
                 script_used=script,
-                started_at=datetime.utcnow(),
+                started_at=utc_now(),
                 status="initiated",
             )
             self.db.add(voice_call)
@@ -161,7 +161,7 @@ class VoiceCallManager:
                 call_id=call_id,
                 speaker="prospect",
                 text=input_text,
-                timestamp=datetime.utcnow(),
+                timestamp=utc_now(),
             )
             self.db.add(prospect_turn)
 
@@ -169,7 +169,7 @@ class VoiceCallManager:
                 call_id=call_id,
                 speaker="ai",
                 text=response_text,
-                timestamp=datetime.utcnow(),
+                timestamp=utc_now(),
             )
             self.db.add(ai_turn)
             self.db.commit()
@@ -199,7 +199,7 @@ class VoiceCallManager:
             analysis = self._analyze_call(full_transcript)
 
             # 3. Update call record
-            call.ended_at = datetime.utcnow()
+            call.ended_at = utc_now()
             call.transcript = full_transcript
             call.outcome = outcome  # or analysis["decision"]
             call.status = "completed"
@@ -401,11 +401,11 @@ class PlaybookExtractor:
 
         try:
             playbook = SalesPlaybook(
-                name=f"Extracted Playbook {datetime.utcnow().timestamp()}",
+                name=f"Extracted Playbook {utc_now().timestamp()}",
                 win_rate=0.75,  # Placeholder
                 usage_count=0,
                 extracted_from_calls=len(cluster),
-                created_at=datetime.utcnow(),
+                created_at=utc_now(),
             )
 
             return playbook

@@ -13,11 +13,11 @@ Pipeline:
 
 import logging
 import uuid
-from datetime import datetime
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import utc_now
 from app.domains.computer_use.services.audit_log_service import (
     AuditLogEntry,
     AuditLogService,
@@ -176,7 +176,7 @@ class SalesCloserService:
 
         Retorna: (confirmation_message, order_reference)
         """
-        order_reference = f"ORD-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
+        order_reference = f"ORD-{utc_now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
 
         confirmation = f"""
 🎉 ¡VENTA CERRADA! 🎉

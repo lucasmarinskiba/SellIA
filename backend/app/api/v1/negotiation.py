@@ -4,11 +4,11 @@ Dynamic pricing, contract optimization, strategy selection
 """
 
 import logging
-from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 
+from app.core.clock import utc_now
 from app.domains.agents.negotiation_engine import (
     CompanySize,
     NegotiationEngine,
@@ -57,7 +57,7 @@ async def calculate_dynamic_pricing(
     return {
         "status": "success",
         "pricing": pricing,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
         "@context": "https://schema.org",
         "@type": "PriceSpecification",
     }
@@ -96,7 +96,7 @@ async def generate_pricing_tiers(
             }
             for tier in tiers
         ],
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     }
 
 
@@ -149,7 +149,7 @@ async def optimize_contract_terms(
             "training_hours_included": terms.training_hours_included,
             "legal_review_needed": terms.legal_review_needed,
         },
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     }
 
 
@@ -189,7 +189,7 @@ async def select_negotiation_strategy(
         "status": "success",
         "strategy": strategy.value,
         "playbook": playbook,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     }
 
 
@@ -218,7 +218,7 @@ async def get_discount_authority(
             "expansion_potential_multiplier": authority.expansion_potential_multiplier,
             "legal_review_threshold_percent": authority.legal_review_threshold * 100,
         },
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     }
 
 
@@ -258,7 +258,7 @@ async def get_crm_leads(
             "status": "success",
             "lead_count": len(leads),
             "leads": [lead.dict() for lead in leads],
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
     except Exception as e:
@@ -279,7 +279,7 @@ async def get_crm_lead(lead_id: str) -> dict[str, Any]:
         return {
             "status": "success",
             "lead": lead.dict(),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
     except HTTPException:
@@ -403,7 +403,7 @@ async def route_lead_with_negotiation(
                 },
                 "playbook": playbook,
             },
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
     except HTTPException:

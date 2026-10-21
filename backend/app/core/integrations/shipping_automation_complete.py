@@ -13,11 +13,13 @@ Soporta:
 import logging
 import os
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import timedelta
 from enum import Enum
 from typing import Any
 
 import httpx
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +88,7 @@ class DHLIntegration:
 
         try:
             payload = {
-                "plannedShippingDateAndTime": datetime.utcnow().isoformat(),
+                "plannedShippingDateAndTime": utc_now().isoformat(),
                 "pickup": {
                     "postalAddress": {
                         "postalCode": sender.get("postal_code"),
@@ -145,7 +147,7 @@ class DHLIntegration:
 
             # Estimar delivery
             est_days = 3 if service == ShippingService.OVERNIGHT else 5
-            estimated_delivery = (datetime.utcnow() + timedelta(days=est_days)).strftime("%Y-%m-%d")
+            estimated_delivery = (utc_now() + timedelta(days=est_days)).strftime("%Y-%m-%d")
 
             return {
                 "status": "success",
@@ -276,7 +278,7 @@ class FedExIntegration:
             ][0]["url"]
 
             est_days = 1 if service == ShippingService.OVERNIGHT else 2
-            estimated_delivery = (datetime.utcnow() + timedelta(days=est_days)).strftime("%Y-%m-%d")
+            estimated_delivery = (utc_now() + timedelta(days=est_days)).strftime("%Y-%m-%d")
 
             return {
                 "status": "success",
@@ -412,11 +414,11 @@ class ShippingAutomationComplete:
         # Correo Argentino: https://api.correoargentino.com.ar
 
         est_days = 5 if service == ShippingService.STANDARD else 2
-        estimated_delivery = (datetime.utcnow() + timedelta(days=est_days)).strftime("%Y-%m-%d")
+        estimated_delivery = (utc_now() + timedelta(days=est_days)).strftime("%Y-%m-%d")
 
         return {
             "status": "success",
-            "tracking_number": f"{carrier.value.upper()}-{order_id}-{int(datetime.utcnow().timestamp())}",
+            "tracking_number": f"{carrier.value.upper()}-{order_id}-{int(utc_now().timestamp())}",
             "label_url": "https://...",
             "carrier": carrier.value,
             "estimated_delivery": estimated_delivery,
@@ -462,7 +464,7 @@ class ShippingAutomationComplete:
                 "tracking_number": tracking_number,
                 "current_status": "In transit",
                 "location": "Argentina",
-                "last_update": datetime.utcnow().isoformat(),
+                "last_update": utc_now().isoformat(),
             }
 
         except Exception as e:

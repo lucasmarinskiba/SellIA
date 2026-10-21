@@ -27,6 +27,8 @@ from enum import Enum
 from random import choice
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -71,8 +73,8 @@ class Variant:
     humanness_score: float = 0.5  # 0-1, from user perception
 
     # Metadata
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    updated_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utc_now)
+    updated_at: datetime = field(default_factory=utc_now)
 
     def get_metrics(self) -> dict[str, float]:
         """Calculate engagement metrics"""
@@ -240,7 +242,7 @@ class ABTestingEngine:
         Returns:
             ABTest instance
         """
-        test_id = f"test_{test_name.lower().replace(' ', '_')}_{int(datetime.utcnow().timestamp())}"
+        test_id = f"test_{test_name.lower().replace(' ', '_')}_{int(utc_now().timestamp())}"
 
         # Create control variant
         control = Variant(
@@ -274,7 +276,7 @@ class ABTestingEngine:
             description=f"Testing {test_type.value} variations",
             control_variant=control,
             duration_days=duration_days,
-            started_at=datetime.utcnow(),
+            started_at=utc_now(),
         )
 
         for variant in treatment_variants:
@@ -361,7 +363,7 @@ class ABTestingEngine:
         elif event_type == "converted":
             variant.conversion_count += 1
 
-        variant.updated_at = datetime.utcnow()
+        variant.updated_at = utc_now()
         return True
 
     def record_humanness_feedback(

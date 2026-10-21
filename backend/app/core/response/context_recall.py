@@ -16,6 +16,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 
 class Intent(str, Enum):
     """User intent types"""
@@ -193,7 +195,7 @@ class ConversationMemory:
         intent = IntentDetector.detect(user_message)
 
         turn = ConversationTurn(
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             user_message=user_message,
             bot_response=bot_response,
             user_sentiment=sentiment,
@@ -218,7 +220,7 @@ class ConversationMemory:
 
         profile = self.user_profiles[user_id]
         profile.conversation_count += 1
-        profile.last_interaction = datetime.utcnow()
+        profile.last_interaction = utc_now()
 
         # Track preferences
         if "sentiments" not in profile.preferences:

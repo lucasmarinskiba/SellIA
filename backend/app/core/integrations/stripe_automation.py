@@ -15,6 +15,8 @@ from typing import Any
 
 import stripe
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -235,7 +237,6 @@ class StripeAutomation:
 
         # P1: Guardar payment en DB real
         try:
-            from datetime import datetime
 
             from app.core.database import AsyncSessionLocal
             from app.core.database.payment_models import Payment
@@ -252,7 +253,7 @@ class StripeAutomation:
                     stripe_payment_intent_id=payment_intent["id"],
                     stripe_charge_id=payment_intent.get("charges", {}).get("data", [{}])[0].get("id"),
                     receipt_url=payment_intent.get("receipt_email"),
-                    completed_at=datetime.utcnow(),
+                    completed_at=utc_now(),
                 )
                 db.add(payment)
                 await db.commit()

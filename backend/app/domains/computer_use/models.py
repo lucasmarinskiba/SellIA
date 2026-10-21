@@ -5,12 +5,12 @@ controla un navegador web y el usuario supervisa en tiempo real.
 """
 
 import uuid
-from datetime import datetime
 
 from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
+from app.core.clock import utc_now
 from app.core.database import Base
 
 
@@ -39,8 +39,8 @@ class ComputerUseSession(Base):
 
     started_at = Column(DateTime(timezone=True), nullable=True)
     completed_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
     user = relationship("User", backref="computer_use_sessions")
     business = relationship("Business", backref="computer_use_sessions")
@@ -81,7 +81,7 @@ class ComputerUseStep(Base):
     execution_result = Column(Text, nullable=True)  # "success" o mensaje de error
     execution_ms = Column(Integer, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
 
 
 class ComputerUseMessage(Base):
@@ -96,4 +96,4 @@ class ComputerUseMessage(Base):
         nullable=False,
     )
     content = Column(Text, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)

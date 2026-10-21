@@ -23,11 +23,12 @@ Polling fallback: If webhook fails, use polling every 30 seconds
 """
 
 import logging
-from datetime import datetime
 from enum import Enum
 from typing import Any
 
 import httpx
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -519,7 +520,7 @@ class TelegramAutomation:
             chat_id,
             "Order Update",
             f"Order #{order_id} status: {status}",
-            {"Time": datetime.utcnow().isoformat()},
+            {"Time": utc_now().isoformat()},
         )
 
     async def send_payment_notification(

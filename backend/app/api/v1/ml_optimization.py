@@ -3,10 +3,12 @@ ML Optimization & Automation API v1 — Phase 6
 Predictive analytics, content optimization, automated improvements, revenue attribution
 """
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Any
 
 from fastapi import APIRouter, Query
+
+from app.core.clock import utc_now
 
 router = APIRouter(tags=["ml-optimization"])
 
@@ -27,7 +29,7 @@ async def predict_organic_traffic(
         "forecast_days": days_ahead,
         "predictions": [
             {
-                "date": (datetime.utcnow() + timedelta(days=i)).isoformat(),
+                "date": (utc_now() + timedelta(days=i)).isoformat(),
                 "predicted_traffic": 2847 + (i * 12) + (i % 7) * 15,
                 "confidence_interval": {
                     "lower": 2500 + (i * 10),
@@ -54,7 +56,7 @@ async def get_content_recommendations(
         "@type": "Dataset",
         "name": "Content Optimization Recommendations",
         "page": page_id or "all",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
         "recommendations": [
             {
                 "id": "rec-word-count",
@@ -112,7 +114,7 @@ async def optimize_page(
     return {
         "status": "optimization_queued",
         "page_id": page_id,
-        "optimization_id": f"opt_{datetime.utcnow().timestamp()}",
+        "optimization_id": f"opt_{utc_now().timestamp()}",
         "estimated_duration_minutes": 15,
         "recommendations_generated": 8,
         "next_steps": [
@@ -257,9 +259,9 @@ async def trigger_automated_improvement(
     return {
         "status": "improvement_scheduled",
         "improvement_type": improvement_type,
-        "improvement_id": f"imp_{datetime.utcnow().timestamp()}",
+        "improvement_id": f"imp_{utc_now().timestamp()}",
         "details": improvement,
-        "start_time": datetime.utcnow().isoformat(),
+        "start_time": utc_now().isoformat(),
         "estimated_completion_hours": 24,
     }
 
@@ -271,22 +273,22 @@ async def get_learning_status() -> dict[str, Any]:
         "@context": "https://schema.org",
         "@type": "Dataset",
         "name": "ML Continuous Learning Status",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
         "model_updates": {
             "traffic_model": {
-                "last_trained": (datetime.utcnow() - timedelta(hours=2)).isoformat(),
+                "last_trained": (utc_now() - timedelta(hours=2)).isoformat(),
                 "accuracy": 0.94,
                 "data_points": 2847,
                 "training_time_minutes": 8,
             },
             "ranking_model": {
-                "last_trained": (datetime.utcnow() - timedelta(hours=4)).isoformat(),
+                "last_trained": (utc_now() - timedelta(hours=4)).isoformat(),
                 "accuracy": 0.87,
                 "data_points": 1247,
                 "training_time_minutes": 12,
             },
             "content_model": {
-                "last_trained": (datetime.utcnow() - timedelta(hours=6)).isoformat(),
+                "last_trained": (utc_now() - timedelta(hours=6)).isoformat(),
                 "accuracy": 0.91,
                 "data_points": 3456,
                 "training_time_minutes": 15,
@@ -294,7 +296,7 @@ async def get_learning_status() -> dict[str, Any]:
         },
         "learning_schedule": {
             "frequency": "daily",
-            "next_update": (datetime.utcnow() + timedelta(hours=18)).isoformat(),
+            "next_update": (utc_now() + timedelta(hours=18)).isoformat(),
             "models_training": 3,
         },
         "feature_importance": {
@@ -322,7 +324,7 @@ async def get_optimization_roadmap() -> dict[str, Any]:
         "@context": "https://schema.org",
         "@type": "Dataset",
         "name": "90-Day SEO Optimization Roadmap",
-        "generated_at": datetime.utcnow().isoformat(),
+        "generated_at": utc_now().isoformat(),
         "roadmap": [
             {
                 "week": "1-2",

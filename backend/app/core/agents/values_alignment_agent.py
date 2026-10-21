@@ -10,9 +10,10 @@ Workflow:
 """
 
 import logging
-from datetime import datetime
 from enum import Enum
 from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -161,7 +162,7 @@ class ValuesAlignmentAgent:
             "secondary_values": secondary_values,
             "confidence": value_confidence,
             "extracted_from": extraction_sources,
-            "extraction_timestamp": datetime.utcnow().isoformat(),
+            "extraction_timestamp": utc_now().isoformat(),
         }
 
     @staticmethod
@@ -399,7 +400,7 @@ class ValuesAlignmentAgent:
 
         learning_record = {
             "recommendation_id": recommendation_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "predicted_alignment": 0,
             "actual_satisfaction": actual_satisfaction,
             "actual_alignment": actual_value_alignment,
@@ -465,5 +466,5 @@ class ValuesAlignmentAgent:
             "conflicted": sum(1 for r in scored_recommendations if r["alignment"]["alignment_score"] < 60),
             "ranked_by_alignment": scored_recommendations,
             "recommendation": "Prioritize fully aligned recommendations",
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
         }

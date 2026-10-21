@@ -19,6 +19,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
+from app.core.clock import utc_now
+
 # ─────────────────────────────────────────────────────────────────────────
 # PREDICTIVE ANALYTICS CAPABILITY
 # ─────────────────────────────────────────────────────────────────────────
@@ -35,7 +37,7 @@ class ForecastResult:
 
     def __post_init__(self):
         if not self.timestamp:
-            self.timestamp = datetime.utcnow().isoformat()
+            self.timestamp = utc_now().isoformat()
 
 
 class DemandForecastingCapability:
@@ -316,7 +318,7 @@ class LearningEvent:
 
     def __post_init__(self):
         if not self.timestamp:
-            self.timestamp = datetime.utcnow().isoformat()
+            self.timestamp = utc_now().isoformat()
 
 
 class SelfLearningCapability:
@@ -416,7 +418,7 @@ class Anomaly:
 
     def __post_init__(self):
         if not self.timestamp:
-            self.timestamp = datetime.utcnow().isoformat()
+            self.timestamp = utc_now().isoformat()
 
 
 class FraudDetectionCapability:

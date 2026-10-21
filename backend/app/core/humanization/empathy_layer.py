@@ -15,6 +15,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -49,7 +51,7 @@ class EmpathySignal:
     trigger_words: list[str] = field(default_factory=list)
     confidence: float = 0.8
     urgency_level: int = 5  # 1-10
-    detected_at: datetime = field(default_factory=datetime.utcnow)
+    detected_at: datetime = field(default_factory=utc_now)
     raw_context: str = ""
 
 

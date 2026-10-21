@@ -16,11 +16,13 @@ Engines:
 """
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import timedelta
 from enum import Enum
 from typing import Any
 
 from anthropic import Anthropic
+
+from app.core.clock import utc_now
 
 client_anthropic = Anthropic()
 
@@ -448,7 +450,7 @@ class CompetitiveIntelligenceTracker:
         )
         recent_deals = self.db.query(Deal).filter(
             Deal.industry == industry,
-            Deal.created_at >= datetime.utcnow() - timedelta(days=days),
+            Deal.created_at >= utc_now() - timedelta(days=days),
         ).count()
         return recent_deals
 
@@ -549,7 +551,7 @@ class RealTimeFOMODashboard:
 
         # Platform FOOM: "X users just upgraded"
         recent_upgrades = self.db.query(User).filter(
-            User.upgraded_at >= datetime.utcnow() - timedelta(days=7),
+            User.upgraded_at >= utc_now() - timedelta(days=7),
         ).count()
 
         return {

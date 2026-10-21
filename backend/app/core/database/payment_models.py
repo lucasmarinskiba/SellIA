@@ -2,7 +2,6 @@
 Payment Models — SQLAlchemy ORM para órdenes, pagos y catálogo.
 """
 
-from datetime import datetime
 
 from sqlalchemy import (
     JSON,
@@ -16,6 +15,8 @@ from sqlalchemy import (
     Text,
 )
 from sqlalchemy.ext.declarative import declarative_base
+
+from app.core.clock import utc_now
 
 Base = declarative_base()
 
@@ -35,8 +36,8 @@ class Product(Base):
     images = Column(JSON, default=[])  # URLs de imágenes
     tags = Column(JSON, default=[])
 
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now, index=True)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
 
 class Order(Base):
@@ -85,8 +86,8 @@ class Order(Base):
     campaign = Column(String(255), nullable=True)
     notes = Column(String(500), nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now, index=True)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
 
 class Payment(Base):
@@ -118,7 +119,7 @@ class Payment(Base):
     billing_details_encrypted = Column(String(500), nullable=True)  # Encrypted JSON
     payment_metadata_encrypted = Column(String(500), nullable=True)  # Encrypted JSON
 
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    created_at = Column(DateTime, default=utc_now, index=True)
     completed_at = Column(DateTime, nullable=True)
 
 
@@ -143,7 +144,7 @@ class Refund(Base):
 
     notes = Column(String(500), nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    created_at = Column(DateTime, default=utc_now, index=True)
     completed_at = Column(DateTime, nullable=True)
 
 
@@ -175,8 +176,8 @@ class Invoice(Base):
 
     paid_at = Column(DateTime, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now, index=True)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
 
 class Subscription(Base):
@@ -203,8 +204,8 @@ class Subscription(Base):
     auto_renew = Column(Boolean, default=True)
     cancel_at = Column(DateTime, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now, index=True)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
 
 class PaymentWebhookLog(Base):
@@ -221,7 +222,7 @@ class PaymentWebhookLog(Base):
 
     payload = Column(JSON)
 
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    created_at = Column(DateTime, default=utc_now, index=True)
 
 
 class TravelMode(Base):
@@ -238,5 +239,5 @@ class TravelMode(Base):
     calendar_blocked = Column(Boolean, default=False)
     auto_response_active = Column(Boolean, default=False)
 
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now, index=True)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)

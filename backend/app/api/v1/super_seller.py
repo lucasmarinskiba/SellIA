@@ -8,11 +8,11 @@ Endpoints:
 """
 
 import logging
-from datetime import datetime
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from app.core.clock import utc_now
 from app.core.intelligence.market_analyzer import MarketAnalyzer
 from app.core.intelligence.problem_detector import ProblemDetector, ProblemSolver
 from app.core.intelligence.sales_executor import SalesExecutor
@@ -114,7 +114,7 @@ async def diagnose_product(diagnosis: ProductDiagnosis):
             ],
             "solutions_by_problem": solutions,
             "urgent_actions": [s["recommended_priority"] for s in solutions if s.get("recommended_priority") == 1],
-            "diagnosed_at": datetime.utcnow().isoformat(),
+            "diagnosed_at": utc_now().isoformat(),
         }
 
     except Exception as e:
@@ -218,7 +218,7 @@ async def generate_complete_plan(diagnosis: ProductDiagnosis):
                 "week_9": "80%+ aha moment rate",
                 "week_12": "<2% churn, >100% NRR",
             },
-            "plan_generated_at": datetime.utcnow().isoformat(),
+            "plan_generated_at": utc_now().isoformat(),
         }
 
     except Exception as e:
@@ -280,7 +280,7 @@ async def execute_immediately(diagnosis: ProductDiagnosis):
         return {
             "status": "execution_ready",
             "product": diagnosis.product_name,
-            "go_live_date": datetime.utcnow().isoformat(),
+            "go_live_date": utc_now().isoformat(),
             "segment": strategy.get("segment"),
             "channels": strategy.get("recommended_channels"),
             "immediate_actions": immediate_actions,

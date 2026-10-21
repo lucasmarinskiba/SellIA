@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
 
+from app.core.clock import utc_now
+
 
 class DealOutcome(str, Enum):
     CLOSED_WON = "closed_won"
@@ -145,7 +147,7 @@ class AIIntelligenceManager:
             "closed_won": 0,
         }
         days_remaining = stage_days_to_close.get(stage.lower(), 30)
-        estimated_close = datetime.utcnow() + timedelta(days=days_remaining)
+        estimated_close = utc_now() + timedelta(days=days_remaining)
 
         prediction = DealPrediction(
             deal_id=deal_id,

@@ -2,9 +2,9 @@
 
 import asyncio
 import logging
-from datetime import datetime
 from typing import Any
 
+from app.core.clock import utc_now
 from app.domains.agents.base_agent import (
     AgentContext,
     AgentDecision,
@@ -31,7 +31,7 @@ class AgentRouter:
         Main orchestration: Route lead through agent pipeline
         until closed, escalated to human, or max hops reached.
         """
-        context.created_at = context.created_at or datetime.utcnow()
+        context.created_at = context.created_at or utc_now()
         context.agent_history = []
 
         hop_count = 0
@@ -61,9 +61,9 @@ class AgentRouter:
 
             # Execute agent
             try:
-                start_time = datetime.utcnow()
+                start_time = utc_now()
                 decision = await current_agent.execute(context)
-                elapsed_ms = (datetime.utcnow() - start_time).total_seconds() * 1000
+                elapsed_ms = (utc_now() - start_time).total_seconds() * 1000
 
                 # Record in history
                 context.agent_history.append(
@@ -80,7 +80,7 @@ class AgentRouter:
 
                 # Update context for next agent
                 context.assigned_agent = current_agent.name
-                context.updated_at = datetime.utcnow()
+                context.updated_at = utc_now()
 
                 # Check if should escalate
                 if decision.should_escalate:
@@ -178,7 +178,7 @@ class AgentRouter:
             "final_data": final_decision.data,
             "total_hops": len(context.agent_history),
             "completion_time_hours": (
-                (datetime.utcnow() - context.created_at).total_seconds() / 3600
+                (utc_now() - context.created_at).total_seconds() / 3600
             ),
             "agent_path": [h["agent"] for h in context.agent_history],
         }

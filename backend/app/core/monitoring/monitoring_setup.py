@@ -11,8 +11,9 @@ Integraciones:
 import logging
 import time
 from collections.abc import Callable
-from datetime import datetime
 from functools import wraps
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -336,7 +337,7 @@ async def health_check_all() -> dict:
         "database": await health_check_database(),
         "stripe": await health_check_stripe(),
         "mercadolibre": await health_check_mercadolibre(),
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     }
 
 

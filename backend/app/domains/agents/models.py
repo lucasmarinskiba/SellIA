@@ -5,7 +5,6 @@ Cada negocio puede configurar y chatear con estos agentes.
 """
 
 import uuid
-from datetime import datetime
 
 from sqlalchemy import (
     Boolean,
@@ -19,6 +18,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
+from app.core.clock import utc_now
 from app.core.database import Base
 
 
@@ -36,7 +36,7 @@ class AgentPersonality(Base):
     color = Column(String(20), default="#FF6B35")
     is_active = Column(Boolean, default=True)
     display_order = Column(Integer, default=0)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
 
 
 class AgentConfig(Base):
@@ -55,8 +55,8 @@ class AgentConfig(Base):
     ai_auto_reply_enabled = Column(Boolean, default=False, nullable=False)
     ai_auto_reply_personality_id = Column(UUID(as_uuid=True), ForeignKey("agent_personalities.id", ondelete="SET NULL"), nullable=True)
     extra_data = Column(JSONB, default=dict)  # flexible config
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
     personality = relationship("AgentPersonality", foreign_keys=[personality_id])
     voice_personality = relationship("AgentPersonality", foreign_keys=[voice_personality_id])
@@ -74,8 +74,8 @@ class AgentConversation(Base):
     context_summary = Column(Text, nullable=True)  # running summary for long conversations
     message_count = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
 
 class AgentMessage(Base):
@@ -89,7 +89,7 @@ class AgentMessage(Base):
     model_used = Column(String(50), nullable=True)  # e.g. 'gpt-4o'
     tokens_used = Column(Integer, nullable=True)
     extra_data = Column(JSONB, default=dict)  # e.g. {"action_triggered": "..."}
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
 
 
 class SellIAConversation(Base):
@@ -101,5 +101,5 @@ class SellIAConversation(Base):
     title = Column(String(200), nullable=True)
     messages = Column(JSONB, default=list)  # [{role, content, action, created_at}, ...]
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)

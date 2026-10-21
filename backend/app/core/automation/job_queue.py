@@ -24,6 +24,8 @@ from datetime import datetime
 from heapq import heappop, heappush
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -108,7 +110,7 @@ class JobQueue:
                 "job_id": job.id,
                 "job_type": job.job_type.value,
                 "reason": reason,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": utc_now().isoformat(),
                 "payload": job.payload,
             })
             logger.warning(f"Job moved to DLQ: {job.id} ({reason})")
@@ -146,7 +148,7 @@ class JobQueue:
     async def clear_dead_letters_older_than(self, hours: int = 24) -> int:
         """Limpia DLQ old entries."""
         async with self.lock:
-            cutoff_time = datetime.utcnow().timestamp() - (hours * 3600)
+            cutoff_time = utc_now().timestamp() - (hours * 3600)
             original_count = len(self.dead_letter_queue)
 
             self.dead_letter_queue = [

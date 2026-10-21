@@ -10,6 +10,8 @@ import numpy as np
 from sklearn.ensemble import IsolationForest, LocalOutlierFactor
 from sklearn.preprocessing import StandardScaler
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -34,7 +36,7 @@ class Pattern:
     trend_direction: str | None = None  # "up", "down", "stable"
     impact: str = "medium"  # low, medium, high
     recommendations: list[str] = field(default_factory=list)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -59,7 +61,7 @@ class MarketPattern:
     volatility: float  # 0-1
     trend_strength: float  # 0-1
     key_insights: list[str] = field(default_factory=list)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -84,7 +86,7 @@ class BehaviorPattern:
     upsell_opportunity: float  # 0-1
     pattern_reliability: float  # 0-1
     similar_customer_count: int
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -110,7 +112,7 @@ class Anomaly:
     affected_features: list[str]
     potential_cause: str
     recommended_action: str
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
         return {

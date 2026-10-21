@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -71,8 +73,8 @@ class NegotiationAgent:
             offer_price=opening_offer_price,
             earnest_money=earnest_money,
             contingencies=strategy.contingencies_to_include,
-            close_date=datetime.utcnow() + timedelta(days=45),
-            possession_date=datetime.utcnow() + timedelta(days=45),
+            close_date=utc_now() + timedelta(days=45),
+            possession_date=utc_now() + timedelta(days=45),
         )
 
         # Store offer
@@ -82,7 +84,7 @@ class NegotiationAgent:
             "status": OfferStatus.DRAFT,
             "offer_terms": offer,
             "strategy": strategy,
-            "created_at": datetime.utcnow(),
+            "created_at": utc_now(),
             "rounds": 0,
         }
 
@@ -93,7 +95,7 @@ class NegotiationAgent:
             "offer_price": opening_offer_price,
             "earnest_money": earnest_money,
             "suggested_contingencies": strategy.contingencies_to_include,
-            "expected_close": (datetime.utcnow() + timedelta(days=45)).isoformat(),
+            "expected_close": (utc_now() + timedelta(days=45)).isoformat(),
         }
 
     def submit_offer(self, offer_id: str, additional_terms: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -109,7 +111,7 @@ class NegotiationAgent:
 
         self.negotiations[offer_id].append({
             "round": 1,
-            "timestamp": datetime.utcnow(),
+            "timestamp": utc_now(),
             "action": "submitted",
             "terms": offer_record["offer_terms"].__dict__,
         })
@@ -119,7 +121,7 @@ class NegotiationAgent:
         return {
             "offer_id": offer_id,
             "status": "submitted",
-            "submission_time": datetime.utcnow().isoformat(),
+            "submission_time": utc_now().isoformat(),
         }
 
     def process_counter_offer(self, offer_id: str, counter_terms: dict[str, Any]) -> dict[str, Any]:
@@ -143,7 +145,7 @@ class NegotiationAgent:
         # Store negotiation round
         self.negotiations[offer_id].append({
             "round": offer_record["rounds"],
-            "timestamp": datetime.utcnow(),
+            "timestamp": utc_now(),
             "action": "counter_received",
             "counter_price": counter_price,
             "counter_terms": counter_terms_list,
@@ -215,7 +217,7 @@ class NegotiationAgent:
 
         self.negotiations[offer_id].append({
             "round": "final",
-            "timestamp": datetime.utcnow(),
+            "timestamp": utc_now(),
             "action": "accepted",
         })
 

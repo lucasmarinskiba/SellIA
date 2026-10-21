@@ -19,6 +19,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 
 class MessagePriority(str, Enum):
     """Message priority levels"""
@@ -36,7 +38,7 @@ class Message:
     user_id: str
     channel: str
     priority: MessagePriority = MessagePriority.NORMAL
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utc_now)
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def get_cache_key(self) -> str:
@@ -260,7 +262,7 @@ class ResponseEngine:
             id=f"resp_{int(time.time() * 1000)}",
             message_id=message.id,
             content=response_content,
-            generated_at=datetime.utcnow(),
+            generated_at=utc_now(),
             latency_ms=latency_ms,
             from_cache=False
         )

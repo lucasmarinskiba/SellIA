@@ -2,9 +2,10 @@
 
 import json
 import logging
-from datetime import datetime
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +62,7 @@ async def websocket_brain(websocket: WebSocket):
                 if msg_type == "ping":
                     await manager.send_personal(websocket, {
                         "type": "pong",
-                        "timestamp": datetime.utcnow().isoformat(),
+                        "timestamp": utc_now().isoformat(),
                     })
 
                 elif msg_type == "subscribe_metrics":
@@ -69,7 +70,7 @@ async def websocket_brain(websocket: WebSocket):
                     await manager.send_personal(websocket, {
                         "type": "subscribed",
                         "channel": "metrics",
-                        "timestamp": datetime.utcnow().isoformat(),
+                        "timestamp": utc_now().isoformat(),
                     })
 
                 elif msg_type == "subscribe_phases":
@@ -77,7 +78,7 @@ async def websocket_brain(websocket: WebSocket):
                     await manager.send_personal(websocket, {
                         "type": "subscribed",
                         "channel": "phases",
-                        "timestamp": datetime.utcnow().isoformat(),
+                        "timestamp": utc_now().isoformat(),
                     })
 
                 else:
@@ -105,7 +106,7 @@ async def broadcast_phase_update(phase: str, status: str, data: dict = None):
         "phase": phase,
         "status": status,
         "data": data or {},
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     })
 
 
@@ -114,7 +115,7 @@ async def broadcast_metrics_update(metrics: dict):
     await manager.broadcast({
         "type": "metrics_update",
         "metrics": metrics,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     })
 
 
@@ -125,5 +126,5 @@ async def broadcast_system_event(event_type: str, message: str, data: dict = Non
         "event_type": event_type,
         "message": message,
         "data": data or {},
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     })

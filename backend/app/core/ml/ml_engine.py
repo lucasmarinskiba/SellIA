@@ -19,6 +19,8 @@ from sklearn.metrics import (
 from sklearn.model_selection import cross_val_score, train_test_split
 from sklearn.preprocessing import StandardScaler
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -43,7 +45,7 @@ class ModelMetrics:
     rmse: float | None = None
     r2: float | None = None
     confusion_matrix: list[list[int]] | None = None
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utc_now)
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -427,7 +429,7 @@ class ModelEvaluator:
         record = {
             "model_name": model_name,
             "version": version,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "metrics": metrics.to_dict(),
             "metadata": metadata or {},
         }

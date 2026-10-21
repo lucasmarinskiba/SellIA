@@ -11,6 +11,8 @@ from typing import Any
 import numpy as np
 from sklearn.metrics import r2_score
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -75,7 +77,7 @@ class TrainingMetrics:
     val_loss: float
     train_score: float
     val_score: float
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
     additional_metrics: dict[str, float] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:

@@ -1,13 +1,13 @@
 """Market API — Endpoints for market detection & agent management."""
 
 import logging
-from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.core.brain.brain_orchestrator_v3 import BrainOrchestratorV3
+from app.core.clock import utc_now
 from app.core.market import (
     AgentLoader,
     ContinuousLearner,
@@ -99,7 +99,7 @@ async def sync_external_systems() -> dict[str, Any]:
         return {
             "status": "success",
             "synced": result["new_agents"],
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
     except Exception as e:
         logger.error(f"Sync failed: {e}")
@@ -113,7 +113,7 @@ async def get_market_status() -> dict[str, Any]:
         return {
             "orchestrator": orchestrator.get_orchestrator_status(),
             "learner": learner.get_learning_status(),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
     except Exception as e:
         logger.error(f"Status check failed: {e}")

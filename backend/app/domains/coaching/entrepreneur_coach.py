@@ -6,6 +6,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -42,7 +44,7 @@ class EntrepreneurProfile:
     team_size: int = 1
     motivation_level: float = 0.8  # 0-1
     challenges: list[str] = field(default_factory=list)
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utc_now)
 
 
 @dataclass

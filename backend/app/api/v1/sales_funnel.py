@@ -132,7 +132,7 @@ async def send_outreach(
 
         # Crear campaign
         campaign = await outreach.create_campaign(
-            name=f"Outreach {datetime.utcnow().strftime('%Y%m%d%H%M')}",
+            name=f"Outreach {utc_now().strftime('%Y%m%d%H%M')}",
             target_quality="hot",
             channel=OutreachChannel(channel),
         )
@@ -316,4 +316,4 @@ async def get_dashboard_metrics() -> dict[str, Any]:
 
 
 # Importar datetime
-from datetime import datetime
+from app.core.clock import utc_now

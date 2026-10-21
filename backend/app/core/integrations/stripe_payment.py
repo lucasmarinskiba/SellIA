@@ -220,7 +220,7 @@ class StripeWebhookHandler:
         # TODO: Update order status en DB, enviar factura, trigger fulfillment
         # db.orders.update_one(
         #     {"order_id": order_id},
-        #     {"$set": {"payment_status": "confirmed", "confirmed_at": datetime.utcnow()}}
+        #     {"$set": {"payment_status": "confirmed", "confirmed_at": utc_now()}}
         # )
 
         return {

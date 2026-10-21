@@ -2,8 +2,9 @@
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -129,7 +130,7 @@ class PricingAgent:
 
         # Age/modernization
         year_built = property_data.get("year_built", 0)
-        current_year = datetime.utcnow().year
+        current_year = utc_now().year
         property_age = current_year - year_built
 
         if property_age < 5:

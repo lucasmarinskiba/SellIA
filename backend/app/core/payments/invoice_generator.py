@@ -18,6 +18,8 @@ from enum import Enum
 from io import BytesIO
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 try:
@@ -101,7 +103,7 @@ class InvoiceGenerator:
             amount_due = amount_subtotal + amount_tax
 
             # Generate invoice ID and number
-            timestamp = datetime.utcnow()
+            timestamp = utc_now()
             invoice_id = f"inv_{order_id}_{int(timestamp.timestamp())}"
             invoice_number = f"INV-{timestamp.strftime('%Y%m%d')}-{order_id[-6:]}"
 

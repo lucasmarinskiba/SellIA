@@ -2,10 +2,11 @@
 
 import enum
 import uuid
-from datetime import datetime
 
 from sqlalchemy import Boolean, Column, DateTime, Index, String, Text, select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.clock import utc_now
 
 # Was `from app.database import Base` -- an isolated Base with no create-
 # table mechanism of its own at all. Switched to the real CoreBase (used by
@@ -49,8 +50,8 @@ class DealComment(Base):
     content = Column(Text, nullable=False)
     mentions = Column(String(500), nullable=True)  # CSV: @user_id, @user_id
     is_internal = Column(Boolean, default=True)  # Don't send to buyer
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     __table_args__ = (
         Index('idx_deal_comments', 'deal_id', 'created_at'),
@@ -75,8 +76,8 @@ class ApprovalChain(Base):
     decision_at = Column(DateTime, nullable=True)
     rejection_reason = Column(Text, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     __table_args__ = (
         Index('idx_approval_action', 'action_id'),
@@ -102,7 +103,7 @@ class Handoff(Base):
     status = Column(String(20), default="pending")  # pending, accepted, rejected
     accepted_at = Column(DateTime, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     __table_args__ = (
         Index('idx_handoff_deal', 'deal_id', 'created_at'),
@@ -126,7 +127,7 @@ class DealShare(Base):
     shared_by_user_id = Column(String(255), nullable=False)
     shared_with_user_id = Column(String(255), nullable=False)
     permissions = Column(String(20), default="read")  # read, edit
-    shared_at = Column(DateTime, default=datetime.utcnow)
+    shared_at = Column(DateTime, default=utc_now)
 
     __table_args__ = (
         Index('idx_deal_shares_deal', 'deal_id', 'shared_at'),
@@ -147,7 +148,7 @@ class TeamNotification(Base):
     related_user_id = Column(String(255), nullable=True)  # Who triggered it
 
     is_read = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     __table_args__ = (
         Index('idx_notif_user', 'user_id', 'is_read', 'created_at'),
@@ -349,11 +350,11 @@ class CollaborationManager:
         if all_approved:
             chain.status = "approved"
             chain.decision_by = approver_id
-            chain.decision_at = datetime.utcnow()
+            chain.decision_at = utc_now()
         elif decision == "rejected":
             chain.status = "rejected"
             chain.decision_by = approver_id
-            chain.decision_at = datetime.utcnow()
+            chain.decision_at = utc_now()
             chain.rejection_reason = rejection_reason
 
         await db.commit()

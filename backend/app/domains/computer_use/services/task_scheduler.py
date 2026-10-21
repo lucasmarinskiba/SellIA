@@ -12,6 +12,8 @@ from enum import Enum
 from heapq import heappop, heappush
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -49,7 +51,7 @@ class Task:
     due_at: datetime = None  # Cuándo ejecutar
     retry_count: int = 0
     max_retries: int = 3
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utc_now)
     status: str = "pending"  # pending, running, completed, failed, conflict
 
     # Para heap queue (comparación)
@@ -131,9 +133,9 @@ class TaskScheduler:
 
         # Usar ahora si no hay due_at
         if not due_at:
-            due_at = datetime.utcnow()
+            due_at = utc_now()
 
-        task_id = f"task_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{task_type.value}_{uuid.uuid4().hex[:6]}"
+        task_id = f"task_{utc_now().strftime('%Y%m%d%H%M%S')}_{task_type.value}_{uuid.uuid4().hex[:6]}"
 
         task = Task(
             task_id=task_id,
@@ -220,7 +222,7 @@ class TaskScheduler:
         if task.retry_count <= task.max_retries:
             # Re-encolar con backoff
             task.status = "pending"
-            task.due_at = datetime.utcnow() + timedelta(seconds=2 ** task.retry_count)
+            task.due_at = utc_now() + timedelta(seconds=2 ** task.retry_count)
             heappush(self.task_queue, task)
 
             self.logger.warning(
@@ -273,12 +275,12 @@ class TaskScheduler:
             recent_tasks = [
                 t
                 for t in customer_tasks
-                if (datetime.utcnow() - t.created_at).total_seconds() < 3600  # Última hora
+                if (utc_now() - t.created_at).total_seconds() < 3600  # Última hora
             ]
 
             if len(recent_tasks) >= self.MAX_TASKS_PER_CUSTOMER_PER_HOUR:
                 # Sugerir ejecutar después de 1 hora
-                alt_time = datetime.utcnow() + timedelta(hours=1)
+                alt_time = utc_now() + timedelta(hours=1)
                 return ConflictCheck(
                     has_conflict=True,
                     reason=f"Too many tasks for this customer in past hour ({len(recent_tasks)}/{self.MAX_TASKS_PER_CUSTOMER_PER_HOUR})",

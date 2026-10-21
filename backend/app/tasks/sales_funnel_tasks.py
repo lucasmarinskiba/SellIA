@@ -89,7 +89,7 @@ def send_outreach_batch(
             lead = await lead_gen.score_lead(lead)
 
         campaign = await outreach.create_campaign(
-            name=f"Outreach {datetime.utcnow().strftime('%Y%m%d%H%M')}",
+            name=f"Outreach {utc_now().strftime('%Y%m%d%H%M')}",
             target_quality="hot",
             channel=OutreachChannel(channel),
         )
@@ -426,3 +426,5 @@ def setup_periodic_tasks(sender, **kwargs):
 
 # Import crontab
 from celery.schedules import crontab
+
+from app.core.clock import utc_now

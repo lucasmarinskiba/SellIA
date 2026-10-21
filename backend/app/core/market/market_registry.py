@@ -11,9 +11,10 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime
 from enum import Enum
 from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ class MarketRegistryEntry:
     loaded_agents: list[str]
     available_rules: list[str]
     health_status: HealthStatus
-    last_updated: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    last_updated: str = field(default_factory=lambda: utc_now().isoformat())
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
@@ -264,7 +265,7 @@ class MarketRegistry:
         if agent_name in self.agents:
             self.agents[agent_name].status = "loaded"
             self.agents[agent_name].last_loaded = (
-                last_loaded or datetime.utcnow().isoformat()
+                last_loaded or utc_now().isoformat()
             )
 
     def mark_agent_error(self, agent_name: str, error_msg: str) -> None:
@@ -282,7 +283,7 @@ class MarketRegistry:
         """Marca rule set como cargado."""
         if rule_set_name in self.rule_sets:
             self.rule_sets[rule_set_name].status = "loaded"
-            self.rule_sets[rule_set_name].last_updated = datetime.utcnow().isoformat()
+            self.rule_sets[rule_set_name].last_updated = utc_now().isoformat()
 
     def check_market_health(self, market_name: str) -> HealthStatus:
         """Verifica salud de mercado.

@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -144,7 +146,7 @@ class TitleVerificationAgent:
         if days_to_clear > 0:
             from datetime import timedelta
 
-            estimated_clear = datetime.utcnow() + timedelta(days=days_to_clear)
+            estimated_clear = utc_now() + timedelta(days=days_to_clear)
 
         # Generate attorney recommendation
         attorney_rec = self._generate_attorney_recommendation(liens, encumbrances, other_issues, title_clear)
@@ -219,7 +221,7 @@ class TitleVerificationAgent:
         return {
             "property_id": property_id,
             "document_type": "Title Commitment",
-            "date": datetime.utcnow().isoformat(),
+            "date": utc_now().isoformat(),
             "title_company": "Sample Title Insurance Company",
             "insurance_commitment_amount": 300000,  # Purchase price
             "title_status": "Clear" if report.title_clear else "Subject to",

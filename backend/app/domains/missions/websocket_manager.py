@@ -53,7 +53,7 @@ class MissionWebSocketManager:
             "step_id": step_id,
             "status": status,
             "data": data or {},
-            "timestamp": str(__import__('datetime').datetime.utcnow()),
+            "timestamp": str(__import__('datetime').utc_now()),
         })
 
     async def broadcast_mission_status(
@@ -69,7 +69,7 @@ class MissionWebSocketManager:
             "mission_id": mission_id,
             "status": status,
             "message": message,
-            "timestamp": str(__import__('datetime').datetime.utcnow()),
+            "timestamp": str(__import__('datetime').utc_now()),
         })
 
     async def broadcast_step_approval_request(

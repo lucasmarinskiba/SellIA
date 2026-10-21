@@ -1,11 +1,12 @@
 """FOMO decay detection + smart rotation."""
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from uuid import UUID
 
 from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import utc_now
 from app.core.logger import get_logger
 from app.domains.seo_config.analytics_models import PublicationLinkMetrics
 from app.domains.seo_config.fomo_models import FOMADecayLog
@@ -36,7 +37,7 @@ class FOMADecayService:
         Returns:
             Decay info if detected, None otherwise
         """
-        today = datetime.utcnow().date()
+        today = utc_now().date()
         week_ago = today - timedelta(days=lookback_days)
 
         # Get current metrics (last 2 days avg)
@@ -74,7 +75,7 @@ class FOMADecayService:
             "baseline_ctr": float(baseline_ctr),
             "current_ctr": float(current_ctr),
             "decay_percentage": float(decay_pct),
-            "detected_at": datetime.utcnow().isoformat(),
+            "detected_at": utc_now().isoformat(),
         }
 
     async def log_decay_and_regenerate(

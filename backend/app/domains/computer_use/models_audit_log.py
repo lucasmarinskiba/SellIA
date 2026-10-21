@@ -24,6 +24,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 
+from app.core.clock import utc_now
 from app.core.database import Base
 
 
@@ -37,7 +38,7 @@ class ComputerUseAuditLog(Base):
     session_id = Column(String(36), ForeignKey("computer_use_sessions.id"), nullable=True, index=True)
 
     # Tiempo
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    created_at = Column(DateTime, default=utc_now, index=True)
     executed_at = Column(DateTime, nullable=True)
     duration_ms = Column(Integer, default=0)
 

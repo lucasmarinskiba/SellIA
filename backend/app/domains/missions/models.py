@@ -5,7 +5,6 @@ de acción generado por IA que se descompone en MissionSteps ejecutables.
 """
 
 import uuid
-from datetime import datetime
 
 from sqlalchemy import (
     Boolean,
@@ -20,6 +19,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
+from app.core.clock import utc_now
 from app.core.database import Base
 
 
@@ -60,8 +60,8 @@ class Mission(Base):
     approved_at = Column(DateTime(timezone=True), nullable=True)
     started_at = Column(DateTime(timezone=True), nullable=True)
     completed_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
     # Relations
     steps = relationship("MissionStep", back_populates="mission", cascade="all, delete-orphan", order_by="MissionStep.step_number")
@@ -94,7 +94,7 @@ class MissionStep(Base):
 
     started_at = Column(DateTime(timezone=True), nullable=True)
     completed_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
 
     # Relations
     mission = relationship("Mission", back_populates="steps")
@@ -110,7 +110,7 @@ class BusinessDiagnostic(Base):
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=True, index=True)
     mission_id = Column(UUID(as_uuid=True), ForeignKey("missions.id", ondelete="SET NULL"), nullable=True)
 
-    diagnostic_date = Column(DateTime(timezone=True), default=datetime.utcnow)
+    diagnostic_date = Column(DateTime(timezone=True), default=utc_now)
     category = Column(
         Enum("sales", "branding", "traffic", "seo", "logistics", "ads", "conversion", "retention", name="diagnostic_category"),
         nullable=False,
@@ -127,7 +127,7 @@ class BusinessDiagnostic(Base):
     is_resolved = Column(Boolean, default=False)
     resolved_at = Column(DateTime(timezone=True), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
 
     # Relations
     mission = relationship("Mission", back_populates="diagnostics")

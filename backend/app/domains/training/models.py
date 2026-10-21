@@ -6,7 +6,6 @@ Tables:
 """
 
 import uuid
-from datetime import datetime
 
 from sqlalchemy import (
     Boolean,
@@ -21,6 +20,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
+from app.core.clock import utc_now
 from app.core.database import Base
 
 
@@ -38,8 +38,8 @@ class TrainingScenario(Base):
     success_criteria = Column(JSONB, default=dict)
     agent_type = Column(String(50), nullable=False, default="general")  # which agent to test
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
     runs = relationship("TrainingRun", back_populates="scenario", cascade="all, delete-orphan")
 
@@ -59,7 +59,7 @@ class TrainingRun(Base):
     customer_satisfaction = Column(Float, nullable=True)  # 0-5
     skills_tested = Column(JSONB, default=dict)  # {skill: score, ...}
     feedback = Column(Text, nullable=True)  # LLM-generated qualitative feedback
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
     completed_at = Column(DateTime(timezone=True), nullable=True)
 
     scenario = relationship(lambda: TrainingScenario, back_populates="runs")

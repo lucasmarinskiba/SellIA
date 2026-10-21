@@ -8,11 +8,13 @@
 """
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import timedelta
 from enum import Enum
 from typing import Any
 
 from anthropic import Anthropic
+
+from app.core.clock import utc_now
 
 client_anthropic = Anthropic()
 
@@ -74,7 +76,7 @@ class ChurnPredictionModel:
         )
 
         reasons = self._identify_churn_reasons(features)
-        churn_date = (datetime.utcnow() + timedelta(days=90)).strftime("%Y-%m-%d")
+        churn_date = (utc_now() + timedelta(days=90)).strftime("%Y-%m-%d")
 
         return ChurnPrediction(
             customer_id=customer_id,
@@ -310,7 +312,7 @@ class ABMIntentScorer:
             "intent_level": self._score_to_level(score),
             "top_signals": top_signals[:3],
             "trending": self._calculate_trend(engagement_data),
-            "updated_at": datetime.utcnow().isoformat(),
+            "updated_at": utc_now().isoformat(),
         }
 
     def _score_to_level(self, score: int) -> str:

@@ -6,6 +6,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -47,7 +49,7 @@ class LeadProfile:
     credit_score: int | None = None
     prequalified: bool = False
     score: float = 0.0
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utc_now)
 
 
 @dataclass
@@ -66,7 +68,7 @@ class PropertyProfile:
     condition: str
     photos: list[str] = field(default_factory=list)
     features: list[str] = field(default_factory=list)
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utc_now)
 
 
 @dataclass
@@ -80,8 +82,8 @@ class ConversationState:
     message_count: int = 0
     agent_responses: list[dict[str, Any]] = field(default_factory=list)
     negotiation_strategy: NegotiationStrategy = NegotiationStrategy.BALANCED
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    updated_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utc_now)
+    updated_at: datetime = field(default_factory=utc_now)
 
 
 class OrchestratorV2:
@@ -188,7 +190,7 @@ class OrchestratorV2:
 
         state = self.conversations[session_id]
         state.message_count += 1
-        state.updated_at = datetime.utcnow()
+        state.updated_at = utc_now()
 
         # Route based on current phase
         agent_ids = self.phase_workflows.get(state.phase, [])
@@ -233,7 +235,7 @@ class OrchestratorV2:
             "priority": agent["priority"],
             "message": self._generate_agent_response(agent_id, state, user_message),
             "recommendations": self._generate_recommendations(agent_id, state),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
         return response
@@ -340,6 +342,6 @@ class OrchestratorV2:
             "lead": state.lead.__dict__ if state.lead else None,
             "property": state.property_item.__dict__ if state.property_item else None,
             "negotiation_strategy": state.negotiation_strategy.value,
-            "duration_seconds": (datetime.utcnow() - state.created_at).total_seconds(),
+            "duration_seconds": (utc_now() - state.created_at).total_seconds(),
             "total_agent_responses": len(state.agent_responses),
         }

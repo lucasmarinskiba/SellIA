@@ -2,7 +2,8 @@
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +67,7 @@ class HotmartAnalyzer:
             demand_score=demand,
             conversion_difficulty=conversion_difficulty,
             target_audience=product_data.get("target_audience", []),
-            last_updated=datetime.utcnow().isoformat(),
+            last_updated=utc_now().isoformat(),
         )
 
     def _calculate_demand_score(self, product_data: dict) -> float:
@@ -106,7 +107,7 @@ class HotmartAnalyzer:
                 demand_score=7.5 + (i * 0.1),
                 conversion_difficulty=5.0,
                 target_audience=["entrepreneurs", "marketers"],
-                last_updated=datetime.utcnow().isoformat(),
+                last_updated=utc_now().isoformat(),
             )
             for i in range(1, 6)
         ]

@@ -27,6 +27,8 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -40,7 +42,7 @@ class WebFormData:
     form_url: str
     form_name: str
     fields: dict[str, str]  # {"email": "user@example.com", "name": "John"}
-    submission_time: datetime = field(default_factory=datetime.utcnow)
+    submission_time: datetime = field(default_factory=utc_now)
     success: bool = False
 
 
@@ -97,8 +99,8 @@ class EnrichedLead:
     ))
 
     # Timestamps
-    first_seen: datetime = field(default_factory=datetime.utcnow)
-    last_seen: datetime = field(default_factory=datetime.utcnow)
+    first_seen: datetime = field(default_factory=utc_now)
+    last_seen: datetime = field(default_factory=utc_now)
     enriched_at: datetime | None = None
 
 
@@ -547,7 +549,7 @@ class LeadEnricher:
 
             # 5. Calcula score
             lead.score = self._calculate_lead_score(lead)
-            lead.enriched_at = datetime.utcnow()
+            lead.enriched_at = utc_now()
 
             logger.info(f"Lead enriched. Score: {lead.score.overall_score:.0f}")
             return lead

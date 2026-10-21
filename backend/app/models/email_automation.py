@@ -1,6 +1,5 @@
 """Email Automation models for Phase 28."""
 
-from datetime import datetime
 from uuid import uuid4
 
 from sqlalchemy import (
@@ -16,6 +15,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID
 
+from app.core.clock import utc_now
 from app.core.database import Base
 
 
@@ -37,7 +37,7 @@ class SendTimePrediction(Base):
 
     # Model
     model_version = Column(String(50))
-    prediction_date = Column(DateTime, default=datetime.utcnow, nullable=False)
+    prediction_date = Column(DateTime, default=utc_now, nullable=False)
 
     # If sent, track actual result
     actual_send_time = Column(DateTime)
@@ -84,7 +84,7 @@ class ProposalDraft(Base):
 
     # Generation
     generation_method = Column(String(50))  # claude_opus, template
-    generated_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    generated_at = Column(DateTime, default=utc_now, nullable=False)
 
     # Usage
     sent_to = Column(String(255))
@@ -110,7 +110,7 @@ class ProposalView(Base):
     draft_id = Column(UUID(as_uuid=True), ForeignKey("proposal_drafts.id", ondelete="CASCADE"), nullable=False)
 
     viewed_by = Column(String(255), nullable=False)
-    viewed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    viewed_at = Column(DateTime, default=utc_now, nullable=False)
     duration_seconds = Column(Integer)
     pages_viewed = Column(Integer)
 
@@ -133,7 +133,7 @@ class CompetitorMention(Base):
     source = Column(String(50))  # email, call_transcript, message
     context = Column(Text)
 
-    detected_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    detected_at = Column(DateTime, default=utc_now, nullable=False)
     confidence = Column(Float)  # 0-1
 
     __table_args__ = (

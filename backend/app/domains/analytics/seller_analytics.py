@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -22,7 +24,7 @@ class SellerMetrics:
     churn_rate: float = 0.0
     expansion_rate: float = 0.0
     customer_satisfaction: float = 0.0
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
 
 @dataclass
@@ -131,7 +133,7 @@ class SellerAnalyticsEngine:
 
         daily_trend = [
             {
-                "date": (datetime.utcnow() - timedelta(days=i)).strftime("%Y-%m-%d"),
+                "date": (utc_now() - timedelta(days=i)).strftime("%Y-%m-%d"),
                 "leads": 45 + (i * 2),
                 "deals": 8 + (i // 2),
                 "revenue": 12500 + (i * 500)

@@ -5,8 +5,9 @@ Ejecuta scripts completos (visit sitio1 → action1 → action2 → visit sitio2
 """
 
 import logging
-from datetime import datetime
 from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ class ComputerUseOrchestrator:
 
         self.current_workflow = {
             "name": workflow_name,
-            "started_at": datetime.utcnow().isoformat(),
+            "started_at": utc_now().isoformat(),
             "actions": len(actions),
             "completed": 0,
             "failed": 0,
@@ -85,7 +86,7 @@ class ComputerUseOrchestrator:
                     logger.error("Critical action failed, stopping workflow")
                     break
 
-        self.current_workflow["completed_at"] = datetime.utcnow().isoformat()
+        self.current_workflow["completed_at"] = utc_now().isoformat()
 
         # Log workflow
         self.workflow_history.append(self.current_workflow)

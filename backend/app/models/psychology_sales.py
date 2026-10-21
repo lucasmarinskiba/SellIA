@@ -1,6 +1,5 @@
 """Phase 31 Psychology Sales models."""
 
-from datetime import datetime
 from uuid import uuid4
 
 from sqlalchemy import (
@@ -16,6 +15,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
+from app.core.clock import utc_now
 from app.core.database import Base
 
 
@@ -38,7 +38,7 @@ class DiscoveryResponse(Base):
     pain_points = Column(JSONB)  # ["losing $50k/mo", "team burnout"]
     needs_identified = Column(JSONB)  # ["cost reduction", "faster implementation"]
 
-    asked_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    asked_at = Column(DateTime, default=utc_now, nullable=False)
 
     __table_args__ = (
         Index("idx_deal_category", "deal_id", "question_category"),
@@ -58,7 +58,7 @@ class NeedNarrative(Base):
     financial_impact_calculated = Column(Float)  # Annual impact in dollars
     pain_points = Column(JSONB)  # Pain points identified
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
 
     __table_args__ = (
         Index("idx_deal_impact", "deal_id", "financial_impact_calculated"),
@@ -87,7 +87,7 @@ class ObjectionHandling(Base):
     resolved = Column(Boolean, default=False)
     resolution_type = Column(String(50))  # overcome, postponed, lost
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
 
     __table_args__ = (
         Index("idx_deal_type", "deal_id", "objection_type"),
@@ -116,7 +116,7 @@ class CloseAttempt(Base):
     committed = Column(Boolean, default=False)
     commitment_type = Column(String(50))  # small_yes, medium_yes, full_yes, objection
 
-    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    timestamp = Column(DateTime, default=utc_now, nullable=False)
 
     __table_args__ = (
         Index("idx_deal_step", "deal_id", "close_step"),
@@ -148,7 +148,7 @@ class SalesConversation(Base):
     deal_value = Column(Float)
     sales_cycle_days = Column(Integer)
 
-    started_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    started_at = Column(DateTime, default=utc_now, nullable=False)
     closed_at = Column(DateTime)
 
     __table_args__ = (
@@ -185,7 +185,7 @@ class SalesRepPerformance(Base):
     sales_cycle_avg_days = Column(Integer)
     aov = Column(Float)  # Average deal value
 
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     __table_args__ = (
         Index("idx_rep_id", "rep_id"),

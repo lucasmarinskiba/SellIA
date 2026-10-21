@@ -1,11 +1,11 @@
 """Phase 26c: Deal Intelligence - Scoring, Forecasting, Risk Analysis."""
 
 import uuid
-from datetime import datetime
 
 from sqlalchemy import Boolean, Column, DateTime, Float, Index, String, Text
 from sqlalchemy.dialects.postgresql import JSON
 
+from app.core.clock import utc_now
 from app.database import Base
 
 
@@ -36,8 +36,8 @@ class DealScore(Base):
     # Trend
     score_trend = Column(String(20), default="stable")  # up, down, stable
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     __table_args__ = (
         Index('idx_deal_score', 'seller_id', 'win_probability'),
@@ -51,7 +51,7 @@ class ForecastSnapshot(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     seller_id = Column(String(255), nullable=False)
-    forecast_date = Column(DateTime, default=datetime.utcnow)
+    forecast_date = Column(DateTime, default=utc_now)
 
     # Aggregates
     total_pipeline_value = Column(Float, default=0)
@@ -69,7 +69,7 @@ class ForecastSnapshot(Base):
     # Deal breakdown
     deal_breakdown = Column(JSON, nullable=True)  # {prob_bucket: count, ...}
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     __table_args__ = (
         Index('idx_forecast_seller', 'seller_id', 'forecast_date'),
@@ -103,7 +103,7 @@ class WinLossAnalysis(Base):
     price_was_factor = Column(Boolean, default=False)
     timing_was_factor = Column(Boolean, default=False)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     __table_args__ = (
         Index('idx_win_loss', 'seller_id', 'outcome'),

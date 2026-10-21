@@ -18,6 +18,8 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -57,7 +59,7 @@ class RetryAttempt:
     """Información de un intento de retry."""
     attempt_number: int
     delay_seconds: float
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
     error: str | None = None
     status_code: int | None = None
 
@@ -83,7 +85,7 @@ class CircuitBreaker:
         self.failure_count = 0
         self.success_count = 0
         self.last_failure_time: datetime | None = None
-        self.last_state_change = datetime.utcnow()
+        self.last_state_change = utc_now()
 
     def record_success(self) -> None:
         """Registra éxito."""
@@ -97,7 +99,7 @@ class CircuitBreaker:
     def record_failure(self) -> None:
         """Registra fallo."""
         self.failure_count += 1
-        self.last_failure_time = datetime.utcnow()
+        self.last_failure_time = utc_now()
 
         if self.state == CircuitBreakerState.CLOSED:
             if self.failure_count >= self.config.failure_threshold:
@@ -113,7 +115,7 @@ class CircuitBreaker:
         if self.state == CircuitBreakerState.OPEN:
             # Intenta recuperación después de recovery_timeout
             if self.last_failure_time:
-                elapsed = (datetime.utcnow() - self.last_failure_time).total_seconds()
+                elapsed = (utc_now() - self.last_failure_time).total_seconds()
                 if elapsed > self.config.recovery_timeout:
                     self._try_half_open()
                     return True
@@ -125,14 +127,14 @@ class CircuitBreaker:
     def _open_circuit(self) -> None:
         """Abre el circuit."""
         self.state = CircuitBreakerState.OPEN
-        self.last_state_change = datetime.utcnow()
+        self.last_state_change = utc_now()
         logger.warning(f"Circuit breaker '{self.name}' OPENED. Failures: {self.failure_count}")
 
     def _try_half_open(self) -> None:
         """Transita a half-open."""
         self.state = CircuitBreakerState.HALF_OPEN
         self.success_count = 0
-        self.last_state_change = datetime.utcnow()
+        self.last_state_change = utc_now()
         logger.info(f"Circuit breaker '{self.name}' HALF-OPEN. Testing recovery...")
 
     def _close_circuit(self) -> None:
@@ -140,7 +142,7 @@ class CircuitBreaker:
         self.state = CircuitBreakerState.CLOSED
         self.failure_count = 0
         self.success_count = 0
-        self.last_state_change = datetime.utcnow()
+        self.last_state_change = utc_now()
         logger.info(f"Circuit breaker '{self.name}' CLOSED. Service recovered.")
 
     def get_status(self) -> dict[str, Any]:
@@ -200,7 +202,7 @@ class RetryEngine:
         config = self.get_config(policy)
         operation_id = str(uuid.uuid4())
         history = RetryHistory(operation_id=operation_id, operation_name=operation_name)
-        start_time = datetime.utcnow()
+        start_time = utc_now()
 
         # Obtener o crear circuit breaker
         if circuit_breaker_name:
@@ -238,7 +240,7 @@ class RetryEngine:
                 )
 
                 # Éxito
-                elapsed = (datetime.utcnow() - start_time).total_seconds()
+                elapsed = (utc_now() - start_time).total_seconds()
                 history.final_status = "success"
                 history.total_duration = elapsed
                 self.retry_history[operation_id] = history
@@ -271,7 +273,7 @@ class RetryEngine:
                 await asyncio.sleep(delay)
             else:
                 # Agotamos retries
-                elapsed = (datetime.utcnow() - start_time).total_seconds()
+                elapsed = (utc_now() - start_time).total_seconds()
                 history.final_status = "failed"
                 history.final_error = error_msg
                 history.total_duration = elapsed
@@ -338,7 +340,7 @@ class RetryEngine:
 
     def clear_history(self, older_than_hours: int = 24) -> int:
         """Limpia historial viejo."""
-        cutoff = datetime.utcnow() - timedelta(hours=older_than_hours)
+        cutoff = utc_now() - timedelta(hours=older_than_hours)
         removed = 0
 
         for op_id, history in list(self.retry_history.items()):

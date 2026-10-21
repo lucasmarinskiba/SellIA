@@ -10,6 +10,8 @@ from datetime import datetime
 from functools import wraps
 from typing import Any, TypeVar
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 T = TypeVar('T')
@@ -131,7 +133,7 @@ class RetryableTask:
         self.last_error: str | None = None
         self.result: Any | None = None
         self.status = "pending"  # pending, running, success, failed
-        self.created_at = datetime.utcnow()
+        self.created_at = utc_now()
         self.completed_at: datetime | None = None
 
     async def execute(self) -> bool:
@@ -147,7 +149,7 @@ class RetryableTask:
                     self.result = self.func(*self.args, **self.kwargs)
 
                 self.status = "success"
-                self.completed_at = datetime.utcnow()
+                self.completed_at = utc_now()
                 logger.info(f"Task {self.task_id} succeeded on attempt {self.attempts}")
                 return True
 
@@ -163,7 +165,7 @@ class RetryableTask:
                     await asyncio.sleep(delay)
                 else:
                     self.status = "failed"
-                    self.completed_at = datetime.utcnow()
+                    self.completed_at = utc_now()
                     logger.error(f"Task {self.task_id} failed after {self.attempts} attempts: {e}")
                     return False
 

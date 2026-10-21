@@ -5,8 +5,9 @@ Fase 1+2+3 convergence: integra knowledge + Computer Use + dashboards.
 """
 
 import logging
-from datetime import datetime
 from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -192,7 +193,7 @@ class MultiPlatformOrchestrator:
         logger.info("Extracting platform analytics")
 
         platforms = ["mercadolibre", "amazon", "tiktok_shop", "ebay", "shopify"]
-        results = {"platforms": {}, "timestamp": datetime.utcnow().isoformat()}
+        results = {"platforms": {}, "timestamp": utc_now().isoformat()}
 
         for platform in platforms:
             try:
@@ -245,7 +246,7 @@ class MultiPlatformOrchestrator:
         # Parsear OCR result (simplificado)
         return {
             "platform": platform,
-            "extracted_at": datetime.utcnow().isoformat(),
+            "extracted_at": utc_now().isoformat(),
             "status": "success" if result.get("completed") > 0 else "failed",
         }
 
@@ -341,7 +342,7 @@ class MultiPlatformOrchestrator:
         )
 
         return {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "inventory": {
                 "total_skus": inventory[0]["total_skus"] if inventory else 0,
                 "total_stock": inventory[0]["total_stock"] if inventory else 0,

@@ -24,6 +24,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -113,14 +115,14 @@ class ProspectingWorkflow:
             logger.info(f"Starting prospecting cycle: {len(search_queries)} queries, {len(locations)} locations")
 
             execution = WorkflowExecution(
-                workflow_id=f"prospecting_{datetime.utcnow().timestamp()}",
+                workflow_id=f"prospecting_{utc_now().timestamp()}",
                 config=WorkflowConfig(
                     name="Prospecting",
                     phase=WorkflowPhase.PROSPECTING,
                     platforms=["google_maps", "linkedin", "yellow_pages"],
                     daily_limit=daily_limit,
                 ),
-                started_at=datetime.utcnow(),
+                started_at=utc_now(),
             )
 
             # 1. SEARCH — Busca en múltiples fuentes
@@ -172,7 +174,7 @@ class ProspectingWorkflow:
 
             logger.info(f"High-value: {len(high_value)}, Medium-value: {len(medium_value)}")
 
-            execution.completed_at = datetime.utcnow()
+            execution.completed_at = utc_now()
             execution.status = "completed"
             execution.total_tasks = len(all_leads)
             execution.completed_tasks = len(self.qualified_leads)
@@ -229,13 +231,13 @@ class SellingWorkflow:
             logger.info(f"Starting sales cycle: {len(products)} products, {len(platforms)} platforms")
 
             execution = WorkflowExecution(
-                workflow_id=f"selling_{datetime.utcnow().timestamp()}",
+                workflow_id=f"selling_{utc_now().timestamp()}",
                 config=WorkflowConfig(
                     name="Complete Sales Cycle",
                     phase=WorkflowPhase.SELLING,
                     platforms=platforms,
                 ),
-                started_at=datetime.utcnow(),
+                started_at=utc_now(),
             )
 
             # 1. LIST — Publica en todas plataformas
@@ -297,7 +299,7 @@ class SellingWorkflow:
 
             # TODO: Integrar con orden tracking
 
-            execution.completed_at = datetime.utcnow()
+            execution.completed_at = utc_now()
             execution.status = "completed"
             execution.total_tasks = len(products) * len(platforms)
 
@@ -362,13 +364,13 @@ class NurturingWorkflow:
             logger.info(f"Starting nurture campaign: {sequence_name}, {len(leads)} leads")
 
             execution = WorkflowExecution(
-                workflow_id=f"nurturing_{datetime.utcnow().timestamp()}",
+                workflow_id=f"nurturing_{utc_now().timestamp()}",
                 config=WorkflowConfig(
                     name=sequence_name,
                     phase=WorkflowPhase.NURTURING,
                     platforms=["email"],
                 ),
-                started_at=datetime.utcnow(),
+                started_at=utc_now(),
             )
 
             results = []
@@ -407,7 +409,7 @@ class NurturingWorkflow:
                     logger.error(f"Error processing lead: {e!s}")
                     execution.failed_tasks += 1
 
-            execution.completed_at = datetime.utcnow()
+            execution.completed_at = utc_now()
             execution.status = "completed"
             execution.total_tasks = len(leads) * len(emails)
 
@@ -459,18 +461,18 @@ class RetentionWorkflow:
             logger.info(f"Starting customer engagement: {len(customers)} customers")
 
             execution = WorkflowExecution(
-                workflow_id=f"retention_{datetime.utcnow().timestamp()}",
+                workflow_id=f"retention_{utc_now().timestamp()}",
                 config=WorkflowConfig(
                     name="Customer Engagement",
                     phase=WorkflowPhase.RETENTION,
                     platforms=["email", "whatsapp"],
                 ),
-                started_at=datetime.utcnow(),
+                started_at=utc_now(),
             )
 
             # TODO: Implementar lógica completa
 
-            execution.completed_at = datetime.utcnow()
+            execution.completed_at = utc_now()
             execution.status = "completed"
 
             return {
@@ -566,7 +568,7 @@ class WorkflowOrchestrator:
 
         try:
             cycles = 0
-            start_time = datetime.utcnow()
+            start_time = utc_now()
 
             while True:
                 cycles += 1
@@ -601,7 +603,7 @@ class WorkflowOrchestrator:
 
         except KeyboardInterrupt:
             logger.info("Sales machine stopped")
-            return {"cycles": cycles, "duration": (datetime.utcnow() - start_time).total_seconds()}
+            return {"cycles": cycles, "duration": (utc_now() - start_time).total_seconds()}
 
     def get_workflows_report(self) -> dict[str, Any]:
         """Retorna reporte de todos workflows ejecutados."""

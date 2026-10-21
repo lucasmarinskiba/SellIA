@@ -30,6 +30,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import utc_now
 from app.core.database import get_db
 from app.domains.channels.models import (
     ChannelConnection,
@@ -165,7 +166,7 @@ async def facebook_shop_config(
             "status": "success",
             "platform": "facebook_shop",
             "account_id": account_id,
-            "configured_at": datetime.utcnow().isoformat(),
+            "configured_at": utc_now().isoformat(),
             "correlation_id": correlation_id,
         }
 
@@ -689,7 +690,7 @@ async def platforms_health() -> dict[str, Any]:
                 "slack": "ok",
                 "telegram": "ok",
             },
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
     except Exception as e:

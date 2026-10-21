@@ -10,9 +10,11 @@ Se integra con RetryEngine del proyecto para:
 
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
 from enum import Enum
 from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +50,7 @@ class RetryHandler:
         """
         async with self.lock:
             delay = self._calculate_delay(job.attempts, policy)
-            retry_at = datetime.utcnow() + timedelta(seconds=delay)
+            retry_at = utc_now() + timedelta(seconds=delay)
 
             self.retry_queue[job.id] = {
                 "job": job,
@@ -69,7 +71,7 @@ class RetryHandler:
         Returns:
             Cantidad de retries procesados
         """
-        now = datetime.utcnow()
+        now = utc_now()
         retries_ready = []
 
         async with self.lock:

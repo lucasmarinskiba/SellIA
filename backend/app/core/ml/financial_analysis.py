@@ -8,6 +8,8 @@ from typing import Any
 
 import numpy as np
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -81,7 +83,7 @@ class BudgetPlanner:
         cumulative_profit = 0
 
         for month in range(months):
-            month_date = datetime.utcnow() + timedelta(days=30 * month)
+            month_date = utc_now() + timedelta(days=30 * month)
 
             # Calculate costs
             total_costs = 0
@@ -290,7 +292,7 @@ class AssetsLiabilitiesTracker:
         balance_check = abs(total_assets - (total_liabilities + total_equity))
 
         snapshot = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "assets": {"items": self.assets, "total": float(total_assets)},
             "liabilities": {"items": self.liabilities, "total": float(total_liabilities)},
             "equity": {"items": self.equity, "total": float(total_equity)},

@@ -24,6 +24,8 @@ from typing import Any
 
 import stripe
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 # Initialize Stripe
@@ -133,7 +135,7 @@ class StripeProcessor:
                 success_url=success_url,
                 cancel_url=cancel_url,
                 metadata=session_metadata,
-                expires_at=int((datetime.utcnow() + timedelta(hours=24)).timestamp()),
+                expires_at=int((utc_now() + timedelta(hours=24)).timestamp()),
             )
 
             logger.info(
@@ -370,7 +372,7 @@ class StripeProcessor:
                 description=description,
                 metadata=invoice_metadata,
                 due_date=int(
-                    (datetime.utcnow() + timedelta(days=due_days)).timestamp()
+                    (utc_now() + timedelta(days=due_days)).timestamp()
                 ),
             )
 

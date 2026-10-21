@@ -10,8 +10,9 @@ Pipeline:
 """
 
 import logging
-from datetime import datetime
 from typing import Any
+
+from app.core.clock import utc_now
 
 from .comment_analyzer import CommentAnalyzer
 from .educational_responder import EducationalResponder
@@ -145,7 +146,7 @@ class CommentResponseEngine:
                 "comment_id": f"cmt_{hash(comment_text) % 10000}",
                 "response_type": approach_type,
                 "personality_applied": self.brand_personality,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": utc_now().isoformat(),
                 "engagement_value": audience.get("engagement_value", "medium"),
                 "author_id": author_profile.get("id", "unknown"),
             },

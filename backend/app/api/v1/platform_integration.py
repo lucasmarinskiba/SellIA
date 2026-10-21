@@ -1,12 +1,13 @@
 """Phase 33 Multi-Platform Seller API (12 endpoints)."""
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.core.clock import utc_now
 from app.core.database import get_db
 from app.domains.enterprise.platform_integration import (
     CompetitorPrice,
@@ -123,7 +124,7 @@ def create_multiplatform_product(
             title=request.title,
             status="active",
             platforms=request.platforms,
-            created_at=datetime.utcnow().isoformat(),
+            created_at=utc_now().isoformat(),
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -388,13 +389,13 @@ def get_dashboard_overview(
 
     # Get seller metrics for each platform
     metrics = db.query(SellerMetrics).filter(
-        SellerMetrics.metric_date == datetime.utcnow().date()
+        SellerMetrics.metric_date == utc_now().date()
     ).all()
 
     metrics_by_platform = {m.platform: m for m in metrics}
 
     # Calculate GMV from orders (last 30 days)
-    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    thirty_days_ago = utc_now() - timedelta(days=30)
     orders = db.query(Order).filter(Order.created_at >= thirty_days_ago).all()
     gmv_by_platform = {}
     for order in orders:
@@ -407,7 +408,7 @@ def get_dashboard_overview(
     total_conversions = sum(l.sales_this_month for l in listings)
 
     return {
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
         "platforms": {
             "mercado_libre": {
                 "active_listings": metrics_by_platform.get("mercado_libre", {}).active_listings or 0,
@@ -444,7 +445,7 @@ def get_bestseller_status(
 ):
     """Real-time best seller ranking across platforms."""
     return {
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
         "mercado_libre": {
             "categories_ranked_1": 8,  # #1 in 8 categories
             "categories_ranked_top5": 25,  # Top 5 in 25 categories

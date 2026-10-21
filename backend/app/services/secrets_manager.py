@@ -161,7 +161,7 @@ class SecretsManager:
             new_data = {
                 **old_data,
                 "value": new_secret,
-                "rotated_at": __import__("datetime").datetime.utcnow().isoformat(),
+                "rotated_at": __import__("datetime").utc_now().isoformat(),
                 "old_value_deprecated": True,
             }
 

@@ -16,6 +16,8 @@ from sklearn.ensemble import (
     VotingRegressor,
 )
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -27,7 +29,7 @@ class EnsembleVote:
     prediction: float
     confidence: float
     weight: float
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -51,7 +53,7 @@ class UncertaintyEstimate:
     prediction_variance: float
     epistemic_uncertainty: float  # Model uncertainty
     aleatoric_uncertainty: float  # Data uncertainty
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -76,7 +78,7 @@ class ModelSelectionResult:
     top_models: list[tuple[str, float]]  # (model_name, score)
     performance_scores: dict[str, float]  # model -> score
     recommended_ensemble: list[str]
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
         return {

@@ -10,6 +10,8 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -32,7 +34,7 @@ class RequestMetrics:
     status_code: int
     success: bool
     error_message: str | None = None
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -133,7 +135,7 @@ class LoadTestRunner:
         logger.info(f"  RPS: {config.requests_per_second}")
         logger.info(f"  Duration: {config.duration_seconds}s")
 
-        start_time = datetime.utcnow()
+        start_time = utc_now()
         metrics: list[RequestMetrics] = []
 
         # Create user tasks
@@ -163,7 +165,7 @@ class LoadTestRunner:
                 if not task.done():
                     task.cancel()
 
-        end_time = datetime.utcnow()
+        end_time = utc_now()
         test_duration = (end_time - start_time).total_seconds()
 
         # Analyze results
@@ -192,15 +194,15 @@ class LoadTestRunner:
     ) -> None:
         """Simulate a single user session."""
 
-        start_time = datetime.utcnow()
+        start_time = utc_now()
         end_time = start_time + timedelta(seconds=config.duration_seconds)
         request_interval = 1.0 / (config.requests_per_second / config.concurrent_users)
 
         # Ramp-up phase
         ramp_up_end = start_time + timedelta(seconds=config.ramp_up_seconds)
 
-        while datetime.utcnow() < end_time:
-            now = datetime.utcnow()
+        while utc_now() < end_time:
+            now = utc_now()
 
             # Ramp-up: gradually increase frequency
             if now < ramp_up_end:

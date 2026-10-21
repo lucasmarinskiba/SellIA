@@ -7,6 +7,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -86,7 +88,7 @@ class PerformanceMonitor:
             name=name,
             value=value,
             unit=unit,
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             tags=tags or {},
         )
 
@@ -144,7 +146,7 @@ class PerformanceMonitor:
             current_value=current_value,
             threshold=threshold,
             severity=severity,
-            detected_at=datetime.utcnow(),
+            detected_at=utc_now(),
             message=f"{component} exceeded {severity} threshold: {current_value:.2f} > {threshold:.2f}",
         )
 
@@ -244,7 +246,7 @@ class PerformanceMonitor:
         # Count recent alerts by severity
         recent_alerts = [
             a for a in self.alerts
-            if a.detected_at > datetime.utcnow() - timedelta(minutes=5)
+            if a.detected_at > utc_now() - timedelta(minutes=5)
         ]
 
         critical_count = sum(1 for a in recent_alerts if a.severity == "critical")
@@ -283,7 +285,7 @@ class PerformanceMonitor:
         self.detect_bottlenecks()
 
         return {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "health": self.get_system_health(),
             "top_metrics": top_metrics,
             "detected_bottlenecks": self.bottlenecks,

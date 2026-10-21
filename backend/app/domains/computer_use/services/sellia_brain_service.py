@@ -9,9 +9,10 @@ Conecta: BrainIntegrationLayer → Computer Use Sessions
 """
 
 import logging
-from datetime import datetime
 from enum import Enum
 from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +58,7 @@ class ActionContext:
         self.product_info = product_info or {}
         self.conversation_history = conversation_history or []
         self.objections = objections or []
-        self.timestamp = datetime.utcnow()
+        self.timestamp = utc_now()
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -92,7 +93,7 @@ class StrategyRecommendation:
         self.prompt_template = prompt_template
         self.reasoning = reasoning
         self.metadata = metadata or {}
-        self.generated_at = datetime.utcnow()
+        self.generated_at = utc_now()
 
     def to_dict(self) -> dict[str, Any]:
         return {

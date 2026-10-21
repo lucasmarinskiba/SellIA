@@ -11,6 +11,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger("research_brain")
 
 
@@ -21,7 +23,7 @@ class ResearchSignal:
     signal_type: str
     value: Any
     confidence: float
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
@@ -34,7 +36,7 @@ class MarketInsight:
     confidence: float
     urgency: str  # "critical", "high", "medium", "low"
     action_required: bool
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
 
 @dataclass
@@ -55,7 +57,7 @@ class TrendAlert:
     velocity: float  # Rate of change
     affected_segments: list[str]
     opportunity: bool
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
 
 # ============================================================================
@@ -79,13 +81,13 @@ class ResearchAgent(ABC):
 
     async def update_cache(self, key: str, value: Any, ttl_seconds: int = 3600):
         """Cache research results with TTL"""
-        self.cache[key] = {"value": value, "expires": datetime.utcnow() + timedelta(seconds=ttl_seconds)}
+        self.cache[key] = {"value": value, "expires": utc_now() + timedelta(seconds=ttl_seconds)}
 
     async def get_cached(self, key: str) -> Any | None:
         """Get cached value if not expired"""
         if key in self.cache:
             entry = self.cache[key]
-            if datetime.utcnow() < entry["expires"]:
+            if utc_now() < entry["expires"]:
                 return entry["value"]
         return None
 
@@ -182,7 +184,7 @@ class CompetitorAnalysisSpecialist(SpecialistAgent):
                 "threats": ["new_entrants", "price_wars", "open_source_alternatives"],
             },
             confidence=0.80,
-            metadata={"competitors_analyzed": 8, "updated": datetime.utcnow().isoformat()}
+            metadata={"competitors_analyzed": 8, "updated": utc_now().isoformat()}
         )
         signals.append(swot_signal)
 
@@ -1603,7 +1605,7 @@ class ResearchBrain:
             "total_specialists": len(self.specialists),
             "active_signals": active_signals,
             "cache_size": len(self.insights_cache),
-            "last_update": datetime.utcnow().isoformat(),
+            "last_update": utc_now().isoformat(),
             "status": "healthy" if total_agents > 50 else "degraded",
         }
 

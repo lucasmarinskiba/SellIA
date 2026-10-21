@@ -3,11 +3,12 @@
 import logging
 import secrets
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.clock import utc_now
 from app.models.email_auth import (
     AccountApproval,
     ApprovalAuditLog,
@@ -57,7 +58,7 @@ class EmailAuthManager:
         """Generate verification token & queue email."""
 
         token = secrets.token_urlsafe(32)
-        expires_at = datetime.utcnow() + timedelta(hours=24)
+        expires_at = utc_now() + timedelta(hours=24)
 
         verification = EmailVerificationToken(
             user_id=user_id,
@@ -94,7 +95,7 @@ class EmailAuthManager:
                 error_code="TOKEN_NOT_FOUND",
             )
 
-        if datetime.utcnow() > verification.expires_at:
+        if utc_now() > verification.expires_at:
             return EmailVerificationResult(
                 success=False,
                 user_id=verification.user_id,
@@ -104,13 +105,13 @@ class EmailAuthManager:
             )
 
         verification.is_verified = True
-        verification.verified_at = datetime.utcnow()
+        verification.verified_at = utc_now()
         self.db.add(verification)
 
         user = self.db.query(User).filter(User.id == verification.user_id).first()
         if user:
             user.email_verified = True
-            user.verified_at = datetime.utcnow()
+            user.verified_at = utc_now()
             self.db.add(user)
 
         self.db.commit()
@@ -147,7 +148,7 @@ class EmailAuthManager:
             company=company,
             role=role,
             approval_status="approved" if auto_approved else "pending",
-            approved_at=datetime.utcnow() if auto_approved else None,
+            approved_at=utc_now() if auto_approved else None,
             auto_approved=auto_approved,
             requested_by=user_id,
         )
@@ -194,7 +195,7 @@ class EmailAuthManager:
 
         approval.approval_status = "approved"
         approval.approved_by = admin_id
-        approval.approved_at = datetime.utcnow()
+        approval.approved_at = utc_now()
         approval.approval_notes = notes
         self.db.add(approval)
 
@@ -226,7 +227,7 @@ class EmailAuthManager:
 
         approval.approval_status = "rejected"
         approval.approved_by = admin_id
-        approval.approved_at = datetime.utcnow()
+        approval.approved_at = utc_now()
         approval.rejection_reason = rejection_reason
         self.db.add(approval)
 

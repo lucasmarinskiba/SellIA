@@ -5,10 +5,11 @@ Market feeds, APIs, external data for research agents
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import Any
 
 import aiohttp
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger("data_sources")
 
@@ -542,13 +543,13 @@ class DataSourceOrchestrator:
         health = {
             "sources": {},
             "overall_status": "healthy",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
         for name, source in self.sources.items():
             try:
                 # Simple connectivity check
-                health["sources"][name] = {"status": "active", "last_check": datetime.utcnow().isoformat()}
+                health["sources"][name] = {"status": "active", "last_check": utc_now().isoformat()}
             except Exception as e:
                 health["sources"][name] = {"status": "error", "error": str(e)}
                 health["overall_status"] = "degraded"

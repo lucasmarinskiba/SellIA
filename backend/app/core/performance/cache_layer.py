@@ -9,6 +9,8 @@ from datetime import datetime, timedelta
 from functools import wraps
 from typing import Any, TypeVar
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
@@ -41,13 +43,13 @@ class CacheEntry:
 
     def is_expired(self) -> bool:
         """Check if entry has expired."""
-        return datetime.utcnow() > self.created_at + timedelta(seconds=self.ttl_seconds)
+        return utc_now() > self.created_at + timedelta(seconds=self.ttl_seconds)
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "key": self.key,
             "ttl_seconds": self.ttl_seconds,
-            "age_seconds": int((datetime.utcnow() - self.created_at).total_seconds()),
+            "age_seconds": int((utc_now() - self.created_at).total_seconds()),
             "hit_count": self.hit_count,
             "created_at": self.created_at.isoformat(),
             "accessed_at": self.accessed_at.isoformat(),
@@ -78,7 +80,7 @@ class LocalCache:
             return None
 
         entry.hit_count += 1
-        entry.accessed_at = datetime.utcnow()
+        entry.accessed_at = utc_now()
         self.hits += 1
         return entry.value
 
@@ -96,8 +98,8 @@ class LocalCache:
             key=key,
             value=value,
             ttl_seconds=ttl_seconds,
-            created_at=datetime.utcnow(),
-            accessed_at=datetime.utcnow(),
+            created_at=utc_now(),
+            accessed_at=utc_now(),
         )
 
     async def delete(self, key: str) -> None:

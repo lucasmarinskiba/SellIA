@@ -21,6 +21,8 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -52,7 +54,7 @@ class AffiliateProduct:
     price: float
     commission_pct: float
     link: str
-    date_added: datetime = field(default_factory=datetime.utcnow)
+    date_added: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -108,7 +110,7 @@ class CommissionTracker:
     def __init__(self):
         self.products: dict[str, AffiliateProduct] = {}
         self.sales: list[AffiliateSale] = []
-        self.created_at = datetime.utcnow()
+        self.created_at = utc_now()
 
     def add_product(self, product: AffiliateProduct) -> None:
         """Add affiliate product to track."""
@@ -381,7 +383,7 @@ class CommissionTracker:
             channel_commission[sale.channel] += sale.commission_earned
 
         return {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "summary": {
                 "total_sales": len(self.sales),
                 "approved_sales": len(approved_sales),
@@ -455,7 +457,7 @@ if __name__ == "__main__":
     tracker.add_product(product2)
 
     # Add sample sales
-    now = datetime.utcnow()
+    now = utc_now()
     sale1 = AffiliateSale(
         "sale_1", "prod_1", "blog_reviews", "blog",
         now - timedelta(days=5),

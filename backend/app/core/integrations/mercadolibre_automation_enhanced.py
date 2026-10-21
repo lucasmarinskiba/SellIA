@@ -12,11 +12,13 @@ Flujo:
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
 from enum import Enum
 from typing import Any
 
 import httpx
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +77,7 @@ class MercadoLibreAutomationEnhanced:
 
             if not orders:
                 logger.info("No new orders")
-                self.last_sync = datetime.utcnow()
+                self.last_sync = utc_now()
                 return {"status": "success", "orders_synced": 0}
 
             processed = []
@@ -92,7 +94,7 @@ class MercadoLibreAutomationEnhanced:
                     logger.error(f"Error processing order {order.get('id')}: {e!s}")
                     failed.append({"order_id": order.get("id"), "error": str(e)})
 
-            self.last_sync = datetime.utcnow()
+            self.last_sync = utc_now()
 
             return {
                 "status": "success",

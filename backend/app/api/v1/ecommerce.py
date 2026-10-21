@@ -13,12 +13,12 @@ Ver: backend/app/core/database/payment_models.py
 
 import logging
 import uuid
-from datetime import datetime
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
 
+from app.core.clock import utc_now
 from app.core.database import AsyncSessionLocal
 from app.core.database.payment_models import Order as OrderModel
 from app.core.database.payment_models import Product as ProductModel
@@ -196,7 +196,7 @@ async def checkout(order_req: OrderRequest, user_id: str):
             total = subtotal - discount_amount
 
             # Crear orden
-            order_id = f"ORD-{datetime.utcnow().strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
+            order_id = f"ORD-{utc_now().strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
             db_order = OrderModel(
                 id=order_id,
                 customer_email="",  # TODO: Obtener de context

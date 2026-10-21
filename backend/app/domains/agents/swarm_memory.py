@@ -1,12 +1,12 @@
 """Swarm Memory - Persistent storage for multi-agent swarm sessions."""
 
 import uuid
-from datetime import datetime
 
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
+from app.core.clock import utc_now
 from app.core.database import Base
 
 
@@ -23,8 +23,8 @@ class SwarmSession(Base):
     round_count = Column(Integer, default=0)
     consensus_reached = Column(Boolean, default=False)
     final_response = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
     messages = relationship("SwarmMessage", back_populates="session", cascade="all, delete-orphan", lazy="selectin")
 
@@ -40,6 +40,6 @@ class SwarmMessage(Base):
     content = Column(Text, nullable=False)
     message_type = Column(String(50), nullable=False)  # idea, critique, agreement, action, final
     round = Column(Integer, nullable=False, default=1)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
 
     session = relationship("SwarmSession", back_populates="messages")

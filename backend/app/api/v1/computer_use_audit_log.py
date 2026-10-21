@@ -9,12 +9,13 @@ Endpoints para ver actividad REAL de agents:
 - POST /audit-logs/{id}/reject — rechazar acción
 """
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import utc_now
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
 from app.core.logger import get_logger
@@ -53,7 +54,7 @@ async def list_audit_logs(
     """
     audit_service = get_audit_log_service(db)
 
-    date_from = datetime.utcnow() - timedelta(days=days)
+    date_from = utc_now() - timedelta(days=days)
 
     filter_obj = ComputerUseAuditLogSearchFilter(
         user_id=str(current_user.id),

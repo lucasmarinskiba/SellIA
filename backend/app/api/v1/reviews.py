@@ -10,6 +10,8 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from app.core.clock import utc_now
+
 router = APIRouter(prefix="/api/v1/reviews", tags=["reviews"])
 logger = logging.getLogger(__name__)
 
@@ -84,7 +86,7 @@ async def create_review(
             "text": text,
             "verified_purchase": verified_purchase,
             "status": "spam" if is_spam else "pending",  # Pending = espera moderación
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": utc_now().isoformat(),
         }
 
         _REVIEWS_DB[review_id] = review

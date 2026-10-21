@@ -32,6 +32,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -159,7 +161,7 @@ class LeadData:
     timeline: str | None = None
     source: str | None = None
     source_platform: PlatformType | None = None
-    extracted_at: datetime = field(default_factory=datetime.utcnow)
+    extracted_at: datetime = field(default_factory=utc_now)
 
 
 @dataclass
@@ -177,8 +179,8 @@ class OrderData:
     total_price: float | None = None
     status: str = "pending"
     shipping_address: str | None = None
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    updated_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utc_now)
+    updated_at: datetime = field(default_factory=utc_now)
 
 
 # ============================================================================
@@ -315,11 +317,11 @@ class BrowserAutomationUtils:
 
         Realiza polling de screenshots hasta que encuentre el elemento.
         """
-        start_time = datetime.utcnow()
+        start_time = utc_now()
         poll_interval = 0.5
 
         while True:
-            elapsed = (datetime.utcnow() - start_time).total_seconds()
+            elapsed = (utc_now() - start_time).total_seconds()
 
             if elapsed > timeout:
                 logger.warning(f"Timeout waiting for element: {description}")
@@ -898,13 +900,13 @@ class ComputerUseOrchestrator:
         5. Captura resultados
         6. Log y retorna
         """
-        workflow_id = f"{platform.value}_{strategy.value}_{datetime.utcnow().timestamp()}"
+        workflow_id = f"{platform.value}_{strategy.value}_{utc_now().timestamp()}"
 
         execution = WorkflowExecution(
             workflow_id=workflow_id,
             strategy_type=strategy,
             platform=platform,
-            started_at=datetime.utcnow(),
+            started_at=utc_now(),
         )
 
         try:
@@ -946,7 +948,7 @@ class ComputerUseOrchestrator:
             execution.failed_actions = execution.total_actions
 
         finally:
-            execution.completed_at = datetime.utcnow()
+            execution.completed_at = utc_now()
             self.workflow_history.append(execution)
 
         return execution

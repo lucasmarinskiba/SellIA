@@ -6,6 +6,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -35,7 +37,7 @@ class StrategyScore:
     roi: float = 0.0  # Return on investment
     nps_score: float = 0.0  # Net Promoter Score
     confidence: float = 0.0  # Confidence in measurements (0-1)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
     notes: str = ""
 
     def overall_score(self) -> float:

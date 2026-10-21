@@ -2,7 +2,6 @@
 
 import enum
 import uuid
-from datetime import datetime
 
 from sqlalchemy import (
     Boolean,
@@ -17,6 +16,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 
+from app.core.clock import utc_now
 from app.core.database import Base
 
 
@@ -61,8 +61,8 @@ class Product(Base):
     stock_total = Column(Integer, nullable=False)
     stock_reserved = Column(Integer, default=0)  # Reserved from recent sales
     is_digital = Column(Boolean, default=False)  # Digital vs physical
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     __table_args__ = (
         Index('idx_seller_sku', 'seller_id', 'sku'),
@@ -87,8 +87,8 @@ class PlatformListing(Base):
     sales_this_month = Column(Integer, default=0)
     best_seller_rank = Column(Integer, nullable=True)  # #1, #2, etc (per category)
     last_sync_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     __table_args__ = (
         Index('idx_platform_listing', 'platform', 'platform_sku'),
@@ -108,7 +108,7 @@ class PriceHistory(Base):
     reason = Column(Text, nullable=True)  # Why price changed
     competitor_price = Column(Float, nullable=True)
     inventory_level = Column(Integer, nullable=True)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=utc_now)
 
     __table_args__ = (
         Index('idx_listing_history', 'listing_id', 'timestamp'),
@@ -129,7 +129,7 @@ class CompetitorPrice(Base):
     rating = Column(Float, nullable=True)
     sales_velocity = Column(Float, nullable=True)  # Units/day
     best_seller_rank = Column(Integer, nullable=True)
-    last_checked = Column(DateTime, default=datetime.utcnow)
+    last_checked = Column(DateTime, default=utc_now)
 
     __table_args__ = (
         Index('idx_competitor_product', 'product_id', 'platform'),
@@ -151,8 +151,8 @@ class KeywordResearch(Base):
     current_rank = Column(Integer, nullable=True)  # Current position (#1, #10, etc)
     rank_trend = Column(String(50), nullable=True)  # up, down, stable
     conversion_rate = Column(Float, nullable=True)  # % of searchers who buy
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     __table_args__ = (
         Index('idx_keyword_product', 'product_id', 'keyword'),
@@ -177,7 +177,7 @@ class ListingVersion(Base):
     impressions = Column(Integer, default=0)
     conversion_rate = Column(Float, nullable=True)
     avg_rating = Column(Float, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     activated_at = Column(DateTime, nullable=True)
 
     __table_args__ = (
@@ -200,7 +200,7 @@ class CustomerReview(Base):
     seller_response = Column(Text, nullable=True)  # Response from seller
     response_date = Column(DateTime, nullable=True)
     helpful_count = Column(Integer, default=0)  # Upvotes
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     __table_args__ = (
         Index('idx_listing_reviews', 'listing_id', 'rating'),
@@ -221,7 +221,7 @@ class Order(Base):
     price = Column(Float, nullable=False)
     quantity = Column(Integer, default=1)
     order_status = Column(String(50), nullable=False)  # pending, shipped, delivered, cancelled
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     shipped_at = Column(DateTime, nullable=True)
     delivered_at = Column(DateTime, nullable=True)
 
@@ -244,7 +244,7 @@ class FOOMMessage(Base):
     call_to_action = Column(String(255), nullable=True)  # "Buy now"
     inventory_level = Column(Integer, nullable=True)
     sales_velocity = Column(Float, nullable=True)
-    generated_at = Column(DateTime, default=datetime.utcnow)
+    generated_at = Column(DateTime, default=utc_now)
 
     __table_args__ = (
         Index('idx_foom_listing', 'listing_id', 'platform'),
@@ -258,7 +258,7 @@ class SellerMetrics(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     seller_id = Column(String(255), nullable=False)
     platform = Column(String(50), nullable=False)
-    metric_date = Column(DateTime, default=datetime.utcnow)
+    metric_date = Column(DateTime, default=utc_now)
     active_listings = Column(Integer, default=0)
     bestseller_count = Column(Integer, default=0)  # #1 rankings
     top_5_count = Column(Integer, default=0)  # Top 5 rankings
@@ -284,7 +284,7 @@ class AdvertisingCampaign(Base):
     campaign_name = Column(String(255), nullable=False)
     campaign_type = Column(String(50), nullable=False)  # sponsored_products, manual_ads
     daily_budget = Column(Float, nullable=False)
-    start_date = Column(DateTime, default=datetime.utcnow)
+    start_date = Column(DateTime, default=utc_now)
     end_date = Column(DateTime, nullable=True)
     status = Column(String(50), default='active')  # active, paused, ended
     impressions = Column(Integer, default=0)
@@ -294,7 +294,7 @@ class AdvertisingCampaign(Base):
     revenue = Column(Float, default=0)
     acos = Column(Float, nullable=True)  # Advertising Cost of Sale
     roas = Column(Float, nullable=True)  # Return on Ad Spend
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     __table_args__ = (
         Index('idx_campaign_listing', 'listing_id', 'status'),
@@ -316,8 +316,8 @@ class PlatformCredential(Base):
     is_active = Column(Boolean, default=True)
     last_sync_at = Column(DateTime, nullable=True)
     error_message = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     __table_args__ = (
         Index('idx_seller_platform', 'seller_id', 'platform'),
@@ -336,7 +336,7 @@ class InventorySyncLog(Base):
     new_stock = Column(Integer, nullable=False)
     sync_status = Column(String(50), nullable=False)  # success, failed
     error_message = Column(Text, nullable=True)
-    sync_timestamp = Column(DateTime, default=datetime.utcnow)
+    sync_timestamp = Column(DateTime, default=utc_now)
 
     __table_args__ = (
         Index('idx_sync_product', 'product_id', 'sync_timestamp'),

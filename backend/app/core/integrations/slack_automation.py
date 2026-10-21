@@ -23,11 +23,12 @@ App Installation:
 import hashlib
 import hmac
 import logging
-from datetime import datetime
 from enum import Enum
 from typing import Any
 
 import httpx
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +107,7 @@ class SlackAutomation:
             except ValueError:
                 return False
 
-            if abs(datetime.utcnow().timestamp() - req_timestamp) > 300:
+            if abs(utc_now().timestamp() - req_timestamp) > 300:
                 logger.warning("Slack request timestamp too old")
                 return False
 
@@ -449,7 +450,7 @@ class SlackAutomation:
                 data={
                     "Amount": f"${order_data.get('amount', 0):.2f}",
                     "Email": order_data.get("customer_email"),
-                    "Time": datetime.utcnow().isoformat(),
+                    "Time": utc_now().isoformat(),
                 },
             )
 

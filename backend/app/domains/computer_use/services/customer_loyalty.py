@@ -5,9 +5,11 @@ Fase 12: Fideliza clientes → upsell → retención → aumenta LTV.
 
 import logging
 import uuid
-from datetime import datetime, timedelta
+from datetime import timedelta
 from enum import Enum
 from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +47,7 @@ class EmailSequence:
         self.emails = emails
 
         self.status = "active"  # active, paused
-        self.created_at = datetime.utcnow()
+        self.created_at = utc_now()
         self.stats = {
             "sent": 0,
             "opened": 0,
@@ -81,7 +83,7 @@ class UpsellOpportunity:
         self.urgency_hours = urgency_hours
 
         self.score = self._calculate_upsell_score()
-        self.created_at = datetime.utcnow()
+        self.created_at = utc_now()
         self.expires_at = self.created_at + timedelta(hours=urgency_hours)
         self.sent = False
 
@@ -162,7 +164,7 @@ class CustomerLoyaltyEngine:
     ) -> EmailSequence:
         """Crea secuencia de emails automática."""
         try:
-            sequence_id = f"seq_{sequence_type.value}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
+            sequence_id = f"seq_{sequence_type.value}_{utc_now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
 
             # Usar template default
             if not emails:

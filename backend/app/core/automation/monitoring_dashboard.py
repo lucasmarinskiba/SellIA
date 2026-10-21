@@ -23,8 +23,9 @@ Dashboard views:
 import asyncio
 import logging
 from collections import defaultdict
-from datetime import datetime
 from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,7 @@ class MetricsCollector:
             event = {
                 "metric": metric_name,
                 "value": value,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": utc_now().isoformat(),
                 "tags": tags or {},
             }
             self.events.append(event)
@@ -124,7 +125,7 @@ class MonitoringDashboard:
         state_metrics = await self.state_manager.export_metrics()
 
         return {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "queue": queue_stats,
             "jobs": state_metrics,
             "active_tasks": len(await self.scheduler.list_tasks()),
@@ -137,7 +138,7 @@ class MonitoringDashboard:
         queue_stats = await self.job_queue.get_stats()
 
         return {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "jobs": {
                 "total": stats_24h.get("total", 0),
                 "success_rate": stats_24h.get("success_rate", "0%"),
@@ -167,7 +168,7 @@ class MonitoringDashboard:
             alerts.append({
                 "severity": "high",
                 "message": f"Queue backing up: {queue_stats['queued']} jobs waiting",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": utc_now().isoformat(),
             })
 
         # Dead letters
@@ -175,7 +176,7 @@ class MonitoringDashboard:
             alerts.append({
                 "severity": "medium",
                 "message": f"{queue_stats['dead_letter']} jobs in dead letter queue",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": utc_now().isoformat(),
             })
 
         # High escalation rate
@@ -184,7 +185,7 @@ class MonitoringDashboard:
             alerts.append({
                 "severity": "high",
                 "message": f"{len(escalations)} unresolved escalations",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": utc_now().isoformat(),
             })
 
         # Low success rate
@@ -195,7 +196,7 @@ class MonitoringDashboard:
             alerts.append({
                 "severity": "medium",
                 "message": f"Low success rate in last hour: {success_rate:.1f}%",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": utc_now().isoformat(),
             })
 
         return alerts
@@ -240,7 +241,7 @@ class MonitoringDashboard:
 
         return {
             "period": "last_hour",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "jobs": stats,
             "metrics": metrics,
         }
@@ -252,7 +253,7 @@ class MonitoringDashboard:
 
         return {
             "period": "last_24_hours",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "jobs": stats,
             "escalations": escalation_stats,
         }
@@ -264,7 +265,7 @@ class MonitoringDashboard:
 
         return {
             "period": "last_7_days",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "jobs": stats,
             "escalations": escalation_stats,
         }
