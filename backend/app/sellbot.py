@@ -1573,8 +1573,8 @@ def _register(router_module, name: str) -> None:
     try:
         app.include_router(router_module.router)
         logger.info(f"✅ {name} router registered")
-    except Exception as e:
-        logger.error(f"❌ Failed to register {name} router: {e}", exc_info=True)
+    except Exception:
+        logger.exception(f"❌ Failed to register {name} router")
 
 _register(leads_module, "leads")
 _register(workflows_module, "workflows")
@@ -1602,8 +1602,8 @@ def _register_domain_router(router_obj, name: str) -> None:
     try:
         app.include_router(router_obj)
         logger.info(f"✅ {name} router registered")
-    except Exception as e:
-        logger.error(f"❌ Failed to register {name} router: {e}", exc_info=True)
+    except Exception:
+        logger.exception(f"❌ Failed to register {name} router")
 
 # Phase X6: FOMO Dynamics (Ultra-Potent Psychology Engine)
 _register_domain_router(fomo_dynamics_router, "fomo_dynamics")

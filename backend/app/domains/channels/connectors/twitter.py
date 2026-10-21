@@ -145,8 +145,8 @@ class XConnector(BaseChannelConnector):
             headers = self._get_bearer_headers()
             response = await self._request_with_backoff("GET", url, headers=headers)
             return response.status_code == 200
-        except Exception as exc:
-            logger.exception("X credential validation failed: %s", exc)
+        except Exception:
+            logger.exception("X credential validation failed: %s")
             return False
 
     async def get_user_profile(self, username: str) -> dict[str, Any]:

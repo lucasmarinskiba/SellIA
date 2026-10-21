@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import warnings
 
 import numpy as np
@@ -9,6 +10,8 @@ import pandas as pd
 
 from app.domains.forecasting.models.base import DEFAULT_QUANTILES, Forecaster
 from app.domains.forecasting.types import ForecastResult, TimeSeries
+
+logger = logging.getLogger(__name__)
 
 try:
     from statsmodels.tsa.exponential_smoothing.ets import ETSModel
@@ -80,7 +83,8 @@ class SarimaForecaster(Forecaster):
                     ).fit(disp=False)
                     if best is None or res.aic < best.aic:
                         best = res
-                except Exception:  # noqa: BLE001
+                except Exception:
+                    logger.exception("fit: error ignorado")
                     continue
         if best is None:
             raise RuntimeError("SARIMA failed to fit any candidate")

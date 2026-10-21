@@ -167,8 +167,8 @@ class FOMOBridge:
             except Exception as e:  # noqa: BLE001
                 try:
                     await self.db.rollback()
-                except Exception:  # noqa: BLE001
-                    pass
+                except Exception:
+                    logger.exception("deploy: error ignorado")
                 logger.warning("fomo_bridge: campaign for %s failed: %s", spec["lever"], str(e)[:200])
                 deployed.append({"mechanism": spec["lever"], "lever": spec["lever"], "error": str(e)[:200]})
 

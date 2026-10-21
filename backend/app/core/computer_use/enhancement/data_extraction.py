@@ -656,7 +656,7 @@ class UniversalDataExtractor:
 
         except Exception as e:
             duration_ms = int((asyncio.get_event_loop().time() - start_time) * 1000)
-            logger.error(f"Extraction failed: {e!s}", exc_info=True)
+            logger.exception("Extraction failed")
 
             return ExtractionResult(
                 success=False,

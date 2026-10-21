@@ -386,18 +386,16 @@ class CashFlowProjector:
         """Calculate total inflows for a month."""
         total = 0
         for inflow in self.cash_inflows:
-            if month >= inflow["start_month"]:
-                if inflow["frequency"] == "monthly" or inflow["frequency"] == "quarterly" and month % 3 == 0 or inflow["frequency"] == "annual" and month == 12:
-                    total += inflow["amount"]
+            if month >= inflow["start_month"] and (inflow["frequency"] == "monthly" or inflow["frequency"] == "quarterly" and month % 3 == 0 or inflow["frequency"] == "annual" and month == 12):
+                total += inflow["amount"]
         return total
 
     def _calculate_period_outflows(self, month: int) -> float:
         """Calculate total outflows for a month."""
         total = 0
         for outflow in self.cash_outflows:
-            if month >= outflow["start_month"]:
-                if outflow["frequency"] == "monthly" or outflow["frequency"] == "quarterly" and month % 3 == 0 or outflow["frequency"] == "annual" and month == 12:
-                    total += outflow["amount"]
+            if month >= outflow["start_month"] and (outflow["frequency"] == "monthly" or outflow["frequency"] == "quarterly" and month % 3 == 0 or outflow["frequency"] == "annual" and month == 12):
+                total += outflow["amount"]
         return total
 
 

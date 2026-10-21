@@ -88,8 +88,8 @@ class FinanceAutopilotEngine:
                 if inv.status == 'draft':
                     inv.status = 'sent'
                 delivered += 1
-            except Exception as e:
-                logger.exception(f'Failed to deliver invoice {inv.id}: {e}')
+            except Exception:
+                logger.exception(f'Failed to deliver invoice {inv.id}')
 
         await self.db.commit()
         logger.info(f'Auto-delivered {delivered} invoices for business {business_id}')
@@ -154,8 +154,8 @@ class FinanceAutopilotEngine:
                 )
                 self.db.add(reminder)
                 reminders_sent += 1
-            except Exception as e:
-                logger.exception(f'Failed to send dunning for invoice {inv.id}: {e}')
+            except Exception:
+                logger.exception(f'Failed to send dunning for invoice {inv.id}')
 
         await self.db.commit()
         logger.info(f'Dunning sequence: {reminders_sent} reminders sent for business {business_id}')

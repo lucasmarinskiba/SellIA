@@ -115,13 +115,11 @@ class RightsAnalyzerAgent:
 
         # Assess overall risk
         critical_issues = []
-        if rights_analysis["derechos_piso"]:
-            if rights_analysis["derechos_piso"].deuda_expensas and rights_analysis["derechos_piso"].deuda_expensas > 0:
-                critical_issues.append(f"Outstanding HOA fees: ${rights_analysis['derechos_piso'].deuda_expensas:,.0f}")
+        if rights_analysis["derechos_piso"] and (rights_analysis["derechos_piso"].deuda_expensas and rights_analysis["derechos_piso"].deuda_expensas > 0):
+            critical_issues.append(f"Outstanding HOA fees: ${rights_analysis['derechos_piso'].deuda_expensas:,.0f}")
 
-        if rights_analysis["derechos_herencia"]:
-            if rights_analysis["derechos_herencia"].conflictos_pendientes:
-                critical_issues.extend(rights_analysis["derechos_herencia"].conflictos_pendientes)
+        if rights_analysis["derechos_herencia"] and rights_analysis["derechos_herencia"].conflictos_pendientes:
+            critical_issues.extend(rights_analysis["derechos_herencia"].conflictos_pendientes)
 
         rights_analysis["critical_issues"] = critical_issues
         rights_analysis["overall_risk_level"] = self._assess_risk_level(rights_analysis)
@@ -240,9 +238,8 @@ class RightsAnalyzerAgent:
             if analysis["derechos_herencia"].status_legalizacion != "complete":
                 risk_factors += 2
 
-        if analysis.get("derechos_piso"):
-            if not analysis["derechos_piso"].pueden_hipotecar:
-                risk_factors += 2
+        if analysis.get("derechos_piso") and not analysis["derechos_piso"].pueden_hipotecar:
+            risk_factors += 2
 
         if risk_factors == 0:
             return "low"

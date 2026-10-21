@@ -850,9 +850,8 @@ class FundamentalAnalysis:
             if macro_indicators.get("inflation", 0.02) < 0.03:
                 tailwinds.append("Moderate inflation supports tech growth")
 
-        if sector == "finance":
-            if macro_indicators.get("interest_rates", 0.03) > 0.02:
-                tailwinds.append("Higher rates benefit net interest margins")
+        if sector == "finance" and macro_indicators.get("interest_rates", 0.03) > 0.02:
+            tailwinds.append("Higher rates benefit net interest margins")
 
         if sector == "energy" and macro_indicators.get("oil_price", 50) > 60:
             tailwinds.append("Higher oil prices support profitability")

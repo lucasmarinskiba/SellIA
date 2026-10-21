@@ -57,9 +57,8 @@ class FeatureFlagService:
         if flag.enabled_plans and plan_id and plan_id not in flag.enabled_plans:
             return False
 
-        if flag.user_id_allowlist and user_id:
-            if user_id in flag.user_id_allowlist:
-                return True
+        if (flag.user_id_allowlist and user_id) and user_id in flag.user_id_allowlist:
+            return True
 
         if flag.rollout_percentage >= 100:
             return True

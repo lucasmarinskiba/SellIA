@@ -341,10 +341,8 @@ class ShippingConnectorAssistant:
 
         estimates = []
         for slug, data in CARRIER_DATA.items():
-            if destination not in data["coverage"] and is_international:
-                # Si es internacional y el carrier no cubre destino, solo carriers internacionales
-                if data["reach"] != "international":
-                    continue
+            if (destination not in data["coverage"] and is_international) and data["reach"] != "international":
+                continue
 
             tier = data["pricing_tier"]
             pricing = PRICING_TIERS.get(tier, PRICING_TIERS["mid"])

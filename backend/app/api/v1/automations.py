@@ -662,12 +662,11 @@ async def generate_content(
     if data.catalog_item_id:
         kwargs["catalog_item_id"] = str(data.catalog_item_id)
 
-    if data.content_type in ["image", "video", "copy"]:
-        if not data.catalog_item_id:
-            raise HTTPException(
-                status_code=400,
-                detail=f"catalog_item_id es requerido para content_type='{data.content_type}'"
-            )
+    if data.content_type in ["image", "video", "copy"] and not data.catalog_item_id:
+        raise HTTPException(
+            status_code=400,
+            detail=f"catalog_item_id es requerido para content_type='{data.content_type}'"
+        )
 
     if data.content_type == "thumbnail":
         kwargs["video_title"] = data.prompt_override or "Video"

@@ -116,8 +116,8 @@ async def build_brief(
         logger.warning("bot brief: seller preferences unreadable: %s", str(e)[:160])
         try:
             await db.rollback()
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception:
+            logger.exception("build_brief: error ignorado")
         missing.append("preferencias del vendedor")
 
     language_name = None

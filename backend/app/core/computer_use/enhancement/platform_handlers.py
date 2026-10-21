@@ -158,7 +158,7 @@ class MercadoLibrePlatformHandler:
             }
 
         except Exception as e:
-            logger.error(f"ML search failed: {e!s}", exc_info=True)
+            logger.exception("ML search failed")
             return {
                 "success": False,
                 "error": str(e),

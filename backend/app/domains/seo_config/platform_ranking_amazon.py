@@ -125,8 +125,8 @@ class AmazonRankingConnector(PlatformRankingConnector):
                     timeout=10,
                 )
                 return resp.status_code == 200
-        except Exception as e:
-            logger.exception(f"Amazon ranking credentials validation failed: {str(e)[:100]}")
+        except Exception:
+            logger.exception("Amazon ranking credentials validation failed")
             return False
 
     async def get_ranking_signals(self, external_id: str) -> list[RankingSignal]:

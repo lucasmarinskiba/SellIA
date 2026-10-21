@@ -33,8 +33,8 @@ def auto_deliver_invoices():
                 try:
                     res = await engine.auto_deliver_invoices(business.id)
                     total_delivered += res.get('delivered', 0)
-                except Exception as e:
-                    logger.exception(f'Failed auto-deliver for business {business.id}: {e}')
+                except Exception:
+                    logger.exception(f'Failed auto-deliver for business {business.id}')
 
             logger.info(f'Finance auto-deliver: {total_delivered} invoices delivered')
             return {'delivered': total_delivered}
@@ -58,8 +58,8 @@ def dunning_sequence():
                 try:
                     res = await engine.run_dunning_sequence(business.id)
                     total_reminders += res.get('reminders_sent', 0)
-                except Exception as e:
-                    logger.exception(f'Failed dunning for business {business.id}: {e}')
+                except Exception:
+                    logger.exception(f'Failed dunning for business {business.id}')
 
             logger.info(f'Finance dunning: {total_reminders} reminders sent')
             return {'reminders_sent': total_reminders}
@@ -83,8 +83,8 @@ def cash_flow_forecast():
                 try:
                     await engine.forecast_cash_flow(business.id, days=30)
                     forecasts += 1
-                except Exception as e:
-                    logger.exception(f'Failed cash flow forecast for business {business.id}: {e}')
+                except Exception:
+                    logger.exception(f'Failed cash flow forecast for business {business.id}')
 
             logger.info(f'Finance cash flow: {forecasts} forecasts generated')
             return {'forecasts': forecasts}
@@ -162,8 +162,8 @@ def auto_reconcile_payments():
                 try:
                     res = await engine.auto_reconcile_payments(business.id)
                     total_reconciled += res.get('reconciled', 0)
-                except Exception as e:
-                    logger.exception(f'Failed reconcile for business {business.id}: {e}')
+                except Exception:
+                    logger.exception(f'Failed reconcile for business {business.id}')
 
             logger.info(f'Finance reconcile: {total_reconciled} payments reconciled')
             return {'reconciled': total_reconciled}

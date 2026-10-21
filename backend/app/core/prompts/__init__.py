@@ -67,12 +67,12 @@ except ImportError:
 
 __all__ = [
     "EXPERT_COUNT",
+    "PROMPT_COUNT",
     "ExpertOrchestrator",
     "ExpertSelector",
     "ExpertType",
     "ExpertVoiceManager",
     "MarketingPrompts",
-    "PROMPT_COUNT",
     "PositioningPrompts",
     "PromptExecutionMode",
     "PromptOrchestrator",

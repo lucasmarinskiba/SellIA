@@ -231,9 +231,9 @@ class AuditLogger:
             db.add(audit_log)
             db.commit()
             db.refresh(audit_log)
-        except Exception as e:
+        except Exception:
             db.rollback()
-            logger.error(f"Failed to log audit event: {e}", exc_info=True)
+            logger.exception("Failed to log audit event")
             # Don't raise - audit failure shouldn't break app
 
         # Also log to structured logger for real-time monitoring

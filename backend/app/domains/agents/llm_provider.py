@@ -308,9 +308,8 @@ async def _is_ollama_available() -> bool:
     base_url = settings.OLLAMA_BASE_URL.rstrip("/")
     try:
         import aiohttp
-        async with aiohttp.ClientSession() as session:
-            async with session.get(f"{base_url}/api/tags", timeout=aiohttp.ClientTimeout(total=3)) as resp:
-                return resp.status == 200
+        async with aiohttp.ClientSession() as session, session.get(f"{base_url}/api/tags", timeout=aiohttp.ClientTimeout(total=3)) as resp:
+            return resp.status == 200
     except Exception:
         logger.exception("_is_ollama_available: error inesperado")
         return False
@@ -377,8 +376,8 @@ async def resolve_api_keys(
         logger.warning(f"Per-business API keys unavailable, using platform keys: {e}", exc_info=True)
         try:
             await db.rollback()
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception:
+            logger.exception("resolve_api_keys: error ignorado")
 
     return keys
 
@@ -511,8 +510,8 @@ async def generate_with_fallback(
             logger.warning(f"Auto-load business_context failed: {exc}", exc_info=True)
             try:
                 await db.rollback()
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception:
+                logger.exception("generate_with_fallback: error ignorado")
 
     # Inject business context into system prompt if available
     if business_context:

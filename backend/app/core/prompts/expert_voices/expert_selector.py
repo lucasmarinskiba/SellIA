@@ -96,9 +96,8 @@ class ExpertSelector:
             score += 0.4
 
         # Objection handling (15% weight)
-        if scenario.objection_level > 5:
-            if expert_type in [ExpertType.BELFORT, ExpertType.CARDONE, ExpertType.MINER]:
-                score += 0.15
+        if scenario.objection_level > 5 and expert_type in [ExpertType.BELFORT, ExpertType.CARDONE, ExpertType.MINER]:
+            score += 0.15
 
         # Deal stage fit (15% weight)
         if scenario.deal_stage == "decision":
@@ -109,9 +108,8 @@ class ExpertSelector:
                 score += 0.15
 
         # Urgency fit (10% weight)
-        if scenario.urgency > 7:
-            if expert_type in [ExpertType.BELFORT, ExpertType.CARDONE, ExpertType.TRUMP]:
-                score += 0.10
+        if scenario.urgency > 7 and expert_type in [ExpertType.BELFORT, ExpertType.CARDONE, ExpertType.TRUMP]:
+            score += 0.10
 
         # Customer personality fit (10% weight)
         if scenario.customer_personality == "analytical":
@@ -144,9 +142,8 @@ class ExpertSelector:
                 score += 0.05
 
         # Competitive pressure fit (5% weight)
-        if scenario.competitive_pressure > 7:
-            if expert_type in [ExpertType.TRUMP, ExpertType.GARYVEE, ExpertType.CARDONE]:
-                score += 0.05
+        if scenario.competitive_pressure > 7 and expert_type in [ExpertType.TRUMP, ExpertType.GARYVEE, ExpertType.CARDONE]:
+            score += 0.05
 
         # Cap at 1.0
         return min(score, 1.0)

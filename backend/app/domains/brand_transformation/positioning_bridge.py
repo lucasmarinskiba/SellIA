@@ -114,8 +114,8 @@ class PositioningBridge:
                 except Exception as e:  # noqa: BLE001
                     try:
                         await self.db.rollback()
-                    except Exception:  # noqa: BLE001
-                        pass
+                    except Exception:
+                        logger.exception("deploy: error ignorado")
                     created.append({"competitor": m["competitor_name"], "monitor_error": str(e)[:160]})
         except Exception as e:  # noqa: BLE001
             plan["monitor_error"] = f"competitive domain unavailable: {str(e)[:160]}"
@@ -135,8 +135,8 @@ class PositioningBridge:
                 except Exception as e:  # noqa: BLE001
                     try:
                         await self.db.rollback()
-                    except Exception:  # noqa: BLE001
-                        pass
+                    except Exception:
+                        logger.exception("deploy: error ignorado")
                     by_name.setdefault(b["competitor_name"], {"competitor": b["competitor_name"]})["battlecard_error"] = str(e)[:160]
             created = list(by_name.values())
         except Exception as e:  # noqa: BLE001

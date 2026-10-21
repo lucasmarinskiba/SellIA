@@ -298,9 +298,8 @@ class PropertyAnalyzerAgent:
             recommendations.append("Hot property - be prepared for multiple offers")
 
         # Investment-specific
-        if property_data.get("is_investment_property"):
-            if property_data.get("estimated_annual_rent", 0) > 0:
-                recommendations.append("Strong rental potential - consider as investment")
+        if property_data.get("is_investment_property") and property_data.get("estimated_annual_rent", 0) > 0:
+            recommendations.append("Strong rental potential - consider as investment")
 
         return recommendations
 

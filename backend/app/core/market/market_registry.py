@@ -149,9 +149,8 @@ class MarketRegistry:
 
         # Actualiza markets con este agente
         for market in market_applicable:
-            if market in self.markets:
-                if agent_name not in self.markets[market].loaded_agents:
-                    self.markets[market].loaded_agents.append(agent_name)
+            if market in self.markets and agent_name not in self.markets[market].loaded_agents:
+                self.markets[market].loaded_agents.append(agent_name)
 
         logger.info(f"Registered agent: {agent_name} (v{version})")
 
@@ -185,9 +184,8 @@ class MarketRegistry:
 
         # Actualiza markets con este rule set
         for market in market_applicable:
-            if market in self.markets:
-                if rule_set_name not in self.markets[market].available_rules:
-                    self.markets[market].available_rules.append(rule_set_name)
+            if market in self.markets and rule_set_name not in self.markets[market].available_rules:
+                self.markets[market].available_rules.append(rule_set_name)
 
         logger.info(f"Registered rule set: {rule_set_name} (v{version})")
 

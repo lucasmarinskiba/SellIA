@@ -165,8 +165,8 @@ class TransformationOrchestrator:
             # (and the outer commit) still works.
             try:
                 await self.db.rollback()
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception:
+                logger.exception("_run_stage_bridge: error ignorado")
             logger.warning("auto-bridge for stage %s failed: %s", stage_key, str(e)[:200])
             return {"bridge_error": str(e)[:200]}
         return None

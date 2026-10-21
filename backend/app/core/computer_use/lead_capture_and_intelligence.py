@@ -463,15 +463,14 @@ class MessageLeadExtractor:
         if len(words) >= 2:
             # Busca patrón "Me llamo X" o similar
             for i, word in enumerate(words):
-                if word.lower() in ["llamo", "name", "soy"]:
-                    if i + 1 < len(words):
-                        name_parts = []
-                        for j in range(i + 1, min(i + 3, len(words))):
-                            if words[j][0].isupper():
-                                name_parts.append(words[j])
-                        if name_parts:
-                            extracted["name"] = " ".join(name_parts)
-                        break
+                if word.lower() in ["llamo", "name", "soy"] and i + 1 < len(words):
+                    name_parts = []
+                    for j in range(i + 1, min(i + 3, len(words))):
+                        if words[j][0].isupper():
+                            name_parts.append(words[j])
+                    if name_parts:
+                        extracted["name"] = " ".join(name_parts)
+                    break
 
         return extracted
 

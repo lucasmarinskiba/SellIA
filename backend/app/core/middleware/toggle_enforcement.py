@@ -117,12 +117,11 @@ async def toggle_enforcement_middleware(request: Request, call_next: Callable) -
             )
 
         # Validar que no haya alcanzado límite
-        if toggle and toggle.monthly_limit:
-            if toggle.current_month_usage >= toggle.monthly_limit:
-                raise HTTPException(
-                    status_code=429,
-                    detail=f"Límite mensual alcanzado: {toggle.monthly_limit} usos. Intenta el próximo mes.",
-                )
+        if (toggle and toggle.monthly_limit) and toggle.current_month_usage >= toggle.monthly_limit:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Límite mensual alcanzado: {toggle.monthly_limit} usos. Intenta el próximo mes.",
+            )
 
         # Ejecutar endpoint
         response = await call_next(request)

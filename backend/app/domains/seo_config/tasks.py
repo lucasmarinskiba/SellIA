@@ -47,9 +47,9 @@ def fetch_nightly_analytics(self):
                         )
                         if metrics:
                             fetched_count += 1
-                    except Exception as e:
+                    except Exception:
                         logger.exception(
-                            f"Failed to fetch analytics for link {link.id}: {str(e)[:100]}"
+                            f"Failed to fetch analytics for link {link.id}"
                         )
 
                 logger.info(f"Nightly analytics fetch complete: {fetched_count}/{len(links)} links")
@@ -92,9 +92,9 @@ def generate_fomo_cadence(self):
                         fomo = await fomo_gen.generate_fomo_for_link(link.business_id, link)
                         if fomo:
                             generated_count += 1
-                    except Exception as e:
+                    except Exception:
                         logger.exception(
-                            f"Failed to generate FOMO for link {link.id}: {str(e)[:100]}"
+                            f"Failed to generate FOMO for link {link.id}"
                         )
 
                 logger.info(f"FOMO cadence complete: {generated_count}/{len(links)} links")
@@ -145,9 +145,9 @@ def compute_analytics_summaries(self):
                         )
                         if summary_30d:
                             computed_count += 1
-                    except Exception as e:
+                    except Exception:
                         logger.exception(
-                            f"Failed to compute summary for link {link.id}: {str(e)[:100]}"
+                            f"Failed to compute summary for link {link.id}"
                         )
 
                 logger.info(f"Analytics summaries computed: {computed_count} summaries")
@@ -188,8 +188,8 @@ def check_ab_test_winners(self):
                         updated_test = await ab_svc.check_and_announce_winner(test.business_id, test.id)
                         if updated_test and updated_test.status == "completed":
                             winners_announced += 1
-                    except Exception as e:
-                        logger.exception(f"Failed to check test {test.id}: {str(e)[:100]}")
+                    except Exception:
+                        logger.exception(f"Failed to check test {test.id}")
 
                 logger.info(f"A/B test check complete: {winners_announced} winners announced")
                 return {"winners_announced": winners_announced}
@@ -249,8 +249,8 @@ def monitor_fomo_decay(self):
                         rotation_result = await rotator.auto_rotate_on_decay(business.id)
                         total_rotated += rotation_result.get('rotated', 0)
 
-                    except Exception as e:
-                        logger.exception(f"Failed to monitor decay for business {business.id}: {str(e)[:100]}")
+                    except Exception:
+                        logger.exception(f"Failed to monitor decay for business {business.id}")
 
                 logger.info(f"FOMO decay monitor complete: {total_decay_detected} decays detected, {total_rotated} auto-rotated")
                 return {
@@ -301,9 +301,9 @@ def compute_positioning_scores(self):
                         )
                         if score:
                             computed += 1
-                    except Exception as e:
+                    except Exception:
                         await db.rollback()
-                        logger.exception(f"Failed to compute positioning for link {link_id}: {str(e)[:100]}")
+                        logger.exception(f"Failed to compute positioning for link {link_id}")
 
                 logger.info(f"Positioning score compute complete: {computed}/{len(link_ids)} links")
                 return {"computed": computed, "total": len(link_ids)}
@@ -357,9 +357,9 @@ def compute_store_positioning_scores(self):
                         score = await service.compute_store_score(business_id, "amazon", connection_id)
                         if score:
                             computed += 1
-                    except Exception as e:
+                    except Exception:
                         await db.rollback()
-                        logger.exception(f"Failed to compute store positioning for business {business_id}: {str(e)[:100]}")
+                        logger.exception(f"Failed to compute store positioning for business {business_id}")
 
                 logger.info(f"Store positioning compute complete: {computed}/{len(targets)} connections")
                 return {"computed": computed, "total": len(targets)}

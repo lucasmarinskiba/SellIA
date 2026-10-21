@@ -333,9 +333,8 @@ class TenantIsolationService:
             TenantIsolationPolicy.business_id == business_id
         ).first()
 
-        if policy and policy.cross_tenant_data_access_blocked:
-            if business_id != request_business_id:
-                logger.warning(f"Cross-tenant access attempt: {business_id} -> {request_business_id}")
-                return False, "Cross-tenant access denied"
+        if (policy and policy.cross_tenant_data_access_blocked) and business_id != request_business_id:
+            logger.warning(f"Cross-tenant access attempt: {business_id} -> {request_business_id}")
+            return False, "Cross-tenant access denied"
 
         return True, None

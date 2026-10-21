@@ -452,25 +452,24 @@ async def computer_use_websocket(
     # Find or create session manager
     manager = get_session_manager(str(session_id))
 
-    if not manager:
-        if session.status == "pending":
-            await websocket.send_json({
-                "type": "status",
-                "data": {"status": "pending", "message": "Iniciando sesión...", "step": 0, "total_steps": settings.COMPUTER_USE_MAX_STEPS},
-            })
-            try:
-                await start_session(session_id, db, type("User", (), {"id": user_id})())
-                for _ in range(10):
-                    await asyncio.sleep(0.5)
-                    manager = get_session_manager(str(session_id))
-                    if manager:
-                        break
-            except Exception as e:
-                logger.exception("Auto-start failed")
-                await websocket.send_json({"type": "error", "data": {"message": f"No se pudo iniciar: {e!s}"}})
-                await ws_manager.disconnect(str(session_id))
-                await websocket.close()
-                return
+    if not manager and session.status == "pending":
+        await websocket.send_json({
+            "type": "status",
+            "data": {"status": "pending", "message": "Iniciando sesión...", "step": 0, "total_steps": settings.COMPUTER_USE_MAX_STEPS},
+        })
+        try:
+            await start_session(session_id, db, type("User", (), {"id": user_id})())
+            for _ in range(10):
+                await asyncio.sleep(0.5)
+                manager = get_session_manager(str(session_id))
+                if manager:
+                    break
+        except Exception as e:
+            logger.exception("Auto-start failed")
+            await websocket.send_json({"type": "error", "data": {"message": f"No se pudo iniciar: {e!s}"}})
+            await ws_manager.disconnect(str(session_id))
+            await websocket.close()
+            return
 
     if not manager:
         await websocket.send_json({"type": "error", "data": {"message": "No se pudo iniciar el gestor de sesión"}})

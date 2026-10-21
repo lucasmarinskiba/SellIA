@@ -120,8 +120,8 @@ class HotmartRankingConnector(PlatformRankingConnector):
             async with httpx.AsyncClient() as client:
                 await self._get_access_token(client)
                 return True
-        except Exception as e:
-            logger.exception(f"Hotmart ranking credentials validation failed: {str(e)[:100]}")
+        except Exception:
+            logger.exception("Hotmart ranking credentials validation failed")
             return False
 
     async def get_ranking_signals(self, external_id: str) -> list[RankingSignal]:

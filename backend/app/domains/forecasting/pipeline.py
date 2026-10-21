@@ -121,7 +121,8 @@ class ForecastPipeline:
             if ctor:
                 try:
                     members.append(ctor())
-                except Exception:  # noqa: BLE001
+                except Exception:
+                    logger.exception("run: error ignorado")
                     continue
         if not members:
             members = [SeasonalNaiveForecaster(), ThetaForecaster()]

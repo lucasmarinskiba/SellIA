@@ -94,10 +94,9 @@ class StaffTaskService:
         tasks = query.order_by(StaffTask.due_date.asc()).all()
 
         for task in tasks:
-            if task.status not in [TaskStatus.COMPLETED, TaskStatus.CANCELLED]:
-                if task.due_date < now:
-                    task.status = TaskStatus.OVERDUE
-                    db.commit()
+            if task.status not in [TaskStatus.COMPLETED, TaskStatus.CANCELLED] and task.due_date < now:
+                task.status = TaskStatus.OVERDUE
+                db.commit()
 
         return tasks
 

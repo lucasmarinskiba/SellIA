@@ -695,7 +695,7 @@ class VerificationCoordinator:
             return result
 
         except Exception as e:
-            logger.error(f"Verification failed: {e!s}", exc_info=True)
+            logger.exception("Verification failed")
             return VerificationResult(
                 action_id="error",
                 action_type=action_type,

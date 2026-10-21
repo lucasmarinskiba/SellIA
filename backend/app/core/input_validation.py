@@ -67,9 +67,8 @@ class InputValidator:
             return True, None, None  # No rules = accept
 
         # Verificar min/max length
-        if "min_length" in rules:
-            if len(str(value)) < rules["min_length"]:
-                return False, f"{field_name} too short (min {rules['min_length']})", "reject"
+        if "min_length" in rules and len(str(value)) < rules["min_length"]:
+            return False, f"{field_name} too short (min {rules['min_length']})", "reject"
 
         if "max_length" in rules and len(str(value)) > rules["max_length"]:
             return False, f"{field_name} too long (max {rules['max_length']})", "reject"

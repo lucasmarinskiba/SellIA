@@ -287,9 +287,8 @@ Decision time. Yes or no?
                 return ClosingTechnique.HORMOZI_URGENCY
 
         # Si hay objeción → usar risk reversal o emotional reframe
-        if any(s.signal_type == "objection_raised" for s in signals):
-            if ClosingTechnique.HORMOZI_RISK_REVERSAL in candidate_techniques:
-                return ClosingTechnique.HORMOZI_RISK_REVERSAL
+        if any(s.signal_type == "objection_raised" for s in signals) and ClosingTechnique.HORMOZI_RISK_REVERSAL in candidate_techniques:
+            return ClosingTechnique.HORMOZI_RISK_REVERSAL
 
         # Default: primera técnica candidata
         return candidate_techniques[0] if candidate_techniques else ClosingTechnique.TRUMP_DIRECT

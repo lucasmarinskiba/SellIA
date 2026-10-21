@@ -133,14 +133,13 @@ class MonitoringSystem:
             "database_query_time_ms": 2000
         }
 
-        if metric.metric_name in thresholds:
-            if metric.value > thresholds[metric.metric_name]:
-                self.create_alert(
-                    alert_type=AlertType.HIGH_LATENCY,
-                    severity=AlertSeverity.HIGH,
-                    title=f"High {metric.metric_name}",
-                    message=f"{metric.metric_name} is {metric.value}{metric.unit}"
-                )
+        if metric.metric_name in thresholds and metric.value > thresholds[metric.metric_name]:
+            self.create_alert(
+                alert_type=AlertType.HIGH_LATENCY,
+                severity=AlertSeverity.HIGH,
+                title=f"High {metric.metric_name}",
+                message=f"{metric.metric_name} is {metric.value}{metric.unit}"
+            )
 
     def get_performance_stats(self) -> dict[str, Any]:
         """Get performance statistics"""

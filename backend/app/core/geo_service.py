@@ -57,22 +57,21 @@ async def get_ip_geolocation(ip: str) -> dict | None:
     url = GEO_API_URL.format(ip=ip)
     
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, timeout=aiohttp.ClientTimeout(total=3)) as resp:
-                if resp.status != 200:
-                    return None
-                data = await resp.json()
-                if data.get("status") != "success":
-                    return None
-                return {
-                    "country": data.get("country"),
-                    "country_code": data.get("countryCode"),
-                    "region": data.get("region"),
-                    "city": data.get("city"),
-                    "latitude": data.get("lat"),
-                    "longitude": data.get("lon"),
-                    "ip": data.get("query") or ip,
-                }
+        async with aiohttp.ClientSession() as session, session.get(url, timeout=aiohttp.ClientTimeout(total=3)) as resp:
+            if resp.status != 200:
+                return None
+            data = await resp.json()
+            if data.get("status") != "success":
+                return None
+            return {
+                "country": data.get("country"),
+                "country_code": data.get("countryCode"),
+                "region": data.get("region"),
+                "city": data.get("city"),
+                "latitude": data.get("lat"),
+                "longitude": data.get("lon"),
+                "ip": data.get("query") or ip,
+            }
     except Exception as e:
         logger.exception("get_ip_geolocation: error inesperado")
         from app.core.logger import get_logger

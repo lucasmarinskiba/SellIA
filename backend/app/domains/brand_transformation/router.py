@@ -352,8 +352,8 @@ async def create_program(
     if body.with_default_automations:
         try:
             await orch.seed_default_automations(business_id, prog, owner_user_id=current_user.id)
-        except Exception:  # noqa: BLE001 — never block program creation on automation seeding
-            pass
+        except Exception:
+            logger.exception("create_program: error ignorado")
     return prog
 
 
@@ -463,8 +463,8 @@ async def _run_all_bg(program_id: str) -> None:
                 if prog3:
                     prog3.run_state = "failed"
                     await db.commit()
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception:
+                logger.exception("_run_all_bg: error ignorado")
 
 
 @router.post("/programs/{program_id}/run-all")

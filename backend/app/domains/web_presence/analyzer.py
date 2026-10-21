@@ -16,6 +16,7 @@ for markup this simple.
 from __future__ import annotations
 
 import json
+import logging
 import re
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
@@ -23,6 +24,8 @@ from typing import Any
 from urllib.parse import urljoin, urlparse
 
 from . import terms
+
+logger = logging.getLogger(__name__)
 
 SEVERITY_ORDER = {"critical": 0, "warning": 1, "info": 2}
 
@@ -228,7 +231,7 @@ def _iter_ld_nodes(value: Any) -> list[dict[str, Any]]:
 
 
 def _strip_www(host: str) -> str:
-    return host[4:] if host.startswith("www.") else host
+    return host.removeprefix("www.")
 
 
 def analyze(html: str, final_url: str) -> PageAudit:
@@ -237,8 +240,8 @@ def analyze(html: str, final_url: str) -> PageAudit:
     try:
         parser.feed(html)
         parser.close()
-    except Exception:  # noqa: BLE001 -- malformed markup must still yield what we got
-        pass
+    except Exception:
+        logger.exception("analyze: error ignorado")
 
     audit = parser.audit
     audit.is_https = final_url.lower().startswith("https://")

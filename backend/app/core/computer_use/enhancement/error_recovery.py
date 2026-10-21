@@ -273,7 +273,7 @@ class ErrorRecoveryManager:
             return result
 
         except Exception as recovery_error:
-            logger.error(f"Recovery itself failed: {recovery_error!s}", exc_info=True)
+            logger.exception("Recovery itself failed")
             return {
                 "success": False,
                 "action": "escalate_human",
