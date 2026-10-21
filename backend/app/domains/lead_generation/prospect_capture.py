@@ -46,7 +46,9 @@ def normalize_phone(raw: str | None) -> str:
     return re.sub(r"\D", "", raw or "")
 
 
-async def _stored_contact_info(db: AsyncSession, business_id: uuid.UUID) -> list[dict[str, Any]]:
+async def _stored_contact_info(
+    db: AsyncSession, business_id: uuid.UUID
+) -> list[dict[str, Any]]:
     result = await db.execute(
         select(InboundLead.contact_info).where(
             InboundLead.business_id == business_id,
@@ -63,7 +65,9 @@ async def save_place_prospects(
     query: str,
 ) -> CaptureResult:
     """Persist prospects that this business does not already have (matched by place_id)."""
-    known_place_ids = {info.get("place_id") for info in await _stored_contact_info(db, business_id)}
+    known_place_ids = {
+        info.get("place_id") for info in await _stored_contact_info(db, business_id)
+    }
     outcome = CaptureResult()
     rows: list[InboundLead] = []
 
@@ -72,20 +76,26 @@ async def save_place_prospects(
             outcome.skipped_duplicates += 1
             continue
         known_place_ids.add(prospect.place_id)
-        rows.append(InboundLead(
-            business_id=business_id,
-            source_type=InboundLeadSource.ORGANIC_SEARCH,
-            source_detail=f"google_places: {query}"[:200],
-            contact_info=prospect.to_contact_info(),
-            nurturing_stage=NurturingStage.NEW,
-        ))
+        rows.append(
+            InboundLead(
+                business_id=business_id,
+                source_type=InboundLeadSource.ORGANIC_SEARCH,
+                source_detail=f"google_places: {query}"[:200],
+                contact_info=prospect.to_contact_info(),
+                nurturing_stage=NurturingStage.NEW,
+            )
+        )
         outcome.created.append(prospect.to_contact_info())
 
     if rows:
         db.add_all(rows)
         await db.commit()
-    logger.info("Places capture business=%s created=%d duplicates=%d",
-                business_id, len(outcome.created), outcome.skipped_duplicates)
+    logger.info(
+        "Places capture business=%s created=%d duplicates=%d",
+        business_id,
+        len(outcome.created),
+        outcome.skipped_duplicates,
+    )
     return outcome
 
 
@@ -101,7 +111,9 @@ def parse_csv_contacts(raw: bytes) -> CsvParseResult:
         raise ValueError("El archivo debe estar codificado en UTF-8") from exc
 
     reader = csv.DictReader(io.StringIO(text))
-    if not reader.fieldnames or "name" not in {h.strip().lower() for h in reader.fieldnames}:
+    if not reader.fieldnames or "name" not in {
+        h.strip().lower() for h in reader.fieldnames
+    }:
         raise ValueError("El CSV necesita una columna 'name' en la primera fila")
 
     outcome = CsvParseResult()
@@ -124,7 +136,9 @@ def parse_csv_contacts(raw: bytes) -> CsvParseResult:
             reason = "falta email o teléfono"
         elif email and not EMAIL_PATTERN.match(email):
             reason = "email inválido"
-        elif (email and email in seen_emails) or (phone_digits and phone_digits in seen_phones):
+        elif (email and email in seen_emails) or (
+            phone_digits and phone_digits in seen_phones
+        ):
             reason = "duplicado dentro del archivo"
 
         if reason:
@@ -159,21 +173,29 @@ async def save_csv_contacts(
 
     for contact in contacts:
         phone_digits = normalize_phone(contact["phone"])
-        if (contact["email"] and contact["email"] in known_emails) or (phone_digits and phone_digits in known_phones):
+        if (contact["email"] and contact["email"] in known_emails) or (
+            phone_digits and phone_digits in known_phones
+        ):
             outcome.skipped_duplicates += 1
             continue
-        rows.append(InboundLead(
-            business_id=business_id,
-            source_type=InboundLeadSource.DIRECT,
-            source_detail=detail,
-            contact_info={k: v for k, v in contact.items() if v},
-            nurturing_stage=NurturingStage.NEW,
-        ))
+        rows.append(
+            InboundLead(
+                business_id=business_id,
+                source_type=InboundLeadSource.DIRECT,
+                source_detail=detail,
+                contact_info={k: v for k, v in contact.items() if v},
+                nurturing_stage=NurturingStage.NEW,
+            )
+        )
         outcome.created.append(contact)
 
     if rows:
         db.add_all(rows)
         await db.commit()
-    logger.info("CSV capture business=%s created=%d duplicates=%d",
-                business_id, len(outcome.created), outcome.skipped_duplicates)
+    logger.info(
+        "CSV capture business=%s created=%d duplicates=%d",
+        business_id,
+        len(outcome.created),
+        outcome.skipped_duplicates,
+    )
     return outcome
