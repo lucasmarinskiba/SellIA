@@ -232,8 +232,7 @@ class StripeProcessor:
         try:
             session = stripe.checkout.Session.retrieve(session_id)
             return {
-                "status": "retrieved",
-                "session_id": session.id,
+                                "session_id": session.id,
                 "payment_intent": session.payment_intent,
                 "customer_email": session.customer_email,
                 "status": session.payment_status,
@@ -250,8 +249,7 @@ class StripeProcessor:
         try:
             intent = stripe.PaymentIntent.retrieve(intent_id)
             return {
-                "status": "retrieved",
-                "payment_intent_id": intent.id,
+                                "payment_intent_id": intent.id,
                 "amount": intent.amount / 100,
                 "currency": intent.currency,
                 "status": intent.status,

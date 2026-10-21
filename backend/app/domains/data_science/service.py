@@ -303,14 +303,14 @@ def _headline(
 
 def _methodology() -> list[str]:
     return [
-        "Todo se cuenta sobre las filas reales de tu cuenta: conversaciones, mensajes y órdenes "
-        "de tus negocios, nunca datos de la plataforma ni de otras cuentas.",
-        "Una consulta cuenta como respondida sólo si hay un mensaje saliente posterior al mensaje "
-        "del cliente en esa misma conversación.",
-        "Los porcentajes vienen con intervalo de confianza de Wilson al 95%: con pocos casos, el "
-        "porcentaje real puede estar bastante lejos del que se ve.",
-        "Los tiempos se informan con mediana y cuartiles, no con promedio, para que un caso "
-        "extremo no defina el número.",
-        f"Con menos de {MIN_TO_READ} casos no se interpreta nada; con menos de {MIN_FOR_TREND} "
-        "la lectura se marca como preliminar.",
+        ("Todo se cuenta sobre las filas reales de tu cuenta: conversaciones, mensajes y órdenes "
+        "de tus negocios, nunca datos de la plataforma ni de otras cuentas."),
+        ("Una consulta cuenta como respondida sólo si hay un mensaje saliente posterior al mensaje "
+        "del cliente en esa misma conversación."),
+        ("Los porcentajes vienen con intervalo de confianza de Wilson al 95%: con pocos casos, el "
+        "porcentaje real puede estar bastante lejos del que se ve."),
+        ("Los tiempos se informan con mediana y cuartiles, no con promedio, para que un caso "
+        "extremo no defina el número."),
+        (f"Con menos de {MIN_TO_READ} casos no se interpreta nada; con menos de {MIN_FOR_TREND} "
+        "la lectura se marca como preliminar."),
     ]

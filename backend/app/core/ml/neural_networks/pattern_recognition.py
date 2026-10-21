@@ -245,7 +245,7 @@ class CustomerBehaviorRecognizer:
             raise ValueError("Recognizer must be trained first")
 
         X_scaled = self.scaler.transform(X)
-        avg_value = float(np.mean(X_scaled[:, 0])) if X_scaled.shape[1] > 0 else 0
+        float(np.mean(X_scaled[:, 0])) if X_scaled.shape[1] > 0 else 0
 
         # Determine behavior type
         frequency_score = customer_data.get("transaction_frequency", 0)

@@ -57,51 +57,51 @@ from .recommendation_networks import (
 )
 
 __all__ = [
+    "ActivationFunction",
+    "ActiveLearner",
+    "AnomalyDetector",
+    "BaggingEngine",
+    "BoostingEngine",
+    "BudgetAllocationNetwork",
+    "ChannelOptimizationNetwork",
+    "ChannelRecommender",
+    "ChurnPredictionNetwork",
+    "CommunicationPatternRecognizer",
+    "CompetitorPatternRecognizer",
+    "ContactTimingNetwork",
+    "CrossModalAttention",
+    "CustomerBehaviorRecognizer",
+    "DemandForecastingNetwork",
+    # Ensemble
+    "EnsemblePredictor",
+    # Attention
+    "FeatureAttention",
+    "FeatureImportanceNetwork",
+    "FewShotLearner",
+    "LeadQualityNetwork",
+    # Pattern Recognition
+    "MarketPatternRecognizer",
+    "MessageTimingNetwork",
+    "MessageToneRecommender",
+    "MetaLearningEngine",
+    "ModelSelector",
+    "NetworkConfig",
     # Base
     "NeuralNetworkBase",
-    "ActivationFunction",
-    "NetworkConfig",
-    "TrainingConfig",
-    # Prediction
-    "SalesPredictionNetwork",
-    "ChurnPredictionNetwork",
-    "DemandForecastingNetwork",
-    "LeadQualityNetwork",
-    "ContactTimingNetwork",
+    # Learning
+    "OnlineLearningEngine",
     "PriceElasticityNetwork",
     # Optimization
     "PricingOptimizationNetwork",
-    "ChannelOptimizationNetwork",
-    "MessageTimingNetwork",
-    "BudgetAllocationNetwork",
-    "FeatureImportanceNetwork",
-    # Pattern Recognition
-    "MarketPatternRecognizer",
-    "CustomerBehaviorRecognizer",
-    "CompetitorPatternRecognizer",
-    "CommunicationPatternRecognizer",
-    "AnomalyDetector",
+    "PricingRecommender",
+    "SalesMethodRecommender",
+    # Prediction
+    "SalesPredictionNetwork",
+    "SpatialAttention",
     # Recommendations
     "StrategyRecommender",
-    "SalesMethodRecommender",
-    "PricingRecommender",
-    "ChannelRecommender",
-    "MessageToneRecommender",
-    # Learning
-    "OnlineLearningEngine",
-    "TransferLearningEngine",
-    "MetaLearningEngine",
-    "FewShotLearner",
-    "ActiveLearner",
-    # Attention
-    "FeatureAttention",
     "TemporalAttention",
-    "SpatialAttention",
-    "CrossModalAttention",
-    # Ensemble
-    "EnsemblePredictor",
+    "TrainingConfig",
+    "TransferLearningEngine",
     "UncertaintyEstimator",
-    "ModelSelector",
-    "BoostingEngine",
-    "BaggingEngine",
 ]

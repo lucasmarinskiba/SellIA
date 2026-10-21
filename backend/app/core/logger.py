@@ -8,13 +8,14 @@ Reemplaza todos los print() dispersos por logging profesional.
 import logging
 import re
 import sys
+from typing import ClassVar
 
 
 class SensitiveDataFilter(logging.Filter):
     """Filtro que enmascara datos sensibles en los logs."""
 
     # Patrones a enmascarar
-    PATTERNS = {
+    PATTERNS: ClassVar[dict] = {
         "email": re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"),
         "api_key": re.compile(r"(api[_-]?key[=:\s]+)([a-zA-Z0-9_\-]{20,})", re.IGNORECASE),
         "token": re.compile(r"(token[=:\s]+)([a-zA-Z0-9_\-\.]{20,})", re.IGNORECASE),

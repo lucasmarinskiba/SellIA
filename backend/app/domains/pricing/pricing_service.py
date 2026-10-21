@@ -28,8 +28,8 @@ class DynamicPricingService:
     def calculate_price(
         location_id: UUID,
         base_price: Decimal,
-        discount_code: str = None,
-        checkin_id: UUID = None,
+        discount_code: str | None = None,
+        checkin_id: UUID | None = None,
         db: Session = None
     ) -> dict:
         """Calculate final price with all adjustments.
@@ -103,7 +103,6 @@ class DynamicPricingService:
 
         # Check for A/B test
         test_variant = None
-        test_id = None
 
         active_test = db.query(PricingABTest).filter(
             PricingABTest.location_id == location_id,
@@ -125,7 +124,6 @@ class DynamicPricingService:
                 test_variant = TestVariant.VARIANT_C
                 final_price = active_test.variant_c_price or final_price
 
-            test_id = active_test.id
 
         db.commit()
 
@@ -151,12 +149,12 @@ class DynamicPricingService:
         order_id: str,
         base_price: Decimal,
         final_price: Decimal,
-        discount_code: str = None,
-        discount_amount: Decimal = None,
+        discount_code: str | None = None,
+        discount_amount: Decimal | None = None,
         applied_peak: bool = False,
-        test_variant: str = None,
-        test_id: UUID = None,
-        checkin_id: UUID = None,
+        test_variant: str | None = None,
+        test_id: UUID | None = None,
+        checkin_id: UUID | None = None,
         db: Session = None
     ) -> dict:
         """Log pricing transaction for analytics."""
@@ -232,7 +230,7 @@ class DynamicPricingService:
         business_id: UUID,
         tier: str,
         tier_multiplier: Decimal,
-        peak_discount_pct: Decimal = None,
+        peak_discount_pct: Decimal | None = None,
         db: Session = None
     ) -> dict:
         """Update location pricing tier."""
@@ -282,7 +280,7 @@ class DiscountCodeService:
         discount_value: Decimal,
         discount_type: str = "percentage",
         valid_days: int = 30,
-        usage_limit: int = None,
+        usage_limit: int | None = None,
         db: Session = None
     ) -> dict:
         """Create location-specific discount code."""
@@ -361,8 +359,8 @@ class ABTestService:
         business_id: UUID,
         test_name: str,
         control_price: Decimal,
-        variant_a_price: Decimal = None,
-        variant_b_price: Decimal = None,
+        variant_a_price: Decimal | None = None,
+        variant_b_price: Decimal | None = None,
         test_duration_days: int = 14,
         db: Session = None
     ) -> dict:
@@ -408,8 +406,8 @@ class ABTestService:
             raise ValueError(f"Test {test_id} not found")
 
         # Calculate conversion rates
-        control_conversion_rate = (test.control_conversions / max(test.control_conversions + 10, 1)) * 100
-        variant_a_rate = (test.variant_a_conversions / max(test.variant_a_conversions + 10, 1)) * 100 if test.variant_a_conversions else 0
+        (test.control_conversions / max(test.control_conversions + 10, 1)) * 100
+        (test.variant_a_conversions / max(test.variant_a_conversions + 10, 1)) * 100 if test.variant_a_conversions else 0
         variant_b_rate = (test.variant_b_conversions / max(test.variant_b_conversions + 10, 1)) * 100 if test.variant_b_conversions else 0
 
         # Calculate revenue per conversion

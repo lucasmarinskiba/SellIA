@@ -74,18 +74,12 @@ class TikTokIntegration:
         """Generate TikTok videos daily"""
         for day in range(1, schedule_days + 1):
             if day <= 3:
-                video_type = "unboxing"
+                pass
             elif day <= 5:
-                video_type = "testimonial"
+                pass
             else:
-                video_type = "countdown"
+                pass
 
-            task = {
-                "product_id": product_id,
-                "video_type": video_type,
-                "day": day,
-                "status": "pending",
-            }
             # Queue for video generation
             await asyncio.sleep(0.01)
 

@@ -6,6 +6,7 @@ Strengths: Background removal, product photography, batch editing
 
 
 import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
 
@@ -27,7 +28,7 @@ class PhotoroomProvider(BaseProvider):
 
     name = "Photoroom"
     slug = "photoroom"
-    supports = [ContentType.IMAGE]
+    supports: ClassVar[list] = [ContentType.IMAGE]
 
     @property
     def is_available(self) -> bool:

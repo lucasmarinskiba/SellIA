@@ -290,7 +290,7 @@ class DealScorer:
         raw_score = sum(
             factors.get(key, 0) * weight for key, weight in weights.items()
         )
-        score = max(0, min(100, int(round(raw_score))))
+        score = max(0, min(100, round(raw_score)))
 
         category = self._score_to_category(score)
         recommendation = self.generate_recommendation(score, factors)
@@ -329,7 +329,7 @@ class DealScorer:
             return 0
 
         inbound = [m for m in messages if getattr(m, "direction", None) == "inbound"]
-        outbound = [m for m in messages if getattr(m, "direction", None) == "outbound"]
+        [m for m in messages if getattr(m, "direction", None) == "outbound"]
 
         # Questions asked by customer
         question_count = 0

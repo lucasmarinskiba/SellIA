@@ -29,10 +29,10 @@ class FraudDetectionService:
         order_id: str,
         customer_id: UUID,
         order_value: Decimal,
-        ip_address: str = None,
-        device_fingerprint: str = None,
-        billing_address: str = None,
-        shipping_address: str = None,
+        ip_address: str | None = None,
+        device_fingerprint: str | None = None,
+        billing_address: str | None = None,
+        shipping_address: str | None = None,
         db: Session = None
     ) -> dict:
         """Score fraud risk for order."""
@@ -259,8 +259,8 @@ class FraudDetectionService:
         business_id: UUID,
         entity_type: str,
         entity_value: str,
-        fraud_reason: str = None,
-        expires_at: datetime = None,
+        fraud_reason: str | None = None,
+        expires_at: datetime | None = None,
         db: Session = None
     ) -> dict:
         """Add email/IP/card to fraud blacklist."""
@@ -309,7 +309,7 @@ class FraudDetectionService:
     @staticmethod
     def get_fraud_summary(
         business_id: UUID,
-        date: str = None,
+        date: str | None = None,
         db: Session = None
     ) -> dict:
         """Get fraud detection summary."""

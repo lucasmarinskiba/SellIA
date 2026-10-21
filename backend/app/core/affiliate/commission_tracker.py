@@ -173,7 +173,7 @@ class CommissionTracker:
         ]
         if product_commissions:
             top_product = max(
-                set(c.product_id for c in product_commissions),
+                {c.product_id for c in product_commissions},
                 key=lambda p: sum(
                     c.commission_amount
                     for c in product_commissions
@@ -279,7 +279,7 @@ class CommissionTracker:
         total_sales = sum(c.sale_amount for c in product_comms)
 
         top_affiliate = max(
-            set(c.affiliate_id for c in product_comms),
+            {c.affiliate_id for c in product_comms},
             key=lambda a: sum(
                 c.commission_amount for c in product_comms if c.affiliate_id == a
             ),
@@ -292,7 +292,7 @@ class CommissionTracker:
             "total_commissions_paid": f"${total_commission:.2f}",
             "average_commission_per_sale": f"${total_commission / total_conversions:.2f}",
             "top_affiliate": top_affiliate,
-            "affiliate_count": len(set(c.affiliate_id for c in product_comms)),
+            "affiliate_count": len({c.affiliate_id for c in product_comms}),
         }
 
     def export_commission_report(self, filename: str) -> bool:

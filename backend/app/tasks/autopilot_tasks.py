@@ -30,7 +30,7 @@ def autopilot_recommendation_executor():
     """Every 15 min: execute pending recommendations via AutopilotEngine."""
     async def _run():
         async with AsyncSessionLocal() as db:
-            engine = AutopilotEngine(db)
+            AutopilotEngine(db)
             executor = AutopilotExecutor(db)
 
             # Get all pending recommendations

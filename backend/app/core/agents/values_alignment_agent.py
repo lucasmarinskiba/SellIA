@@ -11,7 +11,7 @@ Workflow:
 
 import logging
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.clock import utc_now
 
@@ -45,7 +45,7 @@ class ValuesAlignmentAgent:
     """Ensures recommendations respect user values."""
 
     # Value extraction patterns (from behavior)
-    VALUE_INDICATORS = {
+    VALUE_INDICATORS: ClassVar[dict] = {
         ValueType.FINANCIAL: [
             "budget", "save money", "cheap", "discount", "ROI", "investment",
             "affordability", "cost-effective", "free", "price",
@@ -452,7 +452,7 @@ class ValuesAlignmentAgent:
             for rec in recommendations
         ]
 
-        sorted_by_alignment = sorted(
+        sorted(
             scored_recommendations,
             key=lambda x: x["alignment"]["alignment_score"],
             reverse=True,

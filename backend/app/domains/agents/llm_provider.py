@@ -269,7 +269,7 @@ class FallbackProvider(BaseLLMProvider):
 
         # Fallback to Groq (free, ultra-fast cloud)
         if groq_key:
-            groq_model = model if model.startswith("llama") or model.startswith("mixtral") else "llama-3.3-70b-versatile"
+            groq_model = model if model.startswith(("llama", "mixtral")) else "llama-3.3-70b-versatile"
             result = await self.groq.generate(messages, groq_key, groq_model, temperature, max_tokens)
             if result:
                 return result
@@ -285,7 +285,7 @@ class FallbackProvider(BaseLLMProvider):
 
         # Fallback to OpenAI
         if openai_key:
-            openai_model = "gpt-4o-mini" if model.startswith("kimi") or model.startswith("llama") else model
+            openai_model = "gpt-4o-mini" if model.startswith(("kimi", "llama")) else model
             result = await self.openai.generate(messages, openai_key, openai_model, temperature, max_tokens)
             if result:
                 return result
@@ -554,7 +554,7 @@ async def generate_with_fallback(
     # 3. Smart router: pick cheapest adequate model
     selected_model = model
     if use_smart_router:
-        provider_name, selected_model, complexity = route_model(
+        provider_name, selected_model, _complexity = route_model(
             prompt_text,
             ollama_available=keys["ollama"],
             groq_available=bool(keys.get("groq")),

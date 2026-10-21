@@ -490,7 +490,7 @@ def sync_mercadopago_preapprovals():
                             from datetime import datetime as dt
                             if isinstance(next_payment, str):
                                 try:
-                                    sub.next_billing_date = dt.fromisoformat(next_payment.replace("Z", "+00:00"))
+                                    sub.next_billing_date = dt.fromisoformat(next_payment)
                                 except ValueError:
                                     pass
 

@@ -317,15 +317,13 @@ class DynamicPricingEngine:
 
         # Get competitor average price
         if competitors:
-            avg_competitor_price = sum(c.price for c in competitors) / len(competitors)
+            sum(c.price for c in competitors) / len(competitors)
             lowest_competitor = min(c.price for c in competitors)
         else:
-            avg_competitor_price = product.price_base
             lowest_competitor = product.price_base
 
         # Check inventory level
         stock_level = product.stock_total - (product.stock_total * 0.10)  # Account for reserved
-        is_low_stock = stock_level < 50
         is_high_stock = stock_level > 200
 
         # Check sales velocity (mock: daily units)

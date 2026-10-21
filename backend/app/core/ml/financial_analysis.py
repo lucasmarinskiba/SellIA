@@ -126,9 +126,7 @@ class BudgetPlanner:
         """Check if item is active on given date."""
         if start_date and check_date < start_date:
             return False
-        if end_date and check_date > end_date:
-            return False
-        return True
+        return not (end_date and check_date > end_date)
 
     def _find_breakeven_month(self, monthly_budgets: list[dict[str, Any]]) -> int | None:
         """Find month when cumulative profit becomes positive."""

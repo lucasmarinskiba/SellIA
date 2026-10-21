@@ -326,7 +326,7 @@ class PaymentService:
 
         total_revenue = sum((t.amount for t in approved), Decimal(0))
         avg_value = (total_revenue / len(approved)) if approved else Decimal(0)
-        success_rate = int(round((len(approved) / len(all_txns)) * 100)) if all_txns else 0
+        success_rate = round((len(approved) / len(all_txns)) * 100) if all_txns else 0
 
         method_breakdown: dict[str, float] = {}
         for t in approved:
@@ -343,7 +343,7 @@ class PaymentService:
             )
         )
         refunds = refunds_result.scalars().all()
-        refund_rate = int(round((len(refunds) / len(approved)) * 100)) if approved else 0
+        refund_rate = round((len(refunds) / len(approved)) * 100) if approved else 0
 
         metrics_result = await db.execute(
             select(PaymentMetrics).where(PaymentMetrics.business_id == business_id)

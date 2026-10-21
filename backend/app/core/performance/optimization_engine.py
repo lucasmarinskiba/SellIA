@@ -7,7 +7,7 @@ Caching, database optimization, async operations, batch processing.
 import hashlib
 import logging
 import time
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ class OptimizationEngine:
     """Optimiza cada fase venta para máximo throughput."""
 
     # Cache tiers
-    CACHE_TTL = {
+    CACHE_TTL: ClassVar[dict] = {
         "market_analysis": 3600,  # 1h (market no cambia rápido)
         "strategy": 1800,  # 30min (tácticas re-evaluate frecuente)
         "persuasion_copy": 600,  # 10min (copy optimiza cada testing)
@@ -50,7 +50,7 @@ class OptimizationEngine:
         # TODO: await cache.set(key, value, ex=ttl)
 
     # Database optimization
-    DB_INDEXES = {
+    DB_INDEXES: ClassVar[dict] = {
         "orders": ["account_id", "customer_email", "created_at", "status"],
         "leads": ["account_id", "email", "score", "created_at"],
         "email_logs": ["account_id", "to_email", "sent_at"],
@@ -71,7 +71,7 @@ class OptimizationEngine:
         }
 
     # Query optimization
-    OPTIMIZED_QUERIES = {
+    OPTIMIZED_QUERIES: ClassVar[dict] = {
         "get_leads_for_campaign": """
             SELECT id, email, score
             FROM leads

@@ -98,10 +98,7 @@ class SocialSellerEngine:
                 Business.user_id == user_id,
             )
         )
-        if result.scalar_one_or_none():
-            return True
-
-        return False
+        return bool(result.scalar_one_or_none())
 
     async def create_seller(
         self,

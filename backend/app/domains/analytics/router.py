@@ -98,7 +98,7 @@ async def get_dashboard(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
-    service = BusinessIntelligenceService(db)
+    BusinessIntelligenceService(db)
     retention = RetentionService(db)
 
     # Revenue

@@ -196,7 +196,7 @@ class NeuralNetworkBase(ABC):
         # Backpropagate through layers
         for i in range(len(self.weights) - 1, 0, -1):
             delta = np.dot(deltas[0], self.weights[i].T)
-            activation = self.config.activation if i < len(self.weights) - 1 else self.config.output_activation
+            self.config.activation if i < len(self.weights) - 1 else self.config.output_activation
             # Simple gradient approximation (not full backprop for efficiency)
             deltas.insert(0, delta * 0.1)
 

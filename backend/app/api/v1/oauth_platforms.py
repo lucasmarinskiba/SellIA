@@ -79,7 +79,7 @@ async def amazon_callback(
     """Handle Amazon SP-API callback."""
     try:
         token_data = await AmazonSPAPI.exchange_code(code)
-        cred = await store_platform_credential(
+        await store_platform_credential(
             db=db,
             seller_id=seller_id,
             platform="amazon",

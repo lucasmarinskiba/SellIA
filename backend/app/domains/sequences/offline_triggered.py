@@ -2,6 +2,7 @@
 
 import logging
 from enum import Enum
+from typing import ClassVar
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -39,7 +40,7 @@ class OfflineSequenceTemplate(str, Enum):
 class OfflineSequenceService:
     """Service for managing offline-triggered sequences."""
 
-    TEMPLATE_BY_VISIT_TYPE = {
+    TEMPLATE_BY_VISIT_TYPE: ClassVar[dict] = {
         VisitType.WALK_IN: OfflineSequenceTemplate.POST_VISIT_THANK_YOU,
         VisitType.SCHEDULED_DEMO: OfflineSequenceTemplate.POST_DEMO_SUMMARY,
         VisitType.SCHEDULED_TOUR: OfflineSequenceTemplate.POST_TOUR_PROPOSAL,
@@ -47,7 +48,7 @@ class OfflineSequenceService:
         VisitType.QR_SCAN: OfflineSequenceTemplate.POST_VISIT_THANK_YOU,
     }
 
-    EMAIL_DELAYS = {
+    EMAIL_DELAYS: ClassVar[dict] = {
         OfflineSequenceTemplate.POST_VISIT_THANK_YOU: 1,
         OfflineSequenceTemplate.POST_DEMO_SUMMARY: 2,
         OfflineSequenceTemplate.POST_DEMO_PROPOSAL: 24,
@@ -127,7 +128,4 @@ class OfflineSequenceService:
         if offline_conversion.purchased:
             return True
 
-        if offline_conversion.dwell_minutes and offline_conversion.dwell_minutes > 45:
-            return True
-
-        return False
+        return bool(offline_conversion.dwell_minutes and offline_conversion.dwell_minutes > 45)

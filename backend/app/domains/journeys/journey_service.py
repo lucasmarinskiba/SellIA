@@ -53,7 +53,7 @@ class JourneyService:
         return {"variant_id": str(variant.id), "variant_name": variant_name}
 
     @staticmethod
-    async def enroll_customer(journey_id: UUID, customer_id: UUID, business_id: UUID, variant_id: UUID = None, db: AsyncSession = None) -> dict:
+    async def enroll_customer(journey_id: UUID, customer_id: UUID, business_id: UUID, variant_id: UUID | None = None, db: AsyncSession = None) -> dict:
         if not db:
             raise ValueError("Database session required")
 

@@ -5,6 +5,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
+from typing import ClassVar
 
 from app.core.clock import utc_now
 
@@ -60,7 +61,7 @@ class RateLimiter:
     - Resource exhaustion
     """
 
-    TIER_LIMITS = {
+    TIER_LIMITS: ClassVar[dict] = {
         RateLimitTier.FREE: {"per_minute": 100, "per_day": 10_000},
         RateLimitTier.PRO: {"per_minute": 1000, "per_day": 100_000},
         RateLimitTier.ENTERPRISE: {"per_minute": 10_000, "per_day": 1_000_000},

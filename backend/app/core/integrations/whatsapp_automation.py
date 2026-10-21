@@ -74,7 +74,7 @@ class WhatsAppAutomation:
             # Extraer mensaje
             sender_id = webhook_payload["entry"][0]["messaging"][0]["sender"]["id"]
             message_text = webhook_payload["entry"][0]["messaging"][0]["message"]["text"]
-            timestamp = webhook_payload["entry"][0]["messaging"][0]["timestamp"]
+            webhook_payload["entry"][0]["messaging"][0]["timestamp"]
 
             logger.info(f"Message from {sender_id}: {message_text}")
 
@@ -141,7 +141,7 @@ class WhatsAppAutomation:
 
         if not (time_match and date_match):
             # Pedir clarificación
-            response = await self._send_message(
+            await self._send_message(
                 sender_id,
                 "Para agendar, porfa indicá: fecha (ej: mañana, lunes) y hora (ej: 15:30). Ejemplo: 'Mañana a las 3pm'",
             )
@@ -171,7 +171,7 @@ class WhatsAppAutomation:
 
             if calendar_result["status"] == "success":
                 # Confirmar al usuario
-                response = await self._send_message(
+                await self._send_message(
                     sender_id,
                     f"✅ Agendado! Nos vemos {scheduled_datetime.strftime('%A a las %H:%M')}. Te enviaré link de llamada 10 min antes.",
                 )
@@ -183,7 +183,7 @@ class WhatsAppAutomation:
                     "calendar_event": calendar_result.get("event_id"),
                 }
             else:
-                response = await self._send_message(
+                await self._send_message(
                     sender_id,
                     "⚠️ Error al agendar. Intenta de nuevo o contacta soporte.",
                 )
@@ -201,7 +201,7 @@ class WhatsAppAutomation:
 
         if bot_response:
             logger.info("Using bot response")
-            result = await self._send_message(sender_id, bot_response)
+            await self._send_message(sender_id, bot_response)
             return {"status": "bot_response", "response": bot_response}
 
         # Opción 2: Computer Use + CV (si disponible)
@@ -214,12 +214,12 @@ class WhatsAppAutomation:
 
             if cv_response["status"] == "success":
                 response_text = cv_response.get("suggestion", {}).get("next_action", "No entiendo, podés reformular?")
-                result = await self._send_message(sender_id, response_text)
+                await self._send_message(sender_id, response_text)
                 return {"status": "cv_response", "response": response_text}
 
         # Fallback: respuesta genérica
         default_response = "Gracias por tu mensaje! En breve nos ponemos en contacto. Si es urgente, escribí 'urgente'."
-        result = await self._send_message(sender_id, default_response)
+        await self._send_message(sender_id, default_response)
 
         return {"status": "default_response", "response": default_response}
 
@@ -325,7 +325,7 @@ class WhatsAppBotBuilder:
 
         message_lower = message.lower()
 
-        for bot_name, config in self.bots.items():
+        for config in self.bots.values():
             for pattern in config["patterns"]:
                 if pattern.lower() in message_lower:
                     return config["response"]

@@ -10,7 +10,7 @@ Specialties:
 
 import logging
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ class CommunicationFramework(str, Enum):
 class StorytellingAgent:
     """Expert in storytelling and communication."""
 
-    HEROS_JOURNEY = {
+    HEROS_JOURNEY: ClassVar[dict] = {
         "structure": [
             {
                 "stage": "1. Ordinary World",
@@ -114,7 +114,7 @@ class StorytellingAgent:
         ],
     }
 
-    PIXAR_STRUCTURE = {
+    PIXAR_STRUCTURE: ClassVar[dict] = {
         "formula": "Once upon a time... Every day... One day... Because of that... Because of that... Until finally... And the moral is...",
         "breakdown": [
             {
@@ -155,7 +155,7 @@ class StorytellingAgent:
         ],
     }
 
-    TED_TALK_STRUCTURE = {
+    TED_TALK_STRUCTURE: ClassVar[dict] = {
         "elements": [
             {
                 "section": "Hook (first 30 seconds)",
@@ -218,7 +218,7 @@ class StorytellingAgent:
         "visuals": "Minimal, high-quality, support story",
     }
 
-    CUSTOMER_STORY_FRAMEWORK = {
+    CUSTOMER_STORY_FRAMEWORK: ClassVar[dict] = {
         "hero": {
             "focus": "Customer is the hero, not you",
             "elements": [
@@ -268,7 +268,7 @@ class StorytellingAgent:
         },
     }
 
-    BRAND_STORY_ARCHETYPES = {
+    BRAND_STORY_ARCHETYPES: ClassVar[dict] = {
         "origin_story": {
             "elements": [
                 "Why founder started company",
@@ -308,7 +308,7 @@ class StorytellingAgent:
         },
     }
 
-    PITCH_DECK_STRUCTURE = {
+    PITCH_DECK_STRUCTURE: ClassVar[dict] = {
         "slides": [
             {
                 "slide": 1,

@@ -59,13 +59,13 @@ PLAYBOOKS: dict[str, Playbook] = {
         formatting="plain",
         register="formal y concreto",
         rules=[
-            "Nunca des teléfono, email, redes, dirección ni links: MercadoLibre moderá los "
+            ("Nunca des teléfono, email, redes, dirección ni links: MercadoLibre moderá los "
             "mensajes previos a la venta y sancioná la publicación que intenta sacar al "
-            "comprador de la plataforma.",
+            "comprador de la plataforma."),
             "No sugieras pagar por fuera de MercadoLibre en ningún caso.",
             "Respondé la pregunta concreta primero, en una o dos frases, y después agregá el dato útil.",
-            "Si el comprador pide algo que no podés confirmar (stock exacto, fecha de entrega), "
-            "decilo en vez de estimar.",
+            ("Si el comprador pide algo que no podés confirmar (stock exacto, fecha de entrega), "
+            "decilo en vez de estimar."),
         ],
         why="Compartir contacto o links antes de la venta es causa de sanción a la publicación.",
     ),
@@ -245,8 +245,8 @@ PLAYBOOKS: dict[str, Playbook] = {
         formatting="plain",
         register="formal y escueto",
         rules=[
-            "No incluyas links externos, contacto ni pedidos de reseña: Amazon lo prohíbe en la "
-            "mensajería con compradores.",
+            ("No incluyas links externos, contacto ni pedidos de reseña: Amazon lo prohíbe en la "
+            "mensajería con compradores."),
             "Limitate a responder sobre el pedido o el producto.",
         ],
         why="La mensajería de Amazon está estrictamente moderada: un link puede costar la cuenta.",

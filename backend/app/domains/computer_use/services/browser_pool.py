@@ -104,9 +104,8 @@ class BrowserPoolManager:
             context = await browser.new_context(**context_args)
 
             # Set cookies and localStorage if profile provided
-            if profile:
-                if profile.get("cookies"):
-                    await context.add_cookies(profile["cookies"])
+            if profile and profile.get("cookies"):
+                await context.add_cookies(profile["cookies"])
 
             page = await context.new_page()
 

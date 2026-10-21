@@ -6,6 +6,7 @@ Strengths: 3D video, NeRF, product visualization
 
 
 import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
 
@@ -21,7 +22,7 @@ class LumaProvider(BaseProvider):
 
     name = "Luma Dream Machine"
     slug = "luma"
-    supports = [ContentType.VIDEO]
+    supports: ClassVar[list] = [ContentType.VIDEO]
 
     @property
     def is_available(self) -> bool:

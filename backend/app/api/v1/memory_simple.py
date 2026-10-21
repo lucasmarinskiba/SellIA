@@ -17,7 +17,7 @@ router = APIRouter()
 
 
 async def get_user_from_token(
-    authorization: Annotated[str, Header()] = None,
+    authorization: Annotated[str | None, Header()] = None,
 ) -> str:
     """Extract user_id from Bearer token"""
     if not authorization or not authorization.startswith("Bearer "):

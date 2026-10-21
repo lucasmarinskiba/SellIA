@@ -228,8 +228,7 @@ class MercadoPagoProcessor:
             payment = response.json()
 
             return {
-                "status": "retrieved",
-                "payment_id": payment["id"],
+                                "payment_id": payment["id"],
                 "status": payment["status"],
                 "amount": payment["transaction_amount"],
                 "currency": payment["currency_id"],
@@ -293,8 +292,7 @@ class MercadoPagoProcessor:
             logger.info(f"Refund created: {refund.get('id')} | Payment: {payment_id}")
 
             return {
-                "status": "refunded",
-                "refund_id": refund.get("id"),
+                                "refund_id": refund.get("id"),
                 "payment_id": payment_id,
                 "amount_refunded": refund.get("amount", amount),
                 "status": refund.get("status"),

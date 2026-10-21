@@ -58,7 +58,7 @@ class OfflineAnalyticsService:
         )
         visits = result.scalars().all()
         total_foot_traffic = len(visits)
-        unique_visitors = len(set(v.user_id for v in visits))
+        unique_visitors = len({v.user_id for v in visits})
 
         # Offline conversions
         result = await db.execute(

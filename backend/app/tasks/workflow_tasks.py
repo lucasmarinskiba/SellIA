@@ -215,11 +215,11 @@ Write ONLY the email body text. Be concise and compelling."""
             # Determine if HTML or plain text
             html_body = template.body_html if template and template.body_html else None
             if html_body:
-                content_html = _inject_tracking(html_body, tracking_token, base_url)
+                _inject_tracking(html_body, tracking_token, base_url)
                 # Also inject text body as fallback
                 content_text = body
             else:
-                content_html = _inject_tracking(f"<html><body><p>{body.replace(chr(10), '<br/>')}</p></body></html>", tracking_token, base_url)
+                _inject_tracking(f"<html><body><p>{body.replace(chr(10), '<br/>')}</p></body></html>", tracking_token, base_url)
                 content_text = body
 
             # Get SMTP credentials from business email channel
@@ -319,7 +319,7 @@ def check_pending_workflows():
                 if last_action.get("status") == "waiting":
                     resume_at_str = last_action.get("resume_at")
                     if resume_at_str:
-                        resume_at = datetime.fromisoformat(resume_at_str.replace("Z", "+00:00"))
+                        resume_at = datetime.fromisoformat(resume_at_str)
                         if now >= resume_at:
                             # Resume via Celery task
                             wf_result = await db.execute(

@@ -148,7 +148,7 @@ class TelegramAgent:
     def verify_webhook_signature(
         self, payload: str, bot_token: str
     ) -> bool:
-        expected = hmac.new(
+        hmac.new(
             bot_token.encode(), payload.encode(), hashlib.sha256
         ).hexdigest()
         return True  # Telegram uses different verification

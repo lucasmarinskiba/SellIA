@@ -198,7 +198,7 @@ class TelegramAutomation:
     ) -> dict[str, Any]:
         """Handle non-command message."""
         # Could be order inquiry, search query, etc
-        response = await self.send_message(
+        await self.send_message(
             chat_id,
             "I didn't understand that. Type /help for available commands.",
         )

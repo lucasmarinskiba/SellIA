@@ -14,7 +14,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.clock import utc_now
 
@@ -68,19 +68,19 @@ class UserProfile:
 class SentimentAnalyzer:
     """Detect user sentiment from messages"""
 
-    POSITIVE_WORDS = {
+    POSITIVE_WORDS: ClassVar[set] = {
         "love", "great", "awesome", "fantastic", "amazing", "wonderful",
         "excellent", "perfect", "brilliant", "thank", "thanks", "grateful",
         "happy", "excited", "pleased", "satisfied", "recommend"
     }
 
-    NEGATIVE_WORDS = {
+    NEGATIVE_WORDS: ClassVar[set] = {
         "hate", "terrible", "awful", "horrible", "bad", "worst", "useless",
         "waste", "disappointed", "angry", "frustrated", "annoyed", "upset",
         "broken", "problem", "issue", "bug", "error", "fail", "refund"
     }
 
-    VERY_NEGATIVE_WORDS = {
+    VERY_NEGATIVE_WORDS: ClassVar[set] = {
         "scam", "fraud", "criminal", "sue", "lawsuit", "cancel", "never",
         "destroy", "worst", "unacceptable"
     }
@@ -119,32 +119,32 @@ class SentimentAnalyzer:
 class IntentDetector:
     """Detect user intent from message"""
 
-    BUYING_KEYWORDS = {
+    BUYING_KEYWORDS: ClassVar[set] = {
         "buy", "purchase", "order", "get", "want", "need", "price",
         "cost", "how much", "buy now", "interested", "available"
     }
 
-    SELLING_KEYWORDS = {
+    SELLING_KEYWORDS: ClassVar[set] = {
         "sell", "sale", "discount", "offer", "deal", "sale price",
         "selling", "want to sell", "selling price"
     }
 
-    SUPPORT_KEYWORDS = {
+    SUPPORT_KEYWORDS: ClassVar[set] = {
         "help", "support", "problem", "issue", "broken", "not working",
         "error", "bug", "crash", "fix", "troubleshoot", "technical"
     }
 
-    COMPLAINT_KEYWORDS = {
+    COMPLAINT_KEYWORDS: ClassVar[set] = {
         "complaint", "complain", "disappointed", "unsatisfied", "refund",
         "return", "exchange", "wrong", "damaged", "missing"
     }
 
-    INFORMATION_KEYWORDS = {
+    INFORMATION_KEYWORDS: ClassVar[set] = {
         "what", "how", "why", "when", "where", "explain", "tell me",
         "information", "details", "describe", "specs"
     }
 
-    NEGOTIATION_KEYWORDS = {
+    NEGOTIATION_KEYWORDS: ClassVar[set] = {
         "discount", "lower", "cheaper", "negotiate", "deal", "offer",
         "bulk", "wholesale", "volume", "minimum"
     }

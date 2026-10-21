@@ -17,7 +17,7 @@ import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.clock import utc_now
 
@@ -276,7 +276,7 @@ class EscalationPolicy:
     """Define policies para qué debe escalarse."""
 
     # Severity por error pattern
-    ERROR_SEVERITY = {
+    ERROR_SEVERITY: ClassVar[dict] = {
         "payment_failed": "critical",
         "inventory_out_of_sync": "high",
         "platform_api_error": "high",
@@ -287,7 +287,7 @@ class EscalationPolicy:
     }
 
     # Auto-escalate después de N retries
-    AUTO_ESCALATE_AFTER_RETRIES = {
+    AUTO_ESCALATE_AFTER_RETRIES: ClassVar[dict] = {
         "post_product": 3,
         "process_payment": 2,
         "sync_inventory": 2,

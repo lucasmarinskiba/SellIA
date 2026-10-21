@@ -4,7 +4,7 @@ Educational Responder — Micro-teaching, resources, FAQ integration.
 
 import logging
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ class EducationalResponder:
     """Provides educational responses with resources."""
 
     # FAQ Database (topic -> [questions] -> [answers])
-    FAQ_DATABASE = {
+    FAQ_DATABASE: ClassVar[dict] = {
         "pricing": {
             "How much does it cost?": "Pricing starts at $29/month. See full breakdown.",
             "Do you offer discounts?": "Yes, annual billing saves 20%. Non-profits get 50% off.",
@@ -42,7 +42,7 @@ class EducationalResponder:
     }
 
     # Learning paths
-    LEARNING_PATHS = {
+    LEARNING_PATHS: ClassVar[dict] = {
         "beginner": [
             "Getting Started (10 min video)",
             "Feature Overview (blog post)",

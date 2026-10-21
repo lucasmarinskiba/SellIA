@@ -316,7 +316,7 @@ class SegmentationService:
     @staticmethod
     def get_segment_summary(
         business_id: UUID,
-        date: str = None,
+        date: str | None = None,
         db: Session = None
     ) -> dict:
         """Get segmentation summary."""

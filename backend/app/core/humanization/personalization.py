@@ -14,7 +14,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.clock import utc_now
 
@@ -75,7 +75,7 @@ class PersonalizationEngine:
     """Personalizes messages based on buyer data"""
 
     # Name usage guidelines (don't overuse)
-    NAME_USAGE_RULES = {
+    NAME_USAGE_RULES: ClassVar[dict] = {
         "initial": 1,  # Use name 1x in opening
         "follow_up": 0,  # Don't overuse in follow-ups
         "objection_response": 0,  # Focus on response
@@ -83,7 +83,7 @@ class PersonalizationEngine:
     }
 
     # Industry-specific language
-    INDUSTRY_VOCABULARY = {
+    INDUSTRY_VOCABULARY: ClassVar[dict] = {
         "real_estate": {
             "keywords": ["property", "investment", "location", "market value", "inspection"],
             "pain_points": ["neighborhood quality", "resale value", "financing"],
@@ -107,7 +107,7 @@ class PersonalizationEngine:
     }
 
     # Timing-based personalization
-    TIMING_TEMPLATES = {
+    TIMING_TEMPLATES: ClassVar[dict] = {
         "morning": {
             "en": "Hope your day is off to a great start!",
             "es": "¡Espero que tu día comience muy bien!",
@@ -478,10 +478,7 @@ class PersonalizationEngine:
         if buyer_profile.past_purchases:
             return True
 
-        if message_type in ["objection_response", "closing"]:
-            return True
-
-        return False
+        return message_type in ["objection_response", "closing"]
 
     def create_dynamic_reference(
         self,

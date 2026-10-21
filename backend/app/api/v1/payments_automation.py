@@ -21,7 +21,7 @@ router = APIRouter(prefix="/api/v1/payments", tags=["payments"])
 async def create_payment_checkout(
     product: dict[str, Any],
     buyer: dict[str, Any],
-    metadata: dict[str, Any] = None,
+    metadata: dict[str, Any] | None = None,
     stripe_service=None,  # Inyectado desde DI
 ) -> dict[str, Any]:
     """

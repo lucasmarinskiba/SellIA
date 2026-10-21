@@ -122,7 +122,7 @@ class SmartActionRouter:
 
         if deal and deal.stage in ["negotiating", "proposal_sent"]:
             # Auto-close if allowed
-            can_close, reason = await self.autopilot.should_auto_execute(
+            can_close, _reason = await self.autopilot.should_auto_execute(
                 AutopilotActionType.CLOSE_DEAL,
                 config.business_id,
                 {"amount": float(deal.value) if deal.value else 0},
@@ -353,7 +353,7 @@ class SmartActionRouter:
         conversation_id = uuid.UUID(context["conversation_id"])
         days = context.get("days", 3)
 
-        can_send, reason = await self.autopilot.should_auto_execute(
+        can_send, _reason = await self.autopilot.should_auto_execute(
             AutopilotActionType.SEND_FOLLOWUP, config.business_id
         )
         if not can_send:

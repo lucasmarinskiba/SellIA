@@ -52,7 +52,7 @@ async def create_feedback(
     # AI analysis in background (non-blocking for user)
     try:
         business_id = current_user.businesses[0].id if current_user.businesses else uuid.UUID(int=0)
-        fb_type, category, severity, analysis, solution, confidence, duplicate_id = await analyze_feedback(
+        _fb_type, category, severity, analysis, solution, confidence, duplicate_id = await analyze_feedback(
             db=svc.db,
             business_id=business_id,
             title=data.title,
@@ -216,7 +216,7 @@ async def admin_force_ai_analyze(
         raise HTTPException(status_code=404, detail="Feedback no encontrado")
 
     business_id = current_user.businesses[0].id if current_user.businesses else uuid.UUID(int=0)
-    fb_type, category, severity, analysis, solution, confidence, duplicate_id = await analyze_feedback(
+    _fb_type, category, _severity, analysis, solution, confidence, duplicate_id = await analyze_feedback(
         db=svc.db,
         business_id=business_id,
         title=feedback.title,

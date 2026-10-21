@@ -192,7 +192,6 @@ class ExpertSelector:
         self, expert_type: ExpertType, scenario: SalesScenario
     ) -> list[str]:
         """Extract recommended tactics for this expert in this scenario"""
-        tactics = []
 
         expert_map = {
             ExpertType.TRUMP: [

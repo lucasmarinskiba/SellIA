@@ -32,8 +32,8 @@ router = APIRouter()
 
 
 async def _verify_webhook_token(
-    x_webhook_token: Annotated[str, Header()] = None,
-    platform: str = None,
+    x_webhook_token: Annotated[str | None, Header()] = None,
+    platform: str | None = None,
 ) -> str:
     """Verifica token de webhook."""
     if not x_webhook_token:
@@ -297,7 +297,7 @@ async def _process_auto_response(db: AsyncSession, message: IncomingMessage) -> 
         # TODO: obtener user_id del owner de la account/business
         user_id = "system"  # placeholder
 
-        response_text, status, confidence = await responder.process_message(
+        _response_text, status, confidence = await responder.process_message(
             user_id=user_id,
             message=message,
         )

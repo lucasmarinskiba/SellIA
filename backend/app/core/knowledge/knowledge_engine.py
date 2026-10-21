@@ -8,7 +8,7 @@ de los conocimientos aplicados.
 import json
 import os
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.logger import get_logger
 
@@ -53,7 +53,7 @@ class KnowledgeEngine:
 
     # Orden curado de las categorías base; cualquier otro `*.json` que aparezca
     # en library/ se descubre y carga automáticamente (ver _discover_categories).
-    CURATED_ORDER = [
+    CURATED_ORDER: ClassVar[list] = [
         "sales", "persuasion", "habits", "negotiation",
         "entrepreneurship", "wealth", "communication", "psychology", "strategy"
     ]
@@ -235,8 +235,8 @@ class KnowledgeEngine:
 
         # Filter by tags
         if tags:
-            tag_set = set(t.lower() for t in tags)
-            candidates = [c for c in candidates if tag_set & set(t.lower() for t in c.tags)]
+            tag_set = {t.lower() for t in tags}
+            candidates = [c for c in candidates if tag_set & {t.lower() for t in c.tags}]
 
         # Score by context relevance (simple keyword matching)
         if context:

@@ -25,7 +25,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from random import choice
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.clock import utc_now
 
@@ -132,7 +132,7 @@ class ABTestingEngine:
     """Manages A/B testing for humanization optimization"""
 
     # Predefined tone test configurations
-    TONE_TEST_VARIANTS = {
+    TONE_TEST_VARIANTS: ClassVar[dict] = {
         "formal_vs_casual": [
             {
                 "name": "Formal",
@@ -164,7 +164,7 @@ class ABTestingEngine:
     }
 
     # CTA test configurations
-    CTA_TEST_VARIANTS = {
+    CTA_TEST_VARIANTS: ClassVar[dict] = {
         "soft_vs_direct": [
             {
                 "name": "Soft CTA",
@@ -190,7 +190,7 @@ class ABTestingEngine:
     }
 
     # Personalization test configurations
-    PERSONALIZATION_TEST_VARIANTS = {
+    PERSONALIZATION_TEST_VARIANTS: ClassVar[dict] = {
         "with_without_name": [
             {
                 "name": "With Name",

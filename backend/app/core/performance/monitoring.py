@@ -5,7 +5,7 @@ import statistics
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.clock import utc_now
 
@@ -58,7 +58,7 @@ class PerformanceMonitor:
     """Monitor application performance metrics."""
 
     # Performance thresholds
-    THRESHOLDS = {
+    THRESHOLDS: ClassVar[dict] = {
         "response_time_ms": {"warning": 200, "critical": 1000},
         "database_query_ms": {"warning": 100, "critical": 500},
         "cache_hit_rate": {"warning": 0.7, "critical": 0.5},  # Lower is worse

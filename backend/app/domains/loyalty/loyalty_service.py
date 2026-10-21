@@ -110,8 +110,8 @@ class LoyaltyProgramService:
         business_id: UUID,
         points: int,
         transaction_type: str = "earn",
-        description: str = None,
-        order_id: str = None,
+        description: str | None = None,
+        order_id: str | None = None,
         db: Session = None
     ) -> dict:
         """Award points to member."""
@@ -265,7 +265,7 @@ class LoyaltyProgramService:
         reward_name: str,
         reward_type: str,
         points_required: int,
-        value: Decimal = None,
+        value: Decimal | None = None,
         db: Session = None
     ) -> dict:
         """Create reward offer."""
@@ -350,7 +350,7 @@ class LoyaltyProgramService:
     @staticmethod
     def calculate_loyalty_metrics(
         business_id: UUID,
-        date: str = None,
+        date: str | None = None,
         db: Session = None
     ) -> dict:
         """Calculate aggregate loyalty program metrics."""

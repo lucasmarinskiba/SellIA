@@ -206,11 +206,9 @@ class LoadTestRunner:
 
             # Ramp-up: gradually increase frequency
             if now < ramp_up_end:
-                phase = LoadTestPhase.RAMP_UP
                 progress = (now - start_time).total_seconds() / config.ramp_up_seconds
                 actual_interval = request_interval / max(progress, 0.1)
             else:
-                phase = LoadTestPhase.STEADY_STATE
                 actual_interval = request_interval
 
             # Send request
@@ -243,7 +241,7 @@ class LoadTestRunner:
         start_time = time.time()
 
         try:
-            result = await config.target_function(**request_data)
+            await config.target_function(**request_data)
             response_time_ms = (time.time() - start_time) * 1000
             status_code = 200
 

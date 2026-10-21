@@ -15,7 +15,7 @@ import statistics
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 # ============================================================================
 # 1. FX FUNDAMENTALS (1,000+ lines)
@@ -216,7 +216,7 @@ class VolatilityMetrics:
 class SessionAnalysis:
     """FX trading session analysis (Asian, European, US)."""
 
-    SESSIONS = {
+    SESSIONS: ClassVar[dict] = {
         "Tokyo": {"open": 0, "close": 8},  # UTC hours
         "London": {"open": 8, "close": 16},
         "NewYork": {"open": 13, "close": 21},
@@ -304,7 +304,7 @@ class TrendTrading:
         """Identify uptrend, downtrend, or range."""
         recent_prices = prices[-period:]
         higher_highs = sum(1 for i in range(1, len(recent_prices)) if recent_prices[i] > recent_prices[i-1])
-        higher_lows = sum(1 for i in range(1, len(recent_prices)) if recent_prices[i] > recent_prices[i-1])
+        sum(1 for i in range(1, len(recent_prices)) if recent_prices[i] > recent_prices[i-1])
 
         if higher_highs > period * 0.6:
             return "UPTREND"
@@ -360,7 +360,7 @@ class CarryTrade:
         for pair_name, rates in pairs.items():
             base_rate = rates.get("base_rate", 0)
             quote_rate = rates.get("quote_rate", 0)
-            current_price = rates.get("current_price", 1)
+            rates.get("current_price", 1)
 
             carry = base_rate - quote_rate
             opportunities.append({
@@ -391,7 +391,7 @@ class CarryTrade:
 class NewsTrading:
     """News and event-based FX trading."""
 
-    MAJOR_EVENTS = {
+    MAJOR_EVENTS: ClassVar[dict] = {
         "ECB": ["interest_rate_decision", "press_conference", "economic_data"],
         "Fed": ["FOMC_meeting", "press_conference", "employment_data", "inflation_data"],
         "BoJ": ["monetary_policy_decision", "economic_data"],
@@ -704,7 +704,7 @@ class FXHedging:
 class MacroIndicators:
     """Macro indicators for FX forecasting."""
 
-    INDICATOR_RELATIONSHIPS = {
+    INDICATOR_RELATIONSHIPS: ClassVar[dict] = {
         "GDP_growth": {"direction": "bullish", "currency_impact": "strengthens"},
         "inflation": {"direction": "mixed", "currency_impact": "depends_on_relative"},
         "interest_rates": {"direction": "bullish_on_increase", "currency_impact": "strengthens"},
@@ -861,7 +861,7 @@ class FXForecasting:
 class RegulatoryRequirements:
     """FX regulatory compliance framework."""
 
-    MAJOR_REGULATORS = {
+    MAJOR_REGULATORS: ClassVar[dict] = {
         "CFTC": "US Commodity Futures Trading Commission",
         "SEC": "US Securities and Exchange Commission",
         "FCA": "UK Financial Conduct Authority",
@@ -912,7 +912,7 @@ class RegulatoryRequirements:
     def position_limit_compliance(current_position: float, regulatory_limit: float, account_size: float) -> dict[str, Any]:
         """Check position limit compliance."""
         position_as_percent_of_account = (current_position / account_size * 100) if account_size > 0 else 0
-        limit_as_percent_of_account = (regulatory_limit / account_size * 100) if account_size > 0 else 0
+        (regulatory_limit / account_size * 100) if account_size > 0 else 0
 
         return {
             "current_position": round(current_position, 2),

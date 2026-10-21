@@ -281,7 +281,7 @@ class MercadoLibreAutomation:
 
         try:
             # Extraer dirección
-            receiver = order_details.get("shipping", {}).get("receiver_address", {})
+            order_details.get("shipping", {}).get("receiver_address", {})
 
             # Generar label via ML shipping
             response = await self.http_client.post(

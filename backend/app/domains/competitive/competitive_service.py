@@ -27,10 +27,10 @@ class CompetitiveIntelligenceService:
         business_id: UUID,
         name: str,
         competitor_type: str,
-        website: str = None,
-        primary_address: str = None,
-        latitude: float = None,
-        longitude: float = None,
+        website: str | None = None,
+        primary_address: str | None = None,
+        latitude: float | None = None,
+        longitude: float | None = None,
         threat_level: str = "medium",
         db: Session = None
     ) -> dict:
@@ -69,8 +69,8 @@ class CompetitiveIntelligenceService:
         business_id: UUID,
         product_name: str,
         base_price: Decimal,
-        date: str = None,
-        discounted_price: Decimal = None,
+        date: str | None = None,
+        discounted_price: Decimal | None = None,
         in_stock: bool = True,
         source: str = "website",
         db: Session = None
@@ -118,11 +118,11 @@ class CompetitiveIntelligenceService:
         business_id: UUID,
         offering_type: str,
         offering_name: str,
-        category: str = None,
-        description: str = None,
-        features: list[str] = None,
+        category: str | None = None,
+        description: str | None = None,
+        features: list[str] | None = None,
         our_has_equivalent: bool = False,
-        competitive_advantage: str = None,
+        competitive_advantage: str | None = None,
         db: Session = None
     ) -> dict:
         """Log competitor product/service offering."""
@@ -157,7 +157,7 @@ class CompetitiveIntelligenceService:
     @staticmethod
     def get_competitive_position(
         business_id: UUID,
-        date: str = None,
+        date: str | None = None,
         db: Session = None
     ) -> dict:
         """Get competitive position summary."""

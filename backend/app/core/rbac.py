@@ -84,9 +84,7 @@ async def check_permission(
         result = await db.execute(
             select(Business).where(Business.id == business_id, Business.user_id == user_id)
         )
-        if result.scalar_one_or_none():
-            return True
-        return False
+        return bool(result.scalar_one_or_none())
 
     role = bur.role
 
@@ -98,10 +96,7 @@ async def check_permission(
             RolePermission.action.in_([action, "admin"]),
         )
     )
-    if result.scalars().first():
-        return True
-
-    return False
+    return bool(result.scalars().first())
 
 
 def require_permission(resource: str, action: str = "read"):

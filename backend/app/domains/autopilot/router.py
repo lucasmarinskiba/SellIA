@@ -113,7 +113,7 @@ async def get_autopilot_overview(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    engine = AutopilotEngine(db)
+    AutopilotEngine(db)
     report_service = AutopilotReportService(db)
 
     latest_report = await report_service.get_latest_report(business_id)

@@ -98,7 +98,7 @@ class EventBus:
         await self.connect()
         self._pubsub = self._redis_pool.pubsub()
         # Suscribir a todos los canales de eventos
-        channels = [f"events:{et}" for et in self._handlers.keys()] + ["events:all"]
+        channels = [f"events:{et}" for et in self._handlers] + ["events:all"]
         if channels:
             await self._pubsub.subscribe(*channels)
 

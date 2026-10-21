@@ -215,7 +215,7 @@ async def chat_with_agent(
     result = await db.execute(
         select(AgentPersonality).where(AgentPersonality.id == conv.personality_id)
     )
-    personality = result.scalar_one_or_none()
+    result.scalar_one_or_none()
 
     # Get business context
     result = await db.execute(

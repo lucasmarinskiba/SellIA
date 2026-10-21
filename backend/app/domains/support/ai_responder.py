@@ -133,7 +133,4 @@ async def should_escalate(
     user_msgs = [m for m in messages if m.sender_type.value == "user"]
     ai_msgs = [m for m in messages if m.sender_type.value == "ai"]
 
-    if len(ai_msgs) >= MAX_AI_MESSAGES_BEFORE_ESCALATE and len(user_msgs) > len(ai_msgs):
-        return True
-
-    return False
+    return bool(len(ai_msgs) >= MAX_AI_MESSAGES_BEFORE_ESCALATE and len(user_msgs) > len(ai_msgs))

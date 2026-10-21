@@ -160,7 +160,7 @@ class StrategyExpansionEngine:
     # VERTICAL-SPECIFIC STRATEGIES (40 strategies)
     # ========================================================================
 
-    def get_vertical_strategies(self, vertical: str = None) -> dict:
+    def get_vertical_strategies(self, vertical: str | None = None) -> dict:
         """Get vertical-specific strategies. Verticals: real_estate, ecommerce, saas, services."""
         if vertical:
             return {s.strategy_id: s for s in self.vertical.get_by_vertical(vertical)}
@@ -317,27 +317,27 @@ class StrategyExpansionEngine:
 
 # Export main classes for direct import
 __all__ = [
-    "StrategyExpansionEngine",
-    # Pack 1
-    "BlueOceanExpansionPack1",
-    "BlueOceanStrategy",
+    "ACQUISITION_METHODS",
     "BLUE_OCEAN_STRATEGIES",
-    # Pack 2
-    "SalesMethodsExpansionPack2",
-    "SalesMethod",
     "CONSULTATIVE_SALES_METHODS",
-    # Pack 3
-    "PricingExpansionPack3",
-    "PricingStrategy",
     "PRICING_STRATEGIES",
+    "VERTICAL_STRATEGIES",
     # Pack 4
     "AcquisitionExpansionPack4",
     "AcquisitionMethod",
-    "ACQUISITION_METHODS",
+    # Pack 1
+    "BlueOceanExpansionPack1",
+    "BlueOceanStrategy",
+    # Pack 3
+    "PricingExpansionPack3",
+    "PricingStrategy",
+    "SalesMethod",
+    # Pack 2
+    "SalesMethodsExpansionPack2",
+    "StrategyExpansionEngine",
     # Pack 5
     "VerticalExpansionPack5",
     "VerticalStrategy",
-    "VERTICAL_STRATEGIES",
 ]
 
 

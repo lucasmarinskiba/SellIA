@@ -193,7 +193,7 @@ class AdvancedBrowserAgent:
         try:
             # Captura screenshot del elemento
             element = await self.page.query_selector(selector)
-            screenshot = await element.screenshot()
+            await element.screenshot()
 
             # TODO: Integrar Tesseract OCR
             # import pytesseract

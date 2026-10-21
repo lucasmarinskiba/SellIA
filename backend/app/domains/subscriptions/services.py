@@ -200,7 +200,7 @@ async def _check_subscription_limit_inner(
             "allowed": quantity <= limit, "plan": plan.slug,
         }
 
-    sub, plan = row
+    _sub, plan = row
     limits = plan.limits or {}
     limit = limits.get(metric_type, 0)
 

@@ -62,7 +62,7 @@ class DocusignService:
         """
         try:
             # Build envelope request
-            envelope_data = {
+            {
                 "emailSubject": f"Contract for Signature: {contract_name}",
                 "emailBlurb": f"Please review and sign the agreement for {company_name}. Annual value: ${annual_price:,.0f}.",
                 "documents": [

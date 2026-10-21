@@ -90,7 +90,7 @@ async def complete_onboarding_item(
     item_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-    notes: Annotated[str, Query()] = None,
+    notes: Annotated[str | None, Query()] = None,
 ):
     svc = OnboardingService(db)
     return await svc.complete_item(item_id, notes)

@@ -49,10 +49,10 @@ class LocationInventoryService:
         product_id: str,
         quantity_change: int,
         movement_type: str,
-        reason: str = None,
-        related_order_id: str = None,
-        related_checkin_id: UUID = None,
-        staff_id: UUID = None,
+        reason: str | None = None,
+        related_order_id: str | None = None,
+        related_checkin_id: UUID | None = None,
+        staff_id: UUID | None = None,
         db: Session = None
     ) -> dict:
         """Update stock level + log movement.
@@ -172,7 +172,7 @@ class LocationInventoryService:
     @staticmethod
     def get_stock_movement_history(
         location_id: UUID,
-        product_id: str = None,
+        product_id: str | None = None,
         days: int = 30,
         db: Session = None
     ) -> list:
@@ -315,7 +315,7 @@ class FulfillmentRoutingService:
             return {"error": "No inventory available at any location"}
 
         # Sort by score (lower = better)
-        best = sorted(candidates, key=lambda x: x["score"])[0]
+        best = min(candidates, key=lambda x: x["score"])
 
         return {
             "location_id": str(best["location_id"]),

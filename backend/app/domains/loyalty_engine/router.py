@@ -63,16 +63,15 @@ RETENTION_SEQUENCES = {
 
 def _tier_for_points(points: float) -> str:
     for tier, low, high in TIER_THRESHOLDS:
-        if high is None or (low <= points <= high):
-            if points >= low:
-                return tier
+        if (high is None or (low <= points <= high)) and points >= low:
+            return tier
     return "bronze"
 
 
 def _progress_to_next_tier(points: float) -> dict:
     for i, (tier, low, high) in enumerate(TIER_THRESHOLDS):
         if high is not None and low <= points <= high:
-            next_tier, next_low, _ = TIER_THRESHOLDS[i + 1]
+            _next_tier, next_low, _ = TIER_THRESHOLDS[i + 1]
             return {"points_to_next_tier": next_low - points, "progress_to_next": (points - low) / (next_low - low)}
     return {"points_to_next_tier": 0, "progress_to_next": 1.0}
 

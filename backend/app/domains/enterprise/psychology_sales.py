@@ -3,7 +3,7 @@
 import json
 import logging
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, ClassVar
 
 from sqlalchemy.orm import Session
 
@@ -44,7 +44,7 @@ class NeedNarrativeResult:
 class DiscoveryQuestionsEngine:
     """Generate contextual discovery questions."""
 
-    QUESTION_HIERARCHY = {
+    QUESTION_HIERARCHY: ClassVar[dict] = {
         "rapport": [
             "Tell me about {company_name} and what you folks focus on.",
             "How long have you been in your current role?",
@@ -402,7 +402,7 @@ class PsychologyObjectionHandler:
         self.db = db
         self.claude = Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
 
-    OBJECTION_FRAMEWORKS = {
+    OBJECTION_FRAMEWORKS: ClassVar[dict] = {
         "price": {
             "validate": "I get it, budget's tight.",
             "reframe": "Price of regret vs price of solution",
@@ -483,7 +483,7 @@ class AssumptiveCloseEngine:
     def __init__(self, db: Session):
         self.db = db
 
-    CLOSE_SEQUENCE = [
+    CLOSE_SEQUENCE: ClassVar[list] = [
         {
             "step": 1,
             "commitment": "Should we get your team involved in a 30-min call?",

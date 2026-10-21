@@ -7,6 +7,7 @@ Recommended models: llama3.1, mistral, qwen2.5, phi4
 
 
 import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
 
@@ -22,12 +23,12 @@ class OllamaProvider(BaseProvider):
 
     name = "Ollama (Local LLM)"
     slug = "ollama"
-    supports = [ContentType.COPY]
+    supports: ClassVar[list] = [ContentType.COPY]
 
     @property
     def is_available(self) -> bool:
         """Check if Ollama server is reachable."""
-        base_url = settings.OLLAMA_BASE_URL.rstrip("/")
+        settings.OLLAMA_BASE_URL.rstrip("/")
         try:
             # Use a simple sync check for property; async check is done in router
             return True  # Router will verify availability before calling

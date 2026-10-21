@@ -48,7 +48,6 @@ async def validate_subscription_access(
         return False, "Plan no encontrado"
 
     features = plan.features or []
-    limits = plan.limits or {}
 
     # Check if feature is in plan
     if feature_name not in features:

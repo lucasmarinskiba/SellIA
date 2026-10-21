@@ -207,12 +207,6 @@ class ExpertOrchestrator:
     ) -> list[str]:
         """Extract success metrics for this situation"""
 
-        default_metrics = [
-            "Customer moves to next stage of buying process",
-            "No additional objections raised",
-            "Explicit commitment to next step obtained",
-            "Customer tonality becomes more positive"
-        ]
 
         # Context-specific metrics
         if context.scenario.deal_stage == "decision":

@@ -83,7 +83,7 @@ class BayesianNode:
         for hypothesis, prior in self.priors.items():
             # P(H|E) ∝ P(E|H) * P(H)
             likelihood = 1.0
-            for evidence_name, evidence_value in evidence.items():
+            for evidence_name in evidence:
                 if evidence_name in self.likelihoods.get(hypothesis, {}):
                     likelihood *= self.likelihoods[hypothesis][evidence_name]
             posteriors[hypothesis] = likelihood * prior
@@ -309,7 +309,7 @@ class SalesCloserAgent(BaseAgent):
 
     def _generate_close_script(self, context: DecisionContext) -> dict[str, Any]:
         """Genera script de cierre calibrado por etapa."""
-        deal_value = context.signals.get("deal_value", {}).get("value", 0)
+        context.signals.get("deal_value", {}).get("value", 0)
         urgency = context.signals.get("buyer_urgency", {}).get("value", "medium")
         return {
             "script_type": "assumptive_close" if urgency == "high" else "soft_close",
@@ -428,7 +428,7 @@ class ContentStrategistAgent(BaseAgent):
         target_seo_difficulty = context.signals.get("seo_difficulty", {}).get("value", 30)
 
         # Decision tree: stage → content type + SEO approach
-        decision = self._tree_content_decision(buyer_stage)
+        self._tree_content_decision(buyer_stage)
         topic = self._find_seo_opportunity(search_intent, target_seo_difficulty)
         format_rec = self._recommend_format(buyer_stage)
 
@@ -563,9 +563,8 @@ class PatternRecognitionAgent(BaseAgent):
         """Extrae ciclos/tendencias."""
         events = [h["event"] for h in history]
         # Detecta repetición
-        if len(events) > 2:
-            if events[-1] == events[-2]:
-                return ["repetition"]
+        if len(events) > 2 and events[-1] == events[-2]:
+            return ["repetition"]
         return ["cycling", "trending_up"] if len(events) > 1 else []
 
     def _detect_anomalies(self, history: list[dict[str, Any]]) -> list[str]:
@@ -942,7 +941,7 @@ class BrandArchitectAgent(BaseAgent):
 
     async def decide(self, context: DecisionContext) -> dict[str, Any]:
         """Diseña o rediseña marca completa."""
-        current_brand = context.signals.get("current_brand", {}).get("value", {})
+        context.signals.get("current_brand", {}).get("value", {})
         market_feedback = context.signals.get("market_feedback", {}).get("value", {})
 
         brand_identity = self._build_identity(context)

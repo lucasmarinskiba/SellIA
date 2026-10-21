@@ -63,7 +63,6 @@ class HealthScoringService:
         if not conv:
             return CustomerHealthScore(conversation_id, 0, "declining", ChurnRiskLevel.CRITICAL, "Cliente no encontrado")
 
-        business_id = conv.business_id
         now = datetime.now(UTC)
 
         # 1. Recency (30%): days since last order

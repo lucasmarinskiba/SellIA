@@ -64,7 +64,7 @@ async def update_seo_metadata(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Update SEO metadata."""
-    business, website = await _get_website_for_user(business_id, current_user, db)
+    _business, website = await _get_website_for_user(business_id, current_user, db)
 
     website.meta_title = data.get("meta_title", website.meta_title)
     website.meta_description = data.get("meta_description", website.meta_description)
@@ -154,7 +154,7 @@ async def get_sitemap(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Generate dynamic XML sitemap."""
-    business, website = await _get_website_for_user(business_id, current_user, db)
+    _business, website = await _get_website_for_user(business_id, current_user, db)
 
     # Fetch domain
     domain_result = await db.execute(
@@ -197,7 +197,7 @@ async def get_robots_txt(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Generate dynamic robots.txt."""
-    business, website = await _get_website_for_user(business_id, current_user, db)
+    _business, website = await _get_website_for_user(business_id, current_user, db)
 
     # Fetch domain for sitemap URL
     domain_result = await db.execute(
@@ -228,7 +228,7 @@ async def get_seo_audit(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get SEO audit checklist."""
-    business, website = await _get_website_for_user(business_id, current_user, db)
+    _business, website = await _get_website_for_user(business_id, current_user, db)
 
     domain_result = await db.execute(
         select(Domain).where(Domain.website_id == website.id)

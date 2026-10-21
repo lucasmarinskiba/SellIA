@@ -56,7 +56,7 @@ async def websocket_brain(websocket: WebSocket):
             try:
                 message = json.loads(data)
                 msg_type = message.get("type")
-                payload = message.get("payload", {})
+                message.get("payload", {})
 
                 # Handle different message types
                 if msg_type == "ping":
@@ -99,7 +99,7 @@ async def websocket_brain(websocket: WebSocket):
         manager.disconnect(websocket)
 
 
-async def broadcast_phase_update(phase: str, status: str, data: dict = None):
+async def broadcast_phase_update(phase: str, status: str, data: dict | None = None):
     """Broadcast phase update to all clients."""
     await manager.broadcast({
         "type": "phase_update",
@@ -119,7 +119,7 @@ async def broadcast_metrics_update(metrics: dict):
     })
 
 
-async def broadcast_system_event(event_type: str, message: str, data: dict = None):
+async def broadcast_system_event(event_type: str, message: str, data: dict | None = None):
     """Broadcast system event to all clients."""
     await manager.broadcast({
         "type": "system_event",

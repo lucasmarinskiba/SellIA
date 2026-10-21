@@ -87,7 +87,7 @@ settings = get_settings()
 @router.get("/plans", response_model=list[SubscriptionPlanResponse])
 async def list_plans(
     db: Annotated[AsyncSession, Depends(get_db)],
-    region: Annotated[str, Query(description="AR | LATAM | INTL")] = None,
+    region: Annotated[str | None, Query(description="AR | LATAM | INTL")] = None,
     cycle: Annotated[str, Query(description="monthly | yearly")] = "monthly",
 ):
     result = await db.execute(
@@ -1161,9 +1161,9 @@ async def get_admin_revenue(
 async def list_admin_bank_transfers(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-    status: Annotated[str, Query()] = None,
-    date_from: Annotated[str, Query()] = None,
-    date_to: Annotated[str, Query()] = None,
+    status: Annotated[str | None, Query()] = None,
+    date_from: Annotated[str | None, Query()] = None,
+    date_to: Annotated[str | None, Query()] = None,
     page: Annotated[int, Query(ge=1)] = 1,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
 ):
@@ -1199,9 +1199,9 @@ async def list_admin_bank_transfers(
 async def list_admin_subscriptions(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-    plan_slug: Annotated[str, Query()] = None,
-    provider: Annotated[str, Query()] = None,
-    status: Annotated[str, Query()] = None,
+    plan_slug: Annotated[str | None, Query()] = None,
+    provider: Annotated[str | None, Query()] = None,
+    status: Annotated[str | None, Query()] = None,
     page: Annotated[int, Query(ge=1)] = 1,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
 ):

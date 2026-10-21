@@ -41,7 +41,7 @@ class SellIADirector:
         # 2. Evaluate objectives
         objectives = await self.objective_service.get_objectives_for_business(business_id, status="active")
         at_risk_objectives = [o for o in objectives if o.status == ObjectiveStatus.AT_RISK]
-        missed_objectives = [o for o in objectives if o.status == ObjectiveStatus.MISSED]
+        [o for o in objectives if o.status == ObjectiveStatus.MISSED]
 
         # 3. Detect anomalies
         await self.bi_service.detect_anomalies(business_id)
@@ -77,7 +77,7 @@ class SellIADirector:
         if days_remaining <= 0:
             days_remaining = 1
 
-        daily_needed = gap / days_remaining
+        gap / days_remaining
 
         if objective.linked_channel_platform:
             actions.append({

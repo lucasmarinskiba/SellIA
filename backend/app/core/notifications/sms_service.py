@@ -158,7 +158,7 @@ class SMSService:
         phone_number: str,
         order_id: str,
         tracking_number: str,
-        tracking_url: str = None,
+        tracking_url: str | None = None,
     ) -> dict[str, Any]:
         """Envía notificación de envío por SMS."""
 
@@ -184,7 +184,7 @@ class SMSService:
         self,
         phone_number: str,
         order_id: str,
-        review_url: str = None,
+        review_url: str | None = None,
     ) -> dict[str, Any]:
         """Envía confirmación de entrega por SMS."""
 
@@ -209,7 +209,7 @@ class SMSService:
         self,
         phone_number: str,
         order_id: str,
-        retry_url: str = None,
+        retry_url: str | None = None,
     ) -> dict[str, Any]:
         """Envía alerta de pago rechazado por SMS."""
 

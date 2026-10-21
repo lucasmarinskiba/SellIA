@@ -14,7 +14,7 @@ logger = get_logger(__name__)
 
 def check_time_restrictions(
     restrictions: dict[str, Any] | None,
-    timestamp: datetime = None,
+    timestamp: datetime | None = None,
 ) -> tuple[bool, str | None]:
     """
     Verifica si el login está dentro del horario permitido.

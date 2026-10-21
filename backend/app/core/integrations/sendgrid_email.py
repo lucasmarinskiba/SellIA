@@ -105,7 +105,7 @@ class EmailService:
             )
             message.attachment = attachment
 
-            response = sg.send(message)
+            sg.send(message)
 
             logger.info(f"Email with attachment sent to {to_email}")
 

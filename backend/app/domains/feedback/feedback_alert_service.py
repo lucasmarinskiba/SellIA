@@ -29,11 +29,11 @@ class FeedbackAlertService:
         business_id: UUID,
         nps_score: int,
         sentiment: str,
-        comment: str = None,
-        topics: list = None,
-        visitor_email: str = None,
-        visitor_phone: str = None,
-        visitor_name: str = None,
+        comment: str | None = None,
+        topics: list | None = None,
+        visitor_email: str | None = None,
+        visitor_phone: str | None = None,
+        visitor_name: str | None = None,
         db: Session = None
     ) -> dict:
         """Evaluate feedback score. Create alert if NPS < 6."""
@@ -102,7 +102,7 @@ class FeedbackAlertService:
     def escalate_alert(
         alert_id: UUID,
         assigned_to_staff_id: UUID,
-        resolution_plan: str = None,
+        resolution_plan: str | None = None,
         db: Session = None
     ) -> dict:
         """Assign staff member to resolve alert."""
@@ -148,7 +148,7 @@ class FeedbackAlertService:
     @staticmethod
     def resolve_alert(
         alert_id: UUID,
-        resolution_notes: str = None,
+        resolution_notes: str | None = None,
         db: Session = None
     ) -> dict:
         """Mark alert as resolved."""
@@ -187,7 +187,7 @@ class FeedbackAlertService:
     @staticmethod
     def get_location_alerts(
         location_id: UUID,
-        status_filter: str = None,
+        status_filter: str | None = None,
         days: int = 30,
         db: Session = None
     ) -> dict:

@@ -187,10 +187,10 @@ class AdaptiveEngine:
             )
 
         context = self.user_profiles[user_id]
-        config = self.segment_configs.get(context.segment.value, {})
+        self.segment_configs.get(context.segment.value, {})
 
         # Adapt content based on segment
-        adapted = self._adapt_by_segment(context, endpoint_name, base_response)
+        self._adapt_by_segment(context, endpoint_name, base_response)
 
         return AdaptiveResponse(
             endpoint_name=endpoint_name,

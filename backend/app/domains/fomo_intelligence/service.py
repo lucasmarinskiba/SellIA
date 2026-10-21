@@ -1,6 +1,7 @@
 """FOMO Intelligence service: registra usos reales + aprende qué convierte."""
 import uuid
 from datetime import UTC, datetime
+from typing import ClassVar
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,7 +17,7 @@ from app.domains.fomo_intelligence.models import (
 class FOMOIntelligenceService:
     """Registra aplicaciones de las 4 estrategias FOMO y genera inteligencia agregada."""
 
-    STRATEGY_TEMPLATES = {
+    STRATEGY_TEMPLATES: ClassVar[dict] = {
         FOMOStrategyType.ESCASEZ_REAL: {
             "requires_fields": ["slots_remaining", "total_slots"],
             "message_template": "Quedan {slots_remaining} de {total_slots} cupos disponibles",

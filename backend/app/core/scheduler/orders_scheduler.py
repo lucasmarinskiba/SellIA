@@ -190,7 +190,7 @@ class OrdersScheduler:
         """Wrapper para ejecutar Amazon sync."""
         try:
             logger.info(f"Executing Amazon sync for {seller_id}")
-            result = await amazon_service.sync_orders()
+            await amazon_service.sync_orders()
             logger.info("Amazon sync complete")
         except Exception:
             logger.exception("Amazon sync wrapper failed")
@@ -200,7 +200,7 @@ class OrdersScheduler:
         """Wrapper para ejecutar Shopify sync."""
         try:
             logger.info(f"Executing Shopify sync for {store_url}")
-            result = await shopify_service.sync_orders()
+            await shopify_service.sync_orders()
             logger.info("Shopify sync complete")
         except Exception:
             logger.exception("Shopify sync wrapper failed")

@@ -654,7 +654,7 @@ async def schedule_service_for_order(
     from datetime import timedelta
     start = data.get("scheduled_at")
     if start:
-        start_dt = datetime.fromisoformat(start.replace("Z", "+00:00")) if isinstance(start, str) else start
+        start_dt = datetime.fromisoformat(start) if isinstance(start, str) else start
         end_dt = start_dt + timedelta(minutes=data.get("estimated_duration_minutes", 60))
         appt_data = {
             "service_delivery_id": delivery.id,

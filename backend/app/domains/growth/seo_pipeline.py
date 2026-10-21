@@ -32,7 +32,7 @@ class SEOPipeline:
         keyword: str,
         search_intent: str = "informational",  # informational, navigational, transactional, commercial
         word_count: int = 1200,
-        campaign_id: uuid.UUID = None,
+        campaign_id: uuid.UUID | None = None,
     ) -> GeneratedContent:
         """Generate a complete SEO-optimized blog post."""
         # Generate article
@@ -69,7 +69,7 @@ class SEOPipeline:
         business_id: uuid.UUID,
         topic: str,
         difficulty: str = "beginner",  # beginner, intermediate, advanced
-        campaign_id: uuid.UUID = None,
+        campaign_id: uuid.UUID | None = None,
     ) -> GeneratedContent:
         """Generate a how-to guide optimized for featured snippets."""
         system_prompt = """Eres un experto en SEO y contenido educativo. Creas guías paso a paso que:
@@ -264,7 +264,7 @@ Responde en JSON:
     async def get_scheduled_content(
         self,
         business_id: uuid.UUID,
-        platform: str = None,
+        platform: str | None = None,
     ) -> list[ContentCalendar]:
         """Get scheduled content."""
         query = select(ContentCalendar).where(
@@ -308,7 +308,7 @@ Responde en JSON:
         self,
         business_id: uuid.UUID,
         keywords: list[str],
-        campaign_id: uuid.UUID = None,
+        campaign_id: uuid.UUID | None = None,
     ) -> list[GeneratedContent]:
         """Generate multiple pieces of SEO content."""
         contents = []

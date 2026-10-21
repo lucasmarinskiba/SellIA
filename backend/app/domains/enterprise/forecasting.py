@@ -175,7 +175,7 @@ class ForecastingManager:
             "factors": score.ai_score_factors,
         }
 
-    async def forecast_revenue(self, business_id: UUID, db: AsyncSession, periods: list[int] = None) -> dict:
+    async def forecast_revenue(self, business_id: UUID, db: AsyncSession, periods: list[int] | None = None) -> dict:
         """Revenue forecast for multiple day-ahead periods."""
         if periods is None:
             periods = [30, 60, 90]

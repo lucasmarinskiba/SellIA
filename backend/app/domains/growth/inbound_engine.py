@@ -41,9 +41,9 @@ class InboundGrowthEngine:
         name: str,
         campaign_type: GrowthCampaignType,
         description: str = "",
-        config: dict = None,
+        config: dict | None = None,
         target_audience: str = "",
-        content_pillars: list = None,
+        content_pillars: list | None = None,
         tone_of_voice: str = "educational",
     ) -> GrowthCampaign:
         """Create a new organic growth campaign."""
@@ -220,10 +220,10 @@ class InboundGrowthEngine:
         self,
         business_id: uuid.UUID,
         source_type: InboundLeadSource,
-        conversation_id: uuid.UUID = None,
-        campaign_id: uuid.UUID = None,
-        lead_magnet_id: uuid.UUID = None,
-        contact_info: dict = None,
+        conversation_id: uuid.UUID | None = None,
+        campaign_id: uuid.UUID | None = None,
+        lead_magnet_id: uuid.UUID | None = None,
+        contact_info: dict | None = None,
         source_detail: str = "",
     ) -> InboundLead:
         """Capture a new organic inbound lead."""

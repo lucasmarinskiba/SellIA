@@ -92,10 +92,10 @@ async def record_deal_outcome(
     outcome: str,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-    final_value: float = None,
+    final_value: float | None = None,
     days_to_close: int = 0,
     forecasted_probability: float = 0.5,
-    win_loss_reason: str = None,
+    win_loss_reason: str | None = None,
 ):
     """Record deal outcome (won/lost) for forecast-accuracy tracking."""
     deal = await _get_owned_deal(deal_id, current_user, db)

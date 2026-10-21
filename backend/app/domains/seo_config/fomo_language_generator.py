@@ -1,6 +1,7 @@
 """Multi-language FOMO copy generation (ES, EN, PT)."""
 
 import logging
+from typing import ClassVar
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,8 +14,8 @@ logger = logging.getLogger(__name__)
 class FOMALanguageGenerator:
   """Generate FOMO copy in multiple languages."""
 
-  SUPPORTED_LANGUAGES = ['es', 'en', 'pt']
-  LANGUAGE_NAMES = {
+  SUPPORTED_LANGUAGES: ClassVar[list] = ['es', 'en', 'pt']
+  LANGUAGE_NAMES: ClassVar[dict] = {
     'es': 'Español',
     'en': 'English',
     'pt': 'Português',

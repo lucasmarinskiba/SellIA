@@ -5,7 +5,7 @@ Genera captions contextuales basadas en trending topics + product.
 
 import logging
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ class ContentStyle(str, Enum):
 class ContentTemplate:
     """Template para generar contenido."""
 
-    TEMPLATES = {
+    TEMPLATES: ClassVar[dict] = {
         ContentStyle.EDUCATIONAL: [
             "🔥 {tip_number} tip para {topic}:\n{insight}\n\n💡 {action}\n\n{hashtags}",
             "¿Sabías que {fact}?\n\nAcá está cómo {solution}:\n{steps}\n\n{hashtags}",
@@ -48,7 +48,7 @@ class ContentTemplate:
         ],
     }
 
-    HOOKS = [
+    HOOKS: ClassVar[list] = [
         "¿Cuál es tu? Yo elegiría...",
         "Si solo tuvieras 1 tip...",
         "Nadie te va a decir esto pero...",

@@ -186,7 +186,7 @@ class TaskProcessor:
         """Progress lead to next workflow step."""
         workflow_execution_id = task.get("workflow_execution_id")
         next_step = task.get("next_step")
-        delay_minutes = task.get("delay_minutes", 0)
+        task.get("delay_minutes", 0)
 
         try:
             async with AsyncSessionLocal() as session:

@@ -14,8 +14,8 @@ FUNCTIONAL_SLUGS = {"captador", "cualificador", "vendedor", "post-venta"}
 def compose_system_prompt(
     base_slug: str,
     voice_slug: str | None = None,
-    business_context: dict = None,
-    custom_instructions: str = None,
+    business_context: dict | None = None,
+    custom_instructions: str | None = None,
 ) -> str:
     """
     Compose a system prompt that layers an expert's voice over a functional role.

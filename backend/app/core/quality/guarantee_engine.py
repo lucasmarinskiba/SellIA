@@ -5,7 +5,7 @@ Asegura: si X no sucede en 30 días, devolvemos dinero. Zero risk.
 """
 
 import logging
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +14,7 @@ class GuaranteeEngine:
     """Garantías que aseguran cierre venta."""
 
     # Tipos de garantía
-    GUARANTEES = {
+    GUARANTEES: ClassVar[dict] = {
         "money_back": {
             "duration_days": 30,
             "condition": "If not satisfied",
@@ -97,7 +97,7 @@ We only win if you win.
         logger.info(f"Monitoring guarantee for sale {sale_id}")
 
         guarantee = GuaranteeEngine.GUARANTEES.get(guarantee_type, {})
-        duration_days = guarantee.get("duration_days", 30)
+        guarantee.get("duration_days", 30)
 
         # Simular chequeo de condiciones
         conditions_met = True

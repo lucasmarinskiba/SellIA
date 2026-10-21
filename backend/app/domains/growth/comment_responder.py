@@ -54,7 +54,7 @@ class CommentResponder:
         comment_id: str,
         author_username: str,
         comment_text: str,
-        author_id: str = None,
+        author_id: str | None = None,
     ) -> dict[str, Any]:
         """Process a single comment and generate response strategy."""
         comment_lower = comment_text.lower()

@@ -2,7 +2,7 @@
 
 import logging
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ class LeadScoreBreakdown:
 class LeadScorerAgent:
     """Score buyer profiles on 6 critical factors."""
 
-    SCORE_WEIGHTS = {
+    SCORE_WEIGHTS: ClassVar[dict] = {
         "budget": 0.25,
         "motivation": 0.20,
         "timeline": 0.20,

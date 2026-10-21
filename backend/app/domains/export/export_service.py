@@ -31,7 +31,7 @@ class ExportBIService:
         date_start: str | None = None,
         date_end: str | None = None,
         filters: dict | None = None,
-        requested_by: str = None,
+        requested_by: str | None = None,
         db: Session = None
     ) -> dict:
         """Request data export."""
@@ -107,7 +107,7 @@ class ExportBIService:
         report_type: str,
         frequency: str,
         schedule_time: str = "06:00",
-        recipients: list[str] = None,
+        recipients: list[str] | None = None,
         db: Session = None
     ) -> dict:
         """Create scheduled report."""
@@ -160,7 +160,7 @@ class ExportBIService:
         warehouse_type: str,
         warehouse_name: str,
         connection_string: str,
-        tables_to_sync: list[str] = None,
+        tables_to_sync: list[str] | None = None,
         db: Session = None
     ) -> dict:
         """Configure data warehouse integration."""
@@ -239,7 +239,7 @@ class ExportBIService:
         business_id: UUID,
         dashboard_name: str,
         dashboard_type: str,
-        charts: list[dict] = None,
+        charts: list[dict] | None = None,
         db: Session = None
     ) -> dict:
         """Create BI dashboard."""
@@ -295,7 +295,7 @@ class ExportBIService:
     @staticmethod
     def get_export_metrics(
         business_id: UUID,
-        date: str = None,
+        date: str | None = None,
         db: Session = None
     ) -> dict:
         """Get export & BI metrics."""

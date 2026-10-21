@@ -6,6 +6,7 @@ Strengths: Emails, sequences, blog posts, brand voice consistency
 
 
 import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
 
@@ -21,7 +22,7 @@ class JasperProvider(BaseProvider):
 
     name = "Jasper"
     slug = "jasper"
-    supports = [ContentType.COPY]
+    supports: ClassVar[list] = [ContentType.COPY]
 
     @property
     def is_available(self) -> bool:

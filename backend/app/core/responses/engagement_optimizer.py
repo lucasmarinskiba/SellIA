@@ -3,7 +3,7 @@ Engagement Optimizer — Hooks, CTAs, follow-ups, timing optimization.
 """
 
 import logging
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -11,14 +11,14 @@ logger = logging.getLogger(__name__)
 class EngagementOptimizer:
     """Optimizes engagement metrics."""
 
-    HOOK_TEMPLATES = {
+    HOOK_TEMPLATES: ClassVar[dict] = {
         "question": ["Wait, you're asking the real questions", "This deserves a proper answer"],
         "observation": ["Plot twist:", "Here's the thing:", "This is so true because"],
         "challenge": ["Challenge accepted!", "Let's break this down"],
         "story": ["There's actually a story here:", "Funny you mention this"],
     }
 
-    CTA_STYLES = {
+    CTA_STYLES: ClassVar[dict] = {
         "question": "What would help most?",
         "book": "Learn more → [link]",
         "video": "Watch explanation → [link]",

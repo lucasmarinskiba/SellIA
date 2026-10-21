@@ -239,7 +239,7 @@ class AuditLogService:
 
         return log
 
-    async def reject(self, log_id: str, rejected_by_user_id: str, reason: str = None) -> ComputerUseAuditLog | None:
+    async def reject(self, log_id: str, rejected_by_user_id: str, reason: str | None = None) -> ComputerUseAuditLog | None:
         """Rechaza una acción pendiente."""
         log = await self.get_by_id(log_id)
         if not log:

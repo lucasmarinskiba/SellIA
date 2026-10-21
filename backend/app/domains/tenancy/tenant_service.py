@@ -129,7 +129,7 @@ class TenantIsolationService:
         business_id: UUID,
         email: str,
         role: str = "member",
-        permissions: list[str] = None,
+        permissions: list[str] | None = None,
         db: Session = None
     ) -> dict:
         """Add user to business tenant."""
@@ -272,7 +272,7 @@ class TenantIsolationService:
 
             total_actions = len(logs)
             failed_actions = len([l for l in logs if l.action_status == "error"])
-            users_active = len(set(l.user_id for l in logs if l.user_id))
+            users_active = len({l.user_id for l in logs if l.user_id})
 
         elif report_type in ["gdpr_dsar", "ccpa_dsar"]:
             # Data Subject Access Request report
@@ -283,8 +283,8 @@ class TenantIsolationService:
 
             total_actions = len(access_logs)
             data_accesses = len([a for a in access_logs if a.access_type in ["export", "download"]])
-            pii_exposures = len([a for a in access_logs if a.pii_fields_included])
-            users_active = len(set(a.user_email for a in access_logs))
+            len([a for a in access_logs if a.pii_fields_included])
+            users_active = len({a.user_email for a in access_logs})
 
         else:
             total_actions = 0

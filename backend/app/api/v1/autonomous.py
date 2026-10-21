@@ -132,9 +132,7 @@ class AgentSelector:
     def select(event: AutonomousEvent, strategy: dict[str, Any] | None = None) -> str:
         """Retorna ID del agente a usar, basado en estrategia si disponible."""
 
-        event_type = event.event_type
         stage = event.context.get("sales_stage", SalesStage.FIRST_CONTACT)
-        message = event.message or ""
 
         # Si hay estrategia, usarla para seleccionar agente óptimo
         if strategy:

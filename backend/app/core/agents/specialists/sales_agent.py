@@ -11,7 +11,7 @@ Specialties:
 import logging
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ class SalesPlaybook:
 class SalesAgent:
     """Expert in sales techniques and methodologies."""
 
-    METHODOLOGIES = {
+    METHODOLOGIES: ClassVar[dict] = {
         SalesMethodology.MEDDIC: {
             "name": "MEDDIC",
             "description": "Enterprise sales framework focusing on key stakeholders and decision process",
@@ -203,7 +203,7 @@ class SalesAgent:
         },
     }
 
-    PLAYBOOKS = {
+    PLAYBOOKS: ClassVar[dict] = {
         "cold_outreach": SalesPlaybook(
             name="Cold Outreach Framework",
             description="Initial outreach to cold prospects",
@@ -364,7 +364,7 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
         ),
     }
 
-    OBJECTION_RESPONSES = {
+    OBJECTION_RESPONSES: ClassVar[dict] = {
         ObjectionType.PRICE: {
             "reframe": "Not about cost, it's about ROI and value",
             "questions": [

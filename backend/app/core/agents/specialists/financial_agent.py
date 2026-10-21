@@ -11,7 +11,7 @@ Specialties:
 import logging
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ class PricingModel:
 class FinancialAgent:
     """Expert in financial modeling and pricing."""
 
-    PRICING_STRATEGIES = {
+    PRICING_STRATEGIES: ClassVar[dict] = {
         PricingStrategy.COST_PLUS: {
             "name": "Cost-Plus Pricing",
             "description": "Price = Cost + Markup",
@@ -187,7 +187,7 @@ class FinancialAgent:
         },
     }
 
-    FINANCIAL_MODELS = {
+    FINANCIAL_MODELS: ClassVar[dict] = {
         "monthly_projection": {
             "description": "Project revenue, costs, and profitability by month",
             "components": [
@@ -220,7 +220,7 @@ class FinancialAgent:
         },
     }
 
-    GROSS_MARGIN_LEVERS = {
+    GROSS_MARGIN_LEVERS: ClassVar[dict] = {
         "pricing": {
             "tactics": [
                 "Increase price (if market allows)",
@@ -259,7 +259,7 @@ class FinancialAgent:
         },
     }
 
-    PSYCHOLOGICAL_PRICING = {
+    PSYCHOLOGICAL_PRICING: ClassVar[dict] = {
         "charm_pricing": {
             "description": "End price in 9 or 7 ($9.99 vs $10)",
             "effect": "Appears 20-30% cheaper",
@@ -294,7 +294,7 @@ class FinancialAgent:
         },
     }
 
-    PRICING_RESEARCH_METHODS = {
+    PRICING_RESEARCH_METHODS: ClassVar[dict] = {
         "van_westendorp_price_sensitivity": {
             "description": "Survey to find optimal price",
             "questions": [

@@ -119,7 +119,7 @@ def create_multiplatform_product(
         )
 
         sync_engine = PlatformSyncEngine(db)
-        results = sync_engine.create_product(product, platforms)
+        sync_engine.create_product(product, platforms)
 
         return ProductResponse(
             id=product.id,
@@ -148,7 +148,7 @@ def sync_inventory(
         sync_engine = PlatformSyncEngine(db)
 
         # Create mock product for sync
-        product = Product(
+        Product(
             id=product_id,
             sku=f"SKU-{product_id}",
             title="Product",

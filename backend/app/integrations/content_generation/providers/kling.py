@@ -6,6 +6,7 @@ Strengths: Real-world physics, human motion, realistic scenes
 
 
 import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
 
@@ -21,7 +22,7 @@ class KlingProvider(BaseProvider):
 
     name = "Kling AI"
     slug = "kling"
-    supports = [ContentType.VIDEO]
+    supports: ClassVar[list] = [ContentType.VIDEO]
 
     @property
     def is_available(self) -> bool:

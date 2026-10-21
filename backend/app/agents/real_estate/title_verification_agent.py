@@ -183,7 +183,7 @@ class TitleVerificationAgent:
             return "Title has non-resolvable issues. Consult title attorney before proceeding."
 
         if resolvable_count > 0:
-            return f"Title has {resolvable_count} resolvable issues. Estimated {self.title_reports.get(list(self.title_reports.keys())[0]).estimated_clear_date.strftime('%B %d')} to clear with proper remediation."
+            return f"Title has {resolvable_count} resolvable issues. Estimated {self.title_reports.get(next(iter(self.title_reports.keys()))).estimated_clear_date.strftime('%B %d')} to clear with proper remediation."
 
         return "Consult title attorney for detailed review."
 

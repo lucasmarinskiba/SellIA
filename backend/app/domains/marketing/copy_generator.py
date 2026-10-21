@@ -50,12 +50,12 @@ class CopyGenerator:
                 f"{business_name} - Respuesta rápida garantizada",
             ],
             descriptions=[
-                "Contáctanos hoy para solucionar tu problema. Respuesta en 30 minutos. "
-                "Presupuesto sin compromiso.",
-                "Somos especialistas en [especialidad]. Más de 10 años de experiencia. "
-                "Clientes satisfechos.",
-                "Servicio profesional y confiable. Disponibles 24/7. "
-                "Garantía en todos nuestros trabajos.",
+                ("Contáctanos hoy para solucionar tu problema. Respuesta en 30 minutos. "
+                "Presupuesto sin compromiso."),
+                ("Somos especialistas en [especialidad]. Más de 10 años de experiencia. "
+                "Clientes satisfechos."),
+                ("Servicio profesional y confiable. Disponibles 24/7. "
+                "Garantía en todos nuestros trabajos."),
             ],
             calls_to_action=[
                 "Llama ahora",
@@ -100,10 +100,10 @@ class CopyGenerator:
                 "Somos tu solución número 1"
             ],
             descriptions=[
-                "Especialistas en [especialidad]. Síguenos para tips, antes y después, "
-                "y ofertas exclusivas. 👇",
-                "Tus [productos/servicios] de confianza. Calidad premium. "
-                "Envío rápido. ¡Síguenos!",
+                ("Especialistas en [especialidad]. Síguenos para tips, antes y después, "
+                "y ofertas exclusivas. 👇"),
+                ("Tus [productos/servicios] de confianza. Calidad premium. "
+                "Envío rápido. ¡Síguenos!"),
             ],
             calls_to_action=[
                 "Compra ahora",
@@ -199,8 +199,8 @@ class CopyGenerator:
                 "Expertos en [industria]",
             ],
             descriptions=[
-                "Ayudamos a empresas a [lograr objetivo]. Experiencia de 10+ años. "
-                "Conectemos y exploremos oportunidades.",
+                ("Ayudamos a empresas a [lograr objetivo]. Experiencia de 10+ años. "
+                "Conectemos y exploremos oportunidades."),
             ],
             calls_to_action=[
                 "Conectemos",

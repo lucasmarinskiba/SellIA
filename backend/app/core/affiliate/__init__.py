@@ -27,27 +27,27 @@ from .commission_tracker import (
 )
 
 __all__ = [
+    # Sales methods
+    "AFFILIATE_METHODS",
+    # Automation
+    "AffiliateAutomationOrchestrator",
+    "AffiliateCommission",
+    "AffiliatePerformance",
+    "AffiliateProductScore",
+    "AffiliateStrategy",
+    # Strategy
+    "AffiliateStrategyEngine",
+    "AmazonAnalyzer",
+    "AutomationTask",
+    "BeaconsAnalyzer",
+    # Tracking
+    "CommissionTracker",
     # Platform analyzers
     "HotmartAnalyzer",
     "MercadoLibreAnalyzer",
-    "AmazonAnalyzer",
-    "BeaconsAnalyzer",
-    "AffiliateProductScore",
+    "PlatformAutomationAdapter",
     "PlatformComparator",
-    # Sales methods
-    "AFFILIATE_METHODS",
-    "get_methods_by_category",
     "get_best_methods_for_product",
     "get_fastest_methods",
-    # Automation
-    "AffiliateAutomationOrchestrator",
-    "PlatformAutomationAdapter",
-    "AutomationTask",
-    # Strategy
-    "AffiliateStrategyEngine",
-    "AffiliateStrategy",
-    # Tracking
-    "CommissionTracker",
-    "AffiliateCommission",
-    "AffiliatePerformance",
+    "get_methods_by_category",
 ]

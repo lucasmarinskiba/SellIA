@@ -602,10 +602,10 @@ async def whatsapp_embedded_signup(
 async def verify_webhook(
     platform: ChannelPlatform,
     db: Annotated[AsyncSession, Depends(get_db)],
-    hub_mode: Annotated[str, Query(alias="hub.mode")] = None,
-    hub_verify_token: Annotated[str, Query(alias="hub.verify_token")] = None,
-    hub_challenge: Annotated[str, Query(alias="hub.challenge")] = None,
-    token: Annotated[str, Query()] = None,
+    hub_mode: Annotated[str | None, Query(alias="hub.mode")] = None,
+    hub_verify_token: Annotated[str | None, Query(alias="hub.verify_token")] = None,
+    hub_challenge: Annotated[str | None, Query(alias="hub.challenge")] = None,
+    token: Annotated[str | None, Query()] = None,
 ):
     """Verify webhook subscription (used by WhatsApp Business API, Meta, etc.)."""
     # Si hay token, verificar por token directo (Telegram, Webchat)
@@ -650,7 +650,7 @@ async def receive_webhook(
     platform: ChannelPlatform,
     request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
-    token: Annotated[str, Query()] = None,
+    token: Annotated[str | None, Query()] = None,
 ):
     """Receive incoming webhook from any platform.
     
@@ -767,7 +767,6 @@ async def receive_webhook(
 
     # Estrategia 4: Para Telegram, identificar por bot_token en settings/credentials
     elif platform == ChannelPlatform.TELEGRAM:
-        bot_token = None
         try:
             # Telegram no incluye bot_token en el webhook payload
             # Se debe usar ?token=xxx o verificar por webhook_secret

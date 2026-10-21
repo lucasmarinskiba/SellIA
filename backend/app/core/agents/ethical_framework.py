@@ -11,7 +11,7 @@ Prevents:
 
 import logging
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class EthicalFramework:
     """Enforces ethical boundaries in sales."""
 
     # Dark pattern keywords
-    DARK_PATTERN_INDICATORS = {
+    DARK_PATTERN_INDICATORS: ClassVar[dict] = {
         DarkPatternType.FALSE_URGENCY: {
             "keywords": [
                 "hurry", "last chance", "today only", "act now",
@@ -66,7 +66,7 @@ class EthicalFramework:
     }
 
     # Manipulation triggers
-    MANIPULATION_TRIGGERS = {
+    MANIPULATION_TRIGGERS: ClassVar[dict] = {
         "fear_based": ["fail", "lose", "miss", "never", "desperate"],
         "obligation": ["should", "must", "have to", "owe"],
         "guilt": ["shameful", "irresponsible", "negligent"],
@@ -282,7 +282,7 @@ class EthicalFramework:
             review_text = testimonial.get("text", "").lower()
 
             # Red flags for fake reviews
-            fake_review_indicators = [
+            [
                 ("I", review_text.count("I") < 2),  # Few personal pronouns = less authentic
                 ("actually", "actually" in review_text or "really" in review_text),
                 ("specific detail", len(review_text.split()) > 200),  # Too generic or too long

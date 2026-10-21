@@ -10,7 +10,7 @@ Specialties:
 
 import logging
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ class GrowthHackingTactic(str, Enum):
 class DevelopmentAgent:
     """Expert in technical decisions and growth strategy."""
 
-    TECH_STACK_FRAMEWORKS = {
+    TECH_STACK_FRAMEWORKS: ClassVar[dict] = {
         "startup_stage": {
             "goal": "Move fast, validate product-market fit",
             "principles": [
@@ -71,7 +71,7 @@ class DevelopmentAgent:
         },
     }
 
-    GROWTH_HACKING_TACTICS = {
+    GROWTH_HACKING_TACTICS: ClassVar[dict] = {
         GrowthHackingTactic.PRODUCT: {
             "name": "Product-driven growth",
             "description": "Growth is built into product",
@@ -143,7 +143,7 @@ class DevelopmentAgent:
         },
     }
 
-    MVP_FRAMEWORK = {
+    MVP_FRAMEWORK: ClassVar[dict] = {
         "definition": "Minimum feature set to validate core hypothesis",
         "scope_checklist": [
             "Must-have features (core job)",
@@ -169,7 +169,7 @@ class DevelopmentAgent:
         ],
     }
 
-    FEATURE_PRIORITIZATION_FRAMEWORKS = {
+    FEATURE_PRIORITIZATION_FRAMEWORKS: ClassVar[dict] = {
         "kano_model": {
             "name": "Kano Model",
             "description": "Categorize features by impact on satisfaction",
@@ -213,7 +213,7 @@ class DevelopmentAgent:
         },
     }
 
-    TECHNICAL_DEBT_MANAGEMENT = {
+    TECHNICAL_DEBT_MANAGEMENT: ClassVar[dict] = {
         "definition": "Shortcuts taken that require future repayment",
         "types": [
             "Code debt (messy code)",
@@ -243,7 +243,7 @@ class DevelopmentAgent:
         ],
     }
 
-    AUTOMATION_OPPORTUNITIES = {
+    AUTOMATION_OPPORTUNITIES: ClassVar[dict] = {
         "deployment": [
             "CI/CD pipeline (GitHub Actions, GitLab CI)",
             "Automated testing",

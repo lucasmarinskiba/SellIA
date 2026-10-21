@@ -557,7 +557,7 @@ class ProactiveEngine:
             opp_type = "back_in_stock" if change_type == "back_in_stock" else "price_drop"
 
             # Find customers interested in this item via memory similarity
-            interested = await self.memory.search_customer_memories(
+            await self.memory.search_customer_memories(
                 query=item.name or item.description or "",
                 customer_id=None,  # search across all customers
                 k=20,

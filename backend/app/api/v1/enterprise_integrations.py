@@ -24,8 +24,8 @@ async def connect_platform(
     account_id: Annotated[str, Query()],
     api_key: Annotated[str, Query()],
     api_secret: Annotated[str, Query()],
-    phone_number: Annotated[str, Query(description="WhatsApp only")] = None,
-    bot_token: Annotated[str, Query(description="Telegram only")] = None,
+    phone_number: Annotated[str | None, Query(description="WhatsApp only")] = None,
+    bot_token: Annotated[str | None, Query(description="Telegram only")] = None,
 ):
     """Connect WhatsApp or Telegram platform."""
     try:
@@ -181,7 +181,7 @@ async def send_message(
         if key not in integration_manager.platforms:
             return {"status": "error", "message": "Platform not connected"}
 
-        agent = integration_manager.platforms[key]
+        integration_manager.platforms[key]
 
         # Create message record
         message = Message(

@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from heapq import heappop, heappush
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.clock import utc_now
 
@@ -101,7 +101,7 @@ class TaskScheduler:
     MAX_TASKS_PER_CUSTOMER_PER_HOUR = 5
 
     # Conflictos conocidos
-    CONFLICTING_TASK_PAIRS = [
+    CONFLICTING_TASK_PAIRS: ClassVar[list] = [
         (TaskType.RESPOND_MESSAGE, TaskType.CLOSE_SALE),  # Responder y cerrar simultáneamente no tiene sentido
         (TaskType.SCHEDULE_APPOINTMENT, TaskType.LAUNCH_AD_CAMPAIGN),  # No en mismo momento
     ]
@@ -280,7 +280,7 @@ class TaskScheduler:
 
             if len(recent_tasks) >= self.MAX_TASKS_PER_CUSTOMER_PER_HOUR:
                 # Sugerir ejecutar después de 1 hora
-                alt_time = utc_now() + timedelta(hours=1)
+                utc_now() + timedelta(hours=1)
                 return ConflictCheck(
                     has_conflict=True,
                     reason=f"Too many tasks for this customer in past hour ({len(recent_tasks)}/{self.MAX_TASKS_PER_CUSTOMER_PER_HOUR})",

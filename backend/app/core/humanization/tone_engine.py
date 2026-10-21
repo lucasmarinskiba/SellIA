@@ -23,7 +23,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.clock import utc_now
 
@@ -100,7 +100,7 @@ class ToneEngine:
     """Manages communication tones across markets and industries."""
 
     # FORMAL TONE — Professional, structured, business
-    FORMAL_PROFILES = {
+    FORMAL_PROFILES: ClassVar[dict] = {
         Market.LATIN_AMERICA: ToneProfile(
             tone_type=ToneType.FORMAL,
             market=Market.LATIN_AMERICA,
@@ -132,7 +132,7 @@ class ToneEngine:
     }
 
     # CASUAL TONE — Relaxed, conversational, approachable
-    CASUAL_PROFILES = {
+    CASUAL_PROFILES: ClassVar[dict] = {
         Market.USA: ToneProfile(
             tone_type=ToneType.CASUAL,
             market=Market.USA,
@@ -166,7 +166,7 @@ class ToneEngine:
     }
 
     # FRIENDLY TONE — Warm, personable, emotionally engaging
-    FRIENDLY_PROFILES = {
+    FRIENDLY_PROFILES: ClassVar[dict] = {
         Market.LATIN_AMERICA: ToneProfile(
             tone_type=ToneType.FRIENDLY,
             market=Market.LATIN_AMERICA,
@@ -198,7 +198,7 @@ class ToneEngine:
     }
 
     # PROFESSIONAL TONE — Business-focused, credible, expert
-    PROFESSIONAL_PROFILES = {
+    PROFESSIONAL_PROFILES: ClassVar[dict] = {
         Market.USA: ToneProfile(
             tone_type=ToneType.PROFESSIONAL,
             market=Market.USA,
@@ -230,7 +230,7 @@ class ToneEngine:
     }
 
     # CHEEKY TONE — Playful, witty, bold
-    CHEEKY_PROFILES = {
+    CHEEKY_PROFILES: ClassVar[dict] = {
         Market.USA: ToneProfile(
             tone_type=ToneType.CHEEKY,
             market=Market.USA,
@@ -262,7 +262,7 @@ class ToneEngine:
     }
 
     # EDUCATIONAL TONE — Informative, teaching-focused
-    EDUCATIONAL_PROFILES = {
+    EDUCATIONAL_PROFILES: ClassVar[dict] = {
         Market.USA: ToneProfile(
             tone_type=ToneType.EDUCATIONAL,
             market=Market.USA,
@@ -294,7 +294,7 @@ class ToneEngine:
     }
 
     # URGENT TONE — Time-sensitive, action-oriented
-    URGENT_PROFILES = {
+    URGENT_PROFILES: ClassVar[dict] = {
         Market.USA: ToneProfile(
             tone_type=ToneType.URGENT,
             market=Market.USA,
@@ -326,7 +326,7 @@ class ToneEngine:
     }
 
     # LUXE TONE — Premium, exclusive, aspirational
-    LUXE_PROFILES = {
+    LUXE_PROFILES: ClassVar[dict] = {
         Market.LATIN_AMERICA: ToneProfile(
             tone_type=ToneType.LUXE,
             market=Market.LATIN_AMERICA,
@@ -358,7 +358,7 @@ class ToneEngine:
     }
 
     # DISCOUNT TONE — Value-focused, deal-oriented
-    DISCOUNT_PROFILES = {
+    DISCOUNT_PROFILES: ClassVar[dict] = {
         Market.USA: ToneProfile(
             tone_type=ToneType.DISCOUNT,
             market=Market.USA,
@@ -390,7 +390,7 @@ class ToneEngine:
     }
 
     # EMPATHETIC TONE — Understanding, supportive, listening
-    EMPATHETIC_PROFILES = {
+    EMPATHETIC_PROFILES: ClassVar[dict] = {
         Market.LATIN_AMERICA: ToneProfile(
             tone_type=ToneType.EMPATHETIC,
             market=Market.LATIN_AMERICA,

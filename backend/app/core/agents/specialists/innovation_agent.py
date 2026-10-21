@@ -9,7 +9,7 @@ Specialties:
 
 import logging
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class DisruptionType(str, Enum):
 class InnovationAgent:
     """Expert in innovation and product strategy."""
 
-    JOBS_FRAMEWORK = {
+    JOBS_FRAMEWORK: ClassVar[dict] = {
         "core_job": {
             "description": "Functional job customer is trying to accomplish",
             "examples": [
@@ -55,7 +55,7 @@ class InnovationAgent:
         },
     }
 
-    BLUE_OCEAN_STRATEGY = {
+    BLUE_OCEAN_STRATEGY: ClassVar[dict] = {
         "concept": "Create uncontested market space instead of competing in existing market",
         "framework": {
             "eliminate": {
@@ -82,7 +82,7 @@ class InnovationAgent:
         ],
     }
 
-    DESIGN_THINKING_PROCESS = {
+    DESIGN_THINKING_PROCESS: ClassVar[dict] = {
         "empathize": {
             "goal": "Understand user needs deeply",
             "methods": [
@@ -133,7 +133,7 @@ class InnovationAgent:
         },
     }
 
-    DISRUPTION_PATTERNS = {
+    DISRUPTION_PATTERNS: ClassVar[dict] = {
         DisruptionType.PERFORMANCE: {
             "description": "Dramatically improve performance on main job",
             "examples": [
@@ -201,7 +201,7 @@ class InnovationAgent:
         },
     }
 
-    TREND_ANALYSIS = {
+    TREND_ANALYSIS: ClassVar[dict] = {
         "macro_trends": [
             "Demographic shifts (aging population, urbanization)",
             "Economic trends (recession, income growth)",

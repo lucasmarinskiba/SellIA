@@ -53,7 +53,7 @@ class ConnectionManager:
         for c in dead:
             self.landing_connections.discard(c)
 
-    async def broadcast_dashboard(self, data: dict, user_id: str = None):
+    async def broadcast_dashboard(self, data: dict, user_id: str | None = None):
         targets = {user_id: self.dashboard_connections[user_id]} if user_id else self.dashboard_connections
         dead = set()
         for uid, conn in targets.items():
@@ -122,7 +122,7 @@ async def websocket_landing_proof(websocket: WebSocket):
     await manager.connect_landing(websocket)
     try:
         while True:
-            data = await websocket.receive_text()
+            await websocket.receive_text()
     except WebSocketDisconnect:
         await manager.disconnect_landing(websocket)
 
@@ -132,7 +132,7 @@ async def websocket_dashboard(websocket: WebSocket, user_id: str):
     await manager.connect_dashboard(websocket, user_id)
     try:
         while True:
-            data = await websocket.receive_json()
+            await websocket.receive_json()
     except WebSocketDisconnect:
         await manager.disconnect_dashboard(user_id)
 

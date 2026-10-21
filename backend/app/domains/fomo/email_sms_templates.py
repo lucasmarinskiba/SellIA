@@ -397,7 +397,7 @@ class TemplateLibrary:
     def get_template_by_id(template_id: str) -> dict[str, Any]:
         """Fetch template by ID"""
         all_templates = TemplateLibrary.get_all_templates()
-        for category, templates in all_templates.items():
+        for templates in all_templates.values():
             for template in templates:
                 if template.get("id") == template_id:
                     return template

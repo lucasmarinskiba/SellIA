@@ -10,7 +10,7 @@ Técnicas cierre:
 """
 
 import logging
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ class ClosingFramework:
     """Cierra ventas automático. Objection handling + deal structures."""
 
     # Objection handlers (Belfort: anticipate cada una)
-    OBJECTION_HANDLERS = {
+    OBJECTION_HANDLERS: ClassVar[dict] = {
         "price_too_high": {
             "acknowledge": "Entiendo, es inversión.",
             "reframe": [
@@ -73,7 +73,7 @@ class ClosingFramework:
     }
 
     # Deal structures (Trump: múltiples opciones)
-    DEAL_STRUCTURES = [
+    DEAL_STRUCTURES: ClassVar[list] = [
         {
             "name": "Entry",
             "description": "Para empezar",

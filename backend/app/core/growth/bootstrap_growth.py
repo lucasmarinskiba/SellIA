@@ -1,7 +1,7 @@
 """Bootstrap Growth — Start from 0 ventas scenario."""
 
 import logging
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +10,7 @@ class BootstrapGrowth:
     """Strategies for starting from zero."""
 
     # MVP loops
-    MVP_LOOPS = {
+    MVP_LOOPS: ClassVar[dict] = {
         "ecommerce": [
             {"week": 1, "action": "List 10 products", "target": "Initial feedstock"},
             {"week": 2, "action": "Get first 5 sales", "target": "Proof of product-market fit"},
@@ -26,7 +26,7 @@ class BootstrapGrowth:
     }
 
     # Early customer acquisition
-    EARLY_ACQUISITION_TACTICS = [
+    EARLY_ACQUISITION_TACTICS: ClassVar[list] = [
         {"channel": "personal_network", "effort": "1 hour", "expected_customers": 2},
         {"channel": "direct_email", "effort": "2 hours", "expected_customers": 1},
         {"channel": "community", "effort": "3 hours", "expected_customers": 3},

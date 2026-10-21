@@ -4,7 +4,7 @@ Analiza qué está trending en Instagram/TikTok → genera posts automático.
 """
 
 import logging
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.clock import utc_now
 
@@ -50,7 +50,7 @@ class TrendingAnalyzer:
     """Detecta tendencias en redes sociales."""
 
     # Trending topics por defecto (mock data para MVP)
-    INSTAGRAM_TRENDING = {
+    INSTAGRAM_TRENDING: ClassVar[dict] = {
         "hustle_culture": {
             "hashtags": ["#sidehustle", "#entrepreneurlife", "#makemoney"],
             "trend_score": 0.92,
@@ -71,7 +71,7 @@ class TrendingAnalyzer:
         },
     }
 
-    TIKTOK_TRENDING = {
+    TIKTOK_TRENDING: ClassVar[dict] = {
         "short_tips": {
             "hashtags": ["#shorttips", "#quickmoney", "#boostbusiness"],
             "trend_score": 0.95,

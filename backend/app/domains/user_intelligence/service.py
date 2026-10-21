@@ -44,7 +44,7 @@ class UserIntelligenceAgent:
 
         # Infer primary motivation from company data
         role = company_data.get("role", "").lower()
-        industry = company_data.get("industry", "").lower()
+        company_data.get("industry", "").lower()
         if "sales" in role or "revenue" in role:
             primary_motivation = "revenue_growth"
         elif "ops" in role or "efficiency" in role:

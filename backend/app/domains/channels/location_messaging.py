@@ -5,6 +5,7 @@ Customizable per business model, location type, funnel stage.
 """
 
 from enum import Enum
+from typing import ClassVar
 
 from app.domains.businesses.location_models import LocationType
 
@@ -42,7 +43,7 @@ class LocationMessageTemplateService:
     """Generate and manage location-based messages."""
 
     # SMS Templates (160 chars max per SMS)
-    SMS_TEMPLATES = {
+    SMS_TEMPLATES: ClassVar[dict] = {
         MessageTemplate.SHOWROOM_NEARBY_SMS: (
             "🏢 {business_name} showroom está a {distance}km de ti! "
             "Visita hoy y obtén 10% off. {location_name}\n"
@@ -83,7 +84,7 @@ class LocationMessageTemplateService:
     }
 
     # Email Templates (full format)
-    EMAIL_TEMPLATES = {
+    EMAIL_TEMPLATES: ClassVar[dict] = {
         MessageTemplate.SHOWROOM_NEARBY_EMAIL: {
             "subject": "¡{business_name} showroom a {distance}km! Visitá hoy",
             "body": (

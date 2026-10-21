@@ -171,7 +171,7 @@ async def list_session_steps(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Lista los pasos de una sesión."""
-    session = await _get_session_or_404(db, session_id, current_user.id)
+    await _get_session_or_404(db, session_id, current_user.id)
     result = await db.execute(
         select(ComputerUseStep)
         .where(ComputerUseStep.session_id == session_id)
@@ -188,7 +188,7 @@ async def list_session_messages(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Lista los mensajes de chat de supervisión de una sesión."""
-    session = await _get_session_or_404(db, session_id, current_user.id)
+    await _get_session_or_404(db, session_id, current_user.id)
     result = await db.execute(
         select(ComputerUseMessage)
         .where(ComputerUseMessage.session_id == session_id)
@@ -398,7 +398,7 @@ async def get_screenshot(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Sirve un screenshot de un paso específico."""
-    session = await _get_session_or_404(db, session_id, current_user.id)
+    await _get_session_or_404(db, session_id, current_user.id)
     screenshot_path = os.path.join(
         os.getcwd(), "storage", "screenshots", str(session_id), f"step_{step_number}.jpg"
     )

@@ -213,7 +213,7 @@ async def _on_order_created_growth(payload: dict[str, Any]):
 
 async def _on_lead_magnet_delivered(payload: dict[str, Any]):
     """Cuando se entrega un lead magnet y no hay respuesta en 24h, enviar value bomb."""
-    business_id = payload.get("business_id")
+    payload.get("business_id")
     conversation_id = payload.get("conversation_id")
 
     # This would be handled by a scheduled task checking for non-responders
@@ -224,7 +224,7 @@ async def _on_lead_magnet_delivered(payload: dict[str, Any]):
 
 async def _on_referral_signup(payload: dict[str, Any]):
     """Cuando un referral se registra, iniciar secuencia de bienvenida."""
-    business_id = payload.get("business_id")
+    payload.get("business_id")
     new_conversation_id = payload.get("new_conversation_id")
 
     if new_conversation_id:

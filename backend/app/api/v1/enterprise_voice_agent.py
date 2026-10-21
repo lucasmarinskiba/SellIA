@@ -30,12 +30,12 @@ async def update_agent_config(
     business_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-    agent_name: str = None,
-    system_prompt: str = None,
-    voice_id: str = None,
-    language: str = None,
-    greeting_message: str = None,
-    temperature: float = None,
+    agent_name: str | None = None,
+    system_prompt: str | None = None,
+    voice_id: str | None = None,
+    language: str | None = None,
+    greeting_message: str | None = None,
+    temperature: float | None = None,
 ):
     """Create/update this business's voice agent configuration.
 

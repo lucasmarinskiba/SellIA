@@ -6,7 +6,7 @@ de la viewport, inputs excesivos, etc.
 """
 
 import re
-from typing import Any
+from typing import Any, ClassVar
 from urllib.parse import urlparse
 
 from app.core.config import get_settings
@@ -30,14 +30,14 @@ class ActionValidator:
     MAX_WAIT_TIMEOUT_MS = 60000
 
     # Allowed keys for press_key (special/navigation keys + single chars).
-    ALLOWED_KEYS = {
+    ALLOWED_KEYS: ClassVar[set] = {
         "Enter", "Escape", "Tab", "Backspace", "Delete", "Space",
         "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight",
         "Home", "End", "PageUp", "PageDown", "Insert",
     }
 
     # Dangerous URL patterns
-    DANGEROUS_PATTERNS = [
+    DANGEROUS_PATTERNS: ClassVar[list] = [
         r"javascript:",
         r"data:text/html",
         r"vbscript:",
@@ -47,7 +47,7 @@ class ActionValidator:
     ]
 
     # Sensitive input patterns (PII)
-    SENSITIVE_PATTERNS = [
+    SENSITIVE_PATTERNS: ClassVar[list] = [
         r"\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b",  # Credit card
         r"\b\d{3}-\d{2}-\d{4}\b",  # SSN
         r"password\s*=\s*['\"]?[^'\"\s]+",

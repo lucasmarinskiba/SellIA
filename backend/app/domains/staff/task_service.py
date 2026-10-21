@@ -29,12 +29,12 @@ class StaffTaskService:
         task_type: str,
         title: str,
         due_date: datetime,
-        description: str = None,
+        description: str | None = None,
         priority: str = "medium",
         estimated_duration_minutes: int = 15,
-        related_checkin_id: UUID = None,
-        related_product_id: str = None,
-        assigned_by_staff_id: UUID = None,
+        related_checkin_id: UUID | None = None,
+        related_product_id: str | None = None,
+        assigned_by_staff_id: UUID | None = None,
         db: Session = None
     ) -> dict:
         """Create and assign task to staff."""
@@ -73,8 +73,8 @@ class StaffTaskService:
     @staticmethod
     def get_staff_tasks(
         staff_id: UUID,
-        location_id: UUID = None,
-        status_filter: str = None,
+        location_id: UUID | None = None,
+        status_filter: str | None = None,
         db: Session = None
     ) -> list:
         """Get tasks assigned to staff."""
@@ -151,8 +151,8 @@ class StaffTaskService:
     @staticmethod
     def complete_task(
         task_id: UUID,
-        completion_notes: str = None,
-        completion_evidence: dict = None,
+        completion_notes: str | None = None,
+        completion_evidence: dict | None = None,
         db: Session = None
     ) -> dict:
         """Mark task as completed."""
@@ -183,7 +183,7 @@ class StaffTaskService:
         }
 
     @staticmethod
-    def cancel_task(task_id: UUID, reason: str = None, db: Session = None) -> dict:
+    def cancel_task(task_id: UUID, reason: str | None = None, db: Session = None) -> dict:
         """Cancel task."""
         if not db:
             raise ValueError("Database session required")
@@ -296,7 +296,7 @@ class TaskNotificationService:
     def notify_task_assigned(
         task_id: UUID,
         staff_id: UUID,
-        notification_channels: list = None,
+        notification_channels: list | None = None,
         db: Session = None
     ) -> dict:
         """Send notification when task assigned to staff."""
@@ -355,7 +355,7 @@ class ShiftReadinessService:
         business_id: UUID,
         staff_id: UUID,
         shift_start: datetime,
-        shift_end: datetime = None,
+        shift_end: datetime | None = None,
         db: Session = None
     ) -> dict:
         """Generate task performance report for shift."""

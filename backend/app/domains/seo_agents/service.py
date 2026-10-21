@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime, timedelta
+from typing import ClassVar
 
 import anthropic
 from sqlalchemy import and_, desc, select
@@ -520,7 +521,7 @@ class ReviewOrchestrationService:
 class ContentCalendarService:
     """Plan a content pipeline ahead of generation — spaces entries across a rolling window."""
 
-    CONTENT_TYPE_ROTATION = ["blog_post", "landing_page", "guide", "video"]
+    CONTENT_TYPE_ROTATION: ClassVar[list] = ["blog_post", "landing_page", "guide", "video"]
 
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -728,7 +729,7 @@ class MultiLocationSEOService:
     # Directories checked for NAP (Name/Address/Phone) consistency.
     # Real deployment would verify each via its own API/scrape; here the caller
     # reports what it has confirmed and this service tracks the rollup.
-    CITATION_PLATFORMS = ["google_business", "yelp", "facebook", "bing_places", "apple_maps"]
+    CITATION_PLATFORMS: ClassVar[list] = ["google_business", "yelp", "facebook", "bing_places", "apple_maps"]
 
     def __init__(self, db: AsyncSession):
         self.db = db

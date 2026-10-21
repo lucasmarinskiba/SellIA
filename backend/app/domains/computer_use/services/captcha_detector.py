@@ -7,6 +7,7 @@ de visión liviano. Cuando detecta un CAPTCHA, pausa la sesión y notifica.
 
 import io
 import re
+from typing import ClassVar
 
 from PIL import Image
 
@@ -19,7 +20,7 @@ class CaptchaDetector:
     """Detector de CAPTCHAs en screenshots."""
 
     # Keywords commonly found in CAPTCHA pages
-    CAPTCHA_KEYWORDS = [
+    CAPTCHA_KEYWORDS: ClassVar[list] = [
         r"captcha",
         r"recaptcha",
         r"hcaptcha",
@@ -36,7 +37,7 @@ class CaptchaDetector:
     ]
 
     # Common CAPTCHA element selectors (for page source analysis)
-    CAPTCHA_SELECTORS = [
+    CAPTCHA_SELECTORS: ClassVar[list] = [
         "#recaptcha",
         ".g-recaptcha",
         "[data-sitekey]",
@@ -78,7 +79,7 @@ class CaptchaDetector:
         """Detecta CAPTCHA analizando la imagen (heurísticas simples)."""
         try:
             img = Image.open(io.BytesIO(screenshot_bytes))
-            width, height = img.size
+            _width, _height = img.size
 
             # CAPTCHA pages often have specific dimensions or patterns
             # Check if page is mostly a form (simplified heuristic)

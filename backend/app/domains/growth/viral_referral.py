@@ -43,7 +43,7 @@ class ViralReferralEngine:
         incentive_type: str = "discount_credit",  # discount_credit, free_product, exclusive_access
         reward_value: float = 20.0,
         max_referrals_per_user: int = 10,
-        campaign_id: uuid.UUID = None,
+        campaign_id: uuid.UUID | None = None,
     ) -> ReferralProgram:
         """Create a referral program/campaign."""
         # Check if program already exists
@@ -83,7 +83,7 @@ class ViralReferralEngine:
         self,
         business_id: uuid.UUID,
         conversation_id: uuid.UUID,
-        program_id: uuid.UUID = None,
+        program_id: uuid.UUID | None = None,
     ) -> ReferralCode:
         """Generate a unique referral code for a customer."""
         if not program_id:
@@ -201,7 +201,7 @@ Ejemplo de estructura:
         self,
         code: str,
         new_conversation_id: uuid.UUID,
-        new_email: str = None,
+        new_email: str | None = None,
     ) -> dict[str, Any]:
         """Track when a referral converts to a signup."""
         ref_code = await self._get_code_by_string(code)

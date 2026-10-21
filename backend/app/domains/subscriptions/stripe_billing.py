@@ -47,7 +47,7 @@ def _get_stripe_client() -> Any:
 
 def _cents_from_usd(amount_usd: float) -> int:
     """Convert a USD float amount to integer cents for Stripe."""
-    return int(round(amount_usd * 100))
+    return round(amount_usd * 100)
 
 
 # ---------------------------------------------------------------------------

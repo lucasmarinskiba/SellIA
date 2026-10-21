@@ -84,7 +84,7 @@ async def set_travel_mode(
                 logger.info(f"WhatsApp auto-response set: {wa_result}")
 
             # 3. Guardar estado en DB
-            db_result = await _save_travel_mode_db(
+            await _save_travel_mode_db(
                 seller_id=seller_id,
                 start_date=start_dt,
                 end_date=end_dt,
@@ -108,7 +108,7 @@ async def set_travel_mode(
 
         elif status.lower() == "off":
             # Desactivar travel mode
-            db_result = await _save_travel_mode_db(
+            await _save_travel_mode_db(
                 seller_id=seller_id,
                 status="inactive",
             )

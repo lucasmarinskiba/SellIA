@@ -70,8 +70,6 @@ class BusinessLocalizationService:
 
         # Analyze location types
         location_types = {loc.type for loc in locations}
-        has_showroom = LocationType.SHOWROOM in location_types
-        has_office = LocationType.OFFICE in location_types
         has_service_center = LocationType.SERVICE_CENTER in location_types
         has_factory = LocationType.FACTORY in location_types
 

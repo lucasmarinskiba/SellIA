@@ -12,6 +12,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.orchestration.loop_engineering import LoopEngineering
@@ -43,7 +44,7 @@ class StartSalesCycleRequest(BaseModel):
 
 # Mock auth (reemplazar con JWT real)
 def verify_auth(
-    authorization: Annotated[str, Header()] = None,
+    authorization: Annotated[str | None, Header()] = None,
 ) -> dict:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Unauthorized")
@@ -55,8 +56,8 @@ def verify_auth(
 @router.post("/start")
 async def start_sales_cycle(
     request: StartSalesCycleRequest,
-    auth: dict = Depends(verify_auth),
-    db = Depends(get_db),
+    auth: Annotated[dict, Depends(verify_auth)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """
     Inicia ciclo venta completo.

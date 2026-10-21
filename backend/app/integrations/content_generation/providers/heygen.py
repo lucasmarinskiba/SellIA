@@ -6,6 +6,7 @@ Strengths: Realistic avatars, multilingual, lip sync
 
 
 import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
 
@@ -21,7 +22,7 @@ class HeyGenProvider(BaseProvider):
 
     name = "HeyGen"
     slug = "heygen"
-    supports = [ContentType.VIDEO]
+    supports: ClassVar[list] = [ContentType.VIDEO]
 
     @property
     def is_available(self) -> bool:

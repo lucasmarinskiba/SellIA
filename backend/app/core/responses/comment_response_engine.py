@@ -41,7 +41,7 @@ class CommentResponseEngine:
         comment_text: str,
         author_profile: dict[str, Any],
         post_context: dict[str, Any],
-        previous_comments: list[dict[str, Any]] = None,
+        previous_comments: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         """
         Generate optimal response for comment.

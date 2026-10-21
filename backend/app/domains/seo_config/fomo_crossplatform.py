@@ -111,9 +111,9 @@ class FOMAPatternSynthesizer:
 
         recommendations = []
         all_platforms = set()
-        for platform in best_triggers.keys():
+        for platform in best_triggers:
             all_platforms.add(platform)
-        for platform in patterns.keys():
+        for platform in patterns:
             all_platforms.add(platform)
 
         for platform in all_platforms:

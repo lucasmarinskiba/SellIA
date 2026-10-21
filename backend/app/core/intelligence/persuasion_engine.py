@@ -9,7 +9,7 @@ Técnicas:
 """
 
 import logging
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ class PersuasionEngine:
     """Persuade automático usando psicología demostrada."""
 
     # Cialdini: 6 principios + tactical implementations
-    CIALDINI_FRAMEWORKS = {
+    CIALDINI_FRAMEWORKS: ClassVar[dict] = {
         "reciprocity": {
             "principle": "Give first → buyer feels obligated to give back",
             "tactics": [
@@ -89,7 +89,7 @@ class PersuasionEngine:
     }
 
     # Kahneman: Behavioral economics + decision making
-    KAHNEMAN_FRAMEWORKS = {
+    KAHNEMAN_FRAMEWORKS: ClassVar[dict] = {
         "loss_aversion": {
             "principle": "Fear of loss > pleasure of gain (2:1 ratio)",
             "tactics": [
@@ -148,7 +148,7 @@ class PersuasionEngine:
     }
 
     # Language patterns: Milton model + embedded commands
-    LANGUAGE_PATTERNS = {
+    LANGUAGE_PATTERNS: ClassVar[dict] = {
         "presuppositions": {
             "pattern": "Assume outcome, question becomes 'how' not 'if'",
             "examples": [

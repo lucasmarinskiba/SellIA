@@ -176,7 +176,7 @@ class SellIAFeedIAWorkflow:
 
         for field in input_fields:
             label = field.get("label", "").lower()
-            field_type = field.get("type", "text")
+            field.get("type", "text")
 
             if "titulo" in label or "title" in label:
                 fill_actions.append({"type": "fill_form", "params": {"fields": {field.get("selector"): product.get("name")}}})
@@ -201,7 +201,7 @@ class SellIAFeedIAWorkflow:
             {"type": "screenshot", "params": {"filename": "feedia_carousel_saved.png"}},
         ]
 
-        result = await self.browser.browser.execute_workflow("save_carousel", save_actions)
+        await self.browser.browser.execute_workflow("save_carousel", save_actions)
 
         # Verifica completación
         screenshot = await self.browser.browser.take_screenshot()
@@ -260,7 +260,7 @@ class SellIAFeedIAWorkflow:
             {"type": "screenshot", "params": {"filename": "feedia_tiktok_published.png"}},
         ]
 
-        result = await self.browser.browser.execute_workflow("publish_tiktok", publish_actions)
+        await self.browser.browser.execute_workflow("publish_tiktok", publish_actions)
 
         # Verifica
         screenshot = await self.browser.browser.take_screenshot()
@@ -277,7 +277,7 @@ class SellIAFeedIAWorkflow:
         logger.info(f"Publishing to platforms: {platforms}")
 
         screenshot = await self.browser.browser.take_screenshot()
-        cv_suggestion = await self.cv.suggest_next_action(screenshot, goal="publicar a todas las redes sociales")
+        await self.cv.suggest_next_action(screenshot, goal="publicar a todas las redes sociales")
 
         publish_actions = [
             {"type": "click", "params": {"selector": "button[data-action='publish-all']"}},

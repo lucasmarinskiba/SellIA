@@ -244,7 +244,7 @@ class ChannelOptimizationNetwork:
             raise ValueError("Network must be trained first")
 
         X_scaled = self.scaler.transform(X)
-        channel_indices = self.channel_regressor.predict(X_scaled)
+        self.channel_regressor.predict(X_scaled)
 
         predictions = []
         for i in range(len(X)):

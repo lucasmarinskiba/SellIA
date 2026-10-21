@@ -191,9 +191,7 @@ class BudgetController:
         policy = self.get_policy(plan_tier)
         if not policy.prompt_only_fallback:
             return False
-        if total_spend + estimated_cost > policy.daily_budget_usd * 0.9:
-            return True
-        return False
+        return total_spend + estimated_cost > policy.daily_budget_usd * 0.9
 
     async def get_usage_report(self, business_id: str) -> dict:
         """Genera reporte de uso del día."""

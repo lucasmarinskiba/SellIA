@@ -74,7 +74,7 @@ class LocationChannelOrchestrator:
 
         # Build location context
         hours_str = LocationChannelOrchestrator._format_hours(location.hours_json)
-        eta_minutes = ProximityEngine.estimate_eta_minutes(
+        ProximityEngine.estimate_eta_minutes(
             proximity_event.user_latitude,
             proximity_event.user_longitude,
             location

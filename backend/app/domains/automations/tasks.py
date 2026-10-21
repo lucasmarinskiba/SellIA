@@ -81,7 +81,7 @@ async def send_toggle_notification(
                             ).hexdigest()
                             headers["X-Signature"] = signature
 
-                        response = await client.post(
+                        await client.post(
                             rule.webhook_url,
                             json=payload,
                             headers=headers,

@@ -546,7 +546,7 @@ class DataSourceOrchestrator:
             "timestamp": utc_now().isoformat(),
         }
 
-        for name, source in self.sources.items():
+        for name in self.sources:
             try:
                 # Simple connectivity check
                 health["sources"][name] = {"status": "active", "last_check": utc_now().isoformat()}

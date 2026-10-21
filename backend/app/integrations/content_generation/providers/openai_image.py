@@ -15,7 +15,7 @@ y DALL-E 3 HD o GPT Image 1 High para premium.
 
 import asyncio
 import logging
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.config import get_settings
 
@@ -66,7 +66,7 @@ class OpenAIImageProvider(BaseProvider):
 
     name = "OpenAI Image"
     slug = "openai_image"
-    supports = [ContentType.IMAGE]
+    supports: ClassVar[list] = [ContentType.IMAGE]
 
     @property
     def is_available(self) -> bool:

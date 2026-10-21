@@ -259,8 +259,8 @@ def handle_send_email(payload: dict) -> dict:
 
     to_email = payload.get("to_email")
     subject = payload.get("subject")
-    body = payload.get("body")
-    template = payload.get("template", "default")
+    payload.get("body")
+    payload.get("template", "default")
 
     # TODO: Implement SES send
     logger.info(f"Sending email to {to_email}: {subject}")
@@ -299,7 +299,7 @@ def handle_process_recording(payload: dict) -> dict:
     """Process voice recording (transcription + sentiment)."""
 
     call_id = payload.get("call_id")
-    recording_url = payload.get("recording_url")
+    payload.get("recording_url")
 
     # TODO: Implement transcription (Twilio, AWS Transcribe, etc.)
     logger.info(f"Processing recording for call {call_id}")
@@ -317,8 +317,8 @@ def handle_webhook_retry(payload: dict) -> dict:
 
     webhook_id = payload.get("webhook_id")
     url = payload.get("url")
-    event = payload.get("event")
-    data = payload.get("data")
+    payload.get("event")
+    payload.get("data")
 
     # TODO: Implement webhook retry with validation
     logger.info(f"Retrying webhook {webhook_id} to {url}")

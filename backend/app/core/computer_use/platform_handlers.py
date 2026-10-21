@@ -90,7 +90,7 @@ class MercadoLibreComputerUseHandler:
         price: float,
         quantity: int,
         category: str,
-        photos: list[str] = None,
+        photos: list[str] | None = None,
         shipping_method: str = "standard",
     ) -> dict[str, Any]:
         """
@@ -219,7 +219,7 @@ class MercadoLibreComputerUseHandler:
                     await self.browser_utils.click_by_vision(f"Question {i+1}")
 
                     # Lee pregunta completa
-                    screenshot = await self.browser_utils.screenshot_and_analyze()
+                    await self.browser_utils.screenshot_and_analyze()
 
                     # Genera respuesta (aquí se integraría LLM)
                     response_text = "Hola! Gracias por tu pregunta. "
@@ -361,7 +361,7 @@ class ShopifyComputerUseHandler:
         price: float,
         sku: str,
         quantity: int,
-        photos: list[str] = None,
+        photos: list[str] | None = None,
     ) -> dict[str, Any]:
         """
         Crea producto en Shopify.
@@ -547,8 +547,8 @@ class FacebookComputerUseHandler:
         description: str,
         price: float,
         category: str,
-        photos: list[str] = None,
-        location: str = None,
+        photos: list[str] | None = None,
+        location: str | None = None,
     ) -> dict[str, Any]:
         """
         Publica en Facebook Marketplace.
@@ -844,9 +844,9 @@ class EmailComputerUseHandler:
 
             # 1. Navega a login
             if self.email_service == "gmail":
-                url = "https://mail.google.com"
+                pass
             else:
-                url = "https://outlook.office.com"
+                pass
 
             await self.browser_utils.screenshot_and_analyze()
 
@@ -871,7 +871,7 @@ class EmailComputerUseHandler:
         recipient: str,
         subject: str,
         body: str,
-        attachments: list[str] = None,
+        attachments: list[str] | None = None,
     ) -> bool:
         """
         Envía email individual.

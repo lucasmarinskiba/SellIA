@@ -239,7 +239,7 @@ class IntelligentBrowserAgent:
         )
 
         tactics = decision.get("tactics", {})
-        parameters = tactics.get("parameters", {})
+        tactics.get("parameters", {})
 
         # Ejecutar negoción
         negotiation_flow = await self._execute_negotiation(

@@ -208,7 +208,7 @@ Team
         conversation_history: list[dict[str, str]],
     ) -> BuyerPersonality:
         """Infiere personalidad del comprador basada en conversación."""
-        msg_lower = message.lower()
+        message.lower()
         full_conv = " ".join([m.get("content", "").lower() for m in conversation_history])
 
         # ANALYTICAL: preguntas técnicas, datos, ROI

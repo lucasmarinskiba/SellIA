@@ -168,7 +168,6 @@ class WorkflowEngine:
     def _create_task(self, step: WorkflowStep, context: dict) -> dict:
         """Create task action."""
         try:
-            config = step.config
             return {
                 'success': True,
                 'status': 'created',
@@ -221,7 +220,7 @@ class WorkflowEngine:
         """Conditional logic."""
         try:
             config = step.config
-            condition = config.get('condition')
+            config.get('condition')
             # Placeholder: actual condition evaluation
             return {
                 'success': True,

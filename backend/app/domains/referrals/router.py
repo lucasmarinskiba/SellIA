@@ -25,7 +25,7 @@ async def get_my_code(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
-    code = await referral_service.get_or_create_referral_code(db, current_user.id)
+    await referral_service.get_or_create_referral_code(db, current_user.id)
     stats = await referral_service.get_referral_stats(db, current_user.id)
     return stats
 

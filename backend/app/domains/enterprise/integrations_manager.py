@@ -148,7 +148,7 @@ class IntegrationsManager:
             return {'success': False, 'error': 'Zapier not configured'}
 
         try:
-            webhook_url = self.integrations['zapier']['webhook_url']
+            self.integrations['zapier']['webhook_url']
             # Placeholder: actual webhook call
             return {
                 'success': True,

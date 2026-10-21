@@ -269,9 +269,7 @@ class SimulationEngine:
 
             # Run conversation loop
             messages_log: list[dict[str, Any]] = []
-            conversation_turns = 0
             objective_achieved = False
-            conversation_ended = False
 
             # Initial customer message
             customer_msg = await self._generate_customer_message(
@@ -282,7 +280,6 @@ class SimulationEngine:
             messages_log.append({"role": "customer", "content": customer_msg, "turn": 0, "timestamp": datetime.now(UTC).isoformat()})
 
             for turn in range(1, self.max_turns + 1):
-                conversation_turns = turn
 
                 # Agent responds
                 agent_msg = await self._generate_agent_message(
@@ -307,7 +304,6 @@ class SimulationEngine:
 
                 # Check for conversation end signals
                 if self._check_conversation_end(customer_msg):
-                    conversation_ended = True
                     break
 
                 # If objective achieved and customer seems satisfied, end early

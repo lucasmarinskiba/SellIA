@@ -59,7 +59,7 @@ class LocationCheckinService:
     @staticmethod
     def checkout_visitor(
         checkin_id: UUID,
-        visited_sections: list[str] = None,
+        visited_sections: list[str] | None = None,
         db: Session | None = None
     ) -> LocationCheckin:
         """Log visitor check-out, calculate dwell time."""
@@ -154,7 +154,7 @@ class LocationCheckinService:
         business_id: UUID,
         nps_score: int | None = None,
         comment: str | None = None,
-        topics: list[str] = None,
+        topics: list[str] | None = None,
         checkin_id: UUID | None = None,
         staff_id: UUID | None = None,
         db: Session | None = None

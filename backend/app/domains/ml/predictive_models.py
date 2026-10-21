@@ -125,7 +125,7 @@ class DealClosePredictor:
             float(stage_map.get(deal_data.get("stage", "qualification"), 1)),
         ]
 
-    def save(self, path: str = None):
+    def save(self, path: str | None = None):
         """Save model to disk."""
         path = path or os.path.join(MODEL_DIR, "deal_close_model.pkl")
         joblib.dump(self.model, path)
@@ -229,7 +229,7 @@ class ChurnPredictor:
             customer_data.get("data_growth_trend", 0) / 100,  # Monthly growth %
         ]
 
-    def save(self, path: str = None):
+    def save(self, path: str | None = None):
         """Save model to disk."""
         path = path or os.path.join(MODEL_DIR, "churn_model.pkl")
         joblib.dump(self.model, path)
@@ -302,7 +302,7 @@ class ExpansionScorer:
             customer_data.get("revenue_trend", 0),
         ]
 
-    def save(self, path: str = None):
+    def save(self, path: str | None = None):
         """Save model to disk."""
         path = path or os.path.join(MODEL_DIR, "expansion_model.pkl")
         joblib.dump(self.model, path)

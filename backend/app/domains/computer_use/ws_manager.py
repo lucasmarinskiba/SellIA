@@ -74,7 +74,7 @@ class ComputerUseWebSocketManager:
             self._connections[session_id] = websocket
 
         # Subscribe to Redis channel for this session
-        redis_client = await self._get_redis()
+        await self._get_redis()
         if self._pubsub:
             await self._pubsub.subscribe(f"cuws:{session_id}")
 

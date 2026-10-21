@@ -16,7 +16,7 @@ import statistics
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 # ============================================================================
 # 1. EQUITY FUNDAMENTALS (1,200+ lines)
@@ -854,9 +854,8 @@ class FundamentalAnalysis:
             if macro_indicators.get("interest_rates", 0.03) > 0.02:
                 tailwinds.append("Higher rates benefit net interest margins")
 
-        if sector == "energy":
-            if macro_indicators.get("oil_price", 50) > 60:
-                tailwinds.append("Higher oil prices support profitability")
+        if sector == "energy" and macro_indicators.get("oil_price", 50) > 60:
+            tailwinds.append("Higher oil prices support profitability")
 
         return {
             "tailwinds": tailwinds,
@@ -1164,7 +1163,7 @@ class TradeJournal:
 class TradingBiases:
     """Common trading biases and mitigation."""
 
-    COMMON_BIASES = {
+    COMMON_BIASES: ClassVar[dict] = {
         "confirmation_bias": "Seeking only information that confirms existing beliefs",
         "recency_bias": "Overweighting recent price action",
         "loss_aversion": "Holding losers too long and closing winners too early",

@@ -64,40 +64,35 @@ from .visual_confirmation import (
 )
 
 __all__ = [
-    # Analyzer
-    "VisualAnalyzer",
-    "PageAnalysis",
-    "ButtonDetection",
-    "FormField",
-    "TextRegion",
-    "LayoutRegion",
-
-    # Navigator
-    "VisionNavigator",
-    "ElementType",
-    "ElementMatch",
-    "ViewportState",
-
-    # Confirmation
-    "VisualConfirmation",
-    "Confirmation",
     "ActionResult",
-
-    # Parser
-    "VisionScreenshotParser",
-    "ViewportSize",
-    "PageStructure",
-    "PageMetadata",
+    "ActionType",
+    "ButtonDetection",
+    "Confirmation",
+    "ElementMatch",
+    "ElementType",
+    "ExecutionPlan",
+    "FormField",
     "Heading",
     "ImageContent",
-
-    # Executor
-    "VisualAutomationExecutor",
-    "ActionType",
-    "ExecutionPlan",
-
+    "LayoutRegion",
+    "PageAnalysis",
+    "PageMetadata",
+    "PageStructure",
+    "TextRegion",
+    "ViewportSize",
+    "ViewportState",
+    "VisionComparator",
     # Debug
     "VisionDebugAnnotator",
     "VisionDebugLogger",
-    "VisionComparator",
+    # Navigator
+    "VisionNavigator",
+    # Parser
+    "VisionScreenshotParser",
+    # Analyzer
+    "VisualAnalyzer",
+    # Executor
+    "VisualAutomationExecutor",
+    # Confirmation
+    "VisualConfirmation",
 ]

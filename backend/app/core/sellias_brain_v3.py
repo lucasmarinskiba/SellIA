@@ -186,7 +186,7 @@ class SellIABrainV3:
             product_category, {"customer_ltv": 500}
         )
 
-        unit_economics = {
+        {
             "viral_coefficient": referral_loop["viral_coefficient"],
             "monthly_retention": 0.85,
         }

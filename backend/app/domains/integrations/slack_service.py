@@ -81,7 +81,7 @@ class SlackService:
         metadata: dict[str, Any] | None = None,
     ) -> list[dict[str, Any]]:
         """Build Slack message blocks."""
-        color = self.color_map.get(message_type, "#CCCCCC")
+        self.color_map.get(message_type, "#CCCCCC")
 
         blocks = [
             {

@@ -11,7 +11,7 @@ Analyzes incoming comments to understand:
 
 import logging
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.clock import utc_now
 
@@ -60,20 +60,20 @@ class CommentAnalyzer:
     """Analyzes comments in depth."""
 
     # Sentiment indicators
-    POSITIVE_KEYWORDS = [
+    POSITIVE_KEYWORDS: ClassVar[list] = [
         "love", "amazing", "awesome", "great", "excellent", "brilliant",
         "fantastic", "wonderful", "perfect", "helped", "saved", "grateful",
         "thanks", "thank you", "recommend", "best", "beautiful", "impressed",
     ]
 
-    NEGATIVE_KEYWORDS = [
+    NEGATIVE_KEYWORDS: ClassVar[list] = [
         "hate", "terrible", "awful", "bad", "poor", "disappointed",
         "waste", "scam", "broken", "useless", "fail", "problem",
         "issue", "error", "can't", "won't", "doesn't work",
     ]
 
     # Intent indicators
-    INTENT_PATTERNS = {
+    INTENT_PATTERNS: ClassVar[dict] = {
         Intent.QUESTION: [
             r"\?$", "how", "what", "when", "where", "why", "can you",
             "is it", "does it", "would", "could", "should",
@@ -96,7 +96,7 @@ class CommentAnalyzer:
     }
 
     # Audience type indicators
-    AUDIENCE_INDICATORS = {
+    AUDIENCE_INDICATORS: ClassVar[dict] = {
         AudienceType.INFLUENCER: {
             "keywords": ["followers", "followers", "my audience", "my platform"],
             "metrics": {"followers": 10000, "engagement_rate": 0.02},
@@ -116,7 +116,7 @@ class CommentAnalyzer:
     }
 
     # Urgency indicators
-    URGENCY_KEYWORDS = {
+    URGENCY_KEYWORDS: ClassVar[dict] = {
         UrgencyLevel.CRITICAL: ["urgent", "emergency", "asap", "dying", "broken now"],
         UrgencyLevel.HIGH: ["soon", "quickly", "important", "need help", "stuck"],
         UrgencyLevel.MEDIUM: ["interested", "considering", "thinking"],
@@ -215,7 +215,7 @@ class CommentAnalyzer:
         }
 
     @staticmethod
-    def analyze_urgency(comment_text: str, user_history: dict[str, Any] = None) -> dict[str, Any]:
+    def analyze_urgency(comment_text: str, user_history: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Analyze urgency of response needed.
 
@@ -291,7 +291,7 @@ class CommentAnalyzer:
 
         # Analyze profile
         follower_count = author_profile.get("followers", 0)
-        engagement_rate = author_profile.get("engagement_rate", 0)
+        author_profile.get("engagement_rate", 0)
 
         if follower_count > 100000:
             type_scores[AudienceType.INFLUENCER] += 3
@@ -431,9 +431,9 @@ class CommentAnalyzer:
     @staticmethod
     def comprehensive_analysis(
         comment_text: str,
-        author_profile: dict[str, Any] = None,
-        post_context: dict[str, Any] = None,
-        previous_comments: list[dict[str, Any]] = None,
+        author_profile: dict[str, Any] | None = None,
+        post_context: dict[str, Any] | None = None,
+        previous_comments: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         """
         Comprehensive comment analysis combining all checks.

@@ -6,6 +6,7 @@ Supports: showrooms, retail stores, factories, offices, service centers, pickup 
 import uuid
 from datetime import UTC, datetime
 from enum import Enum
+from typing import ClassVar
 
 from pydantic import BaseModel, Field
 from sqlalchemy import (
@@ -119,7 +120,7 @@ class LocationHours(BaseModel):
     close: str = Field(..., pattern=r"^\d{2}:\d{2}$")
 
     class Config:
-        json_schema_extra = {
+        json_schema_extra: ClassVar[dict] = {
             "example": {
                 "open": "09:00",
                 "close": "18:00"
@@ -138,7 +139,7 @@ class LocationHoursWeekly(BaseModel):
     sunday: LocationHours | None = None
 
     class Config:
-        json_schema_extra = {
+        json_schema_extra: ClassVar[dict] = {
             "example": {
                 "monday": {"open": "09:00", "close": "18:00"},
                 "tuesday": {"open": "09:00", "close": "18:00"},

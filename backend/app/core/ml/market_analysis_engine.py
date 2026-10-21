@@ -112,7 +112,7 @@ class CompetitiveIntelligence:
             return None
 
         prices = [p for _, p in recent]
-        slope, intercept, r_value, _, _ = stats.linregress(range(len(prices)), prices)
+        slope, _intercept, r_value, _, _ = stats.linregress(range(len(prices)), prices)
 
         return {
             "competitor_id": competitor_id,
@@ -166,7 +166,7 @@ class MarketTrendsAnalyzer:
             raise ValueError("Need at least 2 data points")
 
         # Calculate trend
-        slope, intercept, r_value, _, _ = stats.linregress(range(len(values)), values)
+        slope, _intercept, r_value, _, _ = stats.linregress(range(len(values)), values)
 
         # Determine direction
         if slope > np.std(values) * 0.1:

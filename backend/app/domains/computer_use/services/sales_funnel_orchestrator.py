@@ -161,7 +161,7 @@ class SalesFunnelOrchestrator:
 
             for lead in leads:
                 if lead.quality.value == "hot":
-                    success, msg_id = await self.outreach.send_outreach(
+                    success, _msg_id = await self.outreach.send_outreach(
                         campaign=campaign,
                         lead=lead,
                         sender_name="SellIA Bot",
@@ -236,12 +236,12 @@ class SalesFunnelOrchestrator:
         """Fase 12: Email sequences + upsell."""
         try:
             # Crear sequences
-            welcome = await self.loyalty.create_email_sequence(
+            await self.loyalty.create_email_sequence(
                 name="Welcome",
                 sequence_type="welcome",
             )
 
-            upsell = await self.loyalty.create_email_sequence(
+            await self.loyalty.create_email_sequence(
                 name="Upsell",
                 sequence_type="upsell",
             )

@@ -201,68 +201,60 @@ async def create_enhancement_system(computer_use_engine) -> dict[str, Any]:
 # ============================================================================
 
 __all__ = [
-    # Version
-    "__version__",
-    "__author__",
-    "__description__",
-    "__status__",
-
-    # Platform Handlers
-    "MercadoLibrePlatformHandler",
-    "ShopifyPlatformHandler",
-    "FacebookPlatformHandler",
-    "WhatsAppPlatformHandler",
+    "AlertManager",
+    "BulkheadManager",
+    "ChaosMonkey",
+    "CircuitBreaker",
     "EmailPlatformHandler",
-    "PlatformHandlerFactory",
-
+    "ErrorCategory",
+    "ErrorDetector",
     # Error Recovery
     "ErrorRecoveryManager",
-    "ErrorDetector",
-    "ResilientAction",
-    "ErrorCategory",
-    "RecoveryStrategy",
-
-    # Action Verification
-    "VerificationCoordinator",
-    "FormSubmissionVerifier",
+    "ErrorTracker",
+    "ExtractionResult",
+    "ExtractionRule",
+    "FacebookPlatformHandler",
+    "FallbackStrategy",
     "FileUploadVerifier",
-    "PaymentVerifier",
-    "MessageDeliveryVerifier",
-    "NavigationVerifier",
-
+    "FormFillPattern",
+    "FormSubmissionVerifier",
     # Interaction Patterns
     "InteractionPatternLibrary",
     "LoginPattern",
-    "SearchPattern",
-    "FormFillPattern",
-    "PaginationPattern",
-    "ModalHandlingPattern",
-    "UploadPattern",
-
-    # Data Extraction
-    "UniversalDataExtractor",
-    "StructuredDataExtractor",
-    "SemiStructuredDataExtractor",
-    "UnstructuredDataExtractor",
-    "ExtractionRule",
-    "ExtractionResult",
-
-    # Resilience
-    "ResilienceCoordinator",
-    "CircuitBreaker",
-    "BulkheadManager",
-    "FallbackStrategy",
-    "TimeoutPolicy",
-    "ThrottlingPolicy",
-    "ChaosMonkey",
-
+    # Platform Handlers
+    "MercadoLibrePlatformHandler",
+    "MessageDeliveryVerifier",
     # Monitoring
     "MetricsCollector",
-    "ErrorTracker",
-    "AlertManager",
-    "PerformanceReporter",
+    "ModalHandlingPattern",
     "MonitoringDashboard",
-
+    "NavigationVerifier",
+    "PaginationPattern",
+    "PaymentVerifier",
+    "PerformanceReporter",
+    "PlatformHandlerFactory",
+    "RecoveryStrategy",
+    # Resilience
+    "ResilienceCoordinator",
+    "ResilientAction",
+    "SearchPattern",
+    "SemiStructuredDataExtractor",
+    "ShopifyPlatformHandler",
+    "StructuredDataExtractor",
+    "ThrottlingPolicy",
+    "TimeoutPolicy",
+    # Data Extraction
+    "UniversalDataExtractor",
+    "UnstructuredDataExtractor",
+    "UploadPattern",
+    # Action Verification
+    "VerificationCoordinator",
+    "WhatsAppPlatformHandler",
+    "__author__",
+    "__description__",
+    "__status__",
+    # Version
+    "__version__",
     # Initialization
     "create_enhancement_system",
 ]

@@ -86,7 +86,7 @@ class PlatformMonetizationFOOM:
 
     def _trigger_power_user_upsell(self, user_data: dict[str, Any]) -> PlatformFOOMTrigger:
         """Upsell power users to premium tier."""
-        features_used = user_data.get("features_used", [])
+        user_data.get("features_used", [])
         feature_limit_hits = user_data.get("feature_limit_hits_7d", 0)
 
         return PlatformFOOMTrigger(
@@ -141,7 +141,7 @@ class PlatformMonetizationFOOM:
 
     def _trigger_retention_upgrade(self, user_data: dict[str, Any]) -> PlatformFOOMTrigger:
         """Prevent churn by upgrading at-risk paid users."""
-        churn_risk = user_data.get("churn_risk", 0)
+        user_data.get("churn_risk", 0)
 
         return PlatformFOOMTrigger(
             user_segment=UserSegment.AT_RISK_PAID,

@@ -132,7 +132,7 @@ async def optimize_budget_allocation(
     try:
         from app.domains.automation.performance_optimizer import OptimizationStrategy
 
-        opt_strategy = OptimizationStrategy(strategy)
+        OptimizationStrategy(strategy)
         recommendation = optimizer.generate_optimization_plan(
             seller_id, {"roi": 2.0, "growth_rate": 0.10}, total_budget
         )
@@ -184,7 +184,7 @@ async def analyze_customer_churn_risk(customer_id: str) -> dict[str, Any]:
         }
 
         plan = retention_engine.generate_retention_plan(customer_id, customer_data)
-        offer = retention_engine.generate_retention_offer(plan)
+        retention_engine.generate_retention_offer(plan)
 
         return {
             "status": "success",
