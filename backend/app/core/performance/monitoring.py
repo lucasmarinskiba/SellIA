@@ -120,15 +120,14 @@ class PerformanceMonitor:
                     severity="critical",
                 )
 
-        elif warning:
-            if (not is_inverted and value > warning) or (is_inverted and value < warning):
-                self._create_alert(
-                    component=metric_name,
-                    metric_name=metric_name,
-                    current_value=value,
-                    threshold=warning,
-                    severity="warning",
-                )
+        elif warning and (not is_inverted and value > warning) or (is_inverted and value < warning):
+            self._create_alert(
+                component=metric_name,
+                metric_name=metric_name,
+                current_value=value,
+                threshold=warning,
+                severity="warning",
+            )
 
     def _create_alert(
         self,

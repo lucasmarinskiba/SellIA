@@ -115,8 +115,10 @@ async def calculate_payroll(
     payroll_date: Annotated[date, Query()],
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-    body: PayrollCalcRequest = PayrollCalcRequest(),
+    body: PayrollCalcRequest | None = None,
 ):
+    if body is None:
+        body = PayrollCalcRequest()
     svc = PayrollService(db)
     return await svc.calculate_payroll(employee_id, payroll_date, body.allowances_aed)
 

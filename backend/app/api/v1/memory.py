@@ -12,8 +12,10 @@ has registered.
 import json
 import logging
 import uuid
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +96,10 @@ async def _ensure_memory_row(user_id: str, db) -> None:
 
 
 @router.get("/me")
-async def get_memory(user_id: str = Depends(get_user_id), db = Depends(get_db)):
+async def get_memory(
+    user_id: Annotated[str, Depends(get_user_id)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """Get user memory"""
     try:
         from sqlalchemy import text
@@ -150,7 +155,11 @@ ALLOWED_UPDATE_FIELDS = {
 
 
 @router.patch("/me")
-async def update_memory(data: dict, user_id: str = Depends(get_user_id), db = Depends(get_db)):
+async def update_memory(
+    data: dict,
+    user_id: Annotated[str, Depends(get_user_id)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """Update user memory"""
     try:
         from sqlalchemy import text
@@ -193,7 +202,11 @@ async def update_memory(data: dict, user_id: str = Depends(get_user_id), db = De
 
 
 @router.post("/events")
-async def log_event(data: dict, user_id: str = Depends(get_user_id), db = Depends(get_db)):
+async def log_event(
+    data: dict,
+    user_id: Annotated[str, Depends(get_user_id)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """Log event"""
     try:
         from sqlalchemy import text
@@ -229,7 +242,11 @@ async def log_event(data: dict, user_id: str = Depends(get_user_id), db = Depend
 
 
 @router.post("/interests/{interest}")
-async def add_interest(interest: str, user_id: str = Depends(get_user_id), db = Depends(get_db)):
+async def add_interest(
+    interest: str,
+    user_id: Annotated[str, Depends(get_user_id)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """Add interest"""
     try:
         from sqlalchemy import text
@@ -257,7 +274,11 @@ async def add_interest(interest: str, user_id: str = Depends(get_user_id), db = 
 
 
 @router.post("/challenges/{challenge}")
-async def add_challenge(challenge: str, user_id: str = Depends(get_user_id), db = Depends(get_db)):
+async def add_challenge(
+    challenge: str,
+    user_id: Annotated[str, Depends(get_user_id)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """Add challenge"""
     try:
         from sqlalchemy import text
@@ -285,7 +306,11 @@ async def add_challenge(challenge: str, user_id: str = Depends(get_user_id), db 
 
 
 @router.post("/preferences")
-async def set_preference(data: dict, user_id: str = Depends(get_user_id), db = Depends(get_db)):
+async def set_preference(
+    data: dict,
+    user_id: Annotated[str, Depends(get_user_id)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """Set preference"""
     try:
         from sqlalchemy import text
@@ -315,7 +340,11 @@ async def set_preference(data: dict, user_id: str = Depends(get_user_id), db = D
 
 
 @router.get("/preferences/{key}")
-async def get_preference(key: str, user_id: str = Depends(get_user_id), db = Depends(get_db)):
+async def get_preference(
+    key: str,
+    user_id: Annotated[str, Depends(get_user_id)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """Get preference"""
     try:
         from sqlalchemy import text
@@ -332,7 +361,11 @@ async def get_preference(key: str, user_id: str = Depends(get_user_id), db = Dep
 
 
 @router.get("/events")
-async def get_events(limit: int = 50, user_id: str = Depends(get_user_id), db = Depends(get_db)):
+async def get_events(
+    user_id: Annotated[str, Depends(get_user_id)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    limit: int = 50,
+):
     """Get recent events"""
     try:
         from sqlalchemy import text

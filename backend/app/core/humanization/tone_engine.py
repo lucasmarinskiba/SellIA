@@ -422,7 +422,7 @@ class ToneEngine:
     }
 
     # Registry of all tone profiles
-    TONE_REGISTRY: dict[tuple[ToneType, Market, Industry], ToneProfile] = {}
+    TONE_REGISTRY: ClassVar[dict[tuple[ToneType, Market, Industry], ToneProfile]] = {}
 
     def __init__(self):
         """Initialize tone engine with all profiles"""

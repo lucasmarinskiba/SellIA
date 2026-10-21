@@ -1048,8 +1048,8 @@ async def get_session_replay(
 
 @router.get("/analytics/summary", response_model=ComputerUseAnalyticsSummary)
 async def get_analytics_summary(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     # Total sessions
     total_result = await db.execute(

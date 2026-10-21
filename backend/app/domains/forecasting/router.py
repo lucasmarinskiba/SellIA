@@ -45,8 +45,10 @@ async def run_all(
     business_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-    body: RunRequest = RunRequest(),
+    body: RunRequest | None = None,
 ):
+    if body is None:
+        body = RunRequest()
     return await ForecastingService(db).run_all(
         business_id, horizon=body.horizon, reconcile=body.reconcile
     )

@@ -240,11 +240,11 @@ class TenantService:
 
         # Restricted fields
         restricted = {"id", "slug", "schema_name", "owner_id"}
-        for key in kwargs:
+        for key, value in kwargs.items():
             if key in restricted:
                 raise AppException(f"Cannot update field: {key}", status_code=400)
             if hasattr(tenant, key):
-                setattr(tenant, key, kwargs[key])
+                setattr(tenant, key, value)
 
         tenant.updated_at = datetime.now(UTC)
         await self.db.commit()

@@ -92,7 +92,7 @@ class ContextRouter:
     """Route a business event to the agent(s) that should handle it"""
 
     # event_type -> ordered list of (agent_id, reason)
-    EVENT_AGENT_MAP: dict[str, list[dict[str, str]]] = {
+    EVENT_AGENT_MAP: ClassVar[dict[str, list[dict[str, str]]]] = {
         "new_visitor": [
             {"agent": "segmentation", "reason": "Classify the visitor into a segment for personalization"},
             {"agent": "copywriter", "reason": "Generate soft, non-pushy live-visitor widget copy"},

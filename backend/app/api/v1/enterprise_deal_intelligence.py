@@ -66,7 +66,7 @@ async def forecast_revenue(
     business_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-    periods: Annotated[list[int], Query()] = [30, 60, 90],
+    periods: Annotated[list[int], Query()] = (30, 60, 90),
 ):
     """Generate revenue forecast for multiple periods."""
     await _get_business_for_user(business_id, current_user, db)

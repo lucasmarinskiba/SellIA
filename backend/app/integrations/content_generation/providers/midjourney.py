@@ -74,18 +74,20 @@ class MidjourneyProvider(BaseProvider):
             for _ in range(60):
                 import asyncio
                 await asyncio.sleep(5)
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(
+                async with (
+                    aiohttp.ClientSession() as session,
+                    session.get(
                         f"https://api.imagineapi.dev/items/images/{image_id}",
                         headers=headers,
-                    ) as poll_resp:
-                        poll_data = await poll_resp.json()
-                        status = poll_data.get("data", {}).get("status")
-                        if status == "completed":
-                            image_url = poll_data.get("data", {}).get("url")
-                            break
-                        elif status == "failed":
-                            return GenerationResult(success=False, error_message="Midjourney generation failed")
+                    ) as poll_resp,
+                ):
+                    poll_data = await poll_resp.json()
+                    status = poll_data.get("data", {}).get("status")
+                    if status == "completed":
+                        image_url = poll_data.get("data", {}).get("url")
+                        break
+                    elif status == "failed":
+                        return GenerationResult(success=False, error_message="Midjourney generation failed")
 
             if not image_url:
                 return GenerationResult(success=False, error_message="Midjourney timeout")

@@ -223,9 +223,9 @@ class SelfConfigEngine:
 
         load_state = self._current_config.get("_load_state", "normal_load")
         if load_state == "high_load":
-            for ch in channel_config:
-                channel_config[ch]["rate_limit_per_minute"] = int(
-                    channel_config[ch]["rate_limit_per_minute"] * 0.7
+            for ch, cfg in channel_config.items():
+                cfg["rate_limit_per_minute"] = int(
+                    cfg["rate_limit_per_minute"] * 0.7
                 )
                 logger.info(f"[SelfConfig] Canal {ch} throttled por alta carga")
 

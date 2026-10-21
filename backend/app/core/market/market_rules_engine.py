@@ -1,7 +1,7 @@
 """Market Rules Engine — Load & apply market-specific rules."""
 
 import logging
-from typing import Any
+from typing import Any, ClassVar
 
 import yaml
 
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class MarketRulesEngine:
     """Load YAML rules and apply to sales process."""
 
-    _rules_cache: dict[str, dict[str, Any]] = {}
+    _rules_cache: ClassVar[dict[str, dict[str, Any]]] = {}
 
     @staticmethod
     def load_rules(market_type: str, rules_file: str) -> dict[str, Any]:

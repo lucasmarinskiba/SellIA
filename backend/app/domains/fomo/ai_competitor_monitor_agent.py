@@ -303,14 +303,16 @@ async def fetch_competitor_page(url: str, timeout_seconds: int = 10) -> str | No
     raw page text, or None on any failure (never raises into the caller)."""
     try:
         import aiohttp
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
+        async with (
+            aiohttp.ClientSession() as session,
+            session.get(
                 url, timeout=aiohttp.ClientTimeout(total=timeout_seconds)
-            ) as resp:
-                if resp.status != 200:
-                    logger.warning(f"Competitor page fetch returned {resp.status} for {url}")
-                    return None
-                return await resp.text()
+            ) as resp,
+        ):
+            if resp.status != 200:
+                logger.warning(f"Competitor page fetch returned {resp.status} for {url}")
+                return None
+            return await resp.text()
     except Exception as e:
         logger.warning(f"Competitor page fetch failed for {url}: {e}", exc_info=True)
         return None

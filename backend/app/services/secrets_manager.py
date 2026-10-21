@@ -46,7 +46,7 @@ class SecretsManager:
                 token=self.vault_token,
             )
 
-    @lru_cache(maxsize=256)
+    @lru_cache(maxsize=256)  # noqa: B019 - gestor de instancia única; el cache vive con el proceso
     def get_secret(self, path: str, key: str | None = None) -> str:
         """
         Get secret by path.

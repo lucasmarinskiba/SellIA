@@ -2,6 +2,7 @@
 Endpoint seguro para subida de archivos con escaneo antivirus.
 """
 
+import asyncio
 import os
 import uuid
 from datetime import UTC, datetime
@@ -13,6 +14,7 @@ from fastapi_limiter.depends import RateLimiter
 
 from app.core.deps import get_current_active_user
 from app.core.file_scanner import file_scanner
+from app.core.fileio import write_file
 from app.domains.users.models import User
 
 router = APIRouter()
@@ -84,8 +86,7 @@ async def upload_file(
     file_path = UPLOAD_DIR / unique_name
 
     # Guardar archivo
-    with open(file_path, "wb") as f:
-        f.write(content)
+    await asyncio.to_thread(write_file, file_path, "wb", data=content)
 
     # Loguear subida exitosa
     import json

@@ -74,12 +74,12 @@ async def list_comments(
 
 @router.post("/approvals/request")
 async def request_approval(
-    action_id: str = Query(...),
-    action_type: str = Query(...),  # discount, escalation, etc
-    requester_id: str = Query(...),
-    requester_name: str = Query(...),
-    approver_ids: list[str] = Body(...),
-    db: AsyncSession = Depends(get_db),
+    action_id: Annotated[str, Query()],
+    action_type: Annotated[str, Query()],  # discount, escalation, etc
+    requester_id: Annotated[str, Query()],
+    requester_name: Annotated[str, Query()],
+    approver_ids: Annotated[list[str], Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Request approval for action (discount, escalation, proposal, close)."""
     chain = await CollaborationManager.request_approval(
@@ -101,10 +101,10 @@ async def request_approval(
 @router.post("/approvals/{approval_id}/decide")
 async def approve_action(
     approval_id: str,
-    approver_id: str = Query(...),
-    decision: str = Query(...),  # "approved" or "rejected"
-    rejection_reason: str = Query(None),
-    db: AsyncSession = Depends(get_db),
+    approver_id: Annotated[str, Query()],
+    decision: Annotated[str, Query()],  # "approved" or "rejected"
+    db: Annotated[AsyncSession, Depends(get_db)],
+    rejection_reason: Annotated[str | None, Query()] = None,
 ):
     """Approve or reject action."""
     stmt = select(ApprovalChain).where(ApprovalChain.id == approval_id)

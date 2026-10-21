@@ -1,5 +1,6 @@
 """Landing Page Builder Service"""
 
+import asyncio
 import json
 import os
 import uuid
@@ -11,6 +12,7 @@ from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
+from app.core.fileio import read_file, write_file
 from app.core.logger import get_logger
 from app.domains.agents.landing_builder.models import LandingPageJob
 from app.domains.agents.llm_provider import generate_with_fallback
@@ -290,8 +292,7 @@ async def generate_landing_page(
         for path, content in files.items():
             full_path = os.path.join(job_dir, path)
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
-            with open(full_path, "w", encoding="utf-8") as f:
-                f.write(content)
+            await asyncio.to_thread(write_file, full_path, "w", encoding="utf-8", data=content)
 
         # ZIP
         zip_path = os.path.join(storage_dir, f"{job.id}.zip")
@@ -334,8 +335,7 @@ async def get_landing_zip(job_id: uuid.UUID) -> bytes | None:
     zip_path = os.path.join(storage_dir, f"{job_id}.zip")
     if not os.path.exists(zip_path):
         return None
-    with open(zip_path, "rb") as f:
-        return f.read()
+    return await asyncio.to_thread(read_file, zip_path, "rb")
 
 
 async def list_jobs(db: AsyncSession, business_id: uuid.UUID) -> list[LandingPageJob]:

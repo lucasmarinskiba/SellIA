@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import uuid
@@ -6,6 +7,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.fileio import write_file
 from app.core.logger import get_logger
 from app.domains.agents.ai_reply import generate_raw_ai_response
 from app.domains.agents.investor_pitch.models import PitchDeck, PitchSlide
@@ -173,8 +175,7 @@ class InvestorPitchService:
         storage_dir = os.path.join(os.getcwd(), "storage", "exports", "pitch_decks")
         os.makedirs(storage_dir, exist_ok=True)
         html_path = os.path.join(storage_dir, f"deck_{deck.id}.html")
-        with open(html_path, "w", encoding="utf-8") as f:
-            f.write("\n".join(html_parts))
+        await asyncio.to_thread(write_file, html_path, "w", encoding="utf-8", data="\n".join(html_parts))
 
         return html_path
 

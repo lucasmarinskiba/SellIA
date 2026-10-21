@@ -384,16 +384,16 @@ async def revoke_all_sessions(
 
 @router.get("/audit-logs", response_model=list[AuditLogResponse])
 async def get_audit_logs(
-    user_id: UUID | None = Query(None),
-    event_type: str | None = Query(None),  # success, failed
-    ip: str | None = Query(None),
-    country: str | None = Query(None),
-    date_from: datetime | None = Query(None),
-    date_to: datetime | None = Query(None),
-    limit: int = Query(100, ge=1, le=1000),
-    offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    user_id: Annotated[UUID | None, Query()] = None,
+    event_type: Annotated[str | None, Query()] = None,  # success, failed
+    ip: Annotated[str | None, Query()] = None,
+    country: Annotated[str | None, Query()] = None,
+    date_from: Annotated[datetime | None, Query()] = None,
+    date_to: Annotated[datetime | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=1000)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ):
     """Panel de auditoría: ver todos los logs de todos los usuarios (solo admin)."""
     if not current_user.is_superuser:

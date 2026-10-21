@@ -254,13 +254,15 @@ Responde en JSON:
     async def detect_with_google_vision(
         self,
         screenshot_bytes: bytes,
-        features: list[str] = ["TEXT_DETECTION", "LABEL_DETECTION", "OBJECT_LOCALIZATION"],
+        features: list[str] | None = None,
     ) -> dict[str, Any]:
         """
         Google Cloud Vision API como backup/complemento.
 
         features: TEXT_DETECTION, LABEL_DETECTION, OBJECT_LOCALIZATION, etc
         """
+        if features is None:
+            features = ["TEXT_DETECTION", "LABEL_DETECTION", "OBJECT_LOCALIZATION"]
 
         if not self.google_api_key:
             logger.warning("Google Vision API key not configured")

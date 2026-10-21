@@ -138,8 +138,8 @@ async def get_garden(
 @router.post("/garden/action")
 async def garden_action(
     action: str,  # sale, lead, review, referral, milestone
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Trigger a garden update action."""
     engine = GamificationEngine(db)

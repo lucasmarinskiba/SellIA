@@ -302,10 +302,9 @@ class ABTestOrchestrator:
         best_rate = 0
 
         for variant, data in test_results.items():
-            if data.get("p_value", 1.0) < 0.05:  # Statistically significant
-                if data.get("conversion_rate", 0) > best_rate:
-                    best_variant = variant
-                    best_rate = data["conversion_rate"]
+            if data.get("p_value", 1.0) < 0.05 and data.get("conversion_rate", 0) > best_rate:  # Statistically significant
+                best_variant = variant
+                best_rate = data["conversion_rate"]
 
         if not best_variant:
             return "no_winner", 0

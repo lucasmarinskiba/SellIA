@@ -22,8 +22,10 @@ async def forecast_cashflow(
     business_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-    body: CashFlowRequest = CashFlowRequest(),
+    body: CashFlowRequest | None = None,
 ):
+    if body is None:
+        body = CashFlowRequest()
     try:
         cf = await CashFlowService(db).forecast(
             business_id,
