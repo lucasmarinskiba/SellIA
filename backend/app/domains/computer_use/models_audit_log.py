@@ -14,7 +14,7 @@ from datetime import datetime
 from uuid import UUID
 from sqlalchemy import Column, String, Integer, Float, DateTime, Text, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
 
 from app.core.database import Base
 
@@ -25,8 +25,10 @@ class ComputerUseAuditLog(Base):
     __tablename__ = "computer_use_audit_logs"
 
     id = Column(String(36), primary_key=True, index=True)
-    user_id = Column(String(36), ForeignKey("users.id"), index=True)
-    session_id = Column(String(36), ForeignKey("computer_use_sessions.id"), nullable=True, index=True)
+    # The referenced keys are UUID columns; a VARCHAR(36) foreign key to them is rejected by PostgreSQL
+    # ("incompatible types"), so the table was never created. as_uuid=False keeps the str values the writers pass.
+    user_id = Column(PGUUID(as_uuid=False), ForeignKey("users.id"), index=True)
+    session_id = Column(PGUUID(as_uuid=False), ForeignKey("computer_use_sessions.id"), nullable=True, index=True)
 
     # Tiempo
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
@@ -58,7 +60,7 @@ class ComputerUseAuditLog(Base):
     # Auditoría
     user_approved = Column(Boolean, nullable=True)  # True: user approved, False: user rejected, None: pending
     approval_at = Column(DateTime, nullable=True)
-    approved_by_user_id = Column(String(36), ForeignKey("users.id"), nullable=True)
+    approved_by_user_id = Column(PGUUID(as_uuid=False), ForeignKey("users.id"), nullable=True)
 
     def __repr__(self):
         return (
