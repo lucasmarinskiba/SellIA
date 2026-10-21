@@ -6,7 +6,7 @@ Fase 11: Encuentra leads en web → enriquece data → segmenta por fit.
 import logging
 import uuid
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 class LeadSource(str, Enum):
     """Fuentes de leads."""
+
     LINKEDIN = "linkedin"
     WEBSITE = "website"
     DIRECTORY = "directory"
@@ -24,6 +25,7 @@ class LeadSource(str, Enum):
 
 class LeadQuality(str, Enum):
     """Calidad de lead."""
+
     HOT = "hot"  # High fit + high intent
     WARM = "warm"  # Medium fit
     COLD = "cold"  # Low fit, high volume
@@ -32,6 +34,7 @@ class LeadQuality(str, Enum):
 @dataclass
 class Lead:
     """Lead/prospect."""
+
     lead_id: str
     name: str
     email: str
@@ -60,7 +63,7 @@ class Lead:
 
     def __post_init__(self):
         if self.created_at is None:
-            self.created_at = datetime.utcnow()
+            self.created_at = datetime.now(UTC)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -98,7 +101,7 @@ class LeadGenerator:
             imported = []
 
             for i, lead_data in enumerate(leads_data):
-                lead_id = f"lead_{source.value}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{i}_{uuid.uuid4().hex[:6]}"
+                lead_id = f"lead_{source.value}_{datetime.now(UTC).strftime('%Y%m%d%H%M%S')}_{i}_{uuid.uuid4().hex[:6]}"
 
                 lead = Lead(
                     lead_id=lead_id,
@@ -119,8 +122,8 @@ class LeadGenerator:
 
             return imported
 
-        except Exception as e:
-            self.logger.error(f"Error importing leads: {e}")
+        except Exception:
+            self.logger.exception("Error importing leads")
             return []
 
     async def enrich_lead(
@@ -145,8 +148,8 @@ class LeadGenerator:
 
             return lead
 
-        except Exception as e:
-            self.logger.error(f"Error enriching lead: {e}")
+        except Exception:
+            self.logger.exception("Error enriching lead")
             return lead
 
     async def score_lead(
@@ -161,7 +164,11 @@ class LeadGenerator:
             intent_score = 0.0
 
             # Fit: ¿es el cliente ideal?
-            if target_industry and lead.industry and target_industry.lower() in lead.industry.lower():
+            if (
+                target_industry
+                and lead.industry
+                and target_industry.lower() in lead.industry.lower()
+            ):
                 fit_score += 0.3
 
             if target_company_size and lead.company_size == target_company_size:
@@ -190,12 +197,14 @@ class LeadGenerator:
             else:
                 lead.quality = LeadQuality.COLD
 
-            self.logger.info(f"Scored lead {lead.email}: fit={lead.fit_score:.1%}, quality={lead.quality.value}")
+            self.logger.info(
+                f"Scored lead {lead.email}: fit={lead.fit_score:.1%}, quality={lead.quality.value}"
+            )
 
             return lead
 
-        except Exception as e:
-            self.logger.error(f"Error scoring lead: {e}")
+        except Exception:
+            self.logger.exception("Error scoring lead")
             return lead
 
     async def get_leads_by_quality(
@@ -215,11 +224,17 @@ class LeadGenerator:
         all_leads = list(self.leads.values())
 
         # Sort by: quality, contacted_count, last_contacted
-        all_leads.sort(key=lambda l: (
-            0 if l.quality == LeadQuality.HOT else (1 if l.quality == LeadQuality.WARM else 2),
-            l.contacted_count,
-            l.last_contacted or datetime.min,
-        ))
+        all_leads.sort(
+            key=lambda l: (
+                (
+                    0
+                    if l.quality == LeadQuality.HOT
+                    else (1 if l.quality == LeadQuality.WARM else 2)
+                ),
+                l.contacted_count,
+                l.last_contacted or datetime.min,
+            )
+        )
 
         return all_leads[:limit]
 

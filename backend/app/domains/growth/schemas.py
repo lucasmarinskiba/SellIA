@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # ========== GrowthCampaign ==========
 
+
 class GrowthCampaignCreate(BaseModel):
     name: str
     campaign_type: str
@@ -57,6 +58,7 @@ class GrowthCampaignResponse(BaseModel):
 
 # ========== LeadMagnet ==========
 
+
 class LeadMagnetCreate(BaseModel):
     topic: str
     magnet_format: str | None = "cheat_sheet"
@@ -105,6 +107,7 @@ class LeadMagnetPerformance(BaseModel):
 
 # ========== InboundLead ==========
 
+
 class InboundLeadCreate(BaseModel):
     source_type: str
     conversation_id: uuid.UUID | None = None
@@ -115,8 +118,15 @@ class InboundLeadCreate(BaseModel):
 
 
 class ProspectSearchRequest(BaseModel):
-    query: str = Field(..., min_length=3, max_length=120, description="Rubro o palabra clave, ej. 'peluquería'")
-    location: str | None = Field(None, max_length=120, description="Ciudad o zona, ej. 'Rosario'")
+    query: str = Field(
+        ...,
+        min_length=3,
+        max_length=120,
+        description="Rubro o palabra clave, ej. 'peluquería'",
+    )
+    location: str | None = Field(
+        None, max_length=120, description="Ciudad o zona, ej. 'Rosario'"
+    )
     limit: int = Field(20, ge=1, le=20)
 
 
@@ -149,6 +159,7 @@ class InboundLeadResponse(BaseModel):
 
 
 # ========== SocialProof ==========
+
 
 class SocialProofCreate(BaseModel):
     conversation_id: uuid.UUID | None = None
@@ -192,6 +203,7 @@ class SocialProofStats(BaseModel):
 
 # ========== UGC ==========
 
+
 class UgcRequestCreate(BaseModel):
     order_id: uuid.UUID
     conversation_id: uuid.UUID
@@ -219,6 +231,7 @@ class UgcRequestResponse(BaseModel):
 
 
 # ========== ValueSequence ==========
+
 
 class ValueSequenceCreate(BaseModel):
     name: str
@@ -260,6 +273,7 @@ class ValueSequencePerformance(BaseModel):
 
 # ========== Referral ==========
 
+
 class ReferralCampaignCreate(BaseModel):
     name: str
     incentive_type: str | None = "discount_credit"
@@ -286,6 +300,7 @@ class ReferralCampaignReport(ReferralMetrics):
 
 
 # ========== Dashboard ==========
+
 
 class GrowthDashboardMetrics(BaseModel):
     leads_this_week: int

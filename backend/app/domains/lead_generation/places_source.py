@@ -76,16 +76,18 @@ def parse_text_search_response(payload: dict[str, Any]) -> list[PlaceProspect]:
         name = (place.get("displayName") or {}).get("text")
         if not place_id or not name:
             continue
-        prospects.append(PlaceProspect(
-            place_id=place_id,
-            name=name,
-            address=place.get("formattedAddress"),
-            phone=place.get("nationalPhoneNumber"),
-            website=place.get("websiteUri"),
-            maps_url=place.get("googleMapsUri"),
-            rating=place.get("rating"),
-            review_count=place.get("userRatingCount"),
-        ))
+        prospects.append(
+            PlaceProspect(
+                place_id=place_id,
+                name=name,
+                address=place.get("formattedAddress"),
+                phone=place.get("nationalPhoneNumber"),
+                website=place.get("websiteUri"),
+                maps_url=place.get("googleMapsUri"),
+                rating=place.get("rating"),
+                review_count=place.get("userRatingCount"),
+            )
+        )
     return prospects
 
 
@@ -115,7 +117,9 @@ async def search_places(
     `transport` exists so tests can replace the network; production leaves it None.
     """
     api_key = _read_api_key()
-    text_query = " ".join(part for part in (query.strip(), (location or "").strip()) if part)
+    text_query = " ".join(
+        part for part in (query.strip(), (location or "").strip()) if part
+    )
     body = {
         "textQuery": text_query,
         "maxResultCount": max(1, min(limit, MAX_RESULTS_PER_QUERY)),
@@ -124,8 +128,12 @@ async def search_places(
     headers = {"X-Goog-Api-Key": api_key, "X-Goog-FieldMask": PLACES_FIELD_MASK}
 
     try:
-        async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT_SECONDS, transport=transport) as client:
-            response = await client.post(PLACES_TEXT_SEARCH_URL, json=body, headers=headers)
+        async with httpx.AsyncClient(
+            timeout=REQUEST_TIMEOUT_SECONDS, transport=transport
+        ) as client:
+            response = await client.post(
+                PLACES_TEXT_SEARCH_URL, json=body, headers=headers
+            )
     except httpx.HTTPError as exc:
         logger.warning("Places text search network error: %s", type(exc).__name__)
         raise PlacesAPIError(502, "sin conexión o tiempo de espera agotado") from exc
