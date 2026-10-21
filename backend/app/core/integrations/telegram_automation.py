@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 class TelegramCommandType(Enum):
     """Telegram bot commands."""
+
     START = "start"
     STATUS = "status"
     ORDERS = "orders"
@@ -44,6 +45,7 @@ class TelegramCommandType(Enum):
 
 class TelegramMessageType(Enum):
     """Telegram message types."""
+
     TEXT = "text"
     PHOTO = "photo"
     DOCUMENT = "document"

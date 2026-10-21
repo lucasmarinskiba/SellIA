@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class PerformanceMetric:
     """Single performance metric."""
+
     name: str
     value: float
     unit: str
@@ -34,6 +35,7 @@ class PerformanceMetric:
 @dataclass
 class BottleneckAlert:
     """Alert for detected bottleneck."""
+
     component: str
     metric_name: str
     current_value: float
@@ -111,7 +113,9 @@ class PerformanceMonitor:
         is_inverted = metric_name == "cache_hit_rate"
 
         if critical:
-            if (not is_inverted and value > critical) or (is_inverted and value < critical):
+            if (not is_inverted and value > critical) or (
+                is_inverted and value < critical
+            ):
                 self._create_alert(
                     component=metric_name,
                     metric_name=metric_name,
@@ -120,7 +124,11 @@ class PerformanceMonitor:
                     severity="critical",
                 )
 
-        elif warning and (not is_inverted and value > warning) or (is_inverted and value < warning):
+        elif (
+            warning
+            and (not is_inverted and value > warning)
+            or (is_inverted and value < warning)
+        ):
             self._create_alert(
                 component=metric_name,
                 metric_name=metric_name,
@@ -244,8 +252,7 @@ class PerformanceMonitor:
 
         # Count recent alerts by severity
         recent_alerts = [
-            a for a in self.alerts
-            if a.detected_at > utc_now() - timedelta(minutes=5)
+            a for a in self.alerts if a.detected_at > utc_now() - timedelta(minutes=5)
         ]
 
         critical_count = sum(1 for a in recent_alerts if a.severity == "critical")
@@ -312,13 +319,17 @@ class PerformanceMonitor:
         if self.metrics.get("queue_depth"):
             queue_depths = [m.value for m in self.metrics["queue_depth"]]
             if max(queue_depths) > 100:
-                recommendations.append("Consider adding more workers for queue processing")
+                recommendations.append(
+                    "Consider adding more workers for queue processing"
+                )
 
         # Check for cache hit rate
         if self.metrics.get("cache_hit_rate"):
             hit_rates = [m.value for m in self.metrics["cache_hit_rate"]]
             if statistics.mean(hit_rates) < 0.6:
-                recommendations.append("Improve cache hit rate with better cache strategy")
+                recommendations.append(
+                    "Improve cache hit rate with better cache strategy"
+                )
 
         return recommendations
 

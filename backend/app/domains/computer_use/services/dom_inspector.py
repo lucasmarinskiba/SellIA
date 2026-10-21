@@ -15,6 +15,7 @@ logger = get_logger(__name__)
 @dataclass
 class DOMElement:
     """Representación simplificada de un elemento DOM."""
+
     tag: str
     text: str
     id: str | None
@@ -29,8 +30,22 @@ class DOMElement:
 class DOMInspector:
     """Inspector del DOM para Computer Use."""
 
-    INTERACTIVE_TAGS: ClassVar[set] = {"button", "a", "input", "select", "textarea", "label"}
-    INTERACTIVE_ROLES: ClassVar[set] = {"button", "link", "textbox", "checkbox", "radio", "menuitem"}
+    INTERACTIVE_TAGS: ClassVar[set] = {
+        "button",
+        "a",
+        "input",
+        "select",
+        "textarea",
+        "label",
+    }
+    INTERACTIVE_ROLES: ClassVar[set] = {
+        "button",
+        "link",
+        "textbox",
+        "checkbox",
+        "radio",
+        "menuitem",
+    }
 
     async def extract_interactive_elements(self, page) -> list[DOMElement]:
         """Extrae todos los elementos interactivos de la página."""
@@ -56,7 +71,9 @@ class DOMInspector:
         """Extrae información de un elemento individual."""
         try:
             tag = await element.evaluate("el => el.tagName.toLowerCase()")
-            text = await element.evaluate("el => el.textContent?.trim()?.substring(0, 100) || ''")
+            text = await element.evaluate(
+                "el => el.textContent?.trim()?.substring(0, 100) || ''"
+            )
             elem_id = await element.evaluate("el => el.id || null")
             classes = await element.evaluate("el => Array.from(el.classList)")
             xpath = await element.evaluate("""
@@ -80,9 +97,11 @@ class DOMInspector:
             # Interactive check
             role = await element.evaluate("el => el.getAttribute('role')")
             is_interactive = (
-                tag in self.INTERACTIVE_TAGS or
-                role in self.INTERACTIVE_ROLES or
-                await element.evaluate("el => el.onclick !== null || el.getAttribute('onclick') !== null")
+                tag in self.INTERACTIVE_TAGS
+                or role in self.INTERACTIVE_ROLES
+                or await element.evaluate(
+                    "el => el.onclick !== null || el.getAttribute('onclick') !== null"
+                )
             )
 
             # Key attributes

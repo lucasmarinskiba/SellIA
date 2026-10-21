@@ -32,7 +32,10 @@ class MarketRulesEngine:
     @staticmethod
     def get_sales_phases(rules: dict[str, Any]) -> list[str]:
         """Get sales cycle phases from rules."""
-        return rules.get("sales_phases", ["discovery", "qualification", "proposal", "negotiation", "closing"])
+        return rules.get(
+            "sales_phases",
+            ["discovery", "qualification", "proposal", "negotiation", "closing"],
+        )
 
     @staticmethod
     def get_sales_cycle_timeline(rules: dict[str, Any]) -> dict[str, int]:
@@ -55,7 +58,9 @@ class MarketRulesEngine:
         return rules.get("commission_structure", {"type": "percentage", "rate": 10})
 
     @staticmethod
-    def get_legal_requirements(rules: dict[str, Any], jurisdiction: str = "default") -> list[str]:
+    def get_legal_requirements(
+        rules: dict[str, Any], jurisdiction: str = "default"
+    ) -> list[str]:
         """Get legal/compliance requirements."""
         legal = rules.get("legal_requirements", {})
         return legal.get(jurisdiction, [])
@@ -76,7 +81,13 @@ class MarketRulesEngine:
     def _get_default_rules() -> dict[str, Any]:
         """Default rules if file not found."""
         return {
-            "sales_phases": ["discovery", "qualification", "proposal", "negotiation", "closing"],
+            "sales_phases": [
+                "discovery",
+                "qualification",
+                "proposal",
+                "negotiation",
+                "closing",
+            ],
             "sales_cycle": {"min": 5, "avg": 30, "max": 90},
             "pricing_rules": {"type": "flexible"},
             "payment_rules": {"type": "one_time"},
@@ -85,7 +96,9 @@ class MarketRulesEngine:
         }
 
     @staticmethod
-    def apply_rules_to_context(rules: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+    def apply_rules_to_context(
+        rules: dict[str, Any], context: dict[str, Any]
+    ) -> dict[str, Any]:
         """Apply market rules to conversation context."""
         context["sales_phases"] = MarketRulesEngine.get_sales_phases(rules)
         context["expected_cycle"] = MarketRulesEngine.get_sales_cycle_timeline(rules)

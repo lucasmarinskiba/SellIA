@@ -17,7 +17,9 @@ from app.domains.businesses.models import Business
 from app.domains.users.models import User
 
 
-async def get_owned_business(db: AsyncSession, business_id: UUID, user: User) -> Business:
+async def get_owned_business(
+    db: AsyncSession, business_id: UUID, user: User
+) -> Business:
     business = await db.get(Business, business_id)
     if business is None:
         raise HTTPException(status_code=404, detail="Negocio no encontrado")
@@ -26,7 +28,9 @@ async def get_owned_business(db: AsyncSession, business_id: UUID, user: User) ->
     return business
 
 
-async def get_owned_location(db: AsyncSession, location_id: UUID, user: User) -> Location:
+async def get_owned_location(
+    db: AsyncSession, location_id: UUID, user: User
+) -> Location:
     location = await db.get(Location, location_id)
     if location is None:
         raise HTTPException(status_code=404, detail="Sucursal no encontrada")

@@ -354,8 +354,7 @@ async def _get_travel_mode_db(seller_id: str) -> dict[str, Any]:
 
         async with AsyncSessionLocal() as db:
             stmt = select(TravelMode).where(
-                TravelMode.seller_id == seller_id,
-                TravelMode.is_active == True
+                TravelMode.seller_id == seller_id, TravelMode.is_active == True
             )
             result = await db.execute(stmt)
             travel_mode = result.scalars().first()
@@ -364,8 +363,16 @@ async def _get_travel_mode_db(seller_id: str) -> dict[str, Any]:
                 return {
                     "is_active": True,
                     "seller_id": seller_id,
-                    "start_date": travel_mode.start_date.isoformat() if travel_mode.start_date else None,
-                    "end_date": travel_mode.end_date.isoformat() if travel_mode.end_date else None,
+                    "start_date": (
+                        travel_mode.start_date.isoformat()
+                        if travel_mode.start_date
+                        else None
+                    ),
+                    "end_date": (
+                        travel_mode.end_date.isoformat()
+                        if travel_mode.end_date
+                        else None
+                    ),
                     "notes": travel_mode.notes,
                 }
             return None

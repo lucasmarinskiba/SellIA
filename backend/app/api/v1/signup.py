@@ -71,12 +71,16 @@ async def signup(
 ):
     """Register new user account with strong password requirements."""
     try:
-        result = await db.execute(text("SELECT id FROM users WHERE email = :email"), {"email": req.email})
+        result = await db.execute(
+            text("SELECT id FROM users WHERE email = :email"), {"email": req.email}
+        )
         if result.scalar():
             raise HTTPException(status_code=400, detail="Email already registered")
 
         user_id = str(uuid.uuid4())
-        password_hash = bcrypt.hashpw(req.password.encode(), bcrypt.gensalt(12)).decode()
+        password_hash = bcrypt.hashpw(
+            req.password.encode(), bcrypt.gensalt(12)
+        ).decode()
 
         # Every NOT NULL users column must be listed here: raw SQL bypasses the ORM's
         # Python-side defaults, and a fresh database (create_all) has no DB-level
@@ -90,11 +94,17 @@ async def signup(
                 VALUES (:id, :email, :hash, :full_name, true, false, 0, false, false, false, 'AR', 'ARS',
                     'America/Argentina/Buenos_Aires', '{}', '[]', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             """),
-            {"id": user_id, "email": req.email, "hash": password_hash, "full_name": req.full_name}
+            {
+                "id": user_id,
+                "email": req.email,
+                "hash": password_hash,
+                "full_name": req.full_name,
+            },
         )
         await db.commit()
 
         from app.core.security import create_access_token
+
         access_token = create_access_token({"sub": user_id})
 
         # This route duplicates /auth/register's account creation but used to
@@ -105,6 +115,7 @@ async def signup(
         # /auth/register sends, so both signup paths behave the same way.
         try:
             from app.api.v1.auth import _send_verification_email
+
             settings = get_settings()
             verify_token = create_access_token(
                 data={"sub": user_id, "scope": "email_verify"},
@@ -146,28 +157,37 @@ async def signin(
     """Sign in with password + optional 2FA."""
     try:
         result = await db.execute(
-            text("SELECT id, email, full_name, hashed_password, is_2fa_enabled, totp_secret FROM users WHERE email = :email"),
-            {"email": req.email}
+            text(
+                "SELECT id, email, full_name, hashed_password, is_2fa_enabled, totp_secret FROM users WHERE email = :email"
+            ),
+            {"email": req.email},
         )
         user_row = result.first()
 
         if not user_row:
             raise HTTPException(status_code=401, detail="Invalid email or password")
 
-        user_id, user_email, full_name, hashed_password, is_2fa_enabled, totp_secret = user_row
+        user_id, user_email, full_name, hashed_password, is_2fa_enabled, totp_secret = (
+            user_row
+        )
 
         if not bcrypt.checkpw(req.password.encode(), hashed_password.encode()):
             raise HTTPException(status_code=401, detail="Invalid email or password")
 
         if is_2fa_enabled:
             if not req.totp_code:
-                return {"requires_2fa": True, "user_id": str(user_id), "message": "2FA code required"}
+                return {
+                    "requires_2fa": True,
+                    "user_id": str(user_id),
+                    "message": "2FA code required",
+                }
 
             totp = pyotp.TOTP(totp_secret)
             if not totp.verify(req.totp_code, valid_window=1):
                 raise HTTPException(status_code=401, detail="Invalid 2FA code")
 
         from app.core.security import create_access_token
+
         access_token = create_access_token({"sub": str(user_id)})
 
         return {
@@ -231,8 +251,10 @@ async def verify_2fa(
             raise HTTPException(status_code=400, detail="Invalid 2FA code")
 
         await db.execute(
-            text("UPDATE users SET is_2fa_enabled = true, totp_secret = :secret WHERE id = :id"),
-            {"id": request.user_id, "secret": request.secret}
+            text(
+                "UPDATE users SET is_2fa_enabled = true, totp_secret = :secret WHERE id = :id"
+            ),
+            {"id": request.user_id, "secret": request.secret},
         )
         await db.commit()
 
@@ -256,8 +278,7 @@ async def disable_2fa(
 ):
     """Disable 2FA (requires password confirmation)."""
     result = await db.execute(
-        text("SELECT hashed_password FROM users WHERE id = :id"),
-        {"id": req.user_id}
+        text("SELECT hashed_password FROM users WHERE id = :id"), {"id": req.user_id}
     )
     user_row = result.first()
 
@@ -265,8 +286,10 @@ async def disable_2fa(
         raise HTTPException(status_code=401, detail="Invalid password")
 
     await db.execute(
-        text("UPDATE users SET is_2fa_enabled = false, totp_secret = NULL WHERE id = :id"),
-        {"id": req.user_id}
+        text(
+            "UPDATE users SET is_2fa_enabled = false, totp_secret = NULL WHERE id = :id"
+        ),
+        {"id": req.user_id},
     )
     await db.commit()
 

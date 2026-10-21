@@ -6,6 +6,7 @@ Analytics Service
 - Workflow performance
 - Lead scoring distribution
 """
+
 import logging
 from datetime import datetime, timedelta
 
@@ -16,6 +17,7 @@ from app.db.models import EmailLog, Lead, WorkflowExecution
 
 logger = logging.getLogger(__name__)
 
+
 # ============================================================
 # ANALYTICS SERVICE
 # ============================================================
@@ -24,7 +26,16 @@ class AnalyticsService:
 
     async def get_lead_funnel(self, session: AsyncSession) -> dict:
         """Sales funnel: count leads at each stage."""
-        statuses = ["new", "contacted", "engaged", "qualified", "won", "bounced", "unsubscribed", "lost"]
+        statuses = [
+            "new",
+            "contacted",
+            "engaged",
+            "qualified",
+            "won",
+            "bounced",
+            "unsubscribed",
+            "lost",
+        ]
 
         funnel = {}
         for status in statuses:
@@ -45,7 +56,7 @@ class AnalyticsService:
             "funnel": funnel,
             "total": total,
             "conversion_rates": conversion_rates,
-            "flow": "new → contacted → engaged → qualified → won"
+            "flow": "new → contacted → engaged → qualified → won",
         }
 
     async def get_email_metrics(self, session: AsyncSession) -> dict:
@@ -79,7 +90,7 @@ class AnalyticsService:
             "clicked": clicked,
             "click_rate": safe_rate(clicked, opened),
             "bounced": bounced,
-            "bounce_rate": safe_rate(bounced, total)
+            "bounce_rate": safe_rate(bounced, total),
         }
 
     async def get_lead_source_analytics(self, session: AsyncSession) -> dict:
@@ -89,7 +100,9 @@ class AnalyticsService:
             func.count(Lead.id).label("total_leads"),
             func.avg(Lead.score).label("avg_score"),
             func.sum(cast(Lead.status == "engaged", Integer)).label("engaged_count"),
-            func.sum(cast(Lead.status == "qualified", Integer)).label("qualified_count"),
+            func.sum(cast(Lead.status == "qualified", Integer)).label(
+                "qualified_count"
+            ),
             func.sum(cast(Lead.status == "won", Integer)).label("won_count"),
         ).group_by(Lead.source)
 
@@ -116,12 +129,12 @@ class AnalyticsService:
                 "qualified": qualified,
                 "qualification_rate": safe_rate(qualified, total),
                 "won": won,
-                "conversion_rate": safe_rate(won, total)
+                "conversion_rate": safe_rate(won, total),
             }
 
         return {
             "by_source": sources,
-            "total_leads": sum(s["total_leads"] for s in sources.values())
+            "total_leads": sum(s["total_leads"] for s in sources.values()),
         }
 
     async def get_workflow_performance(self, session: AsyncSession) -> dict:
@@ -130,10 +143,18 @@ class AnalyticsService:
             WorkflowExecution.workflow_id,
             WorkflowExecution.step_number,
             func.count(WorkflowExecution.id).label("total"),
-            func.sum(cast(WorkflowExecution.email_status == "sent", Integer)).label("sent"),
-            func.sum(cast(WorkflowExecution.email_status == "opened", Integer)).label("opened"),
-            func.sum(cast(WorkflowExecution.email_status == "clicked", Integer)).label("clicked"),
-            func.sum(cast(WorkflowExecution.email_status == "bounced", Integer)).label("bounced"),
+            func.sum(cast(WorkflowExecution.email_status == "sent", Integer)).label(
+                "sent"
+            ),
+            func.sum(cast(WorkflowExecution.email_status == "opened", Integer)).label(
+                "opened"
+            ),
+            func.sum(cast(WorkflowExecution.email_status == "clicked", Integer)).label(
+                "clicked"
+            ),
+            func.sum(cast(WorkflowExecution.email_status == "bounced", Integer)).label(
+                "bounced"
+            ),
         ).group_by(WorkflowExecution.workflow_id, WorkflowExecution.step_number)
 
         result = await session.execute(stmt)
@@ -160,20 +181,14 @@ class AnalyticsService:
                 "sent": sent,
                 "open_rate": safe_rate(opened, sent),
                 "click_rate": safe_rate(clicked, sent),
-                "bounce_rate": safe_rate(bounced, total)
+                "bounce_rate": safe_rate(bounced, total),
             }
 
         return {"by_workflow": workflows}
 
     async def get_lead_score_distribution(self, session: AsyncSession) -> dict:
         """Lead scoring histogram."""
-        buckets = {
-            "0-20": 0,
-            "21-40": 0,
-            "41-60": 0,
-            "61-80": 0,
-            "81-100": 0
-        }
+        buckets = {"0-20": 0, "21-40": 0, "41-60": 0, "61-80": 0, "81-100": 0}
 
         leads_stmt = select(Lead.score)
         result = await session.execute(leads_stmt)
@@ -200,31 +215,31 @@ class AnalyticsService:
             "total_leads": len(scores),
             "avg_score": avg_score,
             "max_score": max_score,
-            "min_score": min_score
+            "min_score": min_score,
         }
 
     async def get_time_series_metrics(
-        self,
-        session: AsyncSession,
-        days: int = 30
+        self, session: AsyncSession, days: int = 30
     ) -> dict:
         """Daily metrics for time series."""
         cutoff = datetime.now() - timedelta(days=days)
 
         # Leads created per day
-        stmt = select(
-            func.date(Lead.created_at),
-            func.count(Lead.id)
-        ).where(Lead.created_at >= cutoff).group_by(func.date(Lead.created_at))
+        stmt = (
+            select(func.date(Lead.created_at), func.count(Lead.id))
+            .where(Lead.created_at >= cutoff)
+            .group_by(func.date(Lead.created_at))
+        )
 
         result = await session.execute(stmt)
         leads_by_day = {str(row[0]): row[1] for row in result.all()}
 
         # Emails sent per day
-        stmt = select(
-            func.date(EmailLog.sent_at),
-            func.count(EmailLog.id)
-        ).where(EmailLog.sent_at >= cutoff).group_by(func.date(EmailLog.sent_at))
+        stmt = (
+            select(func.date(EmailLog.sent_at), func.count(EmailLog.id))
+            .where(EmailLog.sent_at >= cutoff)
+            .group_by(func.date(EmailLog.sent_at))
+        )
 
         result = await session.execute(stmt)
         emails_by_day = {str(row[0]): row[1] for row in result.all()}
@@ -232,7 +247,7 @@ class AnalyticsService:
         return {
             "leads_by_day": leads_by_day,
             "emails_by_day": emails_by_day,
-            "period_days": days
+            "period_days": days,
         }
 
     async def get_lead_health_scores(self, session: AsyncSession) -> dict:
@@ -245,16 +260,16 @@ class AnalyticsService:
             Lead.company,
             Lead.score,
             Lead.status,
-            Lead.last_contacted
+            Lead.last_contacted,
         )
 
         result = await session.execute(stmt)
         leads = result.all()
 
-        hot = []      # score ≥ 70, contacted < 3 days ago
-        warm = []     # score 40-69, contacted < 7 days ago
-        cold = []     # score < 40 OR contacted > 7 days ago
-        dead = []     # status in [bounced, unsubscribed, lost]
+        hot = []  # score ≥ 70, contacted < 3 days ago
+        warm = []  # score 40-69, contacted < 7 days ago
+        cold = []  # score < 40 OR contacted > 7 days ago
+        dead = []  # status in [bounced, unsubscribed, lost]
 
         now = datetime.now()
 
@@ -262,60 +277,71 @@ class AnalyticsService:
             lead_id, name, email, company, score, status, last_contacted = lead
 
             if status in ["bounced", "unsubscribed", "lost"]:
-                dead.append({
-                    "id": lead_id,
-                    "name": name,
-                    "email": email,
-                    "company": company,
-                    "score": score,
-                    "status": status
-                })
+                dead.append(
+                    {
+                        "id": lead_id,
+                        "name": name,
+                        "email": email,
+                        "company": company,
+                        "score": score,
+                        "status": status,
+                    }
+                )
             else:
                 days_since = (now - last_contacted).days if last_contacted else 999
 
                 if (score or 0) >= 70 and days_since <= 3:
-                    hot.append({
-                        "id": lead_id,
-                        "name": name,
-                        "company": company,
-                        "score": score,
-                        "days_since_contact": days_since
-                    })
+                    hot.append(
+                        {
+                            "id": lead_id,
+                            "name": name,
+                            "company": company,
+                            "score": score,
+                            "days_since_contact": days_since,
+                        }
+                    )
                 elif 40 <= (score or 0) < 70 and days_since <= 7:
-                    warm.append({
-                        "id": lead_id,
-                        "name": name,
-                        "company": company,
-                        "score": score,
-                        "days_since_contact": days_since
-                    })
+                    warm.append(
+                        {
+                            "id": lead_id,
+                            "name": name,
+                            "company": company,
+                            "score": score,
+                            "days_since_contact": days_since,
+                        }
+                    )
                 else:
-                    cold.append({
-                        "id": lead_id,
-                        "name": name,
-                        "company": company,
-                        "score": score,
-                        "days_since_contact": days_since
-                    })
+                    cold.append(
+                        {
+                            "id": lead_id,
+                            "name": name,
+                            "company": company,
+                            "score": score,
+                            "days_since_contact": days_since,
+                        }
+                    )
 
         return {
             "hot": {"count": len(hot), "leads": hot},
             "warm": {"count": len(warm), "leads": warm},
             "cold": {"count": len(cold), "leads": cold},
             "dead": {"count": len(dead), "leads": dead},
-            "total": len(hot) + len(warm) + len(cold) + len(dead)
+            "total": len(hot) + len(warm) + len(cold) + len(dead),
         }
+
 
 # ============================================================
 # GLOBAL SERVICE
 # ============================================================
 analytics_service: AnalyticsService = None
 
+
 async def init_analytics_service() -> AnalyticsService:
     """Initialize service."""
     global analytics_service
     analytics_service = AnalyticsService()
     return analytics_service
+
 
 async def get_analytics_service() -> AnalyticsService:
     """Get service."""

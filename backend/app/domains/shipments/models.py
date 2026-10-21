@@ -24,6 +24,7 @@ from app.core.database import Base
 
 class CarrierType(str, enum.Enum):
     """Carriers soportados."""
+
     ANDREANI = "andreani"
     CORREO_ARGENTINO = "correo_argentino"
     OCA = "oca"
@@ -39,19 +40,21 @@ class CarrierType(str, enum.Enum):
 
 class ShipmentStatus(str, enum.Enum):
     """Estados de un envío."""
-    PENDING = "pending"              # Creado, sin etiqueta
+
+    PENDING = "pending"  # Creado, sin etiqueta
     LABEL_CREATED = "label_created"  # Etiqueta generada
-    PICKED_UP = "picked_up"          # Retirado por carrier
-    IN_TRANSIT = "in_transit"        # En tránsito
+    PICKED_UP = "picked_up"  # Retirado por carrier
+    IN_TRANSIT = "in_transit"  # En tránsito
     OUT_FOR_DELIVERY = "out_for_delivery"  # En reparto
-    DELIVERED = "delivered"          # Entregado
-    EXCEPTION = "exception"          # Problema (devolución, daño, etc.)
-    RETURNED = "returned"            # Devuelto
-    CANCELLED = "cancelled"          # Cancelado
+    DELIVERED = "delivered"  # Entregado
+    EXCEPTION = "exception"  # Problema (devolución, daño, etc.)
+    RETURNED = "returned"  # Devuelto
+    CANCELLED = "cancelled"  # Cancelado
 
 
 class ServiceType(str, enum.Enum):
     """Tipo de servicio de envío."""
+
     STANDARD = "standard"
     EXPRESS = "express"
     SAME_DAY = "same_day"
@@ -62,36 +65,67 @@ class ServiceType(str, enum.Enum):
 
 class ShipmentConfig(Base):
     """Configuración de un carrier para un negocio."""
+
     __tablename__ = "shipment_configs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     carrier = Column(Enum(CarrierType), nullable=False)
     label = Column(String(100), nullable=True)  # Nombre personalizado ej: "Mi Andreani"
-    credentials = Column(JSONB, default=dict, nullable=False)  # API keys, usuario, contraseña, cuenta
+    credentials = Column(
+        JSONB, default=dict, nullable=False
+    )  # API keys, usuario, contraseña, cuenta
     is_test_mode = Column(Boolean, default=False, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     default_service_type = Column(Enum(ServiceType), nullable=True)
     default_from_address = Column(JSONB, default=dict, nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
 
 class Shipment(Base):
     """Un envío asociado a una orden."""
+
     __tablename__ = "shipments"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    order_id = Column(UUID(as_uuid=True), ForeignKey("orders.id", ondelete="CASCADE"), nullable=False, index=True)
-    config_id = Column(UUID(as_uuid=True), ForeignKey("shipment_configs.id", ondelete="SET NULL"), nullable=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    order_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("orders.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    config_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("shipment_configs.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     # Carrier info
     carrier = Column(Enum(CarrierType), nullable=False)
-    service_type = Column(Enum(ServiceType), default=ServiceType.STANDARD, nullable=False)
+    service_type = Column(
+        Enum(ServiceType), default=ServiceType.STANDARD, nullable=False
+    )
 
     # Status
-    status = Column(Enum(ShipmentStatus), default=ShipmentStatus.PENDING, nullable=False, index=True)
+    status = Column(
+        Enum(ShipmentStatus), default=ShipmentStatus.PENDING, nullable=False, index=True
+    )
 
     # Tracking
     tracking_number = Column(String(100), nullable=True, index=True)
@@ -103,7 +137,7 @@ class Shipment(Base):
 
     # Addresses
     from_address = Column(JSONB, default=dict, nullable=False)
-    # { "name": "...", "company": "...", "street": "...", "city": "...", 
+    # { "name": "...", "company": "...", "street": "...", "city": "...",
     #   "state": "...", "zip": "...", "country": "AR", "phone": "...", "email": "..." }
     to_address = Column(JSONB, default=dict, nullable=False)
 
@@ -133,20 +167,32 @@ class Shipment(Base):
     notes = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
 
 class ShipmentTrackingEvent(Base):
     """Evento de tracking recibido del carrier."""
+
     __tablename__ = "shipment_tracking_events"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    shipment_id = Column(UUID(as_uuid=True), ForeignKey("shipments.id", ondelete="CASCADE"), nullable=False, index=True)
+    shipment_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("shipments.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     event_code = Column(String(50), nullable=True)
     event_description = Column(String(255), nullable=False)
     location = Column(String(255), nullable=True)
     carrier_status = Column(String(100), nullable=True)
 
-    event_at = Column(DateTime(timezone=True), nullable=False)  # Fecha que reporta el carrier
+    event_at = Column(
+        DateTime(timezone=True), nullable=False
+    )  # Fecha que reporta el carrier
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))

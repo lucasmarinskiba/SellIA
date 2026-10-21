@@ -48,7 +48,9 @@ async def _get_business_for_user(
     return business
 
 
-@router.get("/{business_id}/conversations", response_model=list[ConversationListResponse])
+@router.get(
+    "/{business_id}/conversations", response_model=list[ConversationListResponse]
+)
 async def list_conversations(
     business_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -73,7 +75,10 @@ async def list_conversations(
         # from the sync attribute-access path). This endpoint answered 500 for
         # every account that actually had a conversation.
         .options(selectinload(Conversation.messages))
-        .outerjoin(ChannelConnection, Conversation.channel_connection_id == ChannelConnection.id)
+        .outerjoin(
+            ChannelConnection,
+            Conversation.channel_connection_id == ChannelConnection.id,
+        )
         .where(
             Conversation.business_id == business_id,
             Conversation.is_active == True,
@@ -96,23 +101,35 @@ async def list_conversations(
         if msgs:
             last_msg = msgs[-1]
             last_preview = last_msg.content[:100] if last_msg.content else None
-            last_direction = last_msg.direction.value if hasattr(last_msg.direction, "value") else last_msg.direction
+            last_direction = (
+                last_msg.direction.value
+                if hasattr(last_msg.direction, "value")
+                else last_msg.direction
+            )
         ai_responded = any(
-            (m.direction.value if hasattr(m.direction, "value") else m.direction) == "outbound"
+            (m.direction.value if hasattr(m.direction, "value") else m.direction)
+            == "outbound"
             for m in msgs
         )
-        response.append(ConversationListResponse(
-            **ConversationResponse.model_validate(conv).model_dump(),
-            message_count=msg_count,
-            last_message_preview=last_preview,
-            platform=channel.platform.value if channel and channel.platform else None,
-            last_direction=last_direction,
-            ai_responded=ai_responded,
-        ))
+        response.append(
+            ConversationListResponse(
+                **ConversationResponse.model_validate(conv).model_dump(),
+                message_count=msg_count,
+                last_message_preview=last_preview,
+                platform=(
+                    channel.platform.value if channel and channel.platform else None
+                ),
+                last_direction=last_direction,
+                ai_responded=ai_responded,
+            )
+        )
     return response
 
 
-@router.get("/{business_id}/conversations/{conversation_id}", response_model=ConversationResponse)
+@router.get(
+    "/{business_id}/conversations/{conversation_id}",
+    response_model=ConversationResponse,
+)
 async def get_conversation(
     business_id: UUID,
     conversation_id: UUID,
@@ -133,7 +150,10 @@ async def get_conversation(
     return conversation
 
 
-@router.put("/{business_id}/conversations/{conversation_id}", response_model=ConversationResponse)
+@router.put(
+    "/{business_id}/conversations/{conversation_id}",
+    response_model=ConversationResponse,
+)
 async def update_conversation(
     business_id: UUID,
     conversation_id: UUID,
@@ -154,7 +174,10 @@ async def update_conversation(
 
     update_data = conv_in.model_dump(exclude_unset=True)
     if "extra_data" in update_data and conversation.extra_data:
-        update_data["extra_data"] = {**conversation.extra_data, **update_data["extra_data"]}
+        update_data["extra_data"] = {
+            **conversation.extra_data,
+            **update_data["extra_data"],
+        }
 
     for field, value in update_data.items():
         setattr(conversation, field, value)
@@ -164,7 +187,10 @@ async def update_conversation(
     return conversation
 
 
-@router.get("/{business_id}/conversations/{conversation_id}/messages", response_model=list[MessageResponse])
+@router.get(
+    "/{business_id}/conversations/{conversation_id}/messages",
+    response_model=list[MessageResponse],
+)
 async def list_messages(
     business_id: UUID,
     conversation_id: UUID,
@@ -173,14 +199,20 @@ async def list_messages(
 ):
     await _get_business_for_user(business_id, current_user, db)
     result = await db.execute(
-        select(Message).where(
+        select(Message)
+        .where(
             Message.conversation_id == conversation_id,
-        ).order_by(Message.created_at.asc())
+        )
+        .order_by(Message.created_at.asc())
     )
     return result.scalars().all()
 
 
-@router.post("/{business_id}/conversations/{conversation_id}/messages", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{business_id}/conversations/{conversation_id}/messages",
+    response_model=MessageResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def send_message(
     business_id: UUID,
     conversation_id: UUID,
@@ -218,7 +250,10 @@ async def send_message(
 
         try:
             await send_outbound_message(
-                db, conversation_id, message_in.content, message_in.content_type,
+                db,
+                conversation_id,
+                message_in.content,
+                message_in.content_type,
                 # Credits the reply to whoever is logged in, so a team can see
                 # who is actually answering customers.
                 sent_by_user_id=author_id,
@@ -247,7 +282,9 @@ async def send_message(
             # — which is exactly how this endpoint started answering 500.
             conversation = await db.get(Conversation, conversation_id)
             if conversation is None:
-                raise HTTPException(status_code=404, detail="Conversación no encontrada")
+                raise HTTPException(
+                    status_code=404, detail="Conversación no encontrada"
+                )
             # The send failed, but the seller's words are not thrown away: the
             # row is kept, attributed, and flagged as undelivered so the inbox
             # can show that it never reached the customer.

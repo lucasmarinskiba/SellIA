@@ -65,8 +65,11 @@ async def ensure_catalog_item_columns() -> dict[str, list[str]]:
                     )
                 ).first()
             )
-    except Exception as e:  # noqa: BLE001 -- never block startup on this
-        logger.warning("catalog bootstrap: could not inspect catalog_items: %s", str(e)[:160])
+    # never block startup on this
+    except Exception as e:  # noqa: BLE001
+        logger.warning(
+            "catalog bootstrap: could not inspect catalog_items: %s", str(e)[:160]
+        )
         return added
 
     if not present:
@@ -80,11 +83,15 @@ async def ensure_catalog_item_columns() -> dict[str, list[str]]:
         try:
             async with engine.begin() as conn:
                 await conn.execute(
-                    text(f"ALTER TABLE catalog_items ADD COLUMN IF NOT EXISTS {column} {ddl_type}")
+                    text(
+                        f"ALTER TABLE catalog_items ADD COLUMN IF NOT EXISTS {column} {ddl_type}"
+                    )
                 )
             added["columns"].append(column)
         except Exception as e:  # noqa: BLE001
-            logger.warning("catalog bootstrap: column %s skipped: %s", column, str(e)[:160])
+            logger.warning(
+                "catalog bootstrap: column %s skipped: %s", column, str(e)[:160]
+            )
 
     # Only once the columns it names exist. Constraints have no IF NOT EXISTS, hence the
     # guard (also covers two instances booting at once during a rolling deploy).
@@ -105,11 +112,16 @@ async def ensure_catalog_item_columns() -> dict[str, list[str]]:
                 )
             added["constraints"].append(_CONSTRAINT)
         except Exception as e:  # noqa: BLE001
-            logger.warning("catalog bootstrap: constraint %s skipped: %s", _CONSTRAINT, str(e)[:160])
+            logger.warning(
+                "catalog bootstrap: constraint %s skipped: %s",
+                _CONSTRAINT,
+                str(e)[:160],
+            )
 
     if added["columns"] or added["constraints"]:
         logger.info(
             "✅ catalog_items brought up to the model: columns=%s constraints=%s",
-            added["columns"], added["constraints"],
+            added["columns"],
+            added["constraints"],
         )
     return added

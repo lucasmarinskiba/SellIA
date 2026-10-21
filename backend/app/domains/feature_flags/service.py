@@ -65,7 +65,12 @@ class FeatureFlagService:
 
         if user_id:
             # Deterministic rollout based on user ID hash
-            hash_val = int(hashlib.md5(f"{flag_name}:{user_id}".encode(), usedforsecurity=False).hexdigest(), 16)
+            hash_val = int(
+                hashlib.md5(
+                    f"{flag_name}:{user_id}".encode(), usedforsecurity=False
+                ).hexdigest(),
+                16,
+            )
             user_bucket = hash_val % 100
             return user_bucket < flag.rollout_percentage
 
@@ -75,6 +80,7 @@ class FeatureFlagService:
     async def get_all_flags(db: AsyncSession) -> list[dict]:
         """Return all feature flags (for admin UI)."""
         from app.domains.feature_flags.models import FeatureFlag
+
         result = await db.execute(select(FeatureFlag))
         flags = result.scalars().all()
         return [

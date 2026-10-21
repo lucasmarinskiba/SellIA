@@ -63,7 +63,9 @@ class LeadScoringEngine:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def calculate_score(self, conversation_id: uuid.UUID, business_id: uuid.UUID) -> LeadScore:
+    async def calculate_score(
+        self, conversation_id: uuid.UUID, business_id: uuid.UUID
+    ) -> LeadScore:
         """Calculate or recalculate lead score for a conversation."""
         # Get or create lead score record
         result = await self.db.execute(
@@ -100,13 +102,16 @@ class LeadScoringEngine:
 
         # Get all messages
         result = await self.db.execute(
-            select(Message).where(Message.conversation_id == conversation_id)
+            select(Message)
+            .where(Message.conversation_id == conversation_id)
             .order_by(Message.created_at)
         )
         messages = result.scalars().all()
 
         # Calculate engagement score
-        lead_score.engagement_score = await self._calc_engagement(messages, conversation)
+        lead_score.engagement_score = await self._calc_engagement(
+            messages, conversation
+        )
 
         # Calculate intent score
         lead_score.intent_score = await self._calc_intent(messages, conversation)
@@ -121,13 +126,17 @@ class LeadScoringEngine:
         lead_score.recency_score = await self._calc_recency(messages, conversation)
 
         # Total
-        lead_score.total_score = max(0, min(100,
-            lead_score.engagement_score +
-            lead_score.intent_score +
-            lead_score.demographic_score +
-            lead_score.behavioral_score +
-            lead_score.recency_score
-        ))
+        lead_score.total_score = max(
+            0,
+            min(
+                100,
+                lead_score.engagement_score
+                + lead_score.intent_score
+                + lead_score.demographic_score
+                + lead_score.behavioral_score
+                + lead_score.recency_score,
+            ),
+        )
 
         # Classification
         if lead_score.total_score >= CLASSIFICATION_THRESHOLDS["hot"]:
@@ -168,6 +177,7 @@ class LeadScoringEngine:
 
             try:
                 from app.core.events import emit_lead_score_changed
+
                 await emit_lead_score_changed(
                     business_id=str(business_id),
                     conversation_id=str(conversation_id),
@@ -179,6 +189,7 @@ class LeadScoringEngine:
             except Exception as e:
                 logger.exception("calculate_score: error inesperado")
                 from app.core.logger import get_logger
+
                 get_logger(__name__).error(f"Event emit error: {e}")
 
         return lead_score
@@ -208,6 +219,7 @@ class LeadScoringEngine:
 
         # Multiple messages same day
         from collections import defaultdict
+
         by_day = defaultdict(int)
         for m in messages:
             day = m.created_at.strftime("%Y-%m-%d")
@@ -224,12 +236,55 @@ class LeadScoringEngine:
             return score
 
         intent_keywords = {
-            "price_inquiry": ["precio", "cuanto cuesta", "valor", "costo", "tarifa", "presupuesto", "quote"],
-            "availability_inquiry": ["disponible", "hay stock", "cuando", "horario", "turno", "cita"],
-            "appointment_request": ["agendar", "reservar", "demo", "reunion", "llamada", "consulta"],
-            "demo_request": ["demo", "prueba", "test", "muestra", "gratis", "free trial"],
-            "product_inquiry": ["producto", "servicio", "que ofrecen", "que hacen", "como funciona"],
-            "complaint": ["reclamo", "queja", "malo", "peor", "estafa", "problema", "devolucion"],
+            "price_inquiry": [
+                "precio",
+                "cuanto cuesta",
+                "valor",
+                "costo",
+                "tarifa",
+                "presupuesto",
+                "quote",
+            ],
+            "availability_inquiry": [
+                "disponible",
+                "hay stock",
+                "cuando",
+                "horario",
+                "turno",
+                "cita",
+            ],
+            "appointment_request": [
+                "agendar",
+                "reservar",
+                "demo",
+                "reunion",
+                "llamada",
+                "consulta",
+            ],
+            "demo_request": [
+                "demo",
+                "prueba",
+                "test",
+                "muestra",
+                "gratis",
+                "free trial",
+            ],
+            "product_inquiry": [
+                "producto",
+                "servicio",
+                "que ofrecen",
+                "que hacen",
+                "como funciona",
+            ],
+            "complaint": [
+                "reclamo",
+                "queja",
+                "malo",
+                "peor",
+                "estafa",
+                "problema",
+                "devolucion",
+            ],
         }
 
         for m in messages:
@@ -361,9 +416,17 @@ Breakdown:
 Write a brief commentary (1-2 sentences) explaining this score change to the sales team."""
 
         try:
-            messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
+            messages = [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=user_prompt),
+            ]
             response = await generate_with_fallback(
-                self.db, business_id, messages, model="llama3.1", temperature=0.5, max_tokens=200,
+                self.db,
+                business_id,
+                messages,
+                model="llama3.1",
+                temperature=0.5,
+                max_tokens=200,
             )
             if not response:
                 return None
@@ -371,6 +434,7 @@ Write a brief commentary (1-2 sentences) explaining this score change to the sal
         except Exception as e:
             logger.exception("_generate_commentary: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Commentary generation error: {e}")
             return None
 

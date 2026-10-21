@@ -4,7 +4,6 @@ Pricing: ~$0.08/second
 Strengths: Anime, effects, style transfer, creative video
 """
 
-
 import logging
 from typing import ClassVar
 
@@ -37,7 +36,9 @@ class PikaProvider(BaseProvider):
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         if not self.is_available:
-            return GenerationResult(success=False, error_message="PIKA_API_KEY no configurada")
+            return GenerationResult(
+                success=False, error_message="PIKA_API_KEY no configurada"
+            )
 
         try:
             import aiohttp
@@ -59,9 +60,15 @@ class PikaProvider(BaseProvider):
             ) as resp:
                 data = await resp.json()
 
-            video_url = data.get("video", {}).get("url") if isinstance(data.get("video"), dict) else data.get("url")
+            video_url = (
+                data.get("video", {}).get("url")
+                if isinstance(data.get("video"), dict)
+                else data.get("url")
+            )
             if not video_url:
-                return GenerationResult(success=False, error_message="Pika no devolvió video")
+                return GenerationResult(
+                    success=False, error_message="Pika no devolvió video"
+                )
 
             duration = config.duration_seconds or 5
             return GenerationResult(

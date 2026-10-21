@@ -45,7 +45,9 @@ class IPBlocklistMiddleware(BaseHTTPMiddleware):
                     await db.commit()
                     logger.info(f"Auto-unblocked IP {client_ip}")
                 else:
-                    logger.warning(f"Blocked request from {client_ip}: {blocked.reason}")
+                    logger.warning(
+                        f"Blocked request from {client_ip}: {blocked.reason}"
+                    )
                     return JSONResponse(
                         status_code=403,
                         content={"detail": "IP bloqueada por seguridad"},

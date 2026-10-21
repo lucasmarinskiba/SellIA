@@ -61,7 +61,9 @@ class ValueFirstOutreach:
         self.db.add(sequence)
         await self.db.commit()
         await self.db.refresh(sequence)
-        logger.info(f"Created value sequence {sequence.id} ({message_count} messages) for business {business_id}")
+        logger.info(
+            f"Created value sequence {sequence.id} ({message_count} messages) for business {business_id}"
+        )
         return sequence
 
     async def _generate_sequence_messages(
@@ -121,13 +123,16 @@ NO uses frases genéricas como "espero que estés bien". Sé directo y valioso."
                 temperature=0.75,
             )
             import json
+
             parsed = json.loads(response or "{}")
             return parsed.get("messages", [])
         except Exception:
             logger.exception("Failed to generate sequence messages")
             return self._fallback_messages(topic, message_count, avg_delay)
 
-    def _fallback_messages(self, topic: str, count: int, delay_hours: int) -> list[dict]:
+    def _fallback_messages(
+        self, topic: str, count: int, delay_hours: int
+    ) -> list[dict]:
         """Fallback messages if AI generation fails."""
         messages = [
             {
@@ -192,7 +197,9 @@ NO uses frases genéricas como "espero que estés bien". Sé directo y valioso."
 
         await self.db.commit()
         await self.db.refresh(enrollment)
-        logger.info(f"Enrolled conversation {conversation_id} in sequence {sequence_id}")
+        logger.info(
+            f"Enrolled conversation {conversation_id} in sequence {sequence_id}"
+        )
         return enrollment
 
     async def send_next_message(self, enrollment_id: uuid.UUID) -> dict[str, Any]:
@@ -213,7 +220,11 @@ NO uses frases genéricas como "espero que estés bien". Sé directo y valioso."
             await self.db.commit()
             return {"status": "completed"}
 
-        message_data = sequence.messages[next_step - 1] if next_step <= len(sequence.messages) else None
+        message_data = (
+            sequence.messages[next_step - 1]
+            if next_step <= len(sequence.messages)
+            else None
+        )
         if not message_data:
             return {"status": "error", "reason": "no_message_data"}
 
@@ -226,6 +237,7 @@ NO uses frases genéricas como "espero que estés bien". Sé directo y valioso."
 
         # Send message
         from app.domains.channels.services import send_outbound_message
+
         try:
             await send_outbound_message(
                 self.db,
@@ -243,7 +255,9 @@ NO uses frases genéricas como "espero que estés bien". Sé directo y valioso."
         enrollment.last_engagement_at = datetime.now(UTC)
         await self.db.commit()
 
-        logger.info(f"Sent value message {next_step}/{sequence.message_count} to enrollment {enrollment_id}")
+        logger.info(
+            f"Sent value message {next_step}/{sequence.message_count} to enrollment {enrollment_id}"
+        )
         return {"status": "sent", "step": next_step, "total": sequence.message_count}
 
     async def nurture_cold_leads(
@@ -255,11 +269,15 @@ NO uses frases genéricas como "espero que estés bien". Sé directo y valioso."
         """Auto-enroll cold leads and send next messages."""
         # Find cold leads without active enrollment
         result = await self.db.execute(
-            select(InboundLead).where(
+            select(InboundLead)
+            .where(
                 InboundLead.business_id == business_id,
-                InboundLead.nurturing_stage.in_([NurturingStage.NEW, NurturingStage.AWARENESS]),
+                InboundLead.nurturing_stage.in_(
+                    [NurturingStage.NEW, NurturingStage.AWARENESS]
+                ),
                 InboundLead.is_active == True,
-            ).limit(max_leads)
+            )
+            .limit(max_leads)
         )
         cold_leads = result.scalars().all()
 
@@ -326,8 +344,12 @@ NO uses frases genéricas como "espero que estés bien". Sé directo y valioso."
         )
         converted = converted_result.scalar() or 0
 
-        completion_rate = (completed / total_enrollments * 100) if total_enrollments > 0 else 0
-        conversion_rate = (converted / total_enrollments * 100) if total_enrollments > 0 else 0
+        completion_rate = (
+            (completed / total_enrollments * 100) if total_enrollments > 0 else 0
+        )
+        conversion_rate = (
+            (converted / total_enrollments * 100) if total_enrollments > 0 else 0
+        )
 
         return {
             "sequence_id": str(sequence_id),

@@ -39,7 +39,11 @@ async def _get_business_for_user(
     return business
 
 
-@router.post("/{business_id}/items", response_model=CatalogItemResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{business_id}/items",
+    response_model=CatalogItemResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_catalog_item(
     business_id: UUID,
     item_in: CatalogItemCreate,
@@ -79,6 +83,7 @@ async def sync_catalog_push(
     await _get_business_for_user(business_id, current_user, db)
 
     from app.domains.catalogs.sync_service import CatalogSyncService
+
     sync_service = CatalogSyncService(db)
     results = await sync_service.push_all(business_id)
     await invalidate_cache_pattern(f"catalog:*:{business_id}:*")
@@ -107,6 +112,7 @@ async def sync_catalog_pull(
     await _get_business_for_user(business_id, current_user, db)
 
     from app.domains.catalogs.sync_service import CatalogSyncService
+
     sync_service = CatalogSyncService(db)
     results = await sync_service.pull_all(business_id)
     await invalidate_cache_pattern(f"catalog:*:{business_id}:*")
@@ -232,17 +238,38 @@ async def debug_add_listing_columns(
     (backend/app/api/v1/businesses.py). Call once after deploy.
     """
     if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
+        raise HTTPException(
+            status_code=403, detail="Requiere permisos de administrador"
+        )
     from sqlalchemy import text
+
     try:
-        await db.execute(text("ALTER TABLE catalog_items ADD COLUMN IF NOT EXISTS category VARCHAR(120)"))
-        await db.execute(text("ALTER TABLE catalog_items ADD COLUMN IF NOT EXISTS source_platform VARCHAR(50)"))
-        await db.execute(text("ALTER TABLE catalog_items ADD COLUMN IF NOT EXISTS external_id VARCHAR(255)"))
-        await db.execute(text("ALTER TABLE catalog_items ADD COLUMN IF NOT EXISTS listing_url VARCHAR(1024)"))
-        await db.execute(text(
-            "ALTER TABLE catalog_items ADD CONSTRAINT uq_catalog_item_external "
-            "UNIQUE (business_id, source_platform, external_id)"
-        ))
+        await db.execute(
+            text(
+                "ALTER TABLE catalog_items ADD COLUMN IF NOT EXISTS category VARCHAR(120)"
+            )
+        )
+        await db.execute(
+            text(
+                "ALTER TABLE catalog_items ADD COLUMN IF NOT EXISTS source_platform VARCHAR(50)"
+            )
+        )
+        await db.execute(
+            text(
+                "ALTER TABLE catalog_items ADD COLUMN IF NOT EXISTS external_id VARCHAR(255)"
+            )
+        )
+        await db.execute(
+            text(
+                "ALTER TABLE catalog_items ADD COLUMN IF NOT EXISTS listing_url VARCHAR(1024)"
+            )
+        )
+        await db.execute(
+            text(
+                "ALTER TABLE catalog_items ADD CONSTRAINT uq_catalog_item_external "
+                "UNIQUE (business_id, source_platform, external_id)"
+            )
+        )
         await db.commit()
         return {"status": "ok"}
     except Exception as e:
@@ -251,7 +278,10 @@ async def debug_add_listing_columns(
         return {"status": "error", "error": str(e)}
 
 
-@router.post("/{business_id}/items/{item_id}/enhance-description", response_model=CatalogItemResponse)
+@router.post(
+    "/{business_id}/items/{item_id}/enhance-description",
+    response_model=CatalogItemResponse,
+)
 async def enhance_catalog_description(
     business_id: UUID,
     item_id: UUID,
@@ -303,13 +333,19 @@ Responde SOLO con la descripción mejorada, sin explicaciones."""
     )
 
     if not enhanced:
-        raise HTTPException(status_code=500, detail="No se pudo generar la descripción mejorada")
+        raise HTTPException(
+            status_code=500, detail="No se pudo generar la descripción mejorada"
+        )
 
     original_description = item.description
     item.description = enhanced.strip()
     if not item.extra_data:
         item.extra_data = {}
-    item.extra_data["description_enhanced_at"] = __import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat()
+    item.extra_data["description_enhanced_at"] = (
+        __import__("datetime")
+        .datetime.now(__import__("datetime").timezone.utc)
+        .isoformat()
+    )
     item.extra_data["original_description"] = original_description
     await db.commit()
     await db.refresh(item)
@@ -317,7 +353,9 @@ Responde SOLO con la descripción mejorada, sin explicaciones."""
     return item
 
 
-@router.post("/{business_id}/items/{item_id}/seo-optimize", response_model=CatalogItemResponse)
+@router.post(
+    "/{business_id}/items/{item_id}/seo-optimize", response_model=CatalogItemResponse
+)
 async def seo_optimize_catalog_item(
     business_id: UUID,
     item_id: UUID,
@@ -349,8 +387,8 @@ async def seo_optimize_catalog_item(
     platform_hint = (
         f"El título debe seguir las convenciones de búsqueda de {item.source_platform} "
         f"(no un <title> de sitio web genérico)."
-        if item.source_platform else
-        "No está publicado en ninguna plataforma externa todavía -- generá un título para SEO de sitio web propio."
+        if item.source_platform
+        else "No está publicado en ninguna plataforma externa todavía -- generá un título para SEO de sitio web propio."
     )
 
     system_prompt = """Sos un especialista en SEO de e-commerce. Respondé SOLO con un objeto JSON
@@ -373,8 +411,12 @@ DESCRIPCIÓN: {item.description or 'sin descripción'}
     import json as _json
 
     raw = await generate_raw_ai_response(
-        db=db, business_id=business_id, system_prompt=system_prompt,
-        user_prompt=user_prompt, max_tokens=200, temperature=0.4,
+        db=db,
+        business_id=business_id,
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
+        max_tokens=200,
+        temperature=0.4,
     )
     if not raw:
         raise HTTPException(status_code=500, detail="No se pudo generar el SEO")
@@ -399,7 +441,11 @@ DESCRIPCIÓN: {item.description or 'sin descripción'}
             "@type": "Offer",
             "price": str(item.price),
             "priceCurrency": item.currency,
-            "availability": "https://schema.org/InStock" if item.is_available else "https://schema.org/OutOfStock",
+            "availability": (
+                "https://schema.org/InStock"
+                if item.is_available
+                else "https://schema.org/OutOfStock"
+            ),
         }
     else:
         schema_json["offers"] = {
@@ -414,7 +460,9 @@ DESCRIPCIÓN: {item.description or 'sin descripción'}
         "title": title,
         "meta_description": meta_description,
         "schema_json": schema_json,
-        "generated_at": __import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat(),
+        "generated_at": __import__("datetime")
+        .datetime.now(__import__("datetime").timezone.utc)
+        .isoformat(),
     }
     await db.commit()
     await db.refresh(item)
@@ -422,7 +470,9 @@ DESCRIPCIÓN: {item.description or 'sin descripción'}
     return item
 
 
-@router.post("/{business_id}/items/{item_id}/fomo-generate", response_model=CatalogItemResponse)
+@router.post(
+    "/{business_id}/items/{item_id}/fomo-generate", response_model=CatalogItemResponse
+)
 async def fomo_generate_catalog_item(
     business_id: UUID,
     item_id: UUID,
@@ -465,7 +515,11 @@ Reglas CRÍTICAS:
 - headline: máximo 90 caracteres, en español, directo.
 - Respondé SOLO el JSON, sin markdown ni explicaciones."""
 
-    stock_line = f"STOCK REAL: {item.stock} unidades" if item.stock is not None else "STOCK: no aplica / sin dato real"
+    stock_line = (
+        f"STOCK REAL: {item.stock} unidades"
+        if item.stock is not None
+        else "STOCK: no aplica / sin dato real"
+    )
     user_prompt = f"""NOMBRE: {item.name}
 TIPO: {item.type.value if hasattr(item.type, 'value') else item.type}
 PRECIO: {item.currency} {item.price}
@@ -476,11 +530,17 @@ DISPONIBLE: {'sí' if item.is_available else 'no'}
     import json as _json
 
     raw = await generate_raw_ai_response(
-        db=db, business_id=business_id, system_prompt=system_prompt,
-        user_prompt=user_prompt, max_tokens=100, temperature=0.6,
+        db=db,
+        business_id=business_id,
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
+        max_tokens=100,
+        temperature=0.6,
     )
     if not raw:
-        raise HTTPException(status_code=500, detail="No se pudo generar el copy de FOMO")
+        raise HTTPException(
+            status_code=500, detail="No se pudo generar el copy de FOMO"
+        )
 
     try:
         parsed = _json.loads(raw.strip())
@@ -494,7 +554,9 @@ DISPONIBLE: {'sí' if item.is_available else 'no'}
     item.extra_data["fomo"] = {
         "headline": headline,
         "angle": angle,
-        "generated_at": __import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat(),
+        "generated_at": __import__("datetime")
+        .datetime.now(__import__("datetime").timezone.utc)
+        .isoformat(),
     }
     await db.commit()
     await db.refresh(item)

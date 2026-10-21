@@ -34,6 +34,9 @@ async def _run_check():
                             f"Auto-responder sent {len(responses)} responses for business {business.id}"
                         )
                 except Exception as e:
-                    logger.warning(f"Auto-responder failed for business {business.id}: {e}", exc_info=True)
+                    logger.warning(
+                        f"Auto-responder failed for business {business.id}: {e}",
+                        exc_info=True,
+                    )
         except Exception:
             logger.exception("Auto-responder check task failed")

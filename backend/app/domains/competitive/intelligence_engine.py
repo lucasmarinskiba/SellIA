@@ -22,28 +22,28 @@ logger = get_logger(__name__)
 
 # Regex para extraer precios de HTML/texto
 _PRICE_PATTERNS = [
-    re.compile(r'\$\s*([\d.,]+)', re.IGNORECASE),
-    re.compile(r'([\d.,]+)\s*(?:USD|ARS|USD\$|ARS\$)', re.IGNORECASE),
-    re.compile(r'precio[:\s]*\$?\s*([\d.,]+)', re.IGNORECASE),
-    re.compile(r'([\d.,]+)\s*pesos', re.IGNORECASE),
+    re.compile(r"\$\s*([\d.,]+)", re.IGNORECASE),
+    re.compile(r"([\d.,]+)\s*(?:USD|ARS|USD\$|ARS\$)", re.IGNORECASE),
+    re.compile(r"precio[:\s]*\$?\s*([\d.,]+)", re.IGNORECASE),
+    re.compile(r"([\d.,]+)\s*pesos", re.IGNORECASE),
 ]
 
 # Regex para detectar promociones
 _PROMO_PATTERNS = [
-    re.compile(r'2x1', re.IGNORECASE),
-    re.compile(r'50%\s*off', re.IGNORECASE),
-    re.compile(r'descuento\s+del?\s+\d+%', re.IGNORECASE),
-    re.compile(r'promo', re.IGNORECASE),
-    re.compile(r'oferta', re.IGNORECASE),
-    re.compile(r'envio\s+gratis', re.IGNORECASE),
-    re.compile(r'cuotas?\s+sin\s+interes', re.IGNORECASE),
+    re.compile(r"2x1", re.IGNORECASE),
+    re.compile(r"50%\s*off", re.IGNORECASE),
+    re.compile(r"descuento\s+del?\s+\d+%", re.IGNORECASE),
+    re.compile(r"promo", re.IGNORECASE),
+    re.compile(r"oferta", re.IGNORECASE),
+    re.compile(r"envio\s+gratis", re.IGNORECASE),
+    re.compile(r"cuotas?\s+sin\s+interes", re.IGNORECASE),
 ]
 
 
 def _extract_prices(text: str) -> dict[str, str]:
     """Extrae precios de texto crudo usando regex."""
     prices: dict[str, str] = {}
-    lines = text.split('\n')
+    lines = text.split("\n")
     for line in lines:
         line = line.strip()
         if not line:
@@ -54,7 +54,7 @@ def _extract_prices(text: str) -> dict[str, str]:
                 # Usar la linea como clave aproximada del producto
                 key = line[:80].strip()
                 for m in matches:
-                    prices[key] = m.replace('.', '').replace(',', '.')
+                    prices[key] = m.replace(".", "").replace(",", ".")
                 break
     return prices
 
@@ -71,11 +71,11 @@ def _detect_promotions(text: str) -> list[str]:
 def _normalize_price(value: str) -> float | None:
     """Normaliza un string de precio a float."""
     try:
-        cleaned = value.replace('$', '').replace(' ', '').replace(',', '.')
+        cleaned = value.replace("$", "").replace(" ", "").replace(",", ".")
         # Manejar miles con punto
-        if cleaned.count('.') > 1:
-            parts = cleaned.split('.')
-            cleaned = ''.join(parts[:-1]) + '.' + parts[-1]
+        if cleaned.count(".") > 1:
+            parts = cleaned.split(".")
+            cleaned = "".join(parts[:-1]) + "." + parts[-1]
         return float(cleaned)
     except Exception:
         logger.exception("_normalize_price: error inesperado")
@@ -99,7 +99,7 @@ class CompetitiveIntelligenceEngine:
             competitor_name=competitor_name,
             competitor_url=competitor_url,
             products_to_track=products_to_track or [],
-            status='active',
+            status="active",
         )
         self.db.add(monitor)
         await self.db.commit()
@@ -145,10 +145,12 @@ class CompetitiveIntelligenceEngine:
 
             monitor.last_scraped_at = datetime.now(UTC)
             monitor.last_snapshot = snapshot
-            monitor.status = 'active'
+            monitor.status = "active"
             await self.db.commit()
 
-            logger.info(f"Scrape exitoso: {monitor.competitor_name} — {len(prices)} precios, {len(promos)} promos")
+            logger.info(
+                f"Scrape exitoso: {monitor.competitor_name} — {len(prices)} precios, {len(promos)} promos"
+            )
             return {
                 "monitor_id": monitor_id,
                 "prices_found": prices,
@@ -157,12 +159,14 @@ class CompetitiveIntelligenceEngine:
                 "status": "ok",
             }
         except httpx.HTTPStatusError as e:
-            monitor.status = 'error'
+            monitor.status = "error"
             await self.db.commit()
-            logger.error(f"Scrape HTTP error {monitor.competitor_url}: {e.response.status_code}")
+            logger.error(
+                f"Scrape HTTP error {monitor.competitor_url}: {e.response.status_code}"
+            )
             return {"error": f"HTTP {e.response.status_code}", "status": "error"}
         except Exception as e:
-            monitor.status = 'error'
+            monitor.status = "error"
             await self.db.commit()
             logger.exception(f"Scrape error {monitor.competitor_url}")
             return {"error": str(e), "status": "error"}
@@ -170,10 +174,9 @@ class CompetitiveIntelligenceEngine:
     async def detect_changes(self, business_id: uuid.UUID) -> list[dict[str, Any]]:
         """Compara el ultimo snapshot con el anterior y detecta cambios."""
         result = await self.db.execute(
-            select(CompetitiveMonitor)
-            .where(
+            select(CompetitiveMonitor).where(
                 CompetitiveMonitor.business_id == business_id,
-                CompetitiveMonitor.status == 'active',
+                CompetitiveMonitor.status == "active",
             )
         )
         monitors = result.scalars().all()
@@ -198,79 +201,99 @@ class CompetitiveIntelligenceEngine:
             for product, price_str in current_prices.items():
                 current_price = _normalize_price(price_str)
                 prev_price_str = prev_prices.get(product)
-                prev_price = _normalize_price(prev_price_str) if prev_price_str else None
+                prev_price = (
+                    _normalize_price(prev_price_str) if prev_price_str else None
+                )
 
                 if current_price is None:
                     continue
 
                 if prev_price is None:
-                    changes.append({
-                        "change_type": "new_product",
-                        "severity": "info",
-                        "competitor_name": monitor.competitor_name,
-                        "product_name": product,
-                        "old_value": None,
-                        "new_value": price_str,
-                        "diff_percent": None,
-                        "detected_at": datetime.now(UTC),
-                    })
+                    changes.append(
+                        {
+                            "change_type": "new_product",
+                            "severity": "info",
+                            "competitor_name": monitor.competitor_name,
+                            "product_name": product,
+                            "old_value": None,
+                            "new_value": price_str,
+                            "diff_percent": None,
+                            "detected_at": datetime.now(UTC),
+                        }
+                    )
                     continue
 
                 if current_price < prev_price:
-                    diff = ((prev_price - current_price) / prev_price) * 100 if prev_price else 0
+                    diff = (
+                        ((prev_price - current_price) / prev_price) * 100
+                        if prev_price
+                        else 0
+                    )
                     severity = "critical" if diff > 20 else "warning"
-                    changes.append({
-                        "change_type": "price_down",
-                        "severity": severity,
-                        "competitor_name": monitor.competitor_name,
-                        "product_name": product,
-                        "old_value": prev_price_str,
-                        "new_value": price_str,
-                        "diff_percent": round(diff, 2),
-                        "detected_at": datetime.now(UTC),
-                    })
+                    changes.append(
+                        {
+                            "change_type": "price_down",
+                            "severity": severity,
+                            "competitor_name": monitor.competitor_name,
+                            "product_name": product,
+                            "old_value": prev_price_str,
+                            "new_value": price_str,
+                            "diff_percent": round(diff, 2),
+                            "detected_at": datetime.now(UTC),
+                        }
+                    )
                 elif current_price > prev_price:
-                    diff = ((current_price - prev_price) / prev_price) * 100 if prev_price else 0
-                    changes.append({
-                        "change_type": "price_up",
-                        "severity": "info",
-                        "competitor_name": monitor.competitor_name,
-                        "product_name": product,
-                        "old_value": prev_price_str,
-                        "new_value": price_str,
-                        "diff_percent": round(diff, 2),
-                        "detected_at": datetime.now(UTC),
-                    })
+                    diff = (
+                        ((current_price - prev_price) / prev_price) * 100
+                        if prev_price
+                        else 0
+                    )
+                    changes.append(
+                        {
+                            "change_type": "price_up",
+                            "severity": "info",
+                            "competitor_name": monitor.competitor_name,
+                            "product_name": product,
+                            "old_value": prev_price_str,
+                            "new_value": price_str,
+                            "diff_percent": round(diff, 2),
+                            "detected_at": datetime.now(UTC),
+                        }
+                    )
 
             # Detectar nuevas promociones
             current_promos = set(snapshot.get("promotions", []))
             prev_promos = set(prev_snapshot.get("promotions", []))
             new_promos = current_promos - prev_promos
             for promo in new_promos:
-                changes.append({
-                    "change_type": "promo_started",
-                    "severity": "warning",
-                    "competitor_name": monitor.competitor_name,
-                    "product_name": None,
-                    "old_value": None,
-                    "new_value": promo,
-                    "diff_percent": None,
-                    "detected_at": datetime.now(UTC),
-                })
+                changes.append(
+                    {
+                        "change_type": "promo_started",
+                        "severity": "warning",
+                        "competitor_name": monitor.competitor_name,
+                        "product_name": None,
+                        "old_value": None,
+                        "new_value": promo,
+                        "diff_percent": None,
+                        "detected_at": datetime.now(UTC),
+                    }
+                )
 
             # Detectar productos fuera de stock (desaparecidos del snapshot)
             gone_products = set(prev_prices.keys()) - set(current_prices.keys())
             for product in gone_products:
-                changes.append({
-                    "change_type": "out_of_stock",
-                    "severity": "info",
-                    "competitor_name": monitor.competitor_name,
-                    "product_name": product,
-                    "old_value": prev_prices.get(product),
-                    "new_value": None,
-                    "diff_percent": None,
-                    "detected_at": datetime.now(UTC),
-                })
+                changes.append(
+                    {
+                        "change_type": "out_of_stock",
+                        "severity": "info",
+                        "competitor_name": monitor.competitor_name,
+                        "product_name": product,
+                        "old_value": prev_prices.get(product),
+                        "new_value": None,
+                        "diff_percent": None,
+                        "detected_at": datetime.now(UTC),
+                    }
+                )
 
         return changes
 
@@ -312,12 +335,12 @@ class CompetitiveIntelligenceEngine:
             options: list[str] = []
             risk_note = None
             if suggestion:
-                lines = suggestion.split('\n')
+                lines = suggestion.split("\n")
                 for line in lines:
                     stripped = line.strip()
-                    if stripped.startswith(('1.', '2.', '3.', '4.')):
+                    if stripped.startswith(("1.", "2.", "3.", "4.")):
                         options.append(stripped)
-                    elif 'riesgo' in stripped.lower() or 'risk' in stripped.lower():
+                    elif "riesgo" in stripped.lower() or "risk" in stripped.lower():
                         risk_note = stripped
 
             return {
@@ -340,7 +363,9 @@ class CompetitiveIntelligenceEngine:
                 "risk_note": "Riesgo de matching: Erosion de margen 15%",
             }
 
-    async def get_intelligence_dashboard(self, business_id: uuid.UUID) -> dict[str, Any]:
+    async def get_intelligence_dashboard(
+        self, business_id: uuid.UUID
+    ) -> dict[str, Any]:
         """Retorna todo el estado de inteligencia competitiva para un negocio."""
         result = await self.db.execute(
             select(CompetitiveMonitor)
@@ -381,7 +406,9 @@ class CompetitiveIntelligenceEngine:
             "strategies": strategies,
         }
 
-    async def create_alert(self, business_id: uuid.UUID, change: dict[str, Any]) -> Alert:
+    async def create_alert(
+        self, business_id: uuid.UUID, change: dict[str, Any]
+    ) -> Alert:
         """Crea una alerta en el sistema para notificar al usuario."""
         change_type = change.get("change_type", "cambio")
         competitor = change.get("competitor_name", "Competidor")

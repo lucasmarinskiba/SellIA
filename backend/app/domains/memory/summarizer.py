@@ -29,7 +29,7 @@ _SUMMARY_PROMPT = (
 _FACT_EXTRACTION_PROMPT = (
     "Extrae hechos clave de este cliente: preferencias, objeciones, presupuesto, "
     "canal preferido, horario ideal, historial de compras, pain points. "
-    "Devuelve JSON con formato: {\"facts\": [{\"type\": \"...\", \"content\": \"...\", \"confidence\": 0.9}]}\n\n"
+    'Devuelve JSON con formato: {"facts": [{"type": "...", "content": "...", "confidence": 0.9}]}\n\n'
     "Conversación:\n{conversation_text}\n\n"
     "JSON:"
 )

@@ -37,7 +37,11 @@ router = APIRouter(prefix="/{business_id}/ledger", tags=["Ledger"])
 
 def _month_range(month: int, year: int) -> tuple[datetime, datetime]:
     start = datetime(year, month, 1, tzinfo=UTC)
-    end = datetime(year + 1, 1, 1, tzinfo=UTC) if month == 12 else datetime(year, month + 1, 1, tzinfo=UTC)
+    end = (
+        datetime(year + 1, 1, 1, tzinfo=UTC)
+        if month == 12
+        else datetime(year, month + 1, 1, tzinfo=UTC)
+    )
     return start, end
 
 
@@ -46,7 +50,9 @@ def _handle(exc: Exception) -> HTTPException:
         return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
     if isinstance(exc, LedgerError):
         return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
-    return HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
+    return HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -72,7 +78,9 @@ async def list_accounts(
     return await LedgerService(db).get_accounts(business_id, active_only=active_only)
 
 
-@router.post("/accounts", response_model=AccountResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/accounts", response_model=AccountResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_account(
     business_id: UUID,
     body: AccountCreate,
@@ -80,7 +88,9 @@ async def create_account(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     try:
-        return await LedgerService(db).create_account(business_id, **body.model_dump(exclude_none=True))
+        return await LedgerService(db).create_account(
+            business_id, **body.model_dump(exclude_none=True)
+        )
     except Exception as e:  # noqa: BLE001
         raise _handle(e)
 
@@ -88,7 +98,11 @@ async def create_account(
 # ---------------------------------------------------------------------------
 # Journal entries
 # ---------------------------------------------------------------------------
-@router.post("/journal-entries", response_model=JournalEntryResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/journal-entries",
+    response_model=JournalEntryResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_journal_entry(
     business_id: UUID,
     body: JournalEntryCreate,
@@ -122,7 +136,9 @@ async def list_journal_entries(
     status_filter: Annotated[str | None, Query(alias="status")] = None,
     limit: Annotated[int, Query(ge=1, le=500)] = 100,
 ):
-    return await LedgerService(db).list_entries(business_id, source=source, status=status_filter, limit=limit)
+    return await LedgerService(db).list_entries(
+        business_id, source=source, status=status_filter, limit=limit
+    )
 
 
 @router.post("/journal-entries/{entry_id}/reverse", response_model=JournalEntryResponse)
@@ -135,7 +151,10 @@ async def reverse_journal_entry(
 ):
     try:
         return await LedgerService(db).reverse_entry(
-            business_id, entry_id, reason=reason, created_by=getattr(current_user, "id", None)
+            business_id,
+            entry_id,
+            reason=reason,
+            created_by=getattr(current_user, "id", None),
         )
     except Exception as e:  # noqa: BLE001
         raise _handle(e)
@@ -210,7 +229,10 @@ async def close_period(
 ):
     try:
         return await LedgerReports(db).close_period(
-            business_id, period_name, user_id=getattr(current_user, "id", None), lock=lock
+            business_id,
+            period_name,
+            user_id=getattr(current_user, "id", None),
+            lock=lock,
         )
     except Exception as e:  # noqa: BLE001
         raise _handle(e)
@@ -254,7 +276,11 @@ async def create_bank_account(
     provider: str | None = None,
 ):
     acc = await ReconciliationService(db).create_bank_account(
-        business_id, name=name, currency=currency, institution=institution, provider=provider
+        business_id,
+        name=name,
+        currency=currency,
+        institution=institution,
+        provider=provider,
     )
     return {"id": str(acc.id), "name": acc.name, "currency": acc.currency}
 
@@ -283,7 +309,9 @@ async def run_reconciliation(
     current_user: Annotated[User, Depends(get_current_user)],
     bank_account_id: UUID | None = None,
 ):
-    return await ReconciliationService(db).run_reconciliation(business_id, bank_account_id)
+    return await ReconciliationService(db).run_reconciliation(
+        business_id, bank_account_id
+    )
 
 
 @router.get("/bank/transactions", response_model=list[BankTransactionResponse])
@@ -300,7 +328,9 @@ async def list_bank_transactions(
     )
 
 
-@router.post("/bank/transactions/{txn_id}/categorize", response_model=JournalEntryResponse)
+@router.post(
+    "/bank/transactions/{txn_id}/categorize", response_model=JournalEntryResponse
+)
 async def categorize_bank_transaction(
     business_id: UUID,
     txn_id: UUID,

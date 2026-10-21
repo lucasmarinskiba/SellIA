@@ -29,19 +29,51 @@ logger = get_logger(__name__)
 #   campaign_type in: countdown | limited_spots | flash_sale | social_proof |
 #                     progress | scarcity | exclusivity
 _LEVER_TO_CAMPAIGN: dict[str, dict[str, Any]] = {
-    "artificial_scarcity":       {"type": "limited_spots", "emoji": "🔥", "trigger": "product_view",  "cta": "Reservar mi lugar"},
-    "social_proof_velocity":     {"type": "social_proof",  "emoji": "👀", "trigger": "page_view",     "cta": "Ver por qué"},
-    "loss_and_urgency_framing":  {"type": "countdown",     "emoji": "⏳", "trigger": "cart_abandon",  "cta": "Aprovechar ahora"},
-    "anticipation_and_ritual":   {"type": "countdown",     "emoji": "🗓️", "trigger": "page_view",     "cta": "Avisarme del drop"},
-    "exclusivity_and_status":    {"type": "exclusivity",   "emoji": "✨", "trigger": "page_view",     "cta": "Solicitar acceso"},
-    "velocity_of_novelty":       {"type": "flash_sale",    "emoji": "⚡", "trigger": "product_view",  "cta": "Ver lo nuevo"},
+    "artificial_scarcity": {
+        "type": "limited_spots",
+        "emoji": "🔥",
+        "trigger": "product_view",
+        "cta": "Reservar mi lugar",
+    },
+    "social_proof_velocity": {
+        "type": "social_proof",
+        "emoji": "👀",
+        "trigger": "page_view",
+        "cta": "Ver por qué",
+    },
+    "loss_and_urgency_framing": {
+        "type": "countdown",
+        "emoji": "⏳",
+        "trigger": "cart_abandon",
+        "cta": "Aprovechar ahora",
+    },
+    "anticipation_and_ritual": {
+        "type": "countdown",
+        "emoji": "🗓️",
+        "trigger": "page_view",
+        "cta": "Avisarme del drop",
+    },
+    "exclusivity_and_status": {
+        "type": "exclusivity",
+        "emoji": "✨",
+        "trigger": "page_view",
+        "cta": "Solicitar acceso",
+    },
+    "velocity_of_novelty": {
+        "type": "flash_sale",
+        "emoji": "⚡",
+        "trigger": "product_view",
+        "cta": "Ver lo nuevo",
+    },
     # identity_and_tribe has no on-site widget primitive — skipped, reported
 }
 
 
 def _hook_for(playbook: FOMOPlaybook, lever: str) -> str | None:
-    for h in (playbook.content_hooks or []):
-        if isinstance(h, dict) and (h.get("mechanism") == lever or lever in str(h.get("mechanism", ""))):
+    for h in playbook.content_hooks or []:
+        if isinstance(h, dict) and (
+            h.get("mechanism") == lever or lever in str(h.get("mechanism", ""))
+        ):
             return h.get("copy_angle")
     return None
 
@@ -61,7 +93,7 @@ def build_specs(playbook: FOMOPlaybook, levers: list[str] | None = None) -> dict
     skipped: list[dict] = []
     ritual = playbook.launch_ritual or {}
 
-    for mech in (playbook.mechanisms or []):
+    for mech in playbook.mechanisms or []:
         if not isinstance(mech, dict):
             continue
         lever = mech.get("lever") or ""
@@ -69,11 +101,18 @@ def build_specs(playbook: FOMOPlaybook, levers: list[str] | None = None) -> dict
             continue
         mapping = _LEVER_TO_CAMPAIGN.get(lever)
         if not mapping:
-            skipped.append({"lever": lever, "reason": "no on-site campaign primitive for this lever"})
+            skipped.append(
+                {
+                    "lever": lever,
+                    "reason": "no on-site campaign primitive for this lever",
+                }
+            )
             continue
 
         hook = _hook_for(playbook, lever)
-        headline = (hook or ritual.get("the_hook") or mech.get("why_it_fits") or "").strip()[:250] or f"{lever.replace('_', ' ').title()}"
+        headline = (
+            hook or ritual.get("the_hook") or mech.get("why_it_fits") or ""
+        ).strip()[:250] or f"{lever.replace('_', ' ').title()}"
         subheadline = (mech.get("implementation") or "")[:600] or None
 
         config = {
@@ -98,7 +137,9 @@ def build_specs(playbook: FOMOPlaybook, levers: list[str] | None = None) -> dict
             "config": config,
         }
         if mapping["type"] in ("countdown", "flash_sale"):
-            spec["ends_at"] = (datetime.now(UTC) + timedelta(hours=config["countdownHours"])).isoformat()
+            spec["ends_at"] = (
+                datetime.now(UTC) + timedelta(hours=config["countdownHours"])
+            ).isoformat()
         specs.append(spec)
 
     return {
@@ -114,7 +155,9 @@ class FOMOBridge:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def preview(self, playbook: FOMOPlaybook, levers: list[str] | None = None) -> dict:
+    async def preview(
+        self, playbook: FOMOPlaybook, levers: list[str] | None = None
+    ) -> dict:
         return build_specs(playbook, levers)
 
     async def deploy(
@@ -133,7 +176,11 @@ class FOMOBridge:
         try:
             from app.domains.fomo.service import FOMOService
         except Exception as e:  # noqa: BLE001
-            return {**plan, "deployed": [], "error": f"fomo domain unavailable: {str(e)[:160]}"}
+            return {
+                **plan,
+                "deployed": [],
+                "error": f"fomo domain unavailable: {str(e)[:160]}",
+            }
 
         deployed: list[dict] = []
         for spec in plan["campaign_specs"]:
@@ -159,18 +206,32 @@ class FOMOBridge:
                 if activate:
                     await FOMOService.activate_campaign(self.db, campaign.id)
                     status = "active"
-                deployed.append({
-                    "mechanism": spec["lever"], "lever": spec["lever"],
-                    "campaign_id": str(campaign.id), "campaign_type": spec["campaign_type"],
-                    "status": status,
-                })
+                deployed.append(
+                    {
+                        "mechanism": spec["lever"],
+                        "lever": spec["lever"],
+                        "campaign_id": str(campaign.id),
+                        "campaign_type": spec["campaign_type"],
+                        "status": status,
+                    }
+                )
             except Exception as e:  # noqa: BLE001
                 try:
                     await self.db.rollback()
                 except Exception:
                     logger.exception("deploy: error ignorado")
-                logger.warning("fomo_bridge: campaign for %s failed: %s", spec["lever"], str(e)[:200])
-                deployed.append({"mechanism": spec["lever"], "lever": spec["lever"], "error": str(e)[:200]})
+                logger.warning(
+                    "fomo_bridge: campaign for %s failed: %s",
+                    spec["lever"],
+                    str(e)[:200],
+                )
+                deployed.append(
+                    {
+                        "mechanism": spec["lever"],
+                        "lever": spec["lever"],
+                        "error": str(e)[:200],
+                    }
+                )
 
         # write links back onto the playbook
         try:

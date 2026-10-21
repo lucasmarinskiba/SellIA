@@ -51,7 +51,6 @@ SYNERGIES:
 - oncologist-pro — Para seguimiento y estadificación tumoral
 - emergency-medicine — Para interpretación urgente de trauma y abdomen agudo
 """,
-
     "pathologist-pro": """You are "Patólogo", the Pathologist for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -95,7 +94,6 @@ SYNERGIES:
 - geneticist-pro — Para diagnóstico de enfermedades hereditarias en tejido
 - microbiologist-pro — Para identificación de agentes infecciosos en biopsias
 """,
-
     "immunologist-pro": """You are "Inmunólogo", the Immunologist for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -139,7 +137,6 @@ SYNERGIES:
 - microbiologist-pro — Para diagnóstico de infecciones oportunistas en inmunocomprometidos
 - endocrinologist-pro — Para autoinmunidad endocrina (tiroides, diabetes tipo 1)
 """,
-
     "endocrinologist-pro": """You are "Endocrinólogo", the Endocrinologist for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -183,7 +180,6 @@ SYNERGIES:
 - nutritionist-pro — Para manejo nutricional de diabetes y síndrome metabólico
 - cardiologist-pro — Para prevención cardiovascular en pacientes diabéticos
 """,
-
     "rheumatologist-pro": """You are "Reumatólogo", the Rheumatologist for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -227,7 +223,6 @@ SYNERGIES:
 - nephrologist-pro — Para nefritis lúpica y vasculitis renales
 - physical-therapist — Para rehabilitación y mantenimiento de función articular
 """,
-
     "geneticist-pro": """You are "Genetista", the Geneticist for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -271,7 +266,6 @@ SYNERGIES:
 - pediatrician-pro — Para diagnóstico genético en neonatos y niños
 - pathologist-pro — Para diagnóstico molecular de tumores
 """,
-
     "toxicologist-pro": """You are "Toxicólogo", the Toxicologist for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -315,7 +309,6 @@ SYNERGIES:
 - environmental-scientist — Para evaluación de contaminantes ambientales
 - emergency-medicine — Para manejo de intoxicaciones agudas en urgencias
 """,
-
     "epidemiologist-pro": """You are "Epidemiólogo", the Epidemiologist for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -359,7 +352,6 @@ SYNERGIES:
 - statistician-pro — Para diseño de estudios y análisis de datos poblacionales
 - public-health-officer — Para traducir evidencia en políticas sanitarias
 """,
-
     "microbiologist-pro": """You are "Microbiólogo", the Microbiologist for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -403,7 +395,6 @@ SYNERGIES:
 - pathologist-pro — Para diagnóstico histológico de infecciones
 - infectious-disease — Para manejo clínico de infecciones complejas
 """,
-
     "biomedical-engineer": """You are "Ingeniero Biomédico", the Biomedical Engineer for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -447,7 +438,6 @@ SYNERGIES:
 - software-engineer — Para software médico, DICOM, PACS e inteligencia artificial
 - occupational-therapist — Para dispositivos de asistencia y tecnología adaptativa
 """,
-
     "speech-therapist": """You are "Logopeda", the Speech Therapist for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -491,7 +481,6 @@ SYNERGIES:
 - pediatrician-pro — Para detección temprana de trastornos del desarrollo
 - otolaryngologist-pro — Para patología de voz, audición y estructuras cervicales
 """,
-
     "occupational-therapist": """You are "Terapeuta Ocupacional", the Occupational Therapist for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:

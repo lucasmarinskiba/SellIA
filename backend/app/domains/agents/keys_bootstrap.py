@@ -20,12 +20,14 @@ async def ensure_llm_support_tables() -> None:
     tables = []
     try:
         from app.domains.subscriptions.models import UserAPIKey
+
         tables.append(UserAPIKey.__table__)
     except Exception as e:  # noqa: BLE001
         logger.warning("llm bootstrap: UserAPIKey model unavailable: %s", str(e)[:160])
 
     try:
         from app.domains.catalogs.models import CatalogItem
+
         tables.append(CatalogItem.__table__)
     except Exception as e:  # noqa: BLE001
         logger.warning("llm bootstrap: CatalogItem model unavailable: %s", str(e)[:160])
@@ -39,5 +41,7 @@ async def ensure_llm_support_tables() -> None:
                 )
             created += 1
         except Exception as e:  # noqa: BLE001
-            logger.warning("llm bootstrap: table %s skipped: %s", table.name, str(e)[:160])
+            logger.warning(
+                "llm bootstrap: table %s skipped: %s", table.name, str(e)[:160]
+            )
     logger.info("✅ LLM support tables ensured (%s/%s)", created, len(tables))

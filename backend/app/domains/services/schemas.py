@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # ========== Service Catalog Item Extra Data ==========
 
+
 class ServiceItemConfig(BaseModel):
     modalities: list[str] = Field(default_factory=list)
     solution_types: list[str] = Field(default_factory=list)
@@ -24,6 +25,7 @@ class ServiceItemConfig(BaseModel):
 
 
 # ========== Service Delivery Schemas ==========
+
 
 class ServiceDeliveryCreate(BaseModel):
     order_id: UUID
@@ -90,6 +92,7 @@ class ServiceDeliveryResponse(BaseModel):
 
 
 # ========== Appointment Schemas ==========
+
 
 class AppointmentCreate(BaseModel):
     service_delivery_id: UUID | None = None

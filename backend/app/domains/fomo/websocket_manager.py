@@ -54,7 +54,11 @@ class ConnectionManager:
             self.landing_connections.discard(c)
 
     async def broadcast_dashboard(self, data: dict, user_id: str | None = None):
-        targets = {user_id: self.dashboard_connections[user_id]} if user_id else self.dashboard_connections
+        targets = (
+            {user_id: self.dashboard_connections[user_id]}
+            if user_id
+            else self.dashboard_connections
+        )
         dead = set()
         for uid, conn in targets.items():
             try:

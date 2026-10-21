@@ -17,7 +17,9 @@ from app.domains.users.models import User
 router = APIRouter(prefix="/api/v1", tags=["compliance"])
 
 
-async def _get_business_for_user(business_id: UUID, user: User, db: AsyncSession) -> Business:
+async def _get_business_for_user(
+    business_id: UUID, user: User, db: AsyncSession
+) -> Business:
     """Same convention as websites.py/catalog.py/channels.py/conversations.py.
 
     Every route below had zero authentication until this fix -- anyone
@@ -57,7 +59,9 @@ async def set_consent(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
-    return await ComplianceService.set_consent(business_id, customer_id, request.consent_type, request.consented, db)
+    return await ComplianceService.set_consent(
+        business_id, customer_id, request.consent_type, request.consented, db
+    )
 
 
 @router.post("/customers/{customer_id}/export-data")
@@ -69,7 +73,9 @@ async def request_export(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
-    return await ComplianceService.request_data_export(business_id, customer_id, request.export_format, db)
+    return await ComplianceService.request_data_export(
+        business_id, customer_id, request.export_format, db
+    )
 
 
 @router.post("/customers/{customer_id}/delete-data")
@@ -81,7 +87,9 @@ async def request_deletion(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
-    return await ComplianceService.request_data_deletion(business_id, customer_id, request.deletion_type, db)
+    return await ComplianceService.request_data_deletion(
+        business_id, customer_id, request.deletion_type, db
+    )
 
 
 @router.get("/customers/{customer_id}/consent-status")

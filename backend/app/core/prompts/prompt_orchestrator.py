@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class PromptExecution:
     """Track a single prompt execution."""
+
     prompt_id: str
     execution_id: str
     context_vars: dict[str, Any]
@@ -56,7 +57,9 @@ class PromptOrchestrator:
 
         return prompt_text
 
-    def validate_context(self, prompt: Any, context_vars: dict[str, Any]) -> tuple[bool, list[str]]:
+    def validate_context(
+        self, prompt: Any, context_vars: dict[str, Any]
+    ) -> tuple[bool, list[str]]:
         """Validate that all required context variables are provided."""
         missing_vars = []
 
@@ -67,7 +70,9 @@ class PromptOrchestrator:
         is_valid = len(missing_vars) == 0
         return is_valid, missing_vars
 
-    def execute(self, prompt: Any, context_vars: dict[str, Any], execution_id: str | None = None) -> dict[str, Any]:
+    def execute(
+        self, prompt: Any, context_vars: dict[str, Any], execution_id: str | None = None
+    ) -> dict[str, Any]:
         """Execute a prompt with context injection."""
         import time
         import uuid
@@ -110,7 +115,7 @@ class PromptOrchestrator:
         # Record execution
         duration_ms = (time.time() - start_time) * 1000
         execution = PromptExecution(
-            prompt_id=getattr(prompt, 'id', 'unknown'),
+            prompt_id=getattr(prompt, "id", "unknown"),
             execution_id=execution_id,
             context_vars=context_vars,
             executed_prompt_text=executed_prompt_text if success else "",
@@ -118,18 +123,18 @@ class PromptOrchestrator:
             execution_timestamp=utc_now().isoformat(),
             duration_ms=duration_ms,
             success=success,
-            error_message=error_message
+            error_message=error_message,
         )
         self.execution_history.append(execution)
 
         return {
-            'execution_id': execution_id,
-            'prompt_id': getattr(prompt, 'id', 'unknown'),
-            'success': success,
-            'result': result_text,
-            'error': error_message,
-            'duration_ms': duration_ms,
-            'timestamp': execution.execution_timestamp
+            "execution_id": execution_id,
+            "prompt_id": getattr(prompt, "id", "unknown"),
+            "success": success,
+            "result": result_text,
+            "error": error_message,
+            "duration_ms": duration_ms,
+            "timestamp": execution.execution_timestamp,
         }
 
     def _call_llm(self, prompt_text: str) -> str:
@@ -141,11 +146,9 @@ class PromptOrchestrator:
             # This is a placeholder — implement with your LLM client
             # Example: Claude API, OpenAI, etc.
             response = self.llm_client.generate(
-                prompt=prompt_text,
-                max_tokens=2000,
-                temperature=0.7
+                prompt=prompt_text, max_tokens=2000, temperature=0.7
             )
-            return response.get('text', '')
+            return response.get("text", "")
         except Exception as e:
             logger.error(f"LLM execution error: {e}")
             raise
@@ -155,9 +158,9 @@ class PromptOrchestrator:
         results = []
 
         for prompt_config in prompts:
-            prompt = prompt_config.get('prompt')
-            context_vars = prompt_config.get('context_vars', {})
-            execution_id = prompt_config.get('execution_id')
+            prompt = prompt_config.get("prompt")
+            context_vars = prompt_config.get("context_vars", {})
+            execution_id = prompt_config.get("execution_id")
 
             result = self.execute(prompt, context_vars, execution_id)
             results.append(result)
@@ -165,7 +168,9 @@ class PromptOrchestrator:
         logger.info(f"Batch executed {len(results)} prompts")
         return results
 
-    def get_execution_history(self, prompt_id: str | None = None, limit: int = 100) -> list[dict[str, Any]]:
+    def get_execution_history(
+        self, prompt_id: str | None = None, limit: int = 100
+    ) -> list[dict[str, Any]]:
         """Retrieve execution history."""
         history = self.execution_history
 
@@ -173,24 +178,30 @@ class PromptOrchestrator:
             history = [e for e in history if e.prompt_id == prompt_id]
 
         # Return most recent first
-        history = sorted(history, key=lambda x: x.execution_timestamp, reverse=True)[:limit]
+        history = sorted(history, key=lambda x: x.execution_timestamp, reverse=True)[
+            :limit
+        ]
 
         return [
             {
-                'execution_id': e.execution_id,
-                'prompt_id': e.prompt_id,
-                'timestamp': e.execution_timestamp,
-                'duration_ms': e.duration_ms,
-                'success': e.success,
-                'context_vars': e.context_vars,
-                'result_preview': e.result[:500] if e.result else ""
+                "execution_id": e.execution_id,
+                "prompt_id": e.prompt_id,
+                "timestamp": e.execution_timestamp,
+                "duration_ms": e.duration_ms,
+                "success": e.success,
+                "context_vars": e.context_vars,
+                "result_preview": e.result[:500] if e.result else "",
             }
             for e in history
         ]
 
-    def record_effectiveness(self, execution_id: str, effectiveness_score: float) -> bool:
+    def record_effectiveness(
+        self, execution_id: str, effectiveness_score: float
+    ) -> bool:
         """Record effectiveness of an execution."""
-        execution = next((e for e in self.execution_history if e.execution_id == execution_id), None)
+        execution = next(
+            (e for e in self.execution_history if e.execution_id == execution_id), None
+        )
 
         if not execution:
             return False
@@ -208,7 +219,7 @@ class PromptOrchestrator:
 
         return self.registry.get_recommended_prompts(use_case)
 
-    def search_prompts(self, query: str, search_type: str = 'tag') -> list[str]:
+    def search_prompts(self, query: str, search_type: str = "tag") -> list[str]:
         """Search for prompts."""
         if not self.registry:
             return []
@@ -219,30 +230,44 @@ class PromptOrchestrator:
         """Get statistics on prompt executions."""
         if not self.execution_history:
             return {
-                'total_executions': 0,
-                'successful_executions': 0,
-                'failed_executions': 0,
-                'average_duration_ms': 0,
-                'unique_prompts_executed': 0
+                "total_executions": 0,
+                "successful_executions": 0,
+                "failed_executions": 0,
+                "average_duration_ms": 0,
+                "unique_prompts_executed": 0,
             }
 
         successful = [e for e in self.execution_history if e.success]
         failed = [e for e in self.execution_history if not e.success]
 
-        avg_duration = sum(e.duration_ms for e in self.execution_history) / len(self.execution_history)
+        avg_duration = sum(e.duration_ms for e in self.execution_history) / len(
+            self.execution_history
+        )
         unique_prompts = len({e.prompt_id for e in self.execution_history})
 
         return {
-            'total_executions': len(self.execution_history),
-            'successful_executions': len(successful),
-            'failed_executions': len(failed),
-            'success_rate': len(successful) / len(self.execution_history) if self.execution_history else 0,
-            'average_duration_ms': avg_duration,
-            'unique_prompts_executed': unique_prompts,
-            'execution_timeline': {
-                'oldest': self.execution_history[-1].execution_timestamp if self.execution_history else None,
-                'newest': self.execution_history[0].execution_timestamp if self.execution_history else None
-            }
+            "total_executions": len(self.execution_history),
+            "successful_executions": len(successful),
+            "failed_executions": len(failed),
+            "success_rate": (
+                len(successful) / len(self.execution_history)
+                if self.execution_history
+                else 0
+            ),
+            "average_duration_ms": avg_duration,
+            "unique_prompts_executed": unique_prompts,
+            "execution_timeline": {
+                "oldest": (
+                    self.execution_history[-1].execution_timestamp
+                    if self.execution_history
+                    else None
+                ),
+                "newest": (
+                    self.execution_history[0].execution_timestamp
+                    if self.execution_history
+                    else None
+                ),
+            },
         }
 
     def export_execution_logs(self, filename: str) -> bool:
@@ -250,19 +275,19 @@ class PromptOrchestrator:
         try:
             export_data = [
                 {
-                    'execution_id': e.execution_id,
-                    'prompt_id': e.prompt_id,
-                    'timestamp': e.execution_timestamp,
-                    'success': e.success,
-                    'duration_ms': e.duration_ms,
-                    'context_vars': e.context_vars,
-                    'result': e.result,
-                    'error': e.error_message
+                    "execution_id": e.execution_id,
+                    "prompt_id": e.prompt_id,
+                    "timestamp": e.execution_timestamp,
+                    "success": e.success,
+                    "duration_ms": e.duration_ms,
+                    "context_vars": e.context_vars,
+                    "result": e.result,
+                    "error": e.error_message,
                 }
                 for e in self.execution_history
             ]
 
-            with open(filename, 'w') as f:
+            with open(filename, "w") as f:
                 json.dump(export_data, f, indent=2)
 
             logger.info(f"Exported execution logs to: {filename}")

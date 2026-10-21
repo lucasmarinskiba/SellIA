@@ -82,15 +82,19 @@ class KeywordService:
     async def get_trending_keywords(self, business_id: uuid.UUID) -> list[Keyword]:
         """Get rising trend keywords."""
         keywords = (
-            await self.db.execute(
-                select(Keyword).where(
-                    and_(
-                        Keyword.business_id == business_id,
-                        Keyword.trend == "rising",
+            (
+                await self.db.execute(
+                    select(Keyword).where(
+                        and_(
+                            Keyword.business_id == business_id,
+                            Keyword.trend == "rising",
+                        )
                     )
                 )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return keywords
 
 
@@ -158,10 +162,16 @@ class PageOptimizationService:
     async def seo_health(self, business_id: uuid.UUID) -> dict:
         """Get overall SEO health."""
         pages = (
-            await self.db.execute(
-                select(PageOptimization).where(PageOptimization.business_id == business_id)
+            (
+                await self.db.execute(
+                    select(PageOptimization).where(
+                        PageOptimization.business_id == business_id
+                    )
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         total_pages = len(pages)
         indexed_pages = sum(1 for p in pages if p.indexed)
@@ -175,7 +185,9 @@ class PageOptimizationService:
         high = sum(1 for p in pages if 30 <= p.optimization_score < 60)
 
         return {
-            "overall_score": sum(p.optimization_score for p in pages) // total_pages if pages else 0,
+            "overall_score": (
+                sum(p.optimization_score for p in pages) // total_pages if pages else 0
+            ),
             "indexed_pages": indexed_pages,
             "total_pages": total_pages,
             "avg_page_speed_ms": avg_speed,
@@ -241,14 +253,21 @@ class CompetitorAnalysisService:
         await self.db.commit()
         return analysis
 
-    async def list_competitors(self, business_id: uuid.UUID) -> list[CompetitorAnalysis]:
+    async def list_competitors(
+        self, business_id: uuid.UUID
+    ) -> list[CompetitorAnalysis]:
         """List analyzed competitors."""
         competitors = (
-            await self.db.execute(
-                select(CompetitorAnalysis).where(CompetitorAnalysis.business_id == business_id)
-                .order_by(desc(CompetitorAnalysis.domain_authority))
+            (
+                await self.db.execute(
+                    select(CompetitorAnalysis)
+                    .where(CompetitorAnalysis.business_id == business_id)
+                    .order_by(desc(CompetitorAnalysis.domain_authority))
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return competitors
 
 
@@ -291,7 +310,9 @@ class SEORecommendationService:
         priority: str | None = None,
     ) -> list[SEORecommendation]:
         """List recommendations."""
-        query = select(SEORecommendation).where(SEORecommendation.business_id == business_id)
+        query = select(SEORecommendation).where(
+            SEORecommendation.business_id == business_id
+        )
         if status:
             query = query.where(SEORecommendation.status == status)
         if priority:
@@ -309,7 +330,9 @@ class SEORecommendationService:
         """Update recommendation status."""
         rec = (
             await self.db.execute(
-                select(SEORecommendation).where(SEORecommendation.id == recommendation_id)
+                select(SEORecommendation).where(
+                    SEORecommendation.id == recommendation_id
+                )
             )
         ).scalar_one_or_none()
         if not rec:

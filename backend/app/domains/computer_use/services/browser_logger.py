@@ -66,14 +66,19 @@ class BrowserLogger:
         page.on("response", self._response_handler)
 
         # Page error
-        page.on("pageerror", lambda err: self.console_logs.append(ConsoleLog(
-            level="pageerror",
-            text=str(err),
-            source="page",
-            url=page.url,
-            timestamp=datetime.now(UTC),
-            args=[],
-        )))
+        page.on(
+            "pageerror",
+            lambda err: self.console_logs.append(
+                ConsoleLog(
+                    level="pageerror",
+                    text=str(err),
+                    source="page",
+                    url=page.url,
+                    timestamp=datetime.now(UTC),
+                    args=[],
+                )
+            ),
+        )
 
         logger.info("BrowserLogger attached")
 
@@ -101,30 +106,34 @@ class BrowserLogger:
                     logger.exception("_on_console: error inesperado")
                     args.append("[object]")
 
-            self.console_logs.append(ConsoleLog(
-                level=msg.type,
-                text=msg.text[:1000],
-                source=msg.location.get("url", "") if msg.location else "",
-                url=self._page.url if self._page else "",
-                timestamp=datetime.now(UTC),
-                args=args,
-            ))
+            self.console_logs.append(
+                ConsoleLog(
+                    level=msg.type,
+                    text=msg.text[:1000],
+                    source=msg.location.get("url", "") if msg.location else "",
+                    url=self._page.url if self._page else "",
+                    timestamp=datetime.now(UTC),
+                    args=args,
+                )
+            )
         except Exception as e:
             logger.warning(f"Console log processing error: {e}", exc_info=True)
 
     def _on_request(self, request) -> None:
         """Procesa request de red."""
         try:
-            self.network_requests.append(NetworkRequest(
-                method=request.method,
-                url=request.url[:500],
-                status=None,
-                duration_ms=None,
-                request_headers=dict(request.headers),
-                response_headers={},
-                timestamp=datetime.now(UTC),
-                error=None,
-            ))
+            self.network_requests.append(
+                NetworkRequest(
+                    method=request.method,
+                    url=request.url[:500],
+                    status=None,
+                    duration_ms=None,
+                    request_headers=dict(request.headers),
+                    response_headers={},
+                    timestamp=datetime.now(UTC),
+                    error=None,
+                )
+            )
         except Exception as e:
             logger.warning(f"Request processing error: {e}", exc_info=True)
 
@@ -132,7 +141,11 @@ class BrowserLogger:
         """Procesa response de red."""
         try:
             # Find matching request
-            matching = [r for r in self.network_requests if r.url == response.url[:500] and r.status is None]
+            matching = [
+                r
+                for r in self.network_requests
+                if r.url == response.url[:500] and r.status is None
+            ]
             if matching:
                 req = matching[-1]
                 req.status = response.status
@@ -169,8 +182,7 @@ class BrowserLogger:
                 for e in errors[:5]
             ],
             "failed_request_samples": [
-                {"url": r.url[:100], "status": r.status}
-                for r in failed_reqs[:5]
+                {"url": r.url[:100], "status": r.status} for r in failed_reqs[:5]
             ],
         }
 

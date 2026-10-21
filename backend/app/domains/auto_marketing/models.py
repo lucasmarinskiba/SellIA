@@ -1,4 +1,5 @@
 """Phase X8: Auto-Marketing & Growth Agent - SellIA Self-Promotion System."""
+
 import enum
 import uuid
 from datetime import UTC, datetime
@@ -108,7 +109,9 @@ class CustomerSuccessStory(Base):
     # Results (before/after)
     problem_statement = Column(Text)  # What problem did they have?
     solution_applied = Column(Text)  # How SellIA helped
-    result_metrics = Column(JSON)  # {sales_increase: "150%", time_saved: "20 hours/week"}
+    result_metrics = Column(
+        JSON
+    )  # {sales_increase: "150%", time_saved: "20 hours/week"}
     result_summary = Column(String(300))  # Punchy summary
 
     # Content variants
@@ -131,7 +134,9 @@ class GrowthHackingExperiment(Base):
 
     # Experiment definition
     hypothesis = Column(Text)  # "If we post testimonials, engagement will increase 40%"
-    tactic = Column(String(100))  # "customer_testimonials", "short_form_video", "influencer_collab"
+    tactic = Column(
+        String(100)
+    )  # "customer_testimonials", "short_form_video", "influencer_collab"
     channel = Column(Enum(MarketingChannel))
     variant_a = Column(Text)  # Control version
     variant_b = Column(Text)  # Test version

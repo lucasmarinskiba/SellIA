@@ -53,11 +53,13 @@ class MockDecisionContext:
         self.signals[name] = {"value": value, "weight": 1.0}
 
     def add_history(self, event: str, outcome: bool | None = None) -> None:
-        self.history.append({
-            "event": event,
-            "outcome": outcome,
-            "timestamp": utc_now(),
-        })
+        self.history.append(
+            {
+                "event": event,
+                "outcome": outcome,
+                "timestamp": utc_now(),
+            }
+        )
 
 
 # ─────────────────────────────────────────────────────────────────────────

@@ -76,8 +76,7 @@ def capabilities_for(platform: str) -> dict[str, bool]:
 
     return {
         key: any(
-            callable(getattr(connector_cls, method, None))
-            for method in spec["methods"]
+            callable(getattr(connector_cls, method, None)) for method in spec["methods"]
         )
         for key, spec in CAPABILITY_SPECS.items()
     }

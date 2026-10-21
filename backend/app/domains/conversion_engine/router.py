@@ -9,6 +9,7 @@ no dejaban rastro de haber pasado. Ahora start-closing-sequence crea una fila
 real, closing-effectiveness la lee de verdad (404 si no existe, no inventa
 datos), y win-deal actualiza esa misma fila en vez de solo devolver un cálculo.
 """
+
 import uuid
 from datetime import UTC, datetime
 from typing import Annotated
@@ -25,31 +26,111 @@ router = APIRouter(prefix="/api/v1/conversion-engine", tags=["conversion-engine"
 
 CLOSING_SEQUENCES = {
     "pragmatist": {
-        "touch_1": {"type": "email", "delay_hours": 0, "subject": "ROI breakdown: $2.3M revenue increase in 6 months", "focus": "Financial impact + payback period"},
-        "touch_2": {"type": "demo_invite", "delay_hours": 24, "subject": "30-min walkthrough: Your use case, your data", "focus": "Personalized demo for their industry"},
-        "touch_3": {"type": "objection_handling", "delay_hours": 72, "subject": "Questions about implementation timeline?", "focus": "Risk reduction + timeline proof"},
-        "touch_4": {"type": "close", "delay_hours": 168, "subject": "Ready to lock in your pricing?", "focus": "Limited time offer + contract ready"},
+        "touch_1": {
+            "type": "email",
+            "delay_hours": 0,
+            "subject": "ROI breakdown: $2.3M revenue increase in 6 months",
+            "focus": "Financial impact + payback period",
+        },
+        "touch_2": {
+            "type": "demo_invite",
+            "delay_hours": 24,
+            "subject": "30-min walkthrough: Your use case, your data",
+            "focus": "Personalized demo for their industry",
+        },
+        "touch_3": {
+            "type": "objection_handling",
+            "delay_hours": 72,
+            "subject": "Questions about implementation timeline?",
+            "focus": "Risk reduction + timeline proof",
+        },
+        "touch_4": {
+            "type": "close",
+            "delay_hours": 168,
+            "subject": "Ready to lock in your pricing?",
+            "focus": "Limited time offer + contract ready",
+        },
     },
     "skeptic": {
-        "touch_1": {"type": "social_proof", "delay_hours": 0, "subject": "Gartner Leader + Forrester Wave - Here's why", "focus": "Third-party validation"},
-        "touch_2": {"type": "case_study", "delay_hours": 24, "subject": "Enterprise case study: Similar company, 150% ROI", "focus": "Peer success + metrics"},
-        "touch_3": {"type": "technical_dive", "delay_hours": 72, "subject": "Security, compliance, integration deep-dive", "focus": "Technical proof + risk mitigation"},
-        "touch_4": {"type": "close", "delay_hours": 168, "subject": "Executive briefing + pilot pricing", "focus": "Low-risk pilot + flexible terms"},
+        "touch_1": {
+            "type": "social_proof",
+            "delay_hours": 0,
+            "subject": "Gartner Leader + Forrester Wave - Here's why",
+            "focus": "Third-party validation",
+        },
+        "touch_2": {
+            "type": "case_study",
+            "delay_hours": 24,
+            "subject": "Enterprise case study: Similar company, 150% ROI",
+            "focus": "Peer success + metrics",
+        },
+        "touch_3": {
+            "type": "technical_dive",
+            "delay_hours": 72,
+            "subject": "Security, compliance, integration deep-dive",
+            "focus": "Technical proof + risk mitigation",
+        },
+        "touch_4": {
+            "type": "close",
+            "delay_hours": 168,
+            "subject": "Executive briefing + pilot pricing",
+            "focus": "Low-risk pilot + flexible terms",
+        },
     },
     "impulse_buyer": {
-        "touch_1": {"type": "scarcity", "delay_hours": 0, "subject": "⏰ LAST 3 SEATS: Founding member pricing ($99/mo) expires Friday 5pm", "focus": "Urgency + loss aversion"},
-        "touch_2": {"type": "demo_live", "delay_hours": 6, "subject": "Live demo in 2 hours (3 spots left)", "focus": "Immediate action"},
-        "touch_3": {"type": "countdown", "delay_hours": 24, "subject": "24 hours left: Lock in founding price", "focus": "Deadline pressure"},
-        "touch_4": {"type": "final", "delay_hours": 36, "subject": "LAST CHANCE: Pricing reverts in 12 hours", "focus": "Final urgency push"},
+        "touch_1": {
+            "type": "scarcity",
+            "delay_hours": 0,
+            "subject": "⏰ LAST 3 SEATS: Founding member pricing ($99/mo) expires Friday 5pm",
+            "focus": "Urgency + loss aversion",
+        },
+        "touch_2": {
+            "type": "demo_live",
+            "delay_hours": 6,
+            "subject": "Live demo in 2 hours (3 spots left)",
+            "focus": "Immediate action",
+        },
+        "touch_3": {
+            "type": "countdown",
+            "delay_hours": 24,
+            "subject": "24 hours left: Lock in founding price",
+            "focus": "Deadline pressure",
+        },
+        "touch_4": {
+            "type": "final",
+            "delay_hours": 36,
+            "subject": "LAST CHANCE: Pricing reverts in 12 hours",
+            "focus": "Final urgency push",
+        },
     },
 }
 
 MAGNET_STATS = {
-    "ebook": {"estimated_conversion": 0.18, "average_lead_quality": 0.62, "typical_follow_up": "3-day email sequence"},
-    "calculator": {"estimated_conversion": 0.25, "average_lead_quality": 0.78, "typical_follow_up": "1-hour follow-up call offer"},
-    "template": {"estimated_conversion": 0.22, "average_lead_quality": 0.65, "typical_follow_up": "5-email nurture sequence"},
-    "webinar": {"estimated_conversion": 0.15, "average_lead_quality": 0.85, "typical_follow_up": "2-week demo pipeline"},
-    "audit": {"estimated_conversion": 0.12, "average_lead_quality": 0.92, "typical_follow_up": "Custom proposal + 1-on-1"},
+    "ebook": {
+        "estimated_conversion": 0.18,
+        "average_lead_quality": 0.62,
+        "typical_follow_up": "3-day email sequence",
+    },
+    "calculator": {
+        "estimated_conversion": 0.25,
+        "average_lead_quality": 0.78,
+        "typical_follow_up": "1-hour follow-up call offer",
+    },
+    "template": {
+        "estimated_conversion": 0.22,
+        "average_lead_quality": 0.65,
+        "typical_follow_up": "5-email nurture sequence",
+    },
+    "webinar": {
+        "estimated_conversion": 0.15,
+        "average_lead_quality": 0.85,
+        "typical_follow_up": "2-week demo pipeline",
+    },
+    "audit": {
+        "estimated_conversion": 0.12,
+        "average_lead_quality": 0.92,
+        "typical_follow_up": "Custom proposal + 1-on-1",
+    },
 }
 
 
@@ -61,7 +142,9 @@ async def start_closing_sequence(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Start 4-touch multi-channel closing sequence - persiste la secuencia real."""
-    sequence_content = CLOSING_SEQUENCES.get(personality_type, CLOSING_SEQUENCES["pragmatist"])
+    sequence_content = CLOSING_SEQUENCES.get(
+        personality_type, CLOSING_SEQUENCES["pragmatist"]
+    )
 
     record = ConversionSequence(
         id=str(uuid.uuid4()),
@@ -140,9 +223,20 @@ async def get_closing_effectiveness(
     )
     record = result.scalars().first()
     if record is None:
-        raise HTTPException(status_code=404, detail=f"No hay closing sequence para user_id={user_id}")
+        raise HTTPException(
+            status_code=404, detail=f"No hay closing sequence para user_id={user_id}"
+        )
 
-    touches_sent = sum(1 for t in [record.touch_1_sent, record.touch_2_sent, record.touch_3_sent, record.touch_4_sent] if t is not None)
+    touches_sent = sum(
+        1
+        for t in [
+            record.touch_1_sent,
+            record.touch_2_sent,
+            record.touch_3_sent,
+            record.touch_4_sent,
+        ]
+        if t is not None
+    )
 
     return {
         "user_id": user_id,
@@ -176,9 +270,17 @@ async def record_deal_won(
     )
     record = result.scalars().first()
     if record is None:
-        raise HTTPException(status_code=404, detail=f"No hay closing sequence activa para user_id={user_id}")
+        raise HTTPException(
+            status_code=404,
+            detail=f"No hay closing sequence activa para user_id={user_id}",
+        )
 
-    attribution = ["scarcity_fomo", "personality_targeting", "personalized_demo", "objection_handling"][which_touch_converted - 1]
+    attribution = [
+        "scarcity_fomo",
+        "personality_targeting",
+        "personalized_demo",
+        "objection_handling",
+    ][which_touch_converted - 1]
 
     record.deal_stage = "closed"
     record.contract_signed = True

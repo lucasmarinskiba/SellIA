@@ -28,6 +28,7 @@ async def _get_active_business_ids(db: AsyncSession) -> list[UUID]:
 @shared_task(name="app.tasks.selia_tasks.selia_director_daily")
 def selia_director_daily(business_id: str | None = None):
     """Run daily briefing for a business or all active businesses."""
+
     async def _run_single(bid: UUID):
         async with AsyncSessionLocal() as db:
             director = SellIADirector(db)
@@ -54,6 +55,7 @@ def selia_director_daily(business_id: str | None = None):
 @shared_task(name="app.tasks.selia_tasks.rfm_segmentation")
 def rfm_segmentation(business_id: str | None = None):
     """Calculate RFM segments for all customers of a business or all active businesses."""
+
     async def _run_single(bid: UUID):
         async with AsyncSessionLocal() as db:
             service = RetentionService(db)
@@ -80,6 +82,7 @@ def rfm_segmentation(business_id: str | None = None):
 @shared_task(name="app.tasks.selia_tasks.payment_reminder_check")
 def payment_reminder_check(business_id: str | None = None):
     """Check and send pending payment reminders for a business or all active businesses."""
+
     async def _run_single(bid: UUID):
         async with AsyncSessionLocal() as db:
             service = FinanceService(db)
@@ -103,7 +106,11 @@ def payment_reminder_check(business_id: str | None = None):
                 total_sent += result.get("sent", 0)
             except Exception:
                 logger.exception(f"payment_reminder_check failed for {bid}")
-        return {"status": "ok", "total_sent": total_sent, "total_businesses": len(business_ids)}
+        return {
+            "status": "ok",
+            "total_sent": total_sent,
+            "total_businesses": len(business_ids),
+        }
 
     if business_id:
         return run_async(_run_single(UUID(business_id)))
@@ -113,6 +120,7 @@ def payment_reminder_check(business_id: str | None = None):
 @shared_task(name="app.tasks.selia_tasks.bi_analytics_daily")
 def bi_analytics_daily(business_id: str | None = None):
     """Generate daily BI analytics for a business or all active businesses."""
+
     async def _run_single(bid: UUID):
         async with AsyncSessionLocal() as db:
             service = BiService(db)

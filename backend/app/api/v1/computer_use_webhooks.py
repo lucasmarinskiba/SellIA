@@ -51,6 +51,7 @@ async def _verify_webhook_token(
 
 # ========== WhatsApp ==========
 
+
 @router.post("/webhooks/whatsapp")
 async def whatsapp_webhook(
     payload: dict[str, Any],
@@ -105,11 +106,14 @@ async def whatsapp_webhook(
 
 # ========== Instagram ==========
 
+
 @router.post("/webhooks/instagram")
 async def instagram_webhook(
     payload: dict[str, Any],
     db: Annotated[AsyncSession, Depends(get_db)],
-    _token: Annotated[str, Depends(lambda: _verify_webhook_token(platform="instagram"))],
+    _token: Annotated[
+        str, Depends(lambda: _verify_webhook_token(platform="instagram"))
+    ],
     background_tasks: BackgroundTasks = None,
 ):
     """Webhook de Instagram (DMs + comments)."""
@@ -134,6 +138,7 @@ async def instagram_webhook(
 
 
 # ========== TikTok ==========
+
 
 @router.post("/webhooks/tiktok")
 async def tiktok_webhook(
@@ -165,6 +170,7 @@ async def tiktok_webhook(
 
 # ========== Facebook ==========
 
+
 @router.post("/webhooks/facebook")
 async def facebook_webhook(
     payload: dict[str, Any],
@@ -195,11 +201,14 @@ async def facebook_webhook(
 
 # ========== Mercado Libre ==========
 
+
 @router.post("/webhooks/mercadolibre")
 async def mercadolibre_webhook(
     payload: dict[str, Any],
     db: Annotated[AsyncSession, Depends(get_db)],
-    _token: Annotated[str, Depends(lambda: _verify_webhook_token(platform="mercadolibre"))],
+    _token: Annotated[
+        str, Depends(lambda: _verify_webhook_token(platform="mercadolibre"))
+    ],
     background_tasks: BackgroundTasks = None,
 ):
     """Webhook de Mercado Libre (mensajes)."""
@@ -224,6 +233,7 @@ async def mercadolibre_webhook(
 
 
 # ========== Amazon ==========
+
 
 @router.post("/webhooks/amazon")
 async def amazon_webhook(
@@ -255,6 +265,7 @@ async def amazon_webhook(
 
 # ========== Hotmart ==========
 
+
 @router.post("/webhooks/hotmart")
 async def hotmart_webhook(
     payload: dict[str, Any],
@@ -284,6 +295,7 @@ async def hotmart_webhook(
 
 
 # ========== Background Task ==========
+
 
 async def _process_auto_response(db: AsyncSession, message: IncomingMessage) -> None:
     """

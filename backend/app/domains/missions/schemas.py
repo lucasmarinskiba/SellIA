@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 # ─── MissionStep ───────────────────────────────────────────────────────────────
 
+
 class MissionStepBase(BaseModel):
     step_number: int = 1
     title: str
@@ -48,6 +49,7 @@ class MissionStepRead(MissionStepBase):
 
 
 # ─── Mission ───────────────────────────────────────────────────────────────────
+
 
 class MissionBase(BaseModel):
     title: str
@@ -93,6 +95,7 @@ class MissionRead(MissionBase):
 
 # ─── BusinessDiagnostic ────────────────────────────────────────────────────────
 
+
 class BusinessDiagnosticBase(BaseModel):
     category: str
     severity: str
@@ -124,6 +127,7 @@ class BusinessDiagnosticRead(BusinessDiagnosticBase):
 
 # ─── Playbook ──────────────────────────────────────────────────────────────────
 
+
 class PlaybookStep(BaseModel):
     platform: str
     action_type: str
@@ -146,6 +150,7 @@ class PlaybookRead(BaseModel):
 
 # ─── Mission Launch / Approval ─────────────────────────────────────────────────
 
+
 class MissionLaunchRequest(BaseModel):
     playbook_slug: str | None = None
     custom_description: str | None = None
@@ -159,6 +164,7 @@ class MissionApproveRequest(BaseModel):
 
 
 # ─── Diagnostic Run ────────────────────────────────────────────────────────────
+
 
 class DiagnosticRunRequest(BaseModel):
     business_id: UUID | None = None

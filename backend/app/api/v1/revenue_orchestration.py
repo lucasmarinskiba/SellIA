@@ -17,8 +17,16 @@ async def optimize_deal(
         "deal_id": deal_id,
         "optimized_value": current_value * 1.15,
         "recommendations": [
-            {"type": "scope_expansion", "impact": "+10%", "suggestion": "Add 3-month support"},
-            {"type": "pricing_adjustment", "impact": "+5%", "suggestion": "Annual discount vs monthly"},
+            {
+                "type": "scope_expansion",
+                "impact": "+10%",
+                "suggestion": "Add 3-month support",
+            },
+            {
+                "type": "pricing_adjustment",
+                "impact": "+5%",
+                "suggestion": "Annual discount vs monthly",
+            },
         ],
     }
 

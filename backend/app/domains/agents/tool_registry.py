@@ -27,6 +27,7 @@ logger = get_logger(__name__)
 # Tool input schemas
 # ---------------------------------------------------------------------------
 
+
 class SearchProductsToolInput(BaseModel):
     query: str
     category: str | None = None
@@ -68,6 +69,7 @@ class ScheduleMeetingToolInput(BaseModel):
 # ---------------------------------------------------------------------------
 # Tool implementations
 # ---------------------------------------------------------------------------
+
 
 class SearchProductsTool:
     name = "search_products"
@@ -191,7 +193,9 @@ class GetCustomerHistoryTool:
                     "lead_phone": conv.lead_phone,
                     "lead_source": conv.lead_source,
                     "status": conv.status.value if conv.status else None,
-                    "created_at": conv.created_at.isoformat() if conv.created_at else None,
+                    "created_at": (
+                        conv.created_at.isoformat() if conv.created_at else None
+                    ),
                 }
                 result = await db.execute(
                     select(Message)
@@ -221,7 +225,9 @@ class GetCustomerHistoryTool:
                     "lead_phone": conv.lead_phone,
                     "lead_source": conv.lead_source,
                     "status": conv.status.value if conv.status else None,
-                    "created_at": conv.created_at.isoformat() if conv.created_at else None,
+                    "created_at": (
+                        conv.created_at.isoformat() if conv.created_at else None
+                    ),
                 }
                 result = await db.execute(
                     select(Deal).where(
@@ -378,7 +384,9 @@ class RetrieveDocumentsTool:
         k: int = 3,
     ) -> dict[str, Any]:
         try:
-            results = await document_processor.search_documents(db, business_id, query, k)
+            results = await document_processor.search_documents(
+                db, business_id, query, k
+            )
         except Exception as exc:
             logger.warning(f"Document search failed: {exc}", exc_info=True)
             return {"error": "Document search failed", "details": str(exc)}
@@ -475,6 +483,7 @@ class ScheduleMeetingTool:
 # ---------------------------------------------------------------------------
 # Registry
 # ---------------------------------------------------------------------------
+
 
 class ToolRegistry:
     """Registry of all available tools for the ReAct agent."""

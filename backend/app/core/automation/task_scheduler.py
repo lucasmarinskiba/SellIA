@@ -68,7 +68,9 @@ class TaskScheduler:
                     if task.schedule != "once":
                         task.next_run = self._calculate_next_run(task.schedule)
                     else:
-                        task.enabled = False  # One-time tasks are disabled after execution
+                        task.enabled = (
+                            False  # One-time tasks are disabled after execution
+                        )
 
         logger.debug(f"Tasks due now: {len(tasks_due)}")
         return tasks_due
@@ -156,7 +158,6 @@ def get_default_tasks() -> list[dict[str, Any]]:
             "enabled": True,
             "description": "Publica 2 productos al atardecer",
         },
-
         # ========== INQUIRIES ==========
         {
             "name": "Responder inquiries",
@@ -164,7 +165,6 @@ def get_default_tasks() -> list[dict[str, Any]]:
             "enabled": True,
             "description": "Responde automáticamente a preguntas de clientes",
         },
-
         # ========== EMAILS ==========
         {
             "name": "Enviar campañas (mañana)",
@@ -184,7 +184,6 @@ def get_default_tasks() -> list[dict[str, Any]]:
             "enabled": True,
             "description": "Envía emails de seguimiento",
         },
-
         # ========== INVENTORY ==========
         {
             "name": "Sincronizar inventario",
@@ -192,7 +191,6 @@ def get_default_tasks() -> list[dict[str, Any]]:
             "enabled": True,
             "description": "Sincroniza stock entre plataformas",
         },
-
         # ========== ANALYTICS ==========
         {
             "name": "Monitorear performance",
@@ -200,7 +198,6 @@ def get_default_tasks() -> list[dict[str, Any]]:
             "enabled": True,
             "description": "Extrae métricas de plataformas",
         },
-
         # ========== REPORTS ==========
         {
             "name": "Reporte semanal",
@@ -208,7 +205,6 @@ def get_default_tasks() -> list[dict[str, Any]]:
             "enabled": True,
             "description": "Genera reporte de ventas semanal",
         },
-
         # ========== INFLUENCER ==========
         {
             "name": "Rastrear influencers",
@@ -216,7 +212,6 @@ def get_default_tasks() -> list[dict[str, Any]]:
             "enabled": True,
             "description": "Calcula comisiones de influencers",
         },
-
         # ========== REVIEWS ==========
         {
             "name": "Analizar reviews",
@@ -245,16 +240,20 @@ class SmartScheduler:
         if task_name not in self.performance_history:
             self.performance_history[task_name] = []
 
-        self.performance_history[task_name].append({
-            "timestamp": utc_now(),
-            "execution_time": execution_time,
-            "success": success,
-            "engagement": engagement_metric,
-        })
+        self.performance_history[task_name].append(
+            {
+                "timestamp": utc_now(),
+                "execution_time": execution_time,
+                "success": success,
+                "engagement": engagement_metric,
+            }
+        )
 
         # Keep only last 100 records per task
         if len(self.performance_history[task_name]) > 100:
-            self.performance_history[task_name] = self.performance_history[task_name][-100:]
+            self.performance_history[task_name] = self.performance_history[task_name][
+                -100:
+            ]
 
         # Analyze and potentially adjust schedule
         await self._analyze_and_adjust(task_name)

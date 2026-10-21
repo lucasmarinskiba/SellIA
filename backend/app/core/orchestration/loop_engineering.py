@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 class LoopStatus(str, Enum):
     """Estados loop."""
+
     RUNNING = "running"
     SUCCESS = "success"
     FAILED = "failed"
@@ -25,6 +26,7 @@ class LoopStatus(str, Enum):
 
 class LoopPhase(str, Enum):
     """Fases venta."""
+
     LEAD_CAPTURE = "lead_capture"
     LEAD_QUALIFICATION = "lead_qualification"
     NEGOTIATION = "negotiation"
@@ -86,7 +88,9 @@ class LoopEngineering:
 
             # Chequear límite tiempo
             if elapsed > max_time_seconds:
-                logger.warning(f"Loop {objective} exhausted by time ({elapsed}s > {max_time_seconds}s)")
+                logger.warning(
+                    f"Loop {objective} exhausted by time ({elapsed}s > {max_time_seconds}s)"
+                )
                 loop_log["status"] = LoopStatus.EXHAUSTED.value
                 break
 
@@ -134,11 +138,15 @@ class LoopEngineering:
         loop_log["elapsed_time"] = asyncio.get_event_loop().time() - start_time
 
         self.loops_history.append(loop_log)
-        logger.info(f"Loop {objective} completed: {loop_log['status']} ({iteration} iterations)")
+        logger.info(
+            f"Loop {objective} completed: {loop_log['status']} ({iteration} iterations)"
+        )
 
         return loop_log
 
-    async def run_sales_cycle_with_loops(self, product: dict[str, Any], buyer: dict[str, Any]) -> dict[str, Any]:
+    async def run_sales_cycle_with_loops(
+        self, product: dict[str, Any], buyer: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Ciclo venta completo con Loop Engineering.
 
@@ -238,7 +246,9 @@ class LoopEngineering:
         return cycle_result
 
     # ========== FASE 1: CAPTURE ==========
-    async def _action_capture(self, product: dict[str, Any], buyer: dict[str, Any]) -> dict[str, Any]:
+    async def _action_capture(
+        self, product: dict[str, Any], buyer: dict[str, Any]
+    ) -> dict[str, Any]:
         """Captura lead vía múltiples canales."""
         return {"status": "capturing", "channels": ["whatsapp", "email", "instagram"]}
 
@@ -264,20 +274,28 @@ class LoopEngineering:
         return {"adjustment": "nurture_sequence"}
 
     # ========== FASE 3: NEGOTIATE ==========
-    async def _action_negotiate(self, product: dict[str, Any], buyer: dict[str, Any]) -> dict[str, Any]:
+    async def _action_negotiate(
+        self, product: dict[str, Any], buyer: dict[str, Any]
+    ) -> dict[str, Any]:
         """Negocia deal (price, terms, payment plan)."""
         return {"price_offered": product.get("price"), "terms": "Net 30"}
 
     async def _eval_negotiate(self, result: dict[str, Any]) -> dict[str, Any]:
         """Evaluá: buyer aceptó deal?"""
-        return {"success": True, "deal_agreed": True, "price": result.get("price_offered")}
+        return {
+            "success": True,
+            "deal_agreed": True,
+            "price": result.get("price_offered"),
+        }
 
     async def _correct_negotiate(self, eval_result: dict[str, Any]) -> dict[str, Any]:
         """Corrige: offer payment plan si rechaza price."""
         return {"adjustment": "offer_installments"}
 
     # ========== FASE 4: CLOSING ==========
-    async def _action_close(self, product: dict[str, Any], buyer: dict[str, Any]) -> dict[str, Any]:
+    async def _action_close(
+        self, product: dict[str, Any], buyer: dict[str, Any]
+    ) -> dict[str, Any]:
         """Cierra: firma contrato."""
         return {"contract_sent": True, "signature_requested": True}
 
@@ -290,7 +308,9 @@ class LoopEngineering:
         return {"adjustment": "send_reminder"}
 
     # ========== FASE 5: PAYMENT ==========
-    async def _action_payment(self, product: dict[str, Any], buyer: dict[str, Any]) -> dict[str, Any]:
+    async def _action_payment(
+        self, product: dict[str, Any], buyer: dict[str, Any]
+    ) -> dict[str, Any]:
         """Procesa pago vía Stripe."""
         return {"payment_initiated": True, "intent_id": "pi_12345"}
 
@@ -303,7 +323,9 @@ class LoopEngineering:
         return {"adjustment": "retry_payment"}
 
     # ========== FASE 6: DELIVERY ==========
-    async def _action_delivery(self, product: dict[str, Any], buyer: dict[str, Any]) -> dict[str, Any]:
+    async def _action_delivery(
+        self, product: dict[str, Any], buyer: dict[str, Any]
+    ) -> dict[str, Any]:
         """Entrega producto/acceso."""
         return {"access_granted": True, "onboarding_started": True}
 
@@ -316,7 +338,9 @@ class LoopEngineering:
         return {"adjustment": "resend_access"}
 
     # ========== FASE 7: RETENTION ==========
-    async def _action_retention(self, product: dict[str, Any], buyer: dict[str, Any]) -> dict[str, Any]:
+    async def _action_retention(
+        self, product: dict[str, Any], buyer: dict[str, Any]
+    ) -> dict[str, Any]:
         """Retiene: engagement, upsell, referral."""
         return {"engagement_email_sent": True, "nps_survey_sent": True}
 

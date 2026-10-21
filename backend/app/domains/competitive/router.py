@@ -34,6 +34,7 @@ async def get_db():
 #   Battlecards (existentes)
 # ═══════════════════════════════════════════════════════
 
+
 @router.get("", response_model=list[BattlecardOut])
 async def list_battlecards(
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -62,7 +63,9 @@ async def get_battlecard(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get a single battlecard."""
-    battlecard = await competitive_service.get_battlecard(db, battlecard_id, current_user.id)
+    battlecard = await competitive_service.get_battlecard(
+        db, battlecard_id, current_user.id
+    )
     if not battlecard:
         raise HTTPException(status_code=404, detail="Battlecard no encontrado")
     return battlecard
@@ -76,7 +79,9 @@ async def update_battlecard(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Update a battlecard."""
-    battlecard = await competitive_service.get_battlecard(db, battlecard_id, current_user.id)
+    battlecard = await competitive_service.get_battlecard(
+        db, battlecard_id, current_user.id
+    )
     if not battlecard:
         raise HTTPException(status_code=404, detail="Battlecard no encontrado")
     return await competitive_service.update_battlecard(
@@ -91,7 +96,9 @@ async def delete_battlecard(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Delete a battlecard."""
-    battlecard = await competitive_service.get_battlecard(db, battlecard_id, current_user.id)
+    battlecard = await competitive_service.get_battlecard(
+        db, battlecard_id, current_user.id
+    )
     if not battlecard:
         raise HTTPException(status_code=404, detail="Battlecard no encontrado")
     await competitive_service.delete_battlecard(db, battlecard)
@@ -104,7 +111,9 @@ async def compare_battlecard(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Return structured comparison data for a battlecard."""
-    battlecard = await competitive_service.get_battlecard(db, battlecard_id, current_user.id)
+    battlecard = await competitive_service.get_battlecard(
+        db, battlecard_id, current_user.id
+    )
     if not battlecard:
         raise HTTPException(status_code=404, detail="Battlecard no encontrado")
     return await competitive_service.get_comparison_data(battlecard)
@@ -114,7 +123,10 @@ async def compare_battlecard(
 #   Competitive Intelligence (nuevo)
 # ═══════════════════════════════════════════════════════
 
-@intelligence_router.post("/monitors", response_model=MonitorOut, status_code=status.HTTP_201_CREATED)
+
+@intelligence_router.post(
+    "/monitors", response_model=MonitorOut, status_code=status.HTTP_201_CREATED
+)
 async def create_monitor(
     data: MonitorCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -198,7 +210,9 @@ async def scrape_monitor(
     return result
 
 
-@intelligence_router.delete("/monitors/{monitor_id}", status_code=status.HTTP_204_NO_CONTENT)
+@intelligence_router.delete(
+    "/monitors/{monitor_id}", status_code=status.HTTP_204_NO_CONTENT
+)
 async def delete_monitor(
     monitor_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],

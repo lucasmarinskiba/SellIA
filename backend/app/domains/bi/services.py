@@ -30,7 +30,9 @@ class BiService:
         )
         return result.scalar_one_or_none()
 
-    async def generate_funnel_report(self, business_id: UUID, period: str, period_type: str = "monthly"):
+    async def generate_funnel_report(
+        self, business_id: UUID, period: str, period_type: str = "monthly"
+    ):
         """Generate funnel metrics for a given period."""
         # Count leads (conversations started)
         leads_result = await self.db.execute(
@@ -61,7 +63,9 @@ class BiService:
             leads_count=leads_count,
             orders_count=orders_count or 0,
             revenue_total=revenue_total or Decimal(0),
-            avg_order_value=(revenue_total / orders_count) if orders_count else Decimal(0),
+            avg_order_value=(
+                (revenue_total / orders_count) if orders_count else Decimal(0)
+            ),
         )
         fm._custom_stages = custom_stages  # type: ignore
         self.db.add(fm)
@@ -85,7 +89,9 @@ class BiService:
         )
         return result.scalar_one_or_none()
 
-    async def list_insight_alerts(self, business_id: UUID, insight_type: str | None = None):
+    async def list_insight_alerts(
+        self, business_id: UUID, insight_type: str | None = None
+    ):
         q = select(InsightAlert).where(
             InsightAlert.business_id == business_id,
             InsightAlert.is_active == True,

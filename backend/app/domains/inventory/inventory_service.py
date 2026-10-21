@@ -21,27 +21,28 @@ class LocationInventoryService:
     """Manage per-location inventory."""
 
     @staticmethod
-    def get_location_inventory(
-        location_id: UUID,
-        db: Session
-    ) -> list:
+    def get_location_inventory(location_id: UUID, db: Session) -> list:
         """Get all inventory at location."""
-        inventory = db.query(LocationInventory).filter(
-            LocationInventory.location_id == location_id
-        ).all()
+        inventory = (
+            db.query(LocationInventory)
+            .filter(LocationInventory.location_id == location_id)
+            .all()
+        )
         return inventory
 
     @staticmethod
     def get_product_at_location(
-        location_id: UUID,
-        product_id: str,
-        db: Session
+        location_id: UUID, product_id: str, db: Session
     ) -> LocationInventory | None:
         """Get inventory for specific product at location."""
-        return db.query(LocationInventory).filter(
-            LocationInventory.location_id == location_id,
-            LocationInventory.product_id == product_id
-        ).first()
+        return (
+            db.query(LocationInventory)
+            .filter(
+                LocationInventory.location_id == location_id,
+                LocationInventory.product_id == product_id,
+            )
+            .first()
+        )
 
     @staticmethod
     def update_stock(
@@ -53,7 +54,7 @@ class LocationInventoryService:
         related_order_id: str | None = None,
         related_checkin_id: UUID | None = None,
         staff_id: UUID | None = None,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Update stock level + log movement.
 
@@ -67,11 +68,15 @@ class LocationInventoryService:
         )
 
         if not inventory:
-            raise ValueError(f"Product {product_id} not found at location {location_id}")
+            raise ValueError(
+                f"Product {product_id} not found at location {location_id}"
+            )
 
         quantity_before = inventory.quantity_available
         inventory.quantity_available = max(0, quantity_before + quantity_change)
-        inventory.quantity_on_hand = max(0, inventory.quantity_on_hand + quantity_change)
+        inventory.quantity_on_hand = max(
+            0, inventory.quantity_on_hand + quantity_change
+        )
         inventory.last_stock_check = datetime.now(UTC)
 
         # Update status
@@ -95,17 +100,21 @@ class LocationInventoryService:
             related_order_id=related_order_id,
             related_checkin_id=related_checkin_id,
             moved_by_staff_id=staff_id,
-            moved_by_system=(staff_id is None)
+            moved_by_system=(staff_id is None),
         )
 
         db.add(movement)
 
         # Check for low-stock alert
         if inventory.status == StockStatus.LOW_STOCK:
-            existing_alert = db.query(LowStockAlert).filter(
-                LowStockAlert.inventory_id == inventory.id,
-                LowStockAlert.acknowledged == False
-            ).first()
+            existing_alert = (
+                db.query(LowStockAlert)
+                .filter(
+                    LowStockAlert.inventory_id == inventory.id,
+                    LowStockAlert.acknowledged == False,
+                )
+                .first()
+            )
 
             if not existing_alert:
                 alert = LowStockAlert(
@@ -115,7 +124,7 @@ class LocationInventoryService:
                     product_id=product_id,
                     product_name=inventory.product_name,
                     quantity_available=inventory.quantity_available,
-                    reorder_point=inventory.reorder_point
+                    reorder_point=inventory.reorder_point,
                 )
                 db.add(alert)
                 logger.warning(f"Low stock alert: {product_id} at {location_id}")
@@ -129,15 +138,12 @@ class LocationInventoryService:
             "product_id": product_id,
             "quantity_available": inventory.quantity_available,
             "status": inventory.status.value,
-            "is_low_stock": inventory.status == StockStatus.LOW_STOCK
+            "is_low_stock": inventory.status == StockStatus.LOW_STOCK,
         }
 
     @staticmethod
     def check_stock_for_demo(
-        location_id: UUID,
-        product_id: str,
-        checkin_id: UUID,
-        db: Session
+        location_id: UUID, product_id: str, checkin_id: UUID, db: Session
     ) -> dict:
         """Check if product available for demo at location. Log demo engagement."""
         inventory = LocationInventoryService.get_product_at_location(
@@ -158,7 +164,7 @@ class LocationInventoryService:
             movement_type="demo_checked",
             reason="Visitor demo during checkin",
             related_checkin_id=checkin_id,
-            db=db
+            db=db,
         )
 
         return {
@@ -166,7 +172,7 @@ class LocationInventoryService:
             "product_name": inventory.product_name,
             "quantity_available": inventory.quantity_available - 1,
             "demo_unit": inventory.is_demo_unit,
-            "fulfillment_method": inventory.fulfillment_method.value
+            "fulfillment_method": inventory.fulfillment_method.value,
         }
 
     @staticmethod
@@ -174,7 +180,7 @@ class LocationInventoryService:
         location_id: UUID,
         product_id: str | None = None,
         days: int = 30,
-        db: Session = None
+        db: Session = None,
     ) -> list:
         """Get stock movement history."""
         if not db:
@@ -185,8 +191,7 @@ class LocationInventoryService:
         cutoff = datetime.now(UTC) - timedelta(days=days)
 
         query = db.query(StockMovement).filter(
-            StockMovement.location_id == location_id,
-            StockMovement.created_at >= cutoff
+            StockMovement.location_id == location_id, StockMovement.created_at >= cutoff
         )
 
         if product_id:
@@ -196,9 +201,7 @@ class LocationInventoryService:
 
     @staticmethod
     def acknowledge_low_stock_alert(
-        alert_id: UUID,
-        staff_id: UUID,
-        db: Session
+        alert_id: UUID, staff_id: UUID, db: Session
     ) -> dict:
         """Mark low-stock alert as acknowledged."""
         alert = db.query(LowStockAlert).filter(LowStockAlert.id == alert_id).first()
@@ -216,15 +219,11 @@ class LocationInventoryService:
         return {
             "acknowledged": True,
             "alert_id": str(alert.id),
-            "product_name": alert.product_name
+            "product_name": alert.product_name,
         }
 
     @staticmethod
-    def initiate_reorder(
-        alert_id: UUID,
-        quantity: int,
-        db: Session
-    ) -> dict:
+    def initiate_reorder(alert_id: UUID, quantity: int, db: Session) -> dict:
         """Initiate reorder for low-stock product."""
         alert = db.query(LowStockAlert).filter(LowStockAlert.id == alert_id).first()
 
@@ -244,7 +243,7 @@ class LocationInventoryService:
             quantity_before=alert.quantity_available,
             quantity_after=alert.quantity_available,  # Will update on receipt
             reason=f"Reorder initiated for {alert.product_name}",
-            moved_by_system=True
+            moved_by_system=True,
         )
 
         db.commit()
@@ -253,7 +252,7 @@ class LocationInventoryService:
         return {
             "reorder_initiated": True,
             "alert_id": str(alert.id),
-            "quantity_ordered": quantity
+            "quantity_ordered": quantity,
         }
 
 
@@ -267,7 +266,7 @@ class FulfillmentRoutingService:
         customer_lat: float,
         customer_lng: float,
         locations: list,  # List of Location objects
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Find best location to fulfill order based on inventory + proximity.
 
@@ -282,12 +281,16 @@ class FulfillmentRoutingService:
 
         for loc in locations:
             # Check inventory at location
-            inventory = db.query(LocationInventory).filter(
-                LocationInventory.location_id == loc.id,
-                LocationInventory.product_id == product_id,
-                LocationInventory.quantity_available > 0,
-                LocationInventory.fulfillment_method != FulfillmentMethod.DEMO_ONLY
-            ).first()
+            inventory = (
+                db.query(LocationInventory)
+                .filter(
+                    LocationInventory.location_id == loc.id,
+                    LocationInventory.product_id == product_id,
+                    LocationInventory.quantity_available > 0,
+                    LocationInventory.fulfillment_method != FulfillmentMethod.DEMO_ONLY,
+                )
+                .first()
+            )
 
             if not inventory:
                 continue
@@ -300,16 +303,18 @@ class FulfillmentRoutingService:
             # Score: distance + inventory level
             score = (distance_km / 100) + (100 / (inventory.quantity_available + 1))
 
-            candidates.append({
-                "location_id": loc.id,
-                "location_name": loc.name,
-                "location_address": loc.address,
-                "inventory_available": inventory.quantity_available,
-                "distance_km": round(distance_km, 2),
-                "est_ship_days": inventory.shipping_lead_days,
-                "fulfillment_method": inventory.fulfillment_method.value,
-                "score": score
-            })
+            candidates.append(
+                {
+                    "location_id": loc.id,
+                    "location_name": loc.name,
+                    "location_address": loc.address,
+                    "inventory_available": inventory.quantity_available,
+                    "distance_km": round(distance_km, 2),
+                    "est_ship_days": inventory.shipping_lead_days,
+                    "fulfillment_method": inventory.fulfillment_method.value,
+                    "score": score,
+                }
+            )
 
         if not candidates:
             return {"error": "No inventory available at any location"}
@@ -325,28 +330,30 @@ class FulfillmentRoutingService:
             "distance_km": best["distance_km"],
             "est_ship_days": best["est_ship_days"],
             "fulfillment_method": best["fulfillment_method"],
-            "alternative_locations": candidates[1:3]  # Next 2 best options
+            "alternative_locations": candidates[1:3],  # Next 2 best options
         }
 
     @staticmethod
     def reserve_inventory_for_order(
-        location_id: UUID,
-        product_id: str,
-        quantity: int,
-        order_id: str,
-        db: Session
+        location_id: UUID, product_id: str, quantity: int, order_id: str, db: Session
     ) -> dict:
         """Reserve inventory for online order."""
-        inventory = db.query(LocationInventory).filter(
-            LocationInventory.location_id == location_id,
-            LocationInventory.product_id == product_id
-        ).first()
+        inventory = (
+            db.query(LocationInventory)
+            .filter(
+                LocationInventory.location_id == location_id,
+                LocationInventory.product_id == product_id,
+            )
+            .first()
+        )
 
         if not inventory:
             raise ValueError(f"Product {product_id} not found at location")
 
         if inventory.quantity_available < quantity:
-            raise ValueError(f"Insufficient stock. Available: {inventory.quantity_available}")
+            raise ValueError(
+                f"Insufficient stock. Available: {inventory.quantity_available}"
+            )
 
         inventory.quantity_reserved += quantity
         inventory.quantity_available -= quantity
@@ -362,7 +369,7 @@ class FulfillmentRoutingService:
             quantity_after=inventory.quantity_available,
             reason=f"Reserved for online order {order_id}",
             related_order_id=order_id,
-            moved_by_system=True
+            moved_by_system=True,
         )
 
         db.commit()
@@ -375,21 +382,22 @@ class FulfillmentRoutingService:
             "order_id": order_id,
             "location_id": str(location_id),
             "quantity_reserved": quantity,
-            "quantity_still_available": inventory.quantity_available
+            "quantity_still_available": inventory.quantity_available,
         }
 
     @staticmethod
     def mark_order_shipped(
-        location_id: UUID,
-        product_id: str,
-        order_id: str,
-        db: Session
+        location_id: UUID, product_id: str, order_id: str, db: Session
     ) -> dict:
         """Mark order as shipped. Remove from reserved count."""
-        inventory = db.query(LocationInventory).filter(
-            LocationInventory.location_id == location_id,
-            LocationInventory.product_id == product_id
-        ).first()
+        inventory = (
+            db.query(LocationInventory)
+            .filter(
+                LocationInventory.location_id == location_id,
+                LocationInventory.product_id == product_id,
+            )
+            .first()
+        )
 
         if not inventory:
             raise ValueError(f"Product {product_id} not found at location")
@@ -407,15 +415,11 @@ class FulfillmentRoutingService:
             quantity_after=inventory.quantity_available,
             reason=f"Order shipped: {order_id}",
             related_order_id=order_id,
-            moved_by_system=True
+            moved_by_system=True,
         )
 
         db.commit()
 
         logger.info(f"Order shipped from {location_id}: {order_id}")
 
-        return {
-            "shipped": True,
-            "order_id": order_id,
-            "location_id": str(location_id)
-        }
+        return {"shipped": True, "order_id": order_id, "location_id": str(location_id)}

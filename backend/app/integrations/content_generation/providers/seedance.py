@@ -10,7 +10,6 @@ Pricing (2026):
 Nuestro proveedor premium de video. Se usa cuando la calidad es prioridad.
 """
 
-
 import logging
 from typing import ClassVar
 
@@ -37,9 +36,9 @@ SEEDANCE_ENDPOINTS = {
 
 # Costos por segundo
 SEEDANCE_COSTS = {
-    ContentQuality.DRAFT: 0.081,   # Fast tier
+    ContentQuality.DRAFT: 0.081,  # Fast tier
     ContentQuality.STANDARD: 0.10,  # Standard tier
-    ContentQuality.PREMIUM: 0.12,   # Standard con 1080p
+    ContentQuality.PREMIUM: 0.12,  # Standard con 1080p
 }
 
 DURATIONS = [3, 5, 8, 10]
@@ -62,7 +61,9 @@ class SeedanceProvider(BaseProvider):
         duration = config.duration_seconds or 5
         # Ajustar a duración permitida
         duration = min(DURATIONS, key=lambda x: abs(x - duration))
-        cost_per_sec = SEEDANCE_COSTS.get(config.quality, SEEDANCE_COSTS[ContentQuality.STANDARD])
+        cost_per_sec = SEEDANCE_COSTS.get(
+            config.quality, SEEDANCE_COSTS[ContentQuality.STANDARD]
+        )
         return cost_per_sec * duration
 
     def get_pricing_table(self) -> dict[str, float]:
@@ -125,7 +126,11 @@ class SeedanceProvider(BaseProvider):
             if hasattr(result, "video") and result.video:
                 video_url = result.video.url
             elif isinstance(result, dict):
-                video_url = result.get("video", {}).get("url") if isinstance(result.get("video"), dict) else result.get("video")
+                video_url = (
+                    result.get("video", {}).get("url")
+                    if isinstance(result.get("video"), dict)
+                    else result.get("video")
+                )
 
             if not video_url:
                 return GenerationResult(
@@ -140,11 +145,23 @@ class SeedanceProvider(BaseProvider):
                 success=True,
                 url=video_url,
                 cost_usd=cost,
-                model_used="seedance-2-pro" if config.quality != ContentQuality.DRAFT else "seedance-2-fast",
+                model_used=(
+                    "seedance-2-pro"
+                    if config.quality != ContentQuality.DRAFT
+                    else "seedance-2-fast"
+                ),
                 quality_tier=config.quality,
                 duration_seconds=duration,
-                width=1920 if resolution == "1080p" else 1280 if resolution == "720p" else 854,
-                height=1080 if resolution == "1080p" else 720 if resolution == "720p" else 480,
+                width=(
+                    1920
+                    if resolution == "1080p"
+                    else 1280 if resolution == "720p" else 854
+                ),
+                height=(
+                    1080
+                    if resolution == "1080p"
+                    else 720 if resolution == "720p" else 480
+                ),
                 metadata={
                     "resolution": resolution,
                     "aspect_ratio": aspect_ratio,

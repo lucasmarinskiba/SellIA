@@ -1,6 +1,5 @@
 """FOOM Monetization API - Convert free users to paid + Enable user FOOM selling."""
 
-
 import logging
 from typing import Annotated
 
@@ -160,7 +159,9 @@ def optimize_foom_strategy(
         }
 
         optimizer = FOMOPerformanceOptimizer(db)
-        optimization = optimizer.optimize_foom_strategy(request.user_id, ab_test_results)
+        optimization = optimizer.optimize_foom_strategy(
+            request.user_id, ab_test_results
+        )
 
         return OptimizationResponse(
             current_conversion_rate=optimization["current_conversion_rate"],
@@ -187,7 +188,9 @@ def get_referral_foom(
 
         network_foom = NetworkEffectFOOM(db)
         referral_strategy = network_foom.generate_referral_foom(user_id, user_metrics)
-        ltv_with_network = network_foom.calculate_lifetime_value_with_network(user_metrics)
+        ltv_with_network = network_foom.calculate_lifetime_value_with_network(
+            user_metrics
+        )
 
         return {
             "referral_program": referral_strategy,

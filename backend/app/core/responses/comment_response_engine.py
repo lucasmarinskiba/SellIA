@@ -306,7 +306,9 @@ class CommentResponseEngine:
             return {"total_responses": 0}
 
         total = len(self.response_history)
-        avg_engagement = sum(r["engagement_score"] for r in self.response_history) / total
+        avg_engagement = (
+            sum(r["engagement_score"] for r in self.response_history) / total
+        )
         avg_confidence = sum(r["confidence"] for r in self.response_history) / total
 
         response_types = {}
@@ -319,5 +321,9 @@ class CommentResponseEngine:
             "avg_engagement_score": round(avg_engagement, 1),
             "avg_confidence": round(avg_confidence, 1),
             "response_type_distribution": response_types,
-            "most_common_type": max(response_types, key=response_types.get) if response_types else "unknown",
+            "most_common_type": (
+                max(response_types, key=response_types.get)
+                if response_types
+                else "unknown"
+            ),
         }

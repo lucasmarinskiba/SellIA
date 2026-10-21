@@ -4,7 +4,6 @@ Pricing: Free tier available
 Strengths: Auto-captions, effects, viral templates, mobile-first
 """
 
-
 import logging
 from typing import ClassVar
 
@@ -36,7 +35,9 @@ class CapCutProvider(BaseProvider):
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         if not self.is_available:
-            return GenerationResult(success=False, error_message="CAPCUT_API_KEY no configurada")
+            return GenerationResult(
+                success=False, error_message="CAPCUT_API_KEY no configurada"
+            )
 
         try:
             import aiohttp
@@ -58,9 +59,15 @@ class CapCutProvider(BaseProvider):
             ) as resp:
                 data = await resp.json()
 
-            video_url = data.get("video", {}).get("url") if isinstance(data.get("video"), dict) else data.get("url")
+            video_url = (
+                data.get("video", {}).get("url")
+                if isinstance(data.get("video"), dict)
+                else data.get("url")
+            )
             if not video_url:
-                return GenerationResult(success=False, error_message="CapCut no devolvió video")
+                return GenerationResult(
+                    success=False, error_message="CapCut no devolvió video"
+                )
 
             return GenerationResult(
                 success=True,

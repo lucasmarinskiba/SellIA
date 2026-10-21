@@ -68,7 +68,9 @@ class RunwayProvider(BaseProvider):
     def estimate_cost(self, config: GenerationConfig) -> float:
         if config.content_type == ContentType.VIDEO:
             duration = config.duration_seconds or 5
-            model_config = RUNWAY_MODELS.get(config.quality, RUNWAY_MODELS[ContentQuality.STANDARD])
+            model_config = RUNWAY_MODELS.get(
+                config.quality, RUNWAY_MODELS[ContentQuality.STANDARD]
+            )
             cost = model_config["cost_per_second"] * duration
             if config.quality == ContentQuality.PREMIUM:
                 cost += 0.02 * duration  # upscale
@@ -112,7 +114,9 @@ class RunwayProvider(BaseProvider):
             )
 
     async def _generate_video(self, config: GenerationConfig) -> GenerationResult:
-        model_config = RUNWAY_MODELS.get(config.quality, RUNWAY_MODELS[ContentQuality.STANDARD])
+        model_config = RUNWAY_MODELS.get(
+            config.quality, RUNWAY_MODELS[ContentQuality.STANDARD]
+        )
         duration = min(config.duration_seconds or 5, 10)  # Max 10s base
 
         # Runway API REST

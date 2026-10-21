@@ -22,13 +22,25 @@ from app.core.database import Base
 
 class SocialProfileAudit(Base):
     """Audit of a user's social media profile (Instagram, TikTok, etc.)."""
+
     __tablename__ = "social_profile_audits"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="SET NULL"), nullable=True)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
-    platform = Column(String(50), nullable=False)  # instagram | tiktok | facebook | linkedin
+    platform = Column(
+        String(50), nullable=False
+    )  # instagram | tiktok | facebook | linkedin
     handle = Column(String(100), nullable=False)
     profile_url = Column(String(500), nullable=True)
 
@@ -51,11 +63,21 @@ class SocialProfileAudit(Base):
 
 class ContentCalendarSlot(Base):
     """AI-suggested content calendar slot."""
+
     __tablename__ = "content_calendar_slots"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="SET NULL"), nullable=True)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     platform = Column(String(50), nullable=False)
     scheduled_at = Column(DateTime(timezone=True), nullable=False)
@@ -65,7 +87,9 @@ class ContentCalendarSlot(Base):
     hashtag_suggestions = Column(JSONB, default=list, nullable=False)
     best_time_reason = Column(Text, nullable=True)
 
-    status = Column(String(20), default="suggested", nullable=False)  # suggested | approved | posted | skipped
+    status = Column(
+        String(20), default="suggested", nullable=False
+    )  # suggested | approved | posted | skipped
     posted_at = Column(DateTime(timezone=True), nullable=True)
     performance_notes = Column(Text, nullable=True)
 
@@ -74,10 +98,16 @@ class ContentCalendarSlot(Base):
 
 class CompetitorTracking(Base):
     """Track competitor social media accounts."""
+
     __tablename__ = "competitor_trackings"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     platform = Column(String(50), nullable=False)
     competitor_handle = Column(String(100), nullable=False)

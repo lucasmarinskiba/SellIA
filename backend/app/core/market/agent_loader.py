@@ -59,12 +59,22 @@ class AgentLoader:
             "id": "sellIA_base",
             "name": "SellIA Base Agent",
             "type": "orchestrator",
-            "capabilities": ["lead_capture", "qualification", "negotiation", "closing", "payment", "delivery", "retention"],
+            "capabilities": [
+                "lead_capture",
+                "qualification",
+                "negotiation",
+                "closing",
+                "payment",
+                "delivery",
+                "retention",
+            ],
             "priority": 100,
         }
 
     @staticmethod
-    def _load_real_estate_agent(agent_id: str, profile: "MarketProfile") -> dict[str, Any]:
+    def _load_real_estate_agent(
+        agent_id: str, profile: "MarketProfile"
+    ) -> dict[str, Any]:
         """Load Real Estate agent from external Agente Inmobiliario system."""
         agents = {
             "realEstate_leadScorer": {
@@ -79,7 +89,11 @@ class AgentLoader:
                 "id": "realEstate_propertyAnalyzer",
                 "name": "Property Analyzer",
                 "type": "analyzer",
-                "capabilities": ["valuation", "market_comparison", "investment_analysis"],
+                "capabilities": [
+                    "valuation",
+                    "market_comparison",
+                    "investment_analysis",
+                ],
                 "priority": 85,
                 "source": "Agente IA - Agente Inmobiliario",
             },
@@ -102,7 +116,11 @@ class AgentLoader:
                 "id": "commerce_prospector",
                 "name": "Commerce Prospector",
                 "type": "prospector",
-                "capabilities": ["market_research", "competitor_analysis", "opportunity_identification"],
+                "capabilities": [
+                    "market_research",
+                    "competitor_analysis",
+                    "opportunity_identification",
+                ],
                 "priority": 85,
                 "source": "Agente IA - Asesor Comercial",
             },
@@ -133,14 +151,22 @@ class AgentLoader:
                 "id": "services_qualifier",
                 "name": "Services Qualifier",
                 "type": "qualifier",
-                "capabilities": ["needs_analysis", "scope_definition", "fit_assessment"],
+                "capabilities": [
+                    "needs_analysis",
+                    "scope_definition",
+                    "fit_assessment",
+                ],
                 "priority": 85,
             },
             "services_deliveryCoordinator": {
                 "id": "services_deliveryCoordinator",
                 "name": "Delivery Coordinator",
                 "type": "coordinator",
-                "capabilities": ["project_planning", "milestone_tracking", "quality_assurance"],
+                "capabilities": [
+                    "project_planning",
+                    "milestone_tracking",
+                    "quality_assurance",
+                ],
                 "priority": 80,
             },
         }

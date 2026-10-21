@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 class JobType(Enum):
     """Tipos de jobs."""
+
     POST_PRODUCT = "post_product"
     RESPOND_INQUIRY = "respond_inquiry"
     SEND_EMAIL = "send_email"
@@ -44,6 +45,7 @@ class JobType(Enum):
 
 class JobStatus(Enum):
     """Estados de un job."""
+
     PENDING = "pending"
     RUNNING = "running"
     SUCCESS = "success"
@@ -55,6 +57,7 @@ class JobStatus(Enum):
 
 class Priority(Enum):
     """Niveles de prioridad."""
+
     CRITICAL = 100  # Immediate
     HIGH = 75  # Within minutes
     NORMAL = 50  # Within hours
@@ -65,6 +68,7 @@ class Priority(Enum):
 @dataclass
 class Job:
     """Representa un job a ejecutar."""
+
     id: str
     job_type: JobType
     priority: Priority
@@ -99,6 +103,7 @@ class Job:
 @dataclass
 class Task:
     """Representa una tarea a agendar."""
+
     id: str
     name: str
     job_type: JobType
@@ -163,14 +168,18 @@ class AutomationEngine:
         logger.info("🚀 Automation Engine started")
 
         try:
-            while self.is_running and (cycle_limit is None or self.cycle_count < cycle_limit):
+            while self.is_running and (
+                cycle_limit is None or self.cycle_count < cycle_limit
+            ):
                 self.cycle_count += 1
                 cycle_start = utc_now()
 
                 try:
                     # 1. Obtener tasks del scheduler
                     tasks_to_run = await self.scheduler.get_tasks_for_now()
-                    logger.debug(f"Cycle {self.cycle_count}: {len(tasks_to_run)} tasks ready")
+                    logger.debug(
+                        f"Cycle {self.cycle_count}: {len(tasks_to_run)} tasks ready"
+                    )
 
                     # 2. Enqueue jobs
                     for task in tasks_to_run:
@@ -378,6 +387,8 @@ class AutomationEngine:
             waited += 0.5
 
         if self.job_queue.size() > 0:
-            logger.warning(f"Shutdown timeout: {self.job_queue.size()} jobs still queued")
+            logger.warning(
+                f"Shutdown timeout: {self.job_queue.size()} jobs still queued"
+            )
 
         logger.info("Automation Engine shutdown complete")

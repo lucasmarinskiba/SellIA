@@ -2,6 +2,7 @@
 (ARCAComplianceHub.tsx, CustomsExportHub.tsx): sin prefijo /api/v1, porque esos
 componentes usan el cliente axios con baseURL = NEXT_PUBLIC_API_URL directo.
 """
+
 from fastapi import APIRouter, HTTPException, Query
 
 from app.domains.arca_compliance.service import (
@@ -28,7 +29,9 @@ async def sugerir_monotributo(
 ) -> dict:
     """Sugiere categoría Monotributo real contra la escala vigente de ARCA."""
     try:
-        return ARCAComplianceService.sugerir_categoria_monotributo(facturacion_12m, vende_bienes)
+        return ARCAComplianceService.sugerir_categoria_monotributo(
+            facturacion_12m, vende_bienes
+        )
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
 
@@ -51,7 +54,26 @@ async def get_arca_status() -> dict:
     configured = ARCAComplianceService.is_afip_configured()
     return {
         "afip_certificate_configured": configured,
-        "live_without_certificate": ["padron (validación de CUIT)", "monotributo/sugerir", "aduana/incoterms", "aduana/ncm"],
-        "requires_certificate": ["padron (datos reales AFIP)", "factura/emit (WSFE)", "factura/export (WSFEX)"],
-        "not_implemented_yet": ["libro_iva", "mis_comprobantes", "constancia", "f931", "aduana/cove", "aduana/origen", "aduana/djve", "aduana/permiso-embarque", "aduana/manifiesto"],
+        "live_without_certificate": [
+            "padron (validación de CUIT)",
+            "monotributo/sugerir",
+            "aduana/incoterms",
+            "aduana/ncm",
+        ],
+        "requires_certificate": [
+            "padron (datos reales AFIP)",
+            "factura/emit (WSFE)",
+            "factura/export (WSFEX)",
+        ],
+        "not_implemented_yet": [
+            "libro_iva",
+            "mis_comprobantes",
+            "constancia",
+            "f931",
+            "aduana/cove",
+            "aduana/origen",
+            "aduana/djve",
+            "aduana/permiso-embarque",
+            "aduana/manifiesto",
+        ],
     }

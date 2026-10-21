@@ -52,7 +52,9 @@ class AdBudgetService:
             await self.db.refresh(cfg)
         return cfg
 
-    async def update_config(self, business_id: uuid.UUID, **fields: Any) -> AdBudgetConfig:
+    async def update_config(
+        self, business_id: uuid.UUID, **fields: Any
+    ) -> AdBudgetConfig:
         cfg = await self.get_or_create_config(business_id)
         for k, v in fields.items():
             if v is not None and hasattr(cfg, k):
@@ -66,7 +68,9 @@ class AdBudgetService:
     # ------------------------------------------------------------------
     async def list_channels(self, business_id: uuid.UUID) -> list[AdChannel]:
         res = await self.db.execute(
-            select(AdChannel).where(AdChannel.business_id == business_id).order_by(AdChannel.platform)
+            select(AdChannel)
+            .where(AdChannel.business_id == business_id)
+            .order_by(AdChannel.platform)
         )
         return list(res.scalars().all())
 
@@ -77,7 +81,9 @@ class AdBudgetService:
         await self.db.refresh(ch)
         return ch
 
-    async def update_channel(self, business_id: uuid.UUID, channel_id: uuid.UUID, **fields: Any) -> AdChannel:
+    async def update_channel(
+        self, business_id: uuid.UUID, channel_id: uuid.UUID, **fields: Any
+    ) -> AdChannel:
         ch = await self._get_channel(business_id, channel_id)
         for k, v in fields.items():
             if v is not None and hasattr(ch, k):
@@ -86,12 +92,16 @@ class AdBudgetService:
         await self.db.refresh(ch)
         return ch
 
-    async def delete_channel(self, business_id: uuid.UUID, channel_id: uuid.UUID) -> None:
+    async def delete_channel(
+        self, business_id: uuid.UUID, channel_id: uuid.UUID
+    ) -> None:
         ch = await self._get_channel(business_id, channel_id)
         await self.db.delete(ch)
         await self.db.commit()
 
-    async def _get_channel(self, business_id: uuid.UUID, channel_id: uuid.UUID) -> AdChannel:
+    async def _get_channel(
+        self, business_id: uuid.UUID, channel_id: uuid.UUID
+    ) -> AdChannel:
         res = await self.db.execute(
             select(AdChannel).where(
                 AdChannel.id == channel_id, AdChannel.business_id == business_id
@@ -118,7 +128,11 @@ class AdBudgetService:
         )
 
     async def run_cycle(
-        self, business_id: uuid.UUID, *, force: bool = False, auto_apply: bool | None = None
+        self,
+        business_id: uuid.UUID,
+        *,
+        force: bool = False,
+        auto_apply: bool | None = None,
     ) -> dict[str, Any]:
         cfg = await self.get_or_create_config(business_id)
         if not force and (not cfg.is_active or cfg.is_paused):
@@ -130,7 +144,9 @@ class AdBudgetService:
 
         inputs: list[ChannelInput] = []
         for ch in channels:
-            metrics = await self.perf.gather(business_id, ch, cfg.optimization_window_days)
+            metrics = await self.perf.gather(
+                business_id, ch, cfg.optimization_window_days
+            )
             await self.perf.snapshot(business_id, ch, metrics)
             await self.perf.reconcile_spend_to_ledger(business_id, ch, metrics)
             inputs.append(
@@ -156,7 +172,11 @@ class AdBudgetService:
         realloc = BudgetReallocation(
             business_id=business_id,
             run_id=uuid.uuid4(),
-            status=ReallocationStatus.NOOP.value if result.noop else ReallocationStatus.RECOMMENDED.value,
+            status=(
+                ReallocationStatus.NOOP.value
+                if result.noop
+                else ReallocationStatus.RECOMMENDED.value
+            ),
             blended_roas=result.blended_roas,
             total_budget_before=result.total_before,
             total_budget_after=result.total_after,
@@ -188,7 +208,10 @@ class AdBudgetService:
         }
 
     async def apply_reallocation(
-        self, business_id: uuid.UUID, realloc_id: uuid.UUID, user_id: uuid.UUID | None = None
+        self,
+        business_id: uuid.UUID,
+        realloc_id: uuid.UUID,
+        user_id: uuid.UUID | None = None,
     ) -> BudgetReallocation:
         res = await self.db.execute(
             select(BudgetReallocation).where(
@@ -199,7 +222,10 @@ class AdBudgetService:
         realloc = res.scalar_one_or_none()
         if not realloc:
             raise ValueError("reallocation not found")
-        if realloc.status in (ReallocationStatus.APPLIED.value, ReallocationStatus.REJECTED.value):
+        if realloc.status in (
+            ReallocationStatus.APPLIED.value,
+            ReallocationStatus.REJECTED.value,
+        ):
             raise ValueError(f"reallocation already {realloc.status}")
         await self._apply(business_id, realloc, applied_by=user_id)
         await self.db.commit()
@@ -224,7 +250,10 @@ class AdBudgetService:
         return realloc
 
     async def _apply(
-        self, business_id: uuid.UUID, realloc: BudgetReallocation, applied_by: uuid.UUID | None
+        self,
+        business_id: uuid.UUID,
+        realloc: BudgetReallocation,
+        applied_by: uuid.UUID | None,
     ) -> None:
         applier = BudgetApplier(self.db)
         channels = {str(c.id): c for c in await self.list_channels(business_id)}
@@ -282,19 +311,21 @@ class AdBudgetService:
             total_spend += spend
             total_rev += rev
             total_budget += ch.current_daily_budget or Decimal(0)
-            rows.append({
-                "id": str(ch.id),
-                "platform": ch.platform,
-                "name": ch.display_name,
-                "daily_budget": float(ch.current_daily_budget or 0),
-                "is_managed": ch.is_managed,
-                "is_paused": ch.is_paused,
-                "roas": float(snap.roas) if snap else None,
-                "spend": float(spend),
-                "revenue": float(rev),
-                "conversions": snap.conversions if snap else 0,
-                "captured_at": snap.captured_at.isoformat() if snap else None,
-            })
+            rows.append(
+                {
+                    "id": str(ch.id),
+                    "platform": ch.platform,
+                    "name": ch.display_name,
+                    "daily_budget": float(ch.current_daily_budget or 0),
+                    "is_managed": ch.is_managed,
+                    "is_paused": ch.is_paused,
+                    "roas": float(snap.roas) if snap else None,
+                    "spend": float(spend),
+                    "revenue": float(rev),
+                    "conversions": snap.conversions if snap else 0,
+                    "captured_at": snap.captured_at.isoformat() if snap else None,
+                }
+            )
 
         last = await self.db.execute(
             select(BudgetReallocation)
@@ -310,8 +341,16 @@ class AdBudgetService:
             "is_paused": cfg.is_paused,
             "requires_approval": cfg.requires_approval,
             "target_roas": float(cfg.target_roas),
-            "total_daily_budget": float(cfg.total_daily_budget) if cfg.total_daily_budget else float(total_budget),
-            "blended_roas": float((total_rev / total_spend).quantize(Decimal("0.0001"))) if total_spend > 0 else 0.0,
+            "total_daily_budget": (
+                float(cfg.total_daily_budget)
+                if cfg.total_daily_budget
+                else float(total_budget)
+            ),
+            "blended_roas": (
+                float((total_rev / total_spend).quantize(Decimal("0.0001")))
+                if total_spend > 0
+                else 0.0
+            ),
             "window_days": cfg.optimization_window_days,
             "last_run_at": cfg.last_run_at.isoformat() if cfg.last_run_at else None,
             "channels": rows,
@@ -322,12 +361,15 @@ class AdBudgetService:
                     "created_at": last_realloc.created_at.isoformat(),
                     "decisions": last_realloc.decisions,
                 }
-                if last_realloc and last_realloc.status == ReallocationStatus.RECOMMENDED.value
+                if last_realloc
+                and last_realloc.status == ReallocationStatus.RECOMMENDED.value
                 else None
             ),
         }
 
-    async def history(self, business_id: uuid.UUID, limit: int = 50) -> list[BudgetReallocation]:
+    async def history(
+        self, business_id: uuid.UUID, limit: int = 50
+    ) -> list[BudgetReallocation]:
         res = await self.db.execute(
             select(BudgetReallocation)
             .where(BudgetReallocation.business_id == business_id)

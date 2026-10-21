@@ -404,7 +404,6 @@ class APIKeyService:
         """
         import hashlib
 
-
         key_hash = hashlib.sha256(key.encode()).hexdigest()
 
         api_key = (
@@ -520,7 +519,9 @@ class APIKeyService:
 
         return query.order_by(APIKey.created_at.desc()).all()
 
-    async def schedule_expiration_check(self, db: Session, days_before: int = 7) -> list[str]:
+    async def schedule_expiration_check(
+        self, db: Session, days_before: int = 7
+    ) -> list[str]:
         """Find API keys expiring soon."""
         soon = datetime.now(UTC) + timedelta(days=days_before)
         expiring = (

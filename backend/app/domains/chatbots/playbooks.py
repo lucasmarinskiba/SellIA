@@ -59,13 +59,17 @@ PLAYBOOKS: dict[str, Playbook] = {
         formatting="plain",
         register="formal y concreto",
         rules=[
-            ("Nunca des teléfono, email, redes, dirección ni links: MercadoLibre moderá los "
-            "mensajes previos a la venta y sancioná la publicación que intenta sacar al "
-            "comprador de la plataforma."),
+            (
+                "Nunca des teléfono, email, redes, dirección ni links: MercadoLibre moderá los "
+                "mensajes previos a la venta y sancioná la publicación que intenta sacar al "
+                "comprador de la plataforma."
+            ),
             "No sugieras pagar por fuera de MercadoLibre en ningún caso.",
             "Respondé la pregunta concreta primero, en una o dos frases, y después agregá el dato útil.",
-            ("Si el comprador pide algo que no podés confirmar (stock exacto, fecha de entrega), "
-            "decilo en vez de estimar."),
+            (
+                "Si el comprador pide algo que no podés confirmar (stock exacto, fecha de entrega), "
+                "decilo en vez de estimar."
+            ),
         ],
         why="Compartir contacto o links antes de la venta es causa de sanción a la publicación.",
     ),
@@ -222,7 +226,9 @@ PLAYBOOKS: dict[str, Playbook] = {
         allow_contact_details=True,
         formatting="plain",
         register="claro y servicial",
-        rules=["Es tu propia tienda: podés dar links a tus productos y a tu política de envíos."],
+        rules=[
+            "Es tu propia tienda: podés dar links a tus productos y a tu política de envíos."
+        ],
         why="Tienda propia: ninguna regla ajena limita lo que podés responder.",
     ),
     "woocommerce": Playbook(
@@ -245,8 +251,10 @@ PLAYBOOKS: dict[str, Playbook] = {
         formatting="plain",
         register="formal y escueto",
         rules=[
-            ("No incluyas links externos, contacto ni pedidos de reseña: Amazon lo prohíbe en la "
-            "mensajería con compradores."),
+            (
+                "No incluyas links externos, contacto ni pedidos de reseña: Amazon lo prohíbe en la "
+                "mensajería con compradores."
+            ),
             "Limitate a responder sobre el pedido o el producto.",
         ],
         why="La mensajería de Amazon está estrictamente moderada: un link puede costar la cuenta.",
@@ -369,7 +377,9 @@ _PHONE_RE = re.compile(r"(?:\+?\d[\s().\-]{0,2}){8,}")
 #: An email, loosely: enough to catch one, not to validate it.
 _EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+")
 #: Anything that takes the buyer off the platform.
-_LINK_RE = re.compile(r"(https?://|www\.|wa\.me/|t\.me/|instagram\.com/|bit\.ly/)", re.IGNORECASE)
+_LINK_RE = re.compile(
+    r"(https?://|www\.|wa\.me/|t\.me/|instagram\.com/|bit\.ly/)", re.IGNORECASE
+)
 
 
 def violations(platform: str, reply: str) -> list[str]:
@@ -392,7 +402,9 @@ def violations(platform: str, reply: str) -> list[str]:
                 found.append("incluye lo que parece un teléfono")
                 break
     if len(reply) > book.max_chars:
-        found.append(f"supera el largo máximo ({len(reply)} de {book.max_chars} caracteres)")
+        found.append(
+            f"supera el largo máximo ({len(reply)} de {book.max_chars} caracteres)"
+        )
     return found
 
 

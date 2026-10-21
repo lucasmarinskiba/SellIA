@@ -38,7 +38,7 @@ class AISuggestions:
             h = hash(word) % 64
             vec[h] += 1.0
         # Normalize
-        norm = sum(x ** 2 for x in vec) ** 0.5
+        norm = sum(x**2 for x in vec) ** 0.5
         if norm > 0:
             vec = [x / norm for x in vec]
         return vec
@@ -48,7 +48,9 @@ class AISuggestions:
         dot = sum(x * y for x, y in zip(a, b))
         return dot  # Already normalized
 
-    def index_session(self, task: str, actions: list[dict[str, Any]], success: bool) -> None:
+    def index_session(
+        self, task: str, actions: list[dict[str, Any]], success: bool
+    ) -> None:
         """Indexa una sesión completada para futuras sugerencias."""
         if not success:
             return
@@ -91,13 +93,17 @@ class AISuggestions:
                 action_key = f"{next_action.get('action_type')}:{json.dumps(next_action.get('params', {}), sort_keys=True)}"
                 if action_key not in seen_actions:
                     seen_actions.add(action_key)
-                    suggestions.append(Suggestion(
-                        action_type=next_action.get("action_type", "unknown"),
-                        params=next_action.get("params", {}),
-                        confidence=round(sim, 2),
-                        reason=f"Basado en {len([k for k, s in similarities if s > 0.3])} sesiones similares",
-                        based_on_sessions=len([k for k, s in similarities if s > 0.3]),
-                    ))
+                    suggestions.append(
+                        Suggestion(
+                            action_type=next_action.get("action_type", "unknown"),
+                            params=next_action.get("params", {}),
+                            confidence=round(sim, 2),
+                            reason=f"Basado en {len([k for k, s in similarities if s > 0.3])} sesiones similares",
+                            based_on_sessions=len(
+                                [k for k, s in similarities if s > 0.3]
+                            ),
+                        )
+                    )
 
         return suggestions
 
@@ -109,9 +115,21 @@ class AISuggestions:
     ) -> Suggestion | None:
         """Sugiere una acción de recuperación tras un error."""
         common_recoveries = {
-            "timeout": {"action_type": "wait", "params": {"seconds": 3}, "reason": "La página puede estar lenta, esperar un poco más"},
-            "navigation": {"action_type": "navigate", "params": {"url": ""}, "reason": "Reintentar navegación"},
-            "element": {"action_type": "screenshot", "params": {}, "reason": "Tomar screenshot para reevaluar el estado"},
+            "timeout": {
+                "action_type": "wait",
+                "params": {"seconds": 3},
+                "reason": "La página puede estar lenta, esperar un poco más",
+            },
+            "navigation": {
+                "action_type": "navigate",
+                "params": {"url": ""},
+                "reason": "Reintentar navegación",
+            },
+            "element": {
+                "action_type": "screenshot",
+                "params": {},
+                "reason": "Tomar screenshot para reevaluar el estado",
+            },
         }
 
         error_lower = error_message.lower()

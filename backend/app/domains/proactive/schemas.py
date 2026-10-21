@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict
 # OutreachOpportunity
 # ---------------------------------------------------------------------------
 
+
 class OutreachOpportunityBase(BaseModel):
     opportunity_type: str
     priority: str = "medium"
@@ -42,6 +43,7 @@ class OutreachOpportunityResponse(OutreachOpportunityBase):
 # ---------------------------------------------------------------------------
 # OutreachRule
 # ---------------------------------------------------------------------------
+
 
 class OutreachRuleBase(BaseModel):
     rule_name: str

@@ -107,7 +107,12 @@ class PlatformIntelligence:
             if platform.min_order <= price <= platform.max_order:
                 score += 20
 
-            if product_type == "digital" and "digital" in platform.best_for.lower() or product_type == "physical" and ("LatAm" in platform.best_for or "global" in platform.best_for):
+            if (
+                product_type == "digital"
+                and "digital" in platform.best_for.lower()
+                or product_type == "physical"
+                and ("LatAm" in platform.best_for or "global" in platform.best_for)
+            ):
                 score += 30
 
             if platform.commission_rate < 0.15:

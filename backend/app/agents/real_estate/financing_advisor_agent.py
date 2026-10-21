@@ -28,7 +28,9 @@ class FinancingAdvisorAgent:
     def __init__(self):
         self.financing_plans: dict[str, dict[str, Any]] = {}
 
-    def calculate_mortgage_options(self, purchase_price: float, down_payment_pct: float, credit_score: int) -> list[MortgageOption]:
+    def calculate_mortgage_options(
+        self, purchase_price: float, down_payment_pct: float, credit_score: int
+    ) -> list[MortgageOption]:
         """Calculate mortgage options based on buyer profile."""
         down_payment = purchase_price * (down_payment_pct / 100)
         loan_amount = purchase_price - down_payment
@@ -71,7 +73,9 @@ class FinancingAdvisorAgent:
 
         # 5/1 ARM (Adjustable Rate Mortgage)
         arm_initial_rate = base_rate - 0.5
-        monthly_arm = self._calculate_monthly_payment(loan_amount, arm_initial_rate, 360)
+        monthly_arm = self._calculate_monthly_payment(
+            loan_amount, arm_initial_rate, 360
+        )
         options.append(
             MortgageOption(
                 product_name="5/1 ARM",
@@ -79,7 +83,11 @@ class FinancingAdvisorAgent:
                 loan_amount=loan_amount,
                 term_years=30,
                 monthly_payment=monthly_arm,
-                total_interest=(monthly_arm * 60) + (self._calculate_monthly_payment(loan_amount, base_rate + 1.5, 300) * 300),
+                total_interest=(monthly_arm * 60)
+                + (
+                    self._calculate_monthly_payment(loan_amount, base_rate + 1.5, 300)
+                    * 300
+                ),
                 arm=True,
                 down_payment_required=down_payment,
             )
@@ -101,12 +109,18 @@ class FinancingAdvisorAgent:
         else:
             return 8.5  # Subprime
 
-    def _calculate_monthly_payment(self, principal: float, annual_rate: float, num_payments: int) -> float:
+    def _calculate_monthly_payment(
+        self, principal: float, annual_rate: float, num_payments: int
+    ) -> float:
         """Calculate monthly mortgage payment using amortization formula."""
         monthly_rate = annual_rate / 100 / 12
         if monthly_rate == 0:
             return principal / num_payments
-        return principal * (monthly_rate * (1 + monthly_rate) ** num_payments) / (((1 + monthly_rate) ** num_payments) - 1)
+        return (
+            principal
+            * (monthly_rate * (1 + monthly_rate) ** num_payments)
+            / (((1 + monthly_rate) ** num_payments) - 1)
+        )
 
     def prequalify_buyer(self, buyer_data: dict[str, Any]) -> dict[str, Any]:
         """Prequalify buyer for financing."""
@@ -120,7 +134,9 @@ class FinancingAdvisorAgent:
         max_monthly_payment = (monthly_income * dti_ratio) - monthly_debts
 
         # Convert monthly payment to max loan amount (using 7% rate, 360 months)
-        max_loan = max_monthly_payment / (0.07 / 12 * (1 + 0.07 / 12) ** 360 / (((1 + 0.07 / 12) ** 360) - 1))
+        max_loan = max_monthly_payment / (
+            0.07 / 12 * (1 + 0.07 / 12) ** 360 / (((1 + 0.07 / 12) ** 360) - 1)
+        )
 
         # Add down payment
         max_purchase_price = max_loan + down_payment_savings
@@ -133,27 +149,44 @@ class FinancingAdvisorAgent:
             "credit_score": credit_score,
             "monthly_payment_capacity": max_monthly_payment,
             "dti_ratio": (monthly_debts + max_monthly_payment) / monthly_income,
-            "recommendations": self._get_financing_recommendations(credit_score, buyer_data),
+            "recommendations": self._get_financing_recommendations(
+                credit_score, buyer_data
+            ),
         }
 
-    def _get_financing_recommendations(self, credit_score: int, buyer_data: dict[str, Any]) -> list[str]:
+    def _get_financing_recommendations(
+        self, credit_score: int, buyer_data: dict[str, Any]
+    ) -> list[str]:
         """Get financing recommendations for buyer."""
         recommendations = []
 
         if credit_score < 620:
-            recommendations.append("Credit score too low - work on improving credit before applying")
+            recommendations.append(
+                "Credit score too low - work on improving credit before applying"
+            )
         elif credit_score < 660:
-            recommendations.append("Credit score could be improved - aim for 660+ for better rates")
+            recommendations.append(
+                "Credit score could be improved - aim for 660+ for better rates"
+            )
 
         monthly_debts = buyer_data.get("monthly_debts", 0)
         if monthly_debts > buyer_data.get("monthly_income", 0) * 0.35:
-            recommendations.append("Pay down existing debts to improve debt-to-income ratio")
+            recommendations.append(
+                "Pay down existing debts to improve debt-to-income ratio"
+            )
 
-        if buyer_data.get("down_payment_savings", 0) < buyer_data.get("target_price", 300000) * 0.15:
-            recommendations.append("Save more for down payment to avoid PMI (private mortgage insurance)")
+        if (
+            buyer_data.get("down_payment_savings", 0)
+            < buyer_data.get("target_price", 300000) * 0.15
+        ):
+            recommendations.append(
+                "Save more for down payment to avoid PMI (private mortgage insurance)"
+            )
 
         if not recommendations:
-            recommendations.append("You are in good position for favorable financing terms")
+            recommendations.append(
+                "You are in good position for favorable financing terms"
+            )
 
         return recommendations
 
@@ -174,7 +207,9 @@ class FinancingAdvisorAgent:
             "total": purchase_price * 0.035,  # Average 3.5%
         }
 
-    def calculate_affordability(self, annual_income: float, monthly_debts: float, down_payment: float) -> dict[str, Any]:
+    def calculate_affordability(
+        self, annual_income: float, monthly_debts: float, down_payment: float
+    ) -> dict[str, Any]:
         """Calculate home affordability."""
         monthly_income = annual_income / 12
         max_monthly_payment = (monthly_income * 0.43) - monthly_debts
@@ -186,5 +221,6 @@ class FinancingAdvisorAgent:
             "annual_income": annual_income,
             "max_home_price": max_loan + down_payment,
             "monthly_payment_capacity": max_monthly_payment,
-            "debt_to_income_ratio": (monthly_debts + max_monthly_payment) / monthly_income,
+            "debt_to_income_ratio": (monthly_debts + max_monthly_payment)
+            / monthly_income,
         }

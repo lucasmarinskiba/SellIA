@@ -20,5 +20,7 @@ async def ensure_ad_budget_tables() -> None:
                 )
             created += 1
         except Exception as e:  # noqa: BLE001
-            logger.warning("ad_budget bootstrap: table %s skipped: %s", table.name, str(e)[:160])
+            logger.warning(
+                "ad_budget bootstrap: table %s skipped: %s", table.name, str(e)[:160]
+            )
     logger.info("✅ ad_budget tables ensured (%s/%s)", created, len(AD_BUDGET_TABLES))

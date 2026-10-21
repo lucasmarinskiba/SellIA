@@ -1,4 +1,5 @@
 """Phase X7: Perception Engineering Agent - Psychology-Driven Perception Shift."""
+
 import enum
 import uuid
 from datetime import UTC, datetime
@@ -69,7 +70,9 @@ class ProductPerception(Base):
     actual_unique_features = Column(JSON, default=list)  # Real differentiators
 
     # Customer segment perception
-    target_segment = Column(String(100), nullable=True)  # "luxury_buyers", "budget", "professionals"
+    target_segment = Column(
+        String(100), nullable=True
+    )  # "luxury_buyers", "budget", "professionals"
     segment_perception_gap = Column(Float, default=0)  # Difference: target - current
 
     created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
@@ -96,8 +99,12 @@ class PerceptionShiftCampaign(Base):
     authority_claim = Column(String(200), nullable=True)  # Expert backing
 
     # Psychological leverage
-    cognitive_bias_leveraged = Column(String(100), nullable=True)  # anchoring, availability, etc
-    emotional_trigger = Column(String(100), nullable=True)  # fear, desire, belonging, etc
+    cognitive_bias_leveraged = Column(
+        String(100), nullable=True
+    )  # anchoring, availability, etc
+    emotional_trigger = Column(
+        String(100), nullable=True
+    )  # fear, desire, belonging, etc
     call_to_action = Column(String(200), nullable=False)
 
     # Targeting
@@ -127,8 +134,12 @@ class ValuePerceptionOptimizer(Base):
 
     # Optimization tactics
     anchoring_high_price = Column(Float, nullable=True)  # "Compare to $500 alternative"
-    bundled_value_add = Column(Text, nullable=True)  # Free things adding to perceived value
-    comparison_competitors = Column(JSON, default=list)  # [{"competitor": "X", "price": 1000}]
+    bundled_value_add = Column(
+        Text, nullable=True
+    )  # Free things adding to perceived value
+    comparison_competitors = Column(
+        JSON, default=list
+    )  # [{"competitor": "X", "price": 1000}]
 
     # Reframing options
     reframe_as_investment = Column(Text, nullable=True)  # Not cost, but investment
@@ -153,12 +164,16 @@ class PerceptionNarrative(Base):
     hero = Column(String(200))  # Who is the hero? (product or customer)
     villain = Column(String(200))  # What problem/competitor?
     transformation = Column(Text)  # Before/after customer story
-    proof_points = Column(JSON, default=list)  # Evidence: [testimonials, metrics, awards]
+    proof_points = Column(
+        JSON, default=list
+    )  # Evidence: [testimonials, metrics, awards]
     emotional_appeal = Column(String(100))  # Pride, belonging, fear, joy, etc
     call_to_identity = Column(String(200))  # "Be someone who..." (identity-based)
 
     # Variant narratives
-    narrative_variants = Column(JSON, default=list)  # [{"segment": "luxury", "narrative": "..."}]
+    narrative_variants = Column(
+        JSON, default=list
+    )  # [{"segment": "luxury", "narrative": "..."}]
     primary_narrative = Column(Text)
     backup_narrative = Column(Text, nullable=True)
 

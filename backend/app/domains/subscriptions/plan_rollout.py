@@ -18,10 +18,10 @@ logger = get_logger(__name__)
 
 # Días de retraso por plan
 PLAN_ROLLOUT_DELAYS = {
-    "free": 30,      # Free recibe solo bugfixes críticos, resto después de 30 días
+    "free": 30,  # Free recibe solo bugfixes críticos, resto después de 30 días
     "starter": 14,
     "pro": 7,
-    "enterprise": 0, # Inmediato
+    "enterprise": 0,  # Inmediato
 }
 
 # Planes que pueden recibir cada tipo de mejora
@@ -54,21 +54,29 @@ async def get_eligible_improvements(
     min_deploy_date = datetime.now(UTC) - timedelta(days=delay_days)
 
     result = await db.execute(
-        select(SystemImprovement).where(
+        select(SystemImprovement)
+        .where(
             SystemImprovement.status == "deployed",
             SystemImprovement.deployed_at <= min_deploy_date,
-        ).order_by(SystemImprovement.deployed_at.desc())
+        )
+        .order_by(SystemImprovement.deployed_at.desc())
     )
 
     improvements = result.scalars().all()
 
     # Filter by plan hierarchy
     plan_hierarchy = ["free", "starter", "pro", "enterprise"]
-    user_plan_index = plan_hierarchy.index(plan_slug) if plan_slug in plan_hierarchy else -1
+    user_plan_index = (
+        plan_hierarchy.index(plan_slug) if plan_slug in plan_hierarchy else -1
+    )
 
     eligible = []
     for imp in improvements:
-        imp_plan_index = plan_hierarchy.index(imp.target_plan) if imp.target_plan in plan_hierarchy else 999
+        imp_plan_index = (
+            plan_hierarchy.index(imp.target_plan)
+            if imp.target_plan in plan_hierarchy
+            else 999
+        )
         if user_plan_index >= imp_plan_index:
             eligible.append(imp)
 
@@ -101,6 +109,7 @@ async def check_feature_availability(
 ) -> bool:
     """Verifica si una feature específica está disponible para un usuario."""
     from app.core.intelligence.feature_flags import can_use_feature
+
     return await can_use_feature(db, feature_name, plan_slug, user_id)
 
 
@@ -142,7 +151,9 @@ async def notify_plan_users_of_update(
             eligible = await get_eligible_improvements(db, user_plan)
             if improvement in eligible:
                 # TODO: Send email/push notification
-                logger.info(f"Would notify user {user.id} about improvement {improvement.id}")
+                logger.info(
+                    f"Would notify user {user.id} about improvement {improvement.id}"
+                )
                 notified += 1
 
     return notified

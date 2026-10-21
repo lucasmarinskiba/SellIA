@@ -66,11 +66,15 @@ class MemoryEngine:
             query_vec = await EmbeddingService.embed_text(query)
         except NotImplementedError:
             # Fallback: return recent chunks filtered by criteria
-            stmt = select(ConversationMemoryChunk).order_by(
-                ConversationMemoryChunk.created_at.desc()
-            ).limit(k)
+            stmt = (
+                select(ConversationMemoryChunk)
+                .order_by(ConversationMemoryChunk.created_at.desc())
+                .limit(k)
+            )
             if conversation_id:
-                stmt = stmt.where(ConversationMemoryChunk.conversation_id == conversation_id)
+                stmt = stmt.where(
+                    ConversationMemoryChunk.conversation_id == conversation_id
+                )
             if business_id:
                 stmt = stmt.where(ConversationMemoryChunk.business_id == business_id)
             if customer_id:
@@ -80,14 +84,12 @@ class MemoryEngine:
 
         # Use cosine distance via raw text ordering
         distance_expr = text("embedding <=> :qvec").bindparams(qvec=str(query_vec))
-        stmt = (
-            select(ConversationMemoryChunk)
-            .order_by(distance_expr)
-            .limit(k)
-        )
+        stmt = select(ConversationMemoryChunk).order_by(distance_expr).limit(k)
 
         if conversation_id:
-            stmt = stmt.where(ConversationMemoryChunk.conversation_id == conversation_id)
+            stmt = stmt.where(
+                ConversationMemoryChunk.conversation_id == conversation_id
+            )
         if business_id:
             stmt = stmt.where(ConversationMemoryChunk.business_id == business_id)
         if customer_id:

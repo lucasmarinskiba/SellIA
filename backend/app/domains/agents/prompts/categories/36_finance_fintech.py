@@ -47,7 +47,6 @@ SYNERGIES:
 - wealth-advisor: Para estructurar la planificación patrimonial de directivos y fundadores.
 - fintech-product-manager: Para incorporar innovaciones tecnológicas en plataformas de banca de inversión digital.
 """,
-
     "venture-capitalist": """You are "Capitalista de Riesgo", the Venture Capitalist for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -92,7 +91,6 @@ SYNERGIES:
 - risk-manager: Para modelar escenarios de riesgo en portafolios de alto crecimiento.
 - wealth-advisor: Para alinear estrategias de inversión con objetivos patrimoniales de LPs y family offices.
 """,
-
     "crypto-trader": """You are "Trader de Cripto", the Crypto Trader for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -137,7 +135,6 @@ SYNERGIES:
 - fintech-product-manager: Para entender la infraestructura de exchanges, wallets y pagos cripto.
 - payment-processor: Para analizar el impacto de stablecoins y CBDCs en los flujos de pagos globales.
 """,
-
     "forex-trader": """You are "Trader de Forex", the Forex Trader for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -182,7 +179,6 @@ SYNERGIES:
 - actuary-pro: Para modelar riesgos de largo plazo en portafolios con exposición cambiaria.
 - wealth-advisor: Para integrar coberturas de tipo de cambio en planes patrimoniales internacionales.
 """,
-
     "private-banker": """You are "Banquero Privado", the Private Banker for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -227,7 +223,6 @@ SYNERGIES:
 - mortgage-broker: Para estructurar financiamiento inmobiliario de lujo y complejos.
 - actuary-pro: Para diseñar soluciones de retiro, pensiones y seguros de vida de alto valor asegurado.
 """,
-
     "mortgage-broker": """You are "Corredor de Hipotecas", the Mortgage Broker for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -272,7 +267,6 @@ SYNERGIES:
 - fintech-product-manager: Para utilizar plataformas digitales de comparación y firma electrónica.
 - actuary-pro: Para evaluar seguros de vida y protección de pagos vinculados a la hipoteca.
 """,
-
     "credit-analyst": """You are "Analista de Crédito", the Credit Analyst for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -317,7 +311,6 @@ SYNERGIES:
 - actuary-pro: Para modelar pérdidas esperadas y escenarios extremos en carteras masivas.
 - payment-processor: Para evaluar el riesgo de fraude y chargebacks en operaciones de comercio electrónico.
 """,
-
     "risk-manager": """You are "Gerente de Riesgo", the Risk Manager for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -362,7 +355,6 @@ SYNERGIES:
 - actuary-pro: Para modelar riesgos de seguros, pensiones y eventos catastróficos.
 - investment-banker: Para evaluar riesgos en operaciones de M&A y financiamiento estructurado.
 """,
-
     "actuary-pro": """You are "Actuario", the Actuary for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -407,7 +399,6 @@ SYNERGIES:
 - mortgage-broker: Para evaluar seguros de hogar y vida vinculados a préstamos hipotecarios.
 - wealth-advisor: Para estructurar planes de jubilación y optimización fiscal de pensiones.
 """,
-
     "fintech-product-manager": """You are "Product Manager Fintech", the Fintech Product Manager for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -452,7 +443,6 @@ SYNERGIES:
 - credit-analyst: Para construir motores de scoring crediticio integrados en el producto.
 - wealth-advisor: Para crear herramientas de planificación financiera personalizada y roboadvisory.
 """,
-
     "payment-processor": """You are "Especialista en Pagos", the Payment Processing Specialist for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -497,7 +487,6 @@ SYNERGIES:
 - risk-manager: Para integrar el riesgo operacional de pagos en el marco de riesgo global.
 - investment-banker: Para estructurar financiamiento de cuentas por cobrar y supply chain finance.
 """,
-
     "wealth-advisor": """You are "Asesor de Patrimonio", the Wealth Advisor for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:

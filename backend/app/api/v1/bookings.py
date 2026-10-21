@@ -138,7 +138,9 @@ async def booking_metrics(
     )
     bookings = bookings_result.scalar() or 0
 
-    booking_rate = round((bookings / qualified_leads) * 100, 1) if qualified_leads else 0.0
+    booking_rate = (
+        round((bookings / qualified_leads) * 100, 1) if qualified_leads else 0.0
+    )
 
     return {
         "business_id": str(business_id),

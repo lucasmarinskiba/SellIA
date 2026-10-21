@@ -29,5 +29,5 @@ __all__ = [
     "PricingTier",
     "PricingTransaction",
     "RevenueAnalyticsService",
-    "TestVariant"
+    "TestVariant",
 ]

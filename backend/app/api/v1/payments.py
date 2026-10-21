@@ -22,7 +22,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1", tags=["payments"])
 
 
-async def _get_business_for_user(business_id: UUID, user: User, db: AsyncSession) -> Business:
+async def _get_business_for_user(
+    business_id: UUID, user: User, db: AsyncSession
+) -> Business:
     """Same convention as websites.py/catalog.py/channels.py/conversations.py.
 
     Every route below used to take business_id straight from the URL with no
@@ -94,7 +96,7 @@ async def create_transaction(
         conversation_id=request.conversation_id,
         description=request.description,
         reference_id=request.reference_id,
-        db=db
+        db=db,
     )
 
 
@@ -116,7 +118,7 @@ async def create_mercadopago_checkout(
         currency=request.currency,
         order_id=request.order_id,
         conversation_id=request.conversation_id,
-        db=db
+        db=db,
     )
 
 
@@ -147,9 +149,7 @@ async def handle_mercadopago_webhook(
     if not verify_mercadopago_signature(request, body):
         raise HTTPException(status_code=401, detail="Invalid webhook signature")
     return await PaymentService.process_mercadopago_webhook(
-        business_id=business_id,
-        event_data=body,
-        db=db
+        business_id=business_id, event_data=body, db=db
     )
 
 
@@ -167,7 +167,7 @@ async def create_refund(
         business_id=business_id,
         amount=request.amount,
         reason=request.reason,
-        db=db
+        db=db,
     )
 
 
@@ -184,7 +184,7 @@ async def reconcile_transaction(
         order_id=request.order_id,
         transaction_id=request.transaction_id,
         business_id=business_id,
-        db=db
+        db=db,
     )
 
 
@@ -204,7 +204,7 @@ async def get_transactions(
         status=status,
         location_id=location_id,
         limit=limit,
-        db=db
+        db=db,
     )
 
 
@@ -218,9 +218,7 @@ async def get_settlement_metrics(
     """Get settlement metrics."""
     await _get_business_for_user(business_id, current_user, db)
     return await PaymentService.get_settlement_metrics(
-        business_id=business_id,
-        period_days=period_days,
-        db=db
+        business_id=business_id, period_days=period_days, db=db
     )
 
 
@@ -232,7 +230,4 @@ async def get_payment_metrics(
 ):
     """Get payment metrics."""
     await _get_business_for_user(business_id, current_user, db)
-    return await PaymentService.get_payment_metrics(
-        business_id=business_id,
-        db=db
-    )
+    return await PaymentService.get_payment_metrics(business_id=business_id, db=db)

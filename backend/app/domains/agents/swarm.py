@@ -56,9 +56,19 @@ Respond with a single valid JSON object and NOTHING else:
 
 ROLE_TO_PERSONA_MAP: dict[str, list[str]] = {
     "researcher": ["alex-hormozi", "market-researcher", "data-analyst", "neil-rackham"],
-    "copywriter": ["ad-copywriter", "copywriter-pro", "russell-brunson", "ryan-holiday"],
+    "copywriter": [
+        "ad-copywriter",
+        "copywriter-pro",
+        "russell-brunson",
+        "ryan-holiday",
+    ],
     "closer": ["jordan-belfort", "b2b-closer", "grant-cardone", "ryan-serhant"],
-    "objection_handler": ["chris-voss", "objection-crusher", "jordan-belfort", "robert-cialdini"],
+    "objection_handler": [
+        "chris-voss",
+        "objection-crusher",
+        "jordan-belfort",
+        "robert-cialdini",
+    ],
     "strategist": ["alex-hormozi", "russell-brunson", "grant-cardone", "steve-jobs"],
 }
 
@@ -74,11 +84,17 @@ def _build_agent_prompt(
     """Build the swarm prompt for a single agent."""
     persona = AGENT_PROMPTS.get(agent_slug, AGENT_PROMPTS.get("alex-hormozi", ""))
 
-    context_str = json.dumps(shared_context, ensure_ascii=False, indent=2) if shared_context else "No additional context."
+    context_str = (
+        json.dumps(shared_context, ensure_ascii=False, indent=2)
+        if shared_context
+        else "No additional context."
+    )
 
     history_lines = []
     for msg in history[-20:]:  # Keep last 20 messages for context window
-        history_lines.append(f"[{msg['round']}] {msg['agent_id']} ({msg['role']}): {msg['content']}")
+        history_lines.append(
+            f"[{msg['round']}] {msg['agent_id']} ({msg['role']}): {msg['content']}"
+        )
     history_str = "\n".join(history_lines) if history_lines else "No previous messages."
 
     prev_lines = []
@@ -183,16 +199,63 @@ class SwarmCoordinator:
         selected_roles: list[str] = []
 
         # Heuristic role selection based on task keywords
-        if any(kw in task_lower for kw in ["precio", "price", "cerrar", "close", "deal", "contrato", "contract"]):
+        if any(
+            kw in task_lower
+            for kw in [
+                "precio",
+                "price",
+                "cerrar",
+                "close",
+                "deal",
+                "contrato",
+                "contract",
+            ]
+        ):
             selected_roles.extend(["closer", "objection_handler"])
 
-        if any(kw in task_lower for kw in ["mensaje", "message", "copy", "texto", "text", "email", "anuncio", "ad", "hook"]):
+        if any(
+            kw in task_lower
+            for kw in [
+                "mensaje",
+                "message",
+                "copy",
+                "texto",
+                "text",
+                "email",
+                "anuncio",
+                "ad",
+                "hook",
+            ]
+        ):
             selected_roles.append("copywriter")
 
-        if any(kw in task_lower for kw in ["estrategia", "strategy", "plan", "enfoque", "approach", "tactica", "tactic"]):
+        if any(
+            kw in task_lower
+            for kw in [
+                "estrategia",
+                "strategy",
+                "plan",
+                "enfoque",
+                "approach",
+                "tactica",
+                "tactic",
+            ]
+        ):
             selected_roles.append("strategist")
 
-        if any(kw in task_lower for kw in ["investigar", "research", "dato", "data", "analisis", "analysis", "mercado", "market"]):
+        if any(
+            kw in task_lower
+            for kw in [
+                "investigar",
+                "research",
+                "dato",
+                "data",
+                "analisis",
+                "analysis",
+                "mercado",
+                "market",
+            ]
+        ):
             selected_roles.append("researcher")
 
         # Default panel if no strong signals
@@ -212,12 +275,16 @@ class SwarmCoordinator:
         for role in unique_roles:
             candidates = ROLE_TO_PERSONA_MAP.get(role, ["alex-hormozi"])
             # Pick first candidate that exists in AGENT_PROMPTS
-            agent_slug = next((s for s in candidates if s in AGENT_PROMPTS), candidates[0])
-            result.append({
-                "role": role,
-                "agent_slug": agent_slug,
-                "description": self.ROLE_DESCRIPTIONS.get(role, ""),
-            })
+            agent_slug = next(
+                (s for s in candidates if s in AGENT_PROMPTS), candidates[0]
+            )
+            result.append(
+                {
+                    "role": role,
+                    "agent_slug": agent_slug,
+                    "description": self.ROLE_DESCRIPTIONS.get(role, ""),
+                }
+            )
 
         return result
 
@@ -334,7 +401,12 @@ class AgentSwarm:
 
             # Update shared memory with round summaries
             shared_memory[f"round_{round_num}_summary"] = [
-                {"agent": m["agent_id"], "type": m["message_type"], "content": m["content"]} for m in round_messages
+                {
+                    "agent": m["agent_id"],
+                    "type": m["message_type"],
+                    "content": m["content"],
+                }
+                for m in round_messages
             ]
 
             # Check consensus
@@ -379,13 +451,20 @@ class AgentSwarm:
             if not role:
                 if any(kw in slug for kw in ["copy", "writer", "creative"]):
                     role = "copywriter"
-                elif any(kw in slug for kw in ["close", "closer", "belfort", "cardone", "serhant"]):
+                elif any(
+                    kw in slug
+                    for kw in ["close", "closer", "belfort", "cardone", "serhant"]
+                ):
                     role = "closer"
-                elif any(kw in slug for kw in ["research", "analyst", "data", "rackham"]):
+                elif any(
+                    kw in slug for kw in ["research", "analyst", "data", "rackham"]
+                ):
                     role = "researcher"
                 elif any(kw in slug for kw in ["objection", "voss", "cialdini"]):
                     role = "objection_handler"
-                elif any(kw in slug for kw in ["strateg", "hormozi", "brunson", "jobs"]):
+                elif any(
+                    kw in slug for kw in ["strateg", "hormozi", "brunson", "jobs"]
+                ):
                     role = "strategist"
                 else:
                     role = "contributor"
@@ -398,7 +477,9 @@ class AgentSwarm:
 
         return assignments
 
-    def _synthesize_final_response(self, history: list[dict[str, Any]], task: str) -> str:
+    def _synthesize_final_response(
+        self, history: list[dict[str, Any]], task: str
+    ) -> str:
         """Synthesize a final consensus response from agent contributions."""
         # Gather action proposals and key ideas from last round
         last_round = max((m["round"] for m in history), default=1)
@@ -409,7 +490,9 @@ class AgentSwarm:
 
         for msg in last_messages:
             if msg["message_type"] == "action":
-                parts.append(f"**Proposed Action** ({msg['agent_id']}): {msg['content']}\n")
+                parts.append(
+                    f"**Proposed Action** ({msg['agent_id']}): {msg['content']}\n"
+                )
             elif msg["message_type"] == "idea":
                 parts.append(f"**Insight** ({msg['agent_id']}): {msg['content']}\n")
             elif msg["message_type"] == "agreement":
@@ -417,7 +500,9 @@ class AgentSwarm:
 
         if len(parts) == 1:
             # No structured messages found; concatenate all last-round messages
-            parts.append("\n".join(f"- {m['agent_id']}: {m['content']}" for m in last_messages))
+            parts.append(
+                "\n".join(f"- {m['agent_id']}: {m['content']}" for m in last_messages)
+            )
 
         return "\n".join(parts)
 
@@ -429,5 +514,7 @@ class AgentSwarm:
             lines.append(f"Round {r}:")
             for m in history:
                 if m["round"] == r:
-                    lines.append(f"  [{m['role']}] {m['agent_id']} ({m['message_type']}): {m['content'][:120]}...")
+                    lines.append(
+                        f"  [{m['role']}] {m['agent_id']} ({m['message_type']}): {m['content'][:120]}..."
+                    )
         return "\n".join(lines)

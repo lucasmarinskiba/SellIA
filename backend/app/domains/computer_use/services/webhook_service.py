@@ -76,20 +76,29 @@ class WebhookService:
                 ):
                     last_status = resp.status
                     if resp.status < 400:
-                        logger.info(f"Webhook delivered: {event} → {url} (HTTP {resp.status})")
+                        logger.info(
+                            f"Webhook delivered: {event} → {url} (HTTP {resp.status})"
+                        )
                         return True, resp.status, None
                     else:
                         resp_text = await resp.text()
                         last_error = f"HTTP {resp.status}: {resp_text[:200]}"
-                        logger.warning(f"Webhook failed: {event} → {url} ({last_error})")
+                        logger.warning(
+                            f"Webhook failed: {event} → {url} ({last_error})"
+                        )
             except Exception as e:
                 last_error = str(e)
-                logger.warning(f"Webhook delivery error (attempt {attempt + 1}): {e}", exc_info=True)
+                logger.warning(
+                    f"Webhook delivery error (attempt {attempt + 1}): {e}",
+                    exc_info=True,
+                )
 
             if attempt < retry_count - 1:
-                await asyncio.sleep(2 ** attempt)  # Exponential backoff
+                await asyncio.sleep(2**attempt)  # Exponential backoff
 
-        logger.error(f"Webhook delivery failed after {retry_count} attempts: {event} → {url}")
+        logger.error(
+            f"Webhook delivery failed after {retry_count} attempts: {event} → {url}"
+        )
         return False, last_status, last_error
 
     async def notify_session_completed(

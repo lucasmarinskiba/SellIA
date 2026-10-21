@@ -8,9 +8,10 @@ from typing import Any, ClassVar
 
 class ContentQuality(str, Enum):
     """Quality tier for generation."""
-    DRAFT = "draft"          # Más barato, para previews/iteración
-    STANDARD = "standard"    # Balance calidad/costo
-    PREMIUM = "premium"      # Máxima calidad, más caro
+
+    DRAFT = "draft"  # Más barato, para previews/iteración
+    STANDARD = "standard"  # Balance calidad/costo
+    PREMIUM = "premium"  # Máxima calidad, más caro
 
 
 class ContentType(str, Enum):
@@ -23,6 +24,7 @@ class ContentType(str, Enum):
 @dataclass
 class GenerationResult:
     """Resultado de una generación de contenido."""
+
     success: bool
     url: str | None = None
     text_content: str | None = None
@@ -44,6 +46,7 @@ class GenerationResult:
 @dataclass
 class GenerationConfig:
     """Configuración para generación de contenido."""
+
     prompt: str
     content_type: ContentType
     quality: ContentQuality = ContentQuality.STANDARD

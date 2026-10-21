@@ -59,7 +59,9 @@ __all__ = [
 
 
 def get_system_prompt(
-    slug: str, business_context: dict | None = None, custom_instructions: str | None = None
+    slug: str,
+    business_context: dict | None = None,
+    custom_instructions: str | None = None,
 ) -> str:
     """Build the complete system prompt for an agent.
 
@@ -78,7 +80,9 @@ def get_system_prompt(
         if business_context.get("description"):
             ctx_parts.append(f"Description: {business_context['description']}")
         if business_context.get("catalog_summary"):
-            ctx_parts.append(f"Products/Services: {business_context['catalog_summary']}")
+            ctx_parts.append(
+                f"Products/Services: {business_context['catalog_summary']}"
+            )
         if ctx_parts:
             context_block = "\n\nBUSINESS CONTEXT:\n" + "\n".join(ctx_parts)
 

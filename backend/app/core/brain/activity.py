@@ -28,15 +28,17 @@ from app.core.logger import get_logger
 logger = get_logger(__name__)
 
 # Tipos de interacción reales que el sistema puede emitir.
-_KINDS = frozenset({
-    "agent",        # un agente toma el control / razona
-    "skill",        # se usa una skill (conocimiento, tool)
-    "knowledge",    # consulta a la base de conocimiento
-    "automation",   # corre una automatización
-    "computer_use", # acción de Computer Use (navegador/sandbox)
-    "db",           # lectura/escritura a base de datos
-    "function",     # llamada a función/tool del orquestador
-})
+_KINDS = frozenset(
+    {
+        "agent",  # un agente toma el control / razona
+        "skill",  # se usa una skill (conocimiento, tool)
+        "knowledge",  # consulta a la base de conocimiento
+        "automation",  # corre una automatización
+        "computer_use",  # acción de Computer Use (navegador/sandbox)
+        "db",  # lectura/escritura a base de datos
+        "function",  # llamada a función/tool del orquestador
+    }
+)
 
 _MAX_EVENTS = 300
 
@@ -44,12 +46,13 @@ _MAX_EVENTS = 300
 @dataclass(frozen=True)
 class ActivityEvent:
     """Una interacción real, lista para serializar al frontend."""
+
     seq: int
-    ts: float                  # epoch segundos
-    kind: str                  # uno de _KINDS
-    source: str                # id de nodo origen (capability id o canal)
-    target: str | None      # id de nodo destino (None = self-activación)
-    detail: str                # descripción corta y honesta
+    ts: float  # epoch segundos
+    kind: str  # uno de _KINDS
+    source: str  # id de nodo origen (capability id o canal)
+    target: str | None  # id de nodo destino (None = self-activación)
+    detail: str  # descripción corta y honesta
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -76,14 +79,16 @@ class BrainActivityBus:
                 kind = "function"
             with self._lock:
                 self._seq += 1
-                self._events.append(ActivityEvent(
-                    seq=self._seq,
-                    ts=time.time(),
-                    kind=kind,
-                    source=str(source),
-                    target=str(target) if target else None,
-                    detail=str(detail)[:160],
-                ))
+                self._events.append(
+                    ActivityEvent(
+                        seq=self._seq,
+                        ts=time.time(),
+                        kind=kind,
+                        source=str(source),
+                        target=str(target) if target else None,
+                        detail=str(detail)[:160],
+                    )
+                )
         except Exception as exc:  # pragma: no cover - defensivo
             logger.debug("activity record failed: %s", exc, exc_info=True)
 
@@ -155,6 +160,8 @@ def get_activity_bus() -> BrainActivityBus:
     return _bus
 
 
-def record_activity(kind: str, source: str, detail: str, target: str | None = None) -> None:
+def record_activity(
+    kind: str, source: str, detail: str, target: str | None = None
+) -> None:
     """Atajo best-effort para emitir un evento real desde cualquier capa."""
     get_activity_bus().record(kind=kind, source=source, detail=detail, target=target)

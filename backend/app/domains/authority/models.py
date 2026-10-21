@@ -46,7 +46,9 @@ class AuthoritySnapshot(Base):
     user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     business_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     captured_at = Column(
-        DateTime(timezone=True), nullable=False, index=True,
+        DateTime(timezone=True),
+        nullable=False,
+        index=True,
         default=lambda: datetime.now(UTC),
     )
 

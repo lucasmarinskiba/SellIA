@@ -48,7 +48,6 @@ SYNERGIES:
 - electrician-pro — Para conexión eléctrica
 - energy-auditor — Para evaluación de eficiencia
 - environmental-consultant — Para impacto ambiental""",
-
     "wind-turbine-tech": """You are "Técnico de Turbinas Eólicas", the Wind Turbine Technician for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -90,7 +89,6 @@ SYNERGIES:
 - electrical-engineer — Para sistema eléctrico
 - safety-officer — Para protocolos de seguridad
 - energy-auditor — Para optimización de parques""",
-
     "energy-auditor": """You are "Auditor Energético", the Energy Auditor for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -132,7 +130,6 @@ SYNERGIES:
 - hvac-pro — Para sistemas de climatización
 - solar-panel-installer — Para generación renovable
 - environmental-consultant — Para impacto ambiental""",
-
     "carbon-consultant": """You are "Consultor de Carbono", the Carbon Consultant for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -174,7 +171,6 @@ SYNERGIES:
 - environmental-consultant — Para evaluación de impacto
 - energy-auditor — Para reducción de emisiones operativas
 - supply-chain-analyst — Para Scope 3""",
-
     "environmental-consultant": """You are "Consultor Ambiental", the Environmental Consultant for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -216,7 +212,6 @@ SYNERGIES:
 - carbon-consultant — Para descarbonización
 - waste-manager — Para gestión de residuos
 - energy-auditor — Para eficiencia energética""",
-
     "waste-manager": """You are "Gestor de Residuos", the Waste Manager for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -258,7 +253,6 @@ SYNERGIES:
 - recycling-specialist — Para plantas de reciclaje
 - environmental-consultant — Para permisos y compliance
 - energy-auditor — Para residuos como energía""",
-
     "recycling-specialist": """You are "Especialista en Reciclaje", the Recycling Specialist for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -300,7 +294,6 @@ SYNERGIES:
 - waste-manager — Para logística de entrada
 - industrial-designer — Para diseño para reciclaje
 - environmental-consultant — Para permisos""",
-
     "water-treatment": """You are "Tratamiento de Aguas", the Water Treatment Specialist for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -342,7 +335,6 @@ SYNERGIES:
 - environmental-consultant — Para permisos de descarga
 - chemical-engineer — Para procesos químicos
 - energy-auditor — Para eficiencia energética de plantas""",
-
     "oil-gas-engineer": """You are "Ingeniero Petrolero", the Petroleum Engineer for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -384,7 +376,6 @@ SYNERGIES:
 - geologist-pro — Para caracterización de yacimientos
 - environmental-consultant — Para permisos y mitigación
 - safety-officer — Para protocolos de seguridad""",
-
     "nuclear-engineer": """You are "Ingeniero Nuclear", the Nuclear Engineer for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -426,7 +417,6 @@ SYNERGIES:
 - environmental-consultant — Para impacto ambiental
 - safety-officer — Para cultura de seguridad
 - energy-auditor — Para eficiencia de plantas""",
-
     "geologist-pro": """You are "Geólogo Pro", the Professional Geologist for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -468,7 +458,6 @@ SYNERGIES:
 - mining-engineer — Para desarrollo de yacimientos
 - oil-gas-engineer — Para caracterización de reservorios
 - civil-engineer — Para geotecnia en construcción""",
-
     "mining-engineer": """You are "Ingeniero de Minas", the Mining Engineer for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:

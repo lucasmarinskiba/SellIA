@@ -56,14 +56,26 @@ PLATFORM_FIT: dict[str, dict[str, Any]] = {
         "label": "MercadoLibre",
         "kind": "marketplace",
         "markets": ["AR", "MX", "BR", "CL", "CO", "UY", "PE", "EC", "BO"],
-        "suits": ["physical_products", "fashion_beauty", "home_decor", "handcraft", "health_wellness"],
+        "suits": [
+            "physical_products",
+            "fashion_beauty",
+            "home_decor",
+            "handcraft",
+            "health_wellness",
+        ],
         "note": "El marketplace con más tráfico de compra directa en Latinoamérica.",
     },
     "shopify": {
         "label": "Shopify",
         "kind": "own_store",
         "markets": [],
-        "suits": ["physical_products", "digital_products", "fashion_beauty", "home_decor", "handcraft"],
+        "suits": [
+            "physical_products",
+            "digital_products",
+            "fashion_beauty",
+            "home_decor",
+            "handcraft",
+        ],
         "note": "Tienda propia: no trae tráfico, pero ninguna plataforma se queda con tu cliente.",
     },
     "woocommerce": {
@@ -98,7 +110,12 @@ PLATFORM_FIT: dict[str, dict[str, Any]] = {
         "label": "TikTok Shop",
         "kind": "marketplace",
         "markets": ["US", "GB", "MX", "BR", "ES"],
-        "suits": ["fashion_beauty", "physical_products", "health_wellness", "home_decor"],
+        "suits": [
+            "fashion_beauty",
+            "physical_products",
+            "health_wellness",
+            "home_decor",
+        ],
         "note": "Venta dentro del video: rinde si ya producís contenido.",
     },
     "facebook_marketplace": {
@@ -112,14 +129,27 @@ PLATFORM_FIT: dict[str, dict[str, Any]] = {
         "label": "Instagram",
         "kind": "social",
         "markets": [],
-        "suits": ["fashion_beauty", "food_beverage", "handcraft", "home_decor", "health_wellness", "services"],
+        "suits": [
+            "fashion_beauty",
+            "food_beverage",
+            "handcraft",
+            "home_decor",
+            "health_wellness",
+            "services",
+        ],
         "note": "Donde se descubre el producto y se abre la conversación.",
     },
     "whatsapp": {
         "label": "WhatsApp",
         "kind": "messaging",
         "markets": [],
-        "suits": ["services", "consulting", "food_beverage", "physical_products", "health_wellness"],
+        "suits": [
+            "services",
+            "consulting",
+            "food_beverage",
+            "physical_products",
+            "health_wellness",
+        ],
         "note": "Donde se cierra la venta en Latinoamérica.",
     },
     "telegram": {
@@ -150,18 +180,58 @@ PLATFORM_FIT: dict[str, dict[str, Any]] = {
         "suits": ["consulting", "software", "services"],
         "note": "El canal B2B: decisores, no consumidores.",
     },
-    "threads": {"label": "Threads", "kind": "social", "markets": [], "suits": ["services", "consulting"], "note": "Conversación de texto ligada a tu Instagram."},
-    "twitter": {"label": "X / Twitter", "kind": "social", "markets": [], "suits": ["software", "consulting", "digital_products"], "note": "Nicho técnico y actualidad."},
-    "email": {"label": "Email", "kind": "messaging", "markets": [], "suits": ["digital_products", "consulting", "services", "software"], "note": "Lo único que no depende de un algoritmo ajeno."},
-    "webchat": {"label": "Chat del sitio", "kind": "messaging", "markets": [], "suits": ["services", "software", "consulting"], "note": "Atiende a quien ya está mirando tu producto."},
+    "threads": {
+        "label": "Threads",
+        "kind": "social",
+        "markets": [],
+        "suits": ["services", "consulting"],
+        "note": "Conversación de texto ligada a tu Instagram.",
+    },
+    "twitter": {
+        "label": "X / Twitter",
+        "kind": "social",
+        "markets": [],
+        "suits": ["software", "consulting", "digital_products"],
+        "note": "Nicho técnico y actualidad.",
+    },
+    "email": {
+        "label": "Email",
+        "kind": "messaging",
+        "markets": [],
+        "suits": ["digital_products", "consulting", "services", "software"],
+        "note": "Lo único que no depende de un algoritmo ajeno.",
+    },
+    "webchat": {
+        "label": "Chat del sitio",
+        "kind": "messaging",
+        "markets": [],
+        "suits": ["services", "software", "consulting"],
+        "note": "Atiende a quien ya está mirando tu producto.",
+    },
 }
 
 # The tones the prompt composer really distinguishes.
 TONES: list[dict[str, str]] = [
-    {"value": "professional", "label": "Profesional", "detail": "Claro y directo, sin exceso de confianza."},
-    {"value": "casual", "label": "Cercano", "detail": "Como le hablás a un cliente conocido."},
-    {"value": "persuasive", "label": "Persuasivo", "detail": "Orientado a que la conversación termine en compra."},
-    {"value": "technical", "label": "Técnico", "detail": "Datos, especificaciones y precisión."},
+    {
+        "value": "professional",
+        "label": "Profesional",
+        "detail": "Claro y directo, sin exceso de confianza.",
+    },
+    {
+        "value": "casual",
+        "label": "Cercano",
+        "detail": "Como le hablás a un cliente conocido.",
+    },
+    {
+        "value": "persuasive",
+        "label": "Persuasivo",
+        "detail": "Orientado a que la conversación termine en compra.",
+    },
+    {
+        "value": "technical",
+        "label": "Técnico",
+        "detail": "Datos, especificaciones y precisión.",
+    },
 ]
 
 GOALS: list[dict[str, str]] = [
@@ -197,7 +267,9 @@ def business_types() -> list[dict[str, str]]:
         "handcraft": "Artesanías",
         "other": "Otro",
     }
-    return [{"value": t.value, "label": labels.get(t.value, t.value)} for t in BusinessType]
+    return [
+        {"value": t.value, "label": labels.get(t.value, t.value)} for t in BusinessType
+    ]
 
 
 def sales_models() -> list[dict[str, str]]:
@@ -210,7 +282,9 @@ def sales_models() -> list[dict[str, str]]:
         "d2c": "Marca propia directa (D2C)",
         "marketplace": "En marketplaces",
     }
-    return [{"value": m.value, "label": labels.get(m.value, m.value)} for m in SalesModel]
+    return [
+        {"value": m.value, "label": labels.get(m.value, m.value)} for m in SalesModel
+    ]
 
 
 def platform_options() -> list[dict[str, Any]]:
@@ -220,15 +294,17 @@ def platform_options() -> list[dict[str, Any]]:
     options = []
     for platform, fit in PLATFORM_FIT.items():
         caps = capabilities.capabilities_for(platform)
-        options.append({
-            "value": platform,
-            "label": fit["label"],
-            "kind": fit["kind"],
-            "note": fit["note"],
-            "markets": fit["markets"],
-            "suits": fit["suits"],
-            "capabilities": [key for key, available in caps.items() if available],
-        })
+        options.append(
+            {
+                "value": platform,
+                "label": fit["label"],
+                "kind": fit["kind"],
+                "note": fit["note"],
+                "markets": fit["markets"],
+                "suits": fit["suits"],
+                "capabilities": [key for key, available in caps.items() if available],
+            }
+        )
     return sorted(options, key=lambda option: option["label"].lower())
 
 

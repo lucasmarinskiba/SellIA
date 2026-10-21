@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 class Strategy(str, Enum):
     """Strategy identifiers."""
+
     # Blue Ocean Strategies
     BLUE_OCEAN_ELIMINATE = "blue_ocean_eliminate"
     BLUE_OCEAN_REDUCE = "blue_ocean_reduce"
@@ -70,6 +71,7 @@ class Strategy(str, Enum):
 
 class StrategyCategory(str, Enum):
     """Strategy classification."""
+
     BLUE_OCEAN = "blue_ocean"
     RETENTION = "retention"
     NEGOTIATION = "negotiation"
@@ -82,6 +84,7 @@ class StrategyCategory(str, Enum):
 @dataclass
 class StrategyDefinition:
     """Complete strategy definition with rules."""
+
     strategy_id: Strategy
     name: str
     category: StrategyCategory
@@ -142,7 +145,10 @@ class StrategyRepository:
                     "operations": "2-4 weeks",
                     "marketing": "2-4 weeks",
                 },
-                constraints=["Must maintain quality perception", "Risk of commoditization"],
+                constraints=[
+                    "Must maintain quality perception",
+                    "Risk of commoditization",
+                ],
                 risks=["Brand perception damage", "Competitor response"],
                 expected_roi={"cost_reduction": 0.20, "volume_increase": 0.30},
                 incompatible_with=[Strategy.FEATURE_LEADERSHIP],
@@ -186,7 +192,6 @@ class StrategyRepository:
                 incompatible_with=[],
                 examples=["Southwest Airlines", "Netflix"],
             ),
-
             # Retention Strategies
             Strategy.NPS_DRIVEN: StrategyDefinition(
                 strategy_id=Strategy.NPS_DRIVEN,
@@ -239,7 +244,11 @@ class StrategyRepository:
                     "Personalize based on use case",
                     "Track completion rates",
                 ],
-                success_metrics=["Day 7 activation", "Day 30 retention", "Time to first success"],
+                success_metrics=[
+                    "Day 7 activation",
+                    "Day 30 retention",
+                    "Time to first success",
+                ],
                 typical_timeline_weeks=8,
                 resource_requirements={
                     "product": "2-3 weeks",
@@ -271,7 +280,11 @@ class StrategyRepository:
                     "Celebrate user wins publicly",
                     "Graduate users to leaders",
                 ],
-                success_metrics=["Community size", "Daily active users", "Content generated"],
+                success_metrics=[
+                    "Community size",
+                    "Daily active users",
+                    "Content generated",
+                ],
                 typical_timeline_weeks=12,
                 resource_requirements={
                     "community_manager": "1 person",
@@ -283,7 +296,6 @@ class StrategyRepository:
                 incompatible_with=[],
                 examples=["Circle (community)", "MasterClass (community)"],
             ),
-
             # Pricing Strategies
             Strategy.VALUE_BASED: StrategyDefinition(
                 strategy_id=Strategy.VALUE_BASED,
@@ -305,7 +317,11 @@ class StrategyRepository:
                     "Implement tiered pricing",
                     "Monitor elasticity",
                 ],
-                success_metrics=["Revenue increase", "Margin improvement", "Customer satisfaction"],
+                success_metrics=[
+                    "Revenue increase",
+                    "Margin improvement",
+                    "Customer satisfaction",
+                ],
                 typical_timeline_weeks=10,
                 resource_requirements={
                     "pricing_analyst": "1 person",
@@ -337,7 +353,11 @@ class StrategyRepository:
                     "Create upgrade path",
                     "Monitor tier distribution",
                 ],
-                success_metrics=["Mix of tiers", "ARPU (average revenue per user)", "Conversion rate"],
+                success_metrics=[
+                    "Mix of tiers",
+                    "ARPU (average revenue per user)",
+                    "Conversion rate",
+                ],
                 typical_timeline_weeks=8,
                 resource_requirements={
                     "product": "1-2 weeks",
@@ -369,7 +389,11 @@ class StrategyRepository:
                     "Track free-to-paid conversion",
                     "Optimize upgrade funnel",
                 ],
-                success_metrics=["Free user base", "Free-to-paid conversion", "Free CAC"],
+                success_metrics=[
+                    "Free user base",
+                    "Free-to-paid conversion",
+                    "Free CAC",
+                ],
                 typical_timeline_weeks=12,
                 resource_requirements={
                     "product": "2-4 weeks",
@@ -381,7 +405,6 @@ class StrategyRepository:
                 incompatible_with=[Strategy.PAID_ADS],
                 examples=["Slack", "Canva", "Dropbox"],
             ),
-
             # Acquisition Strategies
             Strategy.CONTENT_MARKETING: StrategyDefinition(
                 strategy_id=Strategy.CONTENT_MARKETING,
@@ -479,7 +502,6 @@ class StrategyRepository:
                 incompatible_with=[],
                 examples=["Dropbox (referral)", "Stripe (integrations)"],
             ),
-
             # Positioning Strategies
             Strategy.CATEGORY_CREATION: StrategyDefinition(
                 strategy_id=Strategy.CATEGORY_CREATION,
@@ -514,7 +536,6 @@ class StrategyRepository:
                 incompatible_with=[],
                 examples=["Zoom (video conferencing)", "Slack (team chat)"],
             ),
-
             # Growth Strategies
             Strategy.PENETRATION: StrategyDefinition(
                 strategy_id=Strategy.PENETRATION,
@@ -535,7 +556,11 @@ class StrategyRepository:
                     "Build premium tier",
                     "Track expansion revenue",
                 ],
-                success_metrics=["Expansion revenue %", "Net revenue retention", "Upsell rate"],
+                success_metrics=[
+                    "Expansion revenue %",
+                    "Net revenue retention",
+                    "Upsell rate",
+                ],
                 typical_timeline_weeks=8,
                 resource_requirements={
                     "product": "2 weeks",
@@ -559,17 +584,25 @@ class StrategyRepository:
 
     def get_strategies_for_industry(self, industry: str) -> list[StrategyDefinition]:
         """Get all strategies applicable to an industry."""
-        return [s for s in self.strategies.values() if industry in s.best_for_industries]
+        return [
+            s for s in self.strategies.values() if industry in s.best_for_industries
+        ]
 
     def get_strategies_for_business_model(self, model: str) -> list[StrategyDefinition]:
         """Get all strategies applicable to a business model."""
-        return [s for s in self.strategies.values() if model in s.best_for_business_models]
+        return [
+            s for s in self.strategies.values() if model in s.best_for_business_models
+        ]
 
-    def get_strategies_by_category(self, category: StrategyCategory) -> list[StrategyDefinition]:
+    def get_strategies_by_category(
+        self, category: StrategyCategory
+    ) -> list[StrategyDefinition]:
         """Get all strategies in a category."""
         return [s for s in self.strategies.values() if s.category == category]
 
-    def find_compatible_strategies(self, strategy_id: Strategy) -> list[StrategyDefinition]:
+    def find_compatible_strategies(
+        self, strategy_id: Strategy
+    ) -> list[StrategyDefinition]:
         """Find strategies that work well together."""
         strategy = self.get_strategy(strategy_id)
         if not strategy:
@@ -577,12 +610,17 @@ class StrategyRepository:
 
         compatible = []
         for s in self.strategies.values():
-            if s.strategy_id not in strategy.incompatible_with and s.strategy_id != strategy_id:
+            if (
+                s.strategy_id not in strategy.incompatible_with
+                and s.strategy_id != strategy_id
+            ):
                 compatible.append(s)
 
         return compatible
 
-    def evaluate_strategy_fit(self, strategy_id: Strategy, business_profile: "BusinessProfile") -> float:
+    def evaluate_strategy_fit(
+        self, strategy_id: Strategy, business_profile: "BusinessProfile"
+    ) -> float:
         """Calculate fit score (0-1) of strategy for business."""
         strategy = self.get_strategy(strategy_id)
         if not strategy:

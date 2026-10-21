@@ -1,4 +1,5 @@
 """Phase 5C: Channel Integration Endpoints."""
+
 from datetime import datetime
 from typing import Annotated
 from uuid import UUID
@@ -126,7 +127,9 @@ async def get_location_reviews(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Get all reviews for location."""
-    reviews = ChannelIntegrationService.get_location_reviews(db, business_id, location_id)
+    reviews = ChannelIntegrationService.get_location_reviews(
+        db, business_id, location_id
+    )
     avg_rating = sum(r.rating for r in reviews) / len(reviews) if reviews else 0
     return {
         "location_id": location_id,

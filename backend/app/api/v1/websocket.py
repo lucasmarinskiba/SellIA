@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+
 # Active connections
 class ConnectionManager:
     def __init__(self):
@@ -60,35 +61,47 @@ async def websocket_brain(websocket: WebSocket):
 
                 # Handle different message types
                 if msg_type == "ping":
-                    await manager.send_personal(websocket, {
-                        "type": "pong",
-                        "timestamp": utc_now().isoformat(),
-                    })
+                    await manager.send_personal(
+                        websocket,
+                        {
+                            "type": "pong",
+                            "timestamp": utc_now().isoformat(),
+                        },
+                    )
 
                 elif msg_type == "subscribe_metrics":
                     # Client wants metrics updates
-                    await manager.send_personal(websocket, {
-                        "type": "subscribed",
-                        "channel": "metrics",
-                        "timestamp": utc_now().isoformat(),
-                    })
+                    await manager.send_personal(
+                        websocket,
+                        {
+                            "type": "subscribed",
+                            "channel": "metrics",
+                            "timestamp": utc_now().isoformat(),
+                        },
+                    )
 
                 elif msg_type == "subscribe_phases":
                     # Client wants phase updates
-                    await manager.send_personal(websocket, {
-                        "type": "subscribed",
-                        "channel": "phases",
-                        "timestamp": utc_now().isoformat(),
-                    })
+                    await manager.send_personal(
+                        websocket,
+                        {
+                            "type": "subscribed",
+                            "channel": "phases",
+                            "timestamp": utc_now().isoformat(),
+                        },
+                    )
 
                 else:
                     logger.warning(f"Unknown message type: {msg_type}")
 
             except json.JSONDecodeError:
-                await manager.send_personal(websocket, {
-                    "type": "error",
-                    "message": "Invalid JSON",
-                })
+                await manager.send_personal(
+                    websocket,
+                    {
+                        "type": "error",
+                        "message": "Invalid JSON",
+                    },
+                )
 
     except WebSocketDisconnect:
         manager.disconnect(websocket)
@@ -101,30 +114,38 @@ async def websocket_brain(websocket: WebSocket):
 
 async def broadcast_phase_update(phase: str, status: str, data: dict | None = None):
     """Broadcast phase update to all clients."""
-    await manager.broadcast({
-        "type": "phase_update",
-        "phase": phase,
-        "status": status,
-        "data": data or {},
-        "timestamp": utc_now().isoformat(),
-    })
+    await manager.broadcast(
+        {
+            "type": "phase_update",
+            "phase": phase,
+            "status": status,
+            "data": data or {},
+            "timestamp": utc_now().isoformat(),
+        }
+    )
 
 
 async def broadcast_metrics_update(metrics: dict):
     """Broadcast metrics update to all clients."""
-    await manager.broadcast({
-        "type": "metrics_update",
-        "metrics": metrics,
-        "timestamp": utc_now().isoformat(),
-    })
+    await manager.broadcast(
+        {
+            "type": "metrics_update",
+            "metrics": metrics,
+            "timestamp": utc_now().isoformat(),
+        }
+    )
 
 
-async def broadcast_system_event(event_type: str, message: str, data: dict | None = None):
+async def broadcast_system_event(
+    event_type: str, message: str, data: dict | None = None
+):
     """Broadcast system event to all clients."""
-    await manager.broadcast({
-        "type": "system_event",
-        "event_type": event_type,
-        "message": message,
-        "data": data or {},
-        "timestamp": utc_now().isoformat(),
-    })
+    await manager.broadcast(
+        {
+            "type": "system_event",
+            "event_type": event_type,
+            "message": message,
+            "data": data or {},
+            "timestamp": utc_now().isoformat(),
+        }
+    )

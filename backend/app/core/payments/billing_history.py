@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 class TransactionType(str, Enum):
     """Transaction types."""
+
     PAYMENT = "payment"
     REFUND = "refund"
     CHARGEBACK = "chargeback"
@@ -148,16 +149,16 @@ class BillingHistoryManager:
             as_of = as_of_date or utc_now()
 
             # Query payments for account
-            payments = db.query(Payment).filter(
-                Payment.created_at <= as_of,
-            ).all()
+            payments = (
+                db.query(Payment)
+                .filter(
+                    Payment.created_at <= as_of,
+                )
+                .all()
+            )
 
-            total_revenue = sum(
-                p.amount for p in payments if p.status == "succeeded"
-            )
-            total_refunds = sum(
-                p.amount for p in payments if p.status == "refunded"
-            )
+            total_revenue = sum(p.amount for p in payments if p.status == "succeeded")
+            total_refunds = sum(p.amount for p in payments if p.status == "refunded")
 
             net_balance = total_revenue - total_refunds
 
@@ -247,14 +248,16 @@ class BillingHistoryManager:
                 elif payment.status == "refunded":
                     total_refunds += amount
 
-                transactions.append({
-                    "date": payment.created_at,
-                    "type": tx_type,
-                    "amount": amount,
-                    "description": f"Order {payment.order_id}",
-                    "order_id": payment.order_id,
-                    "status": payment.status,
-                })
+                transactions.append(
+                    {
+                        "date": payment.created_at,
+                        "type": tx_type,
+                        "amount": amount,
+                        "description": f"Order {payment.order_id}",
+                        "order_id": payment.order_id,
+                        "status": payment.status,
+                    }
+                )
 
             net_revenue = total_revenue - total_refunds
 
@@ -271,13 +274,17 @@ class BillingHistoryManager:
                     "start": start_date,
                     "end": end_date,
                 },
-                "transactions": sorted(transactions, key=lambda x: x["date"], reverse=True),
+                "transactions": sorted(
+                    transactions, key=lambda x: x["date"], reverse=True
+                ),
                 "summary": {
                     "total_transactions": len(transactions),
                     "total_revenue": total_revenue,
                     "total_refunds": total_refunds,
                     "net_revenue": net_revenue,
-                    "num_succeeded": len([p for p in payments if p.status == "succeeded"]),
+                    "num_succeeded": len(
+                        [p for p in payments if p.status == "succeeded"]
+                    ),
                     "num_failed": len([p for p in payments if p.status == "failed"]),
                 },
             }
@@ -333,15 +340,19 @@ class BillingHistoryManager:
                 )
 
                 if month_summary["status"] == "retrieved":
-                    summaries.append({
-                        "month": start_date.strftime("%Y-%m"),
-                        "year": start_date.year,
-                        "month_num": start_date.month,
-                        "transactions": month_summary["summary"]["total_transactions"],
-                        "revenue": month_summary["summary"]["total_revenue"],
-                        "refunds": month_summary["summary"]["total_refunds"],
-                        "net": month_summary["summary"]["net_revenue"],
-                    })
+                    summaries.append(
+                        {
+                            "month": start_date.strftime("%Y-%m"),
+                            "year": start_date.year,
+                            "month_num": start_date.month,
+                            "transactions": month_summary["summary"][
+                                "total_transactions"
+                            ],
+                            "revenue": month_summary["summary"]["total_revenue"],
+                            "refunds": month_summary["summary"]["total_refunds"],
+                            "net": month_summary["summary"]["net_revenue"],
+                        }
+                    )
 
                 end_date = start_date
 

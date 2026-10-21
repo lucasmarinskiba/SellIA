@@ -45,6 +45,11 @@ async def ensure_leads_owner_column() -> None:
             async with engine.begin() as conn:
                 await conn.execute(text(stmt))
             ok += 1
-        except Exception as e:  # noqa: BLE001 -- never block startup on this
-            logger.warning("leads bootstrap statement skipped (%s): %s", stmt[:48], str(e)[:180])
-    logger.info("✅ leads owner-column bootstrap (%s/%s statements)", ok, len(statements))
+        # never block startup on this
+        except Exception as e:  # noqa: BLE001
+            logger.warning(
+                "leads bootstrap statement skipped (%s): %s", stmt[:48], str(e)[:180]
+            )
+    logger.info(
+        "✅ leads owner-column bootstrap (%s/%s statements)", ok, len(statements)
+    )

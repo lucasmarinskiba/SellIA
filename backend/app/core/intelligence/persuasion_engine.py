@@ -175,8 +175,14 @@ class PersuasionEngine:
         },
         "power_words": {
             "high_impact": [
-                "Proven", "Guaranteed", "Exclusive", "Limited",
-                "Breakthrough", "Revolutionary", "Effortless", "Instantly",
+                "Proven",
+                "Guaranteed",
+                "Exclusive",
+                "Limited",
+                "Breakthrough",
+                "Revolutionary",
+                "Effortless",
+                "Instantly",
             ],
             "examples": [
                 "Proven 3-step system (not just system)",
@@ -188,7 +194,9 @@ class PersuasionEngine:
 
     # Persuasion stack: layer multiple principles
     @staticmethod
-    def build_persuasion_stack(buyer: dict[str, Any], product: dict[str, Any]) -> dict[str, Any]:
+    def build_persuasion_stack(
+        buyer: dict[str, Any], product: dict[str, Any]
+    ) -> dict[str, Any]:
         """Construye stack persuasión personalizado."""
 
         stack = {

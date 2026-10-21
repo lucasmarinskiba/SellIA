@@ -22,7 +22,9 @@ logger = logging.getLogger(__name__)
 class ComputerVisionEngine:
     """Computer Vision para entender interfaces web automáticamente."""
 
-    def __init__(self, anthropic_api_key: str, google_vision_api_key: str | None = None):
+    def __init__(
+        self, anthropic_api_key: str, google_vision_api_key: str | None = None
+    ):
         self.anthropic_client = anthropic.Anthropic(api_key=anthropic_api_key)
         self.google_api_key = google_vision_api_key
         self.http_client = httpx.AsyncClient(timeout=30)
@@ -97,7 +99,11 @@ Responde en JSON: {
                 analysis = json.loads(response_text)
             except json.JSONDecodeError:
                 json_match = re.search(r"\{.*\}", response_text, re.DOTALL)
-                analysis = json.loads(json_match.group(0)) if json_match else {"raw": response_text}
+                analysis = (
+                    json.loads(json_match.group(0))
+                    if json_match
+                    else {"raw": response_text}
+                )
 
             return {
                 "status": "success",
@@ -180,7 +186,11 @@ Responde en JSON:
                 detection = json.loads(response_text)
             except json.JSONDecodeError:
                 json_match = re.search(r"\{.*\}", response_text, re.DOTALL)
-                detection = json.loads(json_match.group(0)) if json_match else {"raw": response_text}
+                detection = (
+                    json.loads(json_match.group(0))
+                    if json_match
+                    else {"raw": response_text}
+                )
 
             return {
                 "status": "success",
@@ -225,7 +235,7 @@ Responde en JSON:
                             },
                             {
                                 "type": "text",
-                                "text": "Extrae TODO el texto visible. Responde en JSON: {\"text\": \"...\", \"sections\": [{\"heading\": \"...\", \"content\": \"...\"}]}",
+                                "text": 'Extrae TODO el texto visible. Responde en JSON: {"text": "...", "sections": [{"heading": "...", "content": "..."}]}',
                             },
                         ],
                     }
@@ -241,7 +251,11 @@ Responde en JSON:
                 extraction = json.loads(response_text)
             except json.JSONDecodeError:
                 json_match = re.search(r"\{.*\}", response_text, re.DOTALL)
-                extraction = json.loads(json_match.group(0)) if json_match else {"text": response_text}
+                extraction = (
+                    json.loads(json_match.group(0))
+                    if json_match
+                    else {"text": response_text}
+                )
 
             return {"status": "success", "extraction": extraction}
 
@@ -266,7 +280,10 @@ Responde en JSON:
 
         if not self.google_api_key:
             logger.warning("Google Vision API key not configured")
-            return {"status": "error", "message": "Google Vision API key not configured"}
+            return {
+                "status": "error",
+                "message": "Google Vision API key not configured",
+            }
 
         logger.info(f"Detecting with Google Vision: {features}")
 
@@ -369,7 +386,11 @@ Responde en JSON: {{
                 suggestion = json.loads(response_text)
             except json.JSONDecodeError:
                 json_match = re.search(r"\{.*\}", response_text, re.DOTALL)
-                suggestion = json.loads(json_match.group(0)) if json_match else {"recommendation": response_text}
+                suggestion = (
+                    json.loads(json_match.group(0))
+                    if json_match
+                    else {"recommendation": response_text}
+                )
 
             return {"status": "success", "suggestion": suggestion}
 
@@ -440,7 +461,11 @@ Responde en JSON: {{
                 verification = json.loads(response_text)
             except json.JSONDecodeError:
                 json_match = re.search(r"\{.*\}", response_text, re.DOTALL)
-                verification = json.loads(json_match.group(0)) if json_match else {"result": response_text}
+                verification = (
+                    json.loads(json_match.group(0))
+                    if json_match
+                    else {"result": response_text}
+                )
 
             return {"status": "success", "verification": verification}
 

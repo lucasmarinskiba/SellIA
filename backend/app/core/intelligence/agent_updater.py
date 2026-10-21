@@ -58,21 +58,29 @@ async def check_and_deploy_model_updates(db: AsyncSession) -> dict[str, Any]:
                         agent.extra_data = {}
                     agent.extra_data["ml_model_version"] = new_version
                     agent.extra_data["ml_model_accuracy"] = new_accuracy
-                    agent.extra_data["last_model_update"] = datetime.now(UTC).isoformat()
+                    agent.extra_data["last_model_update"] = datetime.now(
+                        UTC
+                    ).isoformat()
 
                     await db.commit()
-                    updates["deployed"].append({
-                        "agent": agent.slug,
-                        "model": "intent_classifier",
-                        "old_accuracy": current_accuracy,
-                        "new_accuracy": new_accuracy,
-                    })
-                    logger.info(f"Deployed model update to {agent.slug}: accuracy {current_accuracy:.3f} -> {new_accuracy:.3f}")
+                    updates["deployed"].append(
+                        {
+                            "agent": agent.slug,
+                            "model": "intent_classifier",
+                            "old_accuracy": current_accuracy,
+                            "new_accuracy": new_accuracy,
+                        }
+                    )
+                    logger.info(
+                        f"Deployed model update to {agent.slug}: accuracy {current_accuracy:.3f} -> {new_accuracy:.3f}"
+                    )
                 else:
-                    updates["skipped"].append({
-                        "model": "intent_classifier",
-                        "reason": f"Improvement {new_accuracy - current_accuracy:.3f} below threshold",
-                    })
+                    updates["skipped"].append(
+                        {
+                            "model": "intent_classifier",
+                            "reason": f"Improvement {new_accuracy - current_accuracy:.3f} below threshold",
+                        }
+                    )
         except Exception:
             logger.exception("Failed to deploy model update")
 
@@ -82,6 +90,7 @@ async def check_and_deploy_model_updates(db: AsyncSession) -> dict[str, Any]:
 def _backup_agent_prompt(agent: AgentPersonality) -> None:
     """Guarda una copia del prompt actual antes de actualizarlo."""
     import json
+
     backup_dir = "data/agent_backups"
     os.makedirs(backup_dir, exist_ok=True)
 
@@ -93,7 +102,9 @@ def _backup_agent_prompt(agent: AgentPersonality) -> None:
         "backed_up_at": datetime.now(UTC).isoformat(),
     }
 
-    filename = f"{backup_dir}/{agent.slug}_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}.json"
+    filename = (
+        f"{backup_dir}/{agent.slug}_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}.json"
+    )
     with open(filename, "w") as f:
         json.dump(backup, f, indent=2)
 

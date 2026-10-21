@@ -38,10 +38,11 @@ logger = logging.getLogger(__name__)
 # a confusing "Invalid leading whitespace... in header value" error.
 MERCADOPAGO_ACCESS_TOKEN = os.getenv("MERCADOPAGO_ACCESS_TOKEN", "TEST_TOKEN").strip()
 MERCADOPAGO_PUBLIC_KEY = os.getenv("MERCADOPAGO_PUBLIC_KEY", "TEST_KEY").strip()
-MERCADOPAGO_WEBHOOK_SECRET = os.getenv("MERCADOPAGO_WEBHOOK_SECRET", "TEST_SECRET").strip()
+MERCADOPAGO_WEBHOOK_SECRET = os.getenv(
+    "MERCADOPAGO_WEBHOOK_SECRET", "TEST_SECRET"
+).strip()
 MERCADOPAGO_NOTIFICATION_URL = os.getenv(
-    "MERCADOPAGO_NOTIFICATION_URL",
-    "https://api.example.com/webhooks/mercadopago"
+    "MERCADOPAGO_NOTIFICATION_URL", "https://api.example.com/webhooks/mercadopago"
 ).strip()
 
 MERCADOPAGO_API_BASE = "https://api.mercadopago.com/v1"
@@ -50,6 +51,7 @@ MERCADOPAGO_CHECKOUT_BASE = "https://www.mercadopago.com.ar/checkout/pay"
 
 class CurrencyCode(str, Enum):
     """Supported currencies in MercadoPago."""
+
     ARS = "ARS"  # Argentine Peso
     BRL = "BRL"  # Brazilian Real
     CLP = "CLP"  # Chilean Peso
@@ -62,6 +64,7 @@ class CurrencyCode(str, Enum):
 
 class PaymentStatus(str, Enum):
     """MercadoPago payment statuses."""
+
     PENDING = "pending"
     APPROVED = "approved"
     AUTHORIZED = "authorized"
@@ -127,7 +130,8 @@ class MercadoPagoProcessor:
                     "email": customer_email,
                 },
                 "items": items,
-                "back_urls": back_urls or {
+                "back_urls": back_urls
+                or {
                     "success": f"{MERCADOPAGO_NOTIFICATION_URL}/success",
                     "failure": f"{MERCADOPAGO_NOTIFICATION_URL}/failure",
                     "pending": f"{MERCADOPAGO_NOTIFICATION_URL}/pending",
@@ -228,7 +232,7 @@ class MercadoPagoProcessor:
             payment = response.json()
 
             return {
-                                "payment_id": payment["id"],
+                "payment_id": payment["id"],
                 "status": payment["status"],
                 "amount": payment["transaction_amount"],
                 "currency": payment["currency_id"],
@@ -282,9 +286,7 @@ class MercadoPagoProcessor:
             )
 
             if response.status_code not in (200, 201):
-                logger.error(
-                    f"Refund error: {response.status_code} - {response.text}"
-                )
+                logger.error(f"Refund error: {response.status_code} - {response.text}")
                 return {"status": "error", "error": "Refund failed"}
 
             refund = response.json()
@@ -292,7 +294,7 @@ class MercadoPagoProcessor:
             logger.info(f"Refund created: {refund.get('id')} | Payment: {payment_id}")
 
             return {
-                                "refund_id": refund.get("id"),
+                "refund_id": refund.get("id"),
                 "payment_id": payment_id,
                 "amount_refunded": refund.get("amount", amount),
                 "status": refund.get("status"),
@@ -342,9 +344,7 @@ class MercadoPagoProcessor:
                 "reference_id": external_reference,
                 "price": amount,
                 "currency_id": currency,
-                "expires_at": (
-                    utc_now() + timedelta(days=expiration_days)
-                ).isoformat(),
+                "expires_at": (utc_now() + timedelta(days=expiration_days)).isoformat(),
             }
 
             response = requests.post(
@@ -480,9 +480,7 @@ class MercadoPagoWebhookHandler:
         payments = data.get("payments", [])
 
         # Check if all payments are approved
-        all_approved = all(
-            p.get("status") == PaymentStatus.APPROVED for p in payments
-        )
+        all_approved = all(p.get("status") == PaymentStatus.APPROVED for p in payments)
 
         logger.info(f"Merchant order: {order_id} | Reference: {reference}")
 

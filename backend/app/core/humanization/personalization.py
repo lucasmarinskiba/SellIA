@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 class PersonalizationLevel(str, Enum):
     """Level of personalization"""
+
     MINIMAL = "minimal"  # No personalization
     LIGHT = "light"  # Name only
     MODERATE = "moderate"  # Name + one reference
@@ -32,6 +33,7 @@ class PersonalizationLevel(str, Enum):
 @dataclass
 class BuyerProfile:
     """Buyer information for personalization"""
+
     buyer_id: str
     name: str
     first_name: str
@@ -63,6 +65,7 @@ class BuyerProfile:
 @dataclass
 class PersonalizationContext:
     """Context for personalizing a message"""
+
     buyer_profile: BuyerProfile
     message_type: str  # "initial", "follow_up", "objection_response", "closing"
     previous_messages: list[str] = field(default_factory=list)
@@ -85,7 +88,13 @@ class PersonalizationEngine:
     # Industry-specific language
     INDUSTRY_VOCABULARY: ClassVar[dict] = {
         "real_estate": {
-            "keywords": ["property", "investment", "location", "market value", "inspection"],
+            "keywords": [
+                "property",
+                "investment",
+                "location",
+                "market value",
+                "inspection",
+            ],
             "pain_points": ["neighborhood quality", "resale value", "financing"],
             "benefits": ["appreciation", "investment return", "lifestyle"],
         },
@@ -126,12 +135,7 @@ class PersonalizationEngine:
         """Initialize personalization engine"""
         logger.info("PersonalizationEngine initialized")
 
-    def create_buyer_profile(
-        self,
-        buyer_id: str,
-        name: str,
-        **kwargs
-    ) -> BuyerProfile:
+    def create_buyer_profile(self, buyer_id: str, name: str, **kwargs) -> BuyerProfile:
         """
         Create or update buyer profile.
 
@@ -177,19 +181,36 @@ class PersonalizationEngine:
         text = f"{company_name or ''} {context_clues or ''}".lower()
 
         # Real estate indicators
-        if any(word in text for word in ["realty", "property", "real estate", "inmobiliario", "propiedad"]):
+        if any(
+            word in text
+            for word in [
+                "realty",
+                "property",
+                "real estate",
+                "inmobiliario",
+                "propiedad",
+            ]
+        ):
             return "real_estate"
 
         # SaaS indicators
-        if any(word in text for word in ["software", "saas", "platform", "solution", "app"]):
+        if any(
+            word in text for word in ["software", "saas", "platform", "solution", "app"]
+        ):
             return "saas"
 
         # E-commerce indicators
-        if any(word in text for word in ["shop", "store", "ecommerce", "tienda", "ecommerce"]):
+        if any(
+            word in text
+            for word in ["shop", "store", "ecommerce", "tienda", "ecommerce"]
+        ):
             return "ecommerce"
 
         # Services indicators
-        if any(word in text for word in ["consulting", "agency", "services", "consultoría", "asesoría"]):
+        if any(
+            word in text
+            for word in ["consulting", "agency", "services", "consultoría", "asesoría"]
+        ):
             return "services"
 
         return None
@@ -223,10 +244,16 @@ class PersonalizationEngine:
         # Determine personalization level
         level = context.personalization_level
 
-        if level in [PersonalizationLevel.LIGHT, PersonalizationLevel.MODERATE, PersonalizationLevel.DEEP]:
+        if level in [
+            PersonalizationLevel.LIGHT,
+            PersonalizationLevel.MODERATE,
+            PersonalizationLevel.DEEP,
+        ]:
             # Add name greeting (respects usage rules)
             name_uses = self.NAME_USAGE_RULES.get(context.message_type, 0)
-            if (name_uses > 0 and buyer_profile.first_name) and not personalized.startswith(buyer_profile.first_name):
+            if (
+                name_uses > 0 and buyer_profile.first_name
+            ) and not personalized.startswith(buyer_profile.first_name):
                 if language == "es":
                     personalized = f"{buyer_profile.first_name}, {personalized}"
                 else:
@@ -236,15 +263,18 @@ class PersonalizationEngine:
         if level in [PersonalizationLevel.MODERATE, PersonalizationLevel.DEEP]:
             # Add industry-specific language
             if buyer_profile.industry:
-                industry_vocab = self.INDUSTRY_VOCABULARY.get(buyer_profile.industry, {})
+                industry_vocab = self.INDUSTRY_VOCABULARY.get(
+                    buyer_profile.industry, {}
+                )
                 if industry_vocab:
                     # Try to weave in 1-2 industry keywords
                     for keyword in industry_vocab.get("keywords", [])[:2]:
-                        if keyword not in personalized.lower() and "your" in personalized:
+                        if (
+                            keyword not in personalized.lower()
+                            and "your" in personalized
+                        ):
                             personalized = personalized.replace(
-                                "your",
-                                f"your {keyword}",
-                                1
+                                "your", f"your {keyword}", 1
                             )
                             elements_added.append(f"industry_keyword:{keyword}")
                             break
@@ -252,16 +282,17 @@ class PersonalizationEngine:
             # Add company reference
             if buyer_profile.company and "your company" in personalized:
                 personalized = personalized.replace(
-                    "your company",
-                    buyer_profile.company
+                    "your company", buyer_profile.company
                 )
                 elements_added.append(f"company:{buyer_profile.company}")
 
             # Add role reference
-            if (buyer_profile.role and buyer_profile.role.lower() not in personalized.lower()) and ("your role" in personalized or "your position" in personalized):
+            if (
+                buyer_profile.role
+                and buyer_profile.role.lower() not in personalized.lower()
+            ) and ("your role" in personalized or "your position" in personalized):
                 personalized = personalized.replace(
-                    "your role",
-                    f"your {buyer_profile.role.lower()} role"
+                    "your role", f"your {buyer_profile.role.lower()} role"
                 )
                 elements_added.append(f"role:{buyer_profile.role}")
 
@@ -271,14 +302,15 @@ class PersonalizationEngine:
                 if "previously" not in personalized and language == "en":
                     insert_text = f" I saw you {last_purchase.get('product', 'something great')} previously — "
                     personalized = insert_text + personalized
-                    elements_added.append(f"purchase_history:{last_purchase.get('product', 'item')}")
+                    elements_added.append(
+                        f"purchase_history:{last_purchase.get('product', 'item')}"
+                    )
 
         if level == PersonalizationLevel.DEEP:
             # Add timing personalization
             if buyer_profile.best_contact_time:
                 timing_msg = self.TIMING_TEMPLATES.get(
-                    buyer_profile.best_contact_time,
-                    {}
+                    buyer_profile.best_contact_time, {}
                 ).get(language, "")
                 if timing_msg:
                     personalized = f"{timing_msg} {personalized}"
@@ -287,7 +319,9 @@ class PersonalizationEngine:
             # Add urgency signal
             if buyer_profile.urgency_level >= 7:
                 if language == "es":
-                    urgency_indicator = "por tu situación particular, esto puede ser relevante ahora: "
+                    urgency_indicator = (
+                        "por tu situación particular, esto puede ser relevante ahora: "
+                    )
                 else:
                     urgency_indicator = "given your situation, this might be particularly relevant right now: "
                 personalized = f"{urgency_indicator}{personalized}"
@@ -336,10 +370,13 @@ class PersonalizationEngine:
 
         # Check engagement history
         if buyer_profile.engagement_history:
-            recent_engagement = len([
-                e for e in buyer_profile.engagement_history
-                if "week" in str(e).lower()
-            ])
+            recent_engagement = len(
+                [
+                    e
+                    for e in buyer_profile.engagement_history
+                    if "week" in str(e).lower()
+                ]
+            )
             if recent_engagement > 3:
                 urgency += 1
 
@@ -402,8 +439,20 @@ class PersonalizationEngine:
 
         # Infer content preferences from engagement
         if buyer_profile.engagement_history:
-            short_engagement = len([e for e in buyer_profile.engagement_history if "short" in str(e).lower()])
-            long_engagement = len([e for e in buyer_profile.engagement_history if "long" in str(e).lower()])
+            short_engagement = len(
+                [
+                    e
+                    for e in buyer_profile.engagement_history
+                    if "short" in str(e).lower()
+                ]
+            )
+            long_engagement = len(
+                [
+                    e
+                    for e in buyer_profile.engagement_history
+                    if "long" in str(e).lower()
+                ]
+            )
 
             if short_engagement > long_engagement:
                 preferences["content_type"] = "short"
@@ -417,7 +466,10 @@ class PersonalizationEngine:
 
         # Role-based tone preference
         if buyer_profile.role:
-            if "executive" in buyer_profile.role.lower() or "director" in buyer_profile.role.lower():
+            if (
+                "executive" in buyer_profile.role.lower()
+                or "director" in buyer_profile.role.lower()
+            ):
                 preferences["tone"] = "professional"
             elif "manager" in buyer_profile.role.lower():
                 preferences["tone"] = "balanced"
@@ -445,7 +497,8 @@ class PersonalizationEngine:
 
         # Boost for certain element types
         high_value_elements = [
-            e for e in elements
+            e
+            for e in elements
             if any(x in e for x in ["name_greeting", "company", "purchase_history"])
         ]
         if high_value_elements:
@@ -498,7 +551,9 @@ class PersonalizationEngine:
             return f"at {buyer_profile.company}"
 
         elif reference_type == "purchase" and buyer_profile.past_purchases:
-            recent_product = buyer_profile.past_purchases[-1].get("product", "our product")
+            recent_product = buyer_profile.past_purchases[-1].get(
+                "product", "our product"
+            )
             return f"after your recent purchase of {recent_product}"
 
         return None

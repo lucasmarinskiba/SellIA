@@ -28,8 +28,15 @@ class Website(Base):
     __tablename__ = "websites"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    template = Column(SQLEnum(WebsiteTemplate), nullable=False, default=WebsiteTemplate.MODERN)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    template = Column(
+        SQLEnum(WebsiteTemplate), nullable=False, default=WebsiteTemplate.MODERN
+    )
     status = Column(SQLEnum(WebsiteStatus), nullable=False, default=WebsiteStatus.DRAFT)
 
     # Content
@@ -48,18 +55,29 @@ class Website(Base):
     pages = Column(JSONB, default=dict, nullable=False)  # page slugs + content
 
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
     published_at = Column(DateTime(timezone=True), nullable=True)
 
     business = relationship("Business", back_populates="website")
-    domain = relationship("Domain", back_populates="website", uselist=False, cascade="all, delete-orphan")
+    domain = relationship(
+        "Domain", back_populates="website", uselist=False, cascade="all, delete-orphan"
+    )
 
 
 class Domain(Base):
     __tablename__ = "domains"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    website_id = Column(UUID(as_uuid=True), ForeignKey("websites.id", ondelete="CASCADE"), nullable=False, index=True)
+    website_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("websites.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Subdomain (e.g., "tunegocio" for "tunegocio.sellia.app")
     subdomain = Column(String(63), nullable=False, unique=True, index=True)
@@ -75,7 +93,11 @@ class Domain(Base):
     dns_records = Column(JSONB, default=dict, nullable=False)  # MX, CNAME, etc
 
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
     website = relationship("Website", back_populates="domain")
 

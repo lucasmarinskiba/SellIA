@@ -34,6 +34,7 @@ _RECEIPT_STATUS_LABELS = {
 
 class EtsyConnector(BaseChannelConnector):
     """Conector para Etsy (pedidos/receipts de la tienda)."""
+
     platform = "etsy"
 
     def __init__(self, credentials: dict[str, Any], settings: dict[str, Any]):
@@ -44,10 +45,15 @@ class EtsyConnector(BaseChannelConnector):
         self.refresh_token = credentials.get("refresh_token")
         self.shop_id = credentials.get("shop_id")
 
-    async def send_message(self, recipient_id: str, content: str, content_type: str = "text") -> dict[str, Any]:
+    async def send_message(
+        self, recipient_id: str, content: str, content_type: str = "text"
+    ) -> dict[str, Any]:
         """Etsy's Conversations API requires elevated app permissions rarely
         granted to third-party apps; not implemented — log instead."""
-        return {"status": "logged", "note": "Etsy no soporta mensajería directa en este conector"}
+        return {
+            "status": "logged",
+            "note": "Etsy no soporta mensajería directa en este conector",
+        }
 
     async def parse_webhook(self, raw_payload: dict[str, Any]) -> WebhookPayload:
         """Parse an Etsy receipt (order) notification.
@@ -89,7 +95,9 @@ class EtsyConnector(BaseChannelConnector):
 
         return WebhookPayload(
             platform=ChannelPlatform.ETSY,
-            external_id=str(raw_payload.get("receipt_id") or raw_payload.get("shop_id") or "unknown"),
+            external_id=str(
+                raw_payload.get("receipt_id") or raw_payload.get("shop_id") or "unknown"
+            ),
             sender_name="Etsy",
             content=f"Evento: {event}",
             content_type="system",
@@ -101,6 +109,7 @@ class EtsyConnector(BaseChannelConnector):
             return False
         try:
             import httpx
+
             url = f"https://openapi.etsy.com/v3/application/shops/{self.shop_id}"
             headers = {
                 "x-api-key": self.api_keystring,

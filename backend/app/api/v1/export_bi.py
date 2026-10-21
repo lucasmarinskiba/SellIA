@@ -60,7 +60,7 @@ def create_export(
         date_end=request.date_end,
         filters=request.filters,
         requested_by=request.requested_by,
-        db=db
+        db=db,
     )
 
 
@@ -70,10 +70,7 @@ def get_export_status(
     db: Annotated[Session, Depends(get_db)],
 ):
     """Get export status."""
-    return ExportBIService.get_export_status(
-        export_id=export_id,
-        db=db
-    )
+    return ExportBIService.get_export_status(export_id=export_id, db=db)
 
 
 @router.post("/businesses/{business_id}/scheduled-reports")
@@ -90,7 +87,7 @@ def create_scheduled_report(
         frequency=request.frequency,
         schedule_time=request.schedule_time,
         recipients=request.recipients,
-        db=db
+        db=db,
     )
 
 
@@ -107,7 +104,7 @@ def setup_warehouse_sync(
         warehouse_name=request.warehouse_name,
         connection_string=request.connection_string,
         tables_to_sync=request.tables_to_sync,
-        db=db
+        db=db,
     )
 
 
@@ -123,7 +120,7 @@ def create_bi_dashboard(
         dashboard_name=request.dashboard_name,
         dashboard_type=request.dashboard_type,
         charts=request.charts,
-        db=db
+        db=db,
     )
 
 
@@ -134,8 +131,4 @@ def get_export_metrics(
     date: Annotated[str | None, Query(description="YYYY-MM-DD")] = None,
 ):
     """Get export & BI metrics."""
-    return ExportBIService.get_export_metrics(
-        business_id=business_id,
-        date=date,
-        db=db
-    )
+    return ExportBIService.get_export_metrics(business_id=business_id, date=date, db=db)

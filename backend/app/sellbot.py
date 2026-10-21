@@ -10,6 +10,7 @@ Endpoints:
 - /api/v1/workflows/* (Email automation)
 - /api/v1/lead-sources/* (Prospecting)
 """
+
 import asyncio
 import json
 import logging
@@ -127,6 +128,7 @@ progression_service = None
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 # ============================================================
 # STARTUP/SHUTDOWN
 # ============================================================
@@ -151,23 +153,46 @@ async def _bootstrap_database() -> None:
         from sqlalchemy import text
 
         from app.core.database import AsyncSessionLocal, is_sqlite
+
         async with AsyncSessionLocal() as db:
             if is_sqlite:
                 existing = await db.execute(text("PRAGMA table_info(users)"))
                 cols = {row[1] for row in existing.all()}
                 if "totp_secret" not in cols:
-                    await db.execute(text("ALTER TABLE users ADD COLUMN totp_secret VARCHAR(32)"))
+                    await db.execute(
+                        text("ALTER TABLE users ADD COLUMN totp_secret VARCHAR(32)")
+                    )
                 if "is_2fa_enabled" not in cols:
-                    await db.execute(text("ALTER TABLE users ADD COLUMN is_2fa_enabled BOOLEAN DEFAULT 0"))
+                    await db.execute(
+                        text(
+                            "ALTER TABLE users ADD COLUMN is_2fa_enabled BOOLEAN DEFAULT 0"
+                        )
+                    )
                 # Email OTP is a second factor of its own: a user can have it
                 # without TOTP, so it needs its own flag rather than sharing
                 # is_2fa_enabled with the authenticator app.
                 if "email_otp_enabled" not in cols:
-                    await db.execute(text("ALTER TABLE users ADD COLUMN email_otp_enabled BOOLEAN DEFAULT 0"))
+                    await db.execute(
+                        text(
+                            "ALTER TABLE users ADD COLUMN email_otp_enabled BOOLEAN DEFAULT 0"
+                        )
+                    )
             else:
-                await db.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_secret VARCHAR(32)"))
-                await db.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_2fa_enabled BOOLEAN DEFAULT false"))
-                await db.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS email_otp_enabled BOOLEAN DEFAULT false"))
+                await db.execute(
+                    text(
+                        "ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_secret VARCHAR(32)"
+                    )
+                )
+                await db.execute(
+                    text(
+                        "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_2fa_enabled BOOLEAN DEFAULT false"
+                    )
+                )
+                await db.execute(
+                    text(
+                        "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_otp_enabled BOOLEAN DEFAULT false"
+                    )
+                )
             await db.commit()
         logger.info("✅ 2FA schema migrated")
     except Exception as e:
@@ -181,6 +206,7 @@ async def _bootstrap_database() -> None:
         from sqlalchemy import text
 
         from app.core.database import AsyncSessionLocal, is_sqlite
+
         async with AsyncSessionLocal() as db:
             if is_sqlite:
                 await db.execute(text("""
@@ -239,19 +265,27 @@ async def _bootstrap_database() -> None:
                         approved_by_user_id VARCHAR(36)
                     )
                 """))
-                await db.execute(text(
-                    "CREATE INDEX IF NOT EXISTS ix_cu_audit_created_at ON computer_use_audit_logs (created_at)"
-                ))
-                await db.execute(text(
-                    "CREATE INDEX IF NOT EXISTS ix_cu_audit_platform ON computer_use_audit_logs (platform)"
-                ))
-                await db.execute(text(
-                    "CREATE INDEX IF NOT EXISTS ix_cu_audit_status ON computer_use_audit_logs (status)"
-                ))
+                await db.execute(
+                    text(
+                        "CREATE INDEX IF NOT EXISTS ix_cu_audit_created_at ON computer_use_audit_logs (created_at)"
+                    )
+                )
+                await db.execute(
+                    text(
+                        "CREATE INDEX IF NOT EXISTS ix_cu_audit_platform ON computer_use_audit_logs (platform)"
+                    )
+                )
+                await db.execute(
+                    text(
+                        "CREATE INDEX IF NOT EXISTS ix_cu_audit_status ON computer_use_audit_logs (status)"
+                    )
+                )
             await db.commit()
         logger.info("✅ computer_use_audit_logs table ensured")
     except Exception as e:
-        logger.warning(f"computer_use_audit_logs migration: {str(e)[:120]}", exc_info=True)
+        logger.warning(
+            f"computer_use_audit_logs migration: {str(e)[:120]}", exc_info=True
+        )
 
     # Create the 5 team-collaboration tables (deal comments, approvals,
     # handoffs, deal shares, notifications) used by
@@ -265,9 +299,12 @@ async def _bootstrap_database() -> None:
         from sqlalchemy import text
 
         from app.core.database import AsyncSessionLocal, is_sqlite
+
         id_col = "VARCHAR(36) PRIMARY KEY"
         ts_col = "DATETIME" if is_sqlite else "TIMESTAMP"
-        bool_default_false = "BOOLEAN DEFAULT 0" if is_sqlite else "BOOLEAN DEFAULT false"
+        bool_default_false = (
+            "BOOLEAN DEFAULT 0" if is_sqlite else "BOOLEAN DEFAULT false"
+        )
         async with AsyncSessionLocal() as db:
             await db.execute(text(f"""
                 CREATE TABLE IF NOT EXISTS deal_comments (
@@ -282,9 +319,11 @@ async def _bootstrap_database() -> None:
                     updated_at {ts_col}
                 )
             """))
-            await db.execute(text(
-                "CREATE INDEX IF NOT EXISTS idx_deal_comments ON deal_comments (deal_id, created_at)"
-            ))
+            await db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_deal_comments ON deal_comments (deal_id, created_at)"
+                )
+            )
             await db.execute(text(f"""
                 CREATE TABLE IF NOT EXISTS approval_chains (
                     id {id_col},
@@ -301,12 +340,16 @@ async def _bootstrap_database() -> None:
                     updated_at {ts_col}
                 )
             """))
-            await db.execute(text(
-                "CREATE INDEX IF NOT EXISTS idx_approval_action ON approval_chains (action_id)"
-            ))
-            await db.execute(text(
-                "CREATE INDEX IF NOT EXISTS idx_approval_status ON approval_chains (status, created_at)"
-            ))
+            await db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_approval_action ON approval_chains (action_id)"
+                )
+            )
+            await db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_approval_status ON approval_chains (status, created_at)"
+                )
+            )
             await db.execute(text(f"""
                 CREATE TABLE IF NOT EXISTS handoffs (
                     id {id_col},
@@ -323,12 +366,16 @@ async def _bootstrap_database() -> None:
                     created_at {ts_col}
                 )
             """))
-            await db.execute(text(
-                "CREATE INDEX IF NOT EXISTS idx_handoff_deal ON handoffs (deal_id, created_at)"
-            ))
-            await db.execute(text(
-                "CREATE INDEX IF NOT EXISTS idx_handoff_user ON handoffs (to_user_id, status)"
-            ))
+            await db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_handoff_deal ON handoffs (deal_id, created_at)"
+                )
+            )
+            await db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_handoff_user ON handoffs (to_user_id, status)"
+                )
+            )
             await db.execute(text(f"""
                 CREATE TABLE IF NOT EXISTS deal_shares (
                     id {id_col},
@@ -339,9 +386,11 @@ async def _bootstrap_database() -> None:
                     shared_at {ts_col}
                 )
             """))
-            await db.execute(text(
-                "CREATE INDEX IF NOT EXISTS idx_deal_shares_deal ON deal_shares (deal_id, shared_at)"
-            ))
+            await db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_deal_shares_deal ON deal_shares (deal_id, shared_at)"
+                )
+            )
             await db.execute(text(f"""
                 CREATE TABLE IF NOT EXISTS team_notifications (
                     id {id_col},
@@ -355,13 +404,17 @@ async def _bootstrap_database() -> None:
                     created_at {ts_col}
                 )
             """))
-            await db.execute(text(
-                "CREATE INDEX IF NOT EXISTS idx_notif_user ON team_notifications (user_id, is_read, created_at)"
-            ))
+            await db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_notif_user ON team_notifications (user_id, is_read, created_at)"
+                )
+            )
             await db.commit()
         logger.info("✅ team collaboration tables ensured (5/5)")
     except Exception as e:
-        logger.warning(f"team collaboration tables migration: {str(e)[:120]}", exc_info=True)
+        logger.warning(
+            f"team collaboration tables migration: {str(e)[:120]}", exc_info=True
+        )
 
     # deal_outcomes: win/loss history for forecast-accuracy tracking, used by
     # app/domains/enterprise/forecasting.py's DealOutcomeAnalyzer. Its ORM
@@ -374,6 +427,7 @@ async def _bootstrap_database() -> None:
         from sqlalchemy import text
 
         from app.core.database import AsyncSessionLocal, is_sqlite
+
         ts_col = "DATETIME" if is_sqlite else "TIMESTAMP"
         id_type = "VARCHAR(36)" if is_sqlite else "UUID"
         async with AsyncSessionLocal() as db:
@@ -391,9 +445,11 @@ async def _bootstrap_database() -> None:
                     recorded_at {ts_col}
                 )
             """))
-            await db.execute(text(
-                "CREATE INDEX IF NOT EXISTS idx_deal_outcomes_business ON deal_outcomes (business_id, recorded_at)"
-            ))
+            await db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_deal_outcomes_business ON deal_outcomes (business_id, recorded_at)"
+                )
+            )
             await db.commit()
         logger.info("✅ deal_outcomes table ensured")
     except Exception as e:
@@ -410,10 +466,13 @@ async def _bootstrap_database() -> None:
         from sqlalchemy import text
 
         from app.core.database import AsyncSessionLocal, is_sqlite
+
         ts_col = "DATETIME" if is_sqlite else "TIMESTAMP"
         id_type = "VARCHAR(36)" if is_sqlite else "UUID"
         bool_default_true = "BOOLEAN DEFAULT 1" if is_sqlite else "BOOLEAN DEFAULT true"
-        bool_default_false = "BOOLEAN DEFAULT 0" if is_sqlite else "BOOLEAN DEFAULT false"
+        bool_default_false = (
+            "BOOLEAN DEFAULT 0" if is_sqlite else "BOOLEAN DEFAULT false"
+        )
         jsonb_type = "TEXT" if is_sqlite else "JSONB"
         async with AsyncSessionLocal() as db:
             if not is_sqlite:
@@ -449,9 +508,11 @@ async def _bootstrap_database() -> None:
                     updated_at {ts_col}
                 )
             """))
-            await db.execute(text(
-                "CREATE INDEX IF NOT EXISTS ix_pipelines_business_id ON pipelines (business_id)"
-            ))
+            await db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_pipelines_business_id ON pipelines (business_id)"
+                )
+            )
             await db.execute(text(f"""
                 CREATE TABLE IF NOT EXISTS deals (
                     id {id_type} PRIMARY KEY,
@@ -481,18 +542,24 @@ async def _bootstrap_database() -> None:
                     updated_at {ts_col}
                 )
             """))
-            await db.execute(text(
-                "CREATE INDEX IF NOT EXISTS ix_deals_business_id ON deals (business_id)"
-            ))
-            await db.execute(text(
-                "CREATE INDEX IF NOT EXISTS ix_deals_pipeline_id ON deals (pipeline_id)"
-            ))
-            await db.execute(text(
-                "CREATE INDEX IF NOT EXISTS ix_deals_conversation_id ON deals (conversation_id)"
-            ))
-            await db.execute(text(
-                "CREATE INDEX IF NOT EXISTS ix_deals_stage ON deals (stage)"
-            ))
+            await db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_deals_business_id ON deals (business_id)"
+                )
+            )
+            await db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_deals_pipeline_id ON deals (pipeline_id)"
+                )
+            )
+            await db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_deals_conversation_id ON deals (conversation_id)"
+                )
+            )
+            await db.execute(
+                text("CREATE INDEX IF NOT EXISTS ix_deals_stage ON deals (stage)")
+            )
             await db.commit()
         logger.info("✅ pipelines/deals tables ensured (2/2)")
     except Exception as e:
@@ -506,6 +573,7 @@ async def _bootstrap_database() -> None:
         from sqlalchemy import text
 
         from app.core.database import AsyncSessionLocal, is_sqlite
+
         ts_col = "DATETIME" if is_sqlite else "TIMESTAMP"
         id_type = "VARCHAR(36)" if is_sqlite else "UUID"
         bool_default_true = "BOOLEAN DEFAULT 1" if is_sqlite else "BOOLEAN DEFAULT true"
@@ -533,8 +601,16 @@ async def _bootstrap_database() -> None:
                     created_at {ts_col}
                 )
             """))
-            await db.execute(text("CREATE INDEX IF NOT EXISTS ix_ai_agent_voice_calls_business_id ON ai_agent_voice_calls (business_id)"))
-            await db.execute(text("CREATE INDEX IF NOT EXISTS ix_ai_agent_voice_calls_customer_id ON ai_agent_voice_calls (customer_id)"))
+            await db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_ai_agent_voice_calls_business_id ON ai_agent_voice_calls (business_id)"
+                )
+            )
+            await db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_ai_agent_voice_calls_customer_id ON ai_agent_voice_calls (customer_id)"
+                )
+            )
             await db.execute(text(f"""
                 CREATE TABLE IF NOT EXISTS voice_configs (
                     id {id_type} PRIMARY KEY,
@@ -558,7 +634,9 @@ async def _bootstrap_database() -> None:
             await db.commit()
         logger.info("✅ voice_calls/voice_configs tables ensured (2/2)")
     except Exception as e:
-        logger.warning(f"voice_calls/voice_configs migration: {str(e)[:120]}", exc_info=True)
+        logger.warning(
+            f"voice_calls/voice_configs migration: {str(e)[:120]}", exc_info=True
+        )
 
     # business_members + deal_delegations (app.domains.businesses.team_models):
     # real multi-user-per-business membership, built while rebuilding
@@ -570,6 +648,7 @@ async def _bootstrap_database() -> None:
         from sqlalchemy import text
 
         from app.core.database import AsyncSessionLocal, is_sqlite
+
         ts_col = "DATETIME" if is_sqlite else "TIMESTAMP"
         id_type = "VARCHAR(36)" if is_sqlite else "UUID"
         bool_default_true = "BOOLEAN DEFAULT 1" if is_sqlite else "BOOLEAN DEFAULT true"
@@ -594,7 +673,11 @@ async def _bootstrap_database() -> None:
                     CONSTRAINT uq_business_member UNIQUE (business_id, user_id)
                 )
             """))
-            await db.execute(text("CREATE INDEX IF NOT EXISTS ix_business_members_business_id ON business_members (business_id)"))
+            await db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_business_members_business_id ON business_members (business_id)"
+                )
+            )
             await db.execute(text(f"""
                 CREATE TABLE IF NOT EXISTS deal_delegations (
                     id {id_type} PRIMARY KEY,
@@ -609,15 +692,27 @@ async def _bootstrap_database() -> None:
                     decided_at {ts_col}
                 )
             """))
-            await db.execute(text("CREATE INDEX IF NOT EXISTS ix_deal_delegations_business_id ON deal_delegations (business_id)"))
-            await db.execute(text("CREATE INDEX IF NOT EXISTS ix_deal_delegations_to_user ON deal_delegations (to_user_id, status)"))
-            await db.execute(text(
-                f"ALTER TABLE deals ADD COLUMN IF NOT EXISTS assigned_to_user_id {id_type} REFERENCES users(id) ON DELETE SET NULL"
-                if not is_sqlite else
-                f"ALTER TABLE deals ADD COLUMN assigned_to_user_id {id_type}"
-            ))
+            await db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_deal_delegations_business_id ON deal_delegations (business_id)"
+                )
+            )
+            await db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_deal_delegations_to_user ON deal_delegations (to_user_id, status)"
+                )
+            )
+            await db.execute(
+                text(
+                    f"ALTER TABLE deals ADD COLUMN IF NOT EXISTS assigned_to_user_id {id_type} REFERENCES users(id) ON DELETE SET NULL"
+                    if not is_sqlite
+                    else f"ALTER TABLE deals ADD COLUMN assigned_to_user_id {id_type}"
+                )
+            )
             await db.commit()
-        logger.info("✅ team management tables ensured (business_members, deal_delegations, deals.assigned_to_user_id)")
+        logger.info(
+            "✅ team management tables ensured (business_members, deal_delegations, deals.assigned_to_user_id)"
+        )
     except Exception as e:
         logger.warning(f"team management migration: {str(e)[:120]}", exc_info=True)
 
@@ -633,10 +728,13 @@ async def _bootstrap_database() -> None:
         from sqlalchemy import text
 
         from app.core.database import AsyncSessionLocal, is_sqlite
+
         ts_col = "DATETIME" if is_sqlite else "TIMESTAMP WITH TIME ZONE"
         id_type = "VARCHAR(36)" if is_sqlite else "UUID"
         bool_default_true = "BOOLEAN DEFAULT 1" if is_sqlite else "BOOLEAN DEFAULT true"
-        bool_default_false = "BOOLEAN DEFAULT 0" if is_sqlite else "BOOLEAN DEFAULT false"
+        bool_default_false = (
+            "BOOLEAN DEFAULT 0" if is_sqlite else "BOOLEAN DEFAULT false"
+        )
         jsonb_type = "TEXT" if is_sqlite else "JSONB"
         async with AsyncSessionLocal() as db:
             await db.execute(text(f"""
@@ -651,7 +749,11 @@ async def _bootstrap_database() -> None:
                     updated_at {ts_col}
                 )
             """))
-            await db.execute(text("CREATE INDEX IF NOT EXISTS ix_webhook_subscriptions_user_id ON webhook_subscriptions (user_id)"))
+            await db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_webhook_subscriptions_user_id ON webhook_subscriptions (user_id)"
+                )
+            )
             await db.execute(text(f"""
                 CREATE TABLE IF NOT EXISTS webhook_deliveries (
                     id {id_type} PRIMARY KEY,
@@ -665,9 +767,15 @@ async def _bootstrap_database() -> None:
                     success {bool_default_false}
                 )
             """))
-            await db.execute(text("CREATE INDEX IF NOT EXISTS ix_webhook_deliveries_subscription_id ON webhook_deliveries (subscription_id)"))
+            await db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_webhook_deliveries_subscription_id ON webhook_deliveries (subscription_id)"
+                )
+            )
             await db.commit()
-        logger.info("✅ webhook tables ensured (webhook_subscriptions, webhook_deliveries)")
+        logger.info(
+            "✅ webhook tables ensured (webhook_subscriptions, webhook_deliveries)"
+        )
     except Exception as e:
         logger.warning(f"webhook tables migration: {str(e)[:120]}", exc_info=True)
 
@@ -683,6 +791,7 @@ async def _bootstrap_database() -> None:
         from sqlalchemy import text
 
         from app.core.database import AsyncSessionLocal, is_sqlite
+
         ts_col = "DATETIME" if is_sqlite else "TIMESTAMP WITH TIME ZONE"
         id_type = "VARCHAR(36)" if is_sqlite else "UUID"
         async with AsyncSessionLocal() as db:
@@ -707,8 +816,16 @@ async def _bootstrap_database() -> None:
                     updated_at {ts_col}
                 )
             """))
-            await db.execute(text("CREATE INDEX IF NOT EXISTS ix_prompt_experiments_business_id ON prompt_experiments (business_id)"))
-            await db.execute(text("CREATE INDEX IF NOT EXISTS ix_prompt_experiments_agent_type ON prompt_experiments (agent_type)"))
+            await db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_prompt_experiments_business_id ON prompt_experiments (business_id)"
+                )
+            )
+            await db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_prompt_experiments_agent_type ON prompt_experiments (agent_type)"
+                )
+            )
             await db.execute(text(f"""
                 CREATE TABLE IF NOT EXISTS prompt_experiment_results (
                     id {id_type} PRIMARY KEY,
@@ -721,10 +838,20 @@ async def _bootstrap_database() -> None:
                     created_at {ts_col}
                 )
             """))
-            await db.execute(text("CREATE INDEX IF NOT EXISTS ix_prompt_experiment_results_experiment_id ON prompt_experiment_results (experiment_id)"))
-            await db.execute(text("CREATE INDEX IF NOT EXISTS ix_prompt_experiment_results_conversation_id ON prompt_experiment_results (conversation_id)"))
+            await db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_prompt_experiment_results_experiment_id ON prompt_experiment_results (experiment_id)"
+                )
+            )
+            await db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_prompt_experiment_results_conversation_id ON prompt_experiment_results (conversation_id)"
+                )
+            )
             await db.commit()
-        logger.info("✅ A/B testing tables ensured (prompt_experiments, prompt_experiment_results)")
+        logger.info(
+            "✅ A/B testing tables ensured (prompt_experiments, prompt_experiment_results)"
+        )
     except Exception as e:
         logger.warning(f"A/B testing tables migration: {str(e)[:120]}", exc_info=True)
 
@@ -747,10 +874,13 @@ async def _bootstrap_database() -> None:
         from sqlalchemy import text
 
         from app.core.database import AsyncSessionLocal, is_sqlite
+
         ts_col = "DATETIME" if is_sqlite else "TIMESTAMP WITH TIME ZONE"
         id_type = "VARCHAR(36)" if is_sqlite else "UUID"
         bool_default_true = "BOOLEAN DEFAULT 1" if is_sqlite else "BOOLEAN DEFAULT true"
-        bool_default_false = "BOOLEAN DEFAULT 0" if is_sqlite else "BOOLEAN DEFAULT false"
+        bool_default_false = (
+            "BOOLEAN DEFAULT 0" if is_sqlite else "BOOLEAN DEFAULT false"
+        )
         jsonb_type = "TEXT" if is_sqlite else "JSONB"
         async with AsyncSessionLocal() as db:
             await db.execute(text(f"""
@@ -768,7 +898,11 @@ async def _bootstrap_database() -> None:
                     created_at {ts_col}
                 )
             """))
-            await db.execute(text("CREATE INDEX IF NOT EXISTS ix_agent_personalities_slug ON agent_personalities (slug)"))
+            await db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_agent_personalities_slug ON agent_personalities (slug)"
+                )
+            )
             await db.execute(text(f"""
                 CREATE TABLE IF NOT EXISTS agent_configs (
                     id {id_type} PRIMARY KEY,
@@ -785,22 +919,31 @@ async def _bootstrap_database() -> None:
                     updated_at {ts_col}
                 )
             """))
-            await db.execute(text("CREATE INDEX IF NOT EXISTS ix_agent_configs_business_id ON agent_configs (business_id)"))
+            await db.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_agent_configs_business_id ON agent_configs (business_id)"
+                )
+            )
             await db.commit()
-        logger.info("✅ agent personality tables ensured (agent_personalities, agent_configs)")
+        logger.info(
+            "✅ agent personality tables ensured (agent_personalities, agent_configs)"
+        )
 
         # Seed the curated personality catalog now that the table exists --
         # get_or_create_personality() is idempotent (no-op on already-seeded
         # rows), so this is safe to run on every boot.
         try:
             from app.domains.agents.services import AgentService
+
             async with AsyncSessionLocal() as db:
                 seeded = await AgentService(db).seed_personalities()
             logger.info(f"✅ agent_personalities seeded ({len(seeded)} personalities)")
         except Exception as e:
             logger.warning(f"agent_personalities seed: {str(e)[:120]}", exc_info=True)
     except Exception as e:
-        logger.warning(f"agent personality tables migration: {str(e)[:120]}", exc_info=True)
+        logger.warning(
+            f"agent personality tables migration: {str(e)[:120]}", exc_info=True
+        )
     startup_state.mark("agent_personalities")
 
     # Computer Use domain tables (app.domains.computer_use.models +
@@ -844,18 +987,31 @@ async def _bootstrap_database() -> None:
         )
 
         cu_batches = [
-            [ComputerUseBrowserProfile, ComputerUseProxyConfig, ComputerUseTemplate,
-             ComputerUseBatchJob, ComputerUseWebhook],
+            [
+                ComputerUseBrowserProfile,
+                ComputerUseProxyConfig,
+                ComputerUseTemplate,
+                ComputerUseBatchJob,
+                ComputerUseWebhook,
+            ],
             [ComputerUseSession],
-            [ComputerUseStep, ComputerUseMessage, ComputerUseAnnotation,
-             ComputerUseSessionShare, ComputerUseSessionTag, ComputerUseSessionNote,
-             ComputerUseSessionBookmark, ComputerUseScheduledTask],
+            [
+                ComputerUseStep,
+                ComputerUseMessage,
+                ComputerUseAnnotation,
+                ComputerUseSessionShare,
+                ComputerUseSessionTag,
+                ComputerUseSessionNote,
+                ComputerUseSessionBookmark,
+                ComputerUseScheduledTask,
+            ],
         ]
         # One catalog query instead of create_all(checkfirst=True) per table:
         # that checkfirst cost ~85 round trips per table (1176 for these 14) on
         # every boot even when every table already existed. None = could not
         # list them, so fall back to create_all's own per-table check.
         from app.db.schema_bootstrap import existing_table_names
+
         cu_existing = await existing_table_names(engine) or set()
 
         cu_created = []
@@ -867,10 +1023,15 @@ async def _bootstrap_database() -> None:
                     continue
                 try:
                     async with engine.begin() as cu_conn:
-                        await cu_conn.run_sync(Base.metadata.create_all, tables=[cu_table], checkfirst=True)
+                        await cu_conn.run_sync(
+                            Base.metadata.create_all, tables=[cu_table], checkfirst=True
+                        )
                     cu_created.append(cu_table.name)
                 except Exception as cu_e:
-                    logger.warning(f"computer_use table '{cu_table.name}' migration: {str(cu_e)[:120]}", exc_info=True)
+                    logger.warning(
+                        f"computer_use table '{cu_table.name}' migration: {str(cu_e)[:120]}",
+                        exc_info=True,
+                    )
         logger.info(f"✅ Computer Use tables ensured ({len(cu_created)}/14)")
     except Exception as e:
         logger.warning(f"Computer Use tables migration: {str(e)[:120]}", exc_info=True)
@@ -884,16 +1045,23 @@ async def _bootstrap_database() -> None:
         from sqlalchemy import text
 
         from app.core.database import AsyncSessionLocal, is_sqlite
+
         async with AsyncSessionLocal() as db:
             if is_sqlite:
                 existing = await db.execute(text("PRAGMA table_info(businesses)"))
                 cols = {row[1] for row in existing.all()}
                 if "is_active" not in cols:
-                    await db.execute(text("ALTER TABLE businesses ADD COLUMN is_active BOOLEAN DEFAULT 1"))
+                    await db.execute(
+                        text(
+                            "ALTER TABLE businesses ADD COLUMN is_active BOOLEAN DEFAULT 1"
+                        )
+                    )
             else:
-                await db.execute(text(
-                    "ALTER TABLE businesses ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true NOT NULL"
-                ))
+                await db.execute(
+                    text(
+                        "ALTER TABLE businesses ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true NOT NULL"
+                    )
+                )
             await db.commit()
         logger.info("✅ businesses.is_active restored")
     except Exception as e:
@@ -906,12 +1074,17 @@ async def _bootstrap_database() -> None:
         from sqlalchemy import text
 
         from app.core.database import AsyncSessionLocal, is_sqlite
+
         async with AsyncSessionLocal() as db:
             if is_sqlite:
                 existing = await db.execute(text("PRAGMA table_info(businesses)"))
                 cols = {row[1] for row in existing.all()}
                 if "type" not in cols:
-                    await db.execute(text("ALTER TABLE businesses ADD COLUMN type VARCHAR(20) DEFAULT 'services'"))
+                    await db.execute(
+                        text(
+                            "ALTER TABLE businesses ADD COLUMN type VARCHAR(20) DEFAULT 'services'"
+                        )
+                    )
             else:
                 # "business_kind", not "businesstype": that name collides
                 # with app.domains.business_context.models.BusinessType,
@@ -926,9 +1099,11 @@ async def _bootstrap_database() -> None:
                     EXCEPTION WHEN duplicate_object THEN null;
                     END $$;
                 """))
-                await db.execute(text(
-                    "ALTER TABLE businesses ADD COLUMN IF NOT EXISTS type business_kind NOT NULL DEFAULT 'SERVICES'"
-                ))
+                await db.execute(
+                    text(
+                        "ALTER TABLE businesses ADD COLUMN IF NOT EXISTS type business_kind NOT NULL DEFAULT 'SERVICES'"
+                    )
+                )
             await db.commit()
         logger.info("✅ businesses.type restored")
     except Exception as e:
@@ -940,16 +1115,23 @@ async def _bootstrap_database() -> None:
         from sqlalchemy import text
 
         from app.core.database import AsyncSessionLocal, is_sqlite
+
         async with AsyncSessionLocal() as db:
             if is_sqlite:
                 existing = await db.execute(text("PRAGMA table_info(businesses)"))
                 cols = {row[1] for row in existing.all()}
                 if "config" not in cols:
-                    await db.execute(text("ALTER TABLE businesses ADD COLUMN config TEXT DEFAULT '{}'"))
+                    await db.execute(
+                        text(
+                            "ALTER TABLE businesses ADD COLUMN config TEXT DEFAULT '{}'"
+                        )
+                    )
             else:
-                await db.execute(text(
-                    "ALTER TABLE businesses ADD COLUMN IF NOT EXISTS config JSONB DEFAULT '{}'::jsonb NOT NULL"
-                ))
+                await db.execute(
+                    text(
+                        "ALTER TABLE businesses ADD COLUMN IF NOT EXISTS config JSONB DEFAULT '{}'::jsonb NOT NULL"
+                    )
+                )
             await db.commit()
         logger.info("✅ businesses.config restored")
     except Exception as e:
@@ -963,6 +1145,7 @@ async def _bootstrap_database() -> None:
         from sqlalchemy import text
 
         from app.core.database import AsyncSessionLocal, is_sqlite
+
         async with AsyncSessionLocal() as db:
             if is_sqlite:
                 await db.execute(text("""
@@ -1003,7 +1186,9 @@ async def _bootstrap_database() -> None:
             await db.commit()
         logger.info("✅ business_contexts table ensured")
     except Exception as e:
-        logger.warning(f"business_contexts table creation: {str(e)[:120]}", exc_info=True)
+        logger.warning(
+            f"business_contexts table creation: {str(e)[:120]}", exc_info=True
+        )
 
     # Migrate schema for ManyChat + Nicho/Oferta/Ángulos + Booking-rate feature.
     # create_all() never alters existing tables, so business_contexts' new
@@ -1012,30 +1197,53 @@ async def _bootstrap_database() -> None:
         from sqlalchemy import text
 
         from app.core.database import AsyncSessionLocal, is_sqlite
+
         async with AsyncSessionLocal() as db:
             if is_sqlite:
-                existing = await db.execute(text("PRAGMA table_info(business_contexts)"))
+                existing = await db.execute(
+                    text("PRAGMA table_info(business_contexts)")
+                )
                 cols = {row[1] for row in existing.all()}
                 if "communication_angles" not in cols:
-                    await db.execute(text("ALTER TABLE business_contexts ADD COLUMN communication_angles TEXT"))
+                    await db.execute(
+                        text(
+                            "ALTER TABLE business_contexts ADD COLUMN communication_angles TEXT"
+                        )
+                    )
                 if "winning_offer_summary" not in cols:
-                    await db.execute(text("ALTER TABLE business_contexts ADD COLUMN winning_offer_summary TEXT"))
+                    await db.execute(
+                        text(
+                            "ALTER TABLE business_contexts ADD COLUMN winning_offer_summary TEXT"
+                        )
+                    )
                 if "scheduling_link" not in cols:
-                    await db.execute(text("ALTER TABLE business_contexts ADD COLUMN scheduling_link VARCHAR(512)"))
+                    await db.execute(
+                        text(
+                            "ALTER TABLE business_contexts ADD COLUMN scheduling_link VARCHAR(512)"
+                        )
+                    )
             else:
-                await db.execute(text(
-                    "ALTER TABLE business_contexts ADD COLUMN IF NOT EXISTS communication_angles JSONB DEFAULT '[]'::jsonb"
-                ))
-                await db.execute(text(
-                    "ALTER TABLE business_contexts ADD COLUMN IF NOT EXISTS winning_offer_summary TEXT"
-                ))
-                await db.execute(text(
-                    "ALTER TABLE business_contexts ADD COLUMN IF NOT EXISTS scheduling_link VARCHAR(512)"
-                ))
+                await db.execute(
+                    text(
+                        "ALTER TABLE business_contexts ADD COLUMN IF NOT EXISTS communication_angles JSONB DEFAULT '[]'::jsonb"
+                    )
+                )
+                await db.execute(
+                    text(
+                        "ALTER TABLE business_contexts ADD COLUMN IF NOT EXISTS winning_offer_summary TEXT"
+                    )
+                )
+                await db.execute(
+                    text(
+                        "ALTER TABLE business_contexts ADD COLUMN IF NOT EXISTS scheduling_link VARCHAR(512)"
+                    )
+                )
             await db.commit()
         logger.info("✅ business_contexts angles/scheduling schema migrated")
     except Exception as e:
-        logger.warning(f"business_contexts schema migration: {str(e)[:120]}", exc_info=True)
+        logger.warning(
+            f"business_contexts schema migration: {str(e)[:120]}", exc_info=True
+        )
 
     # ManyChat enum value — must commit alone, isolated from any statement
     # that might use the new value in the same transaction (Postgres rule).
@@ -1043,11 +1251,14 @@ async def _bootstrap_database() -> None:
         from sqlalchemy import text
 
         from app.core.database import AsyncSessionLocal, is_sqlite
+
         if not is_sqlite:
             async with AsyncSessionLocal() as db:
-                await db.execute(text(
-                    "ALTER TYPE channelplatform ADD VALUE IF NOT EXISTS 'manychat'"
-                ))
+                await db.execute(
+                    text(
+                        "ALTER TYPE channelplatform ADD VALUE IF NOT EXISTS 'manychat'"
+                    )
+                )
                 await db.commit()
             logger.info("✅ channelplatform enum: manychat ensured")
     except Exception as e:
@@ -1064,6 +1275,7 @@ async def _bootstrap_database() -> None:
         from sqlalchemy import text
 
         from app.core.database import AsyncSessionLocal, is_sqlite
+
         async with AsyncSessionLocal() as db:
             if is_sqlite:
                 await db.execute(text("""
@@ -1163,13 +1375,17 @@ async def _bootstrap_database() -> None:
                         updated_at TIMESTAMP
                     )
                 """))
-                await db.execute(text(
-                    "ALTER TABLE transactions ADD COLUMN IF NOT EXISTS conversation_id UUID"
-                ))
+                await db.execute(
+                    text(
+                        "ALTER TABLE transactions ADD COLUMN IF NOT EXISTS conversation_id UUID"
+                    )
+                )
             await db.commit()
         logger.info("✅ transactions/refunds tables ensured")
     except Exception as e:
-        logger.warning(f"transactions/refunds table creation: {str(e)[:120]}", exc_info=True)
+        logger.warning(
+            f"transactions/refunds table creation: {str(e)[:120]}", exc_info=True
+        )
 
     # Same story as transactions/refunds above — payment_metrics is another
     # CoreBase table init_db() skips. PaymentService._update_payment_metrics
@@ -1180,6 +1396,7 @@ async def _bootstrap_database() -> None:
         from sqlalchemy import text
 
         from app.core.database import AsyncSessionLocal, is_sqlite
+
         async with AsyncSessionLocal() as db:
             if is_sqlite:
                 await db.execute(text("""
@@ -1235,25 +1452,40 @@ async def _bootstrap_database() -> None:
         from sqlalchemy import text
 
         from app.core.database import AsyncSessionLocal, is_sqlite
+
         async with AsyncSessionLocal() as db:
             if is_sqlite:
                 existing = await db.execute(text("PRAGMA table_info(conversations)"))
                 cols = {row[1] for row in existing.all()}
                 if "last_followup_sent_at" not in cols:
-                    await db.execute(text("ALTER TABLE conversations ADD COLUMN last_followup_sent_at DATETIME"))
+                    await db.execute(
+                        text(
+                            "ALTER TABLE conversations ADD COLUMN last_followup_sent_at DATETIME"
+                        )
+                    )
                 if "followup_count" not in cols:
-                    await db.execute(text("ALTER TABLE conversations ADD COLUMN followup_count INTEGER DEFAULT 0"))
+                    await db.execute(
+                        text(
+                            "ALTER TABLE conversations ADD COLUMN followup_count INTEGER DEFAULT 0"
+                        )
+                    )
             else:
-                await db.execute(text(
-                    "ALTER TABLE conversations ADD COLUMN IF NOT EXISTS last_followup_sent_at TIMESTAMP"
-                ))
-                await db.execute(text(
-                    "ALTER TABLE conversations ADD COLUMN IF NOT EXISTS followup_count INTEGER DEFAULT 0"
-                ))
+                await db.execute(
+                    text(
+                        "ALTER TABLE conversations ADD COLUMN IF NOT EXISTS last_followup_sent_at TIMESTAMP"
+                    )
+                )
+                await db.execute(
+                    text(
+                        "ALTER TABLE conversations ADD COLUMN IF NOT EXISTS followup_count INTEGER DEFAULT 0"
+                    )
+                )
             await db.commit()
         logger.info("✅ conversations follow-up columns ensured")
     except Exception as e:
-        logger.warning(f"conversations follow-up columns migration: {str(e)[:120]}", exc_info=True)
+        logger.warning(
+            f"conversations follow-up columns migration: {str(e)[:120]}", exc_info=True
+        )
 
     # Task 6: LLM daily call cap — business_contexts.llm_daily_call_limit
     # (NULL = unlimited, existing behavior) + the llm_daily_usage counter
@@ -1262,12 +1494,19 @@ async def _bootstrap_database() -> None:
         from sqlalchemy import text
 
         from app.core.database import AsyncSessionLocal, is_sqlite
+
         async with AsyncSessionLocal() as db:
             if is_sqlite:
-                existing = await db.execute(text("PRAGMA table_info(business_contexts)"))
+                existing = await db.execute(
+                    text("PRAGMA table_info(business_contexts)")
+                )
                 cols = {row[1] for row in existing.all()}
                 if "llm_daily_call_limit" not in cols:
-                    await db.execute(text("ALTER TABLE business_contexts ADD COLUMN llm_daily_call_limit INTEGER"))
+                    await db.execute(
+                        text(
+                            "ALTER TABLE business_contexts ADD COLUMN llm_daily_call_limit INTEGER"
+                        )
+                    )
                 await db.execute(text("""
                     CREATE TABLE IF NOT EXISTS llm_daily_usage (
                         id VARCHAR(36) PRIMARY KEY,
@@ -1279,9 +1518,11 @@ async def _bootstrap_database() -> None:
                     )
                 """))
             else:
-                await db.execute(text(
-                    "ALTER TABLE business_contexts ADD COLUMN IF NOT EXISTS llm_daily_call_limit INTEGER"
-                ))
+                await db.execute(
+                    text(
+                        "ALTER TABLE business_contexts ADD COLUMN IF NOT EXISTS llm_daily_call_limit INTEGER"
+                    )
+                )
                 await db.execute(text("""
                     CREATE TABLE IF NOT EXISTS llm_daily_usage (
                         id UUID PRIMARY KEY,
@@ -1295,35 +1536,48 @@ async def _bootstrap_database() -> None:
             await db.commit()
         logger.info("✅ LLM daily usage cap schema ensured")
     except Exception as e:
-        logger.warning(f"LLM daily usage cap schema migration: {str(e)[:120]}", exc_info=True)
+        logger.warning(
+            f"LLM daily usage cap schema migration: {str(e)[:120]}", exc_info=True
+        )
 
     # Ensure the double-entry ledger tables exist (CoreBase domain that
     # init_db() skips; migrations are disabled — see entrypoint.sh).
     try:
         from app.domains.ledger.bootstrap import ensure_ledger_tables
+
         await ensure_ledger_tables()
         from app.domains.ad_budget.bootstrap import ensure_ad_budget_tables
+
         await ensure_ad_budget_tables()
         from app.domains.forecasting.bootstrap import ensure_forecasting_tables
+
         await ensure_forecasting_tables()
         from app.domains.brand_transformation.bootstrap import (
             ensure_brand_transformation_tables,
         )
+
         await ensure_brand_transformation_tables()
         startup_state.mark("brand_transformation")
         from app.domains.ai_activity.bootstrap import ensure_ai_activity_tables
+
         await ensure_ai_activity_tables()
         from app.domains.websites.bootstrap import ensure_website_tables
+
         await ensure_website_tables()
         from app.domains.web_presence.bootstrap import ensure_web_presence_tables
+
         await ensure_web_presence_tables()
         from app.domains.authority.bootstrap import ensure_authority_tables
+
         await ensure_authority_tables()
         from app.domains.orders.bootstrap import ensure_orders_tables
+
         await ensure_orders_tables()
         from app.domains.chatbots.bootstrap import ensure_chatbot_tables
+
         await ensure_chatbot_tables()
         from app.domains.agents.keys_bootstrap import ensure_llm_support_tables
+
         await ensure_llm_support_tables()
         # Everything the ORM declares, not only the domains that happened to
         # get their own bootstrap. See app/db/schema_bootstrap.py: migrations
@@ -1331,33 +1585,45 @@ async def _bootstrap_database() -> None:
         # domain tables never existed and their absence surfaced as ordinary
         # emptiness in the UI.
         from app.db.schema_bootstrap import ensure_all_tables, existing_table_names
+
         await ensure_all_tables()
         startup_state.mark("ensure_all_tables")
         from app.db.leads_bootstrap import ensure_leads_owner_column
+
         await ensure_leads_owner_column()
         from app.db.catalog_bootstrap import ensure_catalog_item_columns
+
         await ensure_catalog_item_columns()
         from app.domains.seo_config.positioning_bootstrap import (
             ensure_positioning_recommendation_columns,
         )
+
         await ensure_positioning_recommendation_columns()
         from app.domains.seo_config.conversion_events_bootstrap import (
             ensure_conversion_event_dedupe_column,
         )
+
         await ensure_conversion_event_dedupe_column()
         from app.core.database import engine
         from app.domains.hr.models import HR_TABLES
         from app.domains.legal.models import LEGAL_TABLES
         from app.domains.procurement.models import PROCUREMENT_TABLES
+
         # Only open the transaction for tables that are actually missing; the
         # checkfirst per table below stays as the safety net (and is the whole
         # path when the catalog listing is unavailable).
         hr_existing = await existing_table_names(engine) or set()
-        hr_missing = [t for t in HR_TABLES + LEGAL_TABLES + PROCUREMENT_TABLES if t.name not in hr_existing]
+        hr_missing = [
+            t
+            for t in HR_TABLES + LEGAL_TABLES + PROCUREMENT_TABLES
+            if t.name not in hr_existing
+        ]
         if hr_missing:
             async with engine.begin() as conn:
                 for t in hr_missing:
-                    await conn.run_sync(lambda c, t=t: t.create(bind=c, checkfirst=True))
+                    await conn.run_sync(
+                        lambda c, t=t: t.create(bind=c, checkfirst=True)
+                    )
     except Exception as e:
         logger.warning(f"domain tables bootstrap: {str(e)[:160]}", exc_info=True)
     startup_state.mark("domain_tables")
@@ -1370,11 +1636,17 @@ async def _bootstrap_database() -> None:
         from app.db.seed_phase_33 import seed_phase_33
 
         # Get sync engine from DATABASE_URL
-        db_url = os.getenv("DATABASE_URL", "").replace("postgresql+asyncpg://", "postgresql://").replace("postgresql://", "postgresql+psycopg2://")
+        db_url = (
+            os.getenv("DATABASE_URL", "")
+            .replace("postgresql+asyncpg://", "postgresql://")
+            .replace("postgresql://", "postgresql+psycopg2://")
+        )
         if db_url:
             result = await asyncio.to_thread(_run_phase_33_seed, db_url, seed_phase_33)
             if result["status"] == "success":
-                logger.info(f"✅ Phase 33 seed loaded: {result['products_created']} products, {result['listings_created']} listings, ${result['total_gmv_monthly']:,}/mo GMV")
+                logger.info(
+                    f"✅ Phase 33 seed loaded: {result['products_created']} products, {result['listings_created']} listings, ${result['total_gmv_monthly']:,}/mo GMV"
+                )
             elif result["status"] == "skipped":
                 logger.debug(f"Phase 33 seed: {result['reason']}")
             else:
@@ -1419,10 +1691,14 @@ async def _run_background_bootstrap() -> None:
             asyncio.create_task(run_followup_loop())
             logger.info("✅ Follow-up scheduler started")
         except Exception as e:
-            logger.warning(f"Follow-up scheduler background start warning: {e}", exc_info=True)
+            logger.warning(
+                f"Follow-up scheduler background start warning: {e}", exc_info=True
+            )
 
         startup_state.complete()
-        logger.info(f"✅ Startup bootstrap complete in {startup_state.elapsed_seconds}s")
+        logger.info(
+            f"✅ Startup bootstrap complete in {startup_state.elapsed_seconds}s"
+        )
     except asyncio.CancelledError:
         raise
     except Exception as e:
@@ -1447,6 +1723,7 @@ async def lifespan(app: FastAPI):
     if scheduler and scheduler.redis:
         try:
             from fastapi_limiter import FastAPILimiter
+
             await FastAPILimiter.init(scheduler.redis)
             logger.info("✅ FastAPILimiter initialized")
         except Exception as e:
@@ -1463,7 +1740,9 @@ async def lifespan(app: FastAPI):
     # The database bootstrap runs in the background so uvicorn can start
     # accepting connections right away; see startup_state / GET /api/ready.
     startup_state.start()
-    bootstrap_task = asyncio.create_task(_run_background_bootstrap(), name="db-bootstrap")
+    bootstrap_task = asyncio.create_task(
+        _run_background_bootstrap(), name="db-bootstrap"
+    )
 
     yield
 
@@ -1482,16 +1761,19 @@ async def lifespan(app: FastAPI):
         await scheduler.close()
     logger.info("✅ All services closed")
 
-app = FastAPI(
-    title="SellIA Sellbot",
-    version="1.0.0",
-    lifespan=lifespan
-)
+
+app = FastAPI(title="SellIA Sellbot", version="1.0.0", lifespan=lifespan)
 
 # GET /api/ready — 503 until the background schema bootstrap has finished
 app.include_router(startup_router)
 
-allowed_origins = [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,https://sellia-brain.vercel.app").split(",")]
+allowed_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "ALLOWED_ORIGINS", "http://localhost:3000,https://sellia-brain.vercel.app"
+    ).split(",")
+]
+
 
 # Rate limiter (simple in-memory)
 class RateLimiter:
@@ -1509,7 +1791,9 @@ class RateLimiter:
         self.requests[ip].append(now)
         return True
 
+
 rate_limiter = RateLimiter(requests_per_minute=100)
+
 
 # Logging middleware (structured)
 @app.middleware("http")
@@ -1517,6 +1801,7 @@ async def log_request(request: Request, call_next):
     import time
 
     from app.middleware.threat_intel import get_client_ip
+
     start_time = time.time()
     client_ip = get_client_ip(request)
     request.state.client_ip = client_ip
@@ -1532,8 +1817,15 @@ async def log_request(request: Request, call_next):
     # gave up, even though the app itself was healthy and had been for
     # minutes. Excluding health endpoints from the limiter is standard
     # practice for exactly this reason.
-    if request.url.path not in ("/health", "/api/health", "/api/ready", "/api/v1/health") and not rate_limiter.is_allowed(client_ip):
-        logger.warning(f"Rate limit exceeded: {client_ip} {request.method} {request.url.path}")
+    if request.url.path not in (
+        "/health",
+        "/api/health",
+        "/api/ready",
+        "/api/v1/health",
+    ) and not rate_limiter.is_allowed(client_ip):
+        logger.warning(
+            f"Rate limit exceeded: {client_ip} {request.method} {request.url.path}"
+        )
         return JSONResponse({"error": "Rate limit exceeded"}, status_code=429)
 
     response = await call_next(request)
@@ -1546,7 +1838,7 @@ async def log_request(request: Request, call_next):
         "path": request.url.path,
         "status_code": response.status_code,
         "client_ip": client_ip,
-        "process_time_ms": round(process_time * 1000, 2)
+        "process_time_ms": round(process_time * 1000, 2),
     }
     logger.info(f"API | {log_entry}")
 
@@ -1566,6 +1858,7 @@ from app.core.middleware.toggle_enforcement import toggle_enforcement_middleware
 
 app.add_middleware(BaseHTTPMiddleware, dispatch=toggle_enforcement_middleware)
 
+
 # Registrar routers
 # v1 routes (current stable) — each wrapped so a single broken router
 # (missing dependency, bad import) can never take the whole app down.
@@ -1575,6 +1868,7 @@ def _register(router_module, name: str) -> None:
         logger.info(f"✅ {name} router registered")
     except Exception:
         logger.exception(f"❌ Failed to register {name} router")
+
 
 _register(leads_module, "leads")
 _register(workflows_module, "workflows")
@@ -1597,6 +1891,7 @@ _register(marketing_intelligence_module, "marketing_intelligence")
 _register(accounting_intelligence_module, "accounting_intelligence")
 _register(sales_operations_module, "sales_operations")
 
+
 # Domain routers (Phase 2-5: Backend Intelligence)
 def _register_domain_router(router_obj, name: str) -> None:
     try:
@@ -1604,6 +1899,7 @@ def _register_domain_router(router_obj, name: str) -> None:
         logger.info(f"✅ {name} router registered")
     except Exception:
         logger.exception(f"❌ Failed to register {name} router")
+
 
 # Phase X6: FOMO Dynamics (Ultra-Potent Psychology Engine)
 _register_domain_router(fomo_dynamics_router, "fomo_dynamics")
@@ -1644,6 +1940,7 @@ _register_domain_router(arca_compliance_router, "arca_compliance")
 # Platforms Integration (TikTok Shop real; resto queda como TODO histórico)
 _register_domain_router(platforms_integration_router, "platforms_integration")
 
+
 # Legacy redirect (v1 is default)
 @app.get("/api/version", tags=["system"])
 async def get_version():
@@ -1651,8 +1948,9 @@ async def get_version():
         "version": "1.0.0",
         "status": "stable",
         "deprecation": None,
-        "next_version": "2.0.0 (planned Q3 2024)"
+        "next_version": "2.0.0 (planned Q3 2024)",
     }
+
 
 # ============================================================
 # SALES SYSTEM PROMPT - 34 libros integrados
@@ -1716,6 +2014,7 @@ SALES_SYSTEM_PROMPT = """Eres SellIA, un agente de ventas de IA con maestría en
 - Empatico pero orientado a resultados
 """
 
+
 # ============================================================
 # MODELOS
 # ============================================================
@@ -1727,20 +2026,25 @@ class LeadProfile(BaseModel):
     pain_point: str
     industry: str
 
+
 class EmailSequenceRequest(BaseModel):
     lead: LeadProfile
     offer: str
     sender_name: str = "SellIA"
     sender_email: str
 
+
 class KnowledgeIngestRequest(BaseModel):
     content: str
     source: str
 
+
 # ============================================================
 # FUNCIONES CORE
 # ============================================================
-async def call_anthropic_api(system_prompt: str, user_message: str, retries: int = 3) -> str:
+async def call_anthropic_api(
+    system_prompt: str, user_message: str, retries: int = 3
+) -> str:
     """Llama a Claude API con retry logic."""
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
@@ -1766,25 +2070,35 @@ async def call_anthropic_api(system_prompt: str, user_message: str, retries: int
                 )
                 response.raise_for_status()
                 data = response.json()
-                if not data.get("content") or not isinstance(data["content"], list) or len(data["content"]) == 0:
+                if (
+                    not data.get("content")
+                    or not isinstance(data["content"], list)
+                    or len(data["content"]) == 0
+                ):
                     raise ValueError(f"Invalid Anthropic response structure: {data}")
                 return data["content"][0]["text"]
         except (httpx.TimeoutException, httpx.ConnectError) as e:
             last_error = e
             if attempt < retries - 1:
-                await asyncio.sleep(2 ** attempt)  # Exponential backoff
+                await asyncio.sleep(2**attempt)  # Exponential backoff
                 continue
         except httpx.HTTPStatusError as e:
             if e.response.status_code >= 500:  # Retry only 5xx errors
                 last_error = e
                 if attempt < retries - 1:
-                    await asyncio.sleep(2 ** attempt)
+                    await asyncio.sleep(2**attempt)
                     continue
             raise HTTPException(status_code=e.response.status_code, detail=str(e))
 
-    raise HTTPException(status_code=503, detail=f"Anthropic API unavailable after {retries} attempts: {last_error}")
+    raise HTTPException(
+        status_code=503,
+        detail=f"Anthropic API unavailable after {retries} attempts: {last_error}",
+    )
 
-async def send_whatsapp_message(to: str, text: str, phone_number_id: str, token: str) -> dict:
+
+async def send_whatsapp_message(
+    to: str, text: str, phone_number_id: str, token: str
+) -> dict:
     """Envía mensaje vía WhatsApp Graph API."""
     url = f"https://graph.instagram.com/v18.0/{phone_number_id}/messages"
     try:
@@ -1809,6 +2123,7 @@ async def send_whatsapp_message(to: str, text: str, phone_number_id: str, token:
         logger.error(f"WhatsApp API error for {to}: {e}")
         raise
 
+
 # ============================================================
 # ENDPOINTS
 # ============================================================
@@ -1816,10 +2131,16 @@ async def send_whatsapp_message(to: str, text: str, phone_number_id: str, token:
 async def root():
     return RedirectResponse(url="/api/ping")
 
+
 @app.get("/api/ping")
 async def ping():
     """Simple health check."""
-    return {"status": "ok", "service": "SellIA Sellbot", "timestamp": datetime.now().isoformat()}
+    return {
+        "status": "ok",
+        "service": "SellIA Sellbot",
+        "timestamp": datetime.now().isoformat(),
+    }
+
 
 @app.get("/api/health", tags=["system"])
 async def health_check(
@@ -1876,8 +2197,9 @@ async def health_check(
             # never turns this endpoint into a non-200
             "bootstrap": startup_state.phase,
         },
-        "uptime_seconds": 0  # TODO: track from startup
+        "uptime_seconds": 0,  # TODO: track from startup
     }
+
 
 @app.get("/api/queue/dlq", tags=["monitoring"])
 async def get_dead_letter_queue():
@@ -1892,25 +2214,26 @@ async def get_dead_letter_queue():
         return {
             "status": "ok",
             "dlq_size": dlq_size,
-            "recent_tasks": [json.loads(t) if isinstance(t, str) else t for t in dlq_tasks],
-            "timestamp": datetime.now().isoformat()
+            "recent_tasks": [
+                json.loads(t) if isinstance(t, str) else t for t in dlq_tasks
+            ],
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
         logger.exception("DLQ query failed")
         return {"status": "error", "detail": str(e)}
+
 
 @app.get("/api/v1/queue/stats")
 async def queue_stats():
     """Get email queue statistics."""
     try:
         stats = await get_processor_stats()
-        return {
-            "status": "ok",
-            "queue": stats
-        }
+        return {"status": "ok", "queue": stats}
     except Exception as e:
         logger.exception("Queue stats error")
         return {"status": "error", "detail": str(e)}
+
 
 @app.get("/api/v1/queue/peek")
 async def queue_peek(count: int = 5):
@@ -1920,14 +2243,11 @@ async def queue_peek(count: int = 5):
 
     try:
         tasks = await scheduler.peek_queue(count)
-        return {
-            "status": "ok",
-            "tasks": tasks,
-            "count": len(tasks)
-        }
+        return {"status": "ok", "tasks": tasks, "count": len(tasks)}
     except Exception as e:
         logger.exception("Queue peek error")
         return {"status": "error", "detail": str(e)}
+
 
 @app.post("/api/v1/webhooks/whatsapp")
 async def whatsapp_webhook(request: Request):
@@ -1944,7 +2264,12 @@ async def whatsapp_webhook(request: Request):
             return JSONResponse({"error": "Invalid token"}, status_code=403)
 
         # Procesa mensaje entrante
-        messages = body.get("entry", [{}])[0].get("changes", [{}])[0].get("value", {}).get("messages", [])
+        messages = (
+            body.get("entry", [{}])[0]
+            .get("changes", [{}])[0]
+            .get("value", {})
+            .get("messages", [])
+        )
         if not messages:
             return JSONResponse({"status": "ok"})
 
@@ -1965,12 +2290,15 @@ async def whatsapp_webhook(request: Request):
         phone_number_id = os.getenv("META_PHONE_NUMBER_ID", "")
         token = os.getenv("META_WHATSAPP_TOKEN", "")
         if phone_number_id and token:
-            await send_whatsapp_message(from_number, response_text, phone_number_id, token)
+            await send_whatsapp_message(
+                from_number, response_text, phone_number_id, token
+            )
 
         return JSONResponse({"status": "ok", "response_sent": True})
     except Exception as e:
         logger.exception("WhatsApp webhook error")
         return JSONResponse({"status": "error", "detail": str(e)}, status_code=500)
+
 
 @app.post("/api/v1/sequences/cold-email")
 async def generate_cold_email_sequence(req: EmailSequenceRequest):
@@ -2005,10 +2333,13 @@ SOLO JSON, sin markdown."""
             "status": "generated",
         }
     except json.JSONDecodeError:
-        raise HTTPException(status_code=500, detail="Failed to parse email sequence JSON")
+        raise HTTPException(
+            status_code=500, detail="Failed to parse email sequence JSON"
+        )
     except Exception as e:
         logger.exception("Email sequence error")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/api/v1/knowledge/ingest")
 async def ingest_knowledge(req: KnowledgeIngestRequest):

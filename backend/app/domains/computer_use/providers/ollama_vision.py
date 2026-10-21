@@ -28,10 +28,10 @@ logger = get_logger(__name__)
 
 # Recommended vision models for Ollama
 VISION_MODELS = [
-    "llava",          # General vision
-    "bakllava",       # Better performance
-    "moondream",      # Small and fast
-    "llava-phi3",     # Good balance
+    "llava",  # General vision
+    "bakllava",  # Better performance
+    "moondream",  # Small and fast
+    "llava-phi3",  # Good balance
 ]
 
 
@@ -124,7 +124,10 @@ class OllamaVisionProvider(ComputerUseProvider):
             if coord_match:
                 return ComputerUseAction(
                     action_type="click",
-                    params={"x": int(coord_match.group(1)), "y": int(coord_match.group(2))},
+                    params={
+                        "x": int(coord_match.group(1)),
+                        "y": int(coord_match.group(2)),
+                    },
                     reason=text[:200],
                 )
 
@@ -162,7 +165,11 @@ class OllamaVisionProvider(ComputerUseProvider):
         }
         action_type = type_map.get(action_type, action_type)
 
-        return ComputerUseAction(action_type=action_type, params=params, reason=reason or f"Ollama {action_type}")
+        return ComputerUseAction(
+            action_type=action_type,
+            params=params,
+            reason=reason or f"Ollama {action_type}",
+        )
 
     async def decide_action(
         self,
@@ -187,7 +194,9 @@ class OllamaVisionProvider(ComputerUseProvider):
 
         page_context = ""
         if page_info:
-            page_context = f"URL: {page_info.get('url', '')}\nTitle: {page_info.get('title', '')}"
+            page_context = (
+                f"URL: {page_info.get('url', '')}\nTitle: {page_info.get('title', '')}"
+            )
             if page_info.get("elements_text"):
                 page_context += "\n" + page_info["elements_text"]
             if page_info.get("skill_brief"):

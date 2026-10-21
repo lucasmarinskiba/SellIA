@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 class TelegramConnector(BaseChannelConnector):
     """Conector para Telegram usando Bot API."""
+
     platform = "telegram"
     BASE_URL = "https://api.telegram.org"
 
@@ -22,7 +23,9 @@ class TelegramConnector(BaseChannelConnector):
         self.bot_token = credentials.get("bot_token")
         self.webhook_secret = credentials.get("webhook_secret")
 
-    async def send_message(self, recipient_id: str, content: str, content_type: str = "text") -> dict[str, Any]:
+    async def send_message(
+        self, recipient_id: str, content: str, content_type: str = "text"
+    ) -> dict[str, Any]:
         if not self.bot_token:
             raise ValueError("Falta el bot token de Telegram")
 
@@ -47,7 +50,8 @@ class TelegramConnector(BaseChannelConnector):
         return WebhookPayload(
             platform=ChannelPlatform.TELEGRAM,
             external_id=str(chat.get("id")),
-            sender_name=f"{from_user.get('first_name', '')} {from_user.get('last_name', '')}".strip() or "Telegram User",
+            sender_name=f"{from_user.get('first_name', '')} {from_user.get('last_name', '')}".strip()
+            or "Telegram User",
             sender_id=str(from_user.get("id")),
             content=message.get("text", ""),
             content_type="text",

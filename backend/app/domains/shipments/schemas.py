@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # ========== Address Schema ==========
 
+
 class Address(BaseModel):
     name: str
     company: str | None = None
@@ -21,6 +22,7 @@ class Address(BaseModel):
 
 
 # ========== Package Schema ==========
+
 
 class PackageItem(BaseModel):
     name: str
@@ -38,6 +40,7 @@ class Package(BaseModel):
 
 
 # ========== Shipment Config Schemas ==========
+
 
 class ShipmentConfigCreate(BaseModel):
     carrier: str
@@ -74,6 +77,7 @@ class ShipmentConfigResponse(BaseModel):
 
 # ========== Shipment Tracking Event Schemas ==========
 
+
 class ShipmentTrackingEventResponse(BaseModel):
     id: UUID
     shipment_id: UUID
@@ -87,6 +91,7 @@ class ShipmentTrackingEventResponse(BaseModel):
 
 
 # ========== Shipment Schemas ==========
+
 
 class ShipmentCreate(BaseModel):
     order_id: UUID
@@ -158,6 +163,7 @@ class ShipmentListResponse(BaseModel):
 
 
 # ========== Carrier Info ==========
+
 
 class CarrierInfo(BaseModel):
     id: str

@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 class SlackMessageType(str, Enum):
     """Message types with color-coded blocks."""
+
     ESCALATION = "escalation"  # Red - urgent action needed
     DEAL_CLOSED = "deal_closed"  # Green - win celebration
     CHURN_WARNING = "churn_warning"  # Orange - at-risk customer
@@ -51,9 +52,7 @@ class SlackService:
     ) -> bool:
         """Send formatted message to Slack."""
         try:
-            blocks = self._build_message_blocks(
-                message_type, title, content, metadata
-            )
+            blocks = self._build_message_blocks(message_type, title, content, metadata)
 
             payload = {
                 "channel": channel,
@@ -88,7 +87,11 @@ class SlackService:
                 "type": "header",
                 "text": {
                     "type": "plain_text",
-                    "text": f"🚨 {title}" if message_type == SlackMessageType.ESCALATION else f"📊 {title}",
+                    "text": (
+                        f"🚨 {title}"
+                        if message_type == SlackMessageType.ESCALATION
+                        else f"📊 {title}"
+                    ),
                     "emoji": True,
                 },
             },
@@ -156,18 +159,29 @@ class SlackService:
         )
 
     async def send_churn_warning(
-        self, customer_name: str, company: str, churn_probability: float, days_until_churn: int
+        self,
+        customer_name: str,
+        company: str,
+        churn_probability: float,
+        days_until_churn: int,
     ) -> bool:
         """Send churn risk warning."""
         return await self.send_message(
             SlackMessageType.CHURN_WARNING,
             f"⚠️ CHURN RISK: {customer_name}",
             f"Customer *{customer_name}* at *{company}* is at risk of churning.\n*Churn Probability:* {churn_probability*100:.1f}%\n*Days to Churn:* {days_until_churn}",
-            {"Probability": f"{churn_probability*100:.1f}%", "Timeline": f"{days_until_churn} days"},
+            {
+                "Probability": f"{churn_probability*100:.1f}%",
+                "Timeline": f"{days_until_churn} days",
+            },
         )
 
     async def send_expansion_opportunity(
-        self, customer_name: str, company: str, expansion_value: float, recommended_product: str
+        self,
+        customer_name: str,
+        company: str,
+        expansion_value: float,
+        recommended_product: str,
     ) -> bool:
         """Send expansion opportunity alert."""
         return await self.send_message(

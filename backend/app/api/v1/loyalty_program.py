@@ -57,7 +57,7 @@ def create_loyalty_program(
         name=request.name,
         points_per_dollar=request.points_per_dollar,
         welcome_bonus=request.welcome_bonus,
-        db=db
+        db=db,
     )
 
 
@@ -72,7 +72,7 @@ def enroll_member(
         business_id=business_id,
         customer_id=request.customer_id,
         loyalty_program_id=request.loyalty_program_id,
-        db=db
+        db=db,
     )
 
 
@@ -90,7 +90,7 @@ def award_points(
         transaction_type=request.transaction_type,
         description=request.description,
         order_id=request.order_id,
-        db=db
+        db=db,
     )
 
 
@@ -105,7 +105,7 @@ def redeem_reward(
         member_id=request.member_id,
         reward_id=request.reward_id,
         business_id=business_id,
-        db=db
+        db=db,
     )
 
 
@@ -124,7 +124,7 @@ def create_reward_offer(
         reward_type=request.reward_type,
         points_required=request.points_required,
         value=request.value,
-        db=db
+        db=db,
     )
 
 
@@ -134,10 +134,7 @@ def get_member_details(
     db: Annotated[Session, Depends(get_db)],
 ):
     """Get member profile + points balance."""
-    return LoyaltyProgramService.get_member_details(
-        member_id=member_id,
-        db=db
-    )
+    return LoyaltyProgramService.get_member_details(member_id=member_id, db=db)
 
 
 @router.get("/businesses/{business_id}/loyalty-metrics")
@@ -148,7 +145,5 @@ def get_loyalty_metrics(
 ):
     """Get loyalty program metrics."""
     return LoyaltyProgramService.calculate_loyalty_metrics(
-        business_id=business_id,
-        date=date,
-        db=db
+        business_id=business_id, date=date, db=db
     )

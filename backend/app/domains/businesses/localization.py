@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 class LocalizationStrategy(Enum):
     """Offline-to-online strategy per business model."""
+
     NONE = "none"  # ONLINE_ONLY: no offline strategy
     QR_INVITE = "qr_invite"  # E-commerce+showroom: QR codes → visit invites
     FOOT_TRAFFIC = "foot_traffic"  # Retail: walk-by detection → offers
@@ -27,6 +28,7 @@ class LocalizationStrategy(Enum):
 
 class LocationalizationHint(Enum):
     """Signals that indicate business needs offline strategy."""
+
     HAS_PHYSICAL_LOCATION = "has_physical_location"
     CONFIG_PICKUP_LOCATIONS = "config_pickup_locations"  # GOODS model with pickups
     SERVICE_MODALITIES = "service_modalities"  # SERVICES with on_site/hybrid
@@ -41,7 +43,7 @@ class BusinessLocalizationService:
     def detect_model(
         business: Business,
         locations: list[Location] | None = None,
-        db: Session | None = None
+        db: Session | None = None,
     ) -> LocalizationModel:
         """
         Auto-detect localization model based on business type, config, and locations.
@@ -55,10 +57,13 @@ class BusinessLocalizationService:
         if not locations:
             # Fetch from DB if needed
             if db:
-                locations = db.query(Location).filter(
-                    Location.business_id == business.id,
-                    Location.is_active == True
-                ).all()
+                locations = (
+                    db.query(Location)
+                    .filter(
+                        Location.business_id == business.id, Location.is_active == True
+                    )
+                    .all()
+                )
             else:
                 locations = []
 
@@ -77,7 +82,9 @@ class BusinessLocalizationService:
         config = business.config or {}
         has_pickup_locations = len(config.get("pickup_locations", [])) > 0
         delivery_methods = config.get("delivery_methods", [])
-        has_pickup_delivery = "pickup" in delivery_methods or "meetup" in delivery_methods
+        has_pickup_delivery = (
+            "pickup" in delivery_methods or "meetup" in delivery_methods
+        )
 
         # Score: weight indicators toward offline-first
         signals = []
@@ -112,8 +119,7 @@ class BusinessLocalizationService:
 
     @staticmethod
     def get_strategy_for_model(
-        business_type: BusinessType,
-        localization_model: LocalizationModel
+        business_type: BusinessType, localization_model: LocalizationModel
     ) -> LocalizationStrategy:
         """Get recommended offline strategy based on business type + localization model."""
 
@@ -122,7 +128,10 @@ class BusinessLocalizationService:
 
         # E-commerce + showroom
         if business_type == BusinessType.GOODS:
-            if localization_model in (LocalizationModel.HYBRID_LIGHT, LocalizationModel.HYBRID_HEAVY):
+            if localization_model in (
+                LocalizationModel.HYBRID_LIGHT,
+                LocalizationModel.HYBRID_HEAVY,
+            ):
                 return LocalizationStrategy.QR_INVITE
             return LocalizationStrategy.FOOT_TRAFFIC
 
@@ -144,9 +153,7 @@ class BusinessLocalizationService:
         return LocalizationStrategy.NONE
 
     @staticmethod
-    def automation_triggers_for_strategy(
-        strategy: LocalizationStrategy
-    ) -> list[str]:
+    def automation_triggers_for_strategy(strategy: LocalizationStrategy) -> list[str]:
         """Get list of automation trigger names that should be enabled per strategy."""
 
         triggers_map = {
@@ -184,8 +191,7 @@ class BusinessLocalizationService:
 
     @staticmethod
     def create_location_config_template(
-        location_type: LocationType,
-        business_type: BusinessType
+        location_type: LocationType, business_type: BusinessType
     ) -> dict[str, any]:
         """Create default configuration template for new location based on type + business."""
 
@@ -198,39 +204,49 @@ class BusinessLocalizationService:
 
         # Location-specific configs
         if location_type == LocationType.SHOWROOM:
-            base_config.update({
-                "dwell_threshold_minutes": 10,
-                "offer_demo": True,
-                "offer_tour": True,
-                "collect_contact_info": True,
-            })
+            base_config.update(
+                {
+                    "dwell_threshold_minutes": 10,
+                    "offer_demo": True,
+                    "offer_tour": True,
+                    "collect_contact_info": True,
+                }
+            )
         elif location_type == LocationType.RETAIL_STORE:
-            base_config.update({
-                "dwell_threshold_minutes": 5,
-                "offer_special_price": True,
-                "track_category_browsing": True,
-                "impulse_offer": True,
-            })
+            base_config.update(
+                {
+                    "dwell_threshold_minutes": 5,
+                    "offer_special_price": True,
+                    "track_category_browsing": True,
+                    "impulse_offer": True,
+                }
+            )
         elif location_type == LocationType.FACTORY:
-            base_config.update({
-                "dwell_threshold_minutes": 30,
-                "require_appointment": True,
-                "offer_tour": True,
-                "collect_business_info": True,
-            })
+            base_config.update(
+                {
+                    "dwell_threshold_minutes": 30,
+                    "require_appointment": True,
+                    "offer_tour": True,
+                    "collect_business_info": True,
+                }
+            )
         elif location_type == LocationType.OFFICE:
-            base_config.update({
-                "dwell_threshold_minutes": 20,
-                "require_appointment": True,
-                "offer_demo": True,
-                "collect_company_info": True,
-            })
+            base_config.update(
+                {
+                    "dwell_threshold_minutes": 20,
+                    "require_appointment": True,
+                    "offer_demo": True,
+                    "collect_company_info": True,
+                }
+            )
         elif location_type == LocationType.SERVICE_CENTER:
-            base_config.update({
-                "dwell_threshold_minutes": 15,
-                "enable_booking": True,
-                "offer_consultation": True,
-            })
+            base_config.update(
+                {
+                    "dwell_threshold_minutes": 15,
+                    "enable_booking": True,
+                    "offer_consultation": True,
+                }
+            )
 
         # Business-specific configs
         if business_type == BusinessType.SERVICES:

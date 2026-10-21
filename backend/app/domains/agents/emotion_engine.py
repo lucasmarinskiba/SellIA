@@ -39,7 +39,9 @@ class EmotionDetector:
             {"msg": message, "hist_len": len(conversation_history or [])},
             sort_keys=True,
         )
-        cache_key = f"sellia:emotion:{hashlib.sha256(cache_key_data.encode()).hexdigest()[:32]}"
+        cache_key = (
+            f"sellia:emotion:{hashlib.sha256(cache_key_data.encode()).hexdigest()[:32]}"
+        )
 
         # Try cache first
         try:
@@ -141,9 +143,7 @@ class EmotionDetector:
             redis_client = redis.from_url(
                 settings.REDIS_URL, encoding="utf-8", decode_responses=True
             )
-            await redis_client.setex(
-                cache_key, 3600, result.model_dump_json()
-            )
+            await redis_client.setex(cache_key, 3600, result.model_dump_json())
             await redis_client.close()
         except Exception as e:
             logger.warning(f"Failed to cache emotion result: {e}", exc_info=True)
@@ -161,7 +161,9 @@ class EmotionDetector:
                 db.add(detection)
                 await db.commit()
             except Exception as e:
-                logger.warning(f"Failed to persist emotion detection: {e}", exc_info=True)
+                logger.warning(
+                    f"Failed to persist emotion detection: {e}", exc_info=True
+                )
                 await db.rollback()
 
         return result
@@ -185,12 +187,8 @@ class ToneAdapter:
         "doubtful": (
             "Sé paciente, ofrece pruebas sociales, garantías, casos de éxito, FAQs."
         ),
-        "hurried": (
-            "Sé conciso, ve al grano, ofrece resumen bullet points."
-        ),
-        "happy": (
-            "Sé cálido, agradece, refuerza decisión, cross-sell suave."
-        ),
+        "hurried": ("Sé conciso, ve al grano, ofrece resumen bullet points."),
+        "happy": ("Sé cálido, agradece, refuerza decisión, cross-sell suave."),
         "neutral": "",
     }
 

@@ -49,7 +49,11 @@ async def _get_business_for_user(
     return business
 
 
-@router.post("/{business_id}/channels", response_model=ChannelConnectionResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{business_id}/channels",
+    response_model=ChannelConnectionResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_channel(
     business_id: UUID,
     channel_in: ChannelConnectionCreate,
@@ -59,11 +63,13 @@ async def create_channel(
     await _get_business_for_user(business_id, current_user, db)
 
     # Check channel limit
-    limit_check = await check_subscription_limit(db, current_user.id, "channels", quantity=1)
+    limit_check = await check_subscription_limit(
+        db, current_user.id, "channels", quantity=1
+    )
     if not limit_check["allowed"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Límite de canales alcanzado. Usados: {limit_check['used']}/{limit_check['limit']}"
+            detail=f"Límite de canales alcanzado. Usados: {limit_check['used']}/{limit_check['limit']}",
         )
 
     try:
@@ -79,7 +85,9 @@ async def create_channel(
         await db.refresh(channel)
 
         try:
-            await track_usage(db, current_user.id, "channels", quantity=1, business_id=business_id)
+            await track_usage(
+                db, current_user.id, "channels", quantity=1, business_id=business_id
+            )
         except Exception:
             logger.exception("create_channel: error inesperado")
 
@@ -87,6 +95,7 @@ async def create_channel(
     except Exception as e:
         await db.rollback()
         import logging
+
         logging.getLogger(__name__).exception("create_channel failed")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)[:300]}")
 
@@ -108,11 +117,14 @@ async def list_channels(
         return result.scalars().all()
     except Exception as e:
         import logging
+
         logging.getLogger(__name__).exception("list_channels failed")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)[:300]}")
 
 
-@router.get("/{business_id}/channels/{channel_id}", response_model=ChannelConnectionResponse)
+@router.get(
+    "/{business_id}/channels/{channel_id}", response_model=ChannelConnectionResponse
+)
 async def get_channel(
     business_id: UUID,
     channel_id: UUID,
@@ -132,7 +144,9 @@ async def get_channel(
     return channel
 
 
-@router.put("/{business_id}/channels/{channel_id}", response_model=ChannelConnectionResponse)
+@router.put(
+    "/{business_id}/channels/{channel_id}", response_model=ChannelConnectionResponse
+)
 async def update_channel(
     business_id: UUID,
     channel_id: UUID,
@@ -160,7 +174,9 @@ async def update_channel(
     return channel
 
 
-@router.delete("/{business_id}/channels/{channel_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{business_id}/channels/{channel_id}", status_code=status.HTTP_204_NO_CONTENT
+)
 async def delete_channel(
     business_id: UUID,
     channel_id: UUID,
@@ -203,7 +219,10 @@ async def test_channel_connection(
 
     try:
         from app.domains.channels.connectors import get_connector
-        connector = get_connector(channel.platform, channel.credentials, channel.settings)
+
+        connector = get_connector(
+            channel.platform, channel.credentials, channel.settings
+        )
         is_valid = await connector.validate_credentials()
         if is_valid:
             channel.status = ChannelStatus.CONNECTED
@@ -214,7 +233,11 @@ async def test_channel_connection(
             channel.status = ChannelStatus.ERROR
             channel.status_message = "Credenciales inválidas"
             await db.commit()
-            return {"status": "error", "valid": False, "detail": "Credenciales inválidas"}
+            return {
+                "status": "error",
+                "valid": False,
+                "detail": "Credenciales inválidas",
+            }
     except Exception as e:
         logger.exception("test_channel_connection: error inesperado")
         channel.status = ChannelStatus.ERROR
@@ -224,6 +247,7 @@ async def test_channel_connection(
 
 
 # ========== OAuth Connection Flows ==========
+
 
 @router.get("/{business_id}/channels/{platform}/auth-url")
 async def get_oauth_url(
@@ -242,7 +266,10 @@ async def get_oauth_url(
         # App propia de SellIA (una sola, registrada una vez) -- el usuario
         # final nunca crea ni pega client_id/secret, solo autoriza su cuenta.
         if not settings.MERCADO_LIBRE_CLIENT_ID:
-            raise HTTPException(status_code=503, detail="Mercado Libre no está configurado en el servidor todavía")
+            raise HTTPException(
+                status_code=503,
+                detail="Mercado Libre no está configurado en el servidor todavía",
+            )
 
         result = await db.execute(
             select(ChannelConnection).where(
@@ -273,15 +300,24 @@ async def get_oauth_url(
         }
         await db.commit()
         return {"auth_url": f"{auth_url}?{urlencode(params)}"}
-    
-    elif platform in (ChannelPlatform.FACEBOOK_ADS, ChannelPlatform.INSTAGRAM, ChannelPlatform.MESSENGER, ChannelPlatform.WHATSAPP, ChannelPlatform.FACEBOOK_MARKETPLACE):
+
+    elif platform in (
+        ChannelPlatform.FACEBOOK_ADS,
+        ChannelPlatform.INSTAGRAM,
+        ChannelPlatform.MESSENGER,
+        ChannelPlatform.WHATSAPP,
+        ChannelPlatform.FACEBOOK_MARKETPLACE,
+    ):
         # App propia de SellIA (una sola, registrada una vez) -- mismo patrón
         # que Mercado Libre: el usuario final no crea ni pega app_id/secret,
         # solo autoriza su cuenta. Requiere que la app de Meta haya pasado
         # App Review para los scopes de abajo; hasta entonces solo funciona
         # para los admins/testers agregados en Meta Business Settings.
         if not settings.META_APP_ID:
-            raise HTTPException(status_code=503, detail="Meta no está configurado en el servidor todavía")
+            raise HTTPException(
+                status_code=503,
+                detail="Meta no está configurado en el servidor todavía",
+            )
 
         result = await db.execute(
             select(ChannelConnection).where(
@@ -333,7 +369,9 @@ async def get_oauth_url(
         await db.commit()
         return {"auth_url": f"{auth_url}?{urlencode(params)}"}
 
-    raise HTTPException(status_code=400, detail=f"OAuth no soportado para {platform.value}")
+    raise HTTPException(
+        status_code=400, detail=f"OAuth no soportado para {platform.value}"
+    )
 
 
 @router.get("/oauth/callback/{platform}")
@@ -355,7 +393,9 @@ async def oauth_callback(
     # Nothing should get connected in that case; redirect back with a
     # clear "you didn't authorize it" message instead of a raw 400/422.
     if error or not code or not state:
-        return RedirectResponse(url=f"{base_callback}/dashboard/canales?connect_error=cancelled")
+        return RedirectResponse(
+            url=f"{base_callback}/dashboard/canales?connect_error=cancelled"
+        )
 
     try:
         channel_id = UUID(state)
@@ -373,10 +413,16 @@ async def oauth_callback(
         raise HTTPException(status_code=404, detail="Canal no encontrado")
 
     redirect_uri = f"{base_callback}/api/v1/businesses/oauth/callback/{platform.value}"
-    
+
     if platform == ChannelPlatform.MERCADOLIBRE:
-        if not settings.MERCADO_LIBRE_CLIENT_ID or not settings.MERCADO_LIBRE_CLIENT_SECRET:
-            raise HTTPException(status_code=503, detail="Mercado Libre no está configurado en el servidor todavía")
+        if (
+            not settings.MERCADO_LIBRE_CLIENT_ID
+            or not settings.MERCADO_LIBRE_CLIENT_SECRET
+        ):
+            raise HTTPException(
+                status_code=503,
+                detail="Mercado Libre no está configurado en el servidor todavía",
+            )
 
         async with httpx.AsyncClient() as client:
             response = await client.post(
@@ -390,19 +436,31 @@ async def oauth_callback(
                 },
             )
             if response.status_code != 200:
-                raise HTTPException(status_code=400, detail=f"Error de OAuth: {response.text}")
-            
+                raise HTTPException(
+                    status_code=400, detail=f"Error de OAuth: {response.text}"
+                )
+
             data = response.json()
             channel.credentials["access_token"] = data.get("access_token")
             channel.credentials["refresh_token"] = data.get("refresh_token")
             channel.credentials["seller_id"] = str(data.get("user_id", ""))
             channel.status = ChannelStatus.CONNECTED
             await db.commit()
-            return RedirectResponse(url=f"{base_callback}/dashboard/canales?connected=mercadolibre")
+            return RedirectResponse(
+                url=f"{base_callback}/dashboard/canales?connected=mercadolibre"
+            )
 
-    elif platform in (ChannelPlatform.FACEBOOK_ADS, ChannelPlatform.INSTAGRAM, ChannelPlatform.MESSENGER, ChannelPlatform.WHATSAPP):
+    elif platform in (
+        ChannelPlatform.FACEBOOK_ADS,
+        ChannelPlatform.INSTAGRAM,
+        ChannelPlatform.MESSENGER,
+        ChannelPlatform.WHATSAPP,
+    ):
         if not settings.META_APP_ID or not settings.META_APP_SECRET:
-            raise HTTPException(status_code=503, detail="Meta no está configurado en el servidor todavía")
+            raise HTTPException(
+                status_code=503,
+                detail="Meta no está configurado en el servidor todavía",
+            )
 
         async with httpx.AsyncClient() as client:
             response = await client.get(
@@ -415,12 +473,16 @@ async def oauth_callback(
                 },
             )
             if response.status_code != 200:
-                raise HTTPException(status_code=400, detail=f"Error de OAuth: {response.text}")
+                raise HTTPException(
+                    status_code=400, detail=f"Error de OAuth: {response.text}"
+                )
 
             data = response.json()
             user_token = data.get("access_token")
             if not user_token:
-                raise HTTPException(status_code=400, detail="Meta no devolvió un access_token")
+                raise HTTPException(
+                    status_code=400, detail="Meta no devolvió un access_token"
+                )
 
             # The connectors (instagram.py/messenger.py) read `api_token` as a
             # PAGE access token, not this user token -- sending messages with
@@ -437,15 +499,32 @@ async def oauth_callback(
                     "fb_exchange_token": user_token,
                 },
             )
-            long_lived_token = long_lived_resp.json().get("access_token", user_token) if long_lived_resp.status_code == 200 else user_token
+            long_lived_token = (
+                long_lived_resp.json().get("access_token", user_token)
+                if long_lived_resp.status_code == 200
+                else user_token
+            )
 
             pages_resp = await client.get(
                 "https://graph.facebook.com/v18.0/me/accounts",
                 params={"access_token": long_lived_token},
             )
-            pages = pages_resp.json().get("data", []) if pages_resp.status_code == 200 else []
+            pages = (
+                pages_resp.json().get("data", [])
+                if pages_resp.status_code == 200
+                else []
+            )
 
-            if platform in (ChannelPlatform.INSTAGRAM, ChannelPlatform.MESSENGER, ChannelPlatform.FACEBOOK_ADS, ChannelPlatform.FACEBOOK_MARKETPLACE) and not pages:
+            if (
+                platform
+                in (
+                    ChannelPlatform.INSTAGRAM,
+                    ChannelPlatform.MESSENGER,
+                    ChannelPlatform.FACEBOOK_ADS,
+                    ChannelPlatform.FACEBOOK_MARKETPLACE,
+                )
+                and not pages
+            ):
                 raise HTTPException(
                     status_code=400,
                     detail="Tu cuenta de Facebook no administra ninguna Página. Creá una Página de Facebook primero e intentá de nuevo.",
@@ -460,9 +539,14 @@ async def oauth_callback(
                 page = pages[0]
                 ig_resp = await client.get(
                     f"https://graph.facebook.com/v18.0/{page.get('id')}",
-                    params={"fields": "instagram_business_account", "access_token": page.get("access_token")},
+                    params={
+                        "fields": "instagram_business_account",
+                        "access_token": page.get("access_token"),
+                    },
                 )
-                ig_account = (ig_resp.json() if ig_resp.status_code == 200 else {}).get("instagram_business_account")
+                ig_account = (ig_resp.json() if ig_resp.status_code == 200 else {}).get(
+                    "instagram_business_account"
+                )
                 if not ig_account:
                     raise HTTPException(
                         status_code=400,
@@ -490,9 +574,13 @@ async def oauth_callback(
 
             channel.status = ChannelStatus.CONNECTED
             await db.commit()
-            return RedirectResponse(url=f"{base_callback}/dashboard/canales?connected={platform.value}")
+            return RedirectResponse(
+                url=f"{base_callback}/dashboard/canales?connected={platform.value}"
+            )
 
-    raise HTTPException(status_code=400, detail=f"OAuth no soportado para {platform.value}")
+    raise HTTPException(
+        status_code=400, detail=f"OAuth no soportado para {platform.value}"
+    )
 
 
 @router.get("/{business_id}/channels/whatsapp/embedded-signup-config")
@@ -505,7 +593,9 @@ async def get_whatsapp_embedded_signup_config(
     needing a separate NEXT_PUBLIC_ env var kept in sync with the backend's."""
     await _get_business_for_user(business_id, current_user, db)
     if not settings.META_APP_ID:
-        raise HTTPException(status_code=503, detail="Meta no está configurado en el servidor todavía")
+        raise HTTPException(
+            status_code=503, detail="Meta no está configurado en el servidor todavía"
+        )
     return {"app_id": settings.META_APP_ID}
 
 
@@ -526,13 +616,18 @@ async def whatsapp_embedded_signup(
 
     await _get_business_for_user(business_id, current_user, db)
     if not settings.META_APP_ID or not settings.META_APP_SECRET:
-        raise HTTPException(status_code=503, detail="Meta no está configurado en el servidor todavía")
+        raise HTTPException(
+            status_code=503, detail="Meta no está configurado en el servidor todavía"
+        )
 
     code = payload.get("code")
     waba_id = payload.get("waba_id")
     phone_number_id = payload.get("phone_number_id")
     if not code or not waba_id or not phone_number_id:
-        raise HTTPException(status_code=400, detail="Faltan datos del popup de WhatsApp (code/waba_id/phone_number_id)")
+        raise HTTPException(
+            status_code=400,
+            detail="Faltan datos del popup de WhatsApp (code/waba_id/phone_number_id)",
+        )
 
     async with httpx.AsyncClient() as client:
         # Embedded Signup's code is exchanged the same way, but without a
@@ -547,7 +642,9 @@ async def whatsapp_embedded_signup(
             },
         )
         if token_resp.status_code != 200:
-            raise HTTPException(status_code=400, detail=f"Error de OAuth: {token_resp.text}")
+            raise HTTPException(
+                status_code=400, detail=f"Error de OAuth: {token_resp.text}"
+            )
         user_token = token_resp.json().get("access_token")
 
         long_lived_resp = await client.get(
@@ -559,7 +656,11 @@ async def whatsapp_embedded_signup(
                 "fb_exchange_token": user_token,
             },
         )
-        long_lived_token = long_lived_resp.json().get("access_token", user_token) if long_lived_resp.status_code == 200 else user_token
+        long_lived_token = (
+            long_lived_resp.json().get("access_token", user_token)
+            if long_lived_resp.status_code == 200
+            else user_token
+        )
 
         # Subscribe SellIA's app to this WABA so incoming message webhooks
         # actually arrive -- without this, the number is registered but mute.
@@ -598,6 +699,7 @@ async def whatsapp_embedded_signup(
 
 # ========== Webhook Verification (GET) ==========
 
+
 @router.get("/webhook/{platform}", status_code=status.HTTP_200_OK)
 async def verify_webhook(
     platform: ChannelPlatform,
@@ -634,8 +736,12 @@ async def verify_webhook(
             channels = result.scalars().all()
             for ch in channels:
                 settings = ch.settings or {}
-                expected_token = settings.get("verify_token", ch.credentials.get("verify_token", ""))
-                if expected_token and hmac.compare_digest(hub_verify_token, expected_token):
+                expected_token = settings.get(
+                    "verify_token", ch.credentials.get("verify_token", "")
+                )
+                if expected_token and hmac.compare_digest(
+                    hub_verify_token, expected_token
+                ):
                     return int(hub_challenge)
         raise HTTPException(status_code=403, detail="Verificación de webhook fallida")
 
@@ -645,6 +751,7 @@ async def verify_webhook(
 
 # ========== Webhook Reception (POST) ==========
 
+
 @router.post("/webhook/{platform}", status_code=status.HTTP_202_ACCEPTED)
 async def receive_webhook(
     platform: ChannelPlatform,
@@ -653,7 +760,7 @@ async def receive_webhook(
     token: Annotated[str | None, Query()] = None,
 ):
     """Receive incoming webhook from any platform.
-    
+
     Requiere ?token=xxx para identificar el canal, excepto para plataformas
     que usan verificación por firma (WhatsApp) donde el canal se identifica
     por el ID contenido en el payload.
@@ -694,7 +801,9 @@ async def receive_webhook(
                 select(ChannelConnection).where(
                     ChannelConnection.platform == ChannelPlatform.WHATSAPP,
                     ChannelConnection.is_active == True,
-                    ChannelConnection.credentials.contains({"phone_number_id": phone_number_id}),
+                    ChannelConnection.credentials.contains(
+                        {"phone_number_id": phone_number_id}
+                    ),
                 )
             )
             channel = result.scalar_one_or_none()
@@ -702,15 +811,23 @@ async def receive_webhook(
         # Verificar firma si hay app_secret configurado
         if channel:
             signature = request.headers.get("X-Hub-Signature-256", "")
-            app_secret = channel.credentials.get("app_secret", channel.settings.get("app_secret", ""))
+            app_secret = channel.credentials.get(
+                "app_secret", channel.settings.get("app_secret", "")
+            )
             if app_secret and signature:
                 import hashlib
                 import hmac
-                expected = "sha256=" + hmac.new(
-                    app_secret.encode(), raw_body, hashlib.sha256
-                ).hexdigest()
+
+                expected = (
+                    "sha256="
+                    + hmac.new(
+                        app_secret.encode(), raw_body, hashlib.sha256
+                    ).hexdigest()
+                )
                 if not hmac.compare_digest(expected, signature):
-                    raise HTTPException(status_code=401, detail="Firma de webhook inválida")
+                    raise HTTPException(
+                        status_code=401, detail="Firma de webhook inválida"
+                    )
         else:
             # Fallback: buscar en todos los canales de WhatsApp y verificar firma
             result = await db.execute(
@@ -723,13 +840,19 @@ async def receive_webhook(
             verified = False
             signature = request.headers.get("X-Hub-Signature-256", "")
             for ch in channels:
-                app_secret = ch.credentials.get("app_secret", ch.settings.get("app_secret", ""))
+                app_secret = ch.credentials.get(
+                    "app_secret", ch.settings.get("app_secret", "")
+                )
                 if app_secret and signature:
                     import hashlib
                     import hmac
-                    expected = "sha256=" + hmac.new(
-                        app_secret.encode(), raw_body, hashlib.sha256
-                    ).hexdigest()
+
+                    expected = (
+                        "sha256="
+                        + hmac.new(
+                            app_secret.encode(), raw_body, hashlib.sha256
+                        ).hexdigest()
+                    )
                     if hmac.compare_digest(expected, signature):
                         channel = ch
                         verified = True
@@ -753,13 +876,16 @@ async def receive_webhook(
         if page_id:
             # Buscar por page_id o instagram_account_id en credentials
             from sqlalchemy import or_
+
             result = await db.execute(
                 select(ChannelConnection).where(
                     ChannelConnection.platform == platform,
                     ChannelConnection.is_active == True,
                     or_(
                         ChannelConnection.credentials.contains({"page_id": page_id}),
-                        ChannelConnection.credentials.contains({"instagram_account_id": page_id}),
+                        ChannelConnection.credentials.contains(
+                            {"instagram_account_id": page_id}
+                        ),
                     ),
                 )
             )
@@ -782,7 +908,9 @@ async def receive_webhook(
                 select(ChannelConnection).where(
                     ChannelConnection.platform == ChannelPlatform.MERCADOLIBRE,
                     ChannelConnection.is_active == True,
-                    ChannelConnection.credentials.contains({"seller_id": str(seller_id)}),
+                    ChannelConnection.credentials.contains(
+                        {"seller_id": str(seller_id)}
+                    ),
                 )
             )
             channel = result.scalar_one_or_none()
@@ -816,7 +944,9 @@ async def receive_webhook(
                 select(ChannelConnection).where(
                     ChannelConnection.platform == ChannelPlatform.SHOPIFY,
                     ChannelConnection.is_active == True,
-                    ChannelConnection.credentials.contains({"shop_domain": shop_domain}),
+                    ChannelConnection.credentials.contains(
+                        {"shop_domain": shop_domain}
+                    ),
                 )
             )
             channel = result.scalar_one_or_none()
@@ -827,13 +957,16 @@ async def receive_webhook(
             if webhook_secret and hmac_header:
                 import hashlib
                 import hmac
+
                 digest = hmac.new(
                     webhook_secret.encode("utf-8"),
                     raw_body,
                     hashlib.sha256,
                 ).hexdigest()
                 if not hmac.compare_digest(digest, hmac_header):
-                    raise HTTPException(status_code=401, detail="Firma de webhook inválida")
+                    raise HTTPException(
+                        status_code=401, detail="Firma de webhook inválida"
+                    )
 
         # Also inject the topic into the payload for parsing
         topic = request.headers.get("X-Shopify-Topic", "")
@@ -848,7 +981,9 @@ async def receive_webhook(
                 select(ChannelConnection).where(
                     ChannelConnection.platform == ChannelPlatform.AMAZON,
                     ChannelConnection.is_active == True,
-                    ChannelConnection.credentials.contains({"seller_id": str(seller_id)}),
+                    ChannelConnection.credentials.contains(
+                        {"seller_id": str(seller_id)}
+                    ),
                 )
             )
             channel = result.scalar_one_or_none()
@@ -861,7 +996,9 @@ async def receive_webhook(
                 select(ChannelConnection).where(
                     ChannelConnection.platform == ChannelPlatform.BEACONS,
                     ChannelConnection.is_active == True,
-                    ChannelConnection.credentials.contains({"creator_id": str(creator_id)}),
+                    ChannelConnection.credentials.contains(
+                        {"creator_id": str(creator_id)}
+                    ),
                 )
             )
             channel = result.scalar_one_or_none()
@@ -897,7 +1034,9 @@ async def receive_webhook(
                 select(ChannelConnection).where(
                     ChannelConnection.platform == ChannelPlatform.GOOGLE_ADS,
                     ChannelConnection.is_active == True,
-                    ChannelConnection.credentials.contains({"customer_id": str(lookup_id)}),
+                    ChannelConnection.credentials.contains(
+                        {"customer_id": str(lookup_id)}
+                    ),
                 )
             )
             channel = result.scalar_one_or_none()
@@ -910,7 +1049,9 @@ async def receive_webhook(
                 select(ChannelConnection).where(
                     ChannelConnection.platform == ChannelPlatform.TIKTOK_ADS,
                     ChannelConnection.is_active == True,
-                    ChannelConnection.credentials.contains({"advertiser_id": str(advertiser_id)}),
+                    ChannelConnection.credentials.contains(
+                        {"advertiser_id": str(advertiser_id)}
+                    ),
                 )
             )
             channel = result.scalar_one_or_none()
@@ -948,6 +1089,7 @@ async def receive_webhook(
                 import base64
                 import hashlib
                 import hmac
+
                 digest = hmac.new(
                     webhook_secret.encode("utf-8"),
                     raw_body,
@@ -955,7 +1097,9 @@ async def receive_webhook(
                 ).digest()
                 expected = base64.b64encode(digest).decode("utf-8")
                 if not hmac.compare_digest(expected, signature):
-                    raise HTTPException(status_code=401, detail="Firma de webhook inválida")
+                    raise HTTPException(
+                        status_code=401, detail="Firma de webhook inválida"
+                    )
 
         topic = request.headers.get("X-WC-Webhook-Topic", "")
         if raw_json:
@@ -994,7 +1138,9 @@ async def receive_webhook(
             channel = result.scalar_one_or_none()
 
     if not channel:
-        raise HTTPException(status_code=404, detail="Canal no encontrado para este webhook")
+        raise HTTPException(
+            status_code=404, detail="Canal no encontrado para este webhook"
+        )
 
     # Parse payload using connector
     try:
@@ -1011,7 +1157,9 @@ async def receive_webhook(
             # Fallback: try to construct generic payload
             payload = WebhookPayload(
                 platform=platform,
-                external_id=raw_json.get("from") or raw_json.get("sender", {}).get("id") or "unknown",
+                external_id=raw_json.get("from")
+                or raw_json.get("sender", {}).get("id")
+                or "unknown",
                 sender_name=raw_json.get("sender", {}).get("name"),
                 content=raw_json.get("text") or raw_json.get("message", ""),
                 content_type="text",
@@ -1020,15 +1168,18 @@ async def receive_webhook(
     except Exception as e:
         logger.exception("receive_webhook: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).error(f"Webhook parse error for {platform}: {e}")
         raise HTTPException(status_code=400, detail="Payload inválido")
 
     from app.domains.channels.services import process_incoming_message
+
     try:
         await process_incoming_message(db, channel, payload)
     except Exception as e:
         await db.rollback()
         import logging
+
         logging.getLogger(__name__).exception("process_incoming_message failed")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)[:300]}")
     return {"status": "accepted"}

@@ -129,7 +129,9 @@ class MissionService:
         await self.db.refresh(mission)
         return MissionRead.model_validate(mission)
 
-    async def get(self, mission_id: uuid.UUID, user_id: uuid.UUID) -> MissionRead | None:
+    async def get(
+        self, mission_id: uuid.UUID, user_id: uuid.UUID
+    ) -> MissionRead | None:
         """Obtener una misión por ID (con verificación de ownership)."""
         result = await self.db.execute(
             select(Mission).where(Mission.id == mission_id, Mission.user_id == user_id)
@@ -148,7 +150,11 @@ class MissionService:
         offset: int = 0,
     ) -> list[MissionRead]:
         """Listar misiones de un usuario."""
-        query = select(Mission).where(Mission.user_id == user_id).order_by(desc(Mission.created_at))
+        query = (
+            select(Mission)
+            .where(Mission.user_id == user_id)
+            .order_by(desc(Mission.created_at))
+        )
         if status:
             query = query.where(Mission.status == status)
         if category:
@@ -159,7 +165,9 @@ class MissionService:
         missions = result.scalars().all()
         return [MissionRead.model_validate(m) for m in missions]
 
-    async def update(self, mission_id: uuid.UUID, user_id: uuid.UUID, data: MissionUpdate) -> MissionRead | None:
+    async def update(
+        self, mission_id: uuid.UUID, user_id: uuid.UUID, data: MissionUpdate
+    ) -> MissionRead | None:
         """Actualizar una misión."""
         result = await self.db.execute(
             select(Mission).where(Mission.id == mission_id, Mission.user_id == user_id)
@@ -176,7 +184,9 @@ class MissionService:
         await self.db.refresh(mission)
         return MissionRead.model_validate(mission)
 
-    async def approve(self, mission_id: uuid.UUID, user_id: uuid.UUID, approve_all_steps: bool = False) -> MissionRead | None:
+    async def approve(
+        self, mission_id: uuid.UUID, user_id: uuid.UUID, approve_all_steps: bool = False
+    ) -> MissionRead | None:
         """Aprobar una misión propuesta."""
         result = await self.db.execute(
             select(Mission).where(Mission.id == mission_id, Mission.user_id == user_id)
@@ -196,10 +206,16 @@ class MissionService:
         await self.db.refresh(mission)
         return MissionRead.model_validate(mission)
 
-    async def start(self, mission_id: uuid.UUID, user_id: uuid.UUID) -> MissionRead | None:
+    async def start(
+        self, mission_id: uuid.UUID, user_id: uuid.UUID
+    ) -> MissionRead | None:
         """Iniciar una misión aprobada."""
         result = await self.db.execute(
-            select(Mission).where(Mission.id == mission_id, Mission.user_id == user_id, Mission.status == "approved")
+            select(Mission).where(
+                Mission.id == mission_id,
+                Mission.user_id == user_id,
+                Mission.status == "approved",
+            )
         )
         mission = result.scalar_one_or_none()
         if not mission:
@@ -210,7 +226,9 @@ class MissionService:
 
         # Marcar primer paso ejecutable como running
         for step in mission.steps:
-            if step.status == "pending" and (not step.requires_approval or step.approved_by_user):
+            if step.status == "pending" and (
+                not step.requires_approval or step.approved_by_user
+            ):
                 step.status = "running"
                 step.started_at = utc_now()
                 break
@@ -230,7 +248,11 @@ class MissionService:
         result = await self.db.execute(
             select(MissionStep)
             .join(Mission)
-            .where(MissionStep.id == step_id, Mission.id == mission_id, Mission.user_id == user_id)
+            .where(
+                MissionStep.id == step_id,
+                Mission.id == mission_id,
+                Mission.user_id == user_id,
+            )
         )
         step = result.scalar_one_or_none()
         if not step:
@@ -285,15 +307,24 @@ class MissionService:
         context = {}
         try:
             from app.domains.business_context.models import BusinessContext as BCModel
+
             result = await self.db.execute(
-                select(BCModel).where(BCModel.user_id == user_id, BCModel.business_id == business_id)
+                select(BCModel).where(
+                    BCModel.user_id == user_id, BCModel.business_id == business_id
+                )
             )
             bc = result.scalar_one_or_none()
             if bc:
                 context = {
-                    "business_type": bc.business_type.value if bc.business_type else None,
-                    "geographic_reach": bc.geographic_reach.value if bc.geographic_reach else None,
-                    "presence_type": bc.presence_type.value if bc.presence_type else None,
+                    "business_type": (
+                        bc.business_type.value if bc.business_type else None
+                    ),
+                    "geographic_reach": (
+                        bc.geographic_reach.value if bc.geographic_reach else None
+                    ),
+                    "presence_type": (
+                        bc.presence_type.value if bc.presence_type else None
+                    ),
                     "channels_configured": bc.channels_configured or {},
                     "ads_configured": bc.ads_configured or {},
                     "shipping_configured": bc.shipping_configured or {},
@@ -347,7 +378,9 @@ class MissionService:
         diagnostics = result.scalars().all()
         return [BusinessDiagnosticRead.model_validate(d) for d in diagnostics]
 
-    async def resolve_diagnostic(self, diagnostic_id: uuid.UUID, user_id: uuid.UUID) -> bool:
+    async def resolve_diagnostic(
+        self, diagnostic_id: uuid.UUID, user_id: uuid.UUID
+    ) -> bool:
         """Marcar un diagnóstico como resuelto."""
         result = await self.db.execute(
             select(BusinessDiagnostic).where(

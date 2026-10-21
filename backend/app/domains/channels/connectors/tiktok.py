@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 class TikTokConnector(BaseChannelConnector):
     """Conector para TikTok organic (DMs y comentarios)."""
+
     platform = "tiktok"
     BASE_URL = "https://open.tiktokapis.com"
 
@@ -25,11 +26,14 @@ class TikTokConnector(BaseChannelConnector):
         self.open_id = credentials.get("open_id")
         self.webhook_secret = credentials.get("webhook_secret")
 
-    async def send_message(self, recipient_id: str, content: str, content_type: str = "text") -> dict[str, Any]:
+    async def send_message(
+        self, recipient_id: str, content: str, content_type: str = "text"
+    ) -> dict[str, Any]:
         """TikTok DM messaging requires TikTok For Business API partnership.
         For most creators, direct messaging is not available via API.
         """
         import httpx
+
         if not self.access_token:
             raise ValueError("Falta access_token de TikTok")
 
@@ -47,7 +51,10 @@ class TikTokConnector(BaseChannelConnector):
         async with httpx.AsyncClient() as client:
             response = await client.post(url, headers=headers, json=payload)
             if response.status_code == 403:
-                return {"status": "failed", "note": "TikTok DM API requiere permisos especiales"}
+                return {
+                    "status": "failed",
+                    "note": "TikTok DM API requiere permisos especiales",
+                }
             response.raise_for_status()
             return response.json()
 
@@ -105,6 +112,7 @@ class TikTokConnector(BaseChannelConnector):
             return False
         try:
             import httpx
+
             url = f"{self.BASE_URL}/api/user/info/"
             headers = {"Authorization": f"Bearer {self.access_token}"}
             async with httpx.AsyncClient() as client:

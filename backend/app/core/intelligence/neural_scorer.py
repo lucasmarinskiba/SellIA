@@ -40,7 +40,7 @@ class NeuralScorer:
         # Engagement signals (0-30 points)
         page_views = lead.get("page_views", 0)
         time_on_site = lead.get("time_on_site_seconds", 0)
-        
+
         score += min(page_views * 2, 15)  # Max 15 points
         score += min(time_on_site / 60, 15)  # Max 15 points (15 min+ = 15 points)
 
@@ -84,7 +84,9 @@ class NeuralScorer:
         comp_quality = factors.get("competitor_quality", 5)
         if comp_quality > 0:
             quality_ratio = our_quality / comp_quality
-            comp_multiplier = 1.0 + ((quality_ratio - 1) * 0.05)  # ±5% based on quality gap
+            comp_multiplier = 1.0 + (
+                (quality_ratio - 1) * 0.05
+            )  # ±5% based on quality gap
             multiplier *= comp_multiplier
 
         # Inventory depletion (0.9x - 1.3x)

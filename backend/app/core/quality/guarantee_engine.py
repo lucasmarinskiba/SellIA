@@ -142,7 +142,9 @@ We only win if you win.
         }
 
     @staticmethod
-    async def _process_refund(sale_id: str, amount: float, reason: str) -> dict[str, Any]:
+    async def _process_refund(
+        sale_id: str, amount: float, reason: str
+    ) -> dict[str, Any]:
         """Procesa reembolso automático (Stripe API)."""
 
         logger.info(f"Processing refund for sale {sale_id}: ${amount}")

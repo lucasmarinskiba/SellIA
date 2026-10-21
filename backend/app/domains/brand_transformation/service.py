@@ -64,7 +64,12 @@ _SYSTEM = (
 
 
 # env var names an Anthropic key might be stored under, in priority order
-_KEY_ENV_NAMES = ("ANTHROPIC_API_KEY", "CLAUDE_API_KEY", "ANTHROPIC_KEY", "ANTHROPIC_AUTH_TOKEN")
+_KEY_ENV_NAMES = (
+    "ANTHROPIC_API_KEY",
+    "CLAUDE_API_KEY",
+    "ANTHROPIC_KEY",
+    "ANTHROPIC_AUTH_TOKEN",
+)
 
 _missing_key_warned = False
 
@@ -137,7 +142,9 @@ def _ask_json(prompt: str, fallback: dict) -> dict:
             raise TypeError("not an object")
         return data
     except Exception as e:  # noqa: BLE001
-        logger.warning("brand_transformation: LLM call failed, using fallback: %s", str(e)[:200])
+        logger.warning(
+            "brand_transformation: LLM call failed, using fallback: %s", str(e)[:200]
+        )
         return fallback
 
 
@@ -198,7 +205,9 @@ Return ONLY the final JSON object."""
 
 async def _draft_then_refine(prompt: str, fallback: dict, refine_focus: str) -> dict:
     """Async wrapper — runs the blocking two-pass call off the event loop."""
-    return await asyncio.to_thread(_draft_then_refine_sync, prompt, fallback, refine_focus)
+    return await asyncio.to_thread(
+        _draft_then_refine_sync, prompt, fallback, refine_focus
+    )
 
 
 async def _ask_json_async(prompt: str, fallback: dict) -> dict:
@@ -229,8 +238,15 @@ def _int(v: Any, default: int = 0) -> int:
 
 # fields on DiagnosisIn beyond the base profile that make the call more grounded
 _EVIDENCE_FIELDS = (
-    "time_in_market", "monthly_revenue", "gross_margin_pct", "repeat_purchase_rate",
-    "pricing", "channels", "differentiation_claims", "customer_quotes", "recent_marketing",
+    "time_in_market",
+    "monthly_revenue",
+    "gross_margin_pct",
+    "repeat_purchase_rate",
+    "pricing",
+    "channels",
+    "differentiation_claims",
+    "customer_quotes",
+    "recent_marketing",
 )
 
 
@@ -279,7 +295,9 @@ class DiagnosisAgent(_BaseAgent):
     goal. Confidence is floored by how much real evidence was supplied.
     """
 
-    async def run(self, business_id: uuid.UUID, profile: dict, extra: str | None = None) -> BrandDiagnosis:
+    async def run(
+        self, business_id: uuid.UUID, profile: dict, extra: str | None = None
+    ) -> BrandDiagnosis:
         snap = _evidence_snapshot(profile)
         eq = _evidence_quality(snap)
         prompt = f"""{_profile_block(profile)}
@@ -331,83 +349,151 @@ Return JSON:
   "evidence_quality": "{eq}",
   "summary": "4-5 sentences a founder would want to read — direct, quotable, no hedging"
 }}"""
-        d = await _draft_then_refine(prompt, {
-            "referent_potential_score": 40,
-            "commoditization_level": "high",
-            "commoditization_analysis": {
-                "price": {"score_0_5": 4, "evidence": "Sells at market price; discounts to close"},
-                "product": {"score_0_5": 3, "evidence": "Quality parity with competitors, no signature element"},
-                "distribution": {"score_0_5": 3, "evidence": "Same channels as everyone, no owned audience"},
-                "brand": {"score_0_5": 4, "evidence": "Interchangeable name/story; no point of view"},
+        d = await _draft_then_refine(
+            prompt,
+            {
+                "referent_potential_score": 40,
+                "commoditization_level": "high",
+                "commoditization_analysis": {
+                    "price": {
+                        "score_0_5": 4,
+                        "evidence": "Sells at market price; discounts to close",
+                    },
+                    "product": {
+                        "score_0_5": 3,
+                        "evidence": "Quality parity with competitors, no signature element",
+                    },
+                    "distribution": {
+                        "score_0_5": 3,
+                        "evidence": "Same channels as everyone, no owned audience",
+                    },
+                    "brand": {
+                        "score_0_5": 4,
+                        "evidence": "Interchangeable name/story; no point of view",
+                    },
+                },
+                "symptoms": [
+                    "Positioning indistinguishable from competitors",
+                    "Wins deals on price, not preference",
+                ],
+                "root_causes": [
+                    "No stated point of view",
+                    "No category the business owns",
+                ],
+                "scorecard": {
+                    "positioning": 1,
+                    "brand_identity": 1,
+                    "offer": 2,
+                    "fomo_desire": 1,
+                    "distribution": 2,
+                    "authority": 1,
+                },
+                "referent_gap": {},
+                "closest_precedent": {
+                    "brand": "Red Bull",
+                    "why_it_fits": "Commoditized liquid, won on identity + owned culture",
+                    "what_to_copy": "Fund content/culture that carries the identity; charge for the badge",
+                    "what_not_to_copy": "Extreme-sports theme — pick this business's own subculture",
+                },
+                "moat_assessment": {
+                    "has_moat_today": False,
+                    "buildable_moat_type": "brand",
+                    "how": "Own a category + point of view until customers refuse substitutes",
+                    "why_it_holds": "Meaning is expensive to copy once it's established",
+                },
+                "highest_leverage_moves": [
+                    "Name and own a category (frame the value so competitors look generic)",
+                    "Commit to one archetype (make voice + story consistent everywhere)",
+                    "Build a grand-slam offer (tilt the value equation so price stops being the axis)",
+                ],
+                "quick_wins": [
+                    "Rewrite the homepage around one point of view",
+                    "Add real social proof above the fold",
+                    "Kill the blanket discount",
+                ],
+                "structural_moves": [
+                    "Launch a category-defining content asset",
+                    "Introduce a membership / recurring tier",
+                    "Build one growth loop",
+                ],
+                "kill_criteria": [
+                    "Margin can't support any brand investment for 12 months",
+                    "Founder unwilling to take a polarising position",
+                    "Category is a true commodity with switching cost near zero and no premium segment",
+                ],
+                "second_order_risk": "Scaling ad spend on an undifferentiated offer just raises CAC until margin disappears.",
+                "evidence_quality": eq,
+                "summary": "Undifferentiated player in a crowded field, competing on price. Needs positioning and identity before growth spend, or it buys unprofitable volume.",
             },
-            "symptoms": ["Positioning indistinguishable from competitors", "Wins deals on price, not preference"],
-            "root_causes": ["No stated point of view", "No category the business owns"],
-            "scorecard": {"positioning": 1, "brand_identity": 1, "offer": 2, "fomo_desire": 1, "distribution": 2, "authority": 1},
-            "referent_gap": {},
-            "closest_precedent": {"brand": "Red Bull", "why_it_fits": "Commoditized liquid, won on identity + owned culture", "what_to_copy": "Fund content/culture that carries the identity; charge for the badge", "what_not_to_copy": "Extreme-sports theme — pick this business's own subculture"},
-            "moat_assessment": {"has_moat_today": False, "buildable_moat_type": "brand", "how": "Own a category + point of view until customers refuse substitutes", "why_it_holds": "Meaning is expensive to copy once it's established"},
-            "highest_leverage_moves": ["Name and own a category (frame the value so competitors look generic)", "Commit to one archetype (make voice + story consistent everywhere)", "Build a grand-slam offer (tilt the value equation so price stops being the axis)"],
-            "quick_wins": ["Rewrite the homepage around one point of view", "Add real social proof above the fold", "Kill the blanket discount"],
-            "structural_moves": ["Launch a category-defining content asset", "Introduce a membership / recurring tier", "Build one growth loop"],
-            "kill_criteria": ["Margin can't support any brand investment for 12 months", "Founder unwilling to take a polarising position", "Category is a true commodity with switching cost near zero and no premium segment"],
-            "second_order_risk": "Scaling ad spend on an undifferentiated offer just raises CAC until margin disappears.",
-            "evidence_quality": eq,
-            "summary": "Undifferentiated player in a crowded field, competing on price. Needs positioning and identity before growth spend, or it buys unprofitable volume.",
-        }, "Make the summary sharp enough to quote back to the founder. Every "
-           "leverage move and referent_gap entry must name the mechanism. The "
-           "closest_precedent must explain what transfers and what does not.")
+            "Make the summary sharp enough to quote back to the founder. Every "
+            "leverage move and referent_gap entry must name the mechanism. The "
+            "closest_precedent must explain what transfers and what does not.",
+        )
 
         # confidence can't exceed what the evidence supports
         cap = {"thin": 55, "partial": 75, "solid": 92}[eq]
         conf = min(_int(d.get("confidence"), 55), cap)
 
-        return await self._save(BrandDiagnosis(
-            business_id=business_id,
-            industry=profile.get("industry", "n/a"),
-            current_positioning=profile.get("current_positioning"),
-            known_competitors=profile.get("known_competitors"),
-            revenue_model=profile.get("revenue_model"),
-            notes=profile.get("notes"),
-            evidence_snapshot=snap or None,
-            referent_potential_score=_int(d.get("referent_potential_score")),
-            commoditization_level=d.get("commoditization_level", "unknown"),
-            symptoms=d.get("symptoms"),
-            root_causes=d.get("root_causes"),
-            highest_leverage_moves=d.get("highest_leverage_moves"),
-            scorecard=d.get("scorecard"),
-            summary=d.get("summary"),
-            commoditization_analysis=d.get("commoditization_analysis"),
-            referent_gap=d.get("referent_gap"),
-            closest_precedent=d.get("closest_precedent"),
-            moat_assessment=d.get("moat_assessment"),
-            quick_wins=d.get("quick_wins"),
-            structural_moves=d.get("structural_moves"),
-            kill_criteria=d.get("kill_criteria"),
-            second_order_risk=d.get("second_order_risk"),
-            evidence_quality=d.get("evidence_quality") or eq,
-            confidence=conf,
-            frameworks_applied=d.get("frameworks_applied"),
-            generated_by=d.get("_generated_by", "unknown"),
-        ))
+        return await self._save(
+            BrandDiagnosis(
+                business_id=business_id,
+                industry=profile.get("industry", "n/a"),
+                current_positioning=profile.get("current_positioning"),
+                known_competitors=profile.get("known_competitors"),
+                revenue_model=profile.get("revenue_model"),
+                notes=profile.get("notes"),
+                evidence_snapshot=snap or None,
+                referent_potential_score=_int(d.get("referent_potential_score")),
+                commoditization_level=d.get("commoditization_level", "unknown"),
+                symptoms=d.get("symptoms"),
+                root_causes=d.get("root_causes"),
+                highest_leverage_moves=d.get("highest_leverage_moves"),
+                scorecard=d.get("scorecard"),
+                summary=d.get("summary"),
+                commoditization_analysis=d.get("commoditization_analysis"),
+                referent_gap=d.get("referent_gap"),
+                closest_precedent=d.get("closest_precedent"),
+                moat_assessment=d.get("moat_assessment"),
+                quick_wins=d.get("quick_wins"),
+                structural_moves=d.get("structural_moves"),
+                kill_criteria=d.get("kill_criteria"),
+                second_order_risk=d.get("second_order_risk"),
+                evidence_quality=d.get("evidence_quality") or eq,
+                confidence=conf,
+                frameworks_applied=d.get("frameworks_applied"),
+                generated_by=d.get("_generated_by", "unknown"),
+            )
+        )
 
     async def latest(self, business_id: uuid.UUID) -> BrandDiagnosis | None:
         r = await self.db.execute(
-            select(BrandDiagnosis).where(BrandDiagnosis.business_id == business_id)
-            .order_by(desc(BrandDiagnosis.created_at)).limit(1)
+            select(BrandDiagnosis)
+            .where(BrandDiagnosis.business_id == business_id)
+            .order_by(desc(BrandDiagnosis.created_at))
+            .limit(1)
         )
         return r.scalar_one_or_none()
 
-    async def history(self, business_id: uuid.UUID, limit: int = 12) -> list[BrandDiagnosis]:
+    async def history(
+        self, business_id: uuid.UUID, limit: int = 12
+    ) -> list[BrandDiagnosis]:
         r = await self.db.execute(
-            select(BrandDiagnosis).where(BrandDiagnosis.business_id == business_id)
-            .order_by(desc(BrandDiagnosis.created_at)).limit(limit)
+            select(BrandDiagnosis)
+            .where(BrandDiagnosis.business_id == business_id)
+            .order_by(desc(BrandDiagnosis.created_at))
+            .limit(limit)
         )
         return list(r.scalars().all())
 
 
 _DIAGNOSIS_CARRY = (
-    "referent_gap", "closest_precedent", "moat_assessment", "root_causes",
-    "commoditization_analysis", "highest_leverage_moves", "referent_potential_score",
+    "referent_gap",
+    "closest_precedent",
+    "moat_assessment",
+    "root_causes",
+    "commoditization_analysis",
+    "highest_leverage_moves",
+    "referent_potential_score",
 )
 
 
@@ -417,7 +503,9 @@ def _diagnosis_digest(context: dict | None) -> str:
         return "PRIOR DIAGNOSIS: none — infer from the profile, flag assumptions."
     keep = {k: context[k] for k in _DIAGNOSIS_CARRY if context.get(k) is not None}
     keep = keep or context
-    return "PRIOR DIAGNOSIS (key parts):\n" + json.dumps(keep, ensure_ascii=False)[:2400]
+    return (
+        "PRIOR DIAGNOSIS (key parts):\n" + json.dumps(keep, ensure_ascii=False)[:2400]
+    )
 
 
 class PositioningAgent(_BaseAgent):
@@ -430,7 +518,13 @@ class PositioningAgent(_BaseAgent):
     a FROM->TO reframe — plus the migration risk (who repositioning loses).
     """
 
-    async def run(self, business_id: uuid.UUID, profile: dict, context: dict | None = None, extra: str | None = None) -> PositioningStatement:
+    async def run(
+        self,
+        business_id: uuid.UUID,
+        profile: dict,
+        context: dict | None = None,
+        extra: str | None = None,
+    ) -> PositioningStatement:
         prompt = f"""{_profile_block(profile)}
 
 {_diagnosis_digest(context)}
@@ -487,77 +581,159 @@ Return JSON:
     {{"angle": "a second, different bet", "enemy": "...", "when_to_pick": "..."}}
   ]
 }}"""
-        d = await _draft_then_refine(prompt, {
-            "alternatives_matrix": [
-                {"alternative": "Do nothing / live with the problem", "why_tolerated": "The pain is chronic, not acute", "what_customer_keeps": "Zero switching effort", "what_they_lose": "Compounding time/quality cost"},
-                {"alternative": "Incumbent competitors", "why_tolerated": "Familiar, 'nobody got fired for it'", "what_customer_keeps": "Safety", "what_they_lose": "Any real improvement"},
-            ],
-            "attribute_value_proof": [{"attribute": "TBD — needs founder input", "value": "TBD", "proof_point": "TBD"}],
-            "best_fit_customers": ["TBD — narrow segment"],
-            "enemy_analysis": {"enemy": "The commoditized status quo everyone has stopped questioning", "test_results": [], "passes": False},
-            "point_of_view": "The default way this gets done quietly wastes the customer's money, and the whole industry pretends that's normal.",
-            "pov_validation": {"who_nods": "customers who've been burned", "who_bristles": "incumbents", "cost_to_hold_it": "alienates the price-only buyer", "evidence": "pending founder input", "scores": {"polarising": 1, "defensible": 1, "actionable": 1, "ownable": 1, "durable": 1}},
-            "category_decision": {"recommendation": "play_in_existing", "market_category": profile.get("industry", "n/a"), "new_category_name": None, "king_test": {}, "rationale": "Not enough evidence yet to lead a new category; sharpen the position first.", "name_candidates": []},
-            "reframe": {"from": f"{profile.get('what_they_sell', 'this')} is a commodity you shop on price", "to": f"{profile.get('what_they_sell', 'this')} is a choice that signals something"},
-            "positioning_statement": "Positioning statement pending founder input.",
-            "one_liner": "The better way to " + str(profile.get("what_they_sell", "do this")),
-            "elevator_pitch": "Pending founder input.",
-            "messaging_pillars": [],
-            "migration_risks": {"who_we_lose": "pure price shoppers", "acceptable": True, "mitigation": "Keep an entry tier while the premium position builds"},
-            "alternative_angles": [],
-        }, "The enemy and POV are the whole game — make them specific and a little "
-           "provocative, and show the test results. category_decision must be "
-           "justified by the king_test, not asserted. alternative_angles are real "
-           "strategic forks, not rewordings.")
+        d = await _draft_then_refine(
+            prompt,
+            {
+                "alternatives_matrix": [
+                    {
+                        "alternative": "Do nothing / live with the problem",
+                        "why_tolerated": "The pain is chronic, not acute",
+                        "what_customer_keeps": "Zero switching effort",
+                        "what_they_lose": "Compounding time/quality cost",
+                    },
+                    {
+                        "alternative": "Incumbent competitors",
+                        "why_tolerated": "Familiar, 'nobody got fired for it'",
+                        "what_customer_keeps": "Safety",
+                        "what_they_lose": "Any real improvement",
+                    },
+                ],
+                "attribute_value_proof": [
+                    {
+                        "attribute": "TBD — needs founder input",
+                        "value": "TBD",
+                        "proof_point": "TBD",
+                    }
+                ],
+                "best_fit_customers": ["TBD — narrow segment"],
+                "enemy_analysis": {
+                    "enemy": "The commoditized status quo everyone has stopped questioning",
+                    "test_results": [],
+                    "passes": False,
+                },
+                "point_of_view": "The default way this gets done quietly wastes the customer's money, and the whole industry pretends that's normal.",
+                "pov_validation": {
+                    "who_nods": "customers who've been burned",
+                    "who_bristles": "incumbents",
+                    "cost_to_hold_it": "alienates the price-only buyer",
+                    "evidence": "pending founder input",
+                    "scores": {
+                        "polarising": 1,
+                        "defensible": 1,
+                        "actionable": 1,
+                        "ownable": 1,
+                        "durable": 1,
+                    },
+                },
+                "category_decision": {
+                    "recommendation": "play_in_existing",
+                    "market_category": profile.get("industry", "n/a"),
+                    "new_category_name": None,
+                    "king_test": {},
+                    "rationale": "Not enough evidence yet to lead a new category; sharpen the position first.",
+                    "name_candidates": [],
+                },
+                "reframe": {
+                    "from": f"{profile.get('what_they_sell', 'this')} is a commodity you shop on price",
+                    "to": f"{profile.get('what_they_sell', 'this')} is a choice that signals something",
+                },
+                "positioning_statement": "Positioning statement pending founder input.",
+                "one_liner": "The better way to "
+                + str(profile.get("what_they_sell", "do this")),
+                "elevator_pitch": "Pending founder input.",
+                "messaging_pillars": [],
+                "migration_risks": {
+                    "who_we_lose": "pure price shoppers",
+                    "acceptable": True,
+                    "mitigation": "Keep an entry tier while the premium position builds",
+                },
+                "alternative_angles": [],
+            },
+            "The enemy and POV are the whole game — make them specific and a little "
+            "provocative, and show the test results. category_decision must be "
+            "justified by the king_test, not asserted. alternative_angles are real "
+            "strategic forks, not rewordings.",
+        )
 
         cat = d.get("category_decision") or {}
-        return await self._save(PositioningStatement(
-            business_id=business_id,
-            competitive_alternatives=[m.get("alternative") for m in (d.get("alternatives_matrix") or []) if isinstance(m, dict)] or None,
-            unique_attributes=[a.get("attribute") for a in (d.get("attribute_value_proof") or []) if isinstance(a, dict)] or None,
-            value_themes=[a.get("value") for a in (d.get("attribute_value_proof") or []) if isinstance(a, dict)] or None,
-            best_fit_customers=d.get("best_fit_customers"),
-            market_category=cat.get("market_category") or d.get("market_category"),
-            new_category_name=cat.get("new_category_name") or d.get("new_category_name"),
-            point_of_view=d.get("point_of_view"),
-            the_enemy=(d.get("enemy_analysis") or {}).get("enemy") or d.get("the_enemy"),
-            positioning_statement=d.get("positioning_statement"),
-            one_liner=d.get("one_liner"),
-            elevator_pitch=d.get("elevator_pitch"),
-            alternatives_matrix=d.get("alternatives_matrix"),
-            attribute_value_proof=d.get("attribute_value_proof"),
-            enemy_analysis=d.get("enemy_analysis"),
-            pov_validation=d.get("pov_validation"),
-            category_decision=d.get("category_decision"),
-            reframe=d.get("reframe"),
-            messaging_pillars=d.get("messaging_pillars"),
-            migration_risks=d.get("migration_risks"),
-            alternative_angles=d.get("alternative_angles"),
-            confidence=_int(d.get("confidence"), 60),
-            frameworks_applied=d.get("frameworks_applied"),
-            generated_by=d.get("_generated_by", "unknown"),
-        ))
+        return await self._save(
+            PositioningStatement(
+                business_id=business_id,
+                competitive_alternatives=[
+                    m.get("alternative")
+                    for m in (d.get("alternatives_matrix") or [])
+                    if isinstance(m, dict)
+                ]
+                or None,
+                unique_attributes=[
+                    a.get("attribute")
+                    for a in (d.get("attribute_value_proof") or [])
+                    if isinstance(a, dict)
+                ]
+                or None,
+                value_themes=[
+                    a.get("value")
+                    for a in (d.get("attribute_value_proof") or [])
+                    if isinstance(a, dict)
+                ]
+                or None,
+                best_fit_customers=d.get("best_fit_customers"),
+                market_category=cat.get("market_category") or d.get("market_category"),
+                new_category_name=cat.get("new_category_name")
+                or d.get("new_category_name"),
+                point_of_view=d.get("point_of_view"),
+                the_enemy=(d.get("enemy_analysis") or {}).get("enemy")
+                or d.get("the_enemy"),
+                positioning_statement=d.get("positioning_statement"),
+                one_liner=d.get("one_liner"),
+                elevator_pitch=d.get("elevator_pitch"),
+                alternatives_matrix=d.get("alternatives_matrix"),
+                attribute_value_proof=d.get("attribute_value_proof"),
+                enemy_analysis=d.get("enemy_analysis"),
+                pov_validation=d.get("pov_validation"),
+                category_decision=d.get("category_decision"),
+                reframe=d.get("reframe"),
+                messaging_pillars=d.get("messaging_pillars"),
+                migration_risks=d.get("migration_risks"),
+                alternative_angles=d.get("alternative_angles"),
+                confidence=_int(d.get("confidence"), 60),
+                frameworks_applied=d.get("frameworks_applied"),
+                generated_by=d.get("_generated_by", "unknown"),
+            )
+        )
 
     async def latest(self, business_id: uuid.UUID) -> PositioningStatement | None:
         r = await self.db.execute(
-            select(PositioningStatement).where(PositioningStatement.business_id == business_id)
-            .order_by(desc(PositioningStatement.created_at)).limit(1)
+            select(PositioningStatement)
+            .where(PositioningStatement.business_id == business_id)
+            .order_by(desc(PositioningStatement.created_at))
+            .limit(1)
         )
         return r.scalar_one_or_none()
 
-    async def by_id(self, business_id: uuid.UUID, sid: uuid.UUID) -> PositioningStatement | None:
+    async def by_id(
+        self, business_id: uuid.UUID, sid: uuid.UUID
+    ) -> PositioningStatement | None:
         r = await self.db.execute(
             select(PositioningStatement).where(
-                PositioningStatement.id == sid, PositioningStatement.business_id == business_id
+                PositioningStatement.id == sid,
+                PositioningStatement.business_id == business_id,
             )
         )
         return r.scalar_one_or_none()
 
 
 _POSITIONING_CARRY = (
-    "positioning_statement", "one_liner", "point_of_view", "enemy_analysis",
-    "the_enemy", "reframe", "category_decision", "messaging_pillars",
-    "best_fit_customers", "migration_risks",
+    "positioning_statement",
+    "one_liner",
+    "point_of_view",
+    "enemy_analysis",
+    "the_enemy",
+    "reframe",
+    "category_decision",
+    "messaging_pillars",
+    "best_fit_customers",
+    "migration_risks",
 )
 
 
@@ -565,21 +741,65 @@ def _positioning_digest(context: dict | None) -> str:
     if not context:
         return "PRIOR POSITIONING: none — infer from the profile, flag assumptions."
     keep = {k: context[k] for k in _POSITIONING_CARRY if context.get(k) is not None}
-    return "PRIOR POSITIONING (key parts):\n" + json.dumps(keep or context, ensure_ascii=False)[:2600]
+    return (
+        "PRIOR POSITIONING (key parts):\n"
+        + json.dumps(keep or context, ensure_ascii=False)[:2600]
+    )
 
 
 _STAGE_HIGHLIGHTS = {
-    "diagnosis": ("referent_potential_score", "highest_leverage_moves", "moat_assessment", "closest_precedent", "kill_criteria"),
-    "positioning": ("positioning_statement", "one_liner", "point_of_view", "the_enemy", "category_decision", "messaging_pillars", "best_fit_customers", "reframe"),
-    "brand_identity": ("primary_archetype", "tagline", "story_spine", "verbal_identity", "identity_consistency_rules"),
-    "business_model": ("applied_patterns", "grand_slam_offer", "pricing_architecture", "unit_economics_targets", "value_equation"),
-    "fomo_engine": ("mechanisms", "launch_ritual", "cadence", "content_hooks", "activation_sequence"),
-    "gtm": ("primary_growth_loop", "lightning_strike", "channel_plan", "plan_90_days", "north_star_metric"),
+    "diagnosis": (
+        "referent_potential_score",
+        "highest_leverage_moves",
+        "moat_assessment",
+        "closest_precedent",
+        "kill_criteria",
+    ),
+    "positioning": (
+        "positioning_statement",
+        "one_liner",
+        "point_of_view",
+        "the_enemy",
+        "category_decision",
+        "messaging_pillars",
+        "best_fit_customers",
+        "reframe",
+    ),
+    "brand_identity": (
+        "primary_archetype",
+        "tagline",
+        "story_spine",
+        "verbal_identity",
+        "identity_consistency_rules",
+    ),
+    "business_model": (
+        "applied_patterns",
+        "grand_slam_offer",
+        "pricing_architecture",
+        "unit_economics_targets",
+        "value_equation",
+    ),
+    "fomo_engine": (
+        "mechanisms",
+        "launch_ritual",
+        "cadence",
+        "content_hooks",
+        "activation_sequence",
+    ),
+    "gtm": (
+        "primary_growth_loop",
+        "lightning_strike",
+        "channel_plan",
+        "plan_90_days",
+        "north_star_metric",
+    ),
     "restructuring": ("kill", "keep", "scale", "core_processes", "promise_kpis"),
 }
 
 
-def _stage_context_digest(context: dict | None, want: tuple[str, ...] | None = None) -> str:
+def _stage_context_digest(
+    context: dict | None, want: tuple[str, ...] | None = None
+) -> str:
     """Compact digest of prior-stage artifacts.
 
     Accepts either the orchestrator's {stage_key: artifact_dict} shape or a
@@ -599,7 +819,11 @@ def _stage_context_digest(context: dict | None, want: tuple[str, ...] | None = N
         picked = {k: art[k] for k in _STAGE_HIGHLIGHTS[sk] if art.get(k) is not None}
         if picked:
             out.append(f"[{sk}] " + json.dumps(picked, ensure_ascii=False)[:1500])
-    return "PRIOR STAGES (highlights):\n" + "\n".join(out) if out else "PRIOR STAGES: present but empty."
+    return (
+        "PRIOR STAGES (highlights):\n" + "\n".join(out)
+        if out
+        else "PRIOR STAGES: present but empty."
+    )
 
 
 class BrandIdentityAgent(_BaseAgent):
@@ -614,7 +838,13 @@ class BrandIdentityAgent(_BaseAgent):
     identity non-negotiables that feed the brand_consistency_monitor.
     """
 
-    async def run(self, business_id: uuid.UUID, profile: dict, context: dict | None = None, extra: str | None = None) -> BrandIdentity:
+    async def run(
+        self,
+        business_id: uuid.UUID,
+        profile: dict,
+        context: dict | None = None,
+        extra: str | None = None,
+    ) -> BrandIdentity:
         prompt = f"""{_profile_block(profile)}
 
 {_positioning_digest(context)}
@@ -685,59 +915,132 @@ Return JSON:
     {{"archetype": "...", "what_changes": "...", "when_to_pick": "..."}}
   ]
 }}"""
-        d = await _draft_then_refine(prompt, {
-            "archetype_analysis": {"shortlist": [], "primary": "Hero", "secondary": "Outlaw", "blend": "70% Hero / 30% Outlaw — earnest about the customer's goal, irreverent about the industry", "rationale": "Positioning frames the brand as the one that fights the status quo for the customer."},
-            "story_spine": {"world": "Customers accept the category default.", "problem": "The default quietly costs them.", "insight": "It doesn't have to.", "mission": "Make the better way the obvious way."},
-            "manifesto": "Manifesto pending positioning sign-off.",
-            "tagline": "Do it properly.", "taglines_alt": [],
-            "verbal_identity": {"attributes": [{"adj": "blunt", "sounds_like": "Here's the number. Here's what it means.", "not": "aggressive"}], "lexicon": {"use": [], "ban": list(K.CLICHE_BLOCKLIST)}, "rhythm": "short sentences, one idea each", "humor": "dry, never at the customer's expense", "first_line_rule": "name the enemy or the outcome — never warm up"},
-            "sample_rewrites": [],
-            "naming": {"decision": "keep", "rationale": "Existing name has equity; the gap is meaning, not letters.", "candidates": [], "name_test": "Would a customer repeat it correctly after hearing it once?"},
-            "visual_brief": {"mood": "bold, high-contrast, plain", "palette_direction": "one loud accent for action, near-black + paper for everything else", "typography": "grotesk display + humanist body", "imagery_do": ["real people, unretouched"], "imagery_dont": ["stock handshakes", "gradients on everything"], "logo_direction": "wordmark — the name is the asset", "moodboard_search_terms": [], "one_thing_to_avoid": "looking like every other option in the category"},
-            "brand_architecture": "Single master brand; no sub-brands until a second product line exists; future products take descriptive names under the master.",
-            "identity_consistency_rules": [],
-            "alternative_angles": [],
-        }, "The manifesto, tagline and sample rewrites are judged on whether a real "
-           "brand would ship them — kill anything that reads like a generator. The "
-           "archetype pick must be defended by the shortlist scores.")
+        d = await _draft_then_refine(
+            prompt,
+            {
+                "archetype_analysis": {
+                    "shortlist": [],
+                    "primary": "Hero",
+                    "secondary": "Outlaw",
+                    "blend": "70% Hero / 30% Outlaw — earnest about the customer's goal, irreverent about the industry",
+                    "rationale": "Positioning frames the brand as the one that fights the status quo for the customer.",
+                },
+                "story_spine": {
+                    "world": "Customers accept the category default.",
+                    "problem": "The default quietly costs them.",
+                    "insight": "It doesn't have to.",
+                    "mission": "Make the better way the obvious way.",
+                },
+                "manifesto": "Manifesto pending positioning sign-off.",
+                "tagline": "Do it properly.",
+                "taglines_alt": [],
+                "verbal_identity": {
+                    "attributes": [
+                        {
+                            "adj": "blunt",
+                            "sounds_like": "Here's the number. Here's what it means.",
+                            "not": "aggressive",
+                        }
+                    ],
+                    "lexicon": {"use": [], "ban": list(K.CLICHE_BLOCKLIST)},
+                    "rhythm": "short sentences, one idea each",
+                    "humor": "dry, never at the customer's expense",
+                    "first_line_rule": "name the enemy or the outcome — never warm up",
+                },
+                "sample_rewrites": [],
+                "naming": {
+                    "decision": "keep",
+                    "rationale": "Existing name has equity; the gap is meaning, not letters.",
+                    "candidates": [],
+                    "name_test": "Would a customer repeat it correctly after hearing it once?",
+                },
+                "visual_brief": {
+                    "mood": "bold, high-contrast, plain",
+                    "palette_direction": "one loud accent for action, near-black + paper for everything else",
+                    "typography": "grotesk display + humanist body",
+                    "imagery_do": ["real people, unretouched"],
+                    "imagery_dont": ["stock handshakes", "gradients on everything"],
+                    "logo_direction": "wordmark — the name is the asset",
+                    "moodboard_search_terms": [],
+                    "one_thing_to_avoid": "looking like every other option in the category",
+                },
+                "brand_architecture": "Single master brand; no sub-brands until a second product line exists; future products take descriptive names under the master.",
+                "identity_consistency_rules": [],
+                "alternative_angles": [],
+            },
+            "The manifesto, tagline and sample rewrites are judged on whether a real "
+            "brand would ship them — kill anything that reads like a generator. The "
+            "archetype pick must be defended by the shortlist scores.",
+        )
 
         aa = d.get("archetype_analysis") or {}
         vi = d.get("verbal_identity") or {}
         naming = d.get("naming") or {}
-        return await self._save(BrandIdentity(
-            business_id=business_id,
-            primary_archetype=aa.get("primary") or d.get("primary_archetype"),
-            secondary_archetype=aa.get("secondary") or d.get("secondary_archetype"),
-            rename_recommended=(naming.get("decision") in ("rename", "add_descriptor")),
-            name_candidates=[c.get("name") for c in (naming.get("candidates") or []) if isinstance(c, dict)] or d.get("name_candidates"),
-            tagline=d.get("tagline"),
-            manifesto=d.get("manifesto"),
-            voice_attributes=[a.get("adj") for a in (vi.get("attributes") or []) if isinstance(a, dict)] or d.get("voice_attributes"),
-            voice_do=[a.get("sounds_like") for a in (vi.get("attributes") or []) if isinstance(a, dict)] or d.get("voice_do"),
-            voice_dont=(vi.get("lexicon") or {}).get("ban") or d.get("voice_dont"),
-            sample_rewrites=d.get("sample_rewrites"),
-            visual_brief=d.get("visual_brief"),
-            brand_architecture=" | ".join(x for x in [d.get("brand_architecture"), aa.get("rationale"), naming.get("rationale")] if x),
-            alternative_angles=d.get("alternative_angles"),
-            archetype_analysis=d.get("archetype_analysis"),
-            verbal_identity=d.get("verbal_identity"),
-            naming=d.get("naming"),
-            story_spine=d.get("story_spine"),
-            taglines_alt=d.get("taglines_alt"),
-            identity_consistency_rules=d.get("identity_consistency_rules"),
-            confidence=_int(d.get("confidence"), 60),
-            frameworks_applied=d.get("frameworks_applied"),
-            generated_by=d.get("_generated_by", "unknown"),
-        ))
+        return await self._save(
+            BrandIdentity(
+                business_id=business_id,
+                primary_archetype=aa.get("primary") or d.get("primary_archetype"),
+                secondary_archetype=aa.get("secondary") or d.get("secondary_archetype"),
+                rename_recommended=(
+                    naming.get("decision") in ("rename", "add_descriptor")
+                ),
+                name_candidates=[
+                    c.get("name")
+                    for c in (naming.get("candidates") or [])
+                    if isinstance(c, dict)
+                ]
+                or d.get("name_candidates"),
+                tagline=d.get("tagline"),
+                manifesto=d.get("manifesto"),
+                voice_attributes=[
+                    a.get("adj")
+                    for a in (vi.get("attributes") or [])
+                    if isinstance(a, dict)
+                ]
+                or d.get("voice_attributes"),
+                voice_do=[
+                    a.get("sounds_like")
+                    for a in (vi.get("attributes") or [])
+                    if isinstance(a, dict)
+                ]
+                or d.get("voice_do"),
+                voice_dont=(vi.get("lexicon") or {}).get("ban") or d.get("voice_dont"),
+                sample_rewrites=d.get("sample_rewrites"),
+                visual_brief=d.get("visual_brief"),
+                brand_architecture=" | ".join(
+                    x
+                    for x in [
+                        d.get("brand_architecture"),
+                        aa.get("rationale"),
+                        naming.get("rationale"),
+                    ]
+                    if x
+                ),
+                alternative_angles=d.get("alternative_angles"),
+                archetype_analysis=d.get("archetype_analysis"),
+                verbal_identity=d.get("verbal_identity"),
+                naming=d.get("naming"),
+                story_spine=d.get("story_spine"),
+                taglines_alt=d.get("taglines_alt"),
+                identity_consistency_rules=d.get("identity_consistency_rules"),
+                confidence=_int(d.get("confidence"), 60),
+                frameworks_applied=d.get("frameworks_applied"),
+                generated_by=d.get("_generated_by", "unknown"),
+            )
+        )
 
     async def latest(self, business_id: uuid.UUID) -> BrandIdentity | None:
         r = await self.db.execute(
-            select(BrandIdentity).where(BrandIdentity.business_id == business_id)
-            .order_by(desc(BrandIdentity.created_at)).limit(1)
+            select(BrandIdentity)
+            .where(BrandIdentity.business_id == business_id)
+            .order_by(desc(BrandIdentity.created_at))
+            .limit(1)
         )
         return r.scalar_one_or_none()
 
-    async def by_id(self, business_id: uuid.UUID, iid: uuid.UUID) -> BrandIdentity | None:
+    async def by_id(
+        self, business_id: uuid.UUID, iid: uuid.UUID
+    ) -> BrandIdentity | None:
         r = await self.db.execute(
             select(BrandIdentity).where(
                 BrandIdentity.id == iid, BrandIdentity.business_id == business_id
@@ -756,7 +1059,13 @@ class BusinessModelAgent(_BaseAgent):
     gives a pricing-migration path so the change doesn't trigger a revolt.
     """
 
-    async def run(self, business_id: uuid.UUID, profile: dict, context: dict | None = None, extra: str | None = None) -> BusinessModelRedesign:
+    async def run(
+        self,
+        business_id: uuid.UUID,
+        profile: dict,
+        context: dict | None = None,
+        extra: str | None = None,
+    ) -> BusinessModelRedesign:
         prompt = f"""{_profile_block(profile)}
 
 {_evidence_block(profile)}
@@ -810,45 +1119,99 @@ Return JSON:
   "rationale": "why this model beats the current one — in money terms",
   "alternative_angles": [{{"model": "a different structural bet", "when_to_pick": "..."}}, {{"model": "...", "when_to_pick": "..."}}]
 }}"""
-        d = await _draft_then_refine(prompt, {
-            "model_diagnosis": {"how_it_earns_now": "One-off transactional sales at market price", "margin_leaks": ["Discounting to close", "No recurring revenue"], "every_sale_from_zero": True, "fragility": "Revenue resets to zero every month; no compounding base"},
-            "pattern_evaluation": [
-                {"pattern": "membership_club", "scores": {"positioning_fit": 2, "margin_impact": 1, "retention_impact": 2, "execution_difficulty": 1, "time_to_cash": 1}, "verdict": "apply", "how_it_transfers_here": "Turn repeat buyers into a paid tier with earned perks tied to the brand's point of view", "precedent": "Amazon Prime"},
-                {"pattern": "razor_and_blade", "scores": {"positioning_fit": 1, "margin_impact": 2, "retention_impact": 2, "execution_difficulty": 1, "time_to_cash": 1}, "verdict": "apply", "how_it_transfers_here": "Low-margin entry product, recurring consumable/service attached", "precedent": "Dollar Shave Club"},
-            ],
-            "applied_patterns": ["membership_club — recurring base", "razor_and_blade — attach recurring value"],
-            "canvas": {}, "canvas_changes": [], "new_revenue_streams": [],
-            "value_equation": {"dream_outcome": "The result the customer actually wants", "perceived_likelihood": {"current": "low", "levers_to_raise": ["guarantee", "case studies"]}, "time_delay": {"before": "weeks", "after": "days"}, "effort_and_sacrifice": {"before": "high", "after": "low"}, "net_effect": "Perceived value up: same outcome, less risk and wait."},
-            "grand_slam_offer": {}, "pricing_architecture": {}, "pricing_migration": {},
-            "unit_economics_targets": {}, "errc_grid": {}, "rollout": {}, "risks": [],
-            "rationale": "Recurring revenue lifts LTV and makes CAC affordable; today every sale starts from zero.",
-            "alternative_angles": [],
-        }, "Show the pattern scores — an applied pattern with weak scores gets "
-           "rejected. The value_equation must be concrete (before/after), and every "
-           "unit-economics target must name its assumption. Guarantee needs a real "
-           "worst-case number.")
-        return await self._save(BusinessModelRedesign(
-            business_id=business_id,
-            canvas=d.get("canvas"),
-            applied_patterns=d.get("applied_patterns"),
-            new_revenue_streams=d.get("new_revenue_streams"),
-            grand_slam_offer=d.get("grand_slam_offer"),
-            pricing_architecture=d.get("pricing_architecture"),
-            errc_grid=d.get("errc_grid"),
-            rationale=d.get("rationale"),
-            model_diagnosis=d.get("model_diagnosis"),
-            pattern_evaluation=d.get("pattern_evaluation"),
-            canvas_changes=d.get("canvas_changes"),
-            value_equation=d.get("value_equation"),
-            unit_economics_targets=d.get("unit_economics_targets"),
-            pricing_migration=d.get("pricing_migration"),
-            rollout=d.get("rollout"),
-            risks=d.get("risks"),
-            alternative_angles=d.get("alternative_angles"),
-            confidence=_int(d.get("confidence"), 60),
-            frameworks_applied=d.get("frameworks_applied"),
-            generated_by=d.get("_generated_by", "unknown"),
-        ))
+        d = await _draft_then_refine(
+            prompt,
+            {
+                "model_diagnosis": {
+                    "how_it_earns_now": "One-off transactional sales at market price",
+                    "margin_leaks": ["Discounting to close", "No recurring revenue"],
+                    "every_sale_from_zero": True,
+                    "fragility": "Revenue resets to zero every month; no compounding base",
+                },
+                "pattern_evaluation": [
+                    {
+                        "pattern": "membership_club",
+                        "scores": {
+                            "positioning_fit": 2,
+                            "margin_impact": 1,
+                            "retention_impact": 2,
+                            "execution_difficulty": 1,
+                            "time_to_cash": 1,
+                        },
+                        "verdict": "apply",
+                        "how_it_transfers_here": "Turn repeat buyers into a paid tier with earned perks tied to the brand's point of view",
+                        "precedent": "Amazon Prime",
+                    },
+                    {
+                        "pattern": "razor_and_blade",
+                        "scores": {
+                            "positioning_fit": 1,
+                            "margin_impact": 2,
+                            "retention_impact": 2,
+                            "execution_difficulty": 1,
+                            "time_to_cash": 1,
+                        },
+                        "verdict": "apply",
+                        "how_it_transfers_here": "Low-margin entry product, recurring consumable/service attached",
+                        "precedent": "Dollar Shave Club",
+                    },
+                ],
+                "applied_patterns": [
+                    "membership_club — recurring base",
+                    "razor_and_blade — attach recurring value",
+                ],
+                "canvas": {},
+                "canvas_changes": [],
+                "new_revenue_streams": [],
+                "value_equation": {
+                    "dream_outcome": "The result the customer actually wants",
+                    "perceived_likelihood": {
+                        "current": "low",
+                        "levers_to_raise": ["guarantee", "case studies"],
+                    },
+                    "time_delay": {"before": "weeks", "after": "days"},
+                    "effort_and_sacrifice": {"before": "high", "after": "low"},
+                    "net_effect": "Perceived value up: same outcome, less risk and wait.",
+                },
+                "grand_slam_offer": {},
+                "pricing_architecture": {},
+                "pricing_migration": {},
+                "unit_economics_targets": {},
+                "errc_grid": {},
+                "rollout": {},
+                "risks": [],
+                "rationale": "Recurring revenue lifts LTV and makes CAC affordable; today every sale starts from zero.",
+                "alternative_angles": [],
+            },
+            "Show the pattern scores — an applied pattern with weak scores gets "
+            "rejected. The value_equation must be concrete (before/after), and every "
+            "unit-economics target must name its assumption. Guarantee needs a real "
+            "worst-case number.",
+        )
+        return await self._save(
+            BusinessModelRedesign(
+                business_id=business_id,
+                canvas=d.get("canvas"),
+                applied_patterns=d.get("applied_patterns"),
+                new_revenue_streams=d.get("new_revenue_streams"),
+                grand_slam_offer=d.get("grand_slam_offer"),
+                pricing_architecture=d.get("pricing_architecture"),
+                errc_grid=d.get("errc_grid"),
+                rationale=d.get("rationale"),
+                model_diagnosis=d.get("model_diagnosis"),
+                pattern_evaluation=d.get("pattern_evaluation"),
+                canvas_changes=d.get("canvas_changes"),
+                value_equation=d.get("value_equation"),
+                unit_economics_targets=d.get("unit_economics_targets"),
+                pricing_migration=d.get("pricing_migration"),
+                rollout=d.get("rollout"),
+                risks=d.get("risks"),
+                alternative_angles=d.get("alternative_angles"),
+                confidence=_int(d.get("confidence"), 60),
+                frameworks_applied=d.get("frameworks_applied"),
+                generated_by=d.get("_generated_by", "unknown"),
+            )
+        )
 
 
 class FOMOEngineAgent(_BaseAgent):
@@ -862,7 +1225,13 @@ class FOMOEngineAgent(_BaseAgent):
     fomo-domain action that implements it.
     """
 
-    async def run(self, business_id: uuid.UUID, profile: dict, context: dict | None = None, extra: str | None = None) -> FOMOPlaybook:
+    async def run(
+        self,
+        business_id: uuid.UUID,
+        profile: dict,
+        context: dict | None = None,
+        extra: str | None = None,
+    ) -> FOMOPlaybook:
         prompt = f"""{_profile_block(profile)}
 
 {_positioning_digest(context)}
@@ -911,54 +1280,130 @@ Return JSON:
     {{"angle": "...", "when_to_pick": "..."}}
   ]
 }}"""
-        d = await _draft_then_refine(prompt, {
-            "lever_selection": [],
-            "mechanisms": [
-                {"lever": "social_proof_velocity", "why_it_fits": "Trust gap in the category", "implementation": "Show verified recent-buyer count + the specific item, updated hourly", "trigger": "informational social influence", "kpi": "PDP->cart conversion", "measurement": "cohort A/B on the widget", "anti_fake_guardrail": "Numbers query straight from orders; never round up; link to a public methodology note", "honest_alternative": "Show total lifetime customers instead of 'today'", "precedent": "Booking.com"},
-                {"lever": "anticipation_and_ritual", "why_it_fits": "Customers have nothing to look forward to", "implementation": "Monthly themed release teased 7 days out, one detail revealed per day", "trigger": "anticipation / dopamine gap", "kpi": "launch-day revenue vs baseline day", "measurement": "revenue delta on drop day", "anti_fake_guardrail": "Ship on the promised date every time", "honest_alternative": "A monthly note with no product if there's nothing ready", "precedent": "Glossier"},
-            ],
-            "ethics_review": {"the_line_for_this_brand": "Any scarcity a customer could disprove; any pressure on a first-time visitor mid-crisis", "never_do": ["Fake countdown timers", "Invented 'X people viewing'", "Manufactured stock warnings"], "shown_from_inside_test": "A customer seeing the real order feed behind the counter would nod — it's true."},
-            "activation_sequence": {"first": "Social proof — no supply risk", "gating_conditions": ["Inventory reliable before running the ritual"], "ramp_90d": ["w1-2: social proof live", "w3-6: first drop", "w7-12: members tier"]},
-            "launch_ritual": {"name": "The Drop", "sequence": ["tease -7d", "daily reveal", "open", "sellout recap + waitlist"], "the_hook": "it sells out and doesn't come back", "payoff": "members get 24h early access", "what_makes_it_repeatable": "a fixed date + a fresh theme each cycle"},
-            "cadence": "monthly",
-            "content_hooks": [], "measurement": {"leading": ["waitlist growth", "sellout time"], "lagging": ["repeat rate", "price realised"]},
-            "integration_notes": [
-                {"mechanism": "social_proof_velocity", "sellia_domain_action": "fomo_intelligence POST /generate-social-proof + fomo GET /social-proof widget"},
-                {"mechanism": "anticipation_and_ritual", "sellia_domain_action": "fomo POST /campaigns type=drop then scheduled /activate"},
-            ],
-            "risk_matrix": [{"mechanism": "anticipation_and_ritual", "backfire_mode": "missed drop date kills trust", "early_warning": "prep milestones slipping", "kill_switch": "announce a skip early, don't fake it"}],
-            "risk_notes": "Run few, real deadlines — permanent 'ending soon' trains customers to ignore every one.",
-            "alternative_angles": [],
-        }, "Reject any mechanism the product can't actually support. Every guardrail "
-           "must be measurable ('numbers query from orders'), not 'be honest'. The "
-           "ethics_review must name specific practices this brand rules out.")
-        return await self._save(FOMOPlaybook(
-            business_id=business_id,
-            mechanisms=d.get("mechanisms"),
-            launch_ritual=d.get("launch_ritual"),
-            cadence=d.get("cadence"),
-            risk_notes=d.get("risk_notes"),
-            alternative_angles=d.get("alternative_angles"),
-            lever_selection=d.get("lever_selection"),
-            ethics_review=d.get("ethics_review"),
-            activation_sequence=d.get("activation_sequence"),
-            content_hooks=d.get("content_hooks"),
-            measurement=d.get("measurement"),
-            integration_notes=d.get("integration_notes"),
-            risk_matrix=d.get("risk_matrix"),
-            confidence=_int(d.get("confidence"), 60),
-            frameworks_applied=d.get("frameworks_applied"),
-            generated_by=d.get("_generated_by", "unknown"),
-        ))
+        d = await _draft_then_refine(
+            prompt,
+            {
+                "lever_selection": [],
+                "mechanisms": [
+                    {
+                        "lever": "social_proof_velocity",
+                        "why_it_fits": "Trust gap in the category",
+                        "implementation": "Show verified recent-buyer count + the specific item, updated hourly",
+                        "trigger": "informational social influence",
+                        "kpi": "PDP->cart conversion",
+                        "measurement": "cohort A/B on the widget",
+                        "anti_fake_guardrail": "Numbers query straight from orders; never round up; link to a public methodology note",
+                        "honest_alternative": "Show total lifetime customers instead of 'today'",
+                        "precedent": "Booking.com",
+                    },
+                    {
+                        "lever": "anticipation_and_ritual",
+                        "why_it_fits": "Customers have nothing to look forward to",
+                        "implementation": "Monthly themed release teased 7 days out, one detail revealed per day",
+                        "trigger": "anticipation / dopamine gap",
+                        "kpi": "launch-day revenue vs baseline day",
+                        "measurement": "revenue delta on drop day",
+                        "anti_fake_guardrail": "Ship on the promised date every time",
+                        "honest_alternative": "A monthly note with no product if there's nothing ready",
+                        "precedent": "Glossier",
+                    },
+                ],
+                "ethics_review": {
+                    "the_line_for_this_brand": "Any scarcity a customer could disprove; any pressure on a first-time visitor mid-crisis",
+                    "never_do": [
+                        "Fake countdown timers",
+                        "Invented 'X people viewing'",
+                        "Manufactured stock warnings",
+                    ],
+                    "shown_from_inside_test": "A customer seeing the real order feed behind the counter would nod — it's true.",
+                },
+                "activation_sequence": {
+                    "first": "Social proof — no supply risk",
+                    "gating_conditions": [
+                        "Inventory reliable before running the ritual"
+                    ],
+                    "ramp_90d": [
+                        "w1-2: social proof live",
+                        "w3-6: first drop",
+                        "w7-12: members tier",
+                    ],
+                },
+                "launch_ritual": {
+                    "name": "The Drop",
+                    "sequence": [
+                        "tease -7d",
+                        "daily reveal",
+                        "open",
+                        "sellout recap + waitlist",
+                    ],
+                    "the_hook": "it sells out and doesn't come back",
+                    "payoff": "members get 24h early access",
+                    "what_makes_it_repeatable": "a fixed date + a fresh theme each cycle",
+                },
+                "cadence": "monthly",
+                "content_hooks": [],
+                "measurement": {
+                    "leading": ["waitlist growth", "sellout time"],
+                    "lagging": ["repeat rate", "price realised"],
+                },
+                "integration_notes": [
+                    {
+                        "mechanism": "social_proof_velocity",
+                        "sellia_domain_action": "fomo_intelligence POST /generate-social-proof + fomo GET /social-proof widget",
+                    },
+                    {
+                        "mechanism": "anticipation_and_ritual",
+                        "sellia_domain_action": "fomo POST /campaigns type=drop then scheduled /activate",
+                    },
+                ],
+                "risk_matrix": [
+                    {
+                        "mechanism": "anticipation_and_ritual",
+                        "backfire_mode": "missed drop date kills trust",
+                        "early_warning": "prep milestones slipping",
+                        "kill_switch": "announce a skip early, don't fake it",
+                    }
+                ],
+                "risk_notes": "Run few, real deadlines — permanent 'ending soon' trains customers to ignore every one.",
+                "alternative_angles": [],
+            },
+            "Reject any mechanism the product can't actually support. Every guardrail "
+            "must be measurable ('numbers query from orders'), not 'be honest'. The "
+            "ethics_review must name specific practices this brand rules out.",
+        )
+        return await self._save(
+            FOMOPlaybook(
+                business_id=business_id,
+                mechanisms=d.get("mechanisms"),
+                launch_ritual=d.get("launch_ritual"),
+                cadence=d.get("cadence"),
+                risk_notes=d.get("risk_notes"),
+                alternative_angles=d.get("alternative_angles"),
+                lever_selection=d.get("lever_selection"),
+                ethics_review=d.get("ethics_review"),
+                activation_sequence=d.get("activation_sequence"),
+                content_hooks=d.get("content_hooks"),
+                measurement=d.get("measurement"),
+                integration_notes=d.get("integration_notes"),
+                risk_matrix=d.get("risk_matrix"),
+                confidence=_int(d.get("confidence"), 60),
+                frameworks_applied=d.get("frameworks_applied"),
+                generated_by=d.get("_generated_by", "unknown"),
+            )
+        )
 
     async def latest(self, business_id: uuid.UUID) -> FOMOPlaybook | None:
         r = await self.db.execute(
-            select(FOMOPlaybook).where(FOMOPlaybook.business_id == business_id)
-            .order_by(desc(FOMOPlaybook.created_at)).limit(1)
+            select(FOMOPlaybook)
+            .where(FOMOPlaybook.business_id == business_id)
+            .order_by(desc(FOMOPlaybook.created_at))
+            .limit(1)
         )
         return r.scalar_one_or_none()
 
-    async def by_id(self, business_id: uuid.UUID, playbook_id: uuid.UUID) -> FOMOPlaybook | None:
+    async def by_id(
+        self, business_id: uuid.UUID, playbook_id: uuid.UUID
+    ) -> FOMOPlaybook | None:
         r = await self.db.execute(
             select(FOMOPlaybook).where(
                 FOMOPlaybook.id == playbook_id, FOMOPlaybook.business_id == business_id
@@ -977,7 +1422,13 @@ class GoToMarketAgent(_BaseAgent):
     repurposing chain, and names explicit anti-goals for the 90 days.
     """
 
-    async def run(self, business_id: uuid.UUID, profile: dict, context: dict | None = None, extra: str | None = None) -> GTMPlan:
+    async def run(
+        self,
+        business_id: uuid.UUID,
+        profile: dict,
+        context: dict | None = None,
+        extra: str | None = None,
+    ) -> GTMPlan:
         prompt = f"""{_profile_block(profile)}
 
 {_stage_context_digest(context, want=("positioning", "brand_identity", "business_model", "fomo_engine"))}
@@ -1031,38 +1482,73 @@ Return JSON:
   "anti_goals": ["what NOT to do in 90 days — spreading thin, vanity metrics, premature paid, ..."],
   "alternative_angles": [{{"angle": "a different GTM bet (e.g. sales-led instead of content)", "when_to_pick": "..."}}, {{"angle": "...", "when_to_pick": "..."}}]
 }}"""
-        d = await _draft_then_refine(prompt, {
-            "loop_evaluation": [],
-            "primary_growth_loop": {"type": "content", "steps": ["publish POV content", "earns search + shares", "converts to trial", "customers produce case studies that feed content"], "the_variable_it_turns": "indexable POV assets", "turning_metric": "organic sessions -> trial rate", "cycle_time": "~6 weeks per asset to rank", "reinvestment": "revenue funds more production", "why_not_the_others": "viral: no in-product share reason; paid: margin not ready; sales-led: ACV too low"},
-            "channel_plan": [], "lightning_strike": {}, "content_engine": {}, "funnel": [],
-            "plan_90_days": [], "week_1_actions": ["Publish the POV piece the positioning implies", "Pin it everywhere the brand has presence", "DM 10 best-fit customers for reactions"],
-            "budget_shape": {"allocation": {"content": "60%", "channels": "25%", "tools": "15%"}, "constraint": "founder time"},
-            "north_star_metric": "weekly best-fit trials started",
-            "anti_goals": ["Run paid before the offer converts organically", "Post on 6 platforms at once", "Chase follower count"],
-            "alternative_angles": [],
-        }, "The loop choice must show scores and beat the alternatives on them. "
-           "Every channel needs an effort estimate and a kill signal. The content "
-           "engine must derive from the brand's story spine, not generic topics.")
-        return await self._save(GTMPlan(
-            business_id=business_id,
-            primary_growth_loop=d.get("primary_growth_loop"),
-            channels=d.get("channel_plan") or d.get("channels"),
-            lightning_strike=d.get("lightning_strike"),
-            funnel=d.get("funnel"),
-            content_pillars=(d.get("content_engine") or {}).get("pillars") or d.get("content_pillars"),
-            plan_90_days=d.get("plan_90_days"),
-            loop_evaluation=d.get("loop_evaluation"),
-            channel_plan=d.get("channel_plan"),
-            content_engine=d.get("content_engine"),
-            week_1_actions=d.get("week_1_actions"),
-            budget_shape=d.get("budget_shape"),
-            anti_goals=d.get("anti_goals"),
-            north_star_metric=d.get("north_star_metric"),
-            alternative_angles=d.get("alternative_angles"),
-            confidence=_int(d.get("confidence"), 60),
-            frameworks_applied=d.get("frameworks_applied"),
-            generated_by=d.get("_generated_by", "unknown"),
-        ))
+        d = await _draft_then_refine(
+            prompt,
+            {
+                "loop_evaluation": [],
+                "primary_growth_loop": {
+                    "type": "content",
+                    "steps": [
+                        "publish POV content",
+                        "earns search + shares",
+                        "converts to trial",
+                        "customers produce case studies that feed content",
+                    ],
+                    "the_variable_it_turns": "indexable POV assets",
+                    "turning_metric": "organic sessions -> trial rate",
+                    "cycle_time": "~6 weeks per asset to rank",
+                    "reinvestment": "revenue funds more production",
+                    "why_not_the_others": "viral: no in-product share reason; paid: margin not ready; sales-led: ACV too low",
+                },
+                "channel_plan": [],
+                "lightning_strike": {},
+                "content_engine": {},
+                "funnel": [],
+                "plan_90_days": [],
+                "week_1_actions": [
+                    "Publish the POV piece the positioning implies",
+                    "Pin it everywhere the brand has presence",
+                    "DM 10 best-fit customers for reactions",
+                ],
+                "budget_shape": {
+                    "allocation": {"content": "60%", "channels": "25%", "tools": "15%"},
+                    "constraint": "founder time",
+                },
+                "north_star_metric": "weekly best-fit trials started",
+                "anti_goals": [
+                    "Run paid before the offer converts organically",
+                    "Post on 6 platforms at once",
+                    "Chase follower count",
+                ],
+                "alternative_angles": [],
+            },
+            "The loop choice must show scores and beat the alternatives on them. "
+            "Every channel needs an effort estimate and a kill signal. The content "
+            "engine must derive from the brand's story spine, not generic topics.",
+        )
+        return await self._save(
+            GTMPlan(
+                business_id=business_id,
+                primary_growth_loop=d.get("primary_growth_loop"),
+                channels=d.get("channel_plan") or d.get("channels"),
+                lightning_strike=d.get("lightning_strike"),
+                funnel=d.get("funnel"),
+                content_pillars=(d.get("content_engine") or {}).get("pillars")
+                or d.get("content_pillars"),
+                plan_90_days=d.get("plan_90_days"),
+                loop_evaluation=d.get("loop_evaluation"),
+                channel_plan=d.get("channel_plan"),
+                content_engine=d.get("content_engine"),
+                week_1_actions=d.get("week_1_actions"),
+                budget_shape=d.get("budget_shape"),
+                anti_goals=d.get("anti_goals"),
+                north_star_metric=d.get("north_star_metric"),
+                alternative_angles=d.get("alternative_angles"),
+                confidence=_int(d.get("confidence"), 60),
+                frameworks_applied=d.get("frameworks_applied"),
+                generated_by=d.get("_generated_by", "unknown"),
+            )
+        )
 
 
 class RestructuringAgent(_BaseAgent):
@@ -1076,7 +1562,13 @@ class RestructuringAgent(_BaseAgent):
     sequenced with dependencies.
     """
 
-    async def run(self, business_id: uuid.UUID, profile: dict, context: dict | None = None, extra: str | None = None) -> RestructuringPlan:
+    async def run(
+        self,
+        business_id: uuid.UUID,
+        profile: dict,
+        context: dict | None = None,
+        extra: str | None = None,
+    ) -> RestructuringPlan:
         prompt = f"""{_profile_block(profile)}
 
 {_stage_context_digest(context)}
@@ -1111,35 +1603,79 @@ Return JSON:
   "transition_risks": [{{"risk": "morale | capacity | customer disruption during the change", "mitigation": "..."}}],
   "alternative_angles": [{{"angle": "lean — founder holds more, hires later", "when_to_pick": "..."}}, {{"angle": "hire ahead of the curve", "when_to_pick": "..."}}]
 }}"""
-        d = await _draft_then_refine(prompt, {
-            "kill": [], "keep": [], "scale": [], "capability_gaps": [],
-            "the_one_hire": "none — no hire in the first 90 days; fix process before adding people",
-            "org_redesign": "Keep the team small; one named owner per core process and per key decision, with authority to decide, not just execute.",
-            "decision_rights": [], "core_processes": [],
-            "operating_rhythm": {"daily": {"purpose": "unblock", "attendees": "core team", "output": "today's ship list"}, "weekly": {"purpose": "metrics + one decision", "attendees": "owners", "output": "the week's call"}, "monthly": {"purpose": "stage retro", "attendees": "all", "output": "re-ranked roadmap"}, "quarterly": {"purpose": "re-diagnose", "attendees": "founder + advisors", "output": "reset targets"}},
-            "promise_kpis": [],
-            "unit_economics_gate": {"must_hold": [{"metric": "CAC payback", "threshold": "<= 3 months", "why": "beyond that, growth burns cash faster than it earns"}], "pause_growth_trigger": "CAC payback slips past 4 months two months running"},
-            "unit_economics_notes": "Contribution margin must cover CAC within ~3 months of first purchase, or scaling makes losses bigger, not the business.",
-            "operating_plan_90d": [], "transition_risks": [], "alternative_angles": [],
-        }, "The kill list is the point — each needs the sunk-cost rebuttal and who "
-           "fights it. One owner per decision, no committees. Every core process "
-           "names the promise it protects. The gate needs a concrete pause trigger.")
-        return await self._save(RestructuringPlan(
-            business_id=business_id,
-            kill=d.get("kill"), keep=d.get("keep"), scale=d.get("scale"),
-            org_redesign=d.get("org_redesign"),
-            core_processes=d.get("core_processes"),
-            promise_kpis=d.get("promise_kpis"),
-            unit_economics_notes=d.get("unit_economics_notes"),
-            capability_gaps=d.get("capability_gaps"),
-            decision_rights=d.get("decision_rights"),
-            operating_rhythm=d.get("operating_rhythm"),
-            unit_economics_gate=d.get("unit_economics_gate"),
-            operating_plan_90d=d.get("operating_plan_90d"),
-            transition_risks=d.get("transition_risks"),
-            the_one_hire=d.get("the_one_hire"),
-            alternative_angles=d.get("alternative_angles"),
-            confidence=_int(d.get("confidence"), 60),
-            frameworks_applied=d.get("frameworks_applied"),
-            generated_by=d.get("_generated_by", "unknown"),
-        ))
+        d = await _draft_then_refine(
+            prompt,
+            {
+                "kill": [],
+                "keep": [],
+                "scale": [],
+                "capability_gaps": [],
+                "the_one_hire": "none — no hire in the first 90 days; fix process before adding people",
+                "org_redesign": "Keep the team small; one named owner per core process and per key decision, with authority to decide, not just execute.",
+                "decision_rights": [],
+                "core_processes": [],
+                "operating_rhythm": {
+                    "daily": {
+                        "purpose": "unblock",
+                        "attendees": "core team",
+                        "output": "today's ship list",
+                    },
+                    "weekly": {
+                        "purpose": "metrics + one decision",
+                        "attendees": "owners",
+                        "output": "the week's call",
+                    },
+                    "monthly": {
+                        "purpose": "stage retro",
+                        "attendees": "all",
+                        "output": "re-ranked roadmap",
+                    },
+                    "quarterly": {
+                        "purpose": "re-diagnose",
+                        "attendees": "founder + advisors",
+                        "output": "reset targets",
+                    },
+                },
+                "promise_kpis": [],
+                "unit_economics_gate": {
+                    "must_hold": [
+                        {
+                            "metric": "CAC payback",
+                            "threshold": "<= 3 months",
+                            "why": "beyond that, growth burns cash faster than it earns",
+                        }
+                    ],
+                    "pause_growth_trigger": "CAC payback slips past 4 months two months running",
+                },
+                "unit_economics_notes": "Contribution margin must cover CAC within ~3 months of first purchase, or scaling makes losses bigger, not the business.",
+                "operating_plan_90d": [],
+                "transition_risks": [],
+                "alternative_angles": [],
+            },
+            "The kill list is the point — each needs the sunk-cost rebuttal and who "
+            "fights it. One owner per decision, no committees. Every core process "
+            "names the promise it protects. The gate needs a concrete pause trigger.",
+        )
+        return await self._save(
+            RestructuringPlan(
+                business_id=business_id,
+                kill=d.get("kill"),
+                keep=d.get("keep"),
+                scale=d.get("scale"),
+                org_redesign=d.get("org_redesign"),
+                core_processes=d.get("core_processes"),
+                promise_kpis=d.get("promise_kpis"),
+                unit_economics_notes=d.get("unit_economics_notes"),
+                capability_gaps=d.get("capability_gaps"),
+                decision_rights=d.get("decision_rights"),
+                operating_rhythm=d.get("operating_rhythm"),
+                unit_economics_gate=d.get("unit_economics_gate"),
+                operating_plan_90d=d.get("operating_plan_90d"),
+                transition_risks=d.get("transition_risks"),
+                the_one_hire=d.get("the_one_hire"),
+                alternative_angles=d.get("alternative_angles"),
+                confidence=_int(d.get("confidence"), 60),
+                frameworks_applied=d.get("frameworks_applied"),
+                generated_by=d.get("_generated_by", "unknown"),
+            )
+        )

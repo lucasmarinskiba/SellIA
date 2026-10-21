@@ -48,6 +48,7 @@ async def list_diagnostics(
     from sqlalchemy import desc, select
 
     from app.domains.diagnostics.models import DiagnosticRun
+
     result = await db.execute(
         select(DiagnosticRun)
         .where(DiagnosticRun.user_id == current_user.id)

@@ -17,14 +17,18 @@ router = APIRouter(prefix="/fomo/ai/churn", tags=["fomo-ai-churn"])
 
 @router.post("/score")
 async def score_customer(
-    purchases: Annotated[list[dict[str, Any]], Body(description='[{"date": iso8601, "amount": float}]')],
+    purchases: Annotated[
+        list[dict[str, Any]], Body(description='[{"date": iso8601, "amount": float}]')
+    ],
     current_user: Annotated[User, Depends(get_current_user)],
     send_history: Annotated[list[dict[str, Any]] | None, Body()] = None,
 ):
     """Score one customer's churn risk (heuristic — no labeled training data needed)"""
     parsed_purchases = _parse_dates(purchases, "date")
     parsed_history = _parse_dates(send_history or [], "sent_at")
-    return AIChurnPreventionAgent.score_customer(parsed_purchases, parsed_history or None)
+    return AIChurnPreventionAgent.score_customer(
+        parsed_purchases, parsed_history or None
+    )
 
 
 @router.post("/evaluate-and-trigger")
@@ -34,7 +38,9 @@ async def evaluate_and_trigger(
     batch_monetary_values: Annotated[list[float], Body()],
     current_user: Annotated[User, Depends(get_current_user)],
     send_history: Annotated[list[dict[str, Any]] | None, Body()] = None,
-    threshold: Annotated[float, Query(ge=0.0, le=1.0)] = WinBackTriggerEngine.DEFAULT_THRESHOLD,
+    threshold: Annotated[
+        float, Query(ge=0.0, le=1.0)
+    ] = WinBackTriggerEngine.DEFAULT_THRESHOLD,
 ):
     """Score risk, decide win-back trigger, size a personalized offer if triggered"""
     parsed_purchases = _parse_dates(purchases, "date")
@@ -50,18 +56,27 @@ async def evaluate_and_trigger(
 
 @router.post("/batch-evaluate")
 async def batch_evaluate(
-    customers: Annotated[list[dict[str, Any]], Body(description='[{"customer_id": str, "purchases": [{"date": iso8601, "amount": float}]}]')],
+    customers: Annotated[
+        list[dict[str, Any]],
+        Body(
+            description='[{"customer_id": str, "purchases": [{"date": iso8601, "amount": float}]}]'
+        ),
+    ],
     current_user: Annotated[User, Depends(get_current_user)],
     fatigue_data: Annotated[dict[str, list[dict[str, Any]]] | None, Body()] = None,
-    threshold: Annotated[float, Query(ge=0.0, le=1.0)] = WinBackTriggerEngine.DEFAULT_THRESHOLD,
+    threshold: Annotated[
+        float, Query(ge=0.0, le=1.0)
+    ] = WinBackTriggerEngine.DEFAULT_THRESHOLD,
 ):
     """Batch churn-risk scoring + win-back trigger across all customers"""
     parsed_customers = []
     for c in customers:
-        parsed_customers.append({
-            "customer_id": c["customer_id"],
-            "purchases": _parse_dates(c.get("purchases", []), "date"),
-        })
+        parsed_customers.append(
+            {
+                "customer_id": c["customer_id"],
+                "purchases": _parse_dates(c.get("purchases", []), "date"),
+            }
+        )
 
     parsed_fatigue = None
     if fatigue_data:

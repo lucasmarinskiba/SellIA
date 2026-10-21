@@ -67,6 +67,7 @@ class ThreatIntelMiddleware(BaseHTTPMiddleware):
         blocked_countries = await get_blocked_countries()
         if is_country_blocked(country, blocked_countries):
             from fastapi.responses import JSONResponse
+
             return JSONResponse(
                 status_code=403,
                 content={

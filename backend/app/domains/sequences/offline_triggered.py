@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 class OfflineTriggerType(str, Enum):
     """Triggers that fire based on offline conversion events."""
+
     VISIT_COMPLETED = "visit_completed"
     DEMO_COMPLETED = "demo_completed"
     TOUR_COMPLETED = "tour_completed"
@@ -25,6 +26,7 @@ class OfflineTriggerType(str, Enum):
 
 class OfflineSequenceTemplate(str, Enum):
     """Predefined sequences triggered by offline events."""
+
     POST_VISIT_THANK_YOU = "post_visit_thank_you"
     POST_DEMO_SUMMARY = "post_demo_summary"
     POST_DEMO_PROPOSAL = "post_demo_proposal"
@@ -58,8 +60,7 @@ class OfflineSequenceService:
 
     @staticmethod
     def get_sequence_for_offline_event(
-        offline_conversion: OfflineConversion,
-        purchased: bool = False
+        offline_conversion: OfflineConversion, purchased: bool = False
     ) -> OfflineSequenceTemplate | None:
         """Determine sequence based on visit outcome."""
         visit_type = offline_conversion.visit_type
@@ -73,7 +74,10 @@ class OfflineSequenceService:
             return OfflineSequenceTemplate.POST_TOUR_PROPOSAL
 
         if visit_type in (VisitType.WALK_IN, VisitType.QR_SCAN):
-            if offline_conversion.dwell_minutes and offline_conversion.dwell_minutes > 30:
+            if (
+                offline_conversion.dwell_minutes
+                and offline_conversion.dwell_minutes > 30
+            ):
                 return OfflineSequenceTemplate.WIN_BACK
             else:
                 return OfflineSequenceTemplate.ABANDON_VISIT
@@ -86,7 +90,7 @@ class OfflineSequenceService:
         offline_conversion_id: UUID,
         sequence_template: OfflineSequenceTemplate,
         delay_hours: int | None = None,
-        db: Session | None = None
+        db: Session | None = None,
     ) -> dict:
         """Create automation execution for offline-triggered sequence."""
         if not db:
@@ -121,11 +125,12 @@ class OfflineSequenceService:
 
     @staticmethod
     def should_trigger_referral_sequence(
-        offline_conversion: OfflineConversion,
-        satisfaction_threshold: float = 4.0
+        offline_conversion: OfflineConversion, satisfaction_threshold: float = 4.0
     ) -> bool:
         """Determine if offline visit warrants referral request."""
         if offline_conversion.purchased:
             return True
 
-        return bool(offline_conversion.dwell_minutes and offline_conversion.dwell_minutes > 45)
+        return bool(
+            offline_conversion.dwell_minutes and offline_conversion.dwell_minutes > 45
+        )

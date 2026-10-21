@@ -38,10 +38,12 @@ class AlertService:
 
     async def list_rules(self, business_id: uuid.UUID) -> list[AlertRule]:
         result = await self.db.execute(
-            select(AlertRule).where(
+            select(AlertRule)
+            .where(
                 AlertRule.business_id == business_id,
                 AlertRule.is_active == True,
-            ).order_by(desc(AlertRule.created_at))
+            )
+            .order_by(desc(AlertRule.created_at))
         )
         return result.scalars().all()
 
@@ -49,7 +51,9 @@ class AlertService:
         result = await self.db.execute(select(AlertRule).where(AlertRule.id == rule_id))
         return result.scalar_one_or_none()
 
-    async def update_rule(self, rule_id: uuid.UUID, data: AlertRuleUpdate) -> AlertRule | None:
+    async def update_rule(
+        self, rule_id: uuid.UUID, data: AlertRuleUpdate
+    ) -> AlertRule | None:
         rule = await self.get_rule(rule_id)
         if not rule:
             return None
@@ -163,12 +167,16 @@ class AlertService:
         query = select(Recommendation).where(Recommendation.business_id == business_id)
         if status:
             query = query.where(Recommendation.status == status)
-        query = query.order_by(desc(Recommendation.priority), desc(Recommendation.created_at)).limit(limit)
+        query = query.order_by(
+            desc(Recommendation.priority), desc(Recommendation.created_at)
+        ).limit(limit)
         result = await self.db.execute(query)
         return result.scalars().all()
 
     async def get_recommendation(self, rec_id: uuid.UUID) -> Recommendation | None:
-        result = await self.db.execute(select(Recommendation).where(Recommendation.id == rec_id))
+        result = await self.db.execute(
+            select(Recommendation).where(Recommendation.id == rec_id)
+        )
         return result.scalar_one_or_none()
 
     async def apply_recommendation(

@@ -28,7 +28,9 @@ _SAFE_SCHEMA_NAME = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]{0,62}$")
 
 def _assert_safe_schema_identifier(schema: str) -> str:
     if not _SAFE_SCHEMA_NAME.match(schema):
-        raise AppException(f"Invalid tenant schema identifier: {schema!r}", status_code=500)
+        raise AppException(
+            f"Invalid tenant schema identifier: {schema!r}", status_code=500
+        )
     return schema
 
 
@@ -199,18 +201,14 @@ class TenantIsolation:
         schema = _assert_safe_schema_identifier(await self.get_tenant_schema(tenant_id))
 
         # Set schema for this connection
-        await self.db.execute(
-            text(f"SET search_path = {schema}, public")
-        )
+        await self.db.execute(text(f"SET search_path = {schema}, public"))
 
     async def create_tenant_schema(self, tenant_id: str) -> None:
         """
         Create isolated PostgreSQL schema for tenant.
         Run during tenant creation.
         """
-        tenant = await self.db.execute(
-            select(Tenant).where(Tenant.id == tenant_id)
-        )
+        tenant = await self.db.execute(select(Tenant).where(Tenant.id == tenant_id))
         tenant_obj = tenant.scalar_one_or_none()
 
         if not tenant_obj:
@@ -220,15 +218,11 @@ class TenantIsolation:
 
         try:
             # Create schema
-            await self.db.execute(
-                text(f"CREATE SCHEMA IF NOT EXISTS {schema}")
-            )
+            await self.db.execute(text(f"CREATE SCHEMA IF NOT EXISTS {schema}"))
 
             # Grant permissions to app user
             app_user = "postgres_app_user"  # Configure in .env
-            await self.db.execute(
-                text(f"GRANT USAGE ON SCHEMA {schema} TO {app_user}")
-            )
+            await self.db.execute(text(f"GRANT USAGE ON SCHEMA {schema} TO {app_user}"))
             await self.db.execute(
                 text(f"GRANT CREATE ON SCHEMA {schema} TO {app_user}")
             )
@@ -260,9 +254,7 @@ class TenantIsolation:
         Drop tenant schema (hard delete).
         CASCADE deletes all objects in schema.
         """
-        tenant = await self.db.execute(
-            select(Tenant).where(Tenant.id == tenant_id)
-        )
+        tenant = await self.db.execute(select(Tenant).where(Tenant.id == tenant_id))
         tenant_obj = tenant.scalar_one_or_none()
 
         if not tenant_obj:
@@ -271,9 +263,7 @@ class TenantIsolation:
         schema = _assert_safe_schema_identifier(tenant_obj.schema_name)
 
         try:
-            await self.db.execute(
-                text(f"DROP SCHEMA IF EXISTS {schema} CASCADE")
-            )
+            await self.db.execute(text(f"DROP SCHEMA IF EXISTS {schema} CASCADE"))
             await self.db.commit()
 
             logger.warning(
@@ -352,6 +342,7 @@ class TenantIsolationMiddleware:
 
         except AppException as e:
             from fastapi.responses import JSONResponse
+
             return JSONResponse(
                 status_code=e.status_code,
                 content={"detail": e.message},

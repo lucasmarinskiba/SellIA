@@ -45,16 +45,18 @@ class BotFocus(str, enum.Enum):
     """
 
     AUTO = "auto"
-    ATTRACT = "acquisition"    # atraer clientes / generar interés
-    CLOSE = "conversion"       # cerrar la venta
-    RETAIN = "retention"       # fidelizar / posventa
-    GROW = "expansion"         # upsell, cross-sell, referidos
+    ATTRACT = "acquisition"  # atraer clientes / generar interés
+    CLOSE = "conversion"  # cerrar la venta
+    RETAIN = "retention"  # fidelizar / posventa
+    GROW = "expansion"  # upsell, cross-sell, referidos
 
 
 class PlatformBot(Base):
     __tablename__ = "platform_bots"
     __table_args__ = (
-        UniqueConstraint("business_id", "platform", name="uq_platform_bots_business_platform"),
+        UniqueConstraint(
+            "business_id", "platform", name="uq_platform_bots_business_platform"
+        ),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

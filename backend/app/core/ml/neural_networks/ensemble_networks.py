@@ -85,7 +85,9 @@ class ModelSelectionResult:
             "best_model": self.best_model,
             "selection_reason": self.selection_reason,
             "top_models": [(name, float(score)) for name, score in self.top_models],
-            "performance_scores": {k: float(v) for k, v in self.performance_scores.items()},
+            "performance_scores": {
+                k: float(v) for k, v in self.performance_scores.items()
+            },
             "recommended_ensemble": self.recommended_ensemble,
             "timestamp": self.timestamp.isoformat(),
         }
@@ -103,14 +105,18 @@ class EnsemblePredictor:
         self.voting_classifier: VotingClassifier | None = None
         self.is_trained = False
 
-    def add_model(self, name: str, model: BaseEstimator, weight: float = 1.0) -> "EnsemblePredictor":
+    def add_model(
+        self, name: str, model: BaseEstimator, weight: float = 1.0
+    ) -> "EnsemblePredictor":
         """Add model to ensemble."""
         self.models[name] = model
         self.model_weights[name] = weight
         logger.info(f"Model '{name}' added to ensemble with weight {weight}")
         return self
 
-    def fit(self, X: np.ndarray, y: np.ndarray, task: str = "regression") -> "EnsemblePredictor":
+    def fit(
+        self, X: np.ndarray, y: np.ndarray, task: str = "regression"
+    ) -> "EnsemblePredictor":
         """Fit all ensemble models."""
         if not self.models:
             raise ValueError("No models added to ensemble")
@@ -120,11 +126,15 @@ class EnsemblePredictor:
 
         if task == "regression":
             weights = [self.model_weights.get(name, 1.0) for name, _ in estimators]
-            self.voting_regressor = VotingRegressor(estimators=estimators, weights=weights)
+            self.voting_regressor = VotingRegressor(
+                estimators=estimators, weights=weights
+            )
             self.voting_regressor.fit(X, y)
         else:
             weights = [self.model_weights.get(name, 1.0) for name, _ in estimators]
-            self.voting_classifier = VotingClassifier(estimators=estimators, weights=weights)
+            self.voting_classifier = VotingClassifier(
+                estimators=estimators, weights=weights
+            )
             self.voting_classifier.fit(X, y)
 
         self.is_trained = True
@@ -141,7 +151,9 @@ class EnsemblePredictor:
         else:
             return self.voting_classifier.predict(X)
 
-    def predict_with_votes(self, X: np.ndarray, task: str = "regression") -> tuple[np.ndarray, list[list[EnsembleVote]]]:
+    def predict_with_votes(
+        self, X: np.ndarray, task: str = "regression"
+    ) -> tuple[np.ndarray, list[list[EnsembleVote]]]:
         """Get predictions with individual model votes."""
         if not self.models:
             raise ValueError("No models in ensemble")
@@ -149,7 +161,7 @@ class EnsemblePredictor:
         all_votes = []
 
         for i in range(len(X)):
-            sample = X[i:i + 1]
+            sample = X[i : i + 1]
             votes = []
 
             for name, model in self.models.items():
@@ -212,7 +224,9 @@ class UncertaintyEstimator:
         self.base_model: BaseEstimator | None = None
         self.bootstrap_models: list[BaseEstimator] = []
 
-    def fit(self, X: np.ndarray, y: np.ndarray, base_model: BaseEstimator) -> "UncertaintyEstimator":
+    def fit(
+        self, X: np.ndarray, y: np.ndarray, base_model: BaseEstimator
+    ) -> "UncertaintyEstimator":
         """Fit uncertainty estimator using bootstrap."""
         from sklearn.utils import resample
 
@@ -238,7 +252,7 @@ class UncertaintyEstimator:
         predictions = []
 
         for i in range(len(X)):
-            sample = X[i:i + 1]
+            sample = X[i : i + 1]
 
             # Get predictions from all bootstrap models
             boot_preds = [model.predict(sample)[0] for model in self.bootstrap_models]
@@ -278,7 +292,13 @@ class ModelSelector:
         self.model_scores: dict[str, float] = {}
         self.candidate_models: dict[str, BaseEstimator] = {}
 
-    def evaluate_models(self, X: np.ndarray, y: np.ndarray, models: dict[str, BaseEstimator], task: str = "regression") -> ModelSelectionResult:
+    def evaluate_models(
+        self,
+        X: np.ndarray,
+        y: np.ndarray,
+        models: dict[str, BaseEstimator],
+        task: str = "regression",
+    ) -> ModelSelectionResult:
         """Evaluate and rank models."""
         from sklearn.model_selection import cross_val_score
 
@@ -286,7 +306,13 @@ class ModelSelector:
 
         for name, model in models.items():
             try:
-                scores = cross_val_score(model, X, y, cv=5, scoring="r2" if task == "regression" else "accuracy")
+                scores = cross_val_score(
+                    model,
+                    X,
+                    y,
+                    cv=5,
+                    scoring="r2" if task == "regression" else "accuracy",
+                )
                 self.model_scores[name] = float(np.mean(scores))
             except Exception as e:
                 logger.warning(f"Error evaluating {name}: {e}", exc_info=True)
@@ -325,16 +351,22 @@ class BoostingEngine:
         self.classifier: GradientBoostingClassifier | None = None
         self.is_trained = False
 
-    def fit(self, X: np.ndarray, y: np.ndarray, task: str = "regression") -> "BoostingEngine":
+    def fit(
+        self, X: np.ndarray, y: np.ndarray, task: str = "regression"
+    ) -> "BoostingEngine":
         """Train boosting model."""
         if task == "regression":
             self.regressor = GradientBoostingRegressor(
-                n_estimators=self.n_estimators, learning_rate=self.learning_rate, random_state=42
+                n_estimators=self.n_estimators,
+                learning_rate=self.learning_rate,
+                random_state=42,
             )
             self.regressor.fit(X, y)
         else:
             self.classifier = GradientBoostingClassifier(
-                n_estimators=self.n_estimators, learning_rate=self.learning_rate, random_state=42
+                n_estimators=self.n_estimators,
+                learning_rate=self.learning_rate,
+                random_state=42,
             )
             self.classifier.fit(X, y)
 
@@ -366,24 +398,36 @@ class BoostingEngine:
 class BaggingEngine:
     """Bootstrap aggregating for variance reduction."""
 
-    def __init__(self, n_estimators: int = 10, base_estimator: BaseEstimator | None = None):
+    def __init__(
+        self, n_estimators: int = 10, base_estimator: BaseEstimator | None = None
+    ):
         self.n_estimators = n_estimators
         self.base_estimator = base_estimator
         self.regressor: BaggingRegressor | None = None
         self.classifier: BaggingClassifier | None = None
         self.is_trained = False
 
-    def fit(self, X: np.ndarray, y: np.ndarray, task: str = "regression") -> "BaggingEngine":
+    def fit(
+        self, X: np.ndarray, y: np.ndarray, task: str = "regression"
+    ) -> "BaggingEngine":
         """Train bagging model."""
         from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
-        base_est = self.base_estimator or (DecisionTreeRegressor() if task == "regression" else DecisionTreeClassifier())
+        base_est = self.base_estimator or (
+            DecisionTreeRegressor()
+            if task == "regression"
+            else DecisionTreeClassifier()
+        )
 
         if task == "regression":
-            self.regressor = BaggingRegressor(estimator=base_est, n_estimators=self.n_estimators, random_state=42)
+            self.regressor = BaggingRegressor(
+                estimator=base_est, n_estimators=self.n_estimators, random_state=42
+            )
             self.regressor.fit(X, y)
         else:
-            self.classifier = BaggingClassifier(estimator=base_est, n_estimators=self.n_estimators, random_state=42)
+            self.classifier = BaggingClassifier(
+                estimator=base_est, n_estimators=self.n_estimators, random_state=42
+            )
             self.classifier.fit(X, y)
 
         self.is_trained = True

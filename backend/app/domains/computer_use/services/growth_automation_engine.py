@@ -93,12 +93,14 @@ class GrowthAutomationEngine:
                     strategy=posting_strategy,
                 )
 
-                posts_to_publish.append({
-                    "post": post,
-                    "trending_topic": topic,
-                    "image_theme": image_theme,
-                    "style": style.value,
-                })
+                posts_to_publish.append(
+                    {
+                        "post": post,
+                        "trending_topic": topic,
+                        "image_theme": image_theme,
+                        "style": style.value,
+                    }
+                )
 
                 self.logger.info(f"Generated post for trend: {topic.topic}")
 
@@ -111,20 +113,28 @@ class GrowthAutomationEngine:
                     post=post_data["post"],
                 )
 
-                publish_results.append({
-                    "post_id": post_data["post"].post_id,
-                    "success": success,
-                    "topic": post_data["trending_topic"].topic,
-                    "scheduled_time": post_data["post"].scheduled_time.isoformat(),
-                })
+                publish_results.append(
+                    {
+                        "post_id": post_data["post"].post_id,
+                        "success": success,
+                        "topic": post_data["trending_topic"].topic,
+                        "scheduled_time": post_data["post"].scheduled_time.isoformat(),
+                    }
+                )
 
                 if success:
-                    await self.publisher.update_post_status(post_data["post"].post_id, "published")
+                    await self.publisher.update_post_status(
+                        post_data["post"].post_id, "published"
+                    )
 
             # 4. GET ANALYTICS
             metrics = await self.analytics.get_account_metrics(platform, account_id)
-            top_posts = await self.analytics.get_top_posts(platform, account_id, limit=3)
-            recommendations = await self.analytics.analyze_content_performance(platform, account_id)
+            top_posts = await self.analytics.get_top_posts(
+                platform, account_id, limit=3
+            )
+            recommendations = await self.analytics.analyze_content_performance(
+                platform, account_id
+            )
 
             result = {
                 "status": "success",
@@ -144,7 +154,9 @@ class GrowthAutomationEngine:
                 "next_cycle": (utc_now() + timedelta(hours=6)).isoformat(),
             }
 
-            self.logger.info(f"Daily growth cycle completed: {len(posts_to_publish)} posts created")
+            self.logger.info(
+                f"Daily growth cycle completed: {len(posts_to_publish)} posts created"
+            )
 
             return result
 
@@ -160,7 +172,9 @@ class GrowthAutomationEngine:
         """Obtiene recomendaciones de crecimiento."""
         try:
             # Analizar performance
-            performance = await self.analytics.analyze_content_performance(platform, account_id)
+            performance = await self.analytics.analyze_content_performance(
+                platform, account_id
+            )
             metrics = await self.analytics.get_account_metrics(platform, account_id)
 
             # Predecir growth

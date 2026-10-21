@@ -37,7 +37,9 @@ class CreateCampaignRequest(BaseModel):
     discount_pct: int | None = None
     customer_count: int = Field(default=1000)
     urgency_days: int = Field(default=7)
-    platforms: list[str] = Field(..., description="facebook, instagram, google_search, tiktok")
+    platforms: list[str] = Field(
+        ..., description="facebook, instagram, google_search, tiktok"
+    )
     daily_budget: float = Field(..., gt=0)
     duration_days: int = Field(default=7, ge=1, le=90)
     target_audience: dict[str, Any] | None = None
@@ -140,7 +142,10 @@ async def create_ad_campaign(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/ads/campaigns/{campaign_id}/performance", response_model=CampaignPerformanceResponse)
+@router.get(
+    "/ads/campaigns/{campaign_id}/performance",
+    response_model=CampaignPerformanceResponse,
+)
 async def get_campaign_performance(
     campaign_id: str,
     db: Annotated[AsyncSession, Depends(get_db)],

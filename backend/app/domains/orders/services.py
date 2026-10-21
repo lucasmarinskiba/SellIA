@@ -25,7 +25,11 @@ class EcommerceWebhookProcessor:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    _CONVERTED_ORDER_STATUSES = (OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED)
+    _CONVERTED_ORDER_STATUSES = (
+        OrderStatus.PAID,
+        OrderStatus.SHIPPED,
+        OrderStatus.DELIVERED,
+    )
 
     async def process_order_webhook(
         self,
@@ -51,14 +55,19 @@ class EcommerceWebhookProcessor:
         elif platform == "etsy":
             order = await self._process_etsy(channel, conversation, extra)
         elif platform == "facebook_marketplace":
-            order = await self._process_facebook_marketplace(channel, conversation, extra)
+            order = await self._process_facebook_marketplace(
+                channel, conversation, extra
+            )
 
         if order and order.status in self._CONVERTED_ORDER_STATUSES:
             try:
                 from app.domains.agents.funnel_ab_bridge import record_stage_conversion
+
                 await record_stage_conversion(self.db, conversation)
             except Exception as e:
-                logger.warning(f"Failed to record funnel A/B conversion: {e}", exc_info=True)
+                logger.warning(
+                    f"Failed to record funnel A/B conversion: {e}", exc_info=True
+                )
 
         return order
 
@@ -91,10 +100,20 @@ class EcommerceWebhookProcessor:
             currency=currency,
             status=self._map_shopify_status(financial_status, fulfillment_status),
             payment_status=self._map_payment_status(financial_status),
-            customer_name=customer.get("first_name", "") + " " + customer.get("last_name", ""),
+            customer_name=customer.get("first_name", "")
+            + " "
+            + customer.get("last_name", ""),
             customer_email=customer.get("email"),
             customer_phone=customer.get("phone"),
-            items=[{"name": li.get("title", ""), "qty": li.get("quantity", 1), "price": str(li.get("price", "0")), "sku": li.get("sku", "")} for li in line_items],
+            items=[
+                {
+                    "name": li.get("title", ""),
+                    "qty": li.get("quantity", 1),
+                    "price": str(li.get("price", "0")),
+                    "sku": li.get("sku", ""),
+                }
+                for li in line_items
+            ],
             source_channel="shopify",
         )
         return order
@@ -128,7 +147,15 @@ class EcommerceWebhookProcessor:
             payment_status=PaymentStatus.PENDING,
             customer_name=buyer.get("nickname", ""),
             customer_email=buyer.get("email"),
-            items=[{"name": i.get("item", {}).get("title", ""), "qty": i.get("quantity", 1), "price": str(i.get("unit_price", "0")), "sku": i.get("item", {}).get("seller_sku", "")} for i in items],
+            items=[
+                {
+                    "name": i.get("item", {}).get("title", ""),
+                    "qty": i.get("quantity", 1),
+                    "price": str(i.get("unit_price", "0")),
+                    "sku": i.get("item", {}).get("seller_sku", ""),
+                }
+                for i in items
+            ],
             source_channel="mercadolibre",
         )
         return order
@@ -140,7 +167,9 @@ class EcommerceWebhookProcessor:
         extra: dict[str, Any],
     ) -> Order | None:
         payload_data = extra.get("Payload", {})
-        order_change = payload_data.get("OrderChangeNotification", {}).get("OrderChange", {})
+        order_change = payload_data.get("OrderChangeNotification", {}).get(
+            "OrderChange", {}
+        )
         order_id = str(order_change.get("OrderId", ""))
         if not order_id:
             return None
@@ -152,12 +181,14 @@ class EcommerceWebhookProcessor:
             price = Decimal(str(item.get("ItemPrice", {}).get("Amount", "0")))
             qty = item.get("QuantityOrdered", 1)
             total += price * qty
-            items.append({
-                "name": item.get("Title", ""),
-                "qty": qty,
-                "price": str(price),
-                "sku": item.get("SellerSKU", ""),
-            })
+            items.append(
+                {
+                    "name": item.get("Title", ""),
+                    "qty": qty,
+                    "price": str(price),
+                    "sku": item.get("SellerSKU", ""),
+                }
+            )
 
         order = await self._upsert_order(
             business_id=channel.business_id,
@@ -206,11 +237,20 @@ class EcommerceWebhookProcessor:
             total_amount=total,
             currency=currency,
             status=self._map_hotmart_status(event, purchase.get("status", "")),
-            payment_status=self._map_hotmart_payment_status(event, purchase.get("status", "")),
+            payment_status=self._map_hotmart_payment_status(
+                event, purchase.get("status", "")
+            ),
             customer_name=buyer.get("name", ""),
             customer_email=buyer.get("email"),
             customer_phone=buyer.get("checkout_phone"),
-            items=[{"name": product.get("name", ""), "qty": 1, "price": str(total), "sku": str(product.get("id", ""))}],
+            items=[
+                {
+                    "name": product.get("name", ""),
+                    "qty": 1,
+                    "price": str(total),
+                    "sku": str(product.get("id", "")),
+                }
+            ],
             source_channel="hotmart",
         )
         return order
@@ -240,11 +280,21 @@ class EcommerceWebhookProcessor:
             total_amount=Decimal(str(extra.get("total", "0") or "0")),
             currency=extra.get("currency", "USD"),
             status=self._map_woocommerce_status(extra.get("status", "pending")),
-            payment_status=self._map_woocommerce_payment_status(extra.get("status", "pending")),
+            payment_status=self._map_woocommerce_payment_status(
+                extra.get("status", "pending")
+            ),
             customer_name=f"{billing.get('first_name', '')} {billing.get('last_name', '')}".strip(),
             customer_email=billing.get("email"),
             customer_phone=billing.get("phone"),
-            items=[{"name": li.get("name", ""), "qty": li.get("quantity", 1), "price": str(li.get("total", "0")), "sku": li.get("sku", "")} for li in line_items],
+            items=[
+                {
+                    "name": li.get("name", ""),
+                    "qty": li.get("quantity", 1),
+                    "price": str(li.get("total", "0")),
+                    "sku": li.get("sku", ""),
+                }
+                for li in line_items
+            ],
             source_channel="woocommerce",
         )
         return order
@@ -263,7 +313,11 @@ class EcommerceWebhookProcessor:
         divisor = grandtotal.get("divisor", 100) or 100
         total = Decimal(str(grandtotal.get("amount", 0))) / Decimal(str(divisor))
         currency = grandtotal.get("currency_code", "USD")
-        status = "shipped" if extra.get("is_shipped") else ("paid" if extra.get("is_paid") else "unpaid")
+        status = (
+            "shipped"
+            if extra.get("is_shipped")
+            else ("paid" if extra.get("is_paid") else "unpaid")
+        )
         transactions = extra.get("transactions", [])
 
         order = await self._upsert_order(
@@ -275,10 +329,22 @@ class EcommerceWebhookProcessor:
             total_amount=total,
             currency=currency,
             status=self._map_etsy_status(status),
-            payment_status=PaymentStatus.COMPLETED if extra.get("is_paid") else PaymentStatus.PENDING,
+            payment_status=(
+                PaymentStatus.COMPLETED
+                if extra.get("is_paid")
+                else PaymentStatus.PENDING
+            ),
             customer_name=extra.get("name", ""),
             customer_email=extra.get("buyer_email"),
-            items=[{"name": t.get("title", ""), "qty": t.get("quantity", 1), "price": str((t.get("price") or {}).get("amount", 0)), "sku": t.get("sku", "")} for t in transactions],
+            items=[
+                {
+                    "name": t.get("title", ""),
+                    "qty": t.get("quantity", 1),
+                    "price": str((t.get("price") or {}).get("amount", 0)),
+                    "sku": t.get("sku", ""),
+                }
+                for t in transactions
+            ],
             source_channel="etsy",
         )
         return order
@@ -431,7 +497,12 @@ class EcommerceWebhookProcessor:
     def _map_hotmart_status(event: str, purchase_status: str) -> OrderStatus:
         if event in ("PURCHASE_REFUNDED",):
             return OrderStatus.REFUNDED
-        if event in ("PURCHASE_CANCELED", "PURCHASE_CANCELLED", "SUBSCRIPTION_CANCELLATION", "PURCHASE_EXPIRED"):
+        if event in (
+            "PURCHASE_CANCELED",
+            "PURCHASE_CANCELLED",
+            "SUBSCRIPTION_CANCELLATION",
+            "PURCHASE_EXPIRED",
+        ):
             return OrderStatus.CANCELLED
         if event in ("PURCHASE_APPROVED", "PURCHASE_COMPLETE", "PURCHASE_COMPLETED"):
             return OrderStatus.PAID
@@ -449,7 +520,11 @@ class EcommerceWebhookProcessor:
             return PaymentStatus.REFUNDED
         if event in ("PURCHASE_CHARGEBACK", "PURCHASE_PROTEST"):
             return PaymentStatus.FAILED
-        if event in ("PURCHASE_APPROVED", "PURCHASE_COMPLETE", "PURCHASE_COMPLETED") or purchase_status in ("APPROVED", "COMPLETE", "COMPLETED"):
+        if event in (
+            "PURCHASE_APPROVED",
+            "PURCHASE_COMPLETE",
+            "PURCHASE_COMPLETED",
+        ) or purchase_status in ("APPROVED", "COMPLETE", "COMPLETED"):
             return PaymentStatus.COMPLETED
         if event in ("PURCHASE_CANCELED", "PURCHASE_CANCELLED", "PURCHASE_EXPIRED"):
             return PaymentStatus.FAILED

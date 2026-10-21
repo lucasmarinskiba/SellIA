@@ -36,6 +36,7 @@ logger = logging.getLogger(__name__)
 
 class TikTokOrderStatus(Enum):
     """TikTok Shop order statuses."""
+
     UNPAID = "100"
     PAID_PENDING_SHIPMENT = "110"
     AWAITING_SHIPMENT = "120"
@@ -49,6 +50,7 @@ class TikTokOrderStatus(Enum):
 
 class TikTokFulfillmentType(Enum):
     """Fulfillment types."""
+
     SELLER_FULFILLMENT = "seller_fulfillment"
     TIKTOK_SHOP_FULFILLMENT = "tiktok_shop_fulfillment"
 
@@ -151,9 +153,7 @@ class TikTokShopAutomation:
         """
         try:
             expected_signature = hmac.new(
-                self.webhook_verify_token.encode(),
-                payload_body,
-                hashlib.sha256
+                self.webhook_verify_token.encode(), payload_body, hashlib.sha256
             ).hexdigest()
 
             return hmac.compare_digest(signature, expected_signature)

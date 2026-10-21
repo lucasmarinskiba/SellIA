@@ -33,7 +33,7 @@ class FraudDetectionService:
         device_fingerprint: str | None = None,
         billing_address: str | None = None,
         shipping_address: str | None = None,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Score fraud risk for order."""
         if not db:
@@ -52,10 +52,11 @@ class FraudDetectionService:
 
         # Signal 1: Velocity (orders in last 24h)
         cutoff = datetime.now(UTC) - timedelta(hours=24)
-        recent_orders = db.query(Order).filter(
-            Order.customer_id == customer_id,
-            Order.created_at >= cutoff
-        ).count()
+        recent_orders = (
+            db.query(Order)
+            .filter(Order.customer_id == customer_id, Order.created_at >= cutoff)
+            .count()
+        )
         if recent_orders > 3:
             velocity_score = min(40, recent_orders * 10)
             signals["velocity_score"] = Decimal(str(velocity_score))
@@ -69,9 +70,9 @@ class FraudDetectionService:
             fraud_score += Decimal(str(new_account_score))
 
         # Signal 3: High first order
-        customer_order_count = db.query(Order).filter(
-            Order.customer_id == customer_id
-        ).count()
+        customer_order_count = (
+            db.query(Order).filter(Order.customer_id == customer_id).count()
+        )
         if customer_order_count == 1 and float(order_value) > 500:
             high_first_score = 25
             signals["high_first_score"] = Decimal(str(high_first_score))
@@ -87,12 +88,16 @@ class FraudDetectionService:
         blacklist_hit = False
         if ip_address:
             ip_hash = hashlib.sha256(ip_address.encode()).hexdigest()
-            blacklist = db.query(FraudBlacklist).filter(
-                FraudBlacklist.business_id == business_id,
-                FraudBlacklist.entity_type == "ip",
-                FraudBlacklist.entity_hash == ip_hash,
-                FraudBlacklist.is_active == True
-            ).first()
+            blacklist = (
+                db.query(FraudBlacklist)
+                .filter(
+                    FraudBlacklist.business_id == business_id,
+                    FraudBlacklist.entity_type == "ip",
+                    FraudBlacklist.entity_hash == ip_hash,
+                    FraudBlacklist.is_active == True,
+                )
+                .first()
+            )
             if blacklist:
                 blacklist_hit = True
                 signals["blacklist_match_score"] = Decimal(30)
@@ -123,9 +128,11 @@ class FraudDetectionService:
             primary_reason = FraudReason.NONE
 
         # Create or update score
-        score_record = db.query(OrderFraudScore).filter(
-            OrderFraudScore.order_id == order_id
-        ).first()
+        score_record = (
+            db.query(OrderFraudScore)
+            .filter(OrderFraudScore.order_id == order_id)
+            .first()
+        )
 
         if score_record:
             score_record.fraud_risk_score = fraud_score
@@ -140,7 +147,7 @@ class FraudDetectionService:
                 fraud_risk_level=risk_level,
                 primary_fraud_reason=primary_reason,
                 customer_order_count=customer_order_count,
-                **{k: v for k, v in signals.items()}
+                **{k: v for k, v in signals.items()},
             )
             db.add(score_record)
 
@@ -159,14 +166,12 @@ class FraudDetectionService:
             "fraud_risk_level": risk_level.value,
             "primary_reason": primary_reason.value,
             "blocked": score_record.order_blocked,
-            "manual_review_requested": score_record.manual_review_requested
+            "manual_review_requested": score_record.manual_review_requested,
         }
 
     @staticmethod
     def score_account_fraud(
-        business_id: UUID,
-        customer_id: UUID,
-        db: Session = None
+        business_id: UUID, customer_id: UUID, db: Session = None
     ) -> dict:
         """Score fraud risk for customer account."""
         if not db:
@@ -190,11 +195,13 @@ class FraudDetectionService:
             fraud_score += 20
 
         # Signal 2: Profile completeness
-        fields_filled = sum([
-            bool(customer.email),
-            bool(customer.phone),
-            bool(customer.address),
-        ])
+        fields_filled = sum(
+            [
+                bool(customer.email),
+                bool(customer.phone),
+                bool(customer.address),
+            ]
+        )
         if fields_filled < 2:
             fraud_score += 25
 
@@ -221,9 +228,11 @@ class FraudDetectionService:
             risk_level = FraudRiskLevel.LOW
 
         # Create or update account score
-        account_score = db.query(AccountFraudScore).filter(
-            AccountFraudScore.customer_id == customer_id
-        ).first()
+        account_score = (
+            db.query(AccountFraudScore)
+            .filter(AccountFraudScore.customer_id == customer_id)
+            .first()
+        )
 
         if account_score:
             account_score.account_fraud_score = fraud_score
@@ -238,7 +247,11 @@ class FraudDetectionService:
                 account_risk_level=risk_level,
                 days_since_signup=account_age,
                 total_orders=len(orders),
-                email_verified=customer.email_verified if hasattr(customer, "email_verified") else False
+                email_verified=(
+                    customer.email_verified
+                    if hasattr(customer, "email_verified")
+                    else False
+                ),
             )
             db.add(account_score)
 
@@ -251,7 +264,7 @@ class FraudDetectionService:
             "account_fraud_score": float(fraud_score),
             "account_risk_level": risk_level.value,
             "account_age_days": account_age,
-            "total_orders": len(orders)
+            "total_orders": len(orders),
         }
 
     @staticmethod
@@ -261,7 +274,7 @@ class FraudDetectionService:
         entity_value: str,
         fraud_reason: str | None = None,
         expires_at: datetime | None = None,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Add email/IP/card to fraud blacklist."""
         if not db:
@@ -270,11 +283,15 @@ class FraudDetectionService:
         entity_hash = hashlib.sha256(entity_value.encode()).hexdigest()
 
         # Check if already blacklisted
-        existing = db.query(FraudBlacklist).filter(
-            FraudBlacklist.business_id == business_id,
-            FraudBlacklist.entity_type == entity_type,
-            FraudBlacklist.entity_hash == entity_hash
-        ).first()
+        existing = (
+            db.query(FraudBlacklist)
+            .filter(
+                FraudBlacklist.business_id == business_id,
+                FraudBlacklist.entity_type == entity_type,
+                FraudBlacklist.entity_hash == entity_hash,
+            )
+            .first()
+        )
 
         if existing:
             existing.fraud_count += 1
@@ -282,7 +299,7 @@ class FraudDetectionService:
             return {
                 "blacklist_action": "updated",
                 "entity_type": entity_type,
-                "fraud_count": existing.fraud_count
+                "fraud_count": existing.fraud_count,
             }
 
         # Add to blacklist
@@ -292,7 +309,7 @@ class FraudDetectionService:
             entity_value=entity_value,
             entity_hash=entity_hash,
             fraud_reason=fraud_reason,
-            expires_at=expires_at
+            expires_at=expires_at,
         )
 
         db.add(blacklist)
@@ -303,14 +320,12 @@ class FraudDetectionService:
         return {
             "blacklist_action": "added",
             "entity_type": entity_type,
-            "reason": fraud_reason
+            "reason": fraud_reason,
         }
 
     @staticmethod
     def get_fraud_summary(
-        business_id: UUID,
-        date: str | None = None,
-        db: Session = None
+        business_id: UUID, date: str | None = None, db: Session = None
     ) -> dict:
         """Get fraud detection summary."""
         if not db:
@@ -320,30 +335,44 @@ class FraudDetectionService:
             date = datetime.now(UTC).strftime("%Y-%m-%d")
 
         # Count by risk level
-        order_scores = db.query(OrderFraudScore).filter(
-            OrderFraudScore.business_id == business_id
-        ).all()
+        order_scores = (
+            db.query(OrderFraudScore)
+            .filter(OrderFraudScore.business_id == business_id)
+            .all()
+        )
 
         if not order_scores:
             return {"summary_available": False}
 
-        high_risk = len([s for s in order_scores if s.fraud_risk_level in [FraudRiskLevel.HIGH, FraudRiskLevel.CRITICAL]])
+        high_risk = len(
+            [
+                s
+                for s in order_scores
+                if s.fraud_risk_level in [FraudRiskLevel.HIGH, FraudRiskLevel.CRITICAL]
+            ]
+        )
         blocked = len([s for s in order_scores if s.order_blocked])
         confirmed_fraud = len([s for s in order_scores if s.is_confirmed_fraud])
 
         # Account fraud
-        account_scores = db.query(AccountFraudScore).filter(
-            AccountFraudScore.business_id == business_id
-        ).all()
+        account_scores = (
+            db.query(AccountFraudScore)
+            .filter(AccountFraudScore.business_id == business_id)
+            .all()
+        )
 
         accounts_flagged = len([a for a in account_scores if a.is_flagged])
         accounts_suspended = len([a for a in account_scores if a.account_suspended])
 
         # Blacklist
-        blacklist_count = db.query(FraudBlacklist).filter(
-            FraudBlacklist.business_id == business_id,
-            FraudBlacklist.is_active == True
-        ).count()
+        blacklist_count = (
+            db.query(FraudBlacklist)
+            .filter(
+                FraudBlacklist.business_id == business_id,
+                FraudBlacklist.is_active == True,
+            )
+            .count()
+        )
 
         # Create metrics
         metrics = FraudMetrics(
@@ -353,10 +382,12 @@ class FraudDetectionService:
             orders_flagged_high_risk=high_risk,
             orders_blocked=blocked,
             confirmed_fraud_orders=confirmed_fraud,
-            fraud_order_rate=Decimal(str(round((confirmed_fraud / max(len(order_scores), 1)) * 100, 2))),
+            fraud_order_rate=Decimal(
+                str(round((confirmed_fraud / max(len(order_scores), 1)) * 100, 2))
+            ),
             accounts_flagged=accounts_flagged,
             accounts_suspended=accounts_suspended,
-            total_blacklisted=blacklist_count
+            total_blacklisted=blacklist_count,
         )
 
         db.add(metrics)
@@ -371,13 +402,11 @@ class FraudDetectionService:
                 "total_reviewed": len(order_scores),
                 "high_risk": high_risk,
                 "blocked": blocked,
-                "confirmed_fraud": confirmed_fraud
+                "confirmed_fraud": confirmed_fraud,
             },
             "account_fraud": {
                 "flagged": accounts_flagged,
-                "suspended": accounts_suspended
+                "suspended": accounts_suspended,
             },
-            "blacklist": {
-                "total_entries": blacklist_count
-            }
+            "blacklist": {"total_entries": blacklist_count},
         }

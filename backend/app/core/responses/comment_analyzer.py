@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 class Sentiment(str, Enum):
     """Comment sentiment."""
+
     VERY_POSITIVE = "very_positive"
     POSITIVE = "positive"
     NEUTRAL = "neutral"
@@ -29,6 +30,7 @@ class Sentiment(str, Enum):
 
 class Intent(str, Enum):
     """Comment intent."""
+
     QUESTION = "question"
     PRAISE = "praise"
     CRITICISM = "criticism"
@@ -40,6 +42,7 @@ class Intent(str, Enum):
 
 class AudienceType(str, Enum):
     """Comment author type."""
+
     INFLUENCER = "influencer"  # High reach
     COMPETITOR = "competitor"  # Selling similar
     FAN = "fan"  # Supporter
@@ -50,6 +53,7 @@ class AudienceType(str, Enum):
 
 class UrgencyLevel(str, Enum):
     """Urgency of response."""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -61,37 +65,107 @@ class CommentAnalyzer:
 
     # Sentiment indicators
     POSITIVE_KEYWORDS: ClassVar[list] = [
-        "love", "amazing", "awesome", "great", "excellent", "brilliant",
-        "fantastic", "wonderful", "perfect", "helped", "saved", "grateful",
-        "thanks", "thank you", "recommend", "best", "beautiful", "impressed",
+        "love",
+        "amazing",
+        "awesome",
+        "great",
+        "excellent",
+        "brilliant",
+        "fantastic",
+        "wonderful",
+        "perfect",
+        "helped",
+        "saved",
+        "grateful",
+        "thanks",
+        "thank you",
+        "recommend",
+        "best",
+        "beautiful",
+        "impressed",
     ]
 
     NEGATIVE_KEYWORDS: ClassVar[list] = [
-        "hate", "terrible", "awful", "bad", "poor", "disappointed",
-        "waste", "scam", "broken", "useless", "fail", "problem",
-        "issue", "error", "can't", "won't", "doesn't work",
+        "hate",
+        "terrible",
+        "awful",
+        "bad",
+        "poor",
+        "disappointed",
+        "waste",
+        "scam",
+        "broken",
+        "useless",
+        "fail",
+        "problem",
+        "issue",
+        "error",
+        "can't",
+        "won't",
+        "doesn't work",
     ]
 
     # Intent indicators
     INTENT_PATTERNS: ClassVar[dict] = {
         Intent.QUESTION: [
-            r"\?$", "how", "what", "when", "where", "why", "can you",
-            "is it", "does it", "would", "could", "should",
+            r"\?$",
+            "how",
+            "what",
+            "when",
+            "where",
+            "why",
+            "can you",
+            "is it",
+            "does it",
+            "would",
+            "could",
+            "should",
         ],
         Intent.PRAISE: [
-            "love", "great", "awesome", "amazing", "excellent", "thank",
-            "appreciate", "grateful", "impressed", "brilliant",
+            "love",
+            "great",
+            "awesome",
+            "amazing",
+            "excellent",
+            "thank",
+            "appreciate",
+            "grateful",
+            "impressed",
+            "brilliant",
         ],
         Intent.CRITICISM: [
-            "not good", "bad", "poor", "terrible", "awful", "disappointed",
-            "waste", "doesn't work", "issue", "problem", "hate",
+            "not good",
+            "bad",
+            "poor",
+            "terrible",
+            "awful",
+            "disappointed",
+            "waste",
+            "doesn't work",
+            "issue",
+            "problem",
+            "hate",
         ],
         Intent.JOKE: [
-            "lol", "haha", "😂", ";)", "rofl", "just kidding", "just joking",
+            "lol",
+            "haha",
+            "😂",
+            ";)",
+            "rofl",
+            "just kidding",
+            "just joking",
         ],
         Intent.REQUEST: [
-            "can you", "could you", "would you", "please", "need", "want",
-            "would like", "looking for", "help", "advice",
+            "can you",
+            "could you",
+            "would you",
+            "please",
+            "need",
+            "want",
+            "would like",
+            "looking for",
+            "help",
+            "advice",
         ],
     }
 
@@ -139,10 +213,12 @@ class CommentAnalyzer:
         """
 
         text_lower = comment_text.lower()
-        positive_count = sum(1 for keyword in CommentAnalyzer.POSITIVE_KEYWORDS
-                           if keyword in text_lower)
-        negative_count = sum(1 for keyword in CommentAnalyzer.NEGATIVE_KEYWORDS
-                           if keyword in text_lower)
+        positive_count = sum(
+            1 for keyword in CommentAnalyzer.POSITIVE_KEYWORDS if keyword in text_lower
+        )
+        negative_count = sum(
+            1 for keyword in CommentAnalyzer.NEGATIVE_KEYWORDS if keyword in text_lower
+        )
 
         total_keywords = positive_count + negative_count
         score = 0
@@ -169,10 +245,12 @@ class CommentAnalyzer:
         return {
             "sentiment": sentiment.value,
             "score": round(score, 2),
-            "positive_indicators": [kw for kw in CommentAnalyzer.POSITIVE_KEYWORDS
-                                    if kw in text_lower],
-            "negative_indicators": [kw for kw in CommentAnalyzer.NEGATIVE_KEYWORDS
-                                    if kw in text_lower],
+            "positive_indicators": [
+                kw for kw in CommentAnalyzer.POSITIVE_KEYWORDS if kw in text_lower
+            ],
+            "negative_indicators": [
+                kw for kw in CommentAnalyzer.NEGATIVE_KEYWORDS if kw in text_lower
+            ],
             "confidence": confidence,
         }
 
@@ -193,8 +271,11 @@ class CommentAnalyzer:
         intent_scores = {}
 
         for intent, patterns in CommentAnalyzer.INTENT_PATTERNS.items():
-            score = sum(1 for pattern in patterns
-                       if pattern.lower() in text_lower or text_lower.endswith("?"))
+            score = sum(
+                1
+                for pattern in patterns
+                if pattern.lower() in text_lower or text_lower.endswith("?")
+            )
             intent_scores[intent] = score
 
         primary_intent = max(intent_scores, key=intent_scores.get)
@@ -202,8 +283,11 @@ class CommentAnalyzer:
 
         # Get secondary intents
         sorted_intents = sorted(intent_scores.items(), key=lambda x: x[1], reverse=True)
-        secondary_intents = [intent.value for intent, _ in sorted_intents[1:3]
-                            if intent_scores[intent] > 0]
+        secondary_intents = [
+            intent.value
+            for intent, _ in sorted_intents[1:3]
+            if intent_scores[intent] > 0
+        ]
 
         confidence = min(100, primary_score * 25)
 
@@ -215,7 +299,9 @@ class CommentAnalyzer:
         }
 
     @staticmethod
-    def analyze_urgency(comment_text: str, user_history: dict[str, Any] | None = None) -> dict[str, Any]:
+    def analyze_urgency(
+        comment_text: str, user_history: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """
         Analyze urgency of response needed.
 
@@ -240,10 +326,14 @@ class CommentAnalyzer:
         if user_history:
             if user_history.get("is_buyer"):
                 primary_urgency = (
-                    UrgencyLevel.CRITICAL if urgency_scores[primary_urgency] > 0
+                    UrgencyLevel.CRITICAL
+                    if urgency_scores[primary_urgency] > 0
                     else primary_urgency
                 )
-            if user_history.get("engagement_rate", 0) > 0.1 and primary_urgency == UrgencyLevel.MEDIUM:  # High engagement
+            if (
+                user_history.get("engagement_rate", 0) > 0.1
+                and primary_urgency == UrgencyLevel.MEDIUM
+            ):  # High engagement
                 primary_urgency = UrgencyLevel.HIGH
 
         score = urgency_scores.get(primary_urgency, 0) * 25
@@ -309,9 +399,13 @@ class CommentAnalyzer:
             primary_type = AudienceType.CURIOUS
             confidence = 50
 
-        secondary_types = [at.value for at, score in sorted(type_scores.items(),
-                                                           key=lambda x: x[1], reverse=True)[1:3]
-                          if type_scores[at] > 0]
+        secondary_types = [
+            at.value
+            for at, score in sorted(
+                type_scores.items(), key=lambda x: x[1], reverse=True
+            )[1:3]
+            if type_scores[at] > 0
+        ]
 
         traits = CommentAnalyzer._get_audience_traits(primary_type)
 
@@ -339,7 +433,9 @@ class CommentAnalyzer:
         return traits_map.get(audience_type, "Unknown type")
 
     @staticmethod
-    def _calculate_engagement_value(audience_type: AudienceType, profile: dict[str, Any]) -> str:
+    def _calculate_engagement_value(
+        audience_type: AudienceType, profile: dict[str, Any]
+    ) -> str:
         """Calculate value of engaging with this comment."""
         if audience_type == AudienceType.INFLUENCER:
             return "very_high"  # Potential reach
@@ -379,7 +475,14 @@ class CommentAnalyzer:
 
         # Feature mentions
         specific_features = []
-        feature_keywords = ["feature", "pricing", "integration", "api", "plugin", "support"]
+        feature_keywords = [
+            "feature",
+            "pricing",
+            "integration",
+            "api",
+            "plugin",
+            "support",
+        ]
         for keyword in feature_keywords:
             if keyword in text_lower:
                 specific_features.append(keyword)
@@ -399,15 +502,20 @@ class CommentAnalyzer:
             for prev in previous_comments[-5:]:  # Last 5 comments
                 prev_text_lower = prev.get("text", "").lower()
                 # Simple similarity: shared words
-                if any(word in text_lower for word in prev_text_lower.split()
-                      if len(word) > 4):
+                if any(
+                    word in text_lower
+                    for word in prev_text_lower.split()
+                    if len(word) > 4
+                ):
                     related.append(prev)
 
         # Sentiment trend
         sentiment_trend = "neutral"
         if related:
-            sentiments = [CommentAnalyzer.analyze_sentiment(c.get("text", ""))
-                         for c in related[-3:]]
+            sentiments = [
+                CommentAnalyzer.analyze_sentiment(c.get("text", ""))
+                for c in related[-3:]
+            ]
             avg_score = sum(s["score"] for s in sentiments) / len(sentiments)
             current_sentiment = CommentAnalyzer.analyze_sentiment(comment_text)["score"]
 

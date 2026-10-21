@@ -23,7 +23,7 @@ def _autoregressive_frame(y: pd.Series) -> pd.DataFrame:
     """Features that summarise demand *as of the end of day t* (lag 0 = y[t])."""
     f = pd.DataFrame(index=y.index)
     for lag in LAGS:
-        f[f"lag_{lag}"] = y.shift(lag - 1)          # lag_1 = y[t], lag_7 = y[t-6]
+        f[f"lag_{lag}"] = y.shift(lag - 1)  # lag_1 = y[t], lag_7 = y[t-6]
     for w in ROLL_WINDOWS:
         r = y.rolling(w, min_periods=max(2, w // 2))
         f[f"rmean_{w}"] = r.mean()
@@ -53,7 +53,9 @@ def build_supervised(
 ) -> tuple[pd.DataFrame, pd.Series, list[str]]:
     y = pd.Series(np.asarray(values, dtype=float), index=index, name="y")
     ar = _autoregressive_frame(y)
-    cal = calendar_frame(index, country=country, grain=grain)  # targets are always within history
+    cal = calendar_frame(
+        index, country=country, grain=grain
+    )  # targets are always within history
 
     n = len(index)
     ar_cols = list(ar.columns)
@@ -66,7 +68,11 @@ def build_supervised(
         exog_np = np.nan_to_num(exog.reindex(index).to_numpy(dtype=float))
         exog_cols = [f"x_{c}" for c in exog.columns]
 
-    valid = np.isfinite(ar_np[:, ar_cols.index("lag_7")]) if "lag_7" in ar_cols else np.ones(n, bool)
+    valid = (
+        np.isfinite(ar_np[:, ar_cols.index("lag_7")])
+        if "lag_7" in ar_cols
+        else np.ones(n, bool)
+    )
 
     blocks_X = []
     blocks_y = []

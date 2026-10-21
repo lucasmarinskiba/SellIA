@@ -26,7 +26,9 @@ async def get_db():
 @router.post("/generate")
 async def generate_campaign_copy(
     business_id: Annotated[uuid.UUID, Query()],
-    campaign_type: Annotated[str, Query(description="e.g. flash_sale, cart_abandonment, countdown")],
+    campaign_type: Annotated[
+        str, Query(description="e.g. flash_sale, cart_abandonment, countdown")
+    ],
     product_name: Annotated[str, Query()],
     product_description: Annotated[str, Query()],
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -117,10 +119,30 @@ async def get_supported_tones():
     """List supported copy tones"""
     return {
         "tones": [
-            {"id": "urgent", "name": "Urgente", "description": "Urgencia alta, acción inmediata"},
-            {"id": "friendly", "name": "Cercano", "description": "Cálido, como recomendación de amigo"},
-            {"id": "luxury", "name": "Exclusivo", "description": "Aspiracional, elegante"},
-            {"id": "playful", "name": "Divertido", "description": "Energético, emojis moderados"},
-            {"id": "professional", "name": "Profesional", "description": "Directo, confiable"},
+            {
+                "id": "urgent",
+                "name": "Urgente",
+                "description": "Urgencia alta, acción inmediata",
+            },
+            {
+                "id": "friendly",
+                "name": "Cercano",
+                "description": "Cálido, como recomendación de amigo",
+            },
+            {
+                "id": "luxury",
+                "name": "Exclusivo",
+                "description": "Aspiracional, elegante",
+            },
+            {
+                "id": "playful",
+                "name": "Divertido",
+                "description": "Energético, emojis moderados",
+            },
+            {
+                "id": "professional",
+                "name": "Profesional",
+                "description": "Directo, confiable",
+            },
         ]
     }

@@ -81,7 +81,9 @@ async def design_acquisition_strategy(
                 content = content.split("```")[1].split("```")[0].strip()
             parsed = json.loads(content)
         except Exception as e:
-            logger.warning(f"Failed to parse acquisition strategy LLM output: {e}", exc_info=True)
+            logger.warning(
+                f"Failed to parse acquisition strategy LLM output: {e}", exc_info=True
+            )
 
     strategy = AcquisitionStrategy(
         business_id=business_id,
@@ -100,12 +102,18 @@ async def design_acquisition_strategy(
     return strategy
 
 
-async def get_strategy(db: AsyncSession, strategy_id: uuid.UUID) -> AcquisitionStrategy | None:
-    result = await db.execute(select(AcquisitionStrategy).where(AcquisitionStrategy.id == strategy_id))
+async def get_strategy(
+    db: AsyncSession, strategy_id: uuid.UUID
+) -> AcquisitionStrategy | None:
+    result = await db.execute(
+        select(AcquisitionStrategy).where(AcquisitionStrategy.id == strategy_id)
+    )
     return result.scalar_one_or_none()
 
 
-async def list_strategies(db: AsyncSession, business_id: uuid.UUID) -> list[AcquisitionStrategy]:
+async def list_strategies(
+    db: AsyncSession, business_id: uuid.UUID
+) -> list[AcquisitionStrategy]:
     result = await db.execute(
         select(AcquisitionStrategy)
         .where(AcquisitionStrategy.business_id == business_id)

@@ -73,7 +73,9 @@ async def get_location_inventory(
     await get_owned_location(db, location_id, current_user)
     try:
         inventory_list = await db.run_sync(
-            lambda sync_db: LocationInventoryService.get_location_inventory(location_id, sync_db)
+            lambda sync_db: LocationInventoryService.get_location_inventory(
+                location_id, sync_db
+            )
         )
 
         items = [
@@ -89,7 +91,9 @@ async def get_location_inventory(
                 "is_demo_unit": item.is_demo_unit,
                 "fulfillment_method": item.fulfillment_method.value,
                 "unit_price": float(item.unit_price),
-                "last_stock_check": item.last_stock_check.isoformat() if item.last_stock_check else None,
+                "last_stock_check": (
+                    item.last_stock_check.isoformat() if item.last_stock_check else None
+                ),
             }
             for item in inventory_list
         ]
@@ -97,7 +101,7 @@ async def get_location_inventory(
         return {
             "location_id": str(location_id),
             "total_items": len(items),
-            "inventory": items
+            "inventory": items,
         }
     except Exception as e:
         logger.exception("get_location_inventory: error inesperado")
@@ -115,11 +119,15 @@ async def get_product_stock(
     await get_owned_location(db, location_id, current_user)
     try:
         inventory = await db.run_sync(
-            lambda sync_db: LocationInventoryService.get_product_at_location(location_id, product_id, sync_db)
+            lambda sync_db: LocationInventoryService.get_product_at_location(
+                location_id, product_id, sync_db
+            )
         )
 
         if not inventory:
-            raise HTTPException(status_code=404, detail=f"Product {product_id} not found at location")
+            raise HTTPException(
+                status_code=404, detail=f"Product {product_id} not found at location"
+            )
 
         return {
             "location_id": str(location_id),
@@ -158,7 +166,7 @@ async def update_stock(
                 movement_type=request.movement_type,
                 reason=request.reason,
                 staff_id=request.staff_id,
-                db=sync_db
+                db=sync_db,
             )
         )
         return result
@@ -177,14 +185,16 @@ async def check_demo_stock(
     """Check if product available for demo during visitor checkin."""
     await get_owned_location(db, location_id, current_user)
     if request.location_id != location_id:
-        raise HTTPException(status_code=400, detail="location_id del path y del body no coinciden")
+        raise HTTPException(
+            status_code=400, detail="location_id del path y del body no coinciden"
+        )
     try:
         result = await db.run_sync(
             lambda sync_db: LocationInventoryService.check_stock_for_demo(
                 location_id=request.location_id,
                 product_id=request.product_id,
                 checkin_id=request.checkin_id,
-                db=sync_db
+                db=sync_db,
             )
         )
         return result
@@ -206,10 +216,7 @@ async def get_stock_history(
     try:
         movements = await db.run_sync(
             lambda sync_db: LocationInventoryService.get_stock_movement_history(
-                location_id=location_id,
-                product_id=product_id,
-                days=days,
-                db=sync_db
+                location_id=location_id, product_id=product_id, days=days, db=sync_db
             )
         )
 
@@ -232,7 +239,7 @@ async def get_stock_history(
             "product_id": product_id,
             "period_days": days,
             "total_movements": len(history),
-            "movements": history
+            "movements": history,
         }
     except Exception as e:
         logger.exception("get_stock_history: error inesperado")
@@ -249,8 +256,11 @@ async def get_low_stock_alerts(
     """Get low-stock alerts for location."""
     await get_owned_location(db, location_id, current_user)
     try:
+
         def _load(db: Session) -> list:
-            query = db.query(LowStockAlert).filter(LowStockAlert.location_id == location_id)
+            query = db.query(LowStockAlert).filter(
+                LowStockAlert.location_id == location_id
+            )
 
             if acknowledged is not None:
                 query = query.filter(LowStockAlert.acknowledged == acknowledged)
@@ -277,7 +287,7 @@ async def get_low_stock_alerts(
         return {
             "location_id": str(location_id),
             "total_alerts": len(alert_list),
-            "alerts": alert_list
+            "alerts": alert_list,
         }
     except Exception as e:
         logger.exception("get_low_stock_alerts: error inesperado")
@@ -298,9 +308,7 @@ async def acknowledge_alert(
     try:
         result = await db.run_sync(
             lambda sync_db: LocationInventoryService.acknowledge_low_stock_alert(
-                alert_id=alert_id,
-                staff_id=current_user.id,
-                db=sync_db
+                alert_id=alert_id, staff_id=current_user.id, db=sync_db
             )
         )
         return result
@@ -321,7 +329,11 @@ async def find_fulfillment_location(
         from app.domains.businesses.location_models import Location
 
         def _find(db: Session) -> dict:
-            locations = db.query(Location).filter(Location.business_id == request.business_id).all()
+            locations = (
+                db.query(Location)
+                .filter(Location.business_id == request.business_id)
+                .all()
+            )
 
             return FulfillmentRoutingService.find_best_fulfillment_location(
                 business_id=request.business_id,
@@ -329,7 +341,7 @@ async def find_fulfillment_location(
                 customer_lat=request.customer_lat,
                 customer_lng=request.customer_lng,
                 locations=locations,
-                db=db
+                db=db,
             )
 
         result = await db.run_sync(_find)
@@ -355,7 +367,7 @@ async def reserve_inventory(
                 product_id=request.product_id,
                 quantity=request.quantity,
                 order_id=request.order_id,
-                db=sync_db
+                db=sync_db,
             )
         )
         return result
@@ -380,7 +392,7 @@ async def mark_order_shipped(
                 location_id=location_id,
                 product_id=product_id,
                 order_id=order_id,
-                db=sync_db
+                db=sync_db,
             )
         )
         return result

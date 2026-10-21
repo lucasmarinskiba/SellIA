@@ -22,6 +22,7 @@ router = APIRouter(prefix="/memory", tags=["memory"])
 
 # ========== Conversation Memory Chunks ==========
 
+
 @router.get("/chunks", response_model=list[MemoryChunkResponse])
 async def retrieve_relevant_chunks(
     query: Annotated[str, Query(description="Query text for semantic search")],
@@ -56,6 +57,7 @@ async def delete_chunk(
 
 # ========== Customer Memories ==========
 
+
 @router.get("/customer/{customer_id}", response_model=CustomerProfileResponse)
 async def get_customer_profile(
     customer_id: UUID,
@@ -66,6 +68,7 @@ async def get_customer_profile(
     grouped = await engine.get_customer_profile(customer_id)
     # Wrap ORM objects into response schemas
     from app.domains.memory.schemas import CustomerMemoryResponse
+
     serialized: dict = {
         mem_type: [CustomerMemoryResponse.model_validate(m) for m in items]
         for mem_type, items in grouped.items()
@@ -73,7 +76,11 @@ async def get_customer_profile(
     return CustomerProfileResponse(customer_id=customer_id, memories=serialized)
 
 
-@router.post("/customer-fact", response_model=CustomerMemoryResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/customer-fact",
+    response_model=CustomerMemoryResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def store_customer_fact(
     data: CustomerMemoryCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -95,6 +102,7 @@ async def store_customer_fact(
 # Summarization
 # ------------------------------------------------------------------
 
+
 @router.post("/summarize/{conversation_id}", status_code=status.HTTP_202_ACCEPTED)
 async def trigger_summarization(
     conversation_id: UUID,
@@ -103,6 +111,7 @@ async def trigger_summarization(
 ):
     """Trigger asynchronous summarization for a conversation."""
     from app.domains.memory.tasks import summarize_conversation_task
+
     summarize_conversation_task.delay(str(conversation_id))
     return {"status": "scheduled", "conversation_id": conversation_id}
 
@@ -110,6 +119,7 @@ async def trigger_summarization(
 # ------------------------------------------------------------------
 # Customer Profile Text
 # ------------------------------------------------------------------
+
 
 @router.get("/customer/{customer_id}/profile-text")
 async def get_customer_profile_text(

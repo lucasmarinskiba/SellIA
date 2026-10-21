@@ -4,7 +4,6 @@ Pricing: ~$0.04/image
 Strengths: Typography, text rendering, logos, posters
 """
 
-
 import logging
 from typing import ClassVar
 
@@ -42,7 +41,9 @@ class IdeogramProvider(BaseProvider):
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         if not self.is_available:
-            return GenerationResult(success=False, error_message="IDEOGRAM_API_KEY no configurada")
+            return GenerationResult(
+                success=False, error_message="IDEOGRAM_API_KEY no configurada"
+            )
 
         try:
             import aiohttp
@@ -67,13 +68,18 @@ class IdeogramProvider(BaseProvider):
 
             images = data.get("data", [])
             if not images:
-                return GenerationResult(success=False, error_message="Ideogram no devolvió imagen")
+                return GenerationResult(
+                    success=False, error_message="Ideogram no devolvió imagen"
+                )
 
             image_url = images[0].get("url")
             image_bytes = await download_url(image_url)
             compressed = None
             if image_bytes:
-                compressed = compress_image(image_bytes, quality=smart_quality_for_size(get_image_size_kb(image_bytes)))
+                compressed = compress_image(
+                    image_bytes,
+                    quality=smart_quality_for_size(get_image_size_kb(image_bytes)),
+                )
 
             return GenerationResult(
                 success=True,

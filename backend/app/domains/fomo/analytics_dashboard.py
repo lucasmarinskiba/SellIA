@@ -30,7 +30,7 @@ class AnalyticsDashboard:
                 {"label": "Revenue", "value": "$20,460", "trend": "+15%"},
                 {"label": "Conversions", "value": "682", "trend": "+35%"},
                 {"label": "ROI", "value": "3.42x", "trend": "+42%"},
-            ]
+            ],
         }
 
     @staticmethod
@@ -74,7 +74,7 @@ class AnalyticsDashboard:
                 "avg_daily_revenue": 6820.00,
                 "peak_day": "2026-08-26",
                 "best_metric": "conversions",
-            }
+            },
         }
 
     @staticmethod
@@ -207,8 +207,8 @@ class AnalyticsDashboard:
                     "winner": "variant_a",
                     "confidence": 0.87,
                     "lift": 0.149,
-                }
-            ]
+                },
+            ],
         }
 
     @staticmethod
@@ -255,7 +255,7 @@ class AnalyticsDashboard:
                 },
             ],
             "best_performing_segment": "Cart Abandoners",
-            "opportunity": "Scale cart recovery campaigns"
+            "opportunity": "Scale cart recovery campaigns",
         }
 
     @staticmethod
@@ -298,7 +298,7 @@ class AnalyticsDashboard:
             "biggest_drop": {
                 "stage": "Impressions to Clicks",
                 "percentage": 0.8397,
-                "recommendation": "Increase CTA visibility, test button color/text"
+                "recommendation": "Increase CTA visibility, test button color/text",
             },
             "conversion_rate_overall": 0.0151,
         }
@@ -324,9 +324,15 @@ class AnalyticsDashboard:
                 {"metric": "revenue", "trend": "up", "change": "+22%"},
             ],
             "alerts": [
-                {"severity": "info", "message": "Traffic spike detected - 25% above average"},
-                {"severity": "success", "message": "Conversion rate: 1.69% (goal: 1.5%) ✓"},
-            ]
+                {
+                    "severity": "info",
+                    "message": "Traffic spike detected - 25% above average",
+                },
+                {
+                    "severity": "success",
+                    "message": "Conversion rate: 1.69% (goal: 1.5%) ✓",
+                },
+            ],
         }
 
     @staticmethod
@@ -356,7 +362,10 @@ class AnalyticsDashboard:
             "projection_90_days": {
                 "projected_revenue": daily_avg_revenue * 90,
                 "projected_cost": current_cost,
-                "projected_roi": ((daily_avg_revenue * 90 - current_cost) / current_cost) * 100,
+                "projected_roi": (
+                    (daily_avg_revenue * 90 - current_cost) / current_cost
+                )
+                * 100,
             },
             "growth_trajectory": "accelerating",
             "confidence": 0.89,
@@ -364,9 +373,7 @@ class AnalyticsDashboard:
 
     @staticmethod
     async def get_comparison_benchmarks(
-        campaign_id: str,
-        industry: str,
-        campaign_type: str
+        campaign_id: str, industry: str, campaign_type: str
     ) -> dict[str, Any]:
         """Compare performance against industry benchmarks"""
         benchmarks = {
@@ -380,7 +387,7 @@ class AnalyticsDashboard:
                     "avg_conversion_rate": 0.035,
                     "avg_roi": 5.2,
                     "avg_conversion_lift": 0.65,
-                }
+                },
             },
             "saas": {
                 "trial_expiry": {
@@ -388,7 +395,7 @@ class AnalyticsDashboard:
                     "avg_roi": 3.8,
                     "avg_conversion_lift": 0.35,
                 }
-            }
+            },
         }
 
         current_benchmarks = benchmarks.get(industry, {}).get(campaign_type, {})
@@ -413,5 +420,5 @@ class AnalyticsDashboard:
                 "You're outperforming benchmarks - maintain current strategy",
                 "Test higher discount levels to push lift beyond 0.35",
                 "Scale successful segments identified in channel attribution",
-            ]
+            ],
         }

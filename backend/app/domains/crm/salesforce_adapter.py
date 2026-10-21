@@ -118,9 +118,7 @@ class SalesforceAdapter(CRMAdapter):
             logger.exception(f"Salesforce fetch_lead failed: {lead_id}")
             return None
 
-    async def fetch_leads(
-        self, filters: dict[str, Any] | None = None
-    ) -> list[CRMLead]:
+    async def fetch_leads(self, filters: dict[str, Any] | None = None) -> list[CRMLead]:
         """Fetch multiple leads from Salesforce with optional filtering."""
         try:
             # Build SOQL query

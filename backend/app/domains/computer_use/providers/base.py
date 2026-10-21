@@ -34,4 +34,5 @@ class ComputerUseProvider(ABC):
     def _encode_image(self, image_bytes: bytes) -> str:
         """Codifica imagen a base64."""
         import base64
+
         return base64.b64encode(image_bytes).decode("utf-8")

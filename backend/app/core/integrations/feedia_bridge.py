@@ -103,7 +103,9 @@ class FeedIABridge:
                 json=payload,
                 headers={"Authorization": f"Bearer {self.api_key}"},
             )
-            return response.json() if response.status_code == 200 else {"status": "error"}
+            return (
+                response.json() if response.status_code == 200 else {"status": "error"}
+            )
 
         except Exception as e:
             logger.exception("FeedIA reel request failed")
@@ -135,7 +137,9 @@ class FeedIABridge:
                 json=payload,
                 headers={"Authorization": f"Bearer {self.api_key}"},
             )
-            return response.json() if response.status_code == 200 else {"status": "error"}
+            return (
+                response.json() if response.status_code == 200 else {"status": "error"}
+            )
 
         except Exception:
             logger.exception("FeedIA TikTok request failed")
@@ -166,7 +170,9 @@ class FeedIABridge:
                 json=payload,
                 headers={"Authorization": f"Bearer {self.api_key}"},
             )
-            return response.json() if response.status_code == 200 else {"status": "error"}
+            return (
+                response.json() if response.status_code == 200 else {"status": "error"}
+            )
 
         except Exception:
             logger.exception("Instagram publish failed")
@@ -195,7 +201,9 @@ class FeedIABridge:
                 json=payload,
                 headers={"Authorization": f"Bearer {self.api_key}"},
             )
-            return response.json() if response.status_code == 200 else {"status": "error"}
+            return (
+                response.json() if response.status_code == 200 else {"status": "error"}
+            )
 
         except Exception:
             logger.exception("TikTok publish failed")
@@ -229,7 +237,9 @@ class FeedIABridge:
                 json=payload,
                 headers={"Authorization": f"Bearer {self.api_key}"},
             )
-            return response.json() if response.status_code == 200 else {"status": "error"}
+            return (
+                response.json() if response.status_code == 200 else {"status": "error"}
+            )
 
         except Exception:
             logger.exception("Performance report failed")
@@ -247,7 +257,9 @@ class FeedIABridge:
                 f"{self.api_url}/analytics/audience/{account_id}",
                 headers={"Authorization": f"Bearer {self.api_key}"},
             )
-            return response.json() if response.status_code == 200 else {"status": "error"}
+            return (
+                response.json() if response.status_code == 200 else {"status": "error"}
+            )
 
         except Exception:
             logger.exception("Audience insights request failed")
@@ -265,7 +277,9 @@ class FeedIABridge:
                 f"{self.api_url}/strategy/hashtags/{product_category}",
                 headers={"Authorization": f"Bearer {self.api_key}"},
             )
-            return response.json() if response.status_code == 200 else {"status": "error"}
+            return (
+                response.json() if response.status_code == 200 else {"status": "error"}
+            )
 
         except Exception:
             logger.exception("Hashtag strategy request failed")
@@ -281,7 +295,9 @@ class FeedIABridge:
                 f"{self.api_url}/schedule/optimal/{account_id}",
                 headers={"Authorization": f"Bearer {self.api_key}"},
             )
-            return response.json() if response.status_code == 200 else {"status": "error"}
+            return (
+                response.json() if response.status_code == 200 else {"status": "error"}
+            )
 
         except Exception:
             logger.exception("Schedule request failed")
@@ -323,7 +339,9 @@ class FeedIABridge:
                 params={"handle": competitor_handle, "platform": platform},
                 headers={"Authorization": f"Bearer {self.api_key}"},
             )
-            return response.json() if response.status_code == 200 else {"status": "error"}
+            return (
+                response.json() if response.status_code == 200 else {"status": "error"}
+            )
 
         except Exception:
             logger.exception("Competitor analysis failed")

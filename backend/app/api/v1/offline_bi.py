@@ -35,16 +35,23 @@ async def get_foot_traffic_dashboard(
 
     location = db.query(Location).filter(Location.id == location_id).first()
     if not location:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Location not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Location not found"
+        )
 
     # Verify ownership
-    business = db.query(Business).filter(
-        Business.id == location.business_id,
-        Business.user_id == current_user.id
-    ).first()
+    business = (
+        db.query(Business)
+        .filter(
+            Business.id == location.business_id, Business.user_id == current_user.id
+        )
+        .first()
+    )
 
     if not business:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized"
+        )
 
     # Get heatmap data
     heatmap = OfflineAnalyticsService.get_foot_traffic_heatmap(location_id, days, db)
@@ -68,11 +75,13 @@ async def get_foot_traffic_dashboard(
         daily_visits_trend=[
             {"date": "2026-08-18", "visits": 12},
             {"date": "2026-08-19", "visits": 15},
-        ]
+        ],
     )
 
 
-@router.get("/offline/conversions/{location_id}", response_model=OfflineConversionMetrics)
+@router.get(
+    "/offline/conversions/{location_id}", response_model=OfflineConversionMetrics
+)
 async def get_conversion_dashboard(
     location_id: UUID,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -87,16 +96,23 @@ async def get_conversion_dashboard(
 
     location = db.query(Location).filter(Location.id == location_id).first()
     if not location:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Location not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Location not found"
+        )
 
     # Verify ownership
-    business = db.query(Business).filter(
-        Business.id == location.business_id,
-        Business.user_id == current_user.id
-    ).first()
+    business = (
+        db.query(Business)
+        .filter(
+            Business.id == location.business_id, Business.user_id == current_user.id
+        )
+        .first()
+    )
 
     if not business:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized"
+        )
 
     total_visits = 156
     converted = 18
@@ -112,25 +128,15 @@ async def get_conversion_dashboard(
         avg_order_value=Decimal("2500.00"),
         avg_transaction_value=Decimal("2500.00"),
         by_visit_type={
-            "walk_in": {
-                "visits": 120,
-                "converted": 12,
-                "rate": 0.10,
-                "revenue": 30000
-            },
-            "qr_scan": {
-                "visits": 26,
-                "converted": 4,
-                "rate": 0.15,
-                "revenue": 10000
-            },
+            "walk_in": {"visits": 120, "converted": 12, "rate": 0.10, "revenue": 30000},
+            "qr_scan": {"visits": 26, "converted": 4, "rate": 0.15, "revenue": 10000},
             "scheduled_demo": {
                 "visits": 10,
                 "converted": 2,
                 "rate": 0.20,
-                "revenue": 5000
-            }
-        }
+                "revenue": 5000,
+            },
+        },
     )
 
 
@@ -143,13 +149,16 @@ async def get_dashboard_summary(
 ) -> DashboardSummary:
     """Get high-level summary for main offline BI dashboard."""
 
-    business = db.query(Business).filter(
-        Business.id == business_id,
-        Business.user_id == current_user.id
-    ).first()
+    business = (
+        db.query(Business)
+        .filter(Business.id == business_id, Business.user_id == current_user.id)
+        .first()
+    )
 
     if not business:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized"
+        )
 
     from decimal import Decimal
 
@@ -174,6 +183,6 @@ async def get_dashboard_summary(
             "Impulse offers convert best at 12pm lunch hour",
             "High-dwell visitors (30+ min) have 25% purchase rate",
             "Proximity SMS trigger outperforms email by 3x",
-            "Service Center La Plata punches above foot traffic with 20% conversion"
-        ]
+            "Service Center La Plata punches above foot traffic with 20% conversion",
+        ],
     )

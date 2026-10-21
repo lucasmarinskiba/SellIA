@@ -4,7 +4,6 @@ Prevents duplicate processing of critical operations by caching responses
 per Idempotency-Key header.
 """
 
-
 from fastapi import Request
 from sqlalchemy import select
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -72,6 +71,7 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
 
                     # Reconstruct response for downstream
                     import json
+
                     content = json.loads(body) if body else None
 
                     key_entry = IdempotencyKey(
@@ -89,7 +89,9 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
                         headers=dict(response.headers),
                     )
                 except Exception as e:
-                    logger.warning(f"Failed to cache idempotency response: {e}", exc_info=True)
+                    logger.warning(
+                        f"Failed to cache idempotency response: {e}", exc_info=True
+                    )
                     # Fall through to return original response
 
             return response

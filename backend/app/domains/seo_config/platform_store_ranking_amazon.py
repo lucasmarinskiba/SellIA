@@ -35,7 +35,9 @@ from app.domains.seo_config.platform_store_ranking_base import StorePositioningC
 logger = get_logger(__name__)
 
 STORES_LIST_PATH = "/v2/stores"  # TODO: confirm against Amazon Ads docs
-STORE_INSIGHTS_PATH = "/stores/{brand_entity_id}/insights"  # TODO: confirm against Amazon Ads docs
+STORE_INSIGHTS_PATH = (
+    "/stores/{brand_entity_id}/insights"  # TODO: confirm against Amazon Ads docs
+)
 WINDOW_DAYS = 30  # well inside the API's 100-day cap
 
 # TODO: verify with a real store. Assumed: rates as fractions 0-1, dwell time in seconds.
@@ -47,7 +49,12 @@ _CANDIDATE_KEYS = {
     "quality_score_level": ("qualityScoreLevel", "quality_score_level"),
     "dwell_time": ("dwellTime", "avgDwellTime", "dwell_time"),
     "bounce_rate": ("bounceRate", "bounce_rate"),
-    "new_to_store": ("newToStoreRate", "newToStorePercentage", "newToStorePct", "new_to_store_rate"),
+    "new_to_store": (
+        "newToStoreRate",
+        "newToStorePercentage",
+        "newToStorePct",
+        "new_to_store_rate",
+    ),
 }
 
 # Heuristic references — Amazon publishes no target for these; labeled as such wherever used.
@@ -62,7 +69,9 @@ def _find_number(node: Any, keys: tuple[str, ...]) -> float | None:
     """Depth-first search for the first numeric value under any of `keys`."""
     if isinstance(node, dict):
         for k in keys:
-            if isinstance(node.get(k), (int, float)) and not isinstance(node.get(k), bool):
+            if isinstance(node.get(k), (int, float)) and not isinstance(
+                node.get(k), bool
+            ):
                 return float(node[k])
         for child in node.values():
             found = _find_number(child, keys)
@@ -112,7 +121,12 @@ class AmazonStoreRankingConnector(StorePositioningConnector):
         self._refreshed = False
 
     async def _headers(self, client: httpx.AsyncClient) -> dict[str, str]:
-        if self.refresh_token and self.client_id and self.client_secret and not self._refreshed:
+        if (
+            self.refresh_token
+            and self.client_id
+            and self.client_secret
+            and not self._refreshed
+        ):
             resp = await client.post(
                 self.LWA_TOKEN_URL,
                 data={
@@ -140,17 +154,23 @@ class AmazonStoreRankingConnector(StorePositioningConnector):
         try:
             async with httpx.AsyncClient() as client:
                 resp = await client.get(
-                    f"{self.base_url}{STORES_LIST_PATH}", headers=await self._headers(client), timeout=10
+                    f"{self.base_url}{STORES_LIST_PATH}",
+                    headers=await self._headers(client),
+                    timeout=10,
                 )
                 return resp.status_code == 200
         except Exception:
             logger.exception("Amazon store ranking credentials validation failed")
             return False
 
-    async def get_store_signals(self, store_external_id: str | None = None) -> list[RankingSignal]:
+    async def get_store_signals(
+        self, store_external_id: str | None = None
+    ) -> list[RankingSignal]:
         brand_entity_id = store_external_id or self.brand_entity_id
         if not brand_entity_id:
-            return self._unavailable("falta brand_entity_id (ni en las credenciales ni como parámetro)")
+            return self._unavailable(
+                "falta brand_entity_id (ni en las credenciales ni como parámetro)"
+            )
 
         try:
             async with httpx.AsyncClient() as client:
@@ -168,32 +188,48 @@ class AmazonStoreRankingConnector(StorePositioningConnector):
                 )
             body = resp.json()
         except Exception as e:
-            logger.warning(f"Amazon store ranking: insights fetch failed: {str(e)[:100]}", exc_info=True)
+            logger.warning(
+                f"Amazon store ranking: insights fetch failed: {str(e)[:100]}",
+                exc_info=True,
+            )
             return self._unavailable(str(e)[:100])
 
-        unit_note = (
-            f"asumido: tasas en fracción 0-1={RATES_ARE_FRACTIONS}, dwell en segundos={DWELL_IS_SECONDS} (verificar con una tienda real)"
-        )
+        unit_note = f"asumido: tasas en fracción 0-1={RATES_ARE_FRACTIONS}, dwell en segundos={DWELL_IS_SECONDS} (verificar con una tienda real)"
         signals: list[RankingSignal] = []
 
         visitors = _find_number(body, _CANDIDATE_KEYS["visitors"])
-        signals.append(RankingSignal(
-            "visitors", visitors, measured=visitors is not None,
-            detail="visitantes de la tienda en la ventana; sin escala absoluta para puntuarlo (solo informativo)",
-        ))
+        signals.append(
+            RankingSignal(
+                "visitors",
+                visitors,
+                measured=visitors is not None,
+                detail="visitantes de la tienda en la ventana; sin escala absoluta para puntuarlo (solo informativo)",
+            )
+        )
 
         level = _find_value(body, _CANDIDATE_KEYS["quality_score_level"])
-        signals.append(RankingSignal(
-            "quality_score_level", level, measured=level is not None,
-            detail="escala no confirmada; solo informativo, no se usa para puntuar",
-        ))
+        signals.append(
+            RankingSignal(
+                "quality_score_level",
+                level,
+                measured=level is not None,
+                detail="escala no confirmada; solo informativo, no se usa para puntuar",
+            )
+        )
 
         dwell = _find_number(body, _CANDIDATE_KEYS["dwell_time"])
-        dwell_s = None if dwell is None else (dwell if DWELL_IS_SECONDS else dwell / 1000.0)
-        signals.append(RankingSignal(
-            "dwell_time_seconds", None if dwell_s is None else round(dwell_s, 1), measured=dwell_s is not None,
-            unit="s", detail=unit_note,
-        ))
+        dwell_s = (
+            None if dwell is None else (dwell if DWELL_IS_SECONDS else dwell / 1000.0)
+        )
+        signals.append(
+            RankingSignal(
+                "dwell_time_seconds",
+                None if dwell_s is None else round(dwell_s, 1),
+                measured=dwell_s is not None,
+                unit="s",
+                detail=unit_note,
+            )
+        )
 
         bounce = _find_number(body, _CANDIDATE_KEYS["bounce_rate"])
         signals.append(self._pct_signal("bounce_rate_pct", bounce, unit_note))
@@ -206,37 +242,59 @@ class AmazonStoreRankingConnector(StorePositioningConnector):
 
     def _pct_signal(self, key: str, raw: float | None, detail: str) -> RankingSignal:
         if raw is None:
-            return RankingSignal(key, None, measured=False, unit="%", detail="campo no encontrado en la respuesta")
+            return RankingSignal(
+                key,
+                None,
+                measured=False,
+                unit="%",
+                detail="campo no encontrado en la respuesta",
+            )
         pct = raw * 100.0 if RATES_ARE_FRACTIONS else raw
         return RankingSignal(key, round(pct, 2), measured=True, unit="%", detail=detail)
 
     def _section_ctr_signal(self, body: Any, detail: str) -> RankingSignal:
         """CTR aggregated over a `sections` list: sum(clicks) / sum(impressions)."""
-        sections = _find_value(body, ("sections", "sectionPerformance", "sectionalPerformance"))
+        sections = _find_value(
+            body, ("sections", "sectionPerformance", "sectionalPerformance")
+        )
         clicks = impressions = 0.0
         if isinstance(sections, list):
             for section in sections:
                 if not isinstance(section, dict):
                     continue
                 c = _find_number(section, ("clicks",))
-                i = _find_number(section, ("viewableImpressions", "impressions", "renders"))
+                i = _find_number(
+                    section, ("viewableImpressions", "impressions", "renders")
+                )
                 if c is not None and i:
                     clicks += c
                     impressions += i
         if impressions <= 0:
             return RankingSignal(
-                "section_ctr_pct", None, measured=False, unit="%",
+                "section_ctr_pct",
+                None,
+                measured=False,
+                unit="%",
                 detail="sin datos de secciones en la respuesta (o formato no reconocido)",
             )
         return RankingSignal(
-            "section_ctr_pct", round(clicks / impressions * 100, 2), measured=True, unit="%",
+            "section_ctr_pct",
+            round(clicks / impressions * 100, 2),
+            measured=True,
+            unit="%",
             detail="clicks / impresiones visibles agregado sobre las secciones de la tienda",
         )
 
     def _unavailable(self, reason: str) -> list[RankingSignal]:
         return [
             RankingSignal(k, None, measured=False, detail=reason)
-            for k in ("visitors", "dwell_time_seconds", "bounce_rate_pct", "new_to_store_pct", "section_ctr_pct")
+            for k in (
+                "visitors",
+                "dwell_time_seconds",
+                "bounce_rate_pct",
+                "new_to_store_pct",
+                "section_ctr_pct",
+            )
         ]
 
     # ── Scoring ──
@@ -245,13 +303,17 @@ class AmazonStoreRankingConnector(StorePositioningConnector):
     def _usable(signal: RankingSignal | None) -> bool:
         return bool(signal and signal.measured and signal.value is not None)
 
-    def score_signals(self, signal_map: dict[str, RankingSignal]) -> dict[str, float | None]:
+    def score_signals(
+        self, signal_map: dict[str, RankingSignal]
+    ) -> dict[str, float | None]:
         s = signal_map
 
         engagement_parts = []
         dwell, bounce = s.get("dwell_time_seconds"), s.get("bounce_rate_pct")
         if self._usable(dwell):
-            engagement_parts.append(min(100.0, dwell.value / DWELL_TARGET_S * 100.0))  # heuristic reference
+            engagement_parts.append(
+                min(100.0, dwell.value / DWELL_TARGET_S * 100.0)
+            )  # heuristic reference
         if self._usable(bounce):
             engagement_parts.append(max(0.0, 100.0 - bounce.value))
 
@@ -260,10 +322,20 @@ class AmazonStoreRankingConnector(StorePositioningConnector):
             # Raw visitor counts and the quality-score level have no absolute scale to score
             # against without a per-business baseline — left None rather than invented.
             "traffic_score": None,
-            "engagement_score": round(sum(engagement_parts) / len(engagement_parts), 1) if engagement_parts else None,
-            "new_visitor_score": round(min(100.0, new_visitors.value), 1) if self._usable(new_visitors) else None,
+            "engagement_score": (
+                round(sum(engagement_parts) / len(engagement_parts), 1)
+                if engagement_parts
+                else None
+            ),
+            "new_visitor_score": (
+                round(min(100.0, new_visitors.value), 1)
+                if self._usable(new_visitors)
+                else None
+            ),
             "content_performance_score": (
-                round(min(100.0, ctr.value / SECTION_CTR_TARGET_PCT * 100.0), 1) if self._usable(ctr) else None
+                round(min(100.0, ctr.value / SECTION_CTR_TARGET_PCT * 100.0), 1)
+                if self._usable(ctr)
+                else None
             ),
         }
 
@@ -273,35 +345,47 @@ class AmazonStoreRankingConnector(StorePositioningConnector):
 
         bounce = s.get("bounce_rate_pct")
         if self._usable(bounce) and bounce.value > BOUNCE_WARN_PCT:
-            rules.append({
-                "signal_key": "bounce_rate_pct", "severity": "warning",
-                "message": (
-                    f"El {bounce.value:.0f}% de los visitantes abandona tu Brand Store sin navegar — "
-                    "revisá la home de la tienda: banner, productos destacados y navegación. (umbral heurístico, no oficial de Amazon)"
-                ),
-                "current_value": f"{bounce.value:.0f}%", "target_value": f"<{BOUNCE_WARN_PCT:.0f}%",
-            })
+            rules.append(
+                {
+                    "signal_key": "bounce_rate_pct",
+                    "severity": "warning",
+                    "message": (
+                        f"El {bounce.value:.0f}% de los visitantes abandona tu Brand Store sin navegar — "
+                        "revisá la home de la tienda: banner, productos destacados y navegación. (umbral heurístico, no oficial de Amazon)"
+                    ),
+                    "current_value": f"{bounce.value:.0f}%",
+                    "target_value": f"<{BOUNCE_WARN_PCT:.0f}%",
+                }
+            )
 
         dwell = s.get("dwell_time_seconds")
         if self._usable(dwell) and dwell.value < DWELL_LOW_S:
-            rules.append({
-                "signal_key": "dwell_time_seconds", "severity": "info",
-                "message": (
-                    f"Tus visitantes pasan {dwell.value:.0f}s en la tienda — agregá secciones con video, "
-                    "colecciones y contenido que invite a explorar. (referencia heurística)"
-                ),
-                "current_value": f"{dwell.value:.0f}s", "target_value": f">{DWELL_LOW_S:.0f}s",
-            })
+            rules.append(
+                {
+                    "signal_key": "dwell_time_seconds",
+                    "severity": "info",
+                    "message": (
+                        f"Tus visitantes pasan {dwell.value:.0f}s en la tienda — agregá secciones con video, "
+                        "colecciones y contenido que invite a explorar. (referencia heurística)"
+                    ),
+                    "current_value": f"{dwell.value:.0f}s",
+                    "target_value": f">{DWELL_LOW_S:.0f}s",
+                }
+            )
 
         ctr = s.get("section_ctr_pct")
         if self._usable(ctr) and ctr.value < SECTION_CTR_LOW_PCT:
-            rules.append({
-                "signal_key": "section_ctr_pct", "severity": "info",
-                "message": (
-                    f"El CTR de tus secciones es {ctr.value:.2f}% — probá otro orden de secciones o imágenes/CTA más claros "
-                    "en las de menor clics. (referencia heurística)"
-                ),
-                "current_value": f"{ctr.value:.2f}%", "target_value": f">{SECTION_CTR_LOW_PCT:.0f}%",
-            })
+            rules.append(
+                {
+                    "signal_key": "section_ctr_pct",
+                    "severity": "info",
+                    "message": (
+                        f"El CTR de tus secciones es {ctr.value:.2f}% — probá otro orden de secciones o imágenes/CTA más claros "
+                        "en las de menor clics. (referencia heurística)"
+                    ),
+                    "current_value": f"{ctr.value:.2f}%",
+                    "target_value": f">{SECTION_CTR_LOW_PCT:.0f}%",
+                }
+            )
 
         return rules

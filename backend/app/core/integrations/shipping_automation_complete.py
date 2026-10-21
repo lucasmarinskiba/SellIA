@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 class Carrier(Enum):
     """Carriers soportados."""
+
     DHL = "dhl"
     FEDEX = "fedex"
     ANDREANI = "andreani"
@@ -35,6 +36,7 @@ class Carrier(Enum):
 
 class ShippingService(Enum):
     """Tipos de servicio de envío."""
+
     STANDARD = "standard"  # 5-7 días
     EXPRESS = "express"  # 2-3 días
     OVERNIGHT = "overnight"  # Día siguiente
@@ -43,6 +45,7 @@ class ShippingService(Enum):
 @dataclass
 class ShippingAddress:
     """Dirección de envío."""
+
     recipient_name: str
     phone: str
     email: str
@@ -58,6 +61,7 @@ class ShippingAddress:
 @dataclass
 class ShippingLabel:
     """Etiqueta de envío generada."""
+
     order_id: str
     tracking_number: str
     label_url: str
@@ -147,7 +151,9 @@ class DHLIntegration:
 
             # Estimar delivery
             est_days = 3 if service == ShippingService.OVERNIGHT else 5
-            estimated_delivery = (utc_now() + timedelta(days=est_days)).strftime("%Y-%m-%d")
+            estimated_delivery = (utc_now() + timedelta(days=est_days)).strftime(
+                "%Y-%m-%d"
+            )
 
             return {
                 "status": "success",
@@ -225,7 +231,9 @@ class FedExIntegration:
                             "phoneNumber": sender.get("phone"),
                         },
                         "address": {
-                            "streetLines": [f"{sender.get('street')} {sender.get('number')}"],
+                            "streetLines": [
+                                f"{sender.get('street')} {sender.get('number')}"
+                            ],
                             "city": sender.get("city"),
                             "stateOrProvinceCode": sender.get("state"),
                             "postalCode": sender.get("postal_code"),
@@ -272,13 +280,17 @@ class FedExIntegration:
             response.raise_for_status()
             data = response.json()
 
-            tracking_id = data["output"]["transactionShipments"][0]["masterTrackingNumber"]
+            tracking_id = data["output"]["transactionShipments"][0][
+                "masterTrackingNumber"
+            ]
             label_url = data["output"]["transactionShipments"][0]["pieceResponses"][0][
                 "packageDocuments"
             ][0]["url"]
 
             est_days = 1 if service == ShippingService.OVERNIGHT else 2
-            estimated_delivery = (utc_now() + timedelta(days=est_days)).strftime("%Y-%m-%d")
+            estimated_delivery = (utc_now() + timedelta(days=est_days)).strftime(
+                "%Y-%m-%d"
+            )
 
             return {
                 "status": "success",
@@ -335,7 +347,9 @@ class ShippingAutomationComplete:
         sms_service=None,
     ):
         self.dhl = DHLIntegration(dhl_api_key) if dhl_api_key else None
-        self.fedex = FedExIntegration(fedex_api_key, fedex_account) if fedex_api_key else None
+        self.fedex = (
+            FedExIntegration(fedex_api_key, fedex_account) if fedex_api_key else None
+        )
         self.email = email_service
         self.sms = sms_service
 
@@ -561,7 +575,9 @@ class ShippingAutomationComplete:
                     results["success"] += 1
                 else:
                     results["failed"] += 1
-                    results["errors"].append({"order_id": order.get("id"), "error": result.get("error")})
+                    results["errors"].append(
+                        {"order_id": order.get("id"), "error": result.get("error")}
+                    )
 
             except Exception as e:
                 logger.exception(f"Failed to create label for order {order.get('id')}")

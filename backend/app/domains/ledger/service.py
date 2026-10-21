@@ -73,10 +73,14 @@ class LedgerService:
     # ------------------------------------------------------------------
     # Setup
     # ------------------------------------------------------------------
-    async def ensure_setup(self, business_id: uuid.UUID, currency: str = "ARS") -> dict[str, Any]:
+    async def ensure_setup(
+        self, business_id: uuid.UUID, currency: str = "ARS"
+    ) -> dict[str, Any]:
         """Idempotently seed the chart of accounts and open the current period."""
         existing = await self.db.execute(
-            select(func.count(LedgerAccount.id)).where(LedgerAccount.business_id == business_id)
+            select(func.count(LedgerAccount.id)).where(
+                LedgerAccount.business_id == business_id
+            )
         )
         count = existing.scalar() or 0
         created = 0
@@ -99,14 +103,18 @@ class LedgerService:
 
     async def _subtypes_present(self, business_id: uuid.UUID) -> set[str]:
         res = await self.db.execute(
-            select(LedgerAccount.subtype).where(LedgerAccount.business_id == business_id)
+            select(LedgerAccount.subtype).where(
+                LedgerAccount.business_id == business_id
+            )
         )
         return {s for (s,) in res.all() if s}
 
     # ------------------------------------------------------------------
     # Account lookup
     # ------------------------------------------------------------------
-    async def get_accounts(self, business_id: uuid.UUID, active_only: bool = False) -> list[LedgerAccount]:
+    async def get_accounts(
+        self, business_id: uuid.UUID, active_only: bool = False
+    ) -> list[LedgerAccount]:
         q = select(LedgerAccount).where(LedgerAccount.business_id == business_id)
         if active_only:
             q = q.where(LedgerAccount.is_active.is_(True))
@@ -141,10 +149,14 @@ class LedgerService:
             raise LedgerError("resolve_account needs account_id, code or subtype")
         acc = (await self.db.execute(q)).scalars().first()
         if not acc:
-            raise LedgerError(f"account not found (id={account_id} code={code} subtype={subtype})")
+            raise LedgerError(
+                f"account not found (id={account_id} code={code} subtype={subtype})"
+            )
         return acc
 
-    async def create_account(self, business_id: uuid.UUID, **data: Any) -> LedgerAccount:
+    async def create_account(
+        self, business_id: uuid.UUID, **data: Any
+    ) -> LedgerAccount:
         acc_type = data["type"]
         if acc_type not in NORMAL_BALANCE_BY_TYPE:
             raise LedgerError(f"invalid account type: {acc_type}")
@@ -161,7 +173,9 @@ class LedgerService:
     # ------------------------------------------------------------------
     # Periods
     # ------------------------------------------------------------------
-    async def _get_or_create_period(self, business_id: uuid.UUID, dt: datetime) -> AccountingPeriod:
+    async def _get_or_create_period(
+        self, business_id: uuid.UUID, dt: datetime
+    ) -> AccountingPeriod:
         start, end, name = _month_bounds(dt)
         res = await self.db.execute(
             select(AccountingPeriod).where(
@@ -253,7 +267,11 @@ class LedgerService:
         if idempotency_key:
             dup = await self.find_by_idempotency(business_id, idempotency_key)
             if dup:
-                logger.info("Ledger: idempotent hit for key=%s -> entry %s", idempotency_key, dup.id)
+                logger.info(
+                    "Ledger: idempotent hit for key=%s -> entry %s",
+                    idempotency_key,
+                    dup.id,
+                )
                 return dup
 
         entry_date = entry_date or _utcnow()
@@ -337,7 +355,10 @@ class LedgerService:
             await self.db.refresh(entry, ["lines"])
         logger.info(
             "Ledger: posted %s (%s) %s lines total %s",
-            entry.entry_number, source, len(resolved), _q(total_debit),
+            entry.entry_number,
+            source,
+            len(resolved),
+            _q(total_debit),
         )
         return entry
 
@@ -432,7 +453,9 @@ class LedgerService:
             q = q.where(JournalEntry.entry_date >= start)
         if end is not None:
             q = q.where(JournalEntry.entry_date < end)
-        return {row[0]: (_q(row[1]), _q(row[2])) for row in (await self.db.execute(q)).all()}
+        return {
+            row[0]: (_q(row[1]), _q(row[2])) for row in (await self.db.execute(q)).all()
+        }
 
     async def trial_balance(
         self, business_id: uuid.UUID, as_of: datetime | None = None

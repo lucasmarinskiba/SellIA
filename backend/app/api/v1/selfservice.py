@@ -40,6 +40,7 @@ async def regenerate_api_key(
 ):
     """Regenerate the user's API key."""
     import secrets
+
     new_key = secrets.token_urlsafe(32)
     current_user.api_key = get_password_hash(new_key)
     await db.commit()
@@ -53,6 +54,7 @@ async def pause_subscription(
 ):
     """Pause the active subscription at end of period."""
     from sqlalchemy import select
+
     result = await db.execute(
         select(Subscription).where(
             Subscription.user_id == current_user.id,
@@ -64,7 +66,9 @@ async def pause_subscription(
         raise HTTPException(status_code=404, detail="No hay suscripción activa")
     sub.status = "paused"
     await db.commit()
-    return {"message": "Suscripción pausada. Se mantendrá activa hasta el final del período actual."}
+    return {
+        "message": "Suscripción pausada. Se mantendrá activa hasta el final del período actual."
+    }
 
 
 @router.get("/usage-summary")
@@ -105,7 +109,9 @@ async def usage_summary(
         "plan": plan_name,
         "ai_messages_used": int(ai_messages),
         "ai_messages_limit": plan_limit,
-        "percentage_used": round(ai_messages / plan_limit * 100, 1) if plan_limit else 0,
+        "percentage_used": (
+            round(ai_messages / plan_limit * 100, 1) if plan_limit else 0
+        ),
     }
 
 
@@ -114,10 +120,30 @@ async def list_diagnostic_types():
     """List available automated diagnostic types."""
     return {
         "types": [
-            {"id": "agent_offline", "name": "Mi agente no responde", "description": "Verifica que el agente esté activo y los canales conectados"},
-            {"id": "no_leads", "name": "No llegan leads", "description": "Revisa conversaciones recientes y conectividad de canales"},
-            {"id": "billing_issue", "name": "Problema de facturación", "description": "Verifica suscripción activa y uso del plan"},
-            {"id": "channel_disconnect", "name": "Canal desconectado", "description": "Revisa el estado de WhatsApp, Instagram, etc."},
-            {"id": "slow_ai", "name": "Respuestas AI lentas", "description": "Sugiere optimizaciones para reducir latencia"},
+            {
+                "id": "agent_offline",
+                "name": "Mi agente no responde",
+                "description": "Verifica que el agente esté activo y los canales conectados",
+            },
+            {
+                "id": "no_leads",
+                "name": "No llegan leads",
+                "description": "Revisa conversaciones recientes y conectividad de canales",
+            },
+            {
+                "id": "billing_issue",
+                "name": "Problema de facturación",
+                "description": "Verifica suscripción activa y uso del plan",
+            },
+            {
+                "id": "channel_disconnect",
+                "name": "Canal desconectado",
+                "description": "Revisa el estado de WhatsApp, Instagram, etc.",
+            },
+            {
+                "id": "slow_ai",
+                "name": "Respuestas AI lentas",
+                "description": "Sugiere optimizaciones para reducir latencia",
+            },
         ]
     }

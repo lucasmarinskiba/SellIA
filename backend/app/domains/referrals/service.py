@@ -12,8 +12,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domains.referrals.models import ReferralCode, ReferralTracking
 
 
-async def get_or_create_referral_code(db: AsyncSession, user_id: uuid.UUID) -> ReferralCode:
-    result = await db.execute(select(ReferralCode).where(ReferralCode.user_id == user_id))
+async def get_or_create_referral_code(
+    db: AsyncSession, user_id: uuid.UUID
+) -> ReferralCode:
+    result = await db.execute(
+        select(ReferralCode).where(ReferralCode.user_id == user_id)
+    )
     code = result.scalar_one_or_none()
     if not code:
         new_code = secrets.token_urlsafe(8).upper()[:10]
@@ -28,7 +32,9 @@ async def get_or_create_referral_code(db: AsyncSession, user_id: uuid.UUID) -> R
     return code
 
 
-async def track_click(db: AsyncSession, code_str: str, ip: str | None, ua: str | None) -> ReferralTracking | None:
+async def track_click(
+    db: AsyncSession, code_str: str, ip: str | None, ua: str | None
+) -> ReferralTracking | None:
     result = await db.execute(select(ReferralCode).where(ReferralCode.code == code_str))
     code = result.scalar_one_or_none()
     if not code:
@@ -47,8 +53,12 @@ async def track_click(db: AsyncSession, code_str: str, ip: str | None, ua: str |
     return track
 
 
-async def track_signup(db: AsyncSession, tracking_id: uuid.UUID, new_user_id: uuid.UUID):
-    result = await db.execute(select(ReferralTracking).where(ReferralTracking.id == tracking_id))
+async def track_signup(
+    db: AsyncSession, tracking_id: uuid.UUID, new_user_id: uuid.UUID
+):
+    result = await db.execute(
+        select(ReferralTracking).where(ReferralTracking.id == tracking_id)
+    )
     track = result.scalar_one_or_none()
     if not track:
         return
@@ -57,7 +67,9 @@ async def track_signup(db: AsyncSession, tracking_id: uuid.UUID, new_user_id: uu
     track.signed_up_at = datetime.now(UTC)
 
     # Update referrer stats
-    code_result = await db.execute(select(ReferralCode).where(ReferralCode.id == track.referral_code_id))
+    code_result = await db.execute(
+        select(ReferralCode).where(ReferralCode.id == track.referral_code_id)
+    )
     code = code_result.scalar_one_or_none()
     if code:
         code.total_signups += 1
@@ -65,7 +77,9 @@ async def track_signup(db: AsyncSession, tracking_id: uuid.UUID, new_user_id: uu
     await db.commit()
 
 
-async def track_conversion(db: AsyncSession, referred_user_id: uuid.UUID, amount: float):
+async def track_conversion(
+    db: AsyncSession, referred_user_id: uuid.UUID, amount: float
+):
     """Call this when a referred user makes their first purchase."""
     result = await db.execute(
         select(ReferralTracking).where(
@@ -82,7 +96,9 @@ async def track_conversion(db: AsyncSession, referred_user_id: uuid.UUID, amount
     track.reward_amount = min(amount * 0.20, 50)  # 20% up to $50
     track.reward_status = "pending"
 
-    code_result = await db.execute(select(ReferralCode).where(ReferralCode.id == track.referral_code_id))
+    code_result = await db.execute(
+        select(ReferralCode).where(ReferralCode.id == track.referral_code_id)
+    )
     code = code_result.scalar_one_or_none()
     if code:
         code.total_conversions += 1
@@ -93,7 +109,9 @@ async def track_conversion(db: AsyncSession, referred_user_id: uuid.UUID, amount
 
 
 async def get_referral_stats(db: AsyncSession, user_id: uuid.UUID) -> dict:
-    result = await db.execute(select(ReferralCode).where(ReferralCode.user_id == user_id))
+    result = await db.execute(
+        select(ReferralCode).where(ReferralCode.user_id == user_id)
+    )
     code = result.scalar_one_or_none()
     if not code:
         return {"has_code": False}

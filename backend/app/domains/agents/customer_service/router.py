@@ -71,11 +71,15 @@ async def get_interaction(
     """Get a single interaction."""
     interaction = await cs_service.get_interaction(db, interaction_id)
     if not interaction:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Interacción no encontrada")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Interacción no encontrada"
+        )
     return interaction
 
 
-@router.post("/config", response_model=ServiceBotConfigOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/config", response_model=ServiceBotConfigOut, status_code=status.HTTP_201_CREATED
+)
 async def create_or_update_config(
     data: ServiceBotConfigCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -85,12 +89,15 @@ async def create_or_update_config(
     from sqlalchemy import select
 
     from app.domains.businesses.models import Business
+
     result = await db.execute(
         select(Business).where(Business.user_id == current_user.id).limit(1)
     )
     business = result.scalar_one_or_none()
     if not business:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Negocio no encontrado")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Negocio no encontrado"
+        )
 
     config = await cs_service.create_or_update_config(
         db=db,
@@ -111,12 +118,15 @@ async def update_config(
     from sqlalchemy import select
 
     from app.domains.businesses.models import Business
+
     result = await db.execute(
         select(Business).where(Business.user_id == current_user.id).limit(1)
     )
     business = result.scalar_one_or_none()
     if not business:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Negocio no encontrado")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Negocio no encontrado"
+        )
 
     config = await cs_service.create_or_update_config(
         db=db,
@@ -136,16 +146,21 @@ async def get_config(
     from sqlalchemy import select
 
     from app.domains.businesses.models import Business
+
     result = await db.execute(
         select(Business).where(Business.user_id == current_user.id).limit(1)
     )
     business = result.scalar_one_or_none()
     if not business:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Negocio no encontrado")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Negocio no encontrado"
+        )
 
     config = await cs_service.get_config_by_business(db, business.id)
     if not config:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Configuración no encontrada")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Configuración no encontrada"
+        )
     return config
 
 

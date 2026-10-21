@@ -70,7 +70,9 @@ async def full_monitor_cycle(
 
 @router.post("/fetch-and-monitor")
 async def fetch_and_monitor(
-    url: Annotated[str, Query(description="A URL the user explicitly configured to monitor")],
+    url: Annotated[
+        str, Query(description="A URL the user explicitly configured to monitor")
+    ],
     competitor_name: Annotated[str, Query()],
     current_user: Annotated[User, Depends(get_current_user)],
     previous_snapshot: Annotated[dict[str, Any] | None, Body()] = None,

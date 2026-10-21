@@ -1,4 +1,5 @@
 """Phase X10: FOMO Generation Agent API."""
+
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends
@@ -100,7 +101,7 @@ async def create_countdown_sequence(
         "milestones": {
             "24h_warning": "Will send if not opened",
             "6h_warning": "Urgent final call",
-            "1h_final": "Last chance message"
+            "1h_final": "Last chance message",
         },
     }
 

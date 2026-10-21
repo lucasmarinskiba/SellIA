@@ -33,8 +33,7 @@ def summarize_conversation_task(conversation_id: str | None = None):
         async with AsyncSessionLocal() as db:
             since = datetime.now(UTC) - timedelta(hours=24)
             result = await db.execute(
-                select(Conversation.id)
-                .where(
+                select(Conversation.id).where(
                     Conversation.last_message_at >= since,
                     Conversation.is_active == True,
                 )

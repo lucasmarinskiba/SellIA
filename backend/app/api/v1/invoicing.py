@@ -20,6 +20,7 @@ _INVOICES_DB: dict[str, Any] = {}
 
 class InvoiceLineItem(BaseModel):
     """Item en factura."""
+
     product_name: str
     qty: int
     unit_price: float
@@ -28,6 +29,7 @@ class InvoiceLineItem(BaseModel):
 
 class Invoice(BaseModel):
     """Factura."""
+
     id: str
     invoice_number: str  # INV-2026-0001
     order_id: str
@@ -140,14 +142,16 @@ async def send_invoice_email(invoice_id: str):
 
     invoice = _INVOICES_DB[invoice_id]
 
-    logger.info(f"Reenviando factura {invoice['invoice_number']} a {invoice['customer_email']}")
+    logger.info(
+        f"Reenviando factura {invoice['invoice_number']} a {invoice['customer_email']}"
+    )
 
     # TODO: send_email con PDF adjunto
 
     return {
         "status": "sent",
         "invoice_number": invoice["invoice_number"],
-        "sent_to": invoice["customer_email"]
+        "sent_to": invoice["customer_email"],
     }
 
 

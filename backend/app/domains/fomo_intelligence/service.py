@@ -1,4 +1,5 @@
 """FOMO Intelligence service: registra usos reales + aprende qué convierte."""
+
 import uuid
 from datetime import UTC, datetime
 from typing import ClassVar
@@ -37,7 +38,9 @@ class FOMOIntelligenceService:
     }
 
     @classmethod
-    def _validate_and_render(cls, strategy_type: FOMOStrategyType, data_snapshot: dict) -> str:
+    def _validate_and_render(
+        cls, strategy_type: FOMOStrategyType, data_snapshot: dict
+    ) -> str:
         """Valida que el snapshot tenga los campos reales requeridos y arma el mensaje."""
         template = cls.STRATEGY_TEMPLATES[strategy_type]
         missing = [f for f in template["requires_fields"] if f not in data_snapshot]
@@ -123,10 +126,16 @@ class FOMOIntelligenceService:
         buckets: dict[tuple, dict] = {}
         for app in applications:
             key = (app.strategy_type, app.personality_target or "general")
-            bucket = buckets.setdefault(key, {
-                "sample_size": 0, "impressions": 0, "conversions": 0,
-                "genuine_votes": 0, "genuine_total": 0,
-            })
+            bucket = buckets.setdefault(
+                key,
+                {
+                    "sample_size": 0,
+                    "impressions": 0,
+                    "conversions": 0,
+                    "genuine_votes": 0,
+                    "genuine_total": 0,
+                },
+            )
             bucket["sample_size"] += 1
             for o in outcomes_by_app.get(app.id, []):
                 bucket["impressions"] += o.impressions
@@ -139,8 +148,16 @@ class FOMOIntelligenceService:
         report = []
         for (strategy_type, personality), b in buckets.items():
             conversion_rate = b["conversions"] / max(b["impressions"], 1)
-            trust_score = b["genuine_votes"] / max(b["genuine_total"], 1) if b["genuine_total"] else None
-            confidence = "high" if b["sample_size"] >= 30 else "medium" if b["sample_size"] >= 10 else "low"
+            trust_score = (
+                b["genuine_votes"] / max(b["genuine_total"], 1)
+                if b["genuine_total"]
+                else None
+            )
+            confidence = (
+                "high"
+                if b["sample_size"] >= 30
+                else "medium" if b["sample_size"] >= 10 else "low"
+            )
 
             # Upsert intelligence row
             existing = await db.execute(
@@ -162,38 +179,47 @@ class FOMOIntelligenceService:
             row.total_impressions = b["impressions"]
             row.total_conversions = b["conversions"]
             row.avg_conversion_rate = conversion_rate
-            row.trust_score = trust_score if trust_score is not None else row.trust_score
+            row.trust_score = (
+                trust_score if trust_score is not None else row.trust_score
+            )
             row.confidence_level = confidence
             row.recommendation = (
-                f"Escalar {strategy_type.value} para {personality}" if conversion_rate > 0.05
+                f"Escalar {strategy_type.value} para {personality}"
+                if conversion_rate > 0.05
                 else f"Ajustar mensaje de {strategy_type.value} para {personality} (conversión baja)"
             )
 
-            report.append({
-                "strategy_type": strategy_type.value,
-                "personality_type": personality,
-                "sample_size": b["sample_size"],
-                "conversion_rate": round(conversion_rate, 4),
-                "trust_score": round(trust_score, 2) if trust_score is not None else None,
-                "confidence_level": confidence,
-                "recommendation": row.recommendation,
-            })
+            report.append(
+                {
+                    "strategy_type": strategy_type.value,
+                    "personality_type": personality,
+                    "sample_size": b["sample_size"],
+                    "conversion_rate": round(conversion_rate, 4),
+                    "trust_score": (
+                        round(trust_score, 2) if trust_score is not None else None
+                    ),
+                    "confidence_level": confidence,
+                    "recommendation": row.recommendation,
+                }
+            )
 
         await db.commit()
         return {
             "generated_at": datetime.now(UTC).isoformat(),
             "total_applications": len(applications),
             "total_outcomes_measured": len(outcomes),
-            "strategy_breakdown": sorted(report, key=lambda r: r["conversion_rate"], reverse=True),
+            "strategy_breakdown": sorted(
+                report, key=lambda r: r["conversion_rate"], reverse=True
+            ),
         }
 
     @staticmethod
     async def recommend_strategy(db: AsyncSession, personality_type: str) -> dict:
         """Recomienda la mejor estrategia para una personalidad, basado en intelligence acumulada."""
         result = await db.execute(
-            select(FOMOStrategyIntelligence).where(
-                FOMOStrategyIntelligence.personality_type == personality_type
-            ).order_by(FOMOStrategyIntelligence.avg_conversion_rate.desc())
+            select(FOMOStrategyIntelligence)
+            .where(FOMOStrategyIntelligence.personality_type == personality_type)
+            .order_by(FOMOStrategyIntelligence.avg_conversion_rate.desc())
         )
         rows = result.scalars().all()
 
@@ -226,7 +252,10 @@ class FOMOIntelligenceService:
             "trust_score": round(best.trust_score, 2) if best.trust_score else None,
             "reason": best.recommendation,
             "alternatives": [
-                {"strategy": r.strategy_type.value, "conversion_rate": round(r.avg_conversion_rate, 4)}
+                {
+                    "strategy": r.strategy_type.value,
+                    "conversion_rate": round(r.avg_conversion_rate, 4),
+                }
                 for r in rows[1:]
             ],
         }

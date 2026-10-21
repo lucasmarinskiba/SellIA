@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class MarketAnalysis:
     """Resultado análisis mercado."""
+
     product: str
     category: str
     market_size: str  # Pequeño, Medio, Grande
@@ -33,7 +34,9 @@ class MarketAnalyzer:
     """Analiza mercado para producto dado."""
 
     @staticmethod
-    def analyze(product_name: str, product_description: str, price: float) -> MarketAnalysis:
+    def analyze(
+        product_name: str, product_description: str, price: float
+    ) -> MarketAnalysis:
         """
         Analiza mercado del producto.
 
@@ -49,7 +52,9 @@ class MarketAnalyzer:
 
         # Mock analysis basado en keywords producto
         category = MarketAnalyzer._detect_category(product_description)
-        market_size = MarketAnalyzer._estimate_market_size(category, product_description)
+        market_size = MarketAnalyzer._estimate_market_size(
+            category, product_description
+        )
         demand = MarketAnalyzer._estimate_demand(product_description)
         competition = MarketAnalyzer._estimate_competition(category)
         price_range = MarketAnalyzer._estimate_price_range(category, price)
@@ -168,7 +173,11 @@ class MarketAnalyzer:
             "max": range_data["max"],
             "avg": avg,
             "user_price": user_price,
-            "vs_avg": "competitivo" if abs(user_price - avg) / avg < 0.2 else "premium" if user_price > avg else "budget",
+            "vs_avg": (
+                "competitivo"
+                if abs(user_price - avg) / avg < 0.2
+                else "premium" if user_price > avg else "budget"
+            ),
         }
 
     @staticmethod
@@ -237,7 +246,10 @@ class MarketAnalyzer:
 
     @staticmethod
     def _recommend_positioning(
-        category: str, competition: str, price_range: dict[str, float], user_price: float
+        category: str,
+        competition: str,
+        price_range: dict[str, float],
+        user_price: float,
     ) -> str:
         """Recomendación posicionamiento."""
 
@@ -266,11 +278,24 @@ class MarketComparator:
         return {
             "user_positioning": user_product_analysis.recommended_positioning,
             "competitor_positioning": competitor_analysis.recommended_positioning,
-            "positioning_gap": "Diferenciación posible" if user_product_analysis.recommended_positioning != competitor_analysis.recommended_positioning else "Competing on same positioning",
+            "positioning_gap": (
+                "Diferenciación posible"
+                if user_product_analysis.recommended_positioning
+                != competitor_analysis.recommended_positioning
+                else "Competing on same positioning"
+            ),
             "price_gap_pct": (
-                (user_product_analysis.price_range["user_price"] - competitor_analysis.price_range["avg"])
+                (
+                    user_product_analysis.price_range["user_price"]
+                    - competitor_analysis.price_range["avg"]
+                )
                 / competitor_analysis.price_range["avg"]
                 * 100
             ),
-            "recommendation": "Diferenciarse o cambiar positioning" if user_product_analysis.recommended_positioning == competitor_analysis.recommended_positioning else "Posicionamiento claro diferente",
+            "recommendation": (
+                "Diferenciarse o cambiar positioning"
+                if user_product_analysis.recommended_positioning
+                == competitor_analysis.recommended_positioning
+                else "Posicionamiento claro diferente"
+            ),
         }

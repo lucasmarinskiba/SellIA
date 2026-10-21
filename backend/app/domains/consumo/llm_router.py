@@ -51,8 +51,8 @@ _TASK_CATEGORIES: dict[TaskComplexity, list[str]] = {
 
 # Model tiers by cost (cheapest first)
 TIER_SIMPLE = [
-    ("ollama", "llama3.2:1b"),   # free, local
-    ("openai", "gpt-4o-mini"),   # very cheap
+    ("ollama", "llama3.2:1b"),  # free, local
+    ("openai", "gpt-4o-mini"),  # very cheap
 ]
 TIER_MEDIUM = [
     ("openai", "gpt-4o-mini"),
@@ -86,16 +86,46 @@ def _heuristic_classify(prompt: str) -> TaskComplexity:
         return TaskComplexity.COMPLEX
 
     simple_keywords = [
-        "cómo", "qué es", "dónde", "cuándo", "cuál", "definición",
-        "hello", "hi", "hola", "gracias", "thanks", "ok", "sí", "no",
-        "status", "estado", "precio", "price", "plan", "billing",
+        "cómo",
+        "qué es",
+        "dónde",
+        "cuándo",
+        "cuál",
+        "definición",
+        "hello",
+        "hi",
+        "hola",
+        "gracias",
+        "thanks",
+        "ok",
+        "sí",
+        "no",
+        "status",
+        "estado",
+        "precio",
+        "price",
+        "plan",
+        "billing",
     ]
     complex_keywords = [
-        "estrategia", "strategy", "análisis detallado", "deep analysis",
-        "plan de acción", "action plan", "investigación", "research",
-        "comparativa", "benchmark", "optimización avanzada", "advanced optimization",
-        "modelo de negocio", "business model", "proyección", "forecast",
-        "diagnóstico completo", "full diagnostic",
+        "estrategia",
+        "strategy",
+        "análisis detallado",
+        "deep analysis",
+        "plan de acción",
+        "action plan",
+        "investigación",
+        "research",
+        "comparativa",
+        "benchmark",
+        "optimización avanzada",
+        "advanced optimization",
+        "modelo de negocio",
+        "business model",
+        "proyección",
+        "forecast",
+        "diagnóstico completo",
+        "full diagnostic",
     ]
 
     simple_score = sum(1 for kw in simple_keywords if kw in text)
@@ -131,7 +161,9 @@ class SmartRouterV2:
         try:
             prompt_embedding = await embedding_service.embed_text(prompt)
         except Exception as e:
-            logger.warning(f"Embedding classification failed, using heuristic: {e}", exc_info=True)
+            logger.warning(
+                f"Embedding classification failed, using heuristic: {e}", exc_info=True
+            )
             return _heuristic_classify(prompt)
 
         best_complexity = TaskComplexity.MEDIUM
@@ -139,8 +171,7 @@ class SmartRouterV2:
 
         for complexity, embeddings in self._category_embeddings.items():
             score = max(
-                _cosine_similarity(prompt_embedding, cat_emb)
-                for cat_emb in embeddings
+                _cosine_similarity(prompt_embedding, cat_emb) for cat_emb in embeddings
             )
             if score > best_score:
                 best_score = score
@@ -175,7 +206,9 @@ class SmartRouterV2:
             return ("openai", "gpt-4o-mini", complexity)
 
         provider, model = tier[0]
-        logger.info(f"LLM Router v2: complexity={complexity.value} -> {provider}/{model}")
+        logger.info(
+            f"LLM Router v2: complexity={complexity.value} -> {provider}/{model}"
+        )
         return provider, model, complexity
 
     async def decompose_and_route(
@@ -196,27 +229,35 @@ class SmartRouterV2:
             parts = [p.strip() for p in prompt.split("\n\n") if p.strip()]
             if len(parts) > 1:
                 for i, part in enumerate(parts):
-                    sub_tasks.append({
-                        "task": f"part_{i + 1}",
-                        "prompt": part,
-                        "complexity": complexity,
-                    })
+                    sub_tasks.append(
+                        {
+                            "task": f"part_{i + 1}",
+                            "prompt": part,
+                            "complexity": complexity,
+                        }
+                    )
             else:
-                sub_tasks.append({
+                sub_tasks.append(
+                    {
+                        "task": "main",
+                        "prompt": prompt,
+                        "complexity": complexity,
+                    }
+                )
+        else:
+            sub_tasks.append(
+                {
                     "task": "main",
                     "prompt": prompt,
                     "complexity": complexity,
-                })
-        else:
-            sub_tasks.append({
-                "task": "main",
-                "prompt": prompt,
-                "complexity": complexity,
-            })
+                }
+            )
 
         routed: list[dict[str, Any]] = []
         for sub in sub_tasks:
-            provider, model, comp = await self.route_model(sub["prompt"], ollama_available)
+            provider, model, comp = await self.route_model(
+                sub["prompt"], ollama_available
+            )
             sub["provider"] = provider
             sub["model"] = model
             sub["estimated_cost"] = estimate_cost_usd(sub["prompt"], comp)
@@ -262,9 +303,9 @@ class SmartRouterV2:
 def estimate_cost_usd(prompt: str, complexity: TaskComplexity) -> float:
     """Rough cost estimate for logging/metrics (per 1K tokens)."""
     prices = {
-        TaskComplexity.SIMPLE: 0.0006,    # gpt-4o-mini
-        TaskComplexity.MEDIUM: 0.003,     # haiku / mini
-        TaskComplexity.COMPLEX: 0.015,    # gpt-4o / sonnet
+        TaskComplexity.SIMPLE: 0.0006,  # gpt-4o-mini
+        TaskComplexity.MEDIUM: 0.003,  # haiku / mini
+        TaskComplexity.COMPLEX: 0.015,  # gpt-4o / sonnet
     }
     return prices.get(complexity, 0.003)
 

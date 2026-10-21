@@ -107,7 +107,9 @@ class ClosingFramework:
     ]
 
     @staticmethod
-    def handle_objection(objection_type: str, context: dict[str, Any]) -> dict[str, Any]:
+    def handle_objection(
+        objection_type: str, context: dict[str, Any]
+    ) -> dict[str, Any]:
         """Maneja objeción específica (Belfort)."""
 
         handler = ClosingFramework.OBJECTION_HANDLERS.get(

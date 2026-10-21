@@ -8,6 +8,7 @@ from .affiliate_sales_methods import AffiliateMethod, get_best_methods_for_produ
 @dataclass
 class AffiliateStrategy:
     """Complete affiliate strategy for product."""
+
     product_id: str
     product_name: str
     platform: str
@@ -18,6 +19,7 @@ class AffiliateStrategy:
     time_to_first_sale: str
     required_resources: dict[str, int]  # budget, time, channels
     success_metrics: dict[str, float]
+
 
 class AffiliateStrategyEngine:
     """Engine for selecting optimal affiliate strategies."""
@@ -48,9 +50,7 @@ class AffiliateStrategyEngine:
             target_audience=target_audience,
             primary_methods=primary,
             secondary_methods=secondary,
-            estimated_monthly_revenue=self._estimate_revenue(
-                primary, product_type
-            ),
+            estimated_monthly_revenue=self._estimate_revenue(primary, product_type),
             time_to_first_sale=self._estimate_time_to_sale(primary),
             required_resources=self._estimate_resources(primary, budget),
             success_metrics=self._define_metrics(product_type),
@@ -59,7 +59,9 @@ class AffiliateStrategyEngine:
         self.strategies[product_id] = strategy
         return strategy
 
-    def _estimate_revenue(self, methods: list[AffiliateMethod], product_type: str) -> float:
+    def _estimate_revenue(
+        self, methods: list[AffiliateMethod], product_type: str
+    ) -> float:
         """Estimate monthly revenue from methods."""
         if not methods:
             return 0
@@ -80,7 +82,9 @@ class AffiliateStrategyEngine:
             return "weeks"
         return "months"
 
-    def _estimate_resources(self, methods: list[AffiliateMethod], budget: str) -> dict[str, int]:
+    def _estimate_resources(
+        self, methods: list[AffiliateMethod], budget: str
+    ) -> dict[str, int]:
         """Estimate required resources."""
         budget_map = {"low": 500, "medium": 2000, "high": 10000}
         effort = sum(m.effort_level for m in methods) / len(methods) if methods else 5
@@ -115,7 +119,9 @@ class AffiliateStrategyEngine:
         )
         return sorted_wins[:5]
 
-    def optimize_strategy(self, product_id: str, performance_data: dict) -> AffiliateStrategy:
+    def optimize_strategy(
+        self, product_id: str, performance_data: dict
+    ) -> AffiliateStrategy:
         """Optimize strategy based on performance data."""
         strategy = self.strategies.get(product_id)
         if not strategy:

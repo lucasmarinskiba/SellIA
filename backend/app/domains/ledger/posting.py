@@ -84,22 +84,50 @@ class PostingService:
         cash_subtype = self._cash_subtype(gateway)
 
         lines: list[dict[str, Any]] = [
-            {"account_subtype": cash_subtype, "debit": total,
-             "description": f"Cobro orden {order_id}"},
-            {"account_subtype": rev_subtype, "credit": net_revenue,
-             "description": "Venta neta", "contact_type": "customer", "contact_id": customer_id},
+            {
+                "account_subtype": cash_subtype,
+                "debit": total,
+                "description": f"Cobro orden {order_id}",
+            },
+            {
+                "account_subtype": rev_subtype,
+                "credit": net_revenue,
+                "description": "Venta neta",
+                "contact_type": "customer",
+                "contact_id": customer_id,
+            },
         ]
         if tax > 0:
-            lines.append({"account_subtype": "vat_output", "credit": tax,
-                          "description": "IVA débito fiscal"})
+            lines.append(
+                {
+                    "account_subtype": "vat_output",
+                    "credit": tax,
+                    "description": "IVA débito fiscal",
+                }
+            )
         if discount > 0:
-            lines.append({"account_subtype": "sales_discounts", "debit": discount,
-                          "description": "Descuento otorgado"})
+            lines.append(
+                {
+                    "account_subtype": "sales_discounts",
+                    "debit": discount,
+                    "description": "Descuento otorgado",
+                }
+            )
         if fee > 0:
-            lines.append({"account_subtype": "payment_processing_fees", "debit": fee,
-                          "description": f"Comisión {gateway or 'pasarela'}"})
-            lines.append({"account_subtype": cash_subtype, "credit": fee,
-                          "description": "Retención de comisión"})
+            lines.append(
+                {
+                    "account_subtype": "payment_processing_fees",
+                    "debit": fee,
+                    "description": f"Comisión {gateway or 'pasarela'}",
+                }
+            )
+            lines.append(
+                {
+                    "account_subtype": cash_subtype,
+                    "credit": fee,
+                    "description": "Retención de comisión",
+                }
+            )
 
         return await self.ledger.post_entry(
             business_id,
@@ -134,12 +162,25 @@ class PostingService:
         ref = refund_ref or str(order_id)
 
         lines: list[dict[str, Any]] = [
-            {"account_subtype": rev_subtype, "debit": net, "description": "Reversión de venta"},
-            {"account_subtype": cash_subtype, "credit": amt, "description": f"Reembolso orden {order_id}"},
+            {
+                "account_subtype": rev_subtype,
+                "debit": net,
+                "description": "Reversión de venta",
+            },
+            {
+                "account_subtype": cash_subtype,
+                "credit": amt,
+                "description": f"Reembolso orden {order_id}",
+            },
         ]
         if tax > 0:
-            lines.append({"account_subtype": "vat_output", "debit": tax,
-                          "description": "Reversión IVA débito"})
+            lines.append(
+                {
+                    "account_subtype": "vat_output",
+                    "debit": tax,
+                    "description": "Reversión IVA débito",
+                }
+            )
 
         return await self.ledger.post_entry(
             business_id,
@@ -166,13 +207,22 @@ class PostingService:
         campaign: str | None = None,
     ) -> Any:
         amt = _q(amount)
-        subtype = AD_PLATFORM_SUBTYPE.get((platform or "").lower().strip(), "ad_spend_other")
+        subtype = AD_PLATFORM_SUBTYPE.get(
+            (platform or "").lower().strip(), "ad_spend_other"
+        )
         credit_subtype = "accounts_payable" if on_credit else "cash"
         lines = [
-            {"account_subtype": subtype, "debit": amt,
-             "description": f"Ads {platform}" + (f" — {campaign}" if campaign else "")},
-            {"account_subtype": credit_subtype, "credit": amt,
-             "description": f"Pago ads {platform}"},
+            {
+                "account_subtype": subtype,
+                "debit": amt,
+                "description": f"Ads {platform}"
+                + (f" — {campaign}" if campaign else ""),
+            },
+            {
+                "account_subtype": credit_subtype,
+                "credit": amt,
+                "description": f"Pago ads {platform}",
+            },
         ]
         return await self.ledger.post_entry(
             business_id,
@@ -204,12 +254,25 @@ class PostingService:
         cash_subtype = self._cash_subtype(gateway)
         rev_subtype = "deferred_revenue" if deferred else "subscription_revenue"
         lines = [
-            {"account_subtype": cash_subtype, "debit": amt, "description": "Cobro suscripción"},
-            {"account_subtype": rev_subtype, "credit": net, "description": "Ingreso suscripción"},
+            {
+                "account_subtype": cash_subtype,
+                "debit": amt,
+                "description": "Cobro suscripción",
+            },
+            {
+                "account_subtype": rev_subtype,
+                "credit": net,
+                "description": "Ingreso suscripción",
+            },
         ]
         if tax > 0:
-            lines.append({"account_subtype": "vat_output", "credit": tax,
-                          "description": "IVA débito"})
+            lines.append(
+                {
+                    "account_subtype": "vat_output",
+                    "credit": tax,
+                    "description": "IVA débito",
+                }
+            )
         return await self.ledger.post_entry(
             business_id,
             lines,
@@ -241,30 +304,50 @@ class PostingService:
         net = _q(amt - vat)
         credit_subtype = "accounts_payable" if on_credit else "cash"
         lines: list[dict[str, Any]] = [
-            {"account_subtype": expense_subtype, "debit": net,
-             "description": memo or expense_subtype,
-             "contact_type": "vendor", "contact_id": vendor_id},
+            {
+                "account_subtype": expense_subtype,
+                "debit": net,
+                "description": memo or expense_subtype,
+                "contact_type": "vendor",
+                "contact_id": vendor_id,
+            },
         ]
         if vat > 0:
-            lines.append({"account_subtype": "vat_input", "debit": vat,
-                          "description": "IVA crédito fiscal"})
-        lines.append({"account_subtype": credit_subtype, "credit": amt,
-                      "description": "Pago" if not on_credit else "A pagar",
-                      "contact_type": "vendor", "contact_id": vendor_id})
+            lines.append(
+                {
+                    "account_subtype": "vat_input",
+                    "debit": vat,
+                    "description": "IVA crédito fiscal",
+                }
+            )
+        lines.append(
+            {
+                "account_subtype": credit_subtype,
+                "credit": amt,
+                "description": "Pago" if not on_credit else "A pagar",
+                "contact_type": "vendor",
+                "contact_id": vendor_id,
+            }
+        )
         return await self.ledger.post_entry(
             business_id,
             lines,
             entry_date=entry_date,
             memo=memo or f"Gasto {expense_subtype}",
-            source=JournalSource.ADJUSTMENT.value if expense_subtype == "misc_expenses"
-            else JournalSource.MANUAL.value,
+            source=(
+                JournalSource.ADJUSTMENT.value
+                if expense_subtype == "misc_expenses"
+                else JournalSource.MANUAL.value
+            ),
             source_ref=expense_ref,
             idempotency_key=f"expense:{business_id}:{expense_ref}",
             currency=currency,
         )
 
     # ------------------------------------------------------------------
-    async def backfill_orders(self, business_id: uuid.UUID, limit: int = 500) -> dict[str, Any]:
+    async def backfill_orders(
+        self, business_id: uuid.UUID, limit: int = 500
+    ) -> dict[str, Any]:
         """One-shot: post ledger entries for already-paid orders that predate
         the ledger going live. Safe to re-run (idempotent per order)."""
         from sqlalchemy import select
@@ -272,10 +355,12 @@ class PostingService:
         from app.domains.orders.models import Order, PaymentStatus
 
         res = await self.db.execute(
-            select(Order).where(
+            select(Order)
+            .where(
                 Order.business_id == business_id,
                 Order.payment_status == PaymentStatus.COMPLETED,
-            ).limit(limit)
+            )
+            .limit(limit)
         )
         orders = res.scalars().all()
         posted = 0

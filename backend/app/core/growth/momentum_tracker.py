@@ -30,7 +30,13 @@ class MomentumTracker:
             "day_1_retention": round(active_day_1 / signups_day * 100, 1),
             "day_7_retention": round(active_day_7 / signups_day * 100, 1),
             "day_30_retention": round(active_day_30 / signups_day * 100, 1),
-            "health_score": "excellent" if active_day_30 / signups_day > 0.3 else "good" if active_day_30 / signups_day > 0.1 else "needs_improvement",
+            "health_score": (
+                "excellent"
+                if active_day_30 / signups_day > 0.3
+                else (
+                    "good" if active_day_30 / signups_day > 0.1 else "needs_improvement"
+                )
+            ),
         }
 
     @staticmethod
@@ -44,15 +50,23 @@ class MomentumTracker:
         if not retention_by_week:
             return {}
 
-        week_1_retention = retention_by_week[0] / cohort_size if len(retention_by_week) > 0 else 0
-        week_4_retention = retention_by_week[-1] / cohort_size if retention_by_week else 0
+        week_1_retention = (
+            retention_by_week[0] / cohort_size if len(retention_by_week) > 0 else 0
+        )
+        week_4_retention = (
+            retention_by_week[-1] / cohort_size if retention_by_week else 0
+        )
 
         return {
             "cohort": cohort_name,
             "cohort_size": cohort_size,
             "week_1_retention": round(week_1_retention * 100, 1),
             "week_4_retention": round(week_4_retention * 100, 1),
-            "retention_cliff": "Week 1" if week_1_retention < 0.3 else "Week 2+" if week_1_retention > 0.5 else "Gradual",
+            "retention_cliff": (
+                "Week 1"
+                if week_1_retention < 0.3
+                else "Week 2+" if week_1_retention > 0.5 else "Gradual"
+            ),
             "retention_by_week": retention_by_week,
         }
 
@@ -77,10 +91,18 @@ class MomentumTracker:
 
         return {
             "churn_risk": round(churn_risk, 2),
-            "risk_level": "critical" if churn_risk > 0.5 else "high" if churn_risk > 0.3 else "low",
+            "risk_level": (
+                "critical"
+                if churn_risk > 0.5
+                else "high" if churn_risk > 0.3 else "low"
+            ),
             "engagement_score": current_engagement_score,
             "trend": engagement_trend,
-            "intervention": "Win-back campaign" if churn_risk > 0.5 else "Re-engagement email" if churn_risk > 0.3 else "Monitor",
+            "intervention": (
+                "Win-back campaign"
+                if churn_risk > 0.5
+                else "Re-engagement email" if churn_risk > 0.3 else "Monitor"
+            ),
         }
 
     @staticmethod
@@ -101,8 +123,16 @@ class MomentumTracker:
         return {
             "metric": metric_name,
             "growth_rate_pct": round(growth_rate, 1),
-            "growth_trend": "accelerating" if growth_rate > 15 else "healthy" if growth_rate > 5 else "slowing",
-            "status": "on_track" if growth_rate >= 15 else "warning" if growth_rate >= 5 else "concerning",
+            "growth_trend": (
+                "accelerating"
+                if growth_rate > 15
+                else "healthy" if growth_rate > 5 else "slowing"
+            ),
+            "status": (
+                "on_track"
+                if growth_rate >= 15
+                else "warning" if growth_rate >= 5 else "concerning"
+            ),
         }
 
     @staticmethod
@@ -117,12 +147,16 @@ class MomentumTracker:
         current = current_users
 
         for month in range(months + 1):
-            forecast.append({
-                "month": month,
-                "users": int(current),
-                "monthly_new": int(current * monthly_growth_rate) if month > 0 else 0,
-            })
-            current *= (1 + monthly_growth_rate)
+            forecast.append(
+                {
+                    "month": month,
+                    "users": int(current),
+                    "monthly_new": (
+                        int(current * monthly_growth_rate) if month > 0 else 0
+                    ),
+                }
+            )
+            current *= 1 + monthly_growth_rate
 
         return forecast
 

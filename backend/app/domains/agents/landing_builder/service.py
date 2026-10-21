@@ -31,10 +31,13 @@ def _get_storage_dir() -> str:
     return base
 
 
-async def _fetch_product_data(db: AsyncSession, product_id: uuid.UUID | None) -> dict[str, Any]:
+async def _fetch_product_data(
+    db: AsyncSession, product_id: uuid.UUID | None
+) -> dict[str, Any]:
     if not product_id:
         return {}
     from app.domains.catalogs.models import CatalogItem
+
     result = await db.execute(select(CatalogItem).where(CatalogItem.id == product_id))
     product = result.scalar_one_or_none()
     if not product:
@@ -97,7 +100,12 @@ async def _generate_copy_with_llm(
             "testimonials": [],
             "faq": [],
             "pricing_section": {},
-            "color_scheme": {"primary": "#3B82F6", "secondary": "#10B981", "background": "#F9FAFB", "text": "#111827"},
+            "color_scheme": {
+                "primary": "#3B82F6",
+                "secondary": "#10B981",
+                "background": "#F9FAFB",
+                "text": "#111827",
+            },
         }
     try:
         content = response.content.strip()
@@ -116,11 +124,18 @@ async def _generate_copy_with_llm(
             "testimonials": [],
             "faq": [],
             "pricing_section": {},
-            "color_scheme": {"primary": "#3B82F6", "secondary": "#10B981", "background": "#F9FAFB", "text": "#111827"},
+            "color_scheme": {
+                "primary": "#3B82F6",
+                "secondary": "#10B981",
+                "background": "#F9FAFB",
+                "text": "#111827",
+            },
         }
 
 
-def _build_nextjs_page(copy: dict[str, Any], product_data: dict[str, Any], variant_name: str) -> str:
+def _build_nextjs_page(
+    copy: dict[str, Any], product_data: dict[str, Any], variant_name: str
+) -> str:
     """Construye una página Next.js + Tailwind básica a partir del copy."""
     cs = copy.get("color_scheme", {})
     primary = cs.get("primary", "#3B82F6")
@@ -134,40 +149,47 @@ def _build_nextjs_page(copy: dict[str, Any], product_data: dict[str, Any], varia
     pricing = copy.get("pricing_section", {})
     plans = pricing.get("plans", [])
 
-    features_html = "\n".join(
-        f"""      <div className=\"p-6 bg-white rounded-2xl shadow-sm\">
+    features_html = (
+        "\n".join(f"""      <div className=\"p-6 bg-white rounded-2xl shadow-sm\">
         <h3 className=\"text-lg font-semibold mb-2\" style={{{{color: '{primary}'}}}}>{f.get('title', '')}</h3>
         <p className=\"text-gray-600\">{f.get('description', '')}</p>
-      </div>"""
-        for f in features
-    ) or '<p className="text-gray-600">Próximamente más información.</p>'
+      </div>""" for f in features)
+        or '<p className="text-gray-600">Próximamente más información.</p>'
+    )
 
-    testimonials_html = "\n".join(
-        f"""      <blockquote className=\"p-6 bg-white rounded-2xl shadow-sm\">
+    testimonials_html = (
+        "\n".join(
+            f"""      <blockquote className=\"p-6 bg-white rounded-2xl shadow-sm\">
         <p className=\"italic text-gray-700 mb-4\">&quot;{t.get('quote', '')}&quot;</p>
         <footer className=\"text-sm font-semibold\" style={{{{color: '{primary}'}}}}>— {t.get('author', '')}</footer>
-      </blockquote>"""
-        for t in testimonials
-    ) or ''
+      </blockquote>""" for t in testimonials
+        )
+        or ""
+    )
 
-    faq_html = "\n".join(
-        f"""      <details className=\"group bg-white rounded-xl p-4 shadow-sm\">
+    faq_html = (
+        "\n".join(
+            f"""      <details className=\"group bg-white rounded-xl p-4 shadow-sm\">
         <summary className=\"font-semibold cursor-pointer\" style={{{{color: '{primary}'}}}}>{q.get('question', '')}</summary>
         <p className=\"mt-2 text-gray-600\">{q.get('answer', '')}</p>
-      </details>"""
-        for q in faq
-    ) or ''
+      </details>""" for q in faq
+        )
+        or ""
+    )
 
-    plans_html = "\n".join(
-        f"""      <div className=\"p-6 bg-white rounded-2xl shadow-sm border-t-4\" style={{{{borderColor: '{primary}'}}}}>
+    plans_html = (
+        "\n".join(
+            f"""      <div className=\"p-6 bg-white rounded-2xl shadow-sm border-t-4\" style={{{{borderColor: '{primary}'}}}}>
         <h3 className=\"text-xl font-bold mb-2\">{p.get('name', '')}</h3>
         <p className=\"text-2xl font-extrabold mb-4\" style={{{{color: '{primary}'}}}}>{p.get('price', '')}</p>
         <ul className=\"space-y-2 text-gray-600\">
           {' '.join(f'<li>• {feat}</li>' for feat in p.get('features', []))}
         </ul>
       </div>"""
-        for p in plans
-    ) or ''
+            for p in plans
+        )
+        or ""
+    )
 
     return f"""'use client';
 import React from 'react';
@@ -269,20 +291,34 @@ async def generate_landing_page(
         variants: list[dict[str, Any]] = []
         files: dict[str, str] = {}
 
-        variant_names = ["Variante A (Directa)", "Variante B (Emocional)", "Variante C (Social Proof)"]
+        variant_names = [
+            "Variante A (Directa)",
+            "Variante B (Emocional)",
+            "Variante C (Social Proof)",
+        ]
         for variant_name in variant_names:
-            copy = await _generate_copy_with_llm(db, business_id, product_data, style, variant_name)
+            copy = await _generate_copy_with_llm(
+                db, business_id, product_data, style, variant_name
+            )
             code = _build_nextjs_page(copy, product_data, variant_name)
-            safe_name = variant_name.lower().replace(" ", "_").replace("(", "").replace(")", "").replace("/", "_")
+            safe_name = (
+                variant_name.lower()
+                .replace(" ", "_")
+                .replace("(", "")
+                .replace(")", "")
+                .replace("/", "_")
+            )
             files[f"pages/{safe_name}/page.tsx"] = code
-            variants.append({
-                "variant_name": variant_name,
-                "headline": copy.get("headline", ""),
-                "subheadline": copy.get("subheadline", ""),
-                "cta_text": copy.get("cta_text", ""),
-                "color_scheme": copy.get("color_scheme", {}),
-                "conversion_rate": None,
-            })
+            variants.append(
+                {
+                    "variant_name": variant_name,
+                    "headline": copy.get("headline", ""),
+                    "subheadline": copy.get("subheadline", ""),
+                    "cta_text": copy.get("cta_text", ""),
+                    "color_scheme": copy.get("color_scheme", {}),
+                    "conversion_rate": None,
+                }
+            )
 
         # Guardar en storage
         storage_dir = _get_storage_dir()
@@ -292,7 +328,9 @@ async def generate_landing_page(
         for path, content in files.items():
             full_path = os.path.join(job_dir, path)
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
-            await asyncio.to_thread(write_file, full_path, "w", encoding="utf-8", data=content)
+            await asyncio.to_thread(
+                write_file, full_path, "w", encoding="utf-8", data=content
+            )
 
         # ZIP
         zip_path = os.path.join(storage_dir, f"{job.id}.zip")
@@ -303,7 +341,9 @@ async def generate_landing_page(
         job.variants = variants
         job.generated_code = {"files": files}
         job.generated_code_url = f"/storage/exports/landing_pages/{job.id}.zip"
-        job.preview_url = f"/storage/exports/landing_pages/{job.id}/pages/variante_a_directa/page.tsx"
+        job.preview_url = (
+            f"/storage/exports/landing_pages/{job.id}/pages/variante_a_directa/page.tsx"
+        )
         job.status = "completed"
         await db.commit()
         await db.refresh(job)
@@ -318,7 +358,9 @@ async def generate_landing_page(
     return job
 
 
-async def get_landing_code(db: AsyncSession, job_id: uuid.UUID) -> dict[str, Any] | None:
+async def get_landing_code(
+    db: AsyncSession, job_id: uuid.UUID
+) -> dict[str, Any] | None:
     result = await db.execute(select(LandingPageJob).where(LandingPageJob.id == job_id))
     job = result.scalar_one_or_none()
     if not job:

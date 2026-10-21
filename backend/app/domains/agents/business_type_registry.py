@@ -13,7 +13,6 @@ from app.domains.business_context.models import BusinessType
 AGENT_RELEVANCE: dict[BusinessType, dict[str, int]] = {
     # Format: {agent_slug: priority_score (0-100)}
     # Agents not listed are considered irrelevant (score 0)
-
     BusinessType.PHYSICAL_PRODUCTS: {
         "market_analyst": 90,
         "financial_planner": 80,
@@ -380,7 +379,9 @@ class BusinessTypeRegistry:
     """Registry that provides business-type-aware configurations."""
 
     @staticmethod
-    def get_relevant_agents(business_type: BusinessType, min_priority: int = 50) -> list[str]:
+    def get_relevant_agents(
+        business_type: BusinessType, min_priority: int = 50
+    ) -> list[str]:
         """Return agent slugs relevant for this business type, sorted by priority."""
         scores = AGENT_RELEVANCE.get(business_type, AGENT_RELEVANCE[BusinessType.OTHER])
         filtered = {k: v for k, v in scores.items() if v >= min_priority}
@@ -393,7 +394,9 @@ class BusinessTypeRegistry:
         return scores.get(agent_slug, 0)
 
     @staticmethod
-    def get_relevant_tools(business_type: BusinessType, min_priority: int = 30) -> list[str]:
+    def get_relevant_tools(
+        business_type: BusinessType, min_priority: int = 30
+    ) -> list[str]:
         """Return tool names relevant for this business type, sorted by priority."""
         scores = TOOL_RELEVANCE.get(business_type, TOOL_RELEVANCE[BusinessType.OTHER])
         filtered = {k: v for k, v in scores.items() if v >= min_priority}
@@ -413,11 +416,21 @@ class BusinessTypeRegistry:
         )
 
     @staticmethod
-    def is_agent_relevant(business_type: BusinessType, agent_slug: str, threshold: int = 50) -> bool:
+    def is_agent_relevant(
+        business_type: BusinessType, agent_slug: str, threshold: int = 50
+    ) -> bool:
         """Check if an agent is relevant enough for this business type."""
-        return BusinessTypeRegistry.get_agent_priority(business_type, agent_slug) >= threshold
+        return (
+            BusinessTypeRegistry.get_agent_priority(business_type, agent_slug)
+            >= threshold
+        )
 
     @staticmethod
-    def is_tool_relevant(business_type: BusinessType, tool_name: str, threshold: int = 30) -> bool:
+    def is_tool_relevant(
+        business_type: BusinessType, tool_name: str, threshold: int = 30
+    ) -> bool:
         """Check if a tool is relevant enough for this business type."""
-        return BusinessTypeRegistry.get_tool_priority(business_type, tool_name) >= threshold
+        return (
+            BusinessTypeRegistry.get_tool_priority(business_type, tool_name)
+            >= threshold
+        )

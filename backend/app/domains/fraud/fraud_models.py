@@ -23,6 +23,7 @@ from app.core.database import Base
 
 class FraudRiskLevel(str, Enum):
     """Fraud risk assessment."""
+
     LOW = "low"  # 0-15% risk
     MEDIUM = "medium"  # 16-50% risk
     HIGH = "high"  # 51-80% risk
@@ -31,6 +32,7 @@ class FraudRiskLevel(str, Enum):
 
 class FraudReason(str, Enum):
     """Primary fraud indicator."""
+
     VELOCITY_ABUSE = "velocity_abuse"  # Too many orders in short time
     IMPOSSIBLE_LOCATION = "impossible_location"  # Travel distance impossible
     NEW_ACCOUNT = "new_account"  # Brand new account
@@ -46,11 +48,23 @@ class FraudReason(str, Enum):
 
 class OrderFraudScore(Base):
     """Per-order fraud risk assessment."""
+
     __tablename__ = "order_fraud_scores"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    order_id = Column(String(255), ForeignKey("orders.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    order_id = Column(
+        String(255),
+        ForeignKey("orders.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
     # No ForeignKey: there is no `customers` table. The id is supplied by the caller (a user, lead or
     # contact), so it stays a plain indexed UUID instead of a constraint that can never be created.
     customer_id = Column(UUID(as_uuid=True), nullable=False, index=True)
@@ -94,16 +108,27 @@ class OrderFraudScore(Base):
 
     __table_args__ = (
         Index("idx_business_level", "business_id", "fraud_risk_level"),
-        Index("idx_unresolved", "business_id", "is_confirmed_fraud", "is_confirmed_legitimate"),
+        Index(
+            "idx_unresolved",
+            "business_id",
+            "is_confirmed_fraud",
+            "is_confirmed_legitimate",
+        ),
     )
 
 
 class AccountFraudScore(Base):
     """Per-customer account fraud risk."""
+
     __tablename__ = "account_fraud_scores"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     # No ForeignKey: there is no `customers` table. The id is supplied by the caller (a user, lead or
     # contact), so it stays a plain indexed UUID instead of a constraint that can never be created.
     customer_id = Column(UUID(as_uuid=True), nullable=False, unique=True, index=True)
@@ -149,10 +174,16 @@ class AccountFraudScore(Base):
 
 class FraudBlacklist(Base):
     """Blacklisted entities (email, IP, card, phone)."""
+
     __tablename__ = "fraud_blacklist"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Entity
     entity_type = Column(String(20), nullable=False)  # email, ip, card_token, phone
@@ -178,10 +209,16 @@ class FraudBlacklist(Base):
 
 class FraudMetrics(Base):
     """Aggregate fraud detection metrics."""
+
     __tablename__ = "fraud_metrics"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, unique=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
 
     # Date
     date = Column(String(10), nullable=False)  # YYYY-MM-DD
@@ -216,6 +253,4 @@ class FraudMetrics(Base):
 
     business = relationship("Business", foreign_keys=[business_id])
 
-    __table_args__ = (
-        Index("idx_business_date", "business_id", "date"),
-    )
+    __table_args__ = (Index("idx_business_date", "business_id", "date"),)

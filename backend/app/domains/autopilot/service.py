@@ -63,7 +63,10 @@ class AutopilotEngine:
         if not config.is_active:
             return False, "Autopilot is not active for this business."
         if config.is_paused:
-            return False, f"Autopilot is paused: {config.paused_reason or 'No reason given.'}"
+            return (
+                False,
+                f"Autopilot is paused: {config.paused_reason or 'No reason given.'}",
+            )
 
         # Check daily limits
         can_execute, limit_reason = await self._check_daily_limits(config, action_type)
@@ -94,7 +97,11 @@ class AutopilotEngine:
 
         # Check amount threshold for orders/deals
         amount = context.get("amount", Decimal(0))
-        if action_type in (AutopilotActionType.CREATE_ORDER, AutopilotActionType.CLOSE_DEAL) and amount > config.approval_threshold_amount:
+        if (
+            action_type
+            in (AutopilotActionType.CREATE_ORDER, AutopilotActionType.CLOSE_DEAL)
+            and amount > config.approval_threshold_amount
+        ):
             return False, (
                 f"Amount ${amount:,.2f} exceeds approval threshold "
                 f"${config.approval_threshold_amount:,.2f}. Requires manual approval."
@@ -106,7 +113,9 @@ class AutopilotEngine:
         self, config: AutopilotConfig, action_type: AutopilotActionType
     ) -> tuple[bool, str]:
         """Check if daily limits would be exceeded."""
-        today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start = datetime.now(UTC).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
 
         # Count today's executed actions
         result = await self.db.execute(
@@ -127,18 +136,23 @@ class AutopilotEngine:
             msg_result = await self.db.execute(
                 select(func.count(AutopilotActionLog.id)).where(
                     AutopilotActionLog.business_id == config.business_id,
-                    AutopilotActionLog.action_type.in_([
-                        AutopilotActionType.SEND_FOLLOWUP,
-                        AutopilotActionType.SEND_PROPOSAL,
-                        AutopilotActionType.START_SEQUENCE,
-                    ]),
+                    AutopilotActionLog.action_type.in_(
+                        [
+                            AutopilotActionType.SEND_FOLLOWUP,
+                            AutopilotActionType.SEND_PROPOSAL,
+                            AutopilotActionType.START_SEQUENCE,
+                        ]
+                    ),
                     AutopilotActionLog.status == AutopilotActionStatus.EXECUTED,
                     AutopilotActionLog.created_at >= today_start,
                 )
             )
             msgs_today = msg_result.scalar() or 0
             if msgs_today >= config.max_daily_auto_messages:
-                return False, f"Daily auto-message limit reached ({config.max_daily_auto_messages})."
+                return (
+                    False,
+                    f"Daily auto-message limit reached ({config.max_daily_auto_messages}).",
+                )
 
         # Close limit
         if action_type == AutopilotActionType.CLOSE_DEAL:
@@ -152,7 +166,10 @@ class AutopilotEngine:
             )
             closes_today = close_result.scalar() or 0
             if closes_today >= config.max_daily_auto_closes:
-                return False, f"Daily auto-close limit reached ({config.max_daily_auto_closes})."
+                return (
+                    False,
+                    f"Daily auto-close limit reached ({config.max_daily_auto_closes}).",
+                )
 
         # Order limit
         if action_type == AutopilotActionType.CREATE_ORDER:
@@ -166,7 +183,10 @@ class AutopilotEngine:
             )
             orders_today = order_result.scalar() or 0
             if orders_today >= config.max_daily_auto_orders:
-                return False, f"Daily auto-order limit reached ({config.max_daily_auto_orders})."
+                return (
+                    False,
+                    f"Daily auto-order limit reached ({config.max_daily_auto_orders}).",
+                )
 
         return True, "Within daily limits."
 
@@ -199,7 +219,9 @@ class AutopilotEngine:
             error_message=error_message,
             requires_approval=requires_approval,
             revenue_impact=revenue_impact,
-            executed_at=datetime.now(UTC) if status == AutopilotActionStatus.EXECUTED else None,
+            executed_at=(
+                datetime.now(UTC) if status == AutopilotActionStatus.EXECUTED else None
+            ),
         )
         self.db.add(log)
         await self.db.commit()
@@ -210,7 +232,9 @@ class AutopilotEngine:
         )
         return log
 
-    async def approve_action(self, action_log_id: uuid.UUID, user_id: uuid.UUID, reason: str | None = None) -> AutopilotActionLog | None:
+    async def approve_action(
+        self, action_log_id: uuid.UUID, user_id: uuid.UUID, reason: str | None = None
+    ) -> AutopilotActionLog | None:
         """Manually approve a pending action."""
         result = await self.db.execute(
             select(AutopilotActionLog).where(AutopilotActionLog.id == action_log_id)
@@ -233,7 +257,9 @@ class AutopilotEngine:
 
         return log
 
-    async def reject_action(self, action_log_id: uuid.UUID, reason: str) -> AutopilotActionLog | None:
+    async def reject_action(
+        self, action_log_id: uuid.UUID, reason: str
+    ) -> AutopilotActionLog | None:
         """Manually reject a pending action."""
         result = await self.db.execute(
             select(AutopilotActionLog).where(AutopilotActionLog.id == action_log_id)
@@ -251,15 +277,19 @@ class AutopilotEngine:
 
     async def get_today_counts(self, business_id: uuid.UUID) -> dict[str, int]:
         """Get today's action counts for a business."""
-        today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start = datetime.now(UTC).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
         result = await self.db.execute(
             select(
                 AutopilotActionLog.status,
                 func.count(AutopilotActionLog.id),
-            ).where(
+            )
+            .where(
                 AutopilotActionLog.business_id == business_id,
                 AutopilotActionLog.created_at >= today_start,
-            ).group_by(AutopilotActionLog.status)
+            )
+            .group_by(AutopilotActionLog.status)
         )
         counts = {row[0].value: row[1] for row in result.all()}
         return {
@@ -272,9 +302,12 @@ class AutopilotEngine:
 
     async def get_last_action(self, business_id: uuid.UUID) -> datetime | None:
         result = await self.db.execute(
-            select(AutopilotActionLog.created_at).where(
+            select(AutopilotActionLog.created_at)
+            .where(
                 AutopilotActionLog.business_id == business_id,
-            ).order_by(desc(AutopilotActionLog.created_at)).limit(1)
+            )
+            .order_by(desc(AutopilotActionLog.created_at))
+            .limit(1)
         )
         row = result.scalar_one_or_none()
         return row
@@ -323,7 +356,10 @@ class AutopilotExecutor:
                 entity_id=recommendation.id,
                 reason=reason,
                 status=AutopilotActionStatus.PENDING_APPROVAL,
-                context_data={"recommendation_id": str(recommendation.id), "payload": recommendation.action_payload},
+                context_data={
+                    "recommendation_id": str(recommendation.id),
+                    "payload": recommendation.action_payload,
+                },
                 requires_approval=True,
             )
             return False
@@ -331,7 +367,11 @@ class AutopilotExecutor:
         # Execute
         try:
             success = await self._execute_mapped_action(recommendation)
-            status = AutopilotActionStatus.EXECUTED if success else AutopilotActionStatus.FAILED
+            status = (
+                AutopilotActionStatus.EXECUTED
+                if success
+                else AutopilotActionStatus.FAILED
+            )
             await engine.log_action(
                 business_id=recommendation.business_id,
                 action_type=autopilot_action,
@@ -339,7 +379,10 @@ class AutopilotExecutor:
                 entity_id=recommendation.id,
                 reason=f"Auto-executed recommendation: {recommendation.title}",
                 status=status,
-                context_data={"recommendation_id": str(recommendation.id), "payload": recommendation.action_payload},
+                context_data={
+                    "recommendation_id": str(recommendation.id),
+                    "payload": recommendation.action_payload,
+                },
             )
             if success:
                 recommendation.status = RecommendationStatus.APPLIED
@@ -347,7 +390,9 @@ class AutopilotExecutor:
                 await self.db.commit()
             return success
         except Exception as e:
-            logger.exception(f"Autopilot execution failed for recommendation {recommendation.id}")
+            logger.exception(
+                f"Autopilot execution failed for recommendation {recommendation.id}"
+            )
             await engine.log_action(
                 business_id=recommendation.business_id,
                 action_type=autopilot_action,
@@ -387,7 +432,9 @@ class AutopilotExecutor:
             conversation_id = payload.get("conversation_id")
             if conversation_id:
                 conv_result = await self.db.execute(
-                    select(Conversation).where(Conversation.id == uuid.UUID(conversation_id))
+                    select(Conversation).where(
+                        Conversation.id == uuid.UUID(conversation_id)
+                    )
                 )
                 conv = conv_result.scalar_one_or_none()
                 if conv:
@@ -420,7 +467,9 @@ class AutopilotExecutor:
             conversation_id = payload.get("conversation_id")
             if conversation_id:
                 conv_result = await self.db.execute(
-                    select(Conversation).where(Conversation.id == uuid.UUID(conversation_id))
+                    select(Conversation).where(
+                        Conversation.id == uuid.UUID(conversation_id)
+                    )
                 )
                 conv = conv_result.scalar_one_or_none()
                 if conv:
@@ -454,7 +503,9 @@ class AutopilotReportService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def generate_daily_report(self, business_id: uuid.UUID, report_date: datetime | None = None) -> AutopilotDailyReport:
+    async def generate_daily_report(
+        self, business_id: uuid.UUID, report_date: datetime | None = None
+    ) -> AutopilotDailyReport:
         """Generate a daily report for a business."""
         if report_date is None:
             report_date = datetime.now(UTC)
@@ -469,11 +520,13 @@ class AutopilotReportService:
                 AutopilotActionLog.status,
                 func.count(AutopilotActionLog.id),
                 func.sum(AutopilotActionLog.revenue_impact),
-            ).where(
+            )
+            .where(
                 AutopilotActionLog.business_id == business_id,
                 AutopilotActionLog.created_at >= day_start,
                 AutopilotActionLog.created_at < day_end,
-            ).group_by(AutopilotActionLog.action_type, AutopilotActionLog.status)
+            )
+            .group_by(AutopilotActionLog.action_type, AutopilotActionLog.status)
         )
 
         stats = {
@@ -492,7 +545,10 @@ class AutopilotReportService:
 
         for action_type, status, count, revenue in result.all():
             if status == AutopilotActionStatus.EXECUTED:
-                if action_type in (AutopilotActionType.SEND_FOLLOWUP, AutopilotActionType.SEND_PROPOSAL):
+                if action_type in (
+                    AutopilotActionType.SEND_FOLLOWUP,
+                    AutopilotActionType.SEND_PROPOSAL,
+                ):
                     stats["messages_sent"] += count
                 elif action_type == AutopilotActionType.CLOSE_DEAL:
                     stats["deals_closed"] += count
@@ -504,7 +560,10 @@ class AutopilotReportService:
                     stats["sequences_started"] += count
                 elif action_type == AutopilotActionType.ACTIVATE_RECOVERY_WORKFLOW:
                     stats["workflows_activated"] += count
-                elif action_type in (AutopilotActionType.QUALIFY_LEAD, AutopilotActionType.UPDATE_LEAD_SCORE):
+                elif action_type in (
+                    AutopilotActionType.QUALIFY_LEAD,
+                    AutopilotActionType.UPDATE_LEAD_SCORE,
+                ):
                     stats["leads_contacted"] += count
                 if revenue:
                     stats["revenue_generated"] += revenue
@@ -518,6 +577,7 @@ class AutopilotReportService:
         # Calculate deals value closed
         deals_value = Decimal(0)
         from app.domains.crm.models import Deal
+
         deals_result = await self.db.execute(
             select(func.sum(Deal.value)).where(
                 Deal.business_id == business_id,
@@ -567,17 +627,24 @@ class AutopilotReportService:
         if report.revenue_generated and report.revenue_generated > 0:
             parts.append(f"generó ${float(report.revenue_generated):,.2f} en revenue")
         if report.actions_escalated:
-            parts.append(f"escaló {report.actions_escalated} acciones para revisión humana")
+            parts.append(
+                f"escaló {report.actions_escalated} acciones para revisión humana"
+            )
 
         if not parts:
             return "Hoy no hubo actividad automática. El sistema estuvo monitoreando."
 
         return "Hoy SellIA " + ", ".join(parts) + "."
 
-    async def get_latest_report(self, business_id: uuid.UUID) -> AutopilotDailyReport | None:
+    async def get_latest_report(
+        self, business_id: uuid.UUID
+    ) -> AutopilotDailyReport | None:
         result = await self.db.execute(
-            select(AutopilotDailyReport).where(
+            select(AutopilotDailyReport)
+            .where(
                 AutopilotDailyReport.business_id == business_id,
-            ).order_by(desc(AutopilotDailyReport.report_date)).limit(1)
+            )
+            .order_by(desc(AutopilotDailyReport.report_date))
+            .limit(1)
         )
         return result.scalar_one_or_none()

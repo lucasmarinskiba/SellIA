@@ -39,7 +39,9 @@ async def create_subscription(
     return sub
 
 
-async def list_subscriptions(db: AsyncSession, user_id: uuid.UUID) -> list[WebhookSubscription]:
+async def list_subscriptions(
+    db: AsyncSession, user_id: uuid.UUID
+) -> list[WebhookSubscription]:
     result = await db.execute(
         select(WebhookSubscription).where(WebhookSubscription.user_id == user_id)
     )
@@ -98,7 +100,9 @@ async def list_deliveries(
     return result.scalars().all()
 
 
-async def get_delivery(db: AsyncSession, delivery_id: uuid.UUID) -> WebhookDelivery | None:
+async def get_delivery(
+    db: AsyncSession, delivery_id: uuid.UUID
+) -> WebhookDelivery | None:
     result = await db.execute(
         select(WebhookDelivery).where(WebhookDelivery.id == delivery_id)
     )
@@ -154,7 +158,9 @@ async def record_delivery(
     return delivery
 
 
-async def trigger_event(db: AsyncSession, user_id: uuid.UUID, event_type: str, payload: dict) -> int:
+async def trigger_event(
+    db: AsyncSession, user_id: uuid.UUID, event_type: str, payload: dict
+) -> int:
     """Fan out a real business event to every active subscription this user
     has for it, actually delivering (real signed HTTP POST) and recording
     each attempt. This was the one piece missing from an otherwise-complete
@@ -166,13 +172,19 @@ async def trigger_event(db: AsyncSession, user_id: uuid.UUID, event_type: str, p
     subscriptions were triggered.
     """
     result = await db.execute(
-        select(WebhookSubscription).where(WebhookSubscription.user_id == user_id, WebhookSubscription.active == True)
+        select(WebhookSubscription).where(
+            WebhookSubscription.user_id == user_id, WebhookSubscription.active == True
+        )
     )
-    subscriptions = [s for s in result.scalars().all() if event_type in (s.events or [])]
+    subscriptions = [
+        s for s in result.scalars().all() if event_type in (s.events or [])
+    ]
 
     for sub in subscriptions:
         success, status_code, body = await deliver_webhook(sub, event_type, payload)
-        await record_delivery(db, sub.id, event_type, payload, success, status_code, body)
+        await record_delivery(
+            db, sub.id, event_type, payload, success, status_code, body
+        )
         sub.updated_at = datetime.now(UTC)
     if subscriptions:
         await db.commit()
@@ -180,7 +192,9 @@ async def trigger_event(db: AsyncSession, user_id: uuid.UUID, event_type: str, p
     return len(subscriptions)
 
 
-async def fire_business_event(db: AsyncSession, business_id: uuid.UUID, event_type: str, payload: dict) -> int:
+async def fire_business_event(
+    db: AsyncSession, business_id: uuid.UUID, event_type: str, payload: dict
+) -> int:
     """Convenience wrapper for the real trigger points (lead/deal/payment
     events) -- they know a business_id, not a user_id (subscriptions are
     owned by users, since one user can own several businesses). Resolves
@@ -206,7 +220,9 @@ async def fire_business_event(db: AsyncSession, business_id: uuid.UUID, event_ty
         return 0
 
 
-async def retry_delivery(db: AsyncSession, delivery: WebhookDelivery) -> WebhookDelivery:
+async def retry_delivery(
+    db: AsyncSession, delivery: WebhookDelivery
+) -> WebhookDelivery:
     result = await db.execute(
         select(WebhookSubscription).where(
             WebhookSubscription.id == delivery.subscription_id

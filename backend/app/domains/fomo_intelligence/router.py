@@ -1,4 +1,5 @@
 """FOMO Intelligence API: registro + inteligencia de las 4 estrategias FOMO."""
+
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException
@@ -13,11 +14,18 @@ router = APIRouter(prefix="/api/v1/fomo-intelligence", tags=["fomo-intelligence"
 @router.post("/register-strategy")
 async def register_strategy_application(
     business_id: Annotated[str, Body()],
-    strategy_type: Annotated[str, Body(description="escasez_real | prueba_social | exclusividad | transparencia")],
+    strategy_type: Annotated[
+        str,
+        Body(description="escasez_real | prueba_social | exclusividad | transparencia"),
+    ],
     target_type: Annotated[str, Body()],
     target_id: Annotated[str, Body()],
-    real_data_source: Annotated[str, Body(description="De dónde sale el dato real, ej: inventory_count")],
-    data_snapshot: Annotated[dict, Body(description="El dato real capturado en este momento")],
+    real_data_source: Annotated[
+        str, Body(description="De dónde sale el dato real, ej: inventory_count")
+    ],
+    data_snapshot: Annotated[
+        dict, Body(description="El dato real capturado en este momento")
+    ],
     db: Annotated[AsyncSession, Depends(get_db)],
     channel: Annotated[str | None, Body()] = None,
     personality_target: Annotated[str | None, Body()] = None,
@@ -25,8 +33,15 @@ async def register_strategy_application(
     """Registra un uso real de una de las 4 estrategias FOMO. Rechaza datos incompletos."""
     try:
         application = await FOMOIntelligenceService.register_strategy_application(
-            db, business_id, strategy_type, target_type, target_id,
-            real_data_source, data_snapshot, channel, personality_target,
+            db,
+            business_id,
+            strategy_type,
+            target_type,
+            target_id,
+            real_data_source,
+            data_snapshot,
+            channel,
+            personality_target,
         )
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
@@ -52,7 +67,13 @@ async def record_outcome(
 ) -> dict:
     """Registra el resultado medido de una aplicación de estrategia."""
     outcome = await FOMOIntelligenceService.record_outcome(
-        db, application_id, impressions, clicks, conversions, revenue, perceived_as_genuine
+        db,
+        application_id,
+        impressions,
+        clicks,
+        conversions,
+        revenue,
+        perceived_as_genuine,
     )
     return {
         "outcome_id": outcome.id,
@@ -114,7 +135,11 @@ async def list_strategies() -> dict:
                 "id": "transparencia",
                 "name": "Transparencia",
                 "description": "Muestra resultados y logros reales de tu comunidad para despertar interés genuino.",
-                "requires_fields": ["metric_name", "metric_value", "verification_source"],
+                "requires_fields": [
+                    "metric_name",
+                    "metric_value",
+                    "verification_source",
+                ],
             },
         ]
     }

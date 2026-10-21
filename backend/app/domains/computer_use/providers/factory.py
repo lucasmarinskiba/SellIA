@@ -27,9 +27,11 @@ PROVIDER_PRIORITY = [
 async def _is_ollama_available() -> bool:
     """Check if Ollama server is reachable and has a vision model."""
     from app.core.config import get_settings
+
     base_url = get_settings().OLLAMA_BASE_URL.rstrip("/")
     try:
         import aiohttp
+
         async with aiohttp.ClientSession() as session, session.get(
             f"{base_url}/api/tags",
             timeout=aiohttp.ClientTimeout(total=3),
@@ -70,6 +72,7 @@ def create_provider(
             return None
         try:
             from .anthropic_native import AnthropicNativeProvider
+
             return AnthropicNativeProvider(api_key=key)
         except ImportError as e:
             logger.warning(f"Anthropic native provider not available: {e}")
@@ -80,10 +83,12 @@ def create_provider(
         if not key:
             return None
         from .openai_vision import OpenAIVisionProvider
+
         return OpenAIVisionProvider(api_key=key)
 
     elif provider_name == "ollama":
         from .ollama_vision import OllamaVisionProvider
+
         return OllamaVisionProvider()
 
     else:
@@ -118,7 +123,9 @@ async def create_provider_with_fallback(
         if provider:
             logger.info(f"Using preferred Computer Use provider: {preferred_provider}")
             return provider
-        logger.warning(f"Preferred provider {preferred_provider} not available, trying fallback...")
+        logger.warning(
+            f"Preferred provider {preferred_provider} not available, trying fallback..."
+        )
 
     # Try each provider in priority order
     for provider_name, env_key in PROVIDER_PRIORITY:
@@ -135,7 +142,11 @@ async def create_provider_with_fallback(
             continue
 
         # Check if API key is available
-        key = api_key if env_key and api_key else getattr(settings, env_key, None) if env_key else None
+        key = (
+            api_key
+            if env_key and api_key
+            else getattr(settings, env_key, None) if env_key else None
+        )
         if not key:
             continue
 
@@ -182,7 +193,9 @@ class FallbackComputerUseProvider(ComputerUseProvider):
                 if result.action_type != "error":
                     self.current_index = i
                     return result
-                errors.append(f"{provider.provider_name}: {result.params.get('message', 'error')}")
+                errors.append(
+                    f"{provider.provider_name}: {result.params.get('message', 'error')}"
+                )
             except Exception as e:
                 logger.exception("decide_action: error inesperado")
                 errors.append(f"{provider.provider_name}: {e!s}")

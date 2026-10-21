@@ -45,9 +45,14 @@ class CartAbandonmentTemplates:
 </p>
             """,
             "variables": [
-                "product_name", "product_count", "product_count_plural",
-                "product_price", "quantity", "total_price",
-                "visitor_count", "checkout_url"
+                "product_name",
+                "product_count",
+                "product_count_plural",
+                "product_price",
+                "quantity",
+                "total_price",
+                "visitor_count",
+                "checkout_url",
             ],
             "send_delay_minutes": 5,
             "open_rate_expected": 0.42,
@@ -96,8 +101,12 @@ class CartAbandonmentTemplates:
 </p>
             """,
             "variables": [
-                "product_name", "remaining_stock", "available_stock",
-                "product_price", "original_price", "checkout_url"
+                "product_name",
+                "remaining_stock",
+                "available_stock",
+                "product_price",
+                "original_price",
+                "checkout_url",
             ],
             "send_delay_minutes": 120,
             "open_rate_expected": 0.35,
@@ -152,9 +161,7 @@ class CartAbandonmentTemplates:
   Garantía: Si no estás satisfecho en 30 días, te devolvemos el dinero.
 </p>
             """,
-            "variables": [
-                "subtotal", "discounted_price", "savings", "checkout_url"
-            ],
+            "variables": ["subtotal", "discounted_price", "savings", "checkout_url"],
             "send_delay_minutes": 1440,
             "open_rate_expected": 0.52,
             "click_rate_expected": 0.35,
@@ -229,7 +236,15 @@ class FlashSaleTemplates:
   Comprar Ahora →
 </a>
             """,
-            "variables": ["discount", "time_left", "sold_percent", "top_product_1", "top_product_2", "top_product_3", "shop_url"],
+            "variables": [
+                "discount",
+                "time_left",
+                "sold_percent",
+                "top_product_1",
+                "top_product_2",
+                "top_product_3",
+                "shop_url",
+            ],
             "send_delay_minutes": 240,
         }
 
@@ -277,7 +292,13 @@ class PostPurchaseTemplates:
 <p><strong>¿Necesitas ayuda?</strong></p>
 <a href="{{support_url}}">Contactar soporte</a>
             """,
-            "variables": ["order_id", "customer_name", "delivery_date", "tracking_url", "support_url"],
+            "variables": [
+                "order_id",
+                "customer_name",
+                "delivery_date",
+                "tracking_url",
+                "support_url",
+            ],
             "send_delay_minutes": 5,
         }
 
@@ -305,7 +326,14 @@ class PostPurchaseTemplates:
   <a href="{{url_2}}">Ver más →</a>
 </div>
             """,
-            "variables": ["recommended_product_1", "price_1", "url_1", "recommended_product_2", "price_2", "url_2"],
+            "variables": [
+                "recommended_product_1",
+                "price_1",
+                "url_1",
+                "recommended_product_2",
+                "price_2",
+                "url_2",
+            ],
             "send_delay_minutes": 1440,
         }
 

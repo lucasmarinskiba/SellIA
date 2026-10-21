@@ -42,7 +42,6 @@ class SeoFOOMService:
                 "format": "case study + math",
                 "cta": "See ROI calculator",
             },
-
             # Week 2: Solution intro
             {
                 "week": 2,
@@ -61,7 +60,6 @@ class SeoFOOMService:
                 "format": "interactive table",
                 "cta": "Try free for 14 days",
             },
-
             # Week 3-4: Social proof at scale
             {
                 "week": 3,
@@ -79,7 +77,6 @@ class SeoFOOMService:
                 "format": "press release",
                 "cta": "See all awards",
             },
-
             # Week 5-8: Problem-specific content
             {
                 "week": 5,
@@ -509,12 +506,14 @@ class ProductLedGrowthService:
             ("priority_support", "1-hour response time"),
             ("custom_branding", "White-label solution"),
         ]:
-            gates.append({
-                "feature": feature_name,
-                "gate": "Pro plan required",
-                "cta": f"Unlock {benefit}",
-                "discount": "40% OFF first month",
-            })
+            gates.append(
+                {
+                    "feature": feature_name,
+                    "gate": "Pro plan required",
+                    "cta": f"Unlock {benefit}",
+                    "discount": "40% OFF first month",
+                }
+            )
 
         return {
             "feature_tiers": features,

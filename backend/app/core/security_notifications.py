@@ -29,7 +29,9 @@ SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 SMTP_FROM = os.getenv("SMTP_FROM", SMTP_USER)
 
 
-async def send_security_email(to_email: str, subject: str, body_html: str, body_text: str) -> bool:
+async def send_security_email(
+    to_email: str, subject: str, body_html: str, body_text: str
+) -> bool:
     """Envía un email de alerta de seguridad."""
     if not SMTP_HOST or not SMTP_USER or not SMTP_PASSWORD:
         return False
@@ -57,13 +59,20 @@ async def send_security_email(to_email: str, subject: str, body_html: str, body_
     except Exception as e:
         logger.exception("send_security_email: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).error(f"Email error: {e}")
         return False
 
 
-def format_slack_message(event: str, title: str, description: str, details: dict) -> dict:
+def format_slack_message(
+    event: str, title: str, description: str, details: dict
+) -> dict:
     """Formatea un mensaje para Slack."""
-    color = "danger" if event in ("malware", "brute_force", "suspicious_login") else "warning"
+    color = (
+        "danger"
+        if event in ("malware", "brute_force", "suspicious_login")
+        else "warning"
+    )
     return {
         "attachments": [
             {
@@ -71,7 +80,11 @@ def format_slack_message(event: str, title: str, description: str, details: dict
                 "title": f"🛡️ {title}",
                 "text": description,
                 "fields": [
-                    {"title": k.replace("_", " ").title(), "value": str(v)[:100], "short": True}
+                    {
+                        "title": k.replace("_", " ").title(),
+                        "value": str(v)[:100],
+                        "short": True,
+                    }
                     for k, v in details.items()
                 ],
                 "footer": "SellIA Security",
@@ -81,9 +94,15 @@ def format_slack_message(event: str, title: str, description: str, details: dict
     }
 
 
-def format_discord_message(event: str, title: str, description: str, details: dict) -> dict:
+def format_discord_message(
+    event: str, title: str, description: str, details: dict
+) -> dict:
     """Formatea un mensaje para Discord."""
-    color = 0xFF0000 if event in ("malware", "brute_force", "suspicious_login") else 0xFFA500
+    color = (
+        0xFF0000
+        if event in ("malware", "brute_force", "suspicious_login")
+        else 0xFFA500
+    )
     fields = [
         {"name": k.replace("_", " ").title(), "value": str(v)[:1000], "inline": True}
         for k, v in details.items()
@@ -110,7 +129,9 @@ def format_telegram_message(title: str, description: str, details: dict) -> str:
     return "\n".join(lines)
 
 
-async def send_webhook(webhook: SecurityWebhook, event: str, title: str, description: str, details: dict):
+async def send_webhook(
+    webhook: SecurityWebhook, event: str, title: str, description: str, details: dict
+):
     """Envía una alerta a un webhook configurado."""
     if not webhook.is_active:
         return
@@ -142,9 +163,12 @@ async def send_webhook(webhook: SecurityWebhook, event: str, title: str, descrip
             import hashlib
             import hmac
             import json as _json
+
             headers = {"Content-Type": "application/json"}
             if webhook.secret:
-                payload_bytes = _json.dumps(payload, default=str, separators=(",", ":")).encode()
+                payload_bytes = _json.dumps(
+                    payload, default=str, separators=(",", ":")
+                ).encode()
                 signature = hmac.new(
                     webhook.secret.encode(),
                     payload_bytes,
@@ -158,6 +182,7 @@ async def send_webhook(webhook: SecurityWebhook, event: str, title: str, descrip
     except Exception as e:
         logger.exception("send_webhook: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).error(f"Webhook error ({webhook.name}): {e}")
 
 
@@ -179,23 +204,34 @@ async def notify_security_event(
     """
     # 1. Enviar email al usuario
     if user_email and email_subject and email_body_text:
-        await send_security_email(user_email, email_subject, email_body_html or email_body_text, email_body_text)
+        await send_security_email(
+            user_email,
+            email_subject,
+            email_body_html or email_body_text,
+            email_body_text,
+        )
 
     # 2. Enviar a webhooks activos
     try:
-        result = await db.execute(select(SecurityWebhook).where(SecurityWebhook.is_active == True))
+        result = await db.execute(
+            select(SecurityWebhook).where(SecurityWebhook.is_active == True)
+        )
         webhooks = result.scalars().all()
         for wh in webhooks:
             await send_webhook(wh, event, title, description, details)
     except Exception as e:
         logger.exception("notify_security_event: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).error(f"Error fetching webhooks: {e}")
 
 
 # Plantillas de email predefinidas
 
-def email_new_device_alert(user_name: str, ip: str, country: str, user_agent: str, timestamp: str) -> tuple[str, str]:
+
+def email_new_device_alert(
+    user_name: str, ip: str, country: str, user_agent: str, timestamp: str
+) -> tuple[str, str]:
     """Retorna (html, text) para alerta de nuevo dispositivo."""
     text = f"""
 Hola {user_name},

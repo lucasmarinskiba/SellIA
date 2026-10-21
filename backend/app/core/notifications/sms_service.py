@@ -22,12 +22,14 @@ logger = logging.getLogger(__name__)
 
 class SMSProvider(Enum):
     """Proveedores de SMS soportados."""
+
     TWILIO = "twilio"
     AWS_SNS = "aws_sns"
 
 
 class SMSTemplate(Enum):
     """Templates de SMS predefinidos."""
+
     ORDER_CONFIRMATION = "order_confirmation"
     SHIPMENT_NOTIFICATION = "shipment_notification"
     DELIVERY_CONFIRMATION = "delivery_confirmation"
@@ -39,6 +41,7 @@ class SMSTemplate(Enum):
 @dataclass
 class SMSMessage:
     """Estructura de mensaje SMS."""
+
     phone_number: str  # E164 format: +5491234567890
     content: str
     template_id: str | None = None
@@ -76,7 +79,9 @@ class SMSTemplateEngine:
 
         # Truncar si excede límite
         if len(content) > self.max_length:
-            logger.warning(f"SMS truncated from {len(content)} to {self.max_length} chars")
+            logger.warning(
+                f"SMS truncated from {len(content)} to {self.max_length} chars"
+            )
             content = content[: self.max_length - 3] + "..."
 
         return content
@@ -125,7 +130,9 @@ class SMSService:
         try:
             import boto3
 
-            self.sns_client = boto3.client("sns", region_name=os.getenv("AWS_REGION", "us-east-1"))
+            self.sns_client = boto3.client(
+                "sns", region_name=os.getenv("AWS_REGION", "us-east-1")
+            )
             logger.info("AWS SNS initialized")
 
         except ImportError:
@@ -162,7 +169,9 @@ class SMSService:
     ) -> dict[str, Any]:
         """Envía notificación de envío por SMS."""
 
-        tracking_url_short = self._shorten_url(tracking_url or f"https://track.sellia.ai/{tracking_number}")
+        tracking_url_short = self._shorten_url(
+            tracking_url or f"https://track.sellia.ai/{tracking_number}"
+        )
 
         variables = {
             "order_id": order_id,
@@ -170,12 +179,18 @@ class SMSService:
             "tracking_url_short": tracking_url_short,
         }
 
-        content = self.template_engine.render(SMSTemplate.SHIPMENT_NOTIFICATION, variables)
+        content = self.template_engine.render(
+            SMSTemplate.SHIPMENT_NOTIFICATION, variables
+        )
 
         message = SMSMessage(
             phone_number=phone_number,
             content=content,
-            metadata={"order_id": order_id, "tracking_number": tracking_number, "type": "shipment"},
+            metadata={
+                "order_id": order_id,
+                "tracking_number": tracking_number,
+                "type": "shipment",
+            },
         )
 
         return await self.send(message)
@@ -188,14 +203,18 @@ class SMSService:
     ) -> dict[str, Any]:
         """Envía confirmación de entrega por SMS."""
 
-        review_url_short = self._shorten_url(review_url or f"https://review.sellia.ai/{order_id}")
+        review_url_short = self._shorten_url(
+            review_url or f"https://review.sellia.ai/{order_id}"
+        )
 
         variables = {
             "order_id": order_id,
             "review_url_short": review_url_short,
         }
 
-        content = self.template_engine.render(SMSTemplate.DELIVERY_CONFIRMATION, variables)
+        content = self.template_engine.render(
+            SMSTemplate.DELIVERY_CONFIRMATION, variables
+        )
 
         message = SMSMessage(
             phone_number=phone_number,
@@ -213,7 +232,9 @@ class SMSService:
     ) -> dict[str, Any]:
         """Envía alerta de pago rechazado por SMS."""
 
-        retry_url_short = self._shorten_url(retry_url or f"https://checkout.sellia.ai/{order_id}")
+        retry_url_short = self._shorten_url(
+            retry_url or f"https://checkout.sellia.ai/{order_id}"
+        )
 
         variables = {
             "retry_url_short": retry_url_short,
@@ -242,12 +263,18 @@ class SMSService:
             "refund_amount": f"{refund_amount:.2f}",
         }
 
-        content = self.template_engine.render(SMSTemplate.REFUND_NOTIFICATION, variables)
+        content = self.template_engine.render(
+            SMSTemplate.REFUND_NOTIFICATION, variables
+        )
 
         message = SMSMessage(
             phone_number=phone_number,
             content=content,
-            metadata={"order_id": order_id, "type": "refund", "amount": str(refund_amount)},
+            metadata={
+                "order_id": order_id,
+                "type": "refund",
+                "amount": str(refund_amount),
+            },
         )
 
         return await self.send(message)

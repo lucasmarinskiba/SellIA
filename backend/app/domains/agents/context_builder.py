@@ -79,16 +79,18 @@ class BusinessContextBuilder:
 
         summary = []
         for item in items:
-            summary.append({
-                "name": item.name,
-                "type": item.type.value if item.type else "unknown",
-                "category": item.category,
-                "price": float(item.price) if item.price else 0,
-                "currency": item.currency or "ARS",
-                "description": (item.description or "")[:200],
-                "stock": item.stock,
-                "tags": item.tags or [],
-            })
+            summary.append(
+                {
+                    "name": item.name,
+                    "type": item.type.value if item.type else "unknown",
+                    "category": item.category,
+                    "price": float(item.price) if item.price else 0,
+                    "currency": item.currency or "ARS",
+                    "description": (item.description or "")[:200],
+                    "stock": item.stock,
+                    "tags": item.tags or [],
+                }
+            )
         return summary
 
     async def _get_business_context(self, business_id: Any) -> dict[str, Any] | None:
@@ -106,7 +108,9 @@ class BusinessContextBuilder:
         return {
             "business_type": bc.business_type.value if bc.business_type else None,
             "sales_model": bc.sales_model.value if bc.sales_model else None,
-            "geographic_reach": bc.geographic_reach.value if bc.geographic_reach else None,
+            "geographic_reach": (
+                bc.geographic_reach.value if bc.geographic_reach else None
+            ),
             "presence_type": bc.presence_type.value if bc.presence_type else None,
             "industry": bc.industry,
             "target_audience": bc.target_audience,
@@ -153,7 +157,9 @@ class BusinessContextBuilder:
         elif personality_slug:
             # Buscar personality por slug primero
             p_result = await self.db.execute(
-                select(AgentPersonality).where(AgentPersonality.slug == personality_slug)
+                select(AgentPersonality).where(
+                    AgentPersonality.slug == personality_slug
+                )
             )
             personality = p_result.scalar_one_or_none()
             if personality:
@@ -195,10 +201,20 @@ class BusinessContextBuilder:
         catalog_str = ""
         if ctx.get("catalog_summary"):
             lines = []
-            for item in ctx["catalog_summary"][:10]:  # Max 10 items para no saturar token
-                stock_info = f" (Stock: {item['stock']})" if item['stock'] is not None else ""
-                kind = f"{item['type']}/{item['category']}" if item.get('category') else item['type']
-                lines.append(f"- {item['name']} ({kind}) — {item['currency']} {item['price']}{stock_info}: {item['description'][:100]}")
+            for item in ctx["catalog_summary"][
+                :10
+            ]:  # Max 10 items para no saturar token
+                stock_info = (
+                    f" (Stock: {item['stock']})" if item["stock"] is not None else ""
+                )
+                kind = (
+                    f"{item['type']}/{item['category']}"
+                    if item.get("category")
+                    else item["type"]
+                )
+                lines.append(
+                    f"- {item['name']} ({kind}) — {item['currency']} {item['price']}{stock_info}: {item['description'][:100]}"
+                )
             catalog_str = "\n".join(lines)
 
         # Extraer custom instructions del agent config
@@ -229,11 +245,21 @@ class BusinessContextBuilder:
             # but never made it into this string -- the model only ever saw
             # the coarse geographic_reach enum, never WHERE the business
             # actually is or which countries it's targeting.
-            location_bits = [b for b in (enriched.get("city"), enriched.get("state_province"), enriched.get("country")) if b]
+            location_bits = [
+                b
+                for b in (
+                    enriched.get("city"),
+                    enriched.get("state_province"),
+                    enriched.get("country"),
+                )
+                if b
+            ]
             if location_bits:
                 parts.append(f"Location: {', '.join(location_bits)}")
             if enriched.get("target_countries"):
-                parts.append(f"Target Countries: {', '.join(enriched['target_countries'])}")
+                parts.append(
+                    f"Target Countries: {', '.join(enriched['target_countries'])}"
+                )
             if enriched.get("presence_type"):
                 parts.append(f"Presence: {enriched['presence_type']}")
             if enriched.get("primary_goal"):
@@ -243,11 +269,15 @@ class BusinessContextBuilder:
             if enriched.get("average_ticket"):
                 parts.append(f"Average Ticket: {enriched['average_ticket']}")
             if enriched.get("does_delivery"):
-                parts.append(f"Delivery: yes (radius {enriched.get('shipping_radius_km', '?')}km)")
+                parts.append(
+                    f"Delivery: yes (radius {enriched.get('shipping_radius_km', '?')}km)"
+                )
             if enriched.get("has_physical_location"):
                 parts.append("Has physical location")
             if enriched.get("channels_configured"):
-                active_channels = [k for k, v in enriched["channels_configured"].items() if v]
+                active_channels = [
+                    k for k, v in enriched["channels_configured"].items() if v
+                ]
                 if active_channels:
                     parts.append(f"Active Channels: {', '.join(active_channels)}")
             if enriched.get("ads_configured"):
@@ -259,7 +289,9 @@ class BusinessContextBuilder:
             if enriched.get("ai_priority_actions"):
                 actions = enriched["ai_priority_actions"]
                 if isinstance(actions, list) and actions:
-                    parts.append(f"Priority Actions: {', '.join(str(a) for a in actions[:3])}")
+                    parts.append(
+                        f"Priority Actions: {', '.join(str(a) for a in actions[:3])}"
+                    )
             if parts:
                 enriched_str = "\n".join(parts)
 
@@ -268,6 +300,7 @@ class BusinessContextBuilder:
         if enriched and enriched.get("business_type"):
             try:
                 from app.domains.business_context.models import BusinessType
+
                 bt = BusinessType(enriched["business_type"])
                 prompt_adaptation = BusinessTypeRegistry.get_prompt_adaptation(bt)
             except (ValueError, KeyError):

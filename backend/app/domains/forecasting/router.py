@@ -37,7 +37,9 @@ async def list_series(
     current_user: Annotated[User, Depends(get_current_user)],
     active_only: bool = True,
 ):
-    return await ForecastingService(db).list_series(business_id, active_only=active_only)
+    return await ForecastingService(db).list_series(
+        business_id, active_only=active_only
+    )
 
 
 @router.post("/run")

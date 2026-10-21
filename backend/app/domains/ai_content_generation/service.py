@@ -1,4 +1,5 @@
 """Phase 51: Content Generation Service."""
+
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -175,7 +176,11 @@ class ContentGenerationService:
         if views > 0:
             perf.ctr = (clicks / views * 100) if clicks > 0 else 0
             perf.conversion_rate = (conversions / views * 100) if conversions > 0 else 0
-            perf.engagement_rate = ((clicks + conversions) / views * 100) if (clicks + conversions) > 0 else 0
+            perf.engagement_rate = (
+                ((clicks + conversions) / views * 100)
+                if (clicks + conversions) > 0
+                else 0
+            )
 
         db.add(perf)
         await db.commit()

@@ -114,7 +114,9 @@ class TrendingAnalyzer:
 
             # Filtrar por niche si se proporciona
             if niche:
-                trending_dict = {k: v for k, v in trending_dict.items() if niche.lower() in k.lower()}
+                trending_dict = {
+                    k: v for k, v in trending_dict.items() if niche.lower() in k.lower()
+                }
 
             # Convertir a TrendingTopic objects ordenados por trend_score
             topics = []

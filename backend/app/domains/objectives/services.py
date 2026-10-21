@@ -26,14 +26,24 @@ class ObjectiveService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def create_department(self, business_id: uuid.UUID, name: str, slug: str, **kwargs) -> Department:
+    async def create_department(
+        self, business_id: uuid.UUID, name: str, slug: str, **kwargs
+    ) -> Department:
         dept = Department(business_id=business_id, name=name, slug=slug, **kwargs)
         self.db.add(dept)
         await self.db.commit()
         await self.db.refresh(dept)
         return dept
 
-    async def create_objective(self, business_id: uuid.UUID, name: str, target_value: Decimal, start_date: datetime, end_date: datetime, **kwargs) -> BusinessObjective:
+    async def create_objective(
+        self,
+        business_id: uuid.UUID,
+        name: str,
+        target_value: Decimal,
+        start_date: datetime,
+        end_date: datetime,
+        **kwargs,
+    ) -> BusinessObjective:
         obj = BusinessObjective(
             business_id=business_id,
             name=name,
@@ -47,30 +57,58 @@ class ObjectiveService:
         await self.db.refresh(obj)
         return obj
 
-    async def create_kpi(self, business_id: uuid.UUID, name: str, slug: str, metric_type: str, data_source: str, **kwargs) -> KPI:
-        kpi = KPI(business_id=business_id, name=name, slug=slug, metric_type=metric_type, data_source=data_source, **kwargs)
+    async def create_kpi(
+        self,
+        business_id: uuid.UUID,
+        name: str,
+        slug: str,
+        metric_type: str,
+        data_source: str,
+        **kwargs,
+    ) -> KPI:
+        kpi = KPI(
+            business_id=business_id,
+            name=name,
+            slug=slug,
+            metric_type=metric_type,
+            data_source=data_source,
+            **kwargs,
+        )
         self.db.add(kpi)
         await self.db.commit()
         await self.db.refresh(kpi)
         return kpi
 
-    async def get_objectives_for_business(self, business_id: uuid.UUID, status: str | None = None):
-        query = select(BusinessObjective).where(BusinessObjective.business_id == business_id, BusinessObjective.is_active == True)
+    async def get_objectives_for_business(
+        self, business_id: uuid.UUID, status: str | None = None
+    ):
+        query = select(BusinessObjective).where(
+            BusinessObjective.business_id == business_id,
+            BusinessObjective.is_active == True,
+        )
         if status:
             query = query.where(BusinessObjective.status == ObjectiveStatus(status))
-        result = await self.db.execute(query.order_by(desc(BusinessObjective.created_at)))
+        result = await self.db.execute(
+            query.order_by(desc(BusinessObjective.created_at))
+        )
         return result.scalars().all()
 
-    async def get_kpis_for_business(self, business_id: uuid.UUID, period: str | None = None):
+    async def get_kpis_for_business(
+        self, business_id: uuid.UUID, period: str | None = None
+    ):
         query = select(KPI).where(KPI.business_id == business_id, KPI.is_active == True)
         if period:
             query = query.where(KPI.period == ObjectivePeriod(period))
         result = await self.db.execute(query)
         return result.scalars().all()
 
-    async def update_objective_progress(self, objective_id: uuid.UUID, delta_value: Decimal):
+    async def update_objective_progress(
+        self, objective_id: uuid.UUID, delta_value: Decimal
+    ):
         """Increment current_value of an objective (called by workflows/events)."""
-        result = await self.db.execute(select(BusinessObjective).where(BusinessObjective.id == objective_id))
+        result = await self.db.execute(
+            select(BusinessObjective).where(BusinessObjective.id == objective_id)
+        )
         obj = result.scalar_one_or_none()
         if not obj:
             return
@@ -102,7 +140,10 @@ class ObjectiveService:
             if status:
                 query = query.where(Order.status == status)
             if kpi.period_start and kpi.period_end:
-                query = query.where(Order.created_at >= kpi.period_start, Order.created_at <= kpi.period_end)
+                query = query.where(
+                    Order.created_at >= kpi.period_start,
+                    Order.created_at <= kpi.period_end,
+                )
             result = await self.db.execute(query)
             return Decimal(str(result.scalar() or 0))
 
@@ -114,7 +155,10 @@ class ObjectiveService:
             if platform:
                 query = query.where(Conversation.lead_source == platform)
             if kpi.period_start and kpi.period_end:
-                query = query.where(Conversation.created_at >= kpi.period_start, Conversation.created_at <= kpi.period_end)
+                query = query.where(
+                    Conversation.created_at >= kpi.period_start,
+                    Conversation.created_at <= kpi.period_end,
+                )
             result = await self.db.execute(query)
             return Decimal(str(result.scalar() or 0))
 
@@ -126,7 +170,10 @@ class ObjectiveService:
             if status:
                 query = query.where(Deal.stage == status)
             if kpi.period_start and kpi.period_end:
-                query = query.where(Deal.created_at >= kpi.period_start, Deal.created_at <= kpi.period_end)
+                query = query.where(
+                    Deal.created_at >= kpi.period_start,
+                    Deal.created_at <= kpi.period_end,
+                )
             result = await self.db.execute(query)
             return Decimal(str(result.scalar() or 0))
 
@@ -134,7 +181,9 @@ class ObjectiveService:
 
     async def refresh_all_kpis(self, business_id: uuid.UUID):
         """Recalculate all active KPIs for a business. Called by Celery beat."""
-        result = await self.db.execute(select(KPI).where(KPI.business_id == business_id, KPI.is_active == True))
+        result = await self.db.execute(
+            select(KPI).where(KPI.business_id == business_id, KPI.is_active == True)
+        )
         kpis = result.scalars().all()
         for kpi in kpis:
             try:

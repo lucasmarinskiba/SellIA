@@ -29,7 +29,9 @@ class StartJourneyRequest(BaseModel):
 class RecordTouchpointRequest(BaseModel):
     journey_id: UUID
     business_id: UUID
-    touchpoint_type: str  # email_sent, email_opened, proximity_check, location_visit, order_placed
+    touchpoint_type: (
+        str  # email_sent, email_opened, proximity_check, location_visit, order_placed
+    )
     channel: str
     campaign: str | None = None
     location_id: UUID | None = None
@@ -50,7 +52,7 @@ async def start_journey(
             customer_phone=request.customer_phone,
             campaign=request.campaign,
             source=request.source,
-            db=db
+            db=db,
         )
         return result
     except Exception as e:
@@ -73,7 +75,7 @@ async def record_touchpoint(
             campaign=request.campaign,
             location_id=request.location_id,
             order_id=request.order_id,
-            db=db
+            db=db,
         )
         return result
     except Exception as e:
@@ -104,9 +106,7 @@ async def calculate_journey_metrics(
     """Calculate aggregate journey metrics."""
     try:
         result = CustomerJourneyService.calculate_journey_metrics(
-            business_id=business_id,
-            days=days,
-            db=db
+            business_id=business_id, days=days, db=db
         )
         return result
     except Exception as e:
@@ -128,10 +128,14 @@ async def get_journey_funnel(
 
         cutoff = datetime.now(UTC) - timedelta(days=days)
 
-        journeys = db.query(CustomerJourney).filter(
-            CustomerJourney.business_id == business_id,
-            CustomerJourney.awareness_date >= cutoff
-        ).all()
+        journeys = (
+            db.query(CustomerJourney)
+            .filter(
+                CustomerJourney.business_id == business_id,
+                CustomerJourney.awareness_date >= cutoff,
+            )
+            .all()
+        )
 
         stages = {
             "awareness": len(journeys),
@@ -139,7 +143,7 @@ async def get_journey_funnel(
             "intent": len([j for j in journeys if j.intent_date]),
             "visit": len([j for j in journeys if j.visit_date]),
             "purchase": len([j for j in journeys if j.purchase_date]),
-            "retention": len([j for j in journeys if j.repeat_purchase_count > 0])
+            "retention": len([j for j in journeys if j.repeat_purchase_count > 0]),
         }
 
         return {
@@ -147,12 +151,22 @@ async def get_journey_funnel(
             "period_days": days,
             "funnel": stages,
             "conversion_rates": {
-                "awareness_to_consideration": (stages["consideration"] / max(stages["awareness"], 1)) * 100,
-                "consideration_to_intent": (stages["intent"] / max(stages["consideration"], 1)) * 100,
+                "awareness_to_consideration": (
+                    stages["consideration"] / max(stages["awareness"], 1)
+                )
+                * 100,
+                "consideration_to_intent": (
+                    stages["intent"] / max(stages["consideration"], 1)
+                )
+                * 100,
                 "intent_to_visit": (stages["visit"] / max(stages["intent"], 1)) * 100,
-                "visit_to_purchase": (stages["purchase"] / max(stages["visit"], 1)) * 100,
-                "purchase_to_retention": (stages["retention"] / max(stages["purchase"], 1)) * 100
-            }
+                "visit_to_purchase": (stages["purchase"] / max(stages["visit"], 1))
+                * 100,
+                "purchase_to_retention": (
+                    stages["retention"] / max(stages["purchase"], 1)
+                )
+                * 100,
+            },
         }
     except Exception as e:
         logger.exception("get_journey_funnel: error inesperado")

@@ -95,7 +95,9 @@ async def get_schema_markup(
         select(Domain).where(Domain.website_id == website.id)
     )
     domain = domain_result.scalar_one_or_none()
-    domain_url = f"https://{domain.subdomain}.sellia.app" if domain else "https://example.com"
+    domain_url = (
+        f"https://{domain.subdomain}.sellia.app" if domain else "https://example.com"
+    )
 
     # LocalBusiness schema
     local_business = {
@@ -147,7 +149,9 @@ async def get_schema_markup(
     }
 
 
-@router.get("/businesses/{business_id}/seo/sitemap.xml", response_class=PlainTextResponse)
+@router.get(
+    "/businesses/{business_id}/seo/sitemap.xml", response_class=PlainTextResponse
+)
 async def get_sitemap(
     business_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -161,7 +165,9 @@ async def get_sitemap(
         select(Domain).where(Domain.website_id == website.id)
     )
     domain = domain_result.scalar_one_or_none()
-    domain_url = f"https://{domain.subdomain}.sellia.app" if domain else "https://example.com"
+    domain_url = (
+        f"https://{domain.subdomain}.sellia.app" if domain else "https://example.com"
+    )
 
     # Get pages from website config
     pages = website.pages or {}
@@ -190,7 +196,9 @@ async def get_sitemap(
     return "\n".join(sitemap_entries)
 
 
-@router.get("/businesses/{business_id}/seo/robots.txt", response_class=PlainTextResponse)
+@router.get(
+    "/businesses/{business_id}/seo/robots.txt", response_class=PlainTextResponse
+)
 async def get_robots_txt(
     business_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -204,7 +212,9 @@ async def get_robots_txt(
         select(Domain).where(Domain.website_id == website.id)
     )
     domain = domain_result.scalar_one_or_none()
-    domain_url = f"https://{domain.subdomain}.sellia.app" if domain else "https://example.com"
+    domain_url = (
+        f"https://{domain.subdomain}.sellia.app" if domain else "https://example.com"
+    )
 
     robots_content = f"""# SellIA robots.txt
 User-agent: *
@@ -243,7 +253,8 @@ async def get_seo_audit(
         },
         "meta_description": {
             "label": "Meta Description",
-            "passed": bool(website.meta_description) and len(website.meta_description) >= 120,
+            "passed": bool(website.meta_description)
+            and len(website.meta_description) >= 120,
             "recommendation": "Add a description (120-160 chars) that summarizes your page",
         },
         "og_image": {
@@ -273,7 +284,9 @@ async def get_seo_audit(
         },
         "has_content": {
             "label": "Content Available",
-            "passed": bool(website.description or (website.pages and len(website.pages) > 0)),
+            "passed": bool(
+                website.description or (website.pages and len(website.pages) > 0)
+            ),
             "recommendation": "Add quality content describing your business and offerings",
         },
     }

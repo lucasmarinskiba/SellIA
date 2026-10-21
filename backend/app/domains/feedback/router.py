@@ -37,6 +37,7 @@ def _svc(
 
 # ===== Public/User Endpoints =====
 
+
 @router.post("", response_model=FeedbackResponse, status_code=status.HTTP_201_CREATED)
 async def create_feedback(
     data: FeedbackCreate,
@@ -51,12 +52,18 @@ async def create_feedback(
 
     # AI analysis in background (non-blocking for user)
     try:
-        business_id = current_user.businesses[0].id if current_user.businesses else uuid.UUID(int=0)
-        _fb_type, category, severity, analysis, solution, confidence, duplicate_id = await analyze_feedback(
-            db=svc.db,
-            business_id=business_id,
-            title=data.title,
-            description=data.description,
+        business_id = (
+            current_user.businesses[0].id
+            if current_user.businesses
+            else uuid.UUID(int=0)
+        )
+        _fb_type, category, severity, analysis, solution, confidence, duplicate_id = (
+            await analyze_feedback(
+                db=svc.db,
+                business_id=business_id,
+                title=data.title,
+                description=data.description,
+            )
         )
         feedback.ai_analysis = analysis
         feedback.ai_solution_proposal = solution
@@ -83,7 +90,9 @@ async def list_public_feedback(
     offset: Annotated[int, Query(ge=0)] = 0,
 ):
     """Listar feedback público (roadmap/ideas)."""
-    items, total = await svc.list_feedback(status=status, type=type, search=search, limit=limit, offset=offset)
+    items, total = await svc.list_feedback(
+        status=status, type=type, search=search, limit=limit, offset=offset
+    )
     return {"items": items, "total": total}
 
 
@@ -127,7 +136,11 @@ async def vote_feedback(
     return {"message": "Voto registrado"}
 
 
-@router.post("/{feedback_id}/comments", response_model=CommentResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{feedback_id}/comments",
+    response_model=CommentResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def add_comment(
     feedback_id: uuid.UUID,
     data: CommentCreate,
@@ -171,6 +184,7 @@ async def get_public_changelog(
 
 # ===== Admin Endpoints =====
 
+
 @router.get("/admin/all", response_model=FeedbackListResponse)
 async def admin_list_all(
     current_user: Annotated[User, Depends(get_current_active_user)],
@@ -182,7 +196,9 @@ async def admin_list_all(
 ):
     if not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="Admin required")
-    items, total = await svc.list_feedback(status=status, type=type, limit=limit, offset=offset)
+    items, total = await svc.list_feedback(
+        status=status, type=type, limit=limit, offset=offset
+    )
     return {"items": items, "total": total}
 
 
@@ -215,12 +231,16 @@ async def admin_force_ai_analyze(
     if not feedback:
         raise HTTPException(status_code=404, detail="Feedback no encontrado")
 
-    business_id = current_user.businesses[0].id if current_user.businesses else uuid.UUID(int=0)
-    _fb_type, category, _severity, analysis, solution, confidence, duplicate_id = await analyze_feedback(
-        db=svc.db,
-        business_id=business_id,
-        title=feedback.title,
-        description=feedback.description,
+    business_id = (
+        current_user.businesses[0].id if current_user.businesses else uuid.UUID(int=0)
+    )
+    _fb_type, category, _severity, analysis, solution, confidence, duplicate_id = (
+        await analyze_feedback(
+            db=svc.db,
+            business_id=business_id,
+            title=feedback.title,
+            description=feedback.description,
+        )
     )
 
     feedback.ai_analysis = analysis

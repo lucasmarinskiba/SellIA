@@ -19,17 +19,19 @@ logger = logging.getLogger(__name__)
 
 class SalesStage(str, Enum):
     """Etapas del pipeline de venta."""
-    AWARENESS = "awareness"          # Conocer el producto
+
+    AWARENESS = "awareness"  # Conocer el producto
     CONSIDERATION = "consideration"  # Evaluar opciones
-    DECISION = "decision"           # Decidir comprar
-    NEGOTIATION = "negotiation"     # Negociar términos
-    CLOSURE = "closure"             # Cerrar venta
-    ONBOARDING = "onboarding"       # Post-venta
-    RETENTION = "retention"         # Mantener cliente
+    DECISION = "decision"  # Decidir comprar
+    NEGOTIATION = "negotiation"  # Negociar términos
+    CLOSURE = "closure"  # Cerrar venta
+    ONBOARDING = "onboarding"  # Post-venta
+    RETENTION = "retention"  # Mantener cliente
 
 
 class Platform(str, Enum):
     """Plataformas de venta/comunicación."""
+
     WHATSAPP = "whatsapp"
     EMAIL = "email"
     INSTAGRAM = "instagram"
@@ -296,11 +298,28 @@ Template:
         Identifica palabras clave → recomienda cierre.
         """
         buying_signals = [
-            "cuánto", "precio", "costo", "how much", "cost",
-            "cuándo", "when", "ready", "listo",
-            "garantía", "warranty", "envío", "shipping",
-            "descuento", "discount", "oferta", "offer",
-            "puedo", "can i", "dónde", "where", "how",
+            "cuánto",
+            "precio",
+            "costo",
+            "how much",
+            "cost",
+            "cuándo",
+            "when",
+            "ready",
+            "listo",
+            "garantía",
+            "warranty",
+            "envío",
+            "shipping",
+            "descuento",
+            "discount",
+            "oferta",
+            "offer",
+            "puedo",
+            "can i",
+            "dónde",
+            "where",
+            "how",
         ]
 
         signal_detected = any(signal in message.lower() for signal in buying_signals)

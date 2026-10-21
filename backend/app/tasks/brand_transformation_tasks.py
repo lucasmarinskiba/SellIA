@@ -28,8 +28,8 @@ _INTERVALS = {
     "hourly": 3600,
     "daily": 86_400,
     "weekly": 604_800,
-    "monthly": 2_592_000,      # 30 days
-    "quarterly": 7_776_000,    # 90 days
+    "monthly": 2_592_000,  # 30 days
+    "quarterly": 7_776_000,  # 90 days
 }
 # run a bit early rather than skipping a whole cycle on scheduler jitter
 _SLACK = 1800  # 30 min
@@ -55,10 +55,16 @@ def run_due_brand_automations():
         now = datetime.now(UTC)
         async with AsyncSessionLocal() as db:
             rows = (
-                await db.execute(
-                    select(BrandAutomation).where(BrandAutomation.is_active.is_(True))
+                (
+                    await db.execute(
+                        select(BrandAutomation).where(
+                            BrandAutomation.is_active.is_(True)
+                        )
+                    )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
             due_ids = [r.id for r in rows if _is_due(r, now)]
 
         ran, failed = 0, 0
@@ -67,7 +73,9 @@ def run_due_brand_automations():
                 async with AsyncSessionLocal() as run_db:
                     row = (
                         await run_db.execute(
-                            select(BrandAutomation).where(BrandAutomation.id == automation_id)
+                            select(BrandAutomation).where(
+                                BrandAutomation.id == automation_id
+                            )
                         )
                     ).scalar_one_or_none()
                     if row is None or not _is_due(row, datetime.now(UTC)):
@@ -87,7 +95,11 @@ def run_due_brand_automations():
     return run_async(_run())
 
 
-@shared_task(name="app.tasks.brand_transformation_tasks.run_program_all", time_limit=5400, soft_time_limit=5100)
+@shared_task(
+    name="app.tasks.brand_transformation_tasks.run_program_all",
+    time_limit=5400,
+    soft_time_limit=5100,
+)
 def run_program_all(program_id: str):
     """Run every etapa of a program end to end. Dispatched by the /run-all
     endpoint because a full run is ~15 real LLM calls and would time out a
@@ -106,14 +118,28 @@ def run_program_all(program_id: str):
                 prog2 = await orch.get_program(uuid.UUID(program_id))
                 prog2.run_state = "done"
                 await db.commit()
-                logger.info("brand_transformation: program %s run-all done (%s stages)", program_id, len(results))
-                return {"program_id": program_id, "stages": len(results), "status": "done"}
+                logger.info(
+                    "brand_transformation: program %s run-all done (%s stages)",
+                    program_id,
+                    len(results),
+                )
+                return {
+                    "program_id": program_id,
+                    "stages": len(results),
+                    "status": "done",
+                }
             except Exception as e:  # noqa: BLE001
-                logger.error("brand_transformation: program %s run-all failed: %s", program_id, e)
+                logger.error(
+                    "brand_transformation: program %s run-all failed: %s", program_id, e
+                )
                 prog3 = await orch.get_program(uuid.UUID(program_id))
                 if prog3:
                     prog3.run_state = "failed"
                     await db.commit()
-                return {"program_id": program_id, "status": "failed", "error": str(e)[:200]}
+                return {
+                    "program_id": program_id,
+                    "status": "failed",
+                    "error": str(e)[:200],
+                }
 
     return run_async(_run())

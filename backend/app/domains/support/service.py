@@ -32,7 +32,9 @@ class SupportService:
 
     # ===== Tickets =====
 
-    async def create_ticket(self, user_id: uuid.UUID, data: SupportTicketCreate) -> SupportTicket:
+    async def create_ticket(
+        self, user_id: uuid.UUID, data: SupportTicketCreate
+    ) -> SupportTicket:
         ticket = SupportTicket(
             user_id=user_id,
             business_id=data.business_id,
@@ -45,7 +47,9 @@ class SupportService:
         await self.db.refresh(ticket)
         return ticket
 
-    async def get_ticket(self, ticket_id: uuid.UUID, user_id: uuid.UUID | None = None) -> SupportTicket | None:
+    async def get_ticket(
+        self, ticket_id: uuid.UUID, user_id: uuid.UUID | None = None
+    ) -> SupportTicket | None:
         result = await self.db.execute(
             select(SupportTicket).where(SupportTicket.id == ticket_id)
         )
@@ -83,13 +87,17 @@ class SupportService:
             query = query.where(SupportTicket.assigned_to == assigned_to)
             count_query = count_query.where(SupportTicket.assigned_to == assigned_to)
 
-        query = query.order_by(desc(SupportTicket.created_at)).offset(offset).limit(limit)
+        query = (
+            query.order_by(desc(SupportTicket.created_at)).offset(offset).limit(limit)
+        )
 
         result = await self.db.execute(query)
         total_result = await self.db.execute(count_query)
         return list(result.scalars().all()), total_result.scalar() or 0
 
-    async def update_ticket(self, ticket_id: uuid.UUID, data: SupportTicketUpdate) -> SupportTicket | None:
+    async def update_ticket(
+        self, ticket_id: uuid.UUID, data: SupportTicketUpdate
+    ) -> SupportTicket | None:
         result = await self.db.execute(
             select(SupportTicket).where(SupportTicket.id == ticket_id)
         )
@@ -123,7 +131,9 @@ class SupportService:
         await self.db.refresh(ticket)
         return ticket
 
-    async def submit_csat(self, ticket_id: uuid.UUID, data: CSATSubmit) -> SupportTicket | None:
+    async def submit_csat(
+        self, ticket_id: uuid.UUID, data: CSATSubmit
+    ) -> SupportTicket | None:
         result = await self.db.execute(
             select(SupportTicket).where(SupportTicket.id == ticket_id)
         )
@@ -169,7 +179,9 @@ class SupportService:
 
         return msg
 
-    async def list_messages(self, ticket_id: uuid.UUID, include_internal: bool = False) -> list[TicketMessage]:
+    async def list_messages(
+        self, ticket_id: uuid.UUID, include_internal: bool = False
+    ) -> list[TicketMessage]:
         query = select(TicketMessage).where(TicketMessage.ticket_id == ticket_id)
         if not include_internal:
             query = query.where(TicketMessage.is_internal == False)
@@ -179,7 +191,9 @@ class SupportService:
 
     # ===== FAQ =====
 
-    async def create_faq(self, data: FAQCreate, business_id: uuid.UUID | None = None) -> FAQ:
+    async def create_faq(
+        self, data: FAQCreate, business_id: uuid.UUID | None = None
+    ) -> FAQ:
         faq = FAQ(
             business_id=business_id,
             question=data.question,
@@ -191,7 +205,9 @@ class SupportService:
         await self.db.refresh(faq)
         return faq
 
-    async def list_faqs(self, business_id: uuid.UUID | None = None, search: str | None = None) -> list[FAQ]:
+    async def list_faqs(
+        self, business_id: uuid.UUID | None = None, search: str | None = None
+    ) -> list[FAQ]:
         query = select(FAQ).where(FAQ.is_active == True)
         if business_id:
             query = query.where(FAQ.business_id == business_id)
@@ -233,7 +249,9 @@ class SupportService:
 
     # ===== Knowledge Base =====
 
-    async def create_kb_article(self, data: KnowledgeBaseArticleCreate, business_id: uuid.UUID | None = None) -> KnowledgeBaseArticle:
+    async def create_kb_article(
+        self, data: KnowledgeBaseArticleCreate, business_id: uuid.UUID | None = None
+    ) -> KnowledgeBaseArticle:
         article = KnowledgeBaseArticle(
             business_id=business_id,
             title=data.title,
@@ -246,24 +264,34 @@ class SupportService:
         await self.db.refresh(article)
         return article
 
-    async def list_kb_articles(self, business_id: uuid.UUID | None = None, search: str | None = None) -> list[KnowledgeBaseArticle]:
-        query = select(KnowledgeBaseArticle).where(KnowledgeBaseArticle.is_active == True)
+    async def list_kb_articles(
+        self, business_id: uuid.UUID | None = None, search: str | None = None
+    ) -> list[KnowledgeBaseArticle]:
+        query = select(KnowledgeBaseArticle).where(
+            KnowledgeBaseArticle.is_active == True
+        )
         if business_id:
             query = query.where(KnowledgeBaseArticle.business_id == business_id)
         if search:
             query = query.where(
-                KnowledgeBaseArticle.title.ilike(f"%{search}%") |
-                KnowledgeBaseArticle.content.ilike(f"%{search}%")
+                KnowledgeBaseArticle.title.ilike(f"%{search}%")
+                | KnowledgeBaseArticle.content.ilike(f"%{search}%")
             )
         query = query.order_by(KnowledgeBaseArticle.title)
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
-    async def get_kb_article(self, article_id: uuid.UUID) -> KnowledgeBaseArticle | None:
-        result = await self.db.execute(select(KnowledgeBaseArticle).where(KnowledgeBaseArticle.id == article_id))
+    async def get_kb_article(
+        self, article_id: uuid.UUID
+    ) -> KnowledgeBaseArticle | None:
+        result = await self.db.execute(
+            select(KnowledgeBaseArticle).where(KnowledgeBaseArticle.id == article_id)
+        )
         return result.scalar_one_or_none()
 
-    async def update_kb_article(self, article_id: uuid.UUID, data: KnowledgeBaseArticleUpdate) -> KnowledgeBaseArticle | None:
+    async def update_kb_article(
+        self, article_id: uuid.UUID, data: KnowledgeBaseArticleUpdate
+    ) -> KnowledgeBaseArticle | None:
         article = await self.get_kb_article(article_id)
         if not article:
             return None
@@ -285,21 +313,39 @@ class SupportService:
 
     async def get_stats(self, business_id: uuid.UUID | None = None) -> dict:
         query = select(func.count()).select_from(SupportTicket)
-        open_query = select(func.count()).select_from(SupportTicket).where(SupportTicket.status == TicketStatus.OPEN)
-        in_progress_query = select(func.count()).select_from(SupportTicket).where(SupportTicket.status == TicketStatus.IN_PROGRESS)
-        resolved_today_query = select(func.count()).select_from(SupportTicket).where(
-            SupportTicket.status == TicketStatus.RESOLVED,
-            SupportTicket.resolved_at >= datetime.now(UTC) - timedelta(days=1)
+        open_query = (
+            select(func.count())
+            .select_from(SupportTicket)
+            .where(SupportTicket.status == TicketStatus.OPEN)
         )
-        csat_query = select(func.avg(SupportTicket.csat_rating)).select_from(SupportTicket).where(
-            SupportTicket.csat_rating.isnot(None)
+        in_progress_query = (
+            select(func.count())
+            .select_from(SupportTicket)
+            .where(SupportTicket.status == TicketStatus.IN_PROGRESS)
+        )
+        resolved_today_query = (
+            select(func.count())
+            .select_from(SupportTicket)
+            .where(
+                SupportTicket.status == TicketStatus.RESOLVED,
+                SupportTicket.resolved_at >= datetime.now(UTC) - timedelta(days=1),
+            )
+        )
+        csat_query = (
+            select(func.avg(SupportTicket.csat_rating))
+            .select_from(SupportTicket)
+            .where(SupportTicket.csat_rating.isnot(None))
         )
 
         if business_id:
             query = query.where(SupportTicket.business_id == business_id)
             open_query = open_query.where(SupportTicket.business_id == business_id)
-            in_progress_query = in_progress_query.where(SupportTicket.business_id == business_id)
-            resolved_today_query = resolved_today_query.where(SupportTicket.business_id == business_id)
+            in_progress_query = in_progress_query.where(
+                SupportTicket.business_id == business_id
+            )
+            resolved_today_query = resolved_today_query.where(
+                SupportTicket.business_id == business_id
+            )
             csat_query = csat_query.where(SupportTicket.business_id == business_id)
 
         total = (await self.db.execute(query)).scalar() or 0
@@ -314,6 +360,6 @@ class SupportService:
             "in_progress_tickets": in_progress,
             "resolved_today": resolved_today,
             "avg_resolution_hours": None,  # TODO: calcular
-            "ai_resolution_rate": None,    # TODO: calcular
+            "ai_resolution_rate": None,  # TODO: calcular
             "csat_avg": round(csat_avg, 2) if csat_avg else None,
         }

@@ -18,8 +18,12 @@ forecasting = ForecastingManager()
 outcome_analyzer = DealOutcomeAnalyzer()
 
 
-async def _get_business_for_user(business_id: UUID, user: User, db: AsyncSession) -> Business:
-    result = await db.execute(select(Business).where(Business.id == business_id, Business.user_id == user.id))
+async def _get_business_for_user(
+    business_id: UUID, user: User, db: AsyncSession
+) -> Business:
+    result = await db.execute(
+        select(Business).where(Business.id == business_id, Business.user_id == user.id)
+    )
     business = result.scalar_one_or_none()
     if not business:
         raise HTTPException(status_code=404, detail="Negocio no encontrado")
@@ -100,15 +104,31 @@ async def record_deal_outcome(
     """Record deal outcome (won/lost) for forecast-accuracy tracking."""
     deal = await _get_owned_deal(deal_id, current_user, db)
     result = await outcome_analyzer.record_outcome(
-        db, deal_id, deal.business_id, outcome, final_value, days_to_close, forecasted_probability, win_loss_reason,
+        db,
+        deal_id,
+        deal.business_id,
+        outcome,
+        final_value,
+        days_to_close,
+        forecasted_probability,
+        win_loss_reason,
     )
 
     if outcome in ("won", "lost"):
         from app.domains.webhooks.service import fire_business_event
-        await fire_business_event(db, deal.business_id, f"deal.{outcome}", {
-            "deal_id": str(deal_id), "title": deal.title, "final_value": final_value,
-            "days_to_close": days_to_close, "reason": win_loss_reason,
-        })
+
+        await fire_business_event(
+            db,
+            deal.business_id,
+            f"deal.{outcome}",
+            {
+                "deal_id": str(deal_id),
+                "title": deal.title,
+                "final_value": final_value,
+                "days_to_close": days_to_close,
+                "reason": win_loss_reason,
+            },
+        )
 
         # Real conversion signal for sales-agent message A/B tests (see
         # api/v1/enterprise_testing.py): a deal reaching won/lost is the
@@ -118,11 +138,16 @@ async def record_deal_outcome(
         if deal.conversation_id:
             from app.domains.agents.ab_service import ABTestEngine
             from app.domains.channels.models import Conversation
-            conv_result = await db.execute(select(Conversation).where(Conversation.id == deal.conversation_id))
+
+            conv_result = await db.execute(
+                select(Conversation).where(Conversation.id == deal.conversation_id)
+            )
             conversation = conv_result.scalar_one_or_none()
             if conversation:
                 await ABTestEngine.record_conversation_outcome(
-                    db, conversation, "personality_ab",
+                    db,
+                    conversation,
+                    "personality_ab",
                     "converted" if outcome == "won" else "lost",
                     revenue=final_value if outcome == "won" else None,
                 )

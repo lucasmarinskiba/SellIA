@@ -28,6 +28,7 @@ router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 # ========== Alert Rules ==========
 
+
 @router.get("/rules", response_model=list[AlertRuleResponse])
 async def list_rules(
     business_id: Annotated[UUID, Query()],
@@ -38,7 +39,9 @@ async def list_rules(
     return await svc.list_rules(business_id)
 
 
-@router.post("/rules", response_model=AlertRuleResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/rules", response_model=AlertRuleResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_rule(
     data: AlertRuleCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -75,6 +78,7 @@ async def delete_rule(
 
 
 # ========== Alerts ==========
+
 
 @router.get("", response_model=list[AlertResponse])
 async def list_alerts(
@@ -140,12 +144,20 @@ async def delete_alert(
 
 # ========== Recommendations ==========
 
-async def _require_business_owner(db: AsyncSession, business_id: UUID, user: User) -> None:
+
+async def _require_business_owner(
+    db: AsyncSession, business_id: UUID, user: User
+) -> None:
     """404 unless ``user`` owns ``business_id``: recommendations can change things (e.g. rotate a
-    webhook token), so being logged in is not enough to read or answer someone else's."""
+    webhook token), so being logged in is not enough to read or answer someone else's.
+    """
     if getattr(user, "is_superuser", False):
         return
-    owned = await db.execute(select(Business.id).where(Business.id == business_id, Business.user_id == user.id))
+    owned = await db.execute(
+        select(Business.id).where(
+            Business.id == business_id, Business.user_id == user.id
+        )
+    )
     if owned.first() is None:
         raise HTTPException(status_code=404, detail="Recomendación no encontrada")
 
@@ -155,6 +167,7 @@ async def _owned_recommendation(db: AsyncSession, rec_id: UUID, user: User):
     if rec is None:
         raise HTTPException(status_code=404, detail="Recomendación no encontrada")
     await _require_business_owner(db, rec.business_id, user)
+
 
 @router.get("/recommendations", response_model=list[RecommendationResponse])
 async def list_recommendations(

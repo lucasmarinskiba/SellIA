@@ -75,7 +75,10 @@ async def get_insights(db: AsyncSession, user, days: int = 30) -> dict[str, Any]
     # ── Conversations in the window, with their channel platform ──
     conv_rows = await db.execute(
         select(Conversation.id, Conversation.created_at, ChannelConnection.platform)
-        .outerjoin(ChannelConnection, Conversation.channel_connection_id == ChannelConnection.id)
+        .outerjoin(
+            ChannelConnection,
+            Conversation.channel_connection_id == ChannelConnection.id,
+        )
         .where(
             Conversation.business_id.in_(business_ids),
             Conversation.created_at >= since,
@@ -94,7 +97,10 @@ async def get_insights(db: AsyncSession, user, days: int = 30) -> dict[str, Any]
     # ── Every message of those conversations (one query, then grouped) ──
     msg_rows = await db.execute(
         select(
-            Message.conversation_id, Message.direction, Message.created_at, Message.extra_data
+            Message.conversation_id,
+            Message.direction,
+            Message.created_at,
+            Message.extra_data,
         )
         .where(Message.conversation_id.in_(conv_ids))
         .order_by(Message.created_at.asc())
@@ -164,46 +170,67 @@ async def get_insights(db: AsyncSession, user, days: int = 30) -> dict[str, Any]
         q1, q3 = quartiles(latencies_min)
         spread = (
             f" La mitad del medio de los casos cae entre {round(q1)} y {round(q3)} minutos."
-            if q1 is not None and q3 is not None else ""
+            if q1 is not None and q3 is not None
+            else ""
         )
-        readings.append({
-            "key": "first_response_minutes",
-            "title": "Tiempo hasta la primera respuesta (mediana)",
-            "value": round(med, 1),
-            "unit": "min",
-            "confidence": "solid" if len(latencies_min) >= MIN_FOR_TREND
-                          else "preliminary" if len(latencies_min) >= MIN_TO_READ else "insufficient",
-            "reading": (
-                f"La mitad de tus clientes esperó {round(med)} minutos o menos "
-                f"(n={len(latencies_min)}).{spread} Se usa la mediana y no el promedio: una sola "
-                "consulta contestada dos días después distorsiona un promedio y no describe a nadie."
-            ),
-            "why_it_matters": (
-                "La probabilidad de cerrar cae fuerte con los minutos: responder rápido suele "
-                "rendir más que cualquier cambio de precio."
-            ),
-        })
+        readings.append(
+            {
+                "key": "first_response_minutes",
+                "title": "Tiempo hasta la primera respuesta (mediana)",
+                "value": round(med, 1),
+                "unit": "min",
+                "confidence": (
+                    "solid"
+                    if len(latencies_min) >= MIN_FOR_TREND
+                    else (
+                        "preliminary"
+                        if len(latencies_min) >= MIN_TO_READ
+                        else "insufficient"
+                    )
+                ),
+                "reading": (
+                    f"La mitad de tus clientes esperó {round(med)} minutos o menos "
+                    f"(n={len(latencies_min)}).{spread} Se usa la mediana y no el promedio: una sola "
+                    "consulta contestada dos días después distorsiona un promedio y no describe a nadie."
+                ),
+                "why_it_matters": (
+                    "La probabilidad de cerrar cae fuerte con los minutos: responder rápido suele "
+                    "rendir más que cualquier cambio de precio."
+                ),
+            }
+        )
 
     # ── Volume: last 7 days vs the 7 before, on real created_at ──
     week_ago = now - timedelta(days=7)
     two_weeks_ago = now - timedelta(days=14)
     this_week = sum(1 for _, created, _ in conversations if created >= week_ago)
-    last_week = sum(1 for _, created, _ in conversations if two_weeks_ago <= created < week_ago)
+    last_week = sum(
+        1 for _, created, _ in conversations if two_weeks_ago <= created < week_ago
+    )
     change = describe_change(this_week, last_week, "conversaciones")
-    readings.append({
-        "key": "weekly_volume",
-        "title": "Conversaciones esta semana",
-        "value": this_week,
-        "unit": "",
-        "confidence": "solid" if this_week + last_week >= MIN_FOR_TREND
-                      else "preliminary" if this_week + last_week >= MIN_TO_READ else "insufficient",
-        "reading": change["reading"],
-        "direction": change["direction"],
-        "why_it_matters": (
-            "El volumen es lo primero que hay que mirar: una conversión que sube mientras el "
-            "volumen se derrumba casi siempre es un espejismo."
-        ),
-    })
+    readings.append(
+        {
+            "key": "weekly_volume",
+            "title": "Conversaciones esta semana",
+            "value": this_week,
+            "unit": "",
+            "confidence": (
+                "solid"
+                if this_week + last_week >= MIN_FOR_TREND
+                else (
+                    "preliminary"
+                    if this_week + last_week >= MIN_TO_READ
+                    else "insufficient"
+                )
+            ),
+            "reading": change["reading"],
+            "direction": change["direction"],
+            "why_it_matters": (
+                "El volumen es lo primero que hay que mirar: una conversión que sube mientras el "
+                "volumen se derrumba casi siempre es un espejismo."
+            ),
+        }
+    )
 
     # ── Daily series (real counts, zero-filled so gaps are visible as gaps) ──
     by_day: Counter[str] = Counter()
@@ -218,7 +245,9 @@ async def get_insights(db: AsyncSession, user, days: int = 30) -> dict[str, Any]
     platform_conv: Counter[str] = Counter()
     platform_answered: Counter[str] = Counter()
     for conv_id, _, platform in conversations:
-        name = platform.value if hasattr(platform, "value") else (platform or "sin_canal")
+        name = (
+            platform.value if hasattr(platform, "value") else (platform or "sin_canal")
+        )
         if conv_id in asked:
             platform_conv[name] += 1
             if conv_id in answered:
@@ -226,14 +255,16 @@ async def get_insights(db: AsyncSession, user, days: int = 30) -> dict[str, Any]
     by_platform = []
     for name, total in platform_conv.most_common():
         prop = Proportion(platform_answered.get(name, 0), total)
-        by_platform.append({
-            "platform": name,
-            "conversations": total,
-            "answered": platform_answered.get(name, 0),
-            "response_rate": prop.percent,
-            "confidence": prop.confidence,
-            "reading": prop.reading("consultas"),
-        })
+        by_platform.append(
+            {
+                "platform": name,
+                "conversations": total,
+                "answered": platform_answered.get(name, 0),
+                "response_rate": prop.percent,
+                "confidence": prop.confidence,
+                "reading": prop.reading("consultas"),
+            }
+        )
 
     peak_hours = [
         {"hour": hour, "inbound": count}
@@ -303,14 +334,24 @@ def _headline(
 
 def _methodology() -> list[str]:
     return [
-        ("Todo se cuenta sobre las filas reales de tu cuenta: conversaciones, mensajes y órdenes "
-        "de tus negocios, nunca datos de la plataforma ni de otras cuentas."),
-        ("Una consulta cuenta como respondida sólo si hay un mensaje saliente posterior al mensaje "
-        "del cliente en esa misma conversación."),
-        ("Los porcentajes vienen con intervalo de confianza de Wilson al 95%: con pocos casos, el "
-        "porcentaje real puede estar bastante lejos del que se ve."),
-        ("Los tiempos se informan con mediana y cuartiles, no con promedio, para que un caso "
-        "extremo no defina el número."),
-        (f"Con menos de {MIN_TO_READ} casos no se interpreta nada; con menos de {MIN_FOR_TREND} "
-        "la lectura se marca como preliminar."),
+        (
+            "Todo se cuenta sobre las filas reales de tu cuenta: conversaciones, mensajes y órdenes "
+            "de tus negocios, nunca datos de la plataforma ni de otras cuentas."
+        ),
+        (
+            "Una consulta cuenta como respondida sólo si hay un mensaje saliente posterior al mensaje "
+            "del cliente en esa misma conversación."
+        ),
+        (
+            "Los porcentajes vienen con intervalo de confianza de Wilson al 95%: con pocos casos, el "
+            "porcentaje real puede estar bastante lejos del que se ve."
+        ),
+        (
+            "Los tiempos se informan con mediana y cuartiles, no con promedio, para que un caso "
+            "extremo no defina el número."
+        ),
+        (
+            f"Con menos de {MIN_TO_READ} casos no se interpreta nada; con menos de {MIN_FOR_TREND} "
+            "la lectura se marca como preliminar."
+        ),
     ]

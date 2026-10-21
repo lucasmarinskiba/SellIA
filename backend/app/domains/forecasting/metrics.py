@@ -62,7 +62,11 @@ def mase(y_true, y_pred, y_train, season: int = 1) -> float:
     y_train = np.asarray(y_train, dtype=float)
     if len(y_train) <= season:
         season = 1
-    naive_err = np.mean(np.abs(y_train[season:] - y_train[:-season])) if len(y_train) > season else EPS
+    naive_err = (
+        np.mean(np.abs(y_train[season:] - y_train[:-season]))
+        if len(y_train) > season
+        else EPS
+    )
     naive_err = max(naive_err, EPS)
     return float(np.mean(np.abs(y_true - y_pred)) / naive_err)
 

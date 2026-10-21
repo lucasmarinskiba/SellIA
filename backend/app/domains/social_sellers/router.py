@@ -54,28 +54,33 @@ router = APIRouter(prefix="/social-sellers", tags=["social-sellers"])
 
 # ========== Helpers ==========
 
+
 async def _get_seller_or_404(db: AsyncSession, seller_id: uuid.UUID) -> SocialSeller:
     engine = SocialSellerEngine(db)
     seller = await engine.get_seller(seller_id)
     if not seller:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail='Seller no encontrado.',
+            detail="Seller no encontrado.",
         )
     return seller
 
 
-async def _require_business_access(db: AsyncSession, business_id: uuid.UUID, user: User) -> None:
+async def _require_business_access(
+    db: AsyncSession, business_id: uuid.UUID, user: User
+) -> None:
     engine = SocialSellerEngine(db)
     has_access = await engine._check_business_access(business_id, user.id)
     if not has_access:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail='No tenés acceso a este negocio.',
+            detail="No tenés acceso a este negocio.",
         )
 
 
-async def _require_seller_access(db: AsyncSession, seller_id: uuid.UUID, user: User) -> SocialSeller:
+async def _require_seller_access(
+    db: AsyncSession, seller_id: uuid.UUID, user: User
+) -> SocialSeller:
     seller = await _get_seller_or_404(db, seller_id)
     await _require_business_access(db, seller.business_id, user)
     return seller
@@ -83,7 +88,10 @@ async def _require_seller_access(db: AsyncSession, seller_id: uuid.UUID, user: U
 
 # ========== CRUD ==========
 
-@router.post("", response_model=SocialSellerResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "", response_model=SocialSellerResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_seller(
     data: SocialSellerCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -144,7 +152,7 @@ async def update_seller(
     if not seller:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail='Seller no encontrado.',
+            detail="Seller no encontrado.",
         )
     return seller
 
@@ -162,13 +170,18 @@ async def delete_seller(
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail='Seller no encontrado.',
+            detail="Seller no encontrado.",
         )
 
 
 # ========== Customers ==========
 
-@router.post("/{seller_id}/customers", response_model=SellerCustomerResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/{seller_id}/customers",
+    response_model=SellerCustomerResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def assign_customer(
     seller_id: uuid.UUID,
     data: SellerCustomerCreate,
@@ -204,6 +217,7 @@ async def list_customers(
 
 # ========== Unified Customers ==========
 
+
 @router.get("/customers/unified", response_model=list[UnifiedCustomerResponse])
 async def list_unified_customers(
     business_id: uuid.UUID,
@@ -215,11 +229,16 @@ async def list_unified_customers(
     """Lista los clientes unificados de un negocio."""
     await _require_business_access(db, business_id, current_user)
     matcher = CustomerIdentityMatcher(db)
-    customers = await matcher.list_unified_customers(business_id, limit=limit, offset=offset)
+    customers = await matcher.list_unified_customers(
+        business_id, limit=limit, offset=offset
+    )
     return customers
 
 
-@router.get("/customers/unified/{unified_customer_id}", response_model=UnifiedCustomerProfileResponse)
+@router.get(
+    "/customers/unified/{unified_customer_id}",
+    response_model=UnifiedCustomerProfileResponse,
+)
 async def get_unified_customer(
     unified_customer_id: uuid.UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -231,7 +250,7 @@ async def get_unified_customer(
     if not profile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail='Cliente unificado no encontrado.',
+            detail="Cliente unificado no encontrado.",
         )
     return profile
 
@@ -245,19 +264,23 @@ async def merge_customers(
     """Fusiona dos clientes unificados."""
     matcher = CustomerIdentityMatcher(db)
     result = await matcher.merge_customers(
-        business_id=await resolve_business_id(db, current_user) if hasattr(current_user, 'business_id') else None,
+        business_id=(
+            await resolve_business_id(db, current_user)
+            if hasattr(current_user, "business_id")
+            else None
+        ),
         target_id=data.target_id,
         source_id=data.source_id,
     )
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail='No se pudo fusionar: verificá que ambos clientes existan.',
+            detail="No se pudo fusionar: verificá que ambos clientes existan.",
         )
     return {
-        'status': 'merged',
-        'target_id': data.target_id,
-        'merged_source_id': data.source_id,
+        "status": "merged",
+        "target_id": data.target_id,
+        "merged_source_id": data.source_id,
     }
 
 
@@ -273,15 +296,18 @@ async def suggest_merge(
     await _require_business_access(db, business_id, current_user)
     matcher = CustomerIdentityMatcher(db)
     suggestion = await matcher.suggest_merge(business_id, customer_a_id, customer_b_id)
-    return [{
-        'customer_a_id': customer_a_id,
-        'customer_b_id': customer_b_id,
-        'score': suggestion['score'],
-        'reasons': suggestion['reasons'],
-    }]
+    return [
+        {
+            "customer_a_id": customer_a_id,
+            "customer_b_id": customer_b_id,
+            "score": suggestion["score"],
+            "reasons": suggestion["reasons"],
+        }
+    ]
 
 
 # ========== Pipeline & Performance ==========
+
 
 @router.get("/{seller_id}/pipeline", response_model=SellerPipelineResponse)
 async def get_pipeline(
@@ -310,6 +336,7 @@ async def get_performance(
 
 # ========== Sales & Actions ==========
 
+
 @router.post("/{seller_id}/record-sale", response_model=RecordSaleResponse)
 async def record_sale(
     seller_id: uuid.UUID,
@@ -324,14 +351,15 @@ async def record_sale(
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail='No se pudo registrar la venta.',
+            detail="No se pudo registrar la venta.",
         )
     return result
 
 
 # ========== Lookalike Audience Engine ==========
 
-@router.get('/lookalike/profile', response_model=IdealCustomerProfile)
+
+@router.get("/lookalike/profile", response_model=IdealCustomerProfile)
 async def get_lookalike_profile(
     business_id: uuid.UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -343,7 +371,7 @@ async def get_lookalike_profile(
     return await engine.build_ideal_customer_profile(business_id)
 
 
-@router.get('/lookalike/leads', response_model=list[LookalikeLead])
+@router.get("/lookalike/leads", response_model=list[LookalikeLead])
 async def get_lookalike_leads(
     business_id: uuid.UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -355,7 +383,7 @@ async def get_lookalike_leads(
     return await engine.prioritize_leads(business_id)
 
 
-@router.get('/lookalike/similar-to/{customer_id}', response_model=list[LookalikeLead])
+@router.get("/lookalike/similar-to/{customer_id}", response_model=list[LookalikeLead])
 async def get_similar_to_customer(
     customer_id: uuid.UUID,
     business_id: uuid.UUID,
@@ -369,7 +397,7 @@ async def get_similar_to_customer(
     return await engine.find_similar_to_customer(business_id, customer_id, limit=limit)
 
 
-@router.get('/lookalike/report', response_model=LookalikeReportResponse)
+@router.get("/lookalike/report", response_model=LookalikeReportResponse)
 async def get_lookalike_report(
     business_id: uuid.UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -410,13 +438,15 @@ async def execute_action(
         if not conversation_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail='Se requiere conversation_id en payload.',
+                detail="Se requiere conversation_id en payload.",
             )
-        decision = await engine.decide_next_action(seller_id, uuid.UUID(conversation_id))
+        decision = await engine.decide_next_action(
+            seller_id, uuid.UUID(conversation_id)
+        )
         if not decision:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail='No se encontró la relación con el cliente.',
+                detail="No se encontró la relación con el cliente.",
             )
         return {
             "status": "success",
@@ -433,6 +463,7 @@ async def execute_action(
 
 
 # ========== Radar de Oportunidades ==========
+
 
 @router.get("/radar", response_model=RadarDataResponse)
 async def get_radar(
@@ -458,7 +489,7 @@ async def list_opportunities(
     engine = CustomerLifetimeEngine(db)
     opps = await engine.detect_buying_moments(business_id, lookback_hours=168)
     if heat_level:
-        opps = [o for o in opps if o['heat_level'] == heat_level.lower()]
+        opps = [o for o in opps if o["heat_level"] == heat_level.lower()]
     return opps
 
 
@@ -488,7 +519,9 @@ async def execute_radar_action(
     """Ejecuta una acción recomendada desde el radar."""
     await _require_business_access(db, business_id, current_user)
     engine = CustomerLifetimeEngine(db)
-    result = await engine.execute_radar_action(business_id, conversation_id, data.action, data.payload)
+    result = await engine.execute_radar_action(
+        business_id, conversation_id, data.action, data.payload
+    )
     return {
         "status": result.get("status", "success"),
         "action": result.get("action", data.action),
@@ -501,6 +534,7 @@ async def execute_radar_action(
 
 
 # ========== Wall of Fame & Loyalty ==========
+
 
 @router.get("/wall-of-fame", response_model=list[WallOfFameCustomer])
 async def get_wall_of_fame(
@@ -515,7 +549,9 @@ async def get_wall_of_fame(
     return await engine.get_wall_of_fame(business_id, limit=limit)
 
 
-@router.get("/customers/{customer_id}/badges", response_model=list[CustomerBadgeResponse])
+@router.get(
+    "/customers/{customer_id}/badges", response_model=list[CustomerBadgeResponse]
+)
 async def get_customer_badges(
     customer_id: uuid.UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -563,7 +599,9 @@ async def create_loyalty_action(
     await _require_business_access(db, business_id, current_user)
     engine = LoyaltyEngine(db)
     try:
-        result = await engine.create_loyalty_action(business_id, customer_id, data.action_type)
+        result = await engine.create_loyalty_action(
+            business_id, customer_id, data.action_type
+        )
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

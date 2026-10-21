@@ -45,9 +45,7 @@ All errors return standard format:
         routes=app.routes,
     )
 
-    openapi_schema["info"]["x-logo"] = {
-        "url": "https://sellias.com/logo.png"
-    }
+    openapi_schema["info"]["x-logo"] = {"url": "https://sellias.com/logo.png"}
 
     # Documentación de endpoints principales
     openapi_schema["paths"]["/api/v1/payments/checkout"] = {

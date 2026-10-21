@@ -20,7 +20,11 @@ class OnboardingScraper:
         self._playwright = await async_playwright().start()
         self._browser = await self._playwright.chromium.launch(
             headless=True,
-            args=["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+            args=[
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage",
+            ],
         )
 
     async def _stop(self):
@@ -59,7 +63,14 @@ class OnboardingScraper:
             await page.wait_for_timeout(2500)
 
             # Intentar cerrar popups de cookies comunes
-            for btn_text in ["Aceptar", "Accept", "Aceptar todo", "Accept all", "Entendido", "OK"]:
+            for btn_text in [
+                "Aceptar",
+                "Accept",
+                "Aceptar todo",
+                "Accept all",
+                "Entendido",
+                "OK",
+            ]:
                 try:
                     btn = page.locator(f"button:has-text('{btn_text}')").first
                     if await btn.is_visible(timeout=500):

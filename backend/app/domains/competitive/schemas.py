@@ -65,6 +65,7 @@ class BattlecardCompareOut(BaseModel):
 #   Competitive Intelligence Monitor Schemas
 # ═══════════════════════════════════════════════════════
 
+
 class MonitorCreate(BaseModel):
     business_id: UUID
     competitor_name: str

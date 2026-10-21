@@ -28,7 +28,10 @@ def _try_import_domain_models(module_path: str) -> None:
         importlib.import_module(module_path)
     except Exception:
         logger.exception("_try_import_domain_models: error inesperado")
-        print(f"[celery_app.py] WARNING: skipped model import {module_path!r} due to error:", file=_sys.stderr)
+        print(
+            f"[celery_app.py] WARNING: skipped model import {module_path!r} due to error:",
+            file=_sys.stderr,
+        )
         traceback.print_exc()
 
 
@@ -36,16 +39,16 @@ for _model_module in [
     "app.domains.users.models",
     "app.domains.businesses.models",
     "app.domains.businesses.location_models",  # Business.locations relationship("Location", ...)
-                                                # targets this module -- SQLAlchemy resolves string
-                                                # relationship targets by name from whatever's already
-                                                # imported, so without this every task touching Business
-                                                # (most of them) crashed mapper configuration with
-                                                # "expression 'Location' failed to locate a name".
-                                                # Worked by accident in the web process only because some
-                                                # API router happens to import it before any request hits
-                                                # the ORM; celery has no such router imports.
+    # targets this module -- SQLAlchemy resolves string
+    # relationship targets by name from whatever's already
+    # imported, so without this every task touching Business
+    # (most of them) crashed mapper configuration with
+    # "expression 'Location' failed to locate a name".
+    # Worked by accident in the web process only because some
+    # API router happens to import it before any request hits
+    # the ORM; celery has no such router imports.
     "app.domains.websites.models",  # Business.website relationship("Website", ...) -- same
-                                     # accident-of-import-order gap as location_models above.
+    # accident-of-import-order gap as location_models above.
     "app.domains.catalogs.models",
     "app.domains.channels.models",
     "app.domains.subscriptions.models",
@@ -108,13 +111,13 @@ _modules = [
     "app.tasks.workflow_tasks",
     "app.tasks.authority_tasks",
     "app.tasks.security_tasks",  # referenced by 5 beat_schedule entries below
-                                  # (data_retention_cleanup, rotate_webhook_tokens,
-                                  # security_audit_report, cleanup_expired_ip_blocks,
-                                  # auto_block_high_risk_ips) but was never in this
-                                  # list -- every dispatch of any of them hit
-                                  # "Received unregistered task ... KeyError",
-                                  # identical failure mode to the workflow_tasks/
-                                  # content_tasks bug fixed earlier this session.
+    # (data_retention_cleanup, rotate_webhook_tokens,
+    # security_audit_report, cleanup_expired_ip_blocks,
+    # auto_block_high_risk_ips) but was never in this
+    # list -- every dispatch of any of them hit
+    # "Received unregistered task ... KeyError",
+    # identical failure mode to the workflow_tasks/
+    # content_tasks bug fixed earlier this session.
     "app.domains.documents.tasks",
     "app.tasks.content_tasks",
     "app.tasks.subscription_tasks",
@@ -155,7 +158,10 @@ for mod in _modules:
         # time beat dispatched one of that module's tasks, with no hint of
         # the actual cause. Print the real traceback to stderr instead.
         logger.exception("modulo: error inesperado")
-        print(f"[celery_app.py] WARNING: skipped task module {mod!r} due to error:", file=_sys.stderr)
+        print(
+            f"[celery_app.py] WARNING: skipped task module {mod!r} due to error:",
+            file=_sys.stderr,
+        )
         traceback.print_exc()
 
 celery_app.conf.include = _includes
@@ -294,7 +300,9 @@ celery_app.conf.beat_schedule = {
     },
     "rotate-webhook-tokens": {
         "task": "app.tasks.security_tasks.rotate_webhook_tokens",
-        "schedule": crontab(minute=0, hour=4, day_of_month=1, month_of_year="1,4,7,10"),  # trimestral: 1 de ene/abr/jul/oct 04:00
+        "schedule": crontab(
+            minute=0, hour=4, day_of_month=1, month_of_year="1,4,7,10"
+        ),  # trimestral: 1 de ene/abr/jul/oct 04:00
     },
     "security-audit-report": {
         "task": "app.tasks.security_tasks.security_audit_report",
@@ -460,12 +468,12 @@ celery_app.conf.beat_schedule = {
     # Ciclo maestro: config + repair + protection + optimization
     "autonomous-operations-cycle": {
         "task": "app.tasks.autonomous_tasks.autonomous_operations_cycle",
-        "schedule": 300.0,   # cada 5 minutos — pilares internos con sus propios intervalos
+        "schedule": 300.0,  # cada 5 minutos — pilares internos con sus propios intervalos
     },
     # Health check rápido (sin acciones)
     "system-health-check": {
         "task": "app.tasks.autonomous_tasks.system_health_check",
-        "schedule": 120.0,   # cada 2 minutos
+        "schedule": 120.0,  # cada 2 minutos
     },
     # Optimización profunda + A/B tests
     "deep-system-optimization": {
@@ -485,7 +493,9 @@ celery_app.conf.beat_schedule = {
     # === Sales Funnel Automation (Fases 11-12) ===
     "send-follow-ups": {
         "task": "app.tasks.sales_funnel_tasks.send_follow_ups",
-        "schedule": crontab(minute=0, hour=10, day_of_week="mon,thu"),  # lunes y jueves 10:00 (cada 3-4 días)
+        "schedule": crontab(
+            minute=0, hour=10, day_of_week="mon,thu"
+        ),  # lunes y jueves 10:00 (cada 3-4 días)
     },
     "send-upsell-campaigns": {
         "task": "app.tasks.sales_funnel_tasks.send_upsell_campaigns",
@@ -493,7 +503,9 @@ celery_app.conf.beat_schedule = {
     },
     "send-winback-campaigns": {
         "task": "app.tasks.sales_funnel_tasks.send_winback_campaigns",
-        "schedule": crontab(minute=0, hour=11, day_of_month="1,15"),  # días 1 y 15 de cada mes 11:00 (~cada 14 días)
+        "schedule": crontab(
+            minute=0, hour=11, day_of_month="1,15"
+        ),  # días 1 y 15 de cada mes 11:00 (~cada 14 días)
     },
     "daily-growth-cycle": {
         "task": "app.tasks.sales_funnel_tasks.daily_growth_cycle",

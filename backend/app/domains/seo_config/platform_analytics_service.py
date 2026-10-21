@@ -96,7 +96,9 @@ class PlatformAnalyticsService:
             return None
 
         try:
-            connector = await self.get_analytics_connector(link.platform_source, connection_id)
+            connector = await self.get_analytics_connector(
+                link.platform_source, connection_id
+            )
             if not connector:
                 logger.warning(f"No connector for {link.platform_source}")
                 return None
@@ -181,8 +183,12 @@ class PlatformAnalyticsService:
             total_conversions = sum(m.conversions for m in metrics_list)
             total_revenue = sum(m.revenue for m in metrics_list)
 
-            avg_ctr = (total_clicks / total_impressions * 100) if total_impressions > 0 else 0
-            avg_conv_rate = (total_conversions / total_clicks * 100) if total_clicks > 0 else 0
+            avg_ctr = (
+                (total_clicks / total_impressions * 100) if total_impressions > 0 else 0
+            )
+            avg_conv_rate = (
+                (total_conversions / total_clicks * 100) if total_clicks > 0 else 0
+            )
 
             business_id = metrics_list[0].business_id
 
@@ -203,7 +209,9 @@ class PlatformAnalyticsService:
             await self.db.commit()
             await self.db.refresh(summary)
 
-            logger.info(f"Computed summary for {link_id}: {total_conversions} conversions")
+            logger.info(
+                f"Computed summary for {link_id}: {total_conversions} conversions"
+            )
             return summary
 
         except Exception:

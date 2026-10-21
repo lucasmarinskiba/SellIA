@@ -23,7 +23,11 @@ async def get_db():
         yield session
 
 
-@router.post("/strategies", response_model=AcquisitionStrategyOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/strategies",
+    response_model=AcquisitionStrategyOut,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_strategy(
     data: AcquisitionStrategyCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -33,6 +37,7 @@ async def create_strategy(
     from sqlalchemy import select
 
     from app.domains.businesses.models import Business
+
     result = await db.execute(
         select(Business).where(Business.user_id == current_user.id).limit(1)
     )
@@ -59,6 +64,7 @@ async def list_strategies(
     from sqlalchemy import select
 
     from app.domains.businesses.models import Business
+
     result = await db.execute(
         select(Business).where(Business.user_id == current_user.id).limit(1)
     )

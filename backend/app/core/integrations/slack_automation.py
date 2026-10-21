@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 class SlackCommandType(Enum):
     """Slack slash commands."""
+
     STATUS = "status"
     ANALYTICS = "analytics"
     ORDERS = "orders"
@@ -45,6 +46,7 @@ class SlackCommandType(Enum):
 
 class SlackAlertLevel(Enum):
     """Alert severity levels."""
+
     INFO = "info"
     WARNING = "warning"
     ERROR = "error"
@@ -113,11 +115,14 @@ class SlackAutomation:
 
             # Verify signature
             sig_basestring = f"v0:{timestamp}:{body.decode()}"
-            expected_signature = "v0=" + hmac.new(
-                self.signing_secret.encode(),
-                sig_basestring.encode(),
-                hashlib.sha256
-            ).hexdigest()
+            expected_signature = (
+                "v0="
+                + hmac.new(
+                    self.signing_secret.encode(),
+                    sig_basestring.encode(),
+                    hashlib.sha256,
+                ).hexdigest()
+            )
 
             return hmac.compare_digest(signature, expected_signature)
 
@@ -401,14 +406,18 @@ class SlackAutomation:
             if data:
                 fields = []
                 for key, value in data.items():
-                    fields.append({
-                        "type": "mrkdwn",
-                        "text": f"*{key}*\n{value}",
-                    })
-                blocks.append({
-                    "type": "section",
-                    "fields": fields,
-                })
+                    fields.append(
+                        {
+                            "type": "mrkdwn",
+                            "text": f"*{key}*\n{value}",
+                        }
+                    )
+                blocks.append(
+                    {
+                        "type": "section",
+                        "fields": fields,
+                    }
+                )
 
             payload = {
                 "channel": channel_id,

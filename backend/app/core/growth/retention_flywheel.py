@@ -125,7 +125,11 @@ class RetentionFlywheel:
 
         return {
             "churn_risk": round(min(1.0, churn_risk), 2),
-            "risk_level": "critical" if churn_risk > 0.6 else "high" if churn_risk > 0.3 else "low",
+            "risk_level": (
+                "critical"
+                if churn_risk > 0.6
+                else "high" if churn_risk > 0.3 else "low"
+            ),
             "days_inactive": days_since_last_action,
             "engagement_score": engagement_score,
             "recommended_actions": actions,
@@ -177,7 +181,11 @@ class RetentionFlywheel:
             "monthly_churn_rate": round(monthly_churn_rate * 100, 1),
             "average_lifetime_months": round(months, 1),
             "lifetime_value": round(ltv, 2),
-            "implication": "Focus on retention" if monthly_churn_rate > 0.15 else "Acquisition leverage",
+            "implication": (
+                "Focus on retention"
+                if monthly_churn_rate > 0.15
+                else "Acquisition leverage"
+            ),
         }
 
     @staticmethod
@@ -195,5 +203,9 @@ class RetentionFlywheel:
             "week_4_retention": round(retained_week_4 / cohort_size * 100, 1),
             "improvement_from_baseline": round(retention_improvement * 100, 1),
             "ltv_impact": f"+{round(retention_improvement * 15, 1)}%",  # Rough estimate
-            "recommendation": "Scale retention initiatives" if retention_improvement > 0.1 else "Test more variations",
+            "recommendation": (
+                "Scale retention initiatives"
+                if retention_improvement > 0.1
+                else "Test more variations"
+            ),
         }

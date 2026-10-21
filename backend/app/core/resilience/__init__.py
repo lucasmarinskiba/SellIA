@@ -1,4 +1,5 @@
 """Resilience module — Retry engines, circuit breakers, failover logic."""
+
 import asyncio
 import logging
 from collections.abc import Callable
@@ -39,7 +40,14 @@ class ServiceHealthTracker:
 health_tracker = ServiceHealthTracker()
 
 
-async def retry_with_exponential_backoff(func: Callable, args: tuple = (), kwargs: dict | None = None, max_retries: int = 3, initial_delay: float = 1.0, is_idempotent: bool = True) -> Any:
+async def retry_with_exponential_backoff(
+    func: Callable,
+    args: tuple = (),
+    kwargs: dict | None = None,
+    max_retries: int = 3,
+    initial_delay: float = 1.0,
+    is_idempotent: bool = True,
+) -> Any:
     if kwargs is None:
         kwargs = {}
     if not is_idempotent:
@@ -56,6 +64,7 @@ async def retry_with_exponential_backoff(func: Callable, args: tuple = (), kwarg
                 await asyncio.sleep(delay)
                 delay *= 2
     raise last_exception
+
 
 # InputValidator lives in app/core/input_validation.py (moved out of the old
 # app/core/resilience.py file, which collided with this package's name and

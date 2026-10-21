@@ -34,6 +34,7 @@ router = APIRouter(prefix="/api/v1/tenants", tags=["multi-tenant"])
 # Tenant Management
 # ============================================================================
 
+
 @router.post("")
 async def create_tenant(
     name: str,
@@ -205,6 +206,7 @@ async def upgrade_tier(
 # Tenant Members (RBAC)
 # ============================================================================
 
+
 @router.get("/{tenant_id}/members")
 async def list_members(
     tenant_id: str,
@@ -217,6 +219,7 @@ async def list_members(
 
     # Query members
     from sqlalchemy import select
+
     result = await db.execute(
         select(TenantMember)
         .where(TenantMember.tenant_id == tenant_id)
@@ -251,9 +254,7 @@ async def invite_member(
     from sqlalchemy import select
 
     # Find user by email
-    user_result = await db.execute(
-        select(User).where(User.email == email)
-    )
+    user_result = await db.execute(select(User).where(User.email == email))
     user = user_result.scalar_one_or_none()
 
     if not user:
@@ -297,6 +298,7 @@ async def invite_member(
 # ============================================================================
 # API Keys
 # ============================================================================
+
 
 @router.post("/{tenant_id}/api-keys")
 async def create_api_key(
@@ -426,6 +428,7 @@ async def rotate_api_key(
 # Billing
 # ============================================================================
 
+
 @router.get("/{tenant_id}/billing/usage")
 async def get_billing_usage(
     tenant_id: str,
@@ -445,6 +448,7 @@ async def get_billing_usage(
 # ============================================================================
 # Audit Logs
 # ============================================================================
+
 
 @router.get("/{tenant_id}/audit-logs")
 async def get_audit_logs(

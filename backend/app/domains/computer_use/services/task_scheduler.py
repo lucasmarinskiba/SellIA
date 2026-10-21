@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 class TaskType(str, Enum):
     """Tipos de tareas."""
+
     RESPOND_MESSAGE = "respond_message"
     SCHEDULE_APPOINTMENT = "schedule_appointment"
     CLOSE_SALE = "close_sale"
@@ -31,6 +32,7 @@ class TaskType(str, Enum):
 
 class TaskPriority(int, Enum):
     """Prioridades (lower = ejecuta primero)."""
+
     URGENT = 1  # Responder customer
     HIGH = 2  # Cerrar venta
     MEDIUM = 3  # Seguimiento
@@ -89,7 +91,9 @@ class ConflictCheck:
             "has_conflict": self.has_conflict,
             "reason": self.reason,
             "resolution": self.resolution,
-            "alternative_time": self.alternative_time.isoformat() if self.alternative_time else None,
+            "alternative_time": (
+                self.alternative_time.isoformat() if self.alternative_time else None
+            ),
         }
 
 
@@ -102,8 +106,14 @@ class TaskScheduler:
 
     # Conflictos conocidos
     CONFLICTING_TASK_PAIRS: ClassVar[list] = [
-        (TaskType.RESPOND_MESSAGE, TaskType.CLOSE_SALE),  # Responder y cerrar simultáneamente no tiene sentido
-        (TaskType.SCHEDULE_APPOINTMENT, TaskType.LAUNCH_AD_CAMPAIGN),  # No en mismo momento
+        (
+            TaskType.RESPOND_MESSAGE,
+            TaskType.CLOSE_SALE,
+        ),  # Responder y cerrar simultáneamente no tiene sentido
+        (
+            TaskType.SCHEDULE_APPOINTMENT,
+            TaskType.LAUNCH_AD_CAMPAIGN,
+        ),  # No en mismo momento
     ]
 
     def __init__(self):
@@ -154,10 +164,14 @@ class TaskScheduler:
             # Intentar reschedule
             if conflict.alternative_time:
                 task.due_at = conflict.alternative_time
-                self.logger.info(f"Task rescheduled: {task_id} | reason={conflict.reason}")
+                self.logger.info(
+                    f"Task rescheduled: {task_id} | reason={conflict.reason}"
+                )
             else:
                 task.status = "conflict"
-                self.logger.warning(f"Task conflict (not resolvable): {task_id} | reason={conflict.reason}")
+                self.logger.warning(
+                    f"Task conflict (not resolvable): {task_id} | reason={conflict.reason}"
+                )
                 return task_id, False, conflict.reason
 
         # Encolar
@@ -169,7 +183,9 @@ class TaskScheduler:
                 self.customer_task_history[customer_id] = []
             self.customer_task_history[customer_id].append(task)
 
-        self.logger.info(f"Task enqueued: {task_id} | type={task_type.value} | priority={priority.name}")
+        self.logger.info(
+            f"Task enqueued: {task_id} | type={task_type.value} | priority={priority.name}"
+        )
 
         return task_id, True, None
 
@@ -191,7 +207,9 @@ class TaskScheduler:
         task.status = "running"
         self.executing_tasks[task.task_id] = task
 
-        self.logger.info(f"Executing task: {task.task_id} | type={task.task_type.value}")
+        self.logger.info(
+            f"Executing task: {task.task_id} | type={task.task_type.value}"
+        )
 
         return task
 
@@ -222,7 +240,7 @@ class TaskScheduler:
         if task.retry_count <= task.max_retries:
             # Re-encolar con backoff
             task.status = "pending"
-            task.due_at = utc_now() + timedelta(seconds=2 ** task.retry_count)
+            task.due_at = utc_now() + timedelta(seconds=2**task.retry_count)
             heappush(self.task_queue, task)
 
             self.logger.warning(
@@ -262,7 +280,10 @@ class TaskScheduler:
             return TaskPriority.URGENT
         elif task_type in (TaskType.CLOSE_SALE, TaskType.SCHEDULE_APPOINTMENT):
             return TaskPriority.HIGH
-        elif task_type == TaskType.SEND_FOLLOW_UP or task_type == TaskType.LAUNCH_AD_CAMPAIGN:
+        elif (
+            task_type == TaskType.SEND_FOLLOW_UP
+            or task_type == TaskType.LAUNCH_AD_CAMPAIGN
+        ):
             return TaskPriority.MEDIUM
         else:
             return TaskPriority.LOW
@@ -291,7 +312,10 @@ class TaskScheduler:
             if task.task_type == task_type_a:
                 # Verificar si hay tarea_b ejecutándose
                 for exec_task in self.executing_tasks.values():
-                    if exec_task.task_type == task_type_b and exec_task.customer_id == task.customer_id:
+                    if (
+                        exec_task.task_type == task_type_b
+                        and exec_task.customer_id == task.customer_id
+                    ):
                         return ConflictCheck(
                             has_conflict=True,
                             reason=f"Conflict: cannot execute {task.task_type.value} while {task_type_b.value} is running",

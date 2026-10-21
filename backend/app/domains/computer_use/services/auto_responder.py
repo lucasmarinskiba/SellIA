@@ -81,13 +81,17 @@ class AutoResponderService:
             get_whatsapp_connector(
                 business_account_id=settings.WHATSAPP_BUSINESS_ACCOUNT_ID,
                 access_token=settings.WHATSAPP_ACCESS_TOKEN,
-            ) if hasattr(settings, 'WHATSAPP_BUSINESS_ACCOUNT_ID') else None
+            )
+            if hasattr(settings, "WHATSAPP_BUSINESS_ACCOUNT_ID")
+            else None
         )
         self.instagram_connector = (
             get_instagram_connector(
                 business_account_id=settings.INSTAGRAM_BUSINESS_ACCOUNT_ID,
                 access_token=settings.INSTAGRAM_ACCESS_TOKEN,
-            ) if hasattr(settings, 'INSTAGRAM_BUSINESS_ACCOUNT_ID') else None
+            )
+            if hasattr(settings, "INSTAGRAM_BUSINESS_ACCOUNT_ID")
+            else None
         )
 
         # Payment tracking
@@ -112,13 +116,19 @@ class AutoResponderService:
         try:
             # 0. SCHEDULING: Detectar si es request de agendar
             if self.scheduling_orchestrator:
-                intent, scheduled_response, scheduling_state = await self.scheduling_orchestrator.process_message(
-                    message.customer_id,
-                    message.content,
+                intent, scheduled_response, scheduling_state = (
+                    await self.scheduling_orchestrator.process_message(
+                        message.customer_id,
+                        message.content,
+                    )
                 )
 
                 # Si es scheduling intent → manejar especialmente
-                if intent != self.scheduling_orchestrator.SchedulingIntent.SCHEDULE_REQUEST or scheduling_state:
+                if (
+                    intent
+                    != self.scheduling_orchestrator.SchedulingIntent.SCHEDULE_REQUEST
+                    or scheduling_state
+                ):
                     # Registrar scheduling action en audit log
                     await self._log_scheduling_activity(
                         user_id=user_id,
@@ -127,7 +137,11 @@ class AutoResponderService:
                         intent=intent.value,
                         state=scheduling_state,
                     )
-                    return scheduled_response, "success", 0.95  # Scheduling es high-confidence
+                    return (
+                        scheduled_response,
+                        "success",
+                        0.95,
+                    )  # Scheduling es high-confidence
 
             # 1. Detectar plataforma
             platform = self._source_to_platform(message.source)
@@ -146,10 +160,14 @@ class AutoResponderService:
                     "id": message.customer_id,
                     "email": message.customer_email,
                 },
-                product_info={
-                    "product_id": message.product_id,
-                    "order_id": message.order_id,
-                } if message.product_id or message.order_id else None,
+                product_info=(
+                    {
+                        "product_id": message.product_id,
+                        "order_id": message.order_id,
+                    }
+                    if message.product_id or message.order_id
+                    else None
+                ),
                 conversation_history=message.previous_messages or [],
             )
 
@@ -160,44 +178,65 @@ class AutoResponderService:
 
             # 5. Generar respuesta
             instruction = self._build_instruction(message, strategy)
-            response_prompt = await self.brain_service.get_response_prompt(context, instruction)
+            response_prompt = await self.brain_service.get_response_prompt(
+                context, instruction
+            )
 
             # 6. LLM genera respuesta (placeholder — usar vision agent o LLM provider)
             response_text = await self._generate_response(response_prompt, context)
 
             # 7. Detectar señales de compra
-            signals = await self.brain_service.detect_sales_signals(message.content, context)
+            signals = await self.brain_service.detect_sales_signals(
+                message.content, context
+            )
 
             # 7.5 SALES CLOSING: Evaluar si cerrar venta
             if signals.get("signal_found"):
-                closing_msg, closing_status, closing_confidence = await self.sales_closer.evaluate_and_close(
-                    user_id=user_id,
-                    message=message,
-                    conversation_history=context.conversation_history,
-                    customer_profile=context.customer_profile,
-                    product_info=strategy.metadata if strategy else {},
-                    mode=self.closer_mode,
+                closing_msg, closing_status, closing_confidence = (
+                    await self.sales_closer.evaluate_and_close(
+                        user_id=user_id,
+                        message=message,
+                        conversation_history=context.conversation_history,
+                        customer_profile=context.customer_profile,
+                        product_info=strategy.metadata if strategy else {},
+                        mode=self.closer_mode,
+                    )
                 )
 
                 if closing_msg and closing_status != "not_ready_to_close":
                     response_text = closing_msg
                     confidence = closing_confidence
-                    status = "success" if closing_status == "closing_attempt" else "pending_approval"
+                    status = (
+                        "success"
+                        if closing_status == "closing_attempt"
+                        else "pending_approval"
+                    )
 
                     # GENERAR PAYMENT LINK si sale CERRADA
                     if closing_status == "closing_attempt" and status == "success":
-                        checkout_success, checkout_url = await self.conversion_tracker.process_sale_to_payment(
-                            user_id=user_id,
-                            customer_id=message.customer_id,
-                            customer_email=message.customer_email,
-                            customer_name=message.customer_name,
-                            product_info=strategy.metadata or {},
-                            amount_cents=int((strategy.metadata.get("price", 0) if strategy.metadata else 0) * 100),
+                        checkout_success, checkout_url = (
+                            await self.conversion_tracker.process_sale_to_payment(
+                                user_id=user_id,
+                                customer_id=message.customer_id,
+                                customer_email=message.customer_email,
+                                customer_name=message.customer_name,
+                                product_info=strategy.metadata or {},
+                                amount_cents=int(
+                                    (
+                                        strategy.metadata.get("price", 0)
+                                        if strategy.metadata
+                                        else 0
+                                    )
+                                    * 100
+                                ),
+                            )
                         )
 
                         if checkout_success and checkout_url:
                             # Agregar link de pago al mensaje
-                            response_text += f"\n\n💳 Confirma tu compra aquí: {checkout_url}"
+                            response_text += (
+                                f"\n\n💳 Confirma tu compra aquí: {checkout_url}"
+                            )
 
                     await self._log_activity(
                         user_id=user_id,
@@ -353,7 +392,9 @@ class AutoResponderService:
                 )
 
             # Fallback: browser automation si API no disponible
-            logger.info(f"API not available for {platform.value}, using browser automation")
+            logger.info(
+                f"API not available for {platform.value}, using browser automation"
+            )
 
             if platform == Platform.WHATSAPP:
                 success, msg_id = await self.platform_automation.send_response(
@@ -418,7 +459,11 @@ class AutoResponderService:
             log_entry = AuditLogEntry(
                 user_id=user_id,
                 platform=message.source.value,
-                action_type="message_response" if message.message_type == MessageType.DIRECT_MESSAGE else "comment_response",
+                action_type=(
+                    "message_response"
+                    if message.message_type == MessageType.DIRECT_MESSAGE
+                    else "comment_response"
+                ),
             )
 
             log_entry.with_input(message.content)
@@ -439,12 +484,14 @@ class AutoResponderService:
             else:
                 log_entry.failed(error or "Unknown error")
 
-            log_entry.with_metadata({
-                "customer_id": message.customer_id,
-                "customer_name": message.customer_name,
-                "message_id": message.message_id,
-                "signals": signals,
-            })
+            log_entry.with_metadata(
+                {
+                    "customer_id": message.customer_id,
+                    "customer_name": message.customer_name,
+                    "message_id": message.message_id,
+                    "signals": signals,
+                }
+            )
 
             await self.audit_service.log(log_entry)
 
@@ -481,11 +528,17 @@ class AutoResponderService:
             }
 
             if state:
-                metadata.update({
-                    "proposed_slot": state.proposed_slot.to_dict() if state.proposed_slot else None,
-                    "confirmed": state.confirmed,
-                    "event_id": state.event_id,
-                })
+                metadata.update(
+                    {
+                        "proposed_slot": (
+                            state.proposed_slot.to_dict()
+                            if state.proposed_slot
+                            else None
+                        ),
+                        "confirmed": state.confirmed,
+                        "event_id": state.event_id,
+                    }
+                )
 
             log_entry.with_metadata(metadata)
 

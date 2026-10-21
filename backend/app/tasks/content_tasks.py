@@ -37,9 +37,11 @@ settings = get_settings()
 # Helper: obtener plan tier del negocio
 # ============================================================================
 
+
 async def _get_business_plan_tier(db, business_id: uuid.UUID) -> str:
     """Obtiene el tier de suscripción del negocio."""
     from app.domains.subscriptions.models import Subscription
+
     result = await db.execute(
         select(Subscription).where(
             and_(
@@ -50,7 +52,7 @@ async def _get_business_plan_tier(db, business_id: uuid.UUID) -> str:
     )
     sub = result.scalar_one_or_none()
     if sub:
-        return sub.plan_tier if hasattr(sub, 'plan_tier') else "starter"
+        return sub.plan_tier if hasattr(sub, "plan_tier") else "starter"
     return "free"  # Default para negocios sin suscripción activa
 
 
@@ -58,8 +60,11 @@ async def _get_business_plan_tier(db, business_id: uuid.UUID) -> str:
 # AI Content Generation Tasks (con Router Inteligente)
 # ============================================================================
 
+
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def generate_product_images_task(self, business_id: str, catalog_item_id: str, image_types: list[str] | None = None):
+def generate_product_images_task(
+    self, business_id: str, catalog_item_id: str, image_types: list[str] | None = None
+):
     """Genera imágenes de producto usando el router inteligente.
 
     El router selecciona automáticamente el proveedor más económico:
@@ -74,8 +79,10 @@ def generate_product_images_task(self, business_id: str, catalog_item_id: str, i
         async with AsyncSessionLocal() as db:
             result = await db.execute(
                 select(CatalogItem).where(
-                    and_(CatalogItem.id == uuid.UUID(catalog_item_id),
-                         CatalogItem.business_id == uuid.UUID(business_id))
+                    and_(
+                        CatalogItem.id == uuid.UUID(catalog_item_id),
+                        CatalogItem.business_id == uuid.UUID(business_id),
+                    )
                 )
             )
             item = result.scalar_one_or_none()
@@ -94,7 +101,9 @@ def generate_product_images_task(self, business_id: str, catalog_item_id: str, i
             generated = []
             for img_type in image_types:
                 # Verificar caché de prompt
-                cached_prompt = await cache.get_cached_prompt(catalog_item_id, "image", img_type)
+                cached_prompt = await cache.get_cached_prompt(
+                    catalog_item_id, "image", img_type
+                )
 
                 if cached_prompt:
                     prompt = cached_prompt
@@ -150,11 +159,15 @@ def generate_product_images_task(self, business_id: str, catalog_item_id: str, i
                         gc.status = "completed"
                         gc.ai_model_used = gen_result.model_used
                         gc.generation_cost = int(gen_result.cost_usd * 100)  # centavos
-                        gc.generation_config.update({
-                            "width": gen_result.width,
-                            "height": gen_result.height,
-                            "compressed_size_kb": gen_result.metadata.get("compressed_size_kb"),
-                        })
+                        gc.generation_config.update(
+                            {
+                                "width": gen_result.width,
+                                "height": gen_result.height,
+                                "compressed_size_kb": gen_result.metadata.get(
+                                    "compressed_size_kb"
+                                ),
+                            }
+                        )
                     else:
                         gc.status = "failed"
                         gc.feedback_notes = gen_result.error_message
@@ -167,15 +180,19 @@ def generate_product_images_task(self, business_id: str, catalog_item_id: str, i
                     raise self.retry(exc=e)
 
                 await db.commit()
-                generated.append({
-                    "id": str(gc.id),
-                    "type": img_type,
-                    "status": gc.status,
-                    "prompt": prompt,
-                    "url": gc.source_url,
-                    "cost_usd": gc.generation_cost / 100 if gc.generation_cost else 0,
-                    "model": gc.ai_model_used,
-                })
+                generated.append(
+                    {
+                        "id": str(gc.id),
+                        "type": img_type,
+                        "status": gc.status,
+                        "prompt": prompt,
+                        "url": gc.source_url,
+                        "cost_usd": (
+                            gc.generation_cost / 100 if gc.generation_cost else 0
+                        ),
+                        "model": gc.ai_model_used,
+                    }
+                )
 
             return {
                 "catalog_item_id": catalog_item_id,
@@ -190,7 +207,9 @@ def generate_product_images_task(self, business_id: str, catalog_item_id: str, i
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def generate_video_clips_task(self, business_id: str, catalog_item_id: str, video_types: list[str] | None = None):
+def generate_video_clips_task(
+    self, business_id: str, catalog_item_id: str, video_types: list[str] | None = None
+):
     """Genera clips de video usando el router inteligente.
 
     El router selecciona:
@@ -205,8 +224,10 @@ def generate_video_clips_task(self, business_id: str, catalog_item_id: str, vide
         async with AsyncSessionLocal() as db:
             result = await db.execute(
                 select(CatalogItem).where(
-                    and_(CatalogItem.id == uuid.UUID(catalog_item_id),
-                         CatalogItem.business_id == uuid.UUID(business_id))
+                    and_(
+                        CatalogItem.id == uuid.UUID(catalog_item_id),
+                        CatalogItem.business_id == uuid.UUID(business_id),
+                    )
                 )
             )
             item = result.scalar_one_or_none()
@@ -219,7 +240,9 @@ def generate_video_clips_task(self, business_id: str, catalog_item_id: str, vide
 
             generated = []
             for vid_type in video_types:
-                cached_script = await cache.get_cached_prompt(catalog_item_id, "video", vid_type)
+                cached_script = await cache.get_cached_prompt(
+                    catalog_item_id, "video", vid_type
+                )
                 if cached_script:
                     script = cached_script
                 else:
@@ -279,15 +302,19 @@ def generate_video_clips_task(self, business_id: str, catalog_item_id: str, vide
                     raise self.retry(exc=e)
 
                 await db.commit()
-                generated.append({
-                    "id": str(gc.id),
-                    "type": vid_type,
-                    "status": gc.status,
-                    "script": script,
-                    "url": gc.source_url,
-                    "cost_usd": gc.generation_cost / 100 if gc.generation_cost else 0,
-                    "model": gc.ai_model_used,
-                })
+                generated.append(
+                    {
+                        "id": str(gc.id),
+                        "type": vid_type,
+                        "status": gc.status,
+                        "script": script,
+                        "url": gc.source_url,
+                        "cost_usd": (
+                            gc.generation_cost / 100 if gc.generation_cost else 0
+                        ),
+                        "model": gc.ai_model_used,
+                    }
+                )
 
             return {
                 "catalog_item_id": catalog_item_id,
@@ -302,7 +329,9 @@ def generate_video_clips_task(self, business_id: str, catalog_item_id: str, vide
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def generate_product_copy_task(self, business_id: str, catalog_item_id: str, copy_types: list[str] | None = None):
+def generate_product_copy_task(
+    self, business_id: str, catalog_item_id: str, copy_types: list[str] | None = None
+):
     """Genera copy usando GPT-4o-mini (muy económico: ~$0.0001-0.0005 por generación)."""
     if copy_types is None:
         copy_types = ["benefit_focused", "story_driven", "social_caption"]
@@ -311,8 +340,10 @@ def generate_product_copy_task(self, business_id: str, catalog_item_id: str, cop
         async with AsyncSessionLocal() as db:
             result = await db.execute(
                 select(CatalogItem).where(
-                    and_(CatalogItem.id == uuid.UUID(catalog_item_id),
-                         CatalogItem.business_id == uuid.UUID(business_id))
+                    and_(
+                        CatalogItem.id == uuid.UUID(catalog_item_id),
+                        CatalogItem.business_id == uuid.UUID(business_id),
+                    )
                 )
             )
             item = result.scalar_one_or_none()
@@ -324,12 +355,16 @@ def generate_product_copy_task(self, business_id: str, catalog_item_id: str, cop
 
             generated = []
             for copy_type in copy_types:
-                cached_prompt = await cache.get_cached_prompt(catalog_item_id, "copy", copy_type)
+                cached_prompt = await cache.get_cached_prompt(
+                    catalog_item_id, "copy", copy_type
+                )
                 if cached_prompt:
                     prompt_text = cached_prompt
                 else:
                     prompt_text = _build_copy_prompt(item, copy_type)
-                    await cache.cache_prompt(catalog_item_id, "copy", copy_type, prompt_text)
+                    await cache.cache_prompt(
+                        catalog_item_id, "copy", copy_type, prompt_text
+                    )
 
                 gc = GeneratedContent(
                     business_id=uuid.UUID(business_id),
@@ -351,15 +386,22 @@ def generate_product_copy_task(self, business_id: str, catalog_item_id: str, cop
 
                     from app.domains.agents.llm_provider import generate_with_fallback
 
-                    system_msg = SystemMessage(content=(
-                        "Eres un copywriter experto en e-commerce latinoamericano. "
-                        "Genera copy persuasivo en español. Usa PAS, AIDA, StoryBrand. "
-                        "Máximo 150 palabras."
-                    ))
+                    system_msg = SystemMessage(
+                        content=(
+                            "Eres un copywriter experto en e-commerce latinoamericano. "
+                            "Genera copy persuasivo en español. Usa PAS, AIDA, StoryBrand. "
+                            "Máximo 150 palabras."
+                        )
+                    )
                     human_msg = HumanMessage(content=prompt_text)
 
                     response = await generate_with_fallback(
-                        db, uuid.UUID(business_id), [system_msg, human_msg], model="llama3.1", temperature=0.7, max_tokens=300,
+                        db,
+                        uuid.UUID(business_id),
+                        [system_msg, human_msg],
+                        model="llama3.1",
+                        temperature=0.7,
+                        max_tokens=300,
                     )
                     if response:
                         gc.text_content = response.content
@@ -372,7 +414,9 @@ def generate_product_copy_task(self, business_id: str, catalog_item_id: str, cop
                         gc.text_content = f"[PROMPT LISTO]\n\n{prompt_text}"
                         gc.status = "completed"
                         gc.ai_model_used = "prompt-only"
-                        gc.feedback_notes = "No hay proveedor LLM disponible. Modo demo."
+                        gc.feedback_notes = (
+                            "No hay proveedor LLM disponible. Modo demo."
+                        )
                 except Exception as e:
                     logger.exception("_run: error inesperado")
                     gc.status = "failed"
@@ -380,12 +424,14 @@ def generate_product_copy_task(self, business_id: str, catalog_item_id: str, cop
                     raise self.retry(exc=e)
 
                 await db.commit()
-                generated.append({
-                    "id": str(gc.id),
-                    "type": copy_type,
-                    "status": gc.status,
-                    "copy": gc.text_content,
-                })
+                generated.append(
+                    {
+                        "id": str(gc.id),
+                        "type": copy_type,
+                        "status": gc.status,
+                        "copy": gc.text_content,
+                    }
+                )
 
             return {
                 "catalog_item_id": catalog_item_id,
@@ -400,14 +446,22 @@ def generate_product_copy_task(self, business_id: str, catalog_item_id: str, cop
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def generate_carousel_task(self, business_id: str, catalog_item_id: str, carousel_type: str = "product_showcase"):
+def generate_carousel_task(
+    self,
+    business_id: str,
+    catalog_item_id: str,
+    carousel_type: str = "product_showcase",
+):
     """Genera estructura de carousel."""
+
     async def _run():
         async with AsyncSessionLocal() as db:
             result = await db.execute(
                 select(CatalogItem).where(
-                    and_(CatalogItem.id == uuid.UUID(catalog_item_id),
-                         CatalogItem.business_id == uuid.UUID(business_id))
+                    and_(
+                        CatalogItem.id == uuid.UUID(catalog_item_id),
+                        CatalogItem.business_id == uuid.UUID(business_id),
+                    )
                 )
             )
             item = result.scalar_one_or_none()
@@ -436,14 +490,21 @@ def generate_carousel_task(self, business_id: str, catalog_item_id: str, carouse
 
                 from app.domains.agents.llm_provider import generate_with_fallback
 
-                system_msg = SystemMessage(content=(
-                    "Eres un diseñador de carruseles de Instagram experto. "
-                    "Crea estructuras de 5-7 slides. Máximo 15 palabras por slide."
-                ))
+                system_msg = SystemMessage(
+                    content=(
+                        "Eres un diseñador de carruseles de Instagram experto. "
+                        "Crea estructuras de 5-7 slides. Máximo 15 palabras por slide."
+                    )
+                )
                 human_msg = HumanMessage(content=prompt_text)
 
                 response = await generate_with_fallback(
-                    db, uuid.UUID(business_id), [system_msg, human_msg], model="llama3.1", temperature=0.7, max_tokens=500,
+                    db,
+                    uuid.UUID(business_id),
+                    [system_msg, human_msg],
+                    model="llama3.1",
+                    temperature=0.7,
+                    max_tokens=500,
                 )
                 if response:
                     gc.text_content = response.content
@@ -478,8 +539,11 @@ def generate_carousel_task(self, business_id: str, catalog_item_id: str, carouse
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def generate_thumbnail_task(self, business_id: str, video_title: str, video_description: str = ""):
+def generate_thumbnail_task(
+    self, business_id: str, video_title: str, video_description: str = ""
+):
     """Genera thumbnail usando el router inteligente (imagen)."""
+
     async def _run():
         async with AsyncSessionLocal() as db:
             plan_tier = await _get_business_plan_tier(db, uuid.UUID(business_id))
@@ -550,6 +614,7 @@ def generate_thumbnail_task(self, business_id: str, video_title: str, video_desc
 # Batch & Automation Tasks
 # ============================================================================
 
+
 async def _get_active_business_ids() -> list[uuid.UUID]:
     """Fetch IDs of all active businesses."""
     async with AsyncSessionLocal() as db:
@@ -566,24 +631,31 @@ def auto_generate_catalog_content_task(self, business_id: str | None = None):
     - Solo para productos sin imágenes existentes
     - Limitado por presupuesto del plan
     """
+
     async def _run_single(bid: uuid.UUID):
         async with AsyncSessionLocal() as db:
             result = await db.execute(
-                select(CatalogItem).where(
+                select(CatalogItem)
+                .where(
                     and_(
                         CatalogItem.business_id == bid,
                         or_(
                             CatalogItem.images.is_(None),
                             CatalogItem.images == [],
                             CatalogItem.images == {},
-                        )
+                        ),
                     )
-                ).limit(10)
+                )
+                .limit(10)
             )
             items = result.scalars().all()
 
             if not items:
-                return {"message": "No products need content generation", "count": 0, "business_id": str(bid)}
+                return {
+                    "message": "No products need content generation",
+                    "count": 0,
+                    "business_id": str(bid),
+                }
 
             tasks_launched = []
             for item in items:
@@ -597,11 +669,13 @@ def auto_generate_catalog_content_task(self, business_id: str | None = None):
                     catalog_item_id=str(item.id),
                     copy_types=["benefit_focused", "social_caption"],
                 )
-                tasks_launched.append({
-                    "item_id": str(item.id),
-                    "image_task": img_task.id,
-                    "copy_task": copy_task.id,
-                })
+                tasks_launched.append(
+                    {
+                        "item_id": str(item.id),
+                        "image_task": img_task.id,
+                        "copy_task": copy_task.id,
+                    }
+                )
 
             return {
                 "message": f"Launched content generation for {len(items)} products",
@@ -618,7 +692,11 @@ def auto_generate_catalog_content_task(self, business_id: str | None = None):
                 results.append(await _run_single(bid))
             except Exception:
                 logger.exception(f"auto_generate_catalog_content_task failed for {bid}")
-        return {"status": "ok", "processed": len(results), "total_businesses": len(business_ids)}
+        return {
+            "status": "ok",
+            "processed": len(results),
+            "total_businesses": len(business_ids),
+        }
 
     try:
         if business_id:
@@ -662,6 +740,7 @@ def _due_calendar_posts_stmt(business_id: uuid.UUID, now: datetime):
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def schedule_content_posts_task(self, business_id: str | None = None):
     """Programa publicaciones automáticas."""
+
     async def _run_single(bid: uuid.UUID):
         async with AsyncSessionLocal() as db:
             now = datetime.now(UTC)
@@ -672,11 +751,13 @@ def schedule_content_posts_task(self, business_id: str | None = None):
             for post in posts:
                 post.status = "published"
                 post.published_at = now
-                published.append({
-                    "post_id": str(post.id),
-                    "platform": post.platform,
-                    "format": post.content_format,
-                })
+                published.append(
+                    {
+                        "post_id": str(post.id),
+                        "platform": post.platform,
+                        "format": post.content_format,
+                    }
+                )
 
             await db.commit()
             return {
@@ -694,7 +775,11 @@ def schedule_content_posts_task(self, business_id: str | None = None):
                 total_published += result.get("published_count", 0)
             except Exception:
                 logger.exception(f"schedule_content_posts_task failed for {bid}")
-        return {"status": "ok", "total_published": total_published, "total_businesses": len(business_ids)}
+        return {
+            "status": "ok",
+            "total_published": total_published,
+            "total_businesses": len(business_ids),
+        }
 
     try:
         if business_id:
@@ -708,6 +793,7 @@ def schedule_content_posts_task(self, business_id: str | None = None):
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def analyze_content_performance_task(self, business_id: str | None = None):
     """Analiza rendimiento de contenido."""
+
     async def _run_single(bid: uuid.UUID):
         async with AsyncSessionLocal() as db:
             week_ago = datetime.now(UTC) - timedelta(days=7)
@@ -727,13 +813,19 @@ def analyze_content_performance_task(self, business_id: str | None = None):
                 "total_content": len(contents),
                 "by_type": {},
                 "by_agent": {},
-                "total_spend_usd": sum((c.generation_cost or 0) / 100 for c in contents),
+                "total_spend_usd": sum(
+                    (c.generation_cost or 0) / 100 for c in contents
+                ),
                 "recommendations": [],
             }
 
             for c in contents:
-                insights["by_type"][c.content_type] = insights["by_type"].get(c.content_type, 0) + 1
-                insights["by_agent"][c.agent_slug] = insights["by_agent"].get(c.agent_slug, 0) + 1
+                insights["by_type"][c.content_type] = (
+                    insights["by_type"].get(c.content_type, 0) + 1
+                )
+                insights["by_agent"][c.agent_slug] = (
+                    insights["by_agent"].get(c.agent_slug, 0) + 1
+                )
 
             if len(contents) > 0:
                 insights["recommendations"].append(
@@ -753,7 +845,12 @@ def analyze_content_performance_task(self, business_id: str | None = None):
                 all_insights.append(await _run_single(bid))
             except Exception:
                 logger.exception(f"analyze_content_performance_task failed for {bid}")
-        return {"status": "ok", "insights_count": len(all_insights), "total_businesses": len(business_ids), "insights": all_insights}
+        return {
+            "status": "ok",
+            "insights_count": len(all_insights),
+            "total_businesses": len(business_ids),
+            "insights": all_insights,
+        }
 
     try:
         if business_id:
@@ -773,12 +870,14 @@ def cleanup_old_generated_content_task(self, business_id: str | None = None):
     - Contenido 'completed' > 90 días sin uso: soft-delete
     - Variaciones > 30 días: limpiar JSONB
     """
+
     async def _run():
         async with AsyncSessionLocal() as db:
             now = datetime.now(UTC)
 
             # Eliminar contenido failed antiguo
             from sqlalchemy import delete
+
             failed_threshold = now - timedelta(days=30)
 
             stmt_failed = delete(GeneratedContent).where(
@@ -810,7 +909,9 @@ def cleanup_old_generated_content_task(self, business_id: str | None = None):
             await db.commit()
 
             return {
-                "failed_deleted": failed_result.rowcount if hasattr(failed_result, 'rowcount') else 0,
+                "failed_deleted": (
+                    failed_result.rowcount if hasattr(failed_result, "rowcount") else 0
+                ),
                 "unused_archived": len(unused),
             }
 
@@ -825,6 +926,7 @@ def cleanup_old_generated_content_task(self, business_id: str | None = None):
 # Prompt Builders
 # ============================================================================
 
+
 def _build_image_prompt(item: CatalogItem, image_type: str, business) -> str:
     product = item.name
 
@@ -837,7 +939,9 @@ def _build_image_prompt(item: CatalogItem, image_type: str, business) -> str:
         "ugc_style": f"Casual phone photo of {product} on a messy desk, natural indoor lighting, slightly imperfect angle, authentic user-generated content style, looks like taken by real customer, relatable and genuine feel",
         "social": f"Eye-catching social media image of {product}, bold colors, clean composition, Instagram-ready, square format, high contrast, modern aesthetic, professional product photography",
     }
-    return prompts.get(image_type, f"{base}, professional product photography, high quality")
+    return prompts.get(
+        image_type, f"{base}, professional product photography, high quality"
+    )
 
 
 def _build_video_script(item: CatalogItem, video_type: str) -> str:
@@ -848,7 +952,9 @@ def _build_video_script(item: CatalogItem, video_type: str) -> str:
         "demo": f"Person holding {product}, smiling. Close-up of product in use, smooth camera movement. Result/reaction shot, satisfaction. Voiceover: 'This is how {product} changes everything...'",
         "cta": f"Bold text: 'Limited time offer' + {product} image. Flash key benefits with quick cuts. Price + discount displayed prominently. 'Link in bio' or 'Shop now' with urgency.",
     }
-    return scripts.get(video_type, f"Video for {product}: Hook → Problem → Solution → Proof → CTA")
+    return scripts.get(
+        video_type, f"Video for {product}: Hook → Problem → Solution → Proof → CTA"
+    )
 
 
 def _build_copy_prompt(item: CatalogItem, copy_type: str) -> str:

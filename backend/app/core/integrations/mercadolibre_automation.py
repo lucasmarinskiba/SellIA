@@ -29,7 +29,9 @@ class MercadoLibreAutomation:
 
     BASE_URL = "https://api.mercadolibre.com"
 
-    def __init__(self, seller_id: str, access_token: str, refresh_token: str | None = None):
+    def __init__(
+        self, seller_id: str, access_token: str, refresh_token: str | None = None
+    ):
         self.seller_id = seller_id
         self.access_token = access_token
         self.refresh_token = refresh_token
@@ -73,20 +75,24 @@ class MercadoLibreAutomation:
                 messages_result = await self._respond_buyer_questions(order_id)
 
                 # Generar shipping label automático
-                shipping_result = await self._generate_shipping_label(order_id, order_details)
+                shipping_result = await self._generate_shipping_label(
+                    order_id, order_details
+                )
 
                 # Actualizar status en DB
                 db_result = await self._save_order_to_db(
                     order_id, order_details, shipping_result
                 )
 
-                processed_orders.append({
-                    "order_id": order_id,
-                    "confirm": confirm_result,
-                    "messages": messages_result,
-                    "shipping": shipping_result,
-                    "saved": db_result,
-                })
+                processed_orders.append(
+                    {
+                        "order_id": order_id,
+                        "confirm": confirm_result,
+                        "messages": messages_result,
+                        "shipping": shipping_result,
+                        "saved": db_result,
+                    }
+                )
 
             logger.info(f"Synced {len(processed_orders)} orders")
 
@@ -205,11 +211,13 @@ class MercadoLibreAutomation:
                 if auto_response:
                     # Responder automático
                     answer_result = await self._answer_question(q_id, auto_response)
-                    responses.append({
-                        "question_id": q_id,
-                        "answered": answer_result["status"] == "success",
-                        "response": auto_response,
-                    })
+                    responses.append(
+                        {
+                            "question_id": q_id,
+                            "answered": answer_result["status"] == "success",
+                            "response": auto_response,
+                        }
+                    )
 
             logger.info(f"Answered {len(responses)} questions")
 
@@ -244,7 +252,9 @@ class MercadoLibreAutomation:
 
         return None
 
-    async def _answer_question(self, question_id: str, answer_text: str) -> dict[str, Any]:
+    async def _answer_question(
+        self, question_id: str, answer_text: str
+    ) -> dict[str, Any]:
         """Responde pregunta automáticamente."""
 
         try:
@@ -319,7 +329,9 @@ class MercadoLibreAutomation:
 
     # ========== TRACKING UPDATES ==========
 
-    async def update_tracking(self, shipment_id: str, buyer_email: str) -> dict[str, Any]:
+    async def update_tracking(
+        self, shipment_id: str, buyer_email: str
+    ) -> dict[str, Any]:
         """Actualiza tracking automáticamente y notifica buyer."""
 
         logger.info(f"Updating tracking for shipment {shipment_id}")

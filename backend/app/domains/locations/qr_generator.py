@@ -13,7 +13,7 @@ class LocationQRGenerator:
     def generate_checkin_qr(
         location_id: UUID,
         business_id: UUID,
-        qr_type: str = "visitor_checkin"  # visitor_checkin, staff_checkin, feedback
+        qr_type: str = "visitor_checkin",  # visitor_checkin, staff_checkin, feedback
     ) -> dict:
         """Generate QR code data for location check-in.
 
@@ -29,13 +29,12 @@ class LocationQRGenerator:
             "qr_type": qr_type,
             "location_id": str(location_id),
             "url_safe": True,
-            "encoding": "UTF-8"
+            "encoding": "UTF-8",
         }
 
     @staticmethod
     def generate_location_qr_batch(
-        location_id: UUID,
-        qr_types: list[str] | None = None
+        location_id: UUID, qr_types: list[str] | None = None
     ) -> dict:
         """Generate multiple QR codes for one location.
 
@@ -53,7 +52,7 @@ class LocationQRGenerator:
         return {
             "location_id": str(location_id),
             "qr_codes": qr_codes,
-            "print_ready": True  # Can be printed as physical posters
+            "print_ready": True,  # Can be printed as physical posters
         }
 
     @staticmethod
@@ -71,7 +70,7 @@ class LocationQRGenerator:
                 "valid": True,
                 "location_id": params.get("location"),
                 "type": params.get("type", "visitor_checkin"),
-                "business_id": params.get("business")
+                "business_id": params.get("business"),
             }
         except Exception as e:
             logger.exception("Failed to parse QR payload")

@@ -51,8 +51,17 @@ class XConnector(BaseChannelConnector):
                     )
                 if response.status_code == 429:
                     retry_after = int(response.headers.get("retry-after", "2"))
-                    wait = retry_after if retry_after else (self.BASE_BACKOFF * (2**attempt))
-                    logger.warning("X rate limit hit, waiting %ss before retry %s/%s", wait, attempt + 1, self.MAX_RETRIES)
+                    wait = (
+                        retry_after
+                        if retry_after
+                        else (self.BASE_BACKOFF * (2**attempt))
+                    )
+                    logger.warning(
+                        "X rate limit hit, waiting %ss before retry %s/%s",
+                        wait,
+                        attempt + 1,
+                        self.MAX_RETRIES,
+                    )
                     await asyncio.sleep(wait)
                     continue
                 response.raise_for_status()
@@ -60,21 +69,35 @@ class XConnector(BaseChannelConnector):
             except httpx.HTTPStatusError as exc:
                 if exc.response.status_code >= 500:
                     wait = self.BASE_BACKOFF * (2**attempt)
-                    logger.warning("X server error %s, retrying in %ss (%s/%s)", exc.response.status_code, wait, attempt + 1, self.MAX_RETRIES)
+                    logger.warning(
+                        "X server error %s, retrying in %ss (%s/%s)",
+                        exc.response.status_code,
+                        wait,
+                        attempt + 1,
+                        self.MAX_RETRIES,
+                    )
                     await asyncio.sleep(wait)
                     last_exception = exc
                     continue
                 raise
             except httpx.RequestError as exc:
                 wait = self.BASE_BACKOFF * (2**attempt)
-                logger.warning("X request error, retrying in %ss (%s/%s): %s", wait, attempt + 1, self.MAX_RETRIES, exc)
+                logger.warning(
+                    "X request error, retrying in %ss (%s/%s): %s",
+                    wait,
+                    attempt + 1,
+                    self.MAX_RETRIES,
+                    exc,
+                )
                 await asyncio.sleep(wait)
                 last_exception = exc
         if last_exception:
             raise last_exception
         raise RuntimeError("Max retries exceeded for X API request")
 
-    async def send_message(self, recipient_id: str, content: str, content_type: str = "text") -> dict[str, Any]:
+    async def send_message(
+        self, recipient_id: str, content: str, content_type: str = "text"
+    ) -> dict[str, Any]:
         if not self.bearer_token:
             raise ValueError("Faltan credenciales de X (bearer_token)")
 
@@ -84,7 +107,9 @@ class XConnector(BaseChannelConnector):
         if content_type != "text":
             payload["attachments"] = [{"media_key": content}]
 
-        response = await self._request_with_backoff("POST", url, headers=headers, json=payload)
+        response = await self._request_with_backoff(
+            "POST", url, headers=headers, json=payload
+        )
         data = response.json()
         logger.info("X DM sent to %s", recipient_id)
         return data

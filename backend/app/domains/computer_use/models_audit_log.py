@@ -35,7 +35,9 @@ class ComputerUseAuditLog(Base):
 
     id = Column(String(36), primary_key=True, index=True)
     user_id = Column(String(36), ForeignKey("users.id"), index=True)
-    session_id = Column(String(36), ForeignKey("computer_use_sessions.id"), nullable=True, index=True)
+    session_id = Column(
+        String(36), ForeignKey("computer_use_sessions.id"), nullable=True, index=True
+    )
 
     # Tiempo
     created_at = Column(DateTime, default=utc_now, index=True)
@@ -43,12 +45,20 @@ class ComputerUseAuditLog(Base):
     duration_ms = Column(Integer, default=0)
 
     # Contexto
-    platform = Column(String(50), index=True)  # whatsapp, instagram, tiktok, facebook, mercadolibre, amazon, hotmart, website
-    action_type = Column(String(50), index=True)  # message_response, comment_response, sale_closed, calendar_scheduled, etc
+    platform = Column(
+        String(50), index=True
+    )  # whatsapp, instagram, tiktok, facebook, mercadolibre, amazon, hotmart, website
+    action_type = Column(
+        String(50), index=True
+    )  # message_response, comment_response, sale_closed, calendar_scheduled, etc
 
     # Agent + Estrategia
-    agent_name = Column(String(100), nullable=True)  # acquisition_strategist, auto_responder, closer, etc
-    strategy_name = Column(String(100), nullable=True)  # attention_grabber, closing_technique, etc
+    agent_name = Column(
+        String(100), nullable=True
+    )  # acquisition_strategist, auto_responder, closer, etc
+    strategy_name = Column(
+        String(100), nullable=True
+    )  # attention_grabber, closing_technique, etc
     tactics = Column(JSONB, nullable=True)  # ["authentic_approach", "value_first"]
 
     # Confianza
@@ -56,16 +66,26 @@ class ComputerUseAuditLog(Base):
     requires_approval = Column(Boolean, default=False)
 
     # Datos
-    input_data = Column(Text, nullable=True)  # Mensaje recibido, comentario, etc (truncated to 5000 chars)
-    output_data = Column(Text, nullable=True)  # Respuesta enviada (truncated to 5000 chars)
+    input_data = Column(
+        Text, nullable=True
+    )  # Mensaje recibido, comentario, etc (truncated to 5000 chars)
+    output_data = Column(
+        Text, nullable=True
+    )  # Respuesta enviada (truncated to 5000 chars)
 
     # Resultado
-    status = Column(String(50), index=True)  # success, pending_approval, failed, escalated
+    status = Column(
+        String(50), index=True
+    )  # success, pending_approval, failed, escalated
     error_message = Column(Text, nullable=True)
-    extra_data = Column("metadata", JSONB, nullable=True)  # Datos adicionales: customer_id, order_id, etc
+    extra_data = Column(
+        "metadata", JSONB, nullable=True
+    )  # Datos adicionales: customer_id, order_id, etc
 
     # Auditoría
-    user_approved = Column(Boolean, nullable=True)  # True: user approved, False: user rejected, None: pending
+    user_approved = Column(
+        Boolean, nullable=True
+    )  # True: user approved, False: user rejected, None: pending
     approval_at = Column(DateTime, nullable=True)
     approved_by_user_id = Column(String(36), ForeignKey("users.id"), nullable=True)
 

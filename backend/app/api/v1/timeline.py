@@ -52,7 +52,7 @@ def log_event(
         revenue_impact=request.revenue_impact,
         estimated_value=request.estimated_value,
         created_by=created_by,
-        db=db
+        db=db,
     )
 
 
@@ -77,7 +77,7 @@ def get_customer_timeline(
         offset=offset,
         event_types=event_types_list,
         channels=channels_list,
-        db=db
+        db=db,
     )
 
 
@@ -89,9 +89,7 @@ def get_timeline_summary(
 ):
     """Get timeline summary."""
     return TimelineService.get_timeline_summary(
-        customer_id=customer_id,
-        business_id=business_id,
-        db=db
+        customer_id=customer_id, business_id=business_id, db=db
     )
 
 
@@ -102,11 +100,7 @@ def get_event_stream(
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
 ):
     """Get live event stream."""
-    return TimelineService.get_event_stream(
-        business_id=business_id,
-        limit=limit,
-        db=db
-    )
+    return TimelineService.get_event_stream(business_id=business_id, limit=limit, db=db)
 
 
 @router.get("/timeline/search")
@@ -118,10 +112,7 @@ def search_events(
 ):
     """Search events."""
     return TimelineService.search_events(
-        business_id=business_id,
-        query_text=query,
-        limit=limit,
-        db=db
+        business_id=business_id, query_text=query, limit=limit, db=db
     )
 
 
@@ -133,9 +124,7 @@ def mark_event_important(
 ):
     """Mark event as important."""
     return TimelineService.mark_event_important(
-        event_id=event_id,
-        is_important=is_important,
-        db=db
+        event_id=event_id, is_important=is_important, db=db
     )
 
 
@@ -154,7 +143,7 @@ def save_event_filter(
         event_types=request.event_types,
         channels=request.channels,
         outcomes=request.outcomes,
-        db=db
+        db=db,
     )
 
 
@@ -166,9 +155,7 @@ def get_event_filters(
 ):
     """Get saved filters."""
     return TimelineService.get_event_filters(
-        business_id=business_id,
-        user_id=user_id,
-        db=db
+        business_id=business_id, user_id=user_id, db=db
     )
 
 
@@ -180,7 +167,5 @@ def get_timeline_metrics(
 ):
     """Get timeline metrics."""
     return TimelineService.get_timeline_metrics(
-        business_id=business_id,
-        days=days,
-        db=db
+        business_id=business_id, days=days, db=db
     )

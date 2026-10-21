@@ -1,4 +1,5 @@
 """Feedback loop API: Conversion data improves X9 profiles."""
+
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends
@@ -21,7 +22,12 @@ async def update_profile_from_conversion(
 ) -> dict:
     """Update X9 profile based on X12 conversion attribution."""
     return await FeedbackLoopAgent.update_profile_from_conversion(
-        db, user_id, deal_closed, deal_value, which_touch_converted, conversion_attributed_to
+        db,
+        user_id,
+        deal_closed,
+        deal_value,
+        which_touch_converted,
+        conversion_attributed_to,
     )
 
 

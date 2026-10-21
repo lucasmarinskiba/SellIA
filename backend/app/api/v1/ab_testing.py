@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 class TestMetric(str, Enum):
     """Key metrics to track in A/B tests."""
+
     CLOSE_RATE = "close_rate"
     AVG_DEAL_SIZE = "avg_deal_size"
     SALES_CYCLE_DAYS = "sales_cycle_days"
@@ -65,7 +66,9 @@ async def get_test_results(test_id: str) -> dict[str, Any]:
     treatment_performance = random.uniform(0.35, 0.75)
 
     # Statistical significance
-    improvement = (treatment_performance - control_performance) / control_performance * 100
+    improvement = (
+        (treatment_performance - control_performance) / control_performance * 100
+    )
     is_significant = abs(improvement) > 15  # 15% threshold
 
     return {

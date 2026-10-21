@@ -27,25 +27,32 @@ from app.core.database import Base
 
 class SellerPreferences(Base):
     __tablename__ = "seller_preferences"
-    __table_args__ = (UniqueConstraint("business_id", name="uq_seller_preferences_business"),)
+    __table_args__ = (
+        UniqueConstraint("business_id", name="uq_seller_preferences_business"),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id = Column(
-        UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
 
     # Where the seller wants to sell. Distinct from the channels actually
     # connected: this is intent, and the difference between the two is what the
     # suggestions screen is for.
-    target_platforms = Column(JSONB, default=list, nullable=False)      # ["mercadolibre", "instagram"]
+    target_platforms = Column(
+        JSONB, default=list, nullable=False
+    )  # ["mercadolibre", "instagram"]
     # Languages the business sells in, most important first. The bot answers in
     # the customer's language when it is one of these.
-    languages = Column(JSONB, default=list, nullable=False)             # ["es", "pt"]
+    languages = Column(JSONB, default=list, nullable=False)  # ["es", "pt"]
     # Markets, as ISO country codes, ordered by importance.
-    markets = Column(JSONB, default=list, nullable=False)               # ["AR", "UY"]
+    markets = Column(JSONB, default=list, nullable=False)  # ["AR", "UY"]
     # Free-form tastes: what this seller likes selling, the style they want,
     # references they admire. Fed to the prompt composer as context.
-    tastes = Column(JSONB, default=list, nullable=False)                # ["diseño minimalista", ...]
+    tastes = Column(JSONB, default=list, nullable=False)  # ["diseño minimalista", ...]
     # Words and topics the AI must never use on their behalf.
     banned_topics = Column(JSONB, default=list, nullable=False)
     # The currency the dashboards display by default when a business has more

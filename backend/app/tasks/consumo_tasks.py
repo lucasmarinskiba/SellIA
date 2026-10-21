@@ -17,8 +17,10 @@ logger = get_logger(__name__)
 @shared_task
 def churn_shield_analysis_task():
     """Run daily churn risk analysis for all active users."""
+
     async def _run():
         async with AsyncSessionLocal() as db:
             signals = await run_churn_analysis(db)
             logger.info(f"Churn Shield: {len(signals)} risk signals detected")
+
     run_async(_run())

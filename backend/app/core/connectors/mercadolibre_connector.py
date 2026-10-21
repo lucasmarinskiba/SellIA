@@ -55,18 +55,16 @@ class MercadoLibreConnector(BaseConnector):
         try:
             payload = {
                 "title": product.get("name"),
-                "category_id": product.get("category_id", "MLA1500"),  # Default: general
+                "category_id": product.get(
+                    "category_id", "MLA1500"
+                ),  # Default: general
                 "price": product.get("price"),
                 "currency_id": "ARS",
                 "available_quantity": product.get("stock", 1),
                 "buying_mode": "buy_it_now",
                 "listing_type_id": "gold_pro",
-                "pictures": [
-                    {"source": url} for url in product.get("images", [])
-                ],
-                "description": {
-                    "plain_text": product.get("description", "")
-                },
+                "pictures": [{"source": url} for url in product.get("images", [])],
+                "description": {"plain_text": product.get("description", "")},
             }
 
             async with aiohttp.ClientSession() as session:
@@ -88,7 +86,9 @@ class MercadoLibreConnector(BaseConnector):
             async with aiohttp.ClientSession() as session:
                 url = f"{self.base_url}/users/{self.user_id}/orders/search"
                 headers = {"Authorization": f"Bearer {self.access_token}"}
-                async with session.get(url, headers=headers, params={"sort": "date_desc"}) as resp:
+                async with session.get(
+                    url, headers=headers, params={"sort": "date_desc"}
+                ) as resp:
                     if resp.status == 200:
                         data = await resp.json()
                         return data.get("results", [])
@@ -111,9 +111,9 @@ class MercadoLibreConnector(BaseConnector):
         try:
             orders = await self.get_orders()
             products = await self.list_products()
-            
+
             total_revenue = sum(o.get("total_amount", 0) for o in orders)
-            
+
             return {
                 "listings_active": len(products),
                 "orders_completed": len(orders),

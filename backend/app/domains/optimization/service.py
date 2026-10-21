@@ -47,7 +47,9 @@ class ExperimentRunner:
         await self.db.refresh(exp)
         return exp
 
-    async def evaluate_experiments(self, business_id: uuid.UUID) -> list[dict[str, Any]]:
+    async def evaluate_experiments(
+        self, business_id: uuid.UUID
+    ) -> list[dict[str, Any]]:
         """Evaluate all running experiments for a business."""
         result = await self.db.execute(
             select(OptimizationExperiment).where(
@@ -65,7 +67,9 @@ class ExperimentRunner:
 
         return outcomes
 
-    async def _evaluate_experiment(self, exp: OptimizationExperiment) -> dict[str, Any] | None:
+    async def _evaluate_experiment(
+        self, exp: OptimizationExperiment
+    ) -> dict[str, Any] | None:
         """Evaluate a single experiment for statistical significance."""
         # Gather data based on target metric
         if exp.target_metric == "response_rate":
@@ -87,8 +91,16 @@ class ExperimentRunner:
         b_rate = b_conversions / b_total if b_total else 0
 
         # Simple z-test for proportions
-        p_pooled = (a_conversions + b_conversions) / (a_total + b_total) if (a_total + b_total) else 0
-        se = math.sqrt(p_pooled * (1 - p_pooled) * (1/a_total + 1/b_total)) if p_pooled else 0
+        p_pooled = (
+            (a_conversions + b_conversions) / (a_total + b_total)
+            if (a_total + b_total)
+            else 0
+        )
+        se = (
+            math.sqrt(p_pooled * (1 - p_pooled) * (1 / a_total + 1 / b_total))
+            if p_pooled
+            else 0
+        )
         z = (b_rate - a_rate) / se if se else 0
 
         # Approximate p-value (two-tailed)
@@ -177,7 +189,9 @@ class AutoOptimizer:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def run_optimization_cycle(self, business_id: uuid.UUID) -> list[dict[str, Any]]:
+    async def run_optimization_cycle(
+        self, business_id: uuid.UUID
+    ) -> list[dict[str, Any]]:
         """Run all auto-optimizations for a business."""
         optimizations = []
 
@@ -198,20 +212,38 @@ class AutoOptimizer:
 
         return optimizations
 
-    async def _optimize_outreach_timing(self, business_id: uuid.UUID) -> dict[str, Any] | None:
+    async def _optimize_outreach_timing(
+        self, business_id: uuid.UUID
+    ) -> dict[str, Any] | None:
         """Find optimal send hours based on response rates."""
         # In production, would analyze response rate by hour
         # For now, placeholder
-        return {"type": "timing", "recommendation": "Send follow-ups between 10-12h and 16-18h", "confidence": 0.7}
+        return {
+            "type": "timing",
+            "recommendation": "Send follow-ups between 10-12h and 16-18h",
+            "confidence": 0.7,
+        }
 
-    async def _optimize_personality(self, business_id: uuid.UUID) -> dict[str, Any] | None:
+    async def _optimize_personality(
+        self, business_id: uuid.UUID
+    ) -> dict[str, Any] | None:
         """Find best-performing agent personality."""
         # In production, would compare close rates by personality
-        return {"type": "personality", "recommendation": "Hormozi voice shows 15% higher close rate", "confidence": 0.65}
+        return {
+            "type": "personality",
+            "recommendation": "Hormozi voice shows 15% higher close rate",
+            "confidence": 0.65,
+        }
 
-    async def _optimize_channel_priority(self, business_id: uuid.UUID) -> dict[str, Any] | None:
+    async def _optimize_channel_priority(
+        self, business_id: uuid.UUID
+    ) -> dict[str, Any] | None:
         """Find best-performing channel."""
-        return {"type": "channel", "recommendation": "WhatsApp has 2.3x better response rate than email", "confidence": 0.8}
+        return {
+            "type": "channel",
+            "recommendation": "WhatsApp has 2.3x better response rate than email",
+            "confidence": 0.8,
+        }
 
 
 class CadenceOptimizer:

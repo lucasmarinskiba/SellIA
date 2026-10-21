@@ -184,6 +184,7 @@ class TenantContextMiddleware:
         if not user:
             # No authenticated user: deny access
             from fastapi.responses import JSONResponse
+
             return JSONResponse(
                 status_code=401,
                 content={"detail": "Not authenticated"},
@@ -208,6 +209,7 @@ class TenantContextMiddleware:
 
         except AppException as e:
             from fastapi.responses import JSONResponse
+
             return JSONResponse(
                 status_code=e.status_code,
                 content={"detail": e.message},
@@ -215,6 +217,7 @@ class TenantContextMiddleware:
         except Exception:
             logger.exception("Tenant context middleware error")
             from fastapi.responses import JSONResponse
+
             return JSONResponse(
                 status_code=500,
                 content={"detail": "Internal server error"},

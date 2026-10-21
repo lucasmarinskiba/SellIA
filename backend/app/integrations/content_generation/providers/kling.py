@@ -4,7 +4,6 @@ Pricing: ~$0.06/second (via fal.ai)
 Strengths: Real-world physics, human motion, realistic scenes
 """
 
-
 import logging
 from typing import ClassVar
 
@@ -37,10 +36,13 @@ class KlingProvider(BaseProvider):
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         if not self.is_available:
-            return GenerationResult(success=False, error_message="FAL_KEY no configurada para Kling")
+            return GenerationResult(
+                success=False, error_message="FAL_KEY no configurada para Kling"
+            )
 
         try:
             import fal_client
+
             fal_client.api_key = settings.FAL_KEY
 
             result = await fal_client.subscribe_async(
@@ -55,10 +57,16 @@ class KlingProvider(BaseProvider):
             if hasattr(result, "video") and result.video:
                 video_url = result.video.url
             elif isinstance(result, dict):
-                video_url = result.get("video", {}).get("url") if isinstance(result.get("video"), dict) else result.get("video")
+                video_url = (
+                    result.get("video", {}).get("url")
+                    if isinstance(result.get("video"), dict)
+                    else result.get("video")
+                )
 
             if not video_url:
-                return GenerationResult(success=False, error_message="Kling no devolvió video")
+                return GenerationResult(
+                    success=False, error_message="Kling no devolvió video"
+                )
 
             duration = config.duration_seconds or 5
             return GenerationResult(

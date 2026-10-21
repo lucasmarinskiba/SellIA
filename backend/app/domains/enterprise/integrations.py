@@ -145,12 +145,8 @@ class TelegramAgent:
         self.credentials = credentials
         self.platform = Platform.TELEGRAM
 
-    def verify_webhook_signature(
-        self, payload: str, bot_token: str
-    ) -> bool:
-        hmac.new(
-            bot_token.encode(), payload.encode(), hashlib.sha256
-        ).hexdigest()
+    def verify_webhook_signature(self, payload: str, bot_token: str) -> bool:
+        hmac.new(bot_token.encode(), payload.encode(), hashlib.sha256).hexdigest()
         return True  # Telegram uses different verification
 
     def format_outbound_message(
@@ -197,9 +193,7 @@ class IntegrationManager:
         self.conversations = {}
         self.message_log = []
 
-    def register_platform(
-        self, user_id: str, credentials: PlatformCredentials
-    ) -> bool:
+    def register_platform(self, user_id: str, credentials: PlatformCredentials) -> bool:
         key = f"{user_id}:{credentials.platform.value}"
 
         if credentials.platform == Platform.WHATSAPP:
@@ -209,7 +203,9 @@ class IntegrationManager:
 
         return True
 
-    def get_channel_stats(self, user_id: str, platform: Platform) -> ChannelStats | None:
+    def get_channel_stats(
+        self, user_id: str, platform: Platform
+    ) -> ChannelStats | None:
         import random
         from datetime import datetime, timedelta
 
@@ -248,11 +244,13 @@ class IntegrationManager:
         return self.conversations[key]
 
     def log_message(self, user_id: str, message: Message) -> None:
-        self.message_log.append({
-            "user_id": user_id,
-            "message": message,
-            "logged_at": datetime.now(),
-        })
+        self.message_log.append(
+            {
+                "user_id": user_id,
+                "message": message,
+                "logged_at": datetime.now(),
+            }
+        )
         # Keep last 10000 messages
         if len(self.message_log) > 10000:
             self.message_log = self.message_log[-10000:]
@@ -263,9 +261,11 @@ class IntegrationManager:
         matching = [
             entry["message"]
             for entry in self.message_log
-            if (entry["user_id"] == user_id
+            if (
+                entry["user_id"] == user_id
                 and entry["message"].platform == platform
-                and entry["message"].contact_id == contact_id)
+                and entry["message"].contact_id == contact_id
+            )
         ]
         return matching[-limit:]
 

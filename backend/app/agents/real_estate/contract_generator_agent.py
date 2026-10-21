@@ -16,7 +16,13 @@ class ContractGeneratorAgent:
     def __init__(self):
         self.contracts: dict[str, dict[str, Any]] = {}
 
-    def generate_purchase_agreement(self, property_id: str, buyer_id: str, terms: dict[str, Any], region: str = "Argentina") -> dict[str, Any]:
+    def generate_purchase_agreement(
+        self,
+        property_id: str,
+        buyer_id: str,
+        terms: dict[str, Any],
+        region: str = "Argentina",
+    ) -> dict[str, Any]:
         """Generate purchase agreement based on offer terms."""
         # Random suffix guards against two contracts generated in the same second.
         contract_id = f"PA_{property_id}_{buyer_id}_{utc_now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
@@ -35,8 +41,12 @@ class ContractGeneratorAgent:
                 "inspection_period_days": terms.get("inspection_period_days", 10),
                 "appraisal_contingency": terms.get("appraisal_contingency", True),
                 "financing_contingency": terms.get("financing_contingency", True),
-                "close_date": terms.get("close_date", utc_now() + timedelta(days=45)).isoformat(),
-                "possession_date": terms.get("possession_date", utc_now() + timedelta(days=45)).isoformat(),
+                "close_date": terms.get(
+                    "close_date", utc_now() + timedelta(days=45)
+                ).isoformat(),
+                "possession_date": terms.get(
+                    "possession_date", utc_now() + timedelta(days=45)
+                ).isoformat(),
             },
             "sections": self._generate_contract_sections(terms, region),
             "status": "draft",
@@ -47,7 +57,9 @@ class ContractGeneratorAgent:
 
         return agreement
 
-    def _generate_contract_sections(self, terms: dict[str, Any], region: str) -> dict[str, str]:
+    def _generate_contract_sections(
+        self, terms: dict[str, Any], region: str
+    ) -> dict[str, str]:
         """Generate standard contract sections."""
         sections = {}
 

@@ -34,7 +34,7 @@ class FeedbackAlertService:
         visitor_email: str | None = None,
         visitor_phone: str | None = None,
         visitor_name: str | None = None,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Evaluate feedback score. Create alert if NPS < 6."""
         if not db:
@@ -49,13 +49,17 @@ class FeedbackAlertService:
             business_id=business_id,
             feedback_id=feedback_id,
             nps_score=nps_score,
-            sentiment=FeedbackSentiment[sentiment.upper()] if sentiment else FeedbackSentiment.NEGATIVE,
+            sentiment=(
+                FeedbackSentiment[sentiment.upper()]
+                if sentiment
+                else FeedbackSentiment.NEGATIVE
+            ),
             comment=comment,
             topics=topics or [],
             visitor_email=visitor_email,
             visitor_phone=visitor_phone,
             visitor_name=visitor_name,
-            status=AlertStatus.ACTIVE
+            status=AlertStatus.ACTIVE,
         )
 
         db.add(alert)
@@ -68,15 +72,11 @@ class FeedbackAlertService:
             "alert_triggered": True,
             "alert_id": str(alert.id),
             "nps_score": nps_score,
-            "requires_immediate_attention": nps_score <= 3
+            "requires_immediate_attention": nps_score <= 3,
         }
 
     @staticmethod
-    def acknowledge_alert(
-        alert_id: UUID,
-        manager_id: UUID,
-        db: Session
-    ) -> dict:
+    def acknowledge_alert(alert_id: UUID, manager_id: UUID, db: Session) -> dict:
         """Manager acknowledges alert."""
         alert = db.query(NPSAlert).filter(NPSAlert.id == alert_id).first()
 
@@ -95,7 +95,7 @@ class FeedbackAlertService:
         return {
             "alert_id": str(alert.id),
             "status": alert.status.value,
-            "acknowledged_at": alert.acknowledged_at.isoformat()
+            "acknowledged_at": alert.acknowledged_at.isoformat(),
         }
 
     @staticmethod
@@ -103,7 +103,7 @@ class FeedbackAlertService:
         alert_id: UUID,
         assigned_to_staff_id: UUID,
         resolution_plan: str | None = None,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Assign staff member to resolve alert."""
         if not db:
@@ -129,27 +129,27 @@ class FeedbackAlertService:
             visitor_phone=alert.visitor_phone,
             assigned_to_staff_id=assigned_to_staff_id,
             initial_nps=alert.nps_score,
-            resurvey_scheduled_for=datetime.now(UTC) + timedelta(days=7)
+            resurvey_scheduled_for=datetime.now(UTC) + timedelta(days=7),
         )
 
         db.add(follow_up)
         db.commit()
 
-        logger.info(f"Alert escalated: {alert_id} assigned to staff {assigned_to_staff_id}")
+        logger.info(
+            f"Alert escalated: {alert_id} assigned to staff {assigned_to_staff_id}"
+        )
 
         return {
             "alert_id": str(alert.id),
             "status": alert.status.value,
             "assigned_to": str(assigned_to_staff_id),
             "follow_up_id": str(follow_up.id),
-            "resurvey_scheduled": follow_up.resurvey_scheduled_for.isoformat()
+            "resurvey_scheduled": follow_up.resurvey_scheduled_for.isoformat(),
         }
 
     @staticmethod
     def resolve_alert(
-        alert_id: UUID,
-        resolution_notes: str | None = None,
-        db: Session = None
+        alert_id: UUID, resolution_notes: str | None = None, db: Session = None
     ) -> dict:
         """Mark alert as resolved."""
         if not db:
@@ -165,9 +165,11 @@ class FeedbackAlertService:
         alert.resolution_notes = resolution_notes
 
         # Update follow-up
-        follow_up = db.query(FeedbackFollowUp).filter(
-            FeedbackFollowUp.nps_alert_id == alert.id
-        ).first()
+        follow_up = (
+            db.query(FeedbackFollowUp)
+            .filter(FeedbackFollowUp.nps_alert_id == alert.id)
+            .first()
+        )
 
         if follow_up:
             follow_up.resolved = True
@@ -181,7 +183,7 @@ class FeedbackAlertService:
         return {
             "alert_id": str(alert.id),
             "status": alert.status.value,
-            "resolved_at": alert.resolved_at.isoformat()
+            "resolved_at": alert.resolved_at.isoformat(),
         }
 
     @staticmethod
@@ -189,7 +191,7 @@ class FeedbackAlertService:
         location_id: UUID,
         status_filter: str | None = None,
         days: int = 30,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Get NPS alerts for location."""
         if not db:
@@ -198,8 +200,7 @@ class FeedbackAlertService:
         cutoff = datetime.now(UTC) - timedelta(days=days)
 
         query = db.query(NPSAlert).filter(
-            NPSAlert.location_id == location_id,
-            NPSAlert.created_at >= cutoff
+            NPSAlert.location_id == location_id, NPSAlert.created_at >= cutoff
         )
 
         if status_filter:
@@ -217,7 +218,9 @@ class FeedbackAlertService:
                 "status": a.status.value,
                 "visitor_name": a.visitor_name,
                 "created_at": a.created_at.isoformat(),
-                "assigned_to": str(a.assigned_to_staff_id) if a.assigned_to_staff_id else None,
+                "assigned_to": (
+                    str(a.assigned_to_staff_id) if a.assigned_to_staff_id else None
+                ),
             }
             for a in alerts
         ]
@@ -225,7 +228,9 @@ class FeedbackAlertService:
         # Count by status
         status_counts = {
             "active": len([a for a in alerts if a.status == AlertStatus.ACTIVE]),
-            "acknowledged": len([a for a in alerts if a.status == AlertStatus.ACKNOWLEDGED]),
+            "acknowledged": len(
+                [a for a in alerts if a.status == AlertStatus.ACKNOWLEDGED]
+            ),
             "escalated": len([a for a in alerts if a.status == AlertStatus.ESCALATED]),
             "resolved": len([a for a in alerts if a.status == AlertStatus.RESOLVED]),
         }
@@ -234,7 +239,7 @@ class FeedbackAlertService:
             "location_id": str(location_id),
             "total_alerts": len(alert_list),
             "status_counts": status_counts,
-            "alerts": alert_list
+            "alerts": alert_list,
         }
 
 
@@ -243,9 +248,7 @@ class NPSDashboardService:
 
     @staticmethod
     def update_nps_metrics(
-        location_id: UUID,
-        business_id: UUID,
-        db: Session = None
+        location_id: UUID, business_id: UUID, db: Session = None
     ) -> dict:
         """Update hourly NPS snapshot for location."""
         if not db:
@@ -260,11 +263,15 @@ class NPSDashboardService:
         # Get feedback from past hour
         hour_cutoff = now - timedelta(hours=1)
 
-        feedback_list = db.query(LocationFeedback).filter(
-            LocationFeedback.location_id == location_id,
-            LocationFeedback.created_at >= hour_cutoff,
-            LocationFeedback.nps_score.isnot(None)
-        ).all()
+        feedback_list = (
+            db.query(LocationFeedback)
+            .filter(
+                LocationFeedback.location_id == location_id,
+                LocationFeedback.created_at >= hour_cutoff,
+                LocationFeedback.nps_score.isnot(None),
+            )
+            .all()
+        )
 
         if not feedback_list:
             return {"updated": False, "reason": "No feedback this hour"}
@@ -295,7 +302,7 @@ class NPSDashboardService:
         top_issues = sorted(
             [{"topic": t, "count": c} for t, c in topic_counts.items()],
             key=lambda x: x["count"],
-            reverse=True
+            reverse=True,
         )[:5]
 
         # Store metric
@@ -312,7 +319,7 @@ class NPSDashboardService:
             positive_count=positive,
             neutral_count=neutral,
             negative_count=negative,
-            top_issues=top_issues
+            top_issues=top_issues,
         )
 
         db.add(metric)
@@ -326,14 +333,12 @@ class NPSDashboardService:
             "nps_avg": float(nps_avg),
             "promoters": promoters,
             "detractors": detractors,
-            "top_issues": top_issues
+            "top_issues": top_issues,
         }
 
     @staticmethod
     def get_nps_dashboard(
-        location_id: UUID,
-        days: int = 30,
-        db: Session = None
+        location_id: UUID, days: int = 30, db: Session = None
     ) -> dict:
         """Get NPS dashboard data."""
         if not db:
@@ -342,11 +347,16 @@ class NPSDashboardService:
         cutoff = datetime.now(UTC) - timedelta(days=days)
 
         # Get daily metrics
-        daily_metrics = db.query(NPSTrendMetric).filter(
-            NPSTrendMetric.location_id == location_id,
-            NPSTrendMetric.hour.is_(None),  # Daily aggregate
-            NPSTrendMetric.created_at >= cutoff
-        ).order_by(NPSTrendMetric.date).all()
+        daily_metrics = (
+            db.query(NPSTrendMetric)
+            .filter(
+                NPSTrendMetric.location_id == location_id,
+                NPSTrendMetric.hour.is_(None),  # Daily aggregate
+                NPSTrendMetric.created_at >= cutoff,
+            )
+            .order_by(NPSTrendMetric.date)
+            .all()
+        )
 
         if not daily_metrics:
             daily_metrics = []
@@ -354,19 +364,30 @@ class NPSDashboardService:
         # Calculate overall stats
         all_scores = [float(m.nps_avg) for m in daily_metrics]
         current_nps = float(daily_metrics[-1].nps_avg) if daily_metrics else 0
-        nps_trend_30d = current_nps - float(daily_metrics[0].nps_avg) if len(daily_metrics) > 1 else 0
+        nps_trend_30d = (
+            current_nps - float(daily_metrics[0].nps_avg)
+            if len(daily_metrics) > 1
+            else 0
+        )
 
         # Sentiment trend
-        sentiment_data = db.query(SentimentTrend).filter(
-            SentimentTrend.location_id == location_id,
-            SentimentTrend.date >= cutoff.strftime("%Y-%m-%d")
-        ).order_by(SentimentTrend.date).all()
+        sentiment_data = (
+            db.query(SentimentTrend)
+            .filter(
+                SentimentTrend.location_id == location_id,
+                SentimentTrend.date >= cutoff.strftime("%Y-%m-%d"),
+            )
+            .order_by(SentimentTrend.date)
+            .all()
+        )
 
         return {
             "location_id": str(location_id),
             "period_days": days,
             "current_nps": round(current_nps, 1),
-            "avg_nps_period": round(sum(all_scores) / len(all_scores), 1) if all_scores else 0,
+            "avg_nps_period": (
+                round(sum(all_scores) / len(all_scores), 1) if all_scores else 0
+            ),
             "nps_trend_30d": round(nps_trend_30d, 1),
             "data_points": [
                 {
@@ -388,14 +409,12 @@ class NPSDashboardService:
                     "direction": s.direction,
                 }
                 for s in sentiment_data[-30:]
-            ]
+            ],
         }
 
     @staticmethod
     def calculate_sentiment_trend(
-        location_id: UUID,
-        date: str,
-        db: Session = None
+        location_id: UUID, date: str, db: Session = None
     ) -> dict:
         """Calculate daily sentiment trend."""
         if not db:
@@ -406,12 +425,16 @@ class NPSDashboardService:
         date_start = datetime.fromisoformat(f"{date}T00:00:00+00:00")
         date_end = date_start + timedelta(days=1)
 
-        feedback_list = db.query(LocationFeedback).filter(
-            LocationFeedback.location_id == location_id,
-            LocationFeedback.created_at >= date_start,
-            LocationFeedback.created_at < date_end,
-            LocationFeedback.sentiment.isnot(None)
-        ).all()
+        feedback_list = (
+            db.query(LocationFeedback)
+            .filter(
+                LocationFeedback.location_id == location_id,
+                LocationFeedback.created_at >= date_start,
+                LocationFeedback.created_at < date_end,
+                LocationFeedback.sentiment.isnot(None),
+            )
+            .all()
+        )
 
         if not feedback_list:
             return {"calculated": False}
@@ -425,12 +448,16 @@ class NPSDashboardService:
         prev_date_start = date_start - timedelta(days=1)
         prev_date_end = prev_date_start + timedelta(days=1)
 
-        prev_feedback = db.query(LocationFeedback).filter(
-            LocationFeedback.location_id == location_id,
-            LocationFeedback.created_at >= prev_date_start,
-            LocationFeedback.created_at < prev_date_end,
-            LocationFeedback.sentiment.isnot(None)
-        ).all()
+        prev_feedback = (
+            db.query(LocationFeedback)
+            .filter(
+                LocationFeedback.location_id == location_id,
+                LocationFeedback.created_at >= prev_date_start,
+                LocationFeedback.created_at < prev_date_end,
+                LocationFeedback.sentiment.isnot(None),
+            )
+            .all()
+        )
 
         direction = "stable"
         change = 0
@@ -448,13 +475,15 @@ class NPSDashboardService:
 
         trend = SentimentTrend(
             location_id=location_id,
-            business_id=UUID("00000000-0000-0000-0000-000000000000"),  # TODO: from location
+            business_id=UUID(
+                "00000000-0000-0000-0000-000000000000"
+            ),  # TODO: from location
             date=date,
             positive_pct=Decimal(str(round(positive_pct, 2))),
             neutral_pct=Decimal(str(round(neutral_pct, 2))),
             negative_pct=Decimal(str(round(negative_pct, 2))),
             direction=direction,
-            day_over_day_change=Decimal(str(round(change, 2)))
+            day_over_day_change=Decimal(str(round(change, 2))),
         )
 
         db.add(trend)
@@ -468,5 +497,5 @@ class NPSDashboardService:
             "positive_pct": round(positive_pct, 1),
             "neutral_pct": round(neutral_pct, 1),
             "negative_pct": round(negative_pct, 1),
-            "direction": direction
+            "direction": direction,
         }

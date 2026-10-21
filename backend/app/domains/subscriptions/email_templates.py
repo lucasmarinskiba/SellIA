@@ -7,12 +7,25 @@ Cada función retorna (subject, html_body, text_body).
 from app.core.email_service import base_email_template
 
 
-def transfer_order_created(order_number: str, plan_name: str, amount: float, currency: str, alias: str, cbu: str | None, holder: str, expires_at: str) -> tuple[str, str, str]:
+def transfer_order_created(
+    order_number: str,
+    plan_name: str,
+    amount: float,
+    currency: str,
+    alias: str,
+    cbu: str | None,
+    holder: str,
+    expires_at: str,
+) -> tuple[str, str, str]:
     subject = f"Orden de pago #{order_number} — SellIA"
 
-    cbu_html = f"""
+    cbu_html = (
+        f"""
         <div class="box-row"><span>CBU</span><span>{cbu}</span></div>
-    """ if cbu else ""
+    """
+        if cbu
+        else ""
+    )
 
     html = base_email_template(f"""
         <p>Hola,</p>
@@ -47,7 +60,9 @@ https://app.sellia.com/dashboard/planes
     return subject, html, text
 
 
-def transfer_reminder(order_number: str, plan_name: str, amount: float, currency: str, hours_left: int) -> tuple[str, str, str]:
+def transfer_reminder(
+    order_number: str, plan_name: str, amount: float, currency: str, hours_left: int
+) -> tuple[str, str, str]:
     subject = f"Recordatorio: tu orden #{order_number} expira en {hours_left}h"
 
     html = base_email_template(f"""
@@ -112,7 +127,9 @@ https://app.sellia.com/dashboard/planes
     return subject, html, text
 
 
-def transfer_approved(order_number: str, plan_name: str, period_end: str) -> tuple[str, str, str]:
+def transfer_approved(
+    order_number: str, plan_name: str, period_end: str
+) -> tuple[str, str, str]:
     subject = f"¡Pago aprobado! Plan {plan_name} activado"
 
     html = base_email_template(f"""
@@ -138,7 +155,9 @@ https://app.sellia.com/dashboard
     return subject, html, text
 
 
-def transfer_rejected(order_number: str, plan_name: str, reason: str | None = None) -> tuple[str, str, str]:
+def transfer_rejected(
+    order_number: str, plan_name: str, reason: str | None = None
+) -> tuple[str, str, str]:
     subject = f"Transferencia rechazada — Orden #{order_number}"
 
     reason_html = f"<p><strong>Motivo:</strong> {reason}</p>" if reason else ""
@@ -182,10 +201,16 @@ https://app.sellia.com/dashboard/planes
     return subject, html, text
 
 
-def preapproval_payment_failed(plan_name: str, next_retry: str | None = None) -> tuple[str, str, str]:
+def preapproval_payment_failed(
+    plan_name: str, next_retry: str | None = None
+) -> tuple[str, str, str]:
     subject = f"Problema con el cobro de {plan_name}"
 
-    retry_html = f"<p>El próximo intento de cobro será el <strong>{next_retry}</strong>.</p>" if next_retry else ""
+    retry_html = (
+        f"<p>El próximo intento de cobro será el <strong>{next_retry}</strong>.</p>"
+        if next_retry
+        else ""
+    )
 
     html = base_email_template(f"""
         <p>Hola,</p>
@@ -207,7 +232,9 @@ https://app.sellia.com/dashboard/suscripcion
     return subject, html, text
 
 
-def preapproval_activated(plan_name: str, amount: float, currency: str, next_payment: str) -> tuple[str, str, str]:
+def preapproval_activated(
+    plan_name: str, amount: float, currency: str, next_payment: str
+) -> tuple[str, str, str]:
     subject = f"Cobro automático activado — {plan_name}"
 
     html = base_email_template(f"""

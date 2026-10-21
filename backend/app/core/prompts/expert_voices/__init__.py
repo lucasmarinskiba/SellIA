@@ -91,28 +91,28 @@ ALL_EXPERT_PROMPTS = {
 
 # Flattened prompt list for indexing
 FLAT_PROMPT_LIST = (
-    TRUMP_PROMPTS +
-    BELFORT_PROMPTS +
-    BUFFETT_PROMPTS +
-    KIYOSAKI_PROMPTS +
-    HORMOZI_PROMPTS +
-    CARDONE_PROMPTS +
-    ROBBINS_PROMPTS +
-    GARYVEE_PROMPTS +
-    DALIO_PROMPTS +
-    MINER_PROMPTS +
-    ELLIOTT_PROMPTS +
-    LOIDI_PROMPTS +
-    RIBAS_PROMPTS +
-    GALPERIN_PROMPTS +
-    ROCCA_PROMPTS +
-    GALUCCIO_PROMPTS +
-    RAVIKANT_PROMPTS +
-    TALEB_PROMPTS +
-    GRAHAM_PROMPTS +
-    BENIOFF_PROMPTS +
-    TRACY_PROMPTS +
-    HILL_PROMPTS
+    TRUMP_PROMPTS
+    + BELFORT_PROMPTS
+    + BUFFETT_PROMPTS
+    + KIYOSAKI_PROMPTS
+    + HORMOZI_PROMPTS
+    + CARDONE_PROMPTS
+    + ROBBINS_PROMPTS
+    + GARYVEE_PROMPTS
+    + DALIO_PROMPTS
+    + MINER_PROMPTS
+    + ELLIOTT_PROMPTS
+    + LOIDI_PROMPTS
+    + RIBAS_PROMPTS
+    + GALPERIN_PROMPTS
+    + ROCCA_PROMPTS
+    + GALUCCIO_PROMPTS
+    + RAVIKANT_PROMPTS
+    + TALEB_PROMPTS
+    + GRAHAM_PROMPTS
+    + BENIOFF_PROMPTS
+    + TRACY_PROMPTS
+    + HILL_PROMPTS
 )
 
 # Metadata
@@ -124,6 +124,7 @@ __author__ = "Agente IA - Vendedor Automático (Sellía)"
 # Statistics
 EXPERT_COUNT = len(ALL_EXPERT_PROMPTS)
 PROMPT_COUNT = len(FLAT_PROMPT_LIST)
+
 
 # Main interface for external use
 class ExpertVoiceManager:
@@ -143,19 +144,20 @@ class ExpertVoiceManager:
         scenario: SalesScenario,
         customer_message: str,
         conversation_history=None,
-        additional_context=None
+        additional_context=None,
     ):
         """Execute expert prompt for sales situation"""
         return await self.orchestrator.execute_expert_prompt(
             scenario=scenario,
             customer_message=customer_message,
             conversation_history=conversation_history,
-            additional_context=additional_context
+            additional_context=additional_context,
         )
 
     def select_experts(self, scenario: SalesScenario):
         """Select best experts for scenario"""
         import asyncio
+
         return asyncio.run(self.selector.select_experts(scenario))
 
     def get_available_experts(self):
@@ -173,7 +175,7 @@ class ExpertVoiceManager:
             "total_prompts": PROMPT_COUNT,
             "prompt_distribution": self.get_prompt_distribution(),
             "orchestrator_analytics": self.orchestrator.get_execution_analytics(),
-            "selector_analytics": self.selector.get_performance_analytics()
+            "selector_analytics": self.selector.get_performance_analytics(),
         }
 
 
@@ -244,12 +246,13 @@ __all__ = [
     "get_best_experts_for_context",
     # Registry functions
     "get_expert_metadata",
-    "get_prompt_distribution"
+    "get_prompt_distribution",
 ]
 
 
 # Optional: Initialize default manager
 _default_manager = None
+
 
 def get_expert_voice_manager():
     """Get or create default expert voice manager"""

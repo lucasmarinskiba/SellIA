@@ -23,7 +23,9 @@ class WhatsAppConnector(BaseConnector):
         try:
             async with aiohttp.ClientSession() as session:
                 url = f"{self.base_url}/{self.phone_number_id}"
-                async with session.get(url, params={"access_token": self.access_token}) as resp:
+                async with session.get(
+                    url, params={"access_token": self.access_token}
+                ) as resp:
                     if resp.status == 200:
                         self.authenticated = True
                         return True
@@ -44,11 +46,18 @@ class WhatsAppConnector(BaseConnector):
 
             async with aiohttp.ClientSession() as session:
                 url = f"{self.base_url}/{self.phone_number_id}/messages"
-                async with session.post(url, json=payload, params={"access_token": self.access_token}) as resp:
+                async with session.post(
+                    url, json=payload, params={"access_token": self.access_token}
+                ) as resp:
                     if resp.status == 200:
                         data = await resp.json()
-                        logger.info(f"WhatsApp message sent: {data.get('messages', [{}])[0].get('id')}")
-                        return {"status": "sent", "message_id": data.get("messages", [{}])[0].get("id")}
+                        logger.info(
+                            f"WhatsApp message sent: {data.get('messages', [{}])[0].get('id')}"
+                        )
+                        return {
+                            "status": "sent",
+                            "message_id": data.get("messages", [{}])[0].get("id"),
+                        }
                     return {"status": "error"}
         except Exception as e:
             logger.exception("Error sending WhatsApp message")
@@ -56,15 +65,15 @@ class WhatsAppConnector(BaseConnector):
 
     async def list_products(self) -> list[dict[str, Any]]:
         return []
-    
+
     async def create_listing(self, product: dict[str, Any]) -> dict[str, Any]:
         return {"status": "not_applicable"}
-    
+
     async def get_orders(self) -> list[dict[str, Any]]:
         return []
-    
+
     async def create_campaign(self, campaign: dict[str, Any]) -> dict[str, Any]:
         return {"status": "not_applicable"}
-    
+
     async def get_metrics(self) -> dict[str, Any]:
         return {}

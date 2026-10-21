@@ -92,8 +92,7 @@ class PromptOptimizer:
         cutoff = datetime.now(UTC) - timedelta(days=days)
 
         result = await self.db.execute(
-            select(ConversationOutcome)
-            .where(
+            select(ConversationOutcome).where(
                 ConversationOutcome.agent_type == agent_type,
                 ConversationOutcome.created_at >= cutoff,
             )
@@ -158,7 +157,9 @@ class PromptOptimizer:
         for outcome in failed:
             chunk_result = await self.db.execute(
                 select(ConversationMemoryChunk)
-                .where(ConversationMemoryChunk.conversation_id == outcome.conversation_id)
+                .where(
+                    ConversationMemoryChunk.conversation_id == outcome.conversation_id
+                )
                 .order_by(ConversationMemoryChunk.chunk_index.asc())
                 .limit(10)
             )

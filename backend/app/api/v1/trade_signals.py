@@ -94,7 +94,10 @@ async def trade_heartbeat(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Servicio de copy-trade temporalmente no disponible.",
         )
-    return {"active": await store.is_active(str(user.id)), "window_sec": store.window_sec}
+    return {
+        "active": await store.is_active(str(user.id)),
+        "window_sec": store.window_sec,
+    }
 
 
 @router.get(
@@ -105,7 +108,10 @@ async def trade_presence(
     user: Annotated[User, Depends(get_current_active_user)],
     store: Annotated[RedisCopyTradeStore, Depends(get_store)],
 ) -> dict:
-    return {"active": await store.is_active(str(user.id)), "window_sec": store.window_sec}
+    return {
+        "active": await store.is_active(str(user.id)),
+        "window_sec": store.window_sec,
+    }
 
 
 # ── propuestas ─────────────────────────────────────────────────────────────
@@ -178,6 +184,5 @@ async def reject_proposal(
 async def analysis_styles() -> dict:
     """Estilos de análisis válidos por clase de activo (introspección)."""
     return {
-        ac.value: [s.value for s in styles]
-        for ac, styles in ANALYSIS_BY_ASSET.items()
+        ac.value: [s.value for s in styles] for ac, styles in ANALYSIS_BY_ASSET.items()
     }

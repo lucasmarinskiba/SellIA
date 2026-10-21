@@ -54,7 +54,9 @@ async def assign_task(
 
         result = StaffTaskService.assign_task(
             location_id=request.location_id,
-            business_id=UUID("00000000-0000-0000-0000-000000000000"),  # TODO: from location
+            business_id=UUID(
+                "00000000-0000-0000-0000-000000000000"
+            ),  # TODO: from location
             assigned_to_staff_id=request.assigned_to_staff_id,
             task_type=request.task_type,
             title=request.title,
@@ -65,14 +67,14 @@ async def assign_task(
             related_checkin_id=request.related_checkin_id,
             related_product_id=request.related_product_id,
             assigned_by_staff_id=current_user.id,
-            db=db
+            db=db,
         )
 
         # Send notification
         TaskNotificationService.notify_task_assigned(
             task_id=UUID(result["task_id"]),
             staff_id=request.assigned_to_staff_id,
-            db=db
+            db=db,
         )
 
         return result
@@ -91,10 +93,7 @@ async def get_staff_tasks(
     """Get tasks assigned to staff."""
     try:
         tasks = StaffTaskService.get_staff_tasks(
-            staff_id=staff_id,
-            location_id=location_id,
-            status_filter=status,
-            db=db
+            staff_id=staff_id, location_id=location_id, status_filter=status, db=db
         )
 
         task_list = [
@@ -108,7 +107,9 @@ async def get_staff_tasks(
                 "description": t.description,
                 "estimated_duration_minutes": t.estimated_duration_minutes,
                 "assigned_at": t.assigned_at.isoformat(),
-                "acknowledged_at": t.acknowledged_at.isoformat() if t.acknowledged_at else None,
+                "acknowledged_at": (
+                    t.acknowledged_at.isoformat() if t.acknowledged_at else None
+                ),
                 "started_at": t.started_at.isoformat() if t.started_at else None,
             }
             for t in tasks
@@ -117,7 +118,7 @@ async def get_staff_tasks(
         return {
             "staff_id": str(staff_id),
             "total_tasks": len(task_list),
-            "tasks": task_list
+            "tasks": task_list,
         }
     except Exception as e:
         logger.exception("get_staff_tasks: error inesperado")
@@ -164,7 +165,7 @@ async def complete_task(
             task_id=request.task_id,
             completion_notes=request.completion_notes,
             completion_evidence=request.completion_evidence,
-            db=db
+            db=db,
         )
         return result
     except Exception as e:
@@ -196,9 +197,7 @@ async def get_location_task_queue(
     """Get pending tasks for location."""
     try:
         result = StaffTaskService.get_task_queue(
-            location_id=location_id,
-            max_results=max_results,
-            db=db
+            location_id=location_id, max_results=max_results, db=db
         )
         return result
     except Exception as e:
@@ -222,7 +221,7 @@ async def auto_assign_shift_tasks(
             location_id=location_id,
             staff_id=staff_id,
             shift_start=shift_start_dt,
-            db=db
+            db=db,
         )
         return result
     except Exception as e:
@@ -239,9 +238,9 @@ async def get_task_notifications(
     try:
         from app.domains.staff.task_models import TaskNotification
 
-        notifications = db.query(TaskNotification).filter(
-            TaskNotification.task_id == task_id
-        ).all()
+        notifications = (
+            db.query(TaskNotification).filter(TaskNotification.task_id == task_id).all()
+        )
 
         notif_list = [
             {
@@ -254,10 +253,7 @@ async def get_task_notifications(
             for n in notifications
         ]
 
-        return {
-            "task_id": str(task_id),
-            "notifications": notif_list
-        }
+        return {"task_id": str(task_id), "notifications": notif_list}
     except Exception as e:
         logger.exception("get_task_notifications: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
@@ -271,8 +267,7 @@ async def mark_notification_read(
     """Mark notification as read."""
     try:
         result = TaskNotificationService.mark_notification_read(
-            notification_id=notification_id,
-            db=db
+            notification_id=notification_id, db=db
         )
         return result
     except Exception as e:
@@ -297,11 +292,13 @@ async def get_shift_readiness_report(
 
         result = ShiftReadinessService.generate_shift_report(
             location_id=location_id,
-            business_id=UUID("00000000-0000-0000-0000-000000000000"),  # TODO: from location
+            business_id=UUID(
+                "00000000-0000-0000-0000-000000000000"
+            ),  # TODO: from location
             staff_id=staff_id,
             shift_start=shift_start_dt,
             shift_end=shift_end_dt,
-            db=db
+            db=db,
         )
         return result
     except Exception as e:
@@ -318,9 +315,7 @@ async def get_staff_performance(
     """Get staff task performance metrics."""
     try:
         result = ShiftReadinessService.get_staff_performance(
-            staff_id=staff_id,
-            days=days,
-            db=db
+            staff_id=staff_id, days=days, db=db
         )
         return result
     except Exception as e:

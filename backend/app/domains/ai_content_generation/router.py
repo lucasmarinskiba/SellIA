@@ -1,4 +1,5 @@
 """Phase 51: AI Content Generation Endpoints."""
+
 from typing import Annotated
 from uuid import UUID
 
@@ -41,7 +42,9 @@ async def generate_content(
     """Generate AI content (title, description, social post, email)."""
     # In real system, calls Claude API via anthropic
     # For now, returns stub with high scores
-    generated = f"AI-Generated {req.content_type} for platform {req.platform or 'default'}"
+    generated = (
+        f"AI-Generated {req.content_type} for platform {req.platform or 'default'}"
+    )
 
     content = ContentGenerationService.save_generated_content(
         db=db,
@@ -76,7 +79,15 @@ async def create_variants(
         db=db,
         business_id=business_id,
         generated_content_id=generated_content_id,
-        variants=[{"text": v.text, "style": v.style, "seo_score": 82.0, "engagement_score": 75.0} for v in variants],
+        variants=[
+            {
+                "text": v.text,
+                "style": v.style,
+                "seo_score": 82.0,
+                "engagement_score": 75.0,
+            }
+            for v in variants
+        ],
     )
     return {
         "variants_created": len(created),

@@ -40,7 +40,9 @@ class RollingOriginBacktester:
     # ------------------------------------------------------------------
     def _slices(self, n: int) -> list[int]:
         h = self.horizon
-        min_train = self.min_train or max(2 * (7 if n >= 60 else 1) + h, int(n * 0.4), 30)
+        min_train = self.min_train or max(
+            2 * (7 if n >= 60 else 1) + h, int(n * 0.4), 30
+        )
         step = self.step or max(1, h // 2)
         cuts = []
         cut = n - h
@@ -51,7 +53,9 @@ class RollingOriginBacktester:
 
     def _sub_ts(self, ts: TimeSeries, end: int) -> TimeSeries:
         exog = ts.exog.iloc[:end] if ts.exog is not None else None
-        return TimeSeries(spec=ts.spec, index=ts.index[:end], values=ts.values[:end], exog=exog)
+        return TimeSeries(
+            spec=ts.spec, index=ts.index[:end], values=ts.values[:end], exog=exog
+        )
 
     # ------------------------------------------------------------------
     def run(self, ts: TimeSeries, model_pool: list[Forecaster]) -> BacktestReport:
@@ -65,7 +69,11 @@ class RollingOriginBacktester:
         if not cuts:
             # not enough data to backtest — fall back to equal weights over
             # the cheap statistical models only
-            report.weights = {m.name: 1.0 for m in model_pool if m.name in ("seasonal_naive", "theta", "holt_winters")}
+            report.weights = {
+                m.name: 1.0
+                for m in model_pool
+                if m.name in ("seasonal_naive", "theta", "holt_winters")
+            }
             if not report.weights:
                 report.weights = {model_pool[0].name: 1.0}
             report.chosen = list(report.weights)
@@ -74,27 +82,41 @@ class RollingOriginBacktester:
 
         for fi, cut in enumerate(cuts):
             train = self._sub_ts(ts, cut)
-            actual = ts.values[cut:cut + self.horizon]
-            fut_index = ts.index[cut:cut + self.horizon]
-            fut_exog = ts.exog.iloc[cut:cut + self.horizon] if ts.exog is not None else None
+            actual = ts.values[cut : cut + self.horizon]
+            fut_index = ts.index[cut : cut + self.horizon]
+            fut_exog = (
+                ts.exog.iloc[cut : cut + self.horizon] if ts.exog is not None else None
+            )
 
             for proto in model_pool:
                 model = copy.deepcopy(proto)
                 try:
                     model.fit(train)
-                    fr = model.predict(len(actual), fut_index, fut_exog, self.quantiles).clip_nonnegative()
+                    fr = model.predict(
+                        len(actual), fut_index, fut_exog, self.quantiles
+                    ).clip_nonnegative()
                 except Exception:
                     logger.exception("run: error ignorado")
                     continue
                 mt = M.all_metrics(
-                    actual, fr.mean, train.values, season=season,
+                    actual,
+                    fr.mean,
+                    train.values,
+                    season=season,
                     quantile_preds={q: fr.quantiles[q] for q in fr.quantiles},
                 )
                 report.per_model[model.name].append(
                     FoldMetrics(
-                        model_name=model.name, fold=fi, horizon=len(actual),
-                        mape=mt["mape"], wape=mt["wape"], rmse=mt["rmse"], mae=mt["mae"],
-                        mase=mt["mase"], bias=mt["bias"], pinball=mt["pinball"],
+                        model_name=model.name,
+                        fold=fi,
+                        horizon=len(actual),
+                        mape=mt["mape"],
+                        wape=mt["wape"],
+                        rmse=mt["rmse"],
+                        mae=mt["mae"],
+                        mase=mt["mase"],
+                        bias=mt["bias"],
+                        pinball=mt["pinball"],
                         coverage=mt["coverage"],
                     )
                 )
@@ -122,7 +144,10 @@ class RollingOriginBacktester:
         kept = {k: v for k, v in avg.items() if v <= max(best * 2.0, best + 1e-6)}
         kept = dict(sorted(kept.items(), key=lambda kv: kv[1])[: self.keep_top])
 
-        w = {k: float(np.exp(-(v - best) / max(self.temperature, 1e-3))) for k, v in kept.items()}
+        w = {
+            k: float(np.exp(-(v - best) / max(self.temperature, 1e-3)))
+            for k, v in kept.items()
+        }
         return _normalize(w)
 
 

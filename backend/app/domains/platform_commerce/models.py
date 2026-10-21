@@ -32,7 +32,9 @@ class PlatformSettings(Base):
 
     __tablename__ = "platform_settings"
     __table_args__ = (
-        UniqueConstraint("business_id", "platform", name="uq_platform_settings_business_platform"),
+        UniqueConstraint(
+            "business_id", "platform", name="uq_platform_settings_business_platform"
+        ),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

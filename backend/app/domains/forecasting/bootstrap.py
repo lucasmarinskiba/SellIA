@@ -15,8 +15,14 @@ async def ensure_forecasting_tables() -> None:
     for table in FORECASTING_TABLES:
         try:
             async with engine.begin() as conn:
-                await conn.run_sync(lambda c, t=table: t.create(bind=c, checkfirst=True))
+                await conn.run_sync(
+                    lambda c, t=table: t.create(bind=c, checkfirst=True)
+                )
             created += 1
         except Exception as e:  # noqa: BLE001
-            logger.warning("forecasting bootstrap: table %s skipped: %s", table.name, str(e)[:160])
-    logger.info("✅ forecasting tables ensured (%s/%s)", created, len(FORECASTING_TABLES))
+            logger.warning(
+                "forecasting bootstrap: table %s skipped: %s", table.name, str(e)[:160]
+            )
+    logger.info(
+        "✅ forecasting tables ensured (%s/%s)", created, len(FORECASTING_TABLES)
+    )

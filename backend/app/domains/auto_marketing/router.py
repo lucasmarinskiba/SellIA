@@ -24,7 +24,11 @@ async def get_content_calendar(
         "total_posts": len(calendar),
         "by_channel": {
             ch: len([c for c in calendar if c["channel"] == ch])
-            for ch in [MarketingChannel.INSTAGRAM, MarketingChannel.LINKEDIN, MarketingChannel.TIKTOK]
+            for ch in [
+                MarketingChannel.INSTAGRAM,
+                MarketingChannel.LINKEDIN,
+                MarketingChannel.TIKTOK,
+            ]
         },
         "calendar": calendar[:10],  # First 10 days
     }

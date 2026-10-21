@@ -70,12 +70,14 @@ class AICopywriterPromptBuilder:
         language: SupportedLanguage,
         variant_count: int,
     ) -> list[Any]:
-        system = SystemMessage(content=(
-            "Eres un copywriter senior especializado en marketing FOMO (Fear Of Missing Out) "
-            "para e-commerce y SaaS. Generas copy persuasivo, ético y de alta conversión. "
-            "SIEMPRE respondes con JSON válido y NADA más — sin texto antes o después, "
-            "sin markdown fences, sin explicaciones."
-        ))
+        system = SystemMessage(
+            content=(
+                "Eres un copywriter senior especializado en marketing FOMO (Fear Of Missing Out) "
+                "para e-commerce y SaaS. Generas copy persuasivo, ético y de alta conversión. "
+                "SIEMPRE respondes con JSON válido y NADA más — sin texto antes o después, "
+                "sin markdown fences, sin explicaciones."
+            )
+        )
 
         schema_hint = {
             "subject_lines": ["string, 40-50 chars"] * variant_count,
@@ -115,10 +117,12 @@ Responde ÚNICAMENTE con este JSON (sin texto adicional, sin ```json):
         content: dict[str, Any],
         target_language: SupportedLanguage,
     ) -> list[Any]:
-        system = SystemMessage(content=(
-            "Eres un traductor especializado en copy de marketing. Traduces manteniendo "
-            "el tono persuasivo y la intención FOMO original. Respondes SOLO con JSON válido."
-        ))
+        system = SystemMessage(
+            content=(
+                "Eres un traductor especializado en copy de marketing. Traduces manteniendo "
+                "el tono persuasivo y la intención FOMO original. Respondes SOLO con JSON válido."
+            )
+        )
         human = HumanMessage(content=f"""
 Traduce este contenido de marketing a {LANGUAGE_INSTRUCTIONS[target_language]}
 manteniendo la MISMA estructura JSON y la intención persuasiva:
@@ -142,8 +146,8 @@ class LLMResponseParser:
         cleaned = raw_content.strip()
 
         # Strip markdown code fences if present
-        cleaned = re.sub(r'^```(?:json)?\s*', '', cleaned)
-        cleaned = re.sub(r'\s*```$', '', cleaned)
+        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
+        cleaned = re.sub(r"\s*```$", "", cleaned)
 
         try:
             return json.loads(cleaned)
@@ -151,7 +155,7 @@ class LLMResponseParser:
             pass
 
         # Fallback: extract first {...} block
-        match = re.search(r'\{.*\}', cleaned, re.DOTALL)
+        match = re.search(r"\{.*\}", cleaned, re.DOTALL)
         if match:
             try:
                 return json.loads(match.group(0))
@@ -164,12 +168,17 @@ class LLMResponseParser:
     def validate_campaign_copy_schema(data: dict[str, Any]) -> bool:
         """Verify the parsed response has the expected structure"""
         required_keys = {
-            "subject_lines", "preview_texts", "urgency_messages",
-            "cta_texts", "sms_variants"
+            "subject_lines",
+            "preview_texts",
+            "urgency_messages",
+            "cta_texts",
+            "sms_variants",
         }
         if not required_keys.issubset(data.keys()):
             return False
-        return all(isinstance(data[key], list) and len(data[key]) > 0 for key in required_keys)
+        return all(
+            isinstance(data[key], list) and len(data[key]) > 0 for key in required_keys
+        )
 
 
 class VariantScorer:
@@ -177,9 +186,23 @@ class VariantScorer:
     content heuristics on cold start"""
 
     URGENCY_KEYWORDS: ClassVar[list] = [
-        "hoy", "ahora", "último", "última", "solo", "quedan", "termina",
-        "expira", "limitado", "exclusivo", "today", "now", "last", "only",
-        "expires", "limited", "exclusive",
+        "hoy",
+        "ahora",
+        "último",
+        "última",
+        "solo",
+        "quedan",
+        "termina",
+        "expira",
+        "limitado",
+        "exclusivo",
+        "today",
+        "now",
+        "last",
+        "only",
+        "expires",
+        "limited",
+        "exclusive",
     ]
 
     @staticmethod
@@ -189,7 +212,9 @@ class VariantScorer:
         text_lower = text.lower()
 
         # Urgency keyword presence (max +20)
-        urgency_hits = sum(1 for kw in VariantScorer.URGENCY_KEYWORDS if kw in text_lower)
+        urgency_hits = sum(
+            1 for kw in VariantScorer.URGENCY_KEYWORDS if kw in text_lower
+        )
         score += min(urgency_hits * 5, 20)
 
         # Optimal length bonus (subject lines: 40-50 chars sweet spot)
@@ -313,7 +338,9 @@ class AICopywriterAgent:
 
         parsed = LLMResponseParser.parse_json_response(response.content)
 
-        if parsed is None or not LLMResponseParser.validate_campaign_copy_schema(parsed):
+        if parsed is None or not LLMResponseParser.validate_campaign_copy_schema(
+            parsed
+        ):
             logger.warning(
                 f"AI copywriter returned invalid schema for campaign_type={campaign_type}, "
                 f"falling back to templates"
@@ -424,7 +451,13 @@ class AICopywriterAgent:
             "Últimas unidades",
             "Precio especial hoy",
         ]
-        base_ctas = ["Comprar ahora", "Ver oferta", "Aprovechar ahora", "Reservar ya", "Obtener acceso"]
+        base_ctas = [
+            "Comprar ahora",
+            "Ver oferta",
+            "Aprovechar ahora",
+            "Reservar ya",
+            "Obtener acceso",
+        ]
         base_sms = [
             f"{product_name}: oferta especial disponible ahora. No te la pierdas.",
         ]

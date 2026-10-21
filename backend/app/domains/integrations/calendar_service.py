@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 class EventType(str, Enum):
     """Calendar event types."""
+
     DEMO = "demo"
     FOLLOW_UP = "follow_up"
     NEGOTIATION = "negotiation"
@@ -67,9 +68,7 @@ class CalendarService:
                 "description": description,
                 "start": {"dateTime": start_time.isoformat(), "timeZone": "UTC"},
                 "end": {"dateTime": end_time.isoformat(), "timeZone": "UTC"},
-                "attendees": [
-                    {"email": attendee_email, "displayName": attendee_name}
-                ],
+                "attendees": [{"email": attendee_email, "displayName": attendee_name}],
                 "reminders": {
                     "useDefault": False,
                     "overrides": [

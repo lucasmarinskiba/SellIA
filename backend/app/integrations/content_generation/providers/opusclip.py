@@ -4,7 +4,6 @@ Pricing: ~$0.05/minute
 Strengths: Converts long videos into viral shorts, auto-captions, AI hooks
 """
 
-
 import logging
 from typing import ClassVar
 
@@ -37,7 +36,9 @@ class OpusClipProvider(BaseProvider):
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         if not self.is_available:
-            return GenerationResult(success=False, error_message="OPUSCLIP_API_KEY no configurada")
+            return GenerationResult(
+                success=False, error_message="OPUSCLIP_API_KEY no configurada"
+            )
 
         try:
             import aiohttp
@@ -48,7 +49,8 @@ class OpusClipProvider(BaseProvider):
             }
 
             payload = {
-                "video_url": config.reference_image_url or config.extra_params.get("video_url", ""),
+                "video_url": config.reference_image_url
+                or config.extra_params.get("video_url", ""),
                 "prompt": config.prompt,
             }
 
@@ -61,7 +63,9 @@ class OpusClipProvider(BaseProvider):
 
             clips = data.get("clips", [])
             if not clips:
-                return GenerationResult(success=False, error_message="Opus Clip no devolvió clips")
+                return GenerationResult(
+                    success=False, error_message="Opus Clip no devolvió clips"
+                )
 
             video_url = clips[0].get("url")
             return GenerationResult(

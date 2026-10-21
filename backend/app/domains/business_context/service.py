@@ -29,7 +29,9 @@ class BusinessContextService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_or_create_context(self, user_id: uuid.UUID, business_id: uuid.UUID | None = None) -> BusinessContext:
+    async def get_or_create_context(
+        self, user_id: uuid.UUID, business_id: uuid.UUID | None = None
+    ) -> BusinessContext:
         query = select(BusinessContext).where(BusinessContext.user_id == user_id)
         if business_id:
             query = query.where(BusinessContext.business_id == business_id)
@@ -42,9 +44,13 @@ class BusinessContextService:
             await self.db.refresh(ctx)
         return ctx
 
-    async def update_context(self, user_id: uuid.UUID, context_id: uuid.UUID, data: BusinessContextUpdate) -> BusinessContext | None:
+    async def update_context(
+        self, user_id: uuid.UUID, context_id: uuid.UUID, data: BusinessContextUpdate
+    ) -> BusinessContext | None:
         result = await self.db.execute(
-            select(BusinessContext).where(BusinessContext.id == context_id, BusinessContext.user_id == user_id)
+            select(BusinessContext).where(
+                BusinessContext.id == context_id, BusinessContext.user_id == user_id
+            )
         )
         ctx = result.scalar_one_or_none()
         if not ctx:
@@ -56,21 +62,28 @@ class BusinessContextService:
         await self.db.refresh(ctx)
         return ctx
 
-    async def detect_context_from_business_data(self, user_id: uuid.UUID, business_id: uuid.UUID) -> BusinessContext:
+    async def detect_context_from_business_data(
+        self, user_id: uuid.UUID, business_id: uuid.UUID
+    ) -> BusinessContext:
         """Auto-detect business context from existing data."""
         ctx = await self.get_or_create_context(user_id, business_id)
 
         # Detect from catalog
         try:
             from app.domains.catalog.models import Product
+
             result = await self.db.execute(
                 select(Product).where(Product.business_id == business_id).limit(10)
             )
             products = result.scalars().all()
             if products:
                 # Determine business type from products
-                has_digital = any(p.is_digital for p in products if hasattr(p, 'is_digital'))
-                has_physical = any(not getattr(p, 'is_digital', False) for p in products)
+                has_digital = any(
+                    p.is_digital for p in products if hasattr(p, "is_digital")
+                )
+                has_physical = any(
+                    not getattr(p, "is_digital", False) for p in products
+                )
                 if has_digital and not has_physical:
                     ctx.business_type = BusinessType.DIGITAL_PRODUCTS
                 elif has_physical:
@@ -81,8 +94,11 @@ class BusinessContextService:
         # Detect from channels
         try:
             from app.domains.channels.models import ChannelConnection
+
             result = await self.db.execute(
-                select(ChannelConnection).where(ChannelConnection.business_id == business_id)
+                select(ChannelConnection).where(
+                    ChannelConnection.business_id == business_id
+                )
             )
             channels = result.scalars().all()
             configured = {}
@@ -95,23 +111,30 @@ class BusinessContextService:
         # Detect from business model
         try:
             from app.domains.businesses.models import Business
+
             biz = await self.db.get(Business, business_id)
             if biz:
-                ctx.city = getattr(biz, 'city', None) or ctx.city
-                ctx.country = getattr(biz, 'country', None) or ctx.country
-                ctx.industry = getattr(biz, 'industry', None) or ctx.industry
+                ctx.city = getattr(biz, "city", None) or ctx.city
+                ctx.country = getattr(biz, "country", None) or ctx.country
+                ctx.industry = getattr(biz, "industry", None) or ctx.industry
         except Exception:
             logger.exception("detect_context_from_business_data: error inesperado")
 
         # Detect from orders
         try:
             from app.domains.orders.models import Order
+
             result = await self.db.execute(
-                select(Order).where(Order.business_id == business_id).order_by(Order.created_at.desc()).limit(50)
+                select(Order)
+                .where(Order.business_id == business_id)
+                .order_by(Order.created_at.desc())
+                .limit(50)
             )
             orders = result.scalars().all()
             if orders:
-                amounts = [o.total_amount for o in orders if getattr(o, 'total_amount', None)]
+                amounts = [
+                    o.total_amount for o in orders if getattr(o, "total_amount", None)
+                ]
                 if amounts:
                     avg = sum(amounts) / len(amounts)
                     ctx.average_ticket = int(avg)
@@ -124,11 +147,15 @@ class BusinessContextService:
         await self.db.refresh(ctx)
         return ctx
 
-    async def analyze_reach(self, user_id: uuid.UUID, context_id: uuid.UUID) -> ReachAnalysis:
+    async def analyze_reach(
+        self, user_id: uuid.UUID, context_id: uuid.UUID
+    ) -> ReachAnalysis:
         ctx = await self.get_or_create_context(user_id, None)
         if ctx.id != context_id:
             result = await self.db.execute(
-                select(BusinessContext).where(BusinessContext.id == context_id, BusinessContext.user_id == user_id)
+                select(BusinessContext).where(
+                    BusinessContext.id == context_id, BusinessContext.user_id == user_id
+                )
             )
             ctx = result.scalar_one_or_none() or ctx
 
@@ -144,7 +171,10 @@ class BusinessContextService:
         else:
             recommended = "national"
 
-        local_seo = ctx.presence_type in (PresenceType.LOCAL_PHYSICAL, PresenceType.HYBRID) or ctx.has_physical_location
+        local_seo = (
+            ctx.presence_type in (PresenceType.LOCAL_PHYSICAL, PresenceType.HYBRID)
+            or ctx.has_physical_location
+        )
         cross_border = recommended in ("cross_border", "global")
 
         shipping_recs = []
@@ -165,7 +195,15 @@ class BusinessContextService:
         elif ctx.business_type == BusinessType.SOFTWARE:
             platform_recs.extend(["Product Hunt", "LinkedIn Ads", "Google Search"])
 
-        market_size = "pequeño" if current == "local" else "mediano" if current == "regional" else "grande" if current == "national" else "masivo"
+        market_size = (
+            "pequeño"
+            if current == "local"
+            else (
+                "mediano"
+                if current == "regional"
+                else "grande" if current == "national" else "masivo"
+            )
+        )
 
         return ReachAnalysis(
             current_reach=current,
@@ -177,16 +215,24 @@ class BusinessContextService:
             estimated_addressable_market=market_size,
         )
 
-    async def analyze_channel_gaps(self, user_id: uuid.UUID, context_id: uuid.UUID) -> list[ChannelGapAnalysis]:
+    async def analyze_channel_gaps(
+        self, user_id: uuid.UUID, context_id: uuid.UUID
+    ) -> list[ChannelGapAnalysis]:
         ctx = await self.get_or_create_context(user_id, None)
         if ctx.id != context_id:
             result = await self.db.execute(
-                select(BusinessContext).where(BusinessContext.id == context_id, BusinessContext.user_id == user_id)
+                select(BusinessContext).where(
+                    BusinessContext.id == context_id, BusinessContext.user_id == user_id
+                )
             )
             ctx = result.scalar_one_or_none() or ctx
 
         all_channels = {
-            "instagram": ("critical", "instagram_launch", "Presencia visual obligatoria"),
+            "instagram": (
+                "critical",
+                "instagram_launch",
+                "Presencia visual obligatoria",
+            ),
             "facebook": ("high", "meta_ads_funnel", "Comunidad y ads"),
             "whatsapp": ("critical", "full_automation_setup", "Canal de venta directa"),
             "shopify": ("high", "instagram_launch", "Tienda propia"),
@@ -204,21 +250,30 @@ class BusinessContextService:
         for channel, (priority, playbook, impact) in all_channels.items():
             is_configured = configured.get(channel, False)
             if not is_configured:
-                gaps.append(ChannelGapAnalysis(
-                    channel=channel,
-                    is_configured=False,
-                    priority=priority,
-                    impact_estimate=impact,
-                    setup_difficulty="medium",
-                    recommended_playbook=playbook,
-                ))
-        return sorted(gaps, key=lambda x: {"critical": 0, "high": 1, "medium": 2, "low": 3}[x.priority])
+                gaps.append(
+                    ChannelGapAnalysis(
+                        channel=channel,
+                        is_configured=False,
+                        priority=priority,
+                        impact_estimate=impact,
+                        setup_difficulty="medium",
+                        recommended_playbook=playbook,
+                    )
+                )
+        return sorted(
+            gaps,
+            key=lambda x: {"critical": 0, "high": 1, "medium": 2, "low": 3}[x.priority],
+        )
 
-    async def generate_recommended_playbooks(self, user_id: uuid.UUID, context_id: uuid.UUID) -> list[str]:
+    async def generate_recommended_playbooks(
+        self, user_id: uuid.UUID, context_id: uuid.UUID
+    ) -> list[str]:
         ctx = await self.get_or_create_context(user_id, None)
         if ctx.id != context_id:
             result = await self.db.execute(
-                select(BusinessContext).where(BusinessContext.id == context_id, BusinessContext.user_id == user_id)
+                select(BusinessContext).where(
+                    BusinessContext.id == context_id, BusinessContext.user_id == user_id
+                )
             )
             ctx = result.scalar_one_or_none() or ctx
 
@@ -232,16 +287,56 @@ class BusinessContextService:
 
         # Business type specific
         type_playbooks = {
-            BusinessType.PHYSICAL_PRODUCTS: ["cart_recovery_sequence", "meta_ads_funnel", "cross_border_expansion"],
-            BusinessType.DIGITAL_PRODUCTS: ["lead_nurture_sequence", "google_ads_search", "email_marketing_setup"],
-            BusinessType.SERVICES: ["pro_services_portfolio", "google_local_seo", "lead_nurture_sequence"],
-            BusinessType.CONSULTING: ["consulting_b2b_lead_gen", "consulting_calendly_booking", "linkedin_outreach"],
-            BusinessType.SOFTWARE: ["saas_product_hunt_launch", "saas_demo_scheduling", "google_ads_search"],
-            BusinessType.FOOD_BEVERAGE: ["restaurant_delivery_apps", "restaurant_instagram_food", "restaurant_local_seo"],
-            BusinessType.FASHION_BEAUTY: ["fashion_visual_content", "fashion_influencer_collabs", "instagram_launch"],
-            BusinessType.HEALTH_WELLNESS: ["wellness_appointment_booking", "wellness_testimonial_videos", "google_local_seo"],
-            BusinessType.HOME_DECOR: ["home_decor_pinterest_seo", "home_decor_before_after", "google_local_seo"],
-            BusinessType.HANDCRAFT: ["handcraft_etsy_setup", "handcraft_mercadolibre", "handcraft_storytelling"],
+            BusinessType.PHYSICAL_PRODUCTS: [
+                "cart_recovery_sequence",
+                "meta_ads_funnel",
+                "cross_border_expansion",
+            ],
+            BusinessType.DIGITAL_PRODUCTS: [
+                "lead_nurture_sequence",
+                "google_ads_search",
+                "email_marketing_setup",
+            ],
+            BusinessType.SERVICES: [
+                "pro_services_portfolio",
+                "google_local_seo",
+                "lead_nurture_sequence",
+            ],
+            BusinessType.CONSULTING: [
+                "consulting_b2b_lead_gen",
+                "consulting_calendly_booking",
+                "linkedin_outreach",
+            ],
+            BusinessType.SOFTWARE: [
+                "saas_product_hunt_launch",
+                "saas_demo_scheduling",
+                "google_ads_search",
+            ],
+            BusinessType.FOOD_BEVERAGE: [
+                "restaurant_delivery_apps",
+                "restaurant_instagram_food",
+                "restaurant_local_seo",
+            ],
+            BusinessType.FASHION_BEAUTY: [
+                "fashion_visual_content",
+                "fashion_influencer_collabs",
+                "instagram_launch",
+            ],
+            BusinessType.HEALTH_WELLNESS: [
+                "wellness_appointment_booking",
+                "wellness_testimonial_videos",
+                "google_local_seo",
+            ],
+            BusinessType.HOME_DECOR: [
+                "home_decor_pinterest_seo",
+                "home_decor_before_after",
+                "google_local_seo",
+            ],
+            BusinessType.HANDCRAFT: [
+                "handcraft_etsy_setup",
+                "handcraft_mercadolibre",
+                "handcraft_storytelling",
+            ],
         }
         if ctx.business_type in type_playbooks:
             recs.extend(type_playbooks[ctx.business_type])
@@ -251,7 +346,10 @@ class BusinessContextService:
             GeographicReach.LOCAL: ["google_local_seo", "meta_ads_funnel"],
             GeographicReach.REGIONAL: ["regional_expansion", "meta_ads_funnel"],
             GeographicReach.NATIONAL: ["national_expansion", "shipping_carriers_full"],
-            GeographicReach.CROSS_BORDER: ["cross_border_latam", "cross_border_shipping"],
+            GeographicReach.CROSS_BORDER: [
+                "cross_border_latam",
+                "cross_border_shipping",
+            ],
             GeographicReach.GLOBAL: ["global_expansion", "payment_processors_setup"],
         }
         if ctx.geographic_reach in reach_playbooks:
@@ -261,11 +359,15 @@ class BusinessContextService:
         seen = set()
         return [x for x in recs if not (x in seen or seen.add(x))]
 
-    async def get_wizard_state(self, user_id: uuid.UUID, context_id: uuid.UUID) -> BusinessContextWizardState:
+    async def get_wizard_state(
+        self, user_id: uuid.UUID, context_id: uuid.UUID
+    ) -> BusinessContextWizardState:
         ctx = await self.get_or_create_context(user_id, None)
         if ctx.id != context_id:
             result = await self.db.execute(
-                select(BusinessContext).where(BusinessContext.id == context_id, BusinessContext.user_id == user_id)
+                select(BusinessContext).where(
+                    BusinessContext.id == context_id, BusinessContext.user_id == user_id
+                )
             )
             ctx = result.scalar_one_or_none() or ctx
 
@@ -275,38 +377,87 @@ class BusinessContextService:
                 title="Tipo de Negocio",
                 description="¿Qué vendes y cómo?",
                 fields=[
-                    {"name": "business_type", "type": "select", "label": "Tipo de negocio", "options": [t.value for t in BusinessType]},
-                    {"name": "sales_model", "type": "select", "label": "Modelo de venta", "options": [t.value for t in SalesModel]},
+                    {
+                        "name": "business_type",
+                        "type": "select",
+                        "label": "Tipo de negocio",
+                        "options": [t.value for t in BusinessType],
+                    },
+                    {
+                        "name": "sales_model",
+                        "type": "select",
+                        "label": "Modelo de venta",
+                        "options": [t.value for t in SalesModel],
+                    },
                     {"name": "industry", "type": "text", "label": "Industria/nicho"},
                     # target_audience + value_proposition are injected directly into the
                     # agent's system prompt (app/domains/agents/context_builder.py) --
                     # previously missing from every wizard step definition, so real users
                     # completing this wizard never actually supplied them despite the
                     # model/schema supporting both since day one.
-                    {"name": "target_audience", "type": "textarea", "label": "Público objetivo (ej: mujeres 25-40, clase media-alta)"},
-                    {"name": "value_proposition", "type": "textarea", "label": "Propuesta de valor (¿por qué te eligen a vos y no a la competencia?)"},
+                    {
+                        "name": "target_audience",
+                        "type": "textarea",
+                        "label": "Público objetivo (ej: mujeres 25-40, clase media-alta)",
+                    },
+                    {
+                        "name": "value_proposition",
+                        "type": "textarea",
+                        "label": "Propuesta de valor (¿por qué te eligen a vos y no a la competencia?)",
+                    },
                 ],
-                is_completed=ctx.business_type != BusinessType.OTHER and bool(ctx.target_audience) and bool(ctx.value_proposition),
+                is_completed=ctx.business_type != BusinessType.OTHER
+                and bool(ctx.target_audience)
+                and bool(ctx.value_proposition),
             ),
             BusinessContextWizardStep(
                 step=2,
                 title="Alcance y Ubicación",
                 description="¿Dónde operas y a dónde quieres llegar?",
                 fields=[
-                    {"name": "geographic_reach", "type": "select", "label": "Alcance geográfico", "options": [t.value for t in GeographicReach]},
-                    {"name": "presence_type", "type": "select", "label": "Tipo de presencia", "options": [t.value for t in PresenceType]},
+                    {
+                        "name": "geographic_reach",
+                        "type": "select",
+                        "label": "Alcance geográfico",
+                        "options": [t.value for t in GeographicReach],
+                    },
+                    {
+                        "name": "presence_type",
+                        "type": "select",
+                        "label": "Tipo de presencia",
+                        "options": [t.value for t in PresenceType],
+                    },
                     {"name": "city", "type": "text", "label": "Ciudad"},
                     {"name": "country", "type": "text", "label": "País"},
                 ],
-                is_completed=ctx.city is not None and ctx.geographic_reach != GeographicReach.LOCAL,
+                is_completed=ctx.city is not None
+                and ctx.geographic_reach != GeographicReach.LOCAL,
             ),
             BusinessContextWizardStep(
                 step=3,
                 title="Canales Actuales",
                 description="¿Qué plataformas ya tenés configuradas?",
                 fields=[
-                    {"name": "channels_configured", "type": "multi_select", "label": "Canales activos", "options": ["instagram", "facebook", "whatsapp", "tiktok", "linkedin", "shopify", "mercadolibre", "amazon"]},
-                    {"name": "website_configured", "type": "boolean", "label": "¿Tenés sitio web?"},
+                    {
+                        "name": "channels_configured",
+                        "type": "multi_select",
+                        "label": "Canales activos",
+                        "options": [
+                            "instagram",
+                            "facebook",
+                            "whatsapp",
+                            "tiktok",
+                            "linkedin",
+                            "shopify",
+                            "mercadolibre",
+                            "amazon",
+                        ],
+                    },
+                    {
+                        "name": "website_configured",
+                        "type": "boolean",
+                        "label": "¿Tenés sitio web?",
+                    },
                 ],
                 is_completed=bool(ctx.channels_configured),
             ),
@@ -315,9 +466,22 @@ class BusinessContextService:
                 title="Marketing y Ads",
                 description="¿Ya invertís en publicidad?",
                 fields=[
-                    {"name": "ads_configured", "type": "multi_select", "label": "Ads activos", "options": ["meta_ads", "google_ads", "tiktok_ads"]},
-                    {"name": "seo_configured", "type": "boolean", "label": "¿SEO configurado?"},
-                    {"name": "email_marketing_configured", "type": "boolean", "label": "¿Email marketing activo?"},
+                    {
+                        "name": "ads_configured",
+                        "type": "multi_select",
+                        "label": "Ads activos",
+                        "options": ["meta_ads", "google_ads", "tiktok_ads"],
+                    },
+                    {
+                        "name": "seo_configured",
+                        "type": "boolean",
+                        "label": "¿SEO configurado?",
+                    },
+                    {
+                        "name": "email_marketing_configured",
+                        "type": "boolean",
+                        "label": "¿Email marketing activo?",
+                    },
                 ],
                 is_completed=bool(ctx.ads_configured),
             ),
@@ -326,9 +490,29 @@ class BusinessContextService:
                 title="Logística",
                 description="¿Cómo entregás tus productos/servicios?",
                 fields=[
-                    {"name": "does_delivery", "type": "boolean", "label": "¿Hacés envíos?"},
-                    {"name": "shipping_configured", "type": "multi_select", "label": "Carriers configurados", "options": ["andreani", "dhl", "fedex", "ups", "oca", "correo_argentino"]},
-                    {"name": "shipping_radius_km", "type": "number", "label": "Radio de envío (km)"},
+                    {
+                        "name": "does_delivery",
+                        "type": "boolean",
+                        "label": "¿Hacés envíos?",
+                    },
+                    {
+                        "name": "shipping_configured",
+                        "type": "multi_select",
+                        "label": "Carriers configurados",
+                        "options": [
+                            "andreani",
+                            "dhl",
+                            "fedex",
+                            "ups",
+                            "oca",
+                            "correo_argentino",
+                        ],
+                    },
+                    {
+                        "name": "shipping_radius_km",
+                        "type": "number",
+                        "label": "Radio de envío (km)",
+                    },
                 ],
                 is_completed=not ctx.does_delivery or bool(ctx.shipping_configured),
             ),

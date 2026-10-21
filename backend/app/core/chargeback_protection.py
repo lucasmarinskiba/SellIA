@@ -59,7 +59,9 @@ async def get_chargeback_evidence(
     alert_id: uuid.UUID,
 ) -> dict[str, Any] | None:
     """Obtiene la evidencia de un chargeback."""
-    result = await db.execute(select(ChargebackAlert).where(ChargebackAlert.id == alert_id))
+    result = await db.execute(
+        select(ChargebackAlert).where(ChargebackAlert.id == alert_id)
+    )
     alert = result.scalar_one_or_none()
     if not alert or not alert.evidence_json:
         return None

@@ -9,7 +9,7 @@ y el endpoint de breaches para emails.
 Para emails requiere API key. La verificación de email usa SHA-1 prefix (k-anonymity)
 para no exponer el email completo a terceros.
 
-En realidad HIBP no usa k-anonymity para emails (eso es para passwords). 
+En realidad HIBP no usa k-anonymity para emails (eso es para passwords).
 Para emails se usa el endpoint directo con API key:
   https://haveibeenpwned.com/api/v3/breachedaccount/{email}
 
@@ -32,11 +32,11 @@ PWNED_PASSWORDS_API = "https://api.pwnedpasswords.com/range"
 async def check_email_breaches(email: str, api_key: str) -> dict | None:
     """
     Verifica si un email aparece en breaches conocidas via HIBP.
-    
+
     Args:
         email: Email a verificar
         api_key: API key de HIBP
-    
+
     Returns:
         dict con {found: bool, count: int, names: [str], details: [dict]} o None si error
     """
@@ -60,10 +60,12 @@ async def check_email_breaches(email: str, api_key: str) -> dict | None:
                 return {"found": False, "count": 0, "names": [], "details": []}
             if resp.status == 429:
                 from app.core.logger import get_logger
+
                 get_logger(__name__).warning("HIBP rate limit alcanzado")
                 return None
             if resp.status != 200:
                 from app.core.logger import get_logger
+
                 get_logger(__name__).error(f"HIBP API error: {resp.status}")
                 return None
 
@@ -81,6 +83,7 @@ async def check_email_breaches(email: str, api_key: str) -> dict | None:
     except Exception as e:
         logger.exception("check_email_breaches: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).error(f"Error consultando breaches: {e}")
         return None
 
@@ -88,12 +91,12 @@ async def check_email_breaches(email: str, api_key: str) -> dict | None:
 async def check_password_breach(password: str) -> dict | None:
     """
     Verifica si una contraseña aparece en breaches via k-anonymity (PwnedPasswords).
-    
+
     No envía la contraseña completa, solo los primeros 5 caracteres del hash SHA-1.
-    
+
     Args:
         password: Contraseña a verificar
-    
+
     Returns:
         dict con {found: bool, count: int} o None
     """
@@ -105,12 +108,16 @@ async def check_password_breach(password: str) -> dict | None:
     # not a choice, and not used to protect anything: only the first 5 hex
     # chars ever leave this process, the full password never does.
     # usedforsecurity=False documents that for Bandit/FIPS-mode Python.
-    sha1_hash = hashlib.sha1(password.encode("utf-8"), usedforsecurity=False).hexdigest().upper()
+    sha1_hash = (
+        hashlib.sha1(password.encode("utf-8"), usedforsecurity=False)
+        .hexdigest()
+        .upper()
+    )
     prefix = sha1_hash[:5]
     suffix = sha1_hash[5:]
 
     url = f"{PWNED_PASSWORDS_API}/{prefix}"
-    
+
     try:
         async with aiohttp.ClientSession() as session, session.get(
             url,
@@ -132,6 +139,7 @@ async def check_password_breach(password: str) -> dict | None:
     except Exception as e:
         logger.exception("check_password_breach: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).error(f"Error consultando password: {e}")
         return None
 
@@ -140,11 +148,11 @@ def format_breach_alert(breach_data: dict) -> str:
     """Formatea un mensaje legible con los breaches encontrados."""
     if not breach_data.get("found"):
         return "Tu email no aparece en ninguna filtración conocida. ✅"
-    
+
     names = breach_data.get("names", [])
     count = breach_data.get("count", 0)
-    
+
     if count == 1:
         return f"Tu email aparece en 1 filtración: {names[0]}."
-    
+
     return f"Tu email aparece en {count} filtraciones: {', '.join(names)}."

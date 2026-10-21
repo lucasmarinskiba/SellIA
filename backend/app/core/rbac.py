@@ -82,8 +82,11 @@ async def check_permission(
     if not bur:
         # If no role assigned, check if user owns the business
         from app.domains.businesses.models import Business
+
         result = await db.execute(
-            select(Business).where(Business.id == business_id, Business.user_id == user_id)
+            select(Business).where(
+                Business.id == business_id, Business.user_id == user_id
+            )
         )
         return bool(result.scalar_one_or_none())
 
@@ -102,6 +105,7 @@ async def check_permission(
 
 def require_permission(resource: str, action: str = "read"):
     """Decorator to require a permission on an endpoint."""
+
     def decorator(func: Callable):
         @wraps(func)
         async def wrapper(
@@ -111,12 +115,22 @@ def require_permission(resource: str, action: str = "read"):
             *args,
             **kwargs,
         ):
-            has = await check_permission(db, current_user.id, business_id, resource, action)
+            has = await check_permission(
+                db, current_user.id, business_id, resource, action
+            )
             if not has:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail=f"No tienes permiso para {action} en {resource}.",
                 )
-            return await func(*args, business_id=business_id, db=db, current_user=current_user, **kwargs)
+            return await func(
+                *args,
+                business_id=business_id,
+                db=db,
+                current_user=current_user,
+                **kwargs,
+            )
+
         return wrapper
+
     return decorator

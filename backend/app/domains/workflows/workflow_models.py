@@ -21,6 +21,7 @@ from app.core.database import Base
 
 class TriggerType(str, Enum):
     """Workflow trigger types."""
+
     ORDER_CREATED = "order.created"
     ORDER_PAID = "order.paid"
     ORDER_FULFILLED = "order.fulfilled"
@@ -38,6 +39,7 @@ class TriggerType(str, Enum):
 
 class ActionType(str, Enum):
     """Workflow action types."""
+
     SEND_EMAIL = "send_email"
     SEND_SMS = "send_sms"
     SEND_WHATSAPP = "send_whatsapp"
@@ -55,6 +57,7 @@ class ActionType(str, Enum):
 
 class ConditionOperator(str, Enum):
     """Condition comparison operators."""
+
     EQUALS = "equals"
     NOT_EQUALS = "not_equals"
     CONTAINS = "contains"
@@ -84,10 +87,16 @@ class Workflow(Base):
     (wired live at /api/v1/workflows/*) crashed. See
     memory: login_schema_drift_fixed / model_db_drift_audit.
     """
+
     __tablename__ = "trigger_workflows"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Metadata
     name = Column(String(255), nullable=False)
@@ -121,10 +130,16 @@ class Workflow(Base):
 
 class WorkflowCondition(Base):
     """Workflow condition/rule."""
+
     __tablename__ = "workflow_conditions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    workflow_id = Column(UUID(as_uuid=True), ForeignKey("trigger_workflows.id", ondelete="CASCADE"), nullable=False, index=True)
+    workflow_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("trigger_workflows.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Condition definition
     field_name = Column(String(100), nullable=False)  # e.g., "rfm_score", "churn_risk"
@@ -137,17 +152,21 @@ class WorkflowCondition(Base):
 
     created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
-    __table_args__ = (
-        Index("idx_workflow_condition", "workflow_id"),
-    )
+    __table_args__ = (Index("idx_workflow_condition", "workflow_id"),)
 
 
 class WorkflowAction(Base):
     """Workflow action to execute."""
+
     __tablename__ = "workflow_actions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    workflow_id = Column(UUID(as_uuid=True), ForeignKey("trigger_workflows.id", ondelete="CASCADE"), nullable=False, index=True)
+    workflow_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("trigger_workflows.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Action definition
     action_type = Column(String(50), nullable=False)  # ActionType value
@@ -161,21 +180,32 @@ class WorkflowAction(Base):
 
     created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
-    __table_args__ = (
-        Index("idx_workflow_action", "workflow_id", "order"),
-    )
+    __table_args__ = (Index("idx_workflow_action", "workflow_id", "order"),)
 
 
 class WorkflowExecution(Base):
     """Workflow execution audit log."""
+
     __tablename__ = "trigger_workflow_executions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    workflow_id = Column(UUID(as_uuid=True), ForeignKey("trigger_workflows.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    workflow_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("trigger_workflows.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Trigger
-    customer_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
+    customer_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True
+    )
     trigger_type = Column(String(50), nullable=False)
     trigger_data = Column(JSONB, nullable=True)  # Data that triggered workflow
 
@@ -201,11 +231,23 @@ class WorkflowExecution(Base):
 
 class WorkflowMetrics(Base):
     """Workflow performance metrics."""
+
     __tablename__ = "workflow_metrics"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    workflow_id = Column(UUID(as_uuid=True), ForeignKey("trigger_workflows.id", ondelete="CASCADE"), nullable=False, index=True, unique=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    workflow_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("trigger_workflows.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        unique=True,
+    )
 
     # Execution stats
     total_executions = Column(Integer, default=0)
@@ -232,6 +274,4 @@ class WorkflowMetrics(Base):
 
     updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
-    __table_args__ = (
-        Index("idx_business_workflow", "business_id", "workflow_id"),
-    )
+    __table_args__ = (Index("idx_business_workflow", "business_id", "workflow_id"),)

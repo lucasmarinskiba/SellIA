@@ -27,7 +27,9 @@ async def can_use_feature(
     y el rollout percentage del feature flag.
     """
     result = await db.execute(
-        select(FeatureFlag).where(FeatureFlag.name == feature_name, FeatureFlag.is_active == True)
+        select(FeatureFlag).where(
+            FeatureFlag.name == feature_name, FeatureFlag.is_active == True
+        )
     )
     flag = result.scalar_one_or_none()
     if not flag:
@@ -46,7 +48,12 @@ async def can_use_feature(
         return True
 
     if user_id:
-        hash_val = int(hashlib.md5(f"{feature_name}:{user_id}".encode(), usedforsecurity=False).hexdigest(), 16)
+        hash_val = int(
+            hashlib.md5(
+                f"{feature_name}:{user_id}".encode(), usedforsecurity=False
+            ).hexdigest(),
+            16,
+        )
         user_percentile = hash_val % 100
         return user_percentile < flag.rollout_percentage
 
@@ -59,9 +66,7 @@ async def list_available_features(
     user_id: uuid.UUID | None = None,
 ) -> list[FeatureFlag]:
     """Lista todas las features disponibles para un usuario."""
-    result = await db.execute(
-        select(FeatureFlag).where(FeatureFlag.is_active == True)
-    )
+    result = await db.execute(select(FeatureFlag).where(FeatureFlag.is_active == True))
     flags = result.scalars().all()
 
     available = []

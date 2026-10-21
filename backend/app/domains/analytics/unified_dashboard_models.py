@@ -21,6 +21,7 @@ from app.core.database import Base
 
 class DashboardPeriod(str, Enum):
     """Time period for dashboard metrics."""
+
     TODAY = "today"
     WEEK = "week"
     MONTH = "month"
@@ -30,11 +31,21 @@ class DashboardPeriod(str, Enum):
 
 class UnifiedLocationMetric(Base):
     """Consolidated daily metrics per location."""
+
     __tablename__ = "unified_location_metrics"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    location_id = Column(UUID(as_uuid=True), ForeignKey("locations.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False)
+    location_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("locations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     # Date
     date = Column(String(10), nullable=False)  # YYYY-MM-DD
@@ -90,10 +101,17 @@ class UnifiedLocationMetric(Base):
 
 class BusinessDashboardSummary(Base):
     """High-level business metrics across all locations."""
+
     __tablename__ = "business_dashboard_summary"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
 
     # Period
     date = Column(String(10), nullable=False)  # YYYY-MM-DD (latest update)
@@ -128,21 +146,29 @@ class BusinessDashboardSummary(Base):
 
     # Health score (0-100)
     overall_health_score = Column(Integer, default=0)
-    timestamp = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    timestamp = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
     business = relationship("Business", foreign_keys=[business_id])
 
-    __table_args__ = (
-        Index("idx_business_date", "business_id", "date"),
-    )
+    __table_args__ = (Index("idx_business_date", "business_id", "date"),)
 
 
 class LocationComparison(Base):
     """Compare metrics across locations (benchmark + outliers)."""
+
     __tablename__ = "location_comparison"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Period
     date = Column(String(10), nullable=False)
@@ -165,18 +191,26 @@ class LocationComparison(Base):
 
     created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
-    __table_args__ = (
-        Index("idx_business_comparison", "business_id", "date"),
-    )
+    __table_args__ = (Index("idx_business_comparison", "business_id", "date"),)
 
 
 class FunnelStageMetric(Base):
     """Track conversion through each stage of funnel."""
+
     __tablename__ = "funnel_stage_metrics"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    location_id = Column(UUID(as_uuid=True), ForeignKey("locations.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False)
+    location_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("locations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     # Date
     date = Column(String(10), nullable=False)
@@ -205,6 +239,4 @@ class FunnelStageMetric(Base):
 
     location = relationship("Location", foreign_keys=[location_id])
 
-    __table_args__ = (
-        Index("idx_location_funnel", "location_id", "date"),
-    )
+    __table_args__ = (Index("idx_location_funnel", "location_id", "date"),)

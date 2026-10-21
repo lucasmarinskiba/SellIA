@@ -6,6 +6,7 @@ from enum import Enum
 
 class Industry(str, Enum):
     """Target industries for prompt variations."""
+
     SAAS = "SaaS"
     ECOMMERCE = "E-commerce"
     SERVICES = "Services"
@@ -21,6 +22,7 @@ class Industry(str, Enum):
 @dataclass
 class PromptTemplate:
     """Structure for a single prompt."""
+
     id: str
     name: str
     category: str
@@ -73,8 +75,16 @@ Ensure:
 - Keyword density: 1-2%
 - Schema markup ready
 - Mobile-optimized formatting""",
-            variables=["product_name", "target_audience", "target_keyword", "word_count",
-                      "content_focus", "tone", "unique_angle", "conversion_goal"],
+            variables=[
+                "product_name",
+                "target_audience",
+                "target_keyword",
+                "word_count",
+                "content_focus",
+                "tone",
+                "unique_angle",
+                "conversion_goal",
+            ],
             example_input={
                 "product_name": "ProjectFlow",
                 "target_audience": "Startup founders",
@@ -83,7 +93,7 @@ Ensure:
                 "content_focus": "Time-saving productivity tips",
                 "tone": "Friendly, authoritative",
                 "unique_angle": "First-hand founder experiences",
-                "conversion_goal": "Free trial signup"
+                "conversion_goal": "Free trial signup",
             },
             example_output="""# Top 5 Project Management Strategies Used by 500+ Startup Founders
 Meta: "Learn proven project management techniques from successful founders. Save 10+ hours/week with these actionable strategies..."
@@ -102,13 +112,13 @@ Ready to implement these strategies? Try ProjectFlow free for 14 days.""",
                 "Average engagement: 2+ minutes on page",
                 "Conversion to trial: 2-4%",
                 "Social shares: 50+",
-                "Backlinks: 2+ authoritative domains"
+                "Backlinks: 2+ authoritative domains",
             ],
             industry_variations={
                 Industry.SAAS.value: "Include product comparisons, case studies with metrics",
                 Industry.ECOMMERCE.value: "Focus on buyer intent, seasonal trends, product education",
                 Industry.REAL_ESTATE.value: "Market analysis, location guides, investment tips",
-                Industry.CONSULTING.value: "Industry insights, trend analysis, thought leadership"
+                Industry.CONSULTING.value: "Industry insights, trend analysis, thought leadership",
             },
             best_practices=[
                 "Research top 10 ranking pages first — identify gaps you can fill",
@@ -117,9 +127,15 @@ Ready to implement these strategies? Try ProjectFlow free for 14 days.""",
                 "Add internal links to 3-5 related posts naturally",
                 "Include at least one original stat or research finding",
                 "Optimize for voice search with question-based H2s",
-                "Update evergreen posts monthly with fresh data"
+                "Update evergreen posts monthly with fresh data",
             ],
-            tags=["seo", "content", "organic-growth", "long-form", "thought-leadership"]
+            tags=[
+                "seo",
+                "content",
+                "organic-growth",
+                "long-form",
+                "thought-leadership",
+            ],
         )
 
     @staticmethod
@@ -164,8 +180,16 @@ Visual cues:
 - [Graphics overlay]
 - [Voiceover]
 - [B-roll recommendation]""",
-            variables=["video_type", "platform", "target_audience", "duration", "core_message",
-                      "cta_action", "tone", "format_type"],
+            variables=[
+                "video_type",
+                "platform",
+                "target_audience",
+                "duration",
+                "core_message",
+                "cta_action",
+                "tone",
+                "format_type",
+            ],
             example_input={
                 "video_type": "Educational tutorial",
                 "platform": "TikTok",
@@ -174,7 +198,7 @@ Visual cues:
                 "core_message": "How to automate customer follow-ups",
                 "cta_action": "Download free template",
                 "tone": "Fast-paced, energetic, helpful",
-                "format_type": "Quick tips + demo"
+                "format_type": "Quick tips + demo",
             },
             example_output="""[0-3s] [On camera, confused expression]
 "I used to spend 5 HOURS on follow-ups every week..."
@@ -197,12 +221,12 @@ Visual cues:
                 "Share rate: 1%+ of views",
                 "Comments: 3%+ engagement rate",
                 "Re-watches: 15%+ of viewers",
-                "Save rate (TikTok/Reels): 2%+"
+                "Save rate (TikTok/Reels): 2%+",
             ],
             industry_variations={
                 Industry.SAAS.value: "Demo-heavy, feature showcase, ROI numbers",
                 Industry.ECOMMERCE.value: "Unboxing, product benefits, styling tips",
-                Industry.REAL_ESTATE.value: "Property tours, market analysis, investment tips"
+                Industry.REAL_ESTATE.value: "Property tours, market analysis, investment tips",
             },
             best_practices=[
                 "Test hook variations — winners get promoted",
@@ -210,9 +234,15 @@ Visual cues:
                 "Captions for 90% of viewers with sound off",
                 "Trending audio increases algorithmic reach 40%",
                 "Upload native (don't share YouTube link) for platform preference",
-                "Consistency > perfection; upload 3-5x per week"
+                "Consistency > perfection; upload 3-5x per week",
             ],
-            tags=["video", "content", "social-media", "engagement", "platform-specific"]
+            tags=[
+                "video",
+                "content",
+                "social-media",
+                "engagement",
+                "platform-specific",
+            ],
         )
 
     @staticmethod
@@ -263,11 +293,28 @@ Success metrics:
 A/B test strategy:
 - Variable 1: {test_variable_1}
 - Variable 2: {test_variable_2}""",
-            variables=["sequence_type", "platform", "conversion_goal", "target_audience", "num_emails",
-                      "send_frequency", "product_description", "email_1_theme", "email_1_timing",
-                      "email_1_objective", "email_2_theme", "email_2_timing", "email_2_objective",
-                      "personalization_fields", "segment_logic", "open_rate_target", "click_rate_target",
-                      "conversion_target", "test_variable_1", "test_variable_2"],
+            variables=[
+                "sequence_type",
+                "platform",
+                "conversion_goal",
+                "target_audience",
+                "num_emails",
+                "send_frequency",
+                "product_description",
+                "email_1_theme",
+                "email_1_timing",
+                "email_1_objective",
+                "email_2_theme",
+                "email_2_timing",
+                "email_2_objective",
+                "personalization_fields",
+                "segment_logic",
+                "open_rate_target",
+                "click_rate_target",
+                "conversion_target",
+                "test_variable_1",
+                "test_variable_2",
+            ],
             example_input={
                 "sequence_type": "Lead nurture",
                 "platform": "Mailchimp",
@@ -285,7 +332,7 @@ A/B test strategy:
                 "click_rate_target": "8-12%",
                 "conversion_target": "3-5%",
                 "test_variable_1": "Subject line (FOMO vs. Benefit)",
-                "test_variable_2": "Send time (9am vs. 1pm)"
+                "test_variable_2": "Send time (9am vs. 1pm)",
             },
             example_output="""EMAIL 1: [Welcome]
 Subject: "Your content calendar is costing you [HOURS/WEEK]"
@@ -331,12 +378,12 @@ EMAIL 3-5: [Objection handling, social proof, urgency]
                 "Conversion rate: 2%+ (baseline: 0.5-1%)",
                 "Unsubscribe rate: <0.5%",
                 "Reply rate: 1%+",
-                "Forward rate: 0.5%+ (social proof)"
+                "Forward rate: 0.5%+ (social proof)",
             ],
             industry_variations={
                 Industry.SAAS.value: "ROI focus, feature showcase, free trial positioning",
                 Industry.REAL_ESTATE.value: "Property highlights, investment returns, urgency",
-                Industry.ECOMMERCE.value: "Product benefits, scarcity, discount codes"
+                Industry.ECOMMERCE.value: "Product benefits, scarcity, discount codes",
             },
             best_practices=[
                 "Email 1 = welcome, build trust. Email 2 = problem/solution. Email 3+ = proof",
@@ -345,9 +392,9 @@ EMAIL 3-5: [Objection handling, social proof, urgency]
                 "Send time matters: test 9am, 1pm, 7pm by segment",
                 "Mobile-first: 50%+ opens are mobile",
                 "Re-engage inactive: send win-back email after 30 days no click",
-                "Track opens, clicks, conversions in UTM parameters"
+                "Track opens, clicks, conversions in UTM parameters",
             ],
-            tags=["email", "nurture", "conversion", "automation", "copywriting"]
+            tags=["email", "nurture", "conversion", "automation", "copywriting"],
         )
 
     @staticmethod
@@ -408,10 +455,26 @@ Analytics to track:
 - Audience growth rate
 - Link clicks/conversions
 - Competitor comparison""",
-            variables=["company_name", "platforms", "primary_goal", "target_audience", "posting_frequency",
-                      "content_distribution", "week_1_theme", "week_2_theme", "week_3_theme", "week_4_theme",
-                      "educational_percent", "entertaining_percent", "promotional_percent", "ugc_percent",
-                      "ig_engagement_target", "li_engagement_target", "tiktok_views_target", "reach_growth_target"],
+            variables=[
+                "company_name",
+                "platforms",
+                "primary_goal",
+                "target_audience",
+                "posting_frequency",
+                "content_distribution",
+                "week_1_theme",
+                "week_2_theme",
+                "week_3_theme",
+                "week_4_theme",
+                "educational_percent",
+                "entertaining_percent",
+                "promotional_percent",
+                "ugc_percent",
+                "ig_engagement_target",
+                "li_engagement_target",
+                "tiktok_views_target",
+                "reach_growth_target",
+            ],
             example_input={
                 "company_name": "FitFlow",
                 "platforms": "Instagram, TikTok, YouTube",
@@ -426,7 +489,7 @@ Analytics to track:
                 "ig_engagement_target": "3-5%",
                 "li_engagement_target": "N/A",
                 "tiktok_views_target": "10k+ per video",
-                "reach_growth_target": "5% weekly"
+                "reach_growth_target": "5% weekly",
             },
             example_output="""WEEK 1: Back-to-Basics Fitness
 
@@ -452,12 +515,12 @@ Best time: 6pm
                 "Audience growth: 8-12% per month",
                 "Click-through rate: 2-4%",
                 "Saves/shares: 2%+ of engagement",
-                "Follower quality: 5%+ monthly active"
+                "Follower quality: 5%+ monthly active",
             ],
             industry_variations={
                 Industry.SAAS.value: "Product updates, customer stories, thought leadership",
                 Industry.ECOMMERCE.value: "New products, styling tips, behind-the-scenes",
-                Industry.CONSULTING.value: "Industry insights, team spotlights, success stories"
+                Industry.CONSULTING.value: "Industry insights, team spotlights, success stories",
             },
             best_practices=[
                 "Batch-create content on Sundays for the week — saves 5+ hours",
@@ -465,9 +528,15 @@ Best time: 6pm
                 "Engage: Spend 15 mins daily liking/commenting on target audience posts",
                 "Use Stories/Reels for trends, feed posts for evergreen value",
                 "Monitor trending sounds 24 hours before posting — it's timing",
-                "Tag 3-5 micro-influencers weekly for potential collaborations"
+                "Tag 3-5 micro-influencers weekly for potential collaborations",
             ],
-            tags=["social-media", "content-calendar", "engagement", "multi-platform", "planning"]
+            tags=[
+                "social-media",
+                "content-calendar",
+                "engagement",
+                "multi-platform",
+                "planning",
+            ],
         )
 
     @staticmethod
@@ -530,9 +599,23 @@ Testing plan:
 - Version A (Benefit-focused)
 - Version B (Problem-focused)
 - Version C (Social proof-focused)""",
-            variables=["context", "target_audience", "product_name", "primary_benefit", "key_differentiator",
-                      "price", "num_headlines", "num_subheadlines", "num_ctas", "num_subjects", "num_socials",
-                      "urgency_type", "scarcity_type", "proof_type", "fear_appeal"],
+            variables=[
+                "context",
+                "target_audience",
+                "product_name",
+                "primary_benefit",
+                "key_differentiator",
+                "price",
+                "num_headlines",
+                "num_subheadlines",
+                "num_ctas",
+                "num_subjects",
+                "num_socials",
+                "urgency_type",
+                "scarcity_type",
+                "proof_type",
+                "fear_appeal",
+            ],
             example_input={
                 "context": "SaaS landing page",
                 "target_audience": "Freelance designers",
@@ -548,7 +631,7 @@ Testing plan:
                 "urgency_type": "Limited-time beta pricing",
                 "scarcity_type": "100 spots at current price",
                 "proof_type": "Designer testimonials + logo clients",
-                "fear_appeal": "Missing deadlines, losing clients"
+                "fear_appeal": "Missing deadlines, losing clients",
             },
             example_output="""HEADLINES:
 
@@ -595,12 +678,12 @@ Bridge: "DesignOS handles invoicing, contracts, project tracking, and client fol
                 "Headline click-through rate: 15%+ improvement over control",
                 "Landing page conversion: 2-5% (depends on audience)",
                 "Email open rate: 35%+ (for subject lines)",
-                "CTA conversion: Track Version A vs B vs C"
+                "CTA conversion: Track Version A vs B vs C",
             ],
             industry_variations={
                 Industry.SAAS.value: "ROI-focused, feature-benefit, free trial CTA",
                 Industry.ECOMMERCE.value: "Product benefits, urgency, social proof",
-                Industry.SERVICES.value: "Results-focused, outcome-based, trust signals"
+                Industry.SERVICES.value: "Results-focused, outcome-based, trust signals",
             },
             best_practices=[
                 "Lead with benefit, not feature. 'Save 20 hours' beats 'Automation'",
@@ -608,9 +691,15 @@ Bridge: "DesignOS handles invoicing, contracts, project tracking, and client fol
                 "Avoid jargon — use simple language (8th-grade reading level)",
                 "Number > words: '5 ways' beats 'several ways'",
                 "Power words: Discover, Proven, Exclusive, Proven, Secret, Reveal",
-                "A/B test always: Same audience, different copy versions"
+                "A/B test always: Same audience, different copy versions",
             ],
-            tags=["copywriting", "content-creation", "conversion", "testing", "psychology"]
+            tags=[
+                "copywriting",
+                "content-creation",
+                "conversion",
+                "testing",
+                "psychology",
+            ],
         )
 
     @staticmethod
@@ -678,13 +767,41 @@ Compensation:
 - Timeline: {payment_timeline}
 - Exclusivity: {exclusivity_terms}
 - Usage rights: {content_rights}""",
-            variables=["influencer_name", "brand_name", "campaign_goal", "influencer_tier", "audience_overlap_percent",
-                      "campaign_timeline", "budget", "follower_count", "engagement_rate", "audience_demographics",
-                      "content_style", "brand_alignment", "num_deliverables", "required_formats", "brand_integrations",
-                      "required_ctas", "hashtag_strategy", "product_name", "key_benefit", "specific_differentiator",
-                      "desired_action", "story_hook", "problem_solved", "solution_pathway", "proof_element",
-                      "audience_benefit", "tracking_code", "report_frequency", "success_definition", "rate_structure",
-                      "payment_timeline", "exclusivity_terms", "content_rights"],
+            variables=[
+                "influencer_name",
+                "brand_name",
+                "campaign_goal",
+                "influencer_tier",
+                "audience_overlap_percent",
+                "campaign_timeline",
+                "budget",
+                "follower_count",
+                "engagement_rate",
+                "audience_demographics",
+                "content_style",
+                "brand_alignment",
+                "num_deliverables",
+                "required_formats",
+                "brand_integrations",
+                "required_ctas",
+                "hashtag_strategy",
+                "product_name",
+                "key_benefit",
+                "specific_differentiator",
+                "desired_action",
+                "story_hook",
+                "problem_solved",
+                "solution_pathway",
+                "proof_element",
+                "audience_benefit",
+                "tracking_code",
+                "report_frequency",
+                "success_definition",
+                "rate_structure",
+                "payment_timeline",
+                "exclusivity_terms",
+                "content_rights",
+            ],
             example_input={
                 "influencer_name": "@FitnessJana",
                 "brand_name": "FitFlow",
@@ -718,7 +835,7 @@ Compensation:
                 "rate_structure": "$5,000 for deliverables",
                 "payment_timeline": "50% upfront, 50% on delivery",
                 "exclusivity_terms": "No competing fitness apps for 60 days",
-                "content_rights": "Repost on FitFlow channels with credit"
+                "content_rights": "Repost on FitFlow channels with credit",
             },
             example_output="""PARTNERSHIP BRIEF
 
@@ -775,12 +892,12 @@ Thanks for this partnership!
                 "Engagement rate: 4%+ (comments, saves, shares)",
                 "Reach: 100k+ impressions",
                 "Cost per conversion: <$10",
-                "Audience quality: Track 30-day retention"
+                "Audience quality: Track 30-day retention",
             ],
             industry_variations={
                 Industry.SAAS.value: "Feature demo, ROI proof, free trial CTA",
                 Industry.ECOMMERCE.value: "Product showcase, styling tips, discount codes",
-                Industry.REAL_ESTATE.value: "Property tours, investment angles, neighborhood highlights"
+                Industry.REAL_ESTATE.value: "Property tours, investment angles, neighborhood highlights",
             },
             best_practices=[
                 "Authenticity > polish — micro-influencers win with realness",
@@ -788,9 +905,15 @@ Thanks for this partnership!
                 "Give creative freedom — over-scripting kills engagement",
                 "Use unique tracking code (promo code + UTM) to measure ROI",
                 "Post timing: Coordinate when they post (not you) — their audience sees it",
-                "Follow-up: Weekly check-ins on engagement, celebrate wins together"
+                "Follow-up: Weekly check-ins on engagement, celebrate wins together",
             ],
-            tags=["influencer-marketing", "partnerships", "content", "social-media", "budget-tracked"]
+            tags=[
+                "influencer-marketing",
+                "partnerships",
+                "content",
+                "social-media",
+                "budget-tracked",
+            ],
         )
 
     @staticmethod
@@ -858,13 +981,40 @@ Legal/rights:
 - Terms: {usage_terms}
 - Creator compensation: {creator_payment_terms}
 - Watermarking: {branding_requirements}""",
-            variables=["brand_name", "ugc_goal", "campaign_name", "branded_hashtag", "campaign_duration",
-                      "target_creator_type", "product_name", "prize_1_value", "prize_1_criteria", "prize_2_value",
-                      "prize_2_criteria", "prize_3_value", "prize_3_criteria", "ongoing_reward", "example_good_content",
-                      "example_bad_content", "launch_channel", "promotion_method", "influencer_strategy", "email_strategy",
-                      "feature_location", "curation_frequency", "content_sharing_policy", "curation_payment",
-                      "submission_target", "engagement_target", "reach_target", "cost_per_submission_target",
-                      "content_value_target", "usage_terms", "creator_payment_terms", "branding_requirements"],
+            variables=[
+                "brand_name",
+                "ugc_goal",
+                "campaign_name",
+                "branded_hashtag",
+                "campaign_duration",
+                "target_creator_type",
+                "product_name",
+                "prize_1_value",
+                "prize_1_criteria",
+                "prize_2_value",
+                "prize_2_criteria",
+                "prize_3_value",
+                "prize_3_criteria",
+                "ongoing_reward",
+                "example_good_content",
+                "example_bad_content",
+                "launch_channel",
+                "promotion_method",
+                "influencer_strategy",
+                "email_strategy",
+                "feature_location",
+                "curation_frequency",
+                "content_sharing_policy",
+                "curation_payment",
+                "submission_target",
+                "engagement_target",
+                "reach_target",
+                "cost_per_submission_target",
+                "content_value_target",
+                "usage_terms",
+                "creator_payment_terms",
+                "branding_requirements",
+            ],
             example_input={
                 "brand_name": "SustainableStyleCo",
                 "ugc_goal": "Generate 500+ authentic product reviews + 1M+ impressions",
@@ -897,7 +1047,7 @@ Legal/rights:
                 "content_value_target": "$50k (at production cost)",
                 "usage_terms": "Non-exclusive, perpetual use with creator credit",
                 "creator_payment_terms": "Prize winners paid via email, featured posts get $25 credit",
-                "branding_requirements": "Brand handle mention, hashtag, no competing products visible"
+                "branding_requirements": "Brand handle mention, hashtag, no competing products visible",
             },
             example_output="""CAMPAIGN LAUNCH POST:
 
@@ -960,12 +1110,12 @@ Non-winning entries: We'll still share the best ones
                 "Reach: 1M+ impressions",
                 "Cost per submission: $3-5",
                 "Repurposed content value: $50k+ (vs $10k production cost)",
-                "Conversion: 2-3% of viewers purchase"
+                "Conversion: 2-3% of viewers purchase",
             ],
             industry_variations={
                 Industry.ECOMMERCE.value: "Product styling, unboxing, before/after",
                 Industry.SAAS.value: "Use-case videos, workflow demonstrations, impact stories",
-                Industry.REAL_ESTATE.value: "Home transformations, neighborhood features, testimonials"
+                Industry.REAL_ESTATE.value: "Home transformations, neighborhood features, testimonials",
             },
             best_practices=[
                 "Keep the ask simple — 1 thing (use product, share story). Not 5.",
@@ -973,9 +1123,9 @@ Non-winning entries: We'll still share the best ones
                 "Feature submissions daily — creators want visibility",
                 "Respond to every submission with thanks/encouragement",
                 "Pay for featured posts consistently (trust signals)",
-                "Track UGC reuse value (save production costs)"
+                "Track UGC reuse value (save production costs)",
             ],
-            tags=["ugc", "social-proof", "content", "community", "budget-efficient"]
+            tags=["ugc", "social-proof", "content", "community", "budget-efficient"],
         )
 
     @staticmethod
@@ -1054,16 +1204,54 @@ Tactical moves:
 - Move 1: {tactical_move_1} (timeline: {move_1_timeline})
 - Move 2: {tactical_move_2} (timeline: {move_2_timeline})
 - Move 3: {tactical_move_3} (timeline: {move_3_timeline})""",
-            variables=["product_name", "competitor_1_name", "competitor_1_focus", "competitor_2_name",
-                      "competitor_2_focus", "competitor_3_name", "competitor_3_focus", "comp_positioning",
-                      "comp_value_prop", "comp_benefits", "comp_angles", "comp_audience", "comp_tone",
-                      "comp_content_types", "comp_frequency", "comp_winning_content", "comp_engagement",
-                      "comp_topics", "comp_channels", "comp_growth_rate", "comp_ad_spend", "comp_promotions",
-                      "gap_1", "gap_2", "gap_3", "gap_4", "winning_tactic_1", "winning_tactic_2",
-                      "winning_tactic_3", "our_angle", "our_differentiation", "our_unique_audience",
-                      "positioning_statement", "customer_problem", "vs_competitors", "unique_solution",
-                      "our_content_focus", "our_frequency", "our_channels", "our_advantage", "tactical_move_1",
-                      "move_1_timeline", "tactical_move_2", "move_2_timeline", "tactical_move_3", "move_3_timeline"],
+            variables=[
+                "product_name",
+                "competitor_1_name",
+                "competitor_1_focus",
+                "competitor_2_name",
+                "competitor_2_focus",
+                "competitor_3_name",
+                "competitor_3_focus",
+                "comp_positioning",
+                "comp_value_prop",
+                "comp_benefits",
+                "comp_angles",
+                "comp_audience",
+                "comp_tone",
+                "comp_content_types",
+                "comp_frequency",
+                "comp_winning_content",
+                "comp_engagement",
+                "comp_topics",
+                "comp_channels",
+                "comp_growth_rate",
+                "comp_ad_spend",
+                "comp_promotions",
+                "gap_1",
+                "gap_2",
+                "gap_3",
+                "gap_4",
+                "winning_tactic_1",
+                "winning_tactic_2",
+                "winning_tactic_3",
+                "our_angle",
+                "our_differentiation",
+                "our_unique_audience",
+                "positioning_statement",
+                "customer_problem",
+                "vs_competitors",
+                "unique_solution",
+                "our_content_focus",
+                "our_frequency",
+                "our_channels",
+                "our_advantage",
+                "tactical_move_1",
+                "move_1_timeline",
+                "tactical_move_2",
+                "move_2_timeline",
+                "tactical_move_3",
+                "move_3_timeline",
+            ],
             example_input={
                 "product_name": "TaskFlow",
                 "competitor_1_name": "Asana",
@@ -1110,7 +1298,7 @@ Tactical moves:
                 "tactical_move_2": "Partner with 5 micro-influencers (service professionals)",
                 "move_2_timeline": "Next 45 days",
                 "tactical_move_3": "Launch 'Service Pro Stories' podcast",
-                "move_3_timeline": "Next 60 days"
+                "move_3_timeline": "Next 60 days",
             },
             example_output="""COMPETITIVE ANALYSIS SUMMARY
 
@@ -1179,21 +1367,27 @@ Competitive advantages we can own:
                 "Market differentiation: Clear, owned positioning in target segment",
                 "Content performance: 2x engagement vs competitors (in our segments)",
                 "Brand recall: 40%+ of target audience recognizes our positioning",
-                "Conversion gap: Close 15%+ of competitor evaluations"
+                "Conversion gap: Close 15%+ of competitor evaluations",
             ],
             industry_variations={
                 Industry.SAAS.value: "Feature comparison, ROI metrics, customer success stories",
                 Industry.ECOMMERCE.value: "Product positioning, pricing strategy, target audience",
-                Industry.SERVICES.value: "Expertise differentiation, case results, client testimonials"
+                Industry.SERVICES.value: "Expertise differentiation, case results, client testimonials",
             },
             best_practices=[
                 "Audit competitor messaging quarterly — markets shift fast",
                 "Find gaps, don't copy — own something different",
                 "Test positioning with real customers: 'What makes us different?'",
                 "Focus on one gap you can dominate, not three you can't",
-                "Track competitor content performance (engagement, shares) to spot wins"
+                "Track competitor content performance (engagement, shares) to spot wins",
             ],
-            tags=["competitive-analysis", "positioning", "strategy", "market-research", "differentiation"]
+            tags=[
+                "competitive-analysis",
+                "positioning",
+                "strategy",
+                "market-research",
+                "differentiation",
+            ],
         )
 
     # ==================== CAMPAIGN STRATEGY (10 PROMPTS) ====================
@@ -1308,18 +1502,77 @@ POST-SEASON:
 - Analysis report: {report_date}
 - Learnings doc: {learnings_focus}
 - Next year prep: {next_year_prep}""",
-            variables=["brand_name", "season", "campaign_objective", "target_audience", "revenue_target",
-                      "campaign_duration", "historical_lift", "peak_dates", "customer_motivation", "budget",
-                      "theme", "opening_hook", "campaign_promise", "urgency_mechanism", "angle_1", "angle_2",
-                      "angle_3", "email_sends", "email_1_subject", "email_1_date", "email_2_subject", "email_2_date",
-                      "email_3_subject", "email_3_date", "paid_budget", "platform_1", "platform_1_budget", "audience_1",
-                      "format_1", "platform_2", "platform_2_budget", "audience_2", "format_2", "social_budget_time",
-                      "num_posts", "content_mix", "hashtag_focus", "influencer_strategy", "landing_page_focus",
-                      "hero_message", "offers", "scarcity", "offer_type", "offer_discount", "incentive_1", "incentive_2",
-                      "incentive_3", "inventory_limit", "time_limit", "urgency_messaging", "pre_season_weeks",
-                      "launch_date", "reach_target", "ctr_target", "conversion_target", "aov_target", "cac_target",
-                      "first_touch_percent", "last_touch_percent", "multi_touch_percent", "metric", "threshold",
-                      "action", "metric_2", "threshold_2", "action_2", "report_date", "learnings_focus", "next_year_prep"],
+            variables=[
+                "brand_name",
+                "season",
+                "campaign_objective",
+                "target_audience",
+                "revenue_target",
+                "campaign_duration",
+                "historical_lift",
+                "peak_dates",
+                "customer_motivation",
+                "budget",
+                "theme",
+                "opening_hook",
+                "campaign_promise",
+                "urgency_mechanism",
+                "angle_1",
+                "angle_2",
+                "angle_3",
+                "email_sends",
+                "email_1_subject",
+                "email_1_date",
+                "email_2_subject",
+                "email_2_date",
+                "email_3_subject",
+                "email_3_date",
+                "paid_budget",
+                "platform_1",
+                "platform_1_budget",
+                "audience_1",
+                "format_1",
+                "platform_2",
+                "platform_2_budget",
+                "audience_2",
+                "format_2",
+                "social_budget_time",
+                "num_posts",
+                "content_mix",
+                "hashtag_focus",
+                "influencer_strategy",
+                "landing_page_focus",
+                "hero_message",
+                "offers",
+                "scarcity",
+                "offer_type",
+                "offer_discount",
+                "incentive_1",
+                "incentive_2",
+                "incentive_3",
+                "inventory_limit",
+                "time_limit",
+                "urgency_messaging",
+                "pre_season_weeks",
+                "launch_date",
+                "reach_target",
+                "ctr_target",
+                "conversion_target",
+                "aov_target",
+                "cac_target",
+                "first_touch_percent",
+                "last_touch_percent",
+                "multi_touch_percent",
+                "metric",
+                "threshold",
+                "action",
+                "metric_2",
+                "threshold_2",
+                "action_2",
+                "report_date",
+                "learnings_focus",
+                "next_year_prep",
+            ],
             example_input={
                 "brand_name": "FitFlow",
                 "season": "New Year (Jan 1-31)",
@@ -1389,7 +1642,7 @@ POST-SEASON:
                 "action_2": "A/B test subject lines, increase send frequency",
                 "report_date": "Feb 5",
                 "learnings_focus": "Which messaging angle converted best? Which channel? Time to conversion?",
-                "next_year_prep": "Start New Year campaign Sept 1 (4 months prep for better results)"
+                "next_year_prep": "Start New Year campaign Sept 1 (4 months prep for better results)",
             },
             example_output="""NEW YEAR CAMPAIGN PLAN
 
@@ -1557,21 +1810,21 @@ For next year:
                 "Cost per customer: <$25",
                 "Email open rate: 30%+",
                 "Ad click-through rate: 3%+",
-                "Conversion rate: 2-3%"
+                "Conversion rate: 2-3%",
             ],
             industry_variations={
                 Industry.ECOMMERCE.value: "Seasonal products, gift guides, holiday promotions",
                 Industry.REAL_ESTATE.value: "Spring market surge, year-end deals, tax incentives",
-                Industry.SAAS.value: "Budget planning cycles (Q4 budgets), New Year resolutions"
+                Industry.SAAS.value: "Budget planning cycles (Q4 budgets), New Year resolutions",
             },
             best_practices=[
                 "Seasonal campaigns peak Jan 1-7 and Dec 20-25 — plan accordingly",
                 "Start prep 3-4 months before (Sept for New Year, Sept for holiday)",
                 "Scarcity + countdown = 15-30% conversion lift",
                 "Test messaging angle (resolution vs. habit vs. science) — winners scale",
-                "Email frequency increases by 2-3x during peaks — optimize send times"
+                "Email frequency increases by 2-3x during peaks — optimize send times",
             ],
-            tags=["seasonal", "campaigns", "conversion", "strategy", "timing"]
+            tags=["seasonal", "campaigns", "conversion", "strategy", "timing"],
         )
 
     # ==================== PROMOTIONAL CAMPAIGNS (10 PROMPTS) ====================

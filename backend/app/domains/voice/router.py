@@ -31,7 +31,10 @@ router = APIRouter(prefix="/voice", tags=["voice"])
 
 # ========== Calls ==========
 
-@router.post("/calls", response_model=VoiceCallResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/calls", response_model=VoiceCallResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_call(
     data: VoiceCallCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -166,20 +169,27 @@ async def end_call(
 
 # ========== Config ==========
 
+
 @router.get("/config", response_model=VoiceConfigResponse)
 async def get_voice_config(
     business_id: Annotated[UUID, Query()],
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
-    result = await db.execute(select(VoiceConfig).where(VoiceConfig.business_id == business_id))
+    result = await db.execute(
+        select(VoiceConfig).where(VoiceConfig.business_id == business_id)
+    )
     config = result.scalar_one_or_none()
     if not config:
-        raise HTTPException(status_code=404, detail="Configuración de voz no encontrada")
+        raise HTTPException(
+            status_code=404, detail="Configuración de voz no encontrada"
+        )
     return config
 
 
-@router.post("/config", response_model=VoiceConfigResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/config", response_model=VoiceConfigResponse, status_code=status.HTTP_201_CREATED
+)
 async def upsert_voice_config(
     data: VoiceConfigCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -200,11 +210,14 @@ async def update_voice_config(
     result = await db.execute(select(VoiceConfig).where(VoiceConfig.id == config_id))
     config = result.scalar_one_or_none()
     if not config:
-        raise HTTPException(status_code=404, detail="Configuración de voz no encontrada")
+        raise HTTPException(
+            status_code=404, detail="Configuración de voz no encontrada"
+        )
 
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(config, field, value)
     from datetime import datetime
+
     config.updated_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(config)
@@ -212,6 +225,7 @@ async def update_voice_config(
 
 
 # ========== Webhooks ==========
+
 
 @router.post("/webhook/twilio")
 async def twilio_webhook(

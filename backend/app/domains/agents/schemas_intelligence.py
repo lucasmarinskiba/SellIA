@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # ========== Emotion Schemas ==========
 
+
 class EmotionResult(BaseModel):
     emotion: str = "neutral"
     intensity: float = 0.0
@@ -40,6 +41,7 @@ class EmotionTimelineResponse(BaseModel):
 
 
 # ========== Negotiation Schemas ==========
+
 
 class NegotiationStartRequest(BaseModel):
     conversation_id: UUID

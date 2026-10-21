@@ -5,7 +5,6 @@ Strengths: 256K context, Spanish-native, OpenAI-compatible API,
            automatic context caching (up to 75% savings)
 """
 
-
 import logging
 from typing import ClassVar
 
@@ -36,7 +35,9 @@ class KimiProvider(BaseProvider):
         prompt_chars = len(config.prompt)
         estimated_input_tokens = prompt_chars // 4
         estimated_output_tokens = estimated_input_tokens * 2
-        cost = (estimated_input_tokens * 0.60 + estimated_output_tokens * 2.50) / 1_000_000
+        cost = (
+            estimated_input_tokens * 0.60 + estimated_output_tokens * 2.50
+        ) / 1_000_000
         return max(cost, 0.0001)
 
     def get_pricing_table(self) -> dict[str, float]:
@@ -79,7 +80,9 @@ class KimiProvider(BaseProvider):
             text = response.content
 
             # Estimar costo real basado en usage si está disponible
-            usage = response.usage_metadata if hasattr(response, "usage_metadata") else {}
+            usage = (
+                response.usage_metadata if hasattr(response, "usage_metadata") else {}
+            )
             input_tokens = usage.get("input_tokens", len(config.prompt) // 4)
             output_tokens = usage.get("output_tokens", len(text) // 4)
             cost = (input_tokens * 0.60 + output_tokens * 2.50) / 1_000_000

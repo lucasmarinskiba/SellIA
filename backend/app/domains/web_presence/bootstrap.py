@@ -18,5 +18,7 @@ async def ensure_web_presence_tables() -> None:
                     lambda sync_conn, t=table: t.create(bind=sync_conn, checkfirst=True)
                 )
         except Exception as e:  # noqa: BLE001
-            logger.warning("web_presence bootstrap: table %s skipped: %s", table.name, str(e)[:160])
+            logger.warning(
+                "web_presence bootstrap: table %s skipped: %s", table.name, str(e)[:160]
+            )
     logger.info("✅ web_presence tables ensured")

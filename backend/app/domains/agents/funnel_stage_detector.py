@@ -83,7 +83,10 @@ async def detect_funnel_stage(
         return FunnelStage.ACQUISITION
 
     except Exception as e:
-        logger.warning(f"Funnel stage detection failed, defaulting to ACQUISITION: {e}", exc_info=True)
+        logger.warning(
+            f"Funnel stage detection failed, defaulting to ACQUISITION: {e}",
+            exc_info=True,
+        )
         return FunnelStage.ACQUISITION
 
 

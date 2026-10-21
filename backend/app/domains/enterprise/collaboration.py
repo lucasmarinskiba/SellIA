@@ -24,6 +24,7 @@ from app.core.database import Base
 
 class CollaborationActionEnum(str, enum.Enum):
     """Actions that require approval."""
+
     DISCOUNT = "discount"
     ESCALATION = "escalation"
     HANDOFF = "handoff"
@@ -33,6 +34,7 @@ class CollaborationActionEnum(str, enum.Enum):
 
 class ApprovalStatusEnum(str, enum.Enum):
     """Approval workflow states."""
+
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
@@ -41,6 +43,7 @@ class ApprovalStatusEnum(str, enum.Enum):
 
 class DealComment(Base):
     """Comments on deals (team collaboration)."""
+
     __tablename__ = "deal_comments"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -53,13 +56,12 @@ class DealComment(Base):
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
-    __table_args__ = (
-        Index('idx_deal_comments', 'deal_id', 'created_at'),
-    )
+    __table_args__ = (Index("idx_deal_comments", "deal_id", "created_at"),)
 
 
 class ApprovalChain(Base):
     """Multi-step approvals (e.g., manager sign-off on discounts)."""
+
     __tablename__ = "approval_chains"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -80,13 +82,14 @@ class ApprovalChain(Base):
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     __table_args__ = (
-        Index('idx_approval_action', 'action_id'),
-        Index('idx_approval_status', 'status', 'created_at'),
+        Index("idx_approval_action", "action_id"),
+        Index("idx_approval_status", "status", "created_at"),
     )
 
 
 class Handoff(Base):
     """Deal handoff between team members (with notes)."""
+
     __tablename__ = "handoffs"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -106,8 +109,8 @@ class Handoff(Base):
     created_at = Column(DateTime, default=utc_now)
 
     __table_args__ = (
-        Index('idx_handoff_deal', 'deal_id', 'created_at'),
-        Index('idx_handoff_user', 'to_user_id', 'status'),
+        Index("idx_handoff_deal", "deal_id", "created_at"),
+        Index("idx_handoff_user", "to_user_id", "status"),
     )
 
 
@@ -120,6 +123,7 @@ class DealShare(Base):
     either. Minimal schema matching what that route's request/response
     already specified (deal_id, shared_by, shared_with, permissions).
     """
+
     __tablename__ = "deal_shares"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -129,18 +133,19 @@ class DealShare(Base):
     permissions = Column(String(20), default="read")  # read, edit
     shared_at = Column(DateTime, default=utc_now)
 
-    __table_args__ = (
-        Index('idx_deal_shares_deal', 'deal_id', 'shared_at'),
-    )
+    __table_args__ = (Index("idx_deal_shares_deal", "deal_id", "shared_at"),)
 
 
 class TeamNotification(Base):
     """Real-time notifications (comments, approvals, handoffs)."""
+
     __tablename__ = "team_notifications"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String(255), nullable=False)
-    type = Column(String(50), nullable=False)  # comment, approval_requested, handoff, etc
+    type = Column(
+        String(50), nullable=False
+    )  # comment, approval_requested, handoff, etc
     title = Column(String(255), nullable=False)
     message = Column(Text, nullable=False)
 
@@ -150,9 +155,7 @@ class TeamNotification(Base):
     is_read = Column(Boolean, default=False)
     created_at = Column(DateTime, default=utc_now)
 
-    __table_args__ = (
-        Index('idx_notif_user', 'user_id', 'is_read', 'created_at'),
-    )
+    __table_args__ = (Index("idx_notif_user", "user_id", "is_read", "created_at"),)
 
 
 # ── Collaboration Manager ──
@@ -187,7 +190,9 @@ class CollaborationManager:
         return comment
 
     @staticmethod
-    async def get_deal_comments(db: AsyncSession, deal_id: str, limit: int = 50) -> list[DealComment]:
+    async def get_deal_comments(
+        db: AsyncSession, deal_id: str, limit: int = 50
+    ) -> list[DealComment]:
         """List comments on a deal, most recent first.
 
         This method (and get_pending_approvals/get_deal_activity_feed/
@@ -197,8 +202,10 @@ class CollaborationManager:
         implemented, so every call would have raised AttributeError.
         """
         result = await db.execute(
-            select(DealComment).where(DealComment.deal_id == deal_id)
-            .order_by(DealComment.created_at.desc()).limit(limit)
+            select(DealComment)
+            .where(DealComment.deal_id == deal_id)
+            .order_by(DealComment.created_at.desc())
+            .limit(limit)
         )
         return list(result.scalars().all())
 
@@ -223,7 +230,9 @@ class CollaborationManager:
         return share
 
     @staticmethod
-    async def get_pending_approvals(db: AsyncSession, user_id: str) -> list[ApprovalChain]:
+    async def get_pending_approvals(
+        db: AsyncSession, user_id: str
+    ) -> list[ApprovalChain]:
         """List approval chains where `user_id` is an approver still pending
         a decision. approval_steps is stored as a serialized JSON string
         (see approve_action below), not a queryable JSONB column, so this
@@ -232,25 +241,35 @@ class CollaborationManager:
         """
         import json
 
-        result = await db.execute(select(ApprovalChain).where(ApprovalChain.status == "pending"))
+        result = await db.execute(
+            select(ApprovalChain).where(ApprovalChain.status == "pending")
+        )
         chains = result.scalars().all()
         pending = []
         for chain in chains:
             steps = json.loads(chain.approval_steps)
-            if any(s["approver_id"] == user_id and s["status"] == "pending" for s in steps):
+            if any(
+                s["approver_id"] == user_id and s["status"] == "pending" for s in steps
+            ):
                 pending.append(chain)
         return pending
 
     @staticmethod
-    async def get_deal_activity_feed(db: AsyncSession, deal_id: str, limit: int = 50) -> list[dict]:
+    async def get_deal_activity_feed(
+        db: AsyncSession, deal_id: str, limit: int = 50
+    ) -> list[dict]:
         """Combined, timestamp-sorted feed of comments + shares for a deal."""
         comments_result = await db.execute(
-            select(DealComment).where(DealComment.deal_id == deal_id)
-            .order_by(DealComment.created_at.desc()).limit(limit)
+            select(DealComment)
+            .where(DealComment.deal_id == deal_id)
+            .order_by(DealComment.created_at.desc())
+            .limit(limit)
         )
         shares_result = await db.execute(
-            select(DealShare).where(DealShare.deal_id == deal_id)
-            .order_by(DealShare.shared_at.desc()).limit(limit)
+            select(DealShare)
+            .where(DealShare.deal_id == deal_id)
+            .order_by(DealShare.shared_at.desc())
+            .limit(limit)
         )
 
         activity = [

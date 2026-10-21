@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 class PricingStrategy(str, Enum):
     """Pricing strategy types."""
+
     COST_PLUS = "cost_plus"
     VALUE_BASED = "value_based"
     COMPETITOR_BASED = "competitor_based"
@@ -24,6 +25,7 @@ class PricingStrategy(str, Enum):
 @dataclass
 class PricingRecommendation:
     """Recommended pricing strategy."""
+
     strategy: PricingStrategy
     recommended_price: float
     price_range_low: float
@@ -39,6 +41,7 @@ class PricingRecommendation:
 @dataclass
 class CostReduction:
     """Cost reduction opportunity."""
+
     category: str  # COGS, CAC, Operations, etc.
     opportunity: str
     current_cost: float
@@ -52,6 +55,7 @@ class CostReduction:
 @dataclass
 class MarginImprovement:
     """Margin improvement opportunity."""
+
     improvement_type: str  # COGS reduction, price increase, mix shift, scale
     gross_margin_impact: float
     net_margin_impact: float
@@ -99,9 +103,15 @@ class FinancialOptimizer:
 
         # Evaluate different strategies
         strategies = {
-            PricingStrategy.COST_PLUS: self._cost_plus_pricing(current_price, business_profile),
-            PricingStrategy.VALUE_BASED: self._value_based_pricing(current_price, market_data),
-            PricingStrategy.COMPETITOR_BASED: self._competitor_based_pricing(current_price, competitor_prices),
+            PricingStrategy.COST_PLUS: self._cost_plus_pricing(
+                current_price, business_profile
+            ),
+            PricingStrategy.VALUE_BASED: self._value_based_pricing(
+                current_price, market_data
+            ),
+            PricingStrategy.COMPETITOR_BASED: self._competitor_based_pricing(
+                current_price, competitor_prices
+            ),
             PricingStrategy.PSYCHOLOGICAL: self._psychological_pricing(current_price),
         }
 

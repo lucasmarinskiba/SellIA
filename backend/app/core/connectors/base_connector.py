@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 class ConnectorType(str, Enum):
     """Tipo connector."""
+
     MARKETPLACE = "marketplace"  # MercadoLibre, Amazon, Shopify
     ADS = "ads"  # Facebook/Meta Ads, Google Ads
     MESSAGING = "messaging"  # WhatsApp, Twilio, Email
@@ -27,7 +28,9 @@ class ConnectorType(str, Enum):
 class BaseConnector(ABC):
     """Base class para todos los connectors."""
 
-    def __init__(self, name: str, connector_type: ConnectorType, config: dict[str, Any]):
+    def __init__(
+        self, name: str, connector_type: ConnectorType, config: dict[str, Any]
+    ):
         self.name = name
         self.connector_type = connector_type
         self.config = config
@@ -97,7 +100,9 @@ class ConnectorRegistry:
                 results[name] = False
         return results
 
-    async def sync_product_across_platforms(self, product: dict[str, Any]) -> dict[str, Any]:
+    async def sync_product_across_platforms(
+        self, product: dict[str, Any]
+    ) -> dict[str, Any]:
         """Publica producto en todos los connectors habilitados."""
         results = {}
         for name, connector in self.connectors.items():
@@ -111,7 +116,9 @@ class ConnectorRegistry:
                     results[name] = {"status": "error", "error": str(e)}
         return results
 
-    async def broadcast_message(self, recipients: list[str], message: str) -> dict[str, Any]:
+    async def broadcast_message(
+        self, recipients: list[str], message: str
+    ) -> dict[str, Any]:
         """Envía mensaje por todos los canales (WhatsApp, SMS, email)."""
         results = {}
         for name, connector in self.connectors.items():

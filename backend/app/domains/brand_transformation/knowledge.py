@@ -29,7 +29,13 @@ FOMO_LEVERS: dict[str, dict] = {
         ],
         "failure_mode": "Fake scarcity that customers can disprove (restocks minutes later) "
         "destroys trust permanently.",
-        "cases": ["Supreme", "Hermès Birkin", "Nintendo (Wii/Switch)", "McRib", "Ferrari (build fewer than demand)"],
+        "cases": [
+            "Supreme",
+            "Hermès Birkin",
+            "Nintendo (Wii/Switch)",
+            "McRib",
+            "Ferrari (build fewer than demand)",
+        ],
     },
     "social_proof_velocity": {
         "mechanism": "Show that many people — especially peers and insiders — are already in. "
@@ -41,7 +47,12 @@ FOMO_LEVERS: dict[str, dict] = {
             "'Join 2M+ founders' specificity over vague 'thousands'",
         ],
         "failure_mode": "Round, unverifiable numbers read as marketing and lower trust.",
-        "cases": ["Amazon reviews", "Booking.com urgency UI", "Notion templates gallery", "GoPro"],
+        "cases": [
+            "Amazon reviews",
+            "Booking.com urgency UI",
+            "Notion templates gallery",
+            "GoPro",
+        ],
     },
     "exclusivity_and_status": {
         "mechanism": "Membership as identity. The product is a badge that says something "
@@ -53,7 +64,13 @@ FOMO_LEVERS: dict[str, dict] = {
             "Members-only language, rituals, symbols",
         ],
         "failure_mode": "Exclusivity with nothing behind the door — churns the moment it opens.",
-        "cases": ["American Express Centurion", "Soho House", "Clubhouse", "Nike SNKRS", "Raya"],
+        "cases": [
+            "American Express Centurion",
+            "Soho House",
+            "Clubhouse",
+            "Nike SNKRS",
+            "Raya",
+        ],
     },
     "identity_and_tribe": {
         "mechanism": "Sell a worldview and an enemy, not a product. Customers buy to declare "
@@ -89,7 +106,11 @@ FOMO_LEVERS: dict[str, dict] = {
             "Founder's-edition perks that never return",
         ],
         "failure_mode": "Perpetual 'ending soon' banners train customers to ignore every deadline.",
-        "cases": ["ConvertKit lifetime deals", "course launches (Hormozi, B-School)", "airline seat maps"],
+        "cases": [
+            "ConvertKit lifetime deals",
+            "course launches (Hormozi, B-School)",
+            "airline seat maps",
+        ],
     },
     "velocity_of_novelty": {
         "mechanism": "Constant small newness keeps attention and gives people a reason to check "
@@ -115,7 +136,12 @@ BRAND_ORIGIN_PLAYBOOKS: dict[str, dict] = {
         "real_engine": "Not food — real estate + a franchised operating system. The Speedee "
         "Service System productized consistency; Kroc's franchise + property model made land the "
         "asset and the burger the customer-acquisition cost.",
-        "levers": ["process standardization", "franchise scaling", "predictability as the promise", "site selection moat"],
+        "levers": [
+            "process standardization",
+            "franchise scaling",
+            "predictability as the promise",
+            "site selection moat",
+        ],
         "lesson": "Sell a repeatable system, not a product. Own the layer competitors rent.",
     },
     "Coca-Cola": {
@@ -123,77 +149,132 @@ BRAND_ORIGIN_PLAYBOOKS: dict[str, dict] = {
         "real_engine": "Distribution ubiquity + emotional branding + secret-formula mythology. "
         "'Within an arm's reach of desire' — bottler network put it everywhere; advertising "
         "attached it to happiness, Christmas, belonging.",
-        "levers": ["distribution density", "emotional association", "ritual (the pause)", "mystery/heritage"],
+        "levers": [
+            "distribution density",
+            "emotional association",
+            "ritual (the pause)",
+            "mystery/heritage",
+        ],
         "lesson": "Commodity + total availability + owned emotional occasion = pricing power.",
     },
     "Red Bull": {
         "surface_product": "caffeine + taurine drink",
         "real_engine": "A media company that happens to sell a can. Owns extreme-sports content, "
         "events, teams. The drink funds the content; the content sells the identity ('gives you wings').",
-        "levers": ["content as product", "identity/tribe", "event ownership", "premium price as signal"],
+        "levers": [
+            "content as product",
+            "identity/tribe",
+            "event ownership",
+            "premium price as signal",
+        ],
         "lesson": "If the category is commoditized, win the culture around it and charge for the badge.",
     },
     "Starbucks": {
         "surface_product": "coffee",
         "real_engine": "The 'third place' between home and work. Sold real estate + ritual + "
         "name-on-the-cup personalization at scale. Premium ambiance repriced a $0.50 commodity to $5.",
-        "levers": ["experience design", "daily ritual habit loop", "ubiquity + consistency", "aspirational accessibility"],
+        "levers": [
+            "experience design",
+            "daily ritual habit loop",
+            "ubiquity + consistency",
+            "aspirational accessibility",
+        ],
         "lesson": "Reprice a commodity by selling the context and the routine, not the liquid.",
     },
     "Nike": {
         "surface_product": "shoes",
         "real_engine": "Sells self-transcendence. Athlete endorsement + 'Just Do It' turned a "
         "sneaker into a personal-achievement narrative. Later: scarcity engine (SNKRS drops) on top.",
-        "levers": ["hero/aspiration archetype", "narrative over spec", "scarcity drops", "cultural collabs"],
+        "levers": [
+            "hero/aspiration archetype",
+            "narrative over spec",
+            "scarcity drops",
+            "cultural collabs",
+        ],
         "lesson": "Attach the product to who the customer wants to become.",
     },
     "Supreme": {
         "surface_product": "t-shirts / skate gear",
         "real_engine": "Manufactured scarcity + subculture credibility + collab reach. Deliberately "
         "under-produces; weekly drops sell out in seconds; resale market advertises for free.",
-        "levers": ["hard scarcity", "subculture authenticity", "drop ritual", "collab borrowing"],
+        "levers": [
+            "hard scarcity",
+            "subculture authenticity",
+            "drop ritual",
+            "collab borrowing",
+        ],
         "lesson": "Constrain supply, own a cadence, let the resale market be your ad budget.",
     },
     "Apple": {
         "surface_product": "computers / phones",
         "real_engine": "Design as identity + closed ecosystem lock-in + keynote theater. Premium "
         "price is the signal; the ecosystem is the moat; the launch is the marketing.",
-        "levers": ["design/craft archetype", "anticipation ritual", "ecosystem lock-in", "premium-as-signal"],
+        "levers": [
+            "design/craft archetype",
+            "anticipation ritual",
+            "ecosystem lock-in",
+            "premium-as-signal",
+        ],
         "lesson": "Vertical control + ceremony + taste lets you set price instead of taking it.",
     },
     "Tesla": {
         "surface_product": "electric cars",
         "real_engine": "$0 paid ads. Founder mission narrative + waitlist/pre-order + software-update "
         "novelty + owners as evangelists. Sold the future, delivered updates.",
-        "levers": ["mission/founder narrative", "pre-order status", "continuous novelty (OTA)", "owner tribe"],
+        "levers": [
+            "mission/founder narrative",
+            "pre-order status",
+            "continuous novelty (OTA)",
+            "owner tribe",
+        ],
         "lesson": "A strong enough point of view and a waitlist replaces a marketing budget.",
     },
     "Instagram / TikTok / YouTube": {
         "surface_product": "a feed",
         "real_engine": "Two-sided attention loop: creators chase reach, viewers chase novelty, the "
         "algorithm rewards both. Variable-reward scroll + creator status ladder + network effects.",
-        "levers": ["variable reward loop", "creator status economy", "network effects", "low-friction creation"],
+        "levers": [
+            "variable reward loop",
+            "creator status economy",
+            "network effects",
+            "low-friction creation",
+        ],
         "lesson": "Build a loop where each user's activity increases the value for the next user.",
     },
     "Liquid Death": {
         "surface_product": "canned water",
         "real_engine": "Comedy + heavy-metal identity in the most boring category. 'Murder your "
         "thirst.' The brand voice is the product; water is the medium.",
-        "levers": ["identity/tribe", "category contrast", "shareable voice", "merch as media"],
+        "levers": [
+            "identity/tribe",
+            "category contrast",
+            "shareable voice",
+            "merch as media",
+        ],
         "lesson": "In a commodity, an extreme distinctive voice is the differentiation.",
     },
     "Decathlon": {
         "surface_product": "sports gear",
         "real_engine": "Vertical integration + own-brands (Quechua, Domyos...) + big-box price "
         "leadership. Owns design->manufacture->retail, so quality-per-dollar is unmatched.",
-        "levers": ["vertical integration", "private-label portfolio", "price leadership", "accessibility"],
+        "levers": [
+            "vertical integration",
+            "private-label portfolio",
+            "price leadership",
+            "accessibility",
+        ],
         "lesson": "Owning the whole chain lets you win on value where others margin-stack.",
     },
     "Gucci / Versace (luxury)": {
         "surface_product": "clothes / bags",
         "real_engine": "Artificial scarcity + heritage story + price-as-status + creative-director "
         "reinventions that generate press cycles. Never discount; destroy unsold stock.",
-        "levers": ["price-as-signal", "heritage narrative", "controlled scarcity", "designer news cycle"],
+        "levers": [
+            "price-as-signal",
+            "heritage narrative",
+            "controlled scarcity",
+            "designer news cycle",
+        ],
         "lesson": "Protecting price and scarcity IS the product for status goods.",
     },
 }
@@ -268,20 +349,41 @@ FRAMEWORKS: dict[str, str] = {
 # ---------------------------------------------------------------------------
 
 CLICHE_BLOCKLIST: list[str] = [
-    "synergy", "leverage synergies", "world-class", "cutting-edge", "best-in-class",
-    "unlock your potential", "take it to the next level", "game-changer", "disruptive innovation",
-    "seamless experience", "robust solution", "innovative solution", "empower", "holistic approach",
-    "think outside the box", "paradigm shift", "value-added", "one-stop shop", "customer-centric",
-    "passionate team", "state-of-the-art", "revolutionize", "elevate your brand",
+    "synergy",
+    "leverage synergies",
+    "world-class",
+    "cutting-edge",
+    "best-in-class",
+    "unlock your potential",
+    "take it to the next level",
+    "game-changer",
+    "disruptive innovation",
+    "seamless experience",
+    "robust solution",
+    "innovative solution",
+    "empower",
+    "holistic approach",
+    "think outside the box",
+    "paradigm shift",
+    "value-added",
+    "one-stop shop",
+    "customer-centric",
+    "passionate team",
+    "state-of-the-art",
+    "revolutionize",
+    "elevate your brand",
 ]
 
-QUALITY_BAR = """QUALITY BAR — every output is graded against this before it ships:
+QUALITY_BAR = (
+    """QUALITY BAR — every output is graded against this before it ships:
 
 1. SPECIFIC over generic. Every claim names a mechanism, a number, or a named
    precedent. "Improve customer engagement" is a failure; "cut the checkout
    from 5 steps to 2, the way Amazon's 1-Click did" is a pass.
 2. NO CLICHÉS. Banned words/phrases (if you catch yourself writing one of
-   these, rewrite the sentence): """ + ", ".join(f'"{w}"' for w in CLICHE_BLOCKLIST) + """
+   these, rewrite the sentence): """
+    + ", ".join(f'"{w}"' for w in CLICHE_BLOCKLIST)
+    + """
 3. OCURRENCIA (wit / inventiveness). The recommendation should be the kind
    a sharp strategist would actually say in a room, not the first bland
    answer a search engine would give. Prefer the non-obvious angle that is
@@ -300,6 +402,7 @@ QUALITY_BAR = """QUALITY BAR — every output is graded against this before it s
    one and why it transfers to this business specifically — do not silently
    reuse the example's own product/tagline.
 """
+)
 
 
 def quality_bar() -> str:
@@ -731,16 +834,46 @@ def roadmap_horizons_digest() -> str:
 # ---------------------------------------------------------------------------
 
 COHERENCE_CHECKS: list[dict] = [
-    {"id": "enemy_consistency", "check": "Is the SAME enemy present across positioning (the_enemy), the brand story spine (problem beat), and the FOMO risk framing? A brand that fights three different enemies has none."},
-    {"id": "archetype_voice_in_copy", "check": "Do the FOMO content_hooks and GTM content pillars actually sound like the chosen archetype and verbal_identity (lexicon, first-line rule), or generic marketing?"},
-    {"id": "offer_affords_the_loop", "check": "Does the business_model's contribution margin / unit economics actually fund the GTM primary growth loop? A paid loop on a thin margin is incoherent."},
-    {"id": "pricing_matches_position", "check": "Does the pricing_architecture (premium vs value, round vs charm) match the positioning and archetype? Charm pricing under a Ruler/premium position is a contradiction."},
-    {"id": "category_vs_gtm", "check": "If category_decision is 'design_new', does the GTM include the market-conditioning work to teach it? If 'play_in_existing', is it not wasting effort evangelising a category?"},
-    {"id": "fomo_vs_ethics_vs_brand", "check": "Do the chosen FOMO mechanisms pass the brand's own ethics_review AND fit the archetype? An Innocent/Caregiver brand running hard-scarcity drops is off-brand."},
-    {"id": "restructuring_supports_promise", "check": "Do the core_processes and promise_kpis actually protect the specific promise in the positioning statement, or generic ops metrics?"},
-    {"id": "roadmap_respects_dependencies", "check": "Does the 90-day roadmap start moves whose blocked_by items land later? Any action before its dependency is a sequencing error."},
-    {"id": "kill_criteria_wired", "check": "Are the diagnosis kill_criteria and the restructuring unit_economics_gate actually represented as kill_switches at a decision gate?"},
-    {"id": "best_fit_customer_consistency", "check": "Is the same narrow best-fit customer targeted in positioning, the offer, the FOMO mechanisms, and the GTM channels — or does each stage drift to a different audience?"},
+    {
+        "id": "enemy_consistency",
+        "check": "Is the SAME enemy present across positioning (the_enemy), the brand story spine (problem beat), and the FOMO risk framing? A brand that fights three different enemies has none.",
+    },
+    {
+        "id": "archetype_voice_in_copy",
+        "check": "Do the FOMO content_hooks and GTM content pillars actually sound like the chosen archetype and verbal_identity (lexicon, first-line rule), or generic marketing?",
+    },
+    {
+        "id": "offer_affords_the_loop",
+        "check": "Does the business_model's contribution margin / unit economics actually fund the GTM primary growth loop? A paid loop on a thin margin is incoherent.",
+    },
+    {
+        "id": "pricing_matches_position",
+        "check": "Does the pricing_architecture (premium vs value, round vs charm) match the positioning and archetype? Charm pricing under a Ruler/premium position is a contradiction.",
+    },
+    {
+        "id": "category_vs_gtm",
+        "check": "If category_decision is 'design_new', does the GTM include the market-conditioning work to teach it? If 'play_in_existing', is it not wasting effort evangelising a category?",
+    },
+    {
+        "id": "fomo_vs_ethics_vs_brand",
+        "check": "Do the chosen FOMO mechanisms pass the brand's own ethics_review AND fit the archetype? An Innocent/Caregiver brand running hard-scarcity drops is off-brand.",
+    },
+    {
+        "id": "restructuring_supports_promise",
+        "check": "Do the core_processes and promise_kpis actually protect the specific promise in the positioning statement, or generic ops metrics?",
+    },
+    {
+        "id": "roadmap_respects_dependencies",
+        "check": "Does the 90-day roadmap start moves whose blocked_by items land later? Any action before its dependency is a sequencing error.",
+    },
+    {
+        "id": "kill_criteria_wired",
+        "check": "Are the diagnosis kill_criteria and the restructuring unit_economics_gate actually represented as kill_switches at a decision gate?",
+    },
+    {
+        "id": "best_fit_customer_consistency",
+        "check": "Is the same narrow best-fit customer targeted in positioning, the offer, the FOMO mechanisms, and the GTM channels — or does each stage drift to a different audience?",
+    },
 ]
 
 

@@ -169,7 +169,9 @@ privacy@company.com for questions.
         return {
             "sale_id": sale.get("id"),
             "refund_eligible": refund_eligible,
-            "reason": "Within 30-day window" if refund_eligible else "Outside 30-day window",
+            "reason": (
+                "Within 30-day window" if refund_eligible else "Outside 30-day window"
+            ),
             "amount": sale.get("amount") if refund_eligible else 0,
         }
 
@@ -199,7 +201,9 @@ class SupportChatbot:
         return "Great question! Conectándote con nuestro equipo en 5 min. Espera..."
 
     @staticmethod
-    def generate_faq_from_history(sales_history: list[dict[str, Any]]) -> list[dict[str, str]]:
+    def generate_faq_from_history(
+        sales_history: list[dict[str, Any]],
+    ) -> list[dict[str, str]]:
         """Genera FAQ automático desde histórico de preguntas."""
 
         # TODO: Analizar conversaciones, extraer preguntas comunes, generar respuestas

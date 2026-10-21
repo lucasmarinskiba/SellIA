@@ -37,7 +37,7 @@ async def upload_file(
 ):
     """
     Endpoint seguro para subida de archivos.
-    
+
     Validaciones:
     - Extensión en whitelist
     - MIME type verificado
@@ -53,15 +53,21 @@ async def upload_file(
         import json
 
         from app.middleware.security_logging import security_logger
-        security_logger.warning(json.dumps({
-            "event": "MALICIOUS_UPLOAD_BLOCKED",
-            "user_id": str(current_user.id),
-            "filename": file.filename,
-            "ip": getattr(request.state, "client_ip", "unknown"),
-            "reason": scan_result.message,
-            "details": scan_result.details,
-            "timestamp": datetime.now(UTC).isoformat(),
-        }, ensure_ascii=False))
+
+        security_logger.warning(
+            json.dumps(
+                {
+                    "event": "MALICIOUS_UPLOAD_BLOCKED",
+                    "user_id": str(current_user.id),
+                    "filename": file.filename,
+                    "ip": getattr(request.state, "client_ip", "unknown"),
+                    "reason": scan_result.message,
+                    "details": scan_result.details,
+                    "timestamp": datetime.now(UTC).isoformat(),
+                },
+                ensure_ascii=False,
+            )
+        )
 
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -79,7 +85,18 @@ async def upload_file(
 
     # Generar nombre único y seguro
     safe_ext = Path(file.filename or "").suffix.lower()
-    if safe_ext not in {".jpg", ".jpeg", ".png", ".webp", ".gif", ".pdf", ".txt", ".csv", ".xlsx", ".docx"}:
+    if safe_ext not in {
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".webp",
+        ".gif",
+        ".pdf",
+        ".txt",
+        ".csv",
+        ".xlsx",
+        ".docx",
+    }:
         safe_ext = ".bin"
 
     unique_name = f"{uuid.uuid4().hex}_{file_hash[:16]}{safe_ext}"
@@ -92,17 +109,23 @@ async def upload_file(
     import json
 
     from app.middleware.security_logging import security_logger
-    security_logger.info(json.dumps({
-        "event": "FILE_UPLOAD_SUCCESS",
-        "user_id": str(current_user.id),
-        "filename": file.filename,
-        "stored_as": unique_name,
-        "sha256": file_hash,
-        "size": len(content),
-        "ip": getattr(request.state, "client_ip", "unknown"),
-        "scan_result": scan_result.message,
-        "timestamp": datetime.now(UTC).isoformat(),
-    }, ensure_ascii=False))
+
+    security_logger.info(
+        json.dumps(
+            {
+                "event": "FILE_UPLOAD_SUCCESS",
+                "user_id": str(current_user.id),
+                "filename": file.filename,
+                "stored_as": unique_name,
+                "sha256": file_hash,
+                "size": len(content),
+                "ip": getattr(request.state, "client_ip", "unknown"),
+                "scan_result": scan_result.message,
+                "timestamp": datetime.now(UTC).isoformat(),
+            },
+            ensure_ascii=False,
+        )
+    )
 
     return {
         "success": True,
@@ -134,6 +157,7 @@ async def download_file(
         raise HTTPException(status_code=404, detail="Archivo no encontrado")
 
     from fastapi.responses import FileResponse
+
     return FileResponse(
         path=file_path,
         filename=safe_name,

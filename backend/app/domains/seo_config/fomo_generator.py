@@ -40,7 +40,9 @@ class PublicationFOMOGenerator:
         config = result.scalar_one_or_none()
         if config is not None and not config.global_seo_enabled:
             return False
-        return await is_brain_capability_enabled(self.db, business_id, FOMO_PUBLICATIONS)
+        return await is_brain_capability_enabled(
+            self.db, business_id, FOMO_PUBLICATIONS
+        )
 
     async def _may_generate(self, business_id: UUID, link: PublicationLink) -> bool:
         """The full on/off check for generating FOMO for one link: the link's own
@@ -50,8 +52,10 @@ class PublicationFOMOGenerator:
         if not link.seo_enabled:
             return False
         return await SEOAgentGuard(self.db).can_run_seo_agent(
-            business_id, "fomo_engine",
-            platform_id=link.connection_id, platform_name=link.platform_source,
+            business_id,
+            "fomo_engine",
+            platform_id=link.connection_id,
+            platform_name=link.platform_source,
         )
 
     async def generate_fomo_for_link(
@@ -149,12 +153,17 @@ class PublicationFOMOGenerator:
             "failed": failed,
         }
 
-    async def get_latest_fomo(self, business_id: UUID, link_id: UUID) -> PublicationLinkFOMO | None:
+    async def get_latest_fomo(
+        self, business_id: UUID, link_id: UUID
+    ) -> PublicationLinkFOMO | None:
         """Get the most recent FOMO copy for a link, scoped to the business
         that owns it — link_id alone is a caller-supplied path param."""
         result = await self.db.execute(
             select(PublicationLinkFOMO)
-            .where(PublicationLinkFOMO.link_id == link_id, PublicationLinkFOMO.business_id == business_id)
+            .where(
+                PublicationLinkFOMO.link_id == link_id,
+                PublicationLinkFOMO.business_id == business_id,
+            )
             .order_by(PublicationLinkFOMO.created_at.desc())
             .limit(1)
         )
@@ -206,7 +215,9 @@ class PublicationFOMOGenerator:
             fomo_playbook = await agent.run(business_id, profile, context, extra)
 
             fomo_score = getattr(fomo_playbook, "fomo_intensity_score", 70)
-            urgency = force_urgency or getattr(fomo_playbook, "urgency_trigger", "limited_time")
+            urgency = force_urgency or getattr(
+                fomo_playbook, "urgency_trigger", "limited_time"
+            )
             scarcity = None
             social_proof = None
             call_to_action = "Get it now before it's gone"
@@ -218,7 +229,9 @@ class PublicationFOMOGenerator:
                     social_proof = mechanisms.get("social_proof")
                     call_to_action = mechanisms.get("cta", call_to_action)
 
-            generated_copy = f"{scarcity or ''}\n{social_proof or ''}\n{call_to_action}".strip()
+            generated_copy = (
+                f"{scarcity or ''}\n{social_proof or ''}\n{call_to_action}".strip()
+            )
 
             fomo_entry = PublicationLinkFOMO(
                 business_id=business_id,
@@ -235,7 +248,9 @@ class PublicationFOMOGenerator:
             await self.db.commit()
             await self.db.refresh(fomo_entry)
 
-            logger.info(f"Generated FOMO copy for link {link_id} [{language}] (score: {fomo_score})")
+            logger.info(
+                f"Generated FOMO copy for link {link_id} [{language}] (score: {fomo_score})"
+            )
             return fomo_entry
 
         except Exception:

@@ -46,7 +46,9 @@ class HoursVerdict:
     after_hours_message: str | None = None
 
 
-def check_hours(active_hours: dict[str, Any] | None, now: datetime | None = None) -> HoursVerdict:
+def check_hours(
+    active_hours: dict[str, Any] | None, now: datetime | None = None
+) -> HoursVerdict:
     """Is the current moment inside the bot's window?
 
     The window is stored in the seller's local time with an explicit UTC offset,
@@ -109,7 +111,9 @@ async def build_brief(
         from app.domains.preferences.models import SellerPreferences
 
         result = await db.execute(
-            select(SellerPreferences).where(SellerPreferences.business_id == business_id)
+            select(SellerPreferences).where(
+                SellerPreferences.business_id == business_id
+            )
         )
         prefs = result.scalar_one_or_none()
     except Exception as e:  # noqa: BLE001
@@ -161,7 +165,9 @@ async def build_brief(
             )
 
     if bot is not None and getattr(bot, "custom_instructions", None):
-        sections.append(f"INSTRUCCIONES DEL VENDEDOR PARA ESTE CANAL: {bot.custom_instructions}")
+        sections.append(
+            f"INSTRUCCIONES DEL VENDEDOR PARA ESTE CANAL: {bot.custom_instructions}"
+        )
         sources.append("instrucciones del canal")
 
     prompt = playbooks.prompt_fragment(platform, language=language_name)
@@ -188,7 +194,9 @@ class SendVerdict:
     trimmed: bool
 
 
-def vet_reply(platform: str, reply: str, *, hold_on_violation: bool = True) -> SendVerdict:
+def vet_reply(
+    platform: str, reply: str, *, hold_on_violation: bool = True
+) -> SendVerdict:
     """Check a generated reply against the platform before it goes out.
 
     Length is repaired (trimmed at a sentence boundary). A forbidden link or

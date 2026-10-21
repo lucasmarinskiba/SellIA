@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 class VendorCreate(BaseModel):
     """Create vendor."""
+
     name: str = Field(..., min_length=1, max_length=255)
     category: str = Field(..., min_length=1, max_length=100)
     contact_email: str = Field(..., min_length=1, max_length=255)
@@ -17,6 +18,7 @@ class VendorCreate(BaseModel):
 
 class VendorScoreUpdate(BaseModel):
     """Update vendor scores."""
+
     quality_score: Decimal = Field(..., ge=0, le=100)
     cost_score: Decimal = Field(..., ge=0, le=100)
     delivery_score: Decimal = Field(..., ge=0, le=100)
@@ -24,6 +26,7 @@ class VendorScoreUpdate(BaseModel):
 
 class VendorOut(BaseModel):
     """Vendor response."""
+
     id: UUID
     business_id: UUID
     name: str
@@ -43,6 +46,7 @@ class VendorOut(BaseModel):
 
 class RFQCreate(BaseModel):
     """Create RFQ."""
+
     vendor_id: UUID | None = None
     description: str = Field(..., min_length=1)
     quantity: int = Field(..., ge=1)
@@ -52,11 +56,13 @@ class RFQCreate(BaseModel):
 
 class RFQAccept(BaseModel):
     """Accept RFQ response."""
+
     quote_amount_aed: Decimal = Field(..., ge=0)
 
 
 class RFQOut(BaseModel):
     """RFQ response."""
+
     id: UUID
     business_id: UUID
     rfq_number: str
@@ -76,6 +82,7 @@ class RFQOut(BaseModel):
 
 class PurchaseOrderCreate(BaseModel):
     """Create purchase order."""
+
     vendor_id: UUID
     rfq_id: UUID | None = None
     description: str = Field(..., min_length=1)
@@ -86,6 +93,7 @@ class PurchaseOrderCreate(BaseModel):
 
 class PurchaseOrderUpdate(BaseModel):
     """Update PO status."""
+
     status: str = Field(..., pattern="^(issued|received|invoiced|paid)$")
     actual_delivery_date: date | None = None
     invoice_number: str | None = Field(None, max_length=50)
@@ -94,6 +102,7 @@ class PurchaseOrderUpdate(BaseModel):
 
 class PurchaseOrderOut(BaseModel):
     """PO response."""
+
     id: UUID
     business_id: UUID
     po_number: str

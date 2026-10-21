@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class AutomationTask:
     """Single automation task for Computer Use."""
+
     task_id: str
     platform: str  # hotmart|meli|amazon|beacons|instagram|tiktok
     action: str  # create_campaign|upload_post|schedule_email|add_links

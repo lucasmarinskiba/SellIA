@@ -19,7 +19,9 @@ from app.domains.subscriptions.models import (
 logger = logging.getLogger(__name__)
 
 
-async def get_or_create_subscription(db: AsyncSession, user_id: Any, plan_slug: str = "free") -> Subscription:
+async def get_or_create_subscription(
+    db: AsyncSession, user_id: Any, plan_slug: str = "free"
+) -> Subscription:
     result = await db.execute(
         select(Subscription).where(Subscription.user_id == user_id)
     )
@@ -127,7 +129,9 @@ async def create_default_plans(db: AsyncSession) -> SubscriptionPlan:
         db.add(plan)
     await db.commit()
 
-    result = await db.execute(select(SubscriptionPlan).where(SubscriptionPlan.slug == "free"))
+    result = await db.execute(
+        select(SubscriptionPlan).where(SubscriptionPlan.slug == "free")
+    )
     return result.scalar_one()
 
 
@@ -149,8 +153,18 @@ async def check_subscription_limit(
         logger.exception("check_subscription_limit: error inesperado")
         await db.rollback()
         from app.core.logger import get_logger
-        get_logger(__name__).error(f"check_subscription_limit failed, allowing by default: {e}")
-        return {"metric": metric_type, "used": 0, "limit": -1, "remaining": -1, "has_limit": False, "allowed": True}
+
+        get_logger(__name__).error(
+            f"check_subscription_limit failed, allowing by default: {e}"
+        )
+        return {
+            "metric": metric_type,
+            "used": 0,
+            "limit": -1,
+            "remaining": -1,
+            "has_limit": False,
+            "allowed": True,
+        }
 
 
 async def _check_subscription_limit_inner(
@@ -179,25 +193,41 @@ async def _check_subscription_limit_inner(
         # product decision nobody made here.
         free_plan = await db.execute(
             select(SubscriptionPlan)
-            .where(SubscriptionPlan.slug == "free", SubscriptionPlan.is_active.is_(True))
+            .where(
+                SubscriptionPlan.slug == "free", SubscriptionPlan.is_active.is_(True)
+            )
             .limit(1)
         )
         plan = free_plan.scalar_one_or_none()
         if plan is None:
             return {
-                "metric": metric_type, "used": 0, "limit": -1, "remaining": -1,
-                "has_limit": False, "allowed": True, "plan": "sin plan",
+                "metric": metric_type,
+                "used": 0,
+                "limit": -1,
+                "remaining": -1,
+                "has_limit": False,
+                "allowed": True,
+                "plan": "sin plan",
             }
         limit = (plan.limits or {}).get(metric_type, -1)
         if limit == -1:
             return {
-                "metric": metric_type, "used": 0, "limit": -1, "remaining": -1,
-                "has_limit": False, "allowed": True, "plan": plan.slug,
+                "metric": metric_type,
+                "used": 0,
+                "limit": -1,
+                "remaining": -1,
+                "has_limit": False,
+                "allowed": True,
+                "plan": plan.slug,
             }
         return {
-            "metric": metric_type, "used": 0, "limit": limit,
-            "remaining": max(0, limit - quantity), "has_limit": True,
-            "allowed": quantity <= limit, "plan": plan.slug,
+            "metric": metric_type,
+            "used": 0,
+            "limit": limit,
+            "remaining": max(0, limit - quantity),
+            "has_limit": True,
+            "allowed": quantity <= limit,
+            "plan": plan.slug,
         }
 
     _sub, plan = row
@@ -206,20 +236,34 @@ async def _check_subscription_limit_inner(
 
     # Unlimited (-1 means no limit)
     if limit == -1:
-        return {"metric": metric_type, "used": 0, "limit": -1, "remaining": -1, "has_limit": False, "allowed": True}
+        return {
+            "metric": metric_type,
+            "used": 0,
+            "limit": -1,
+            "remaining": -1,
+            "has_limit": False,
+            "allowed": True,
+        }
 
     # Superusers bypass all limits
     from app.domains.users.models import User
+
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if user and user.is_superuser:
-        return {"metric": metric_type, "used": 0, "limit": -1, "remaining": -1, "has_limit": False, "allowed": True}
+        return {
+            "metric": metric_type,
+            "used": 0,
+            "limit": -1,
+            "remaining": -1,
+            "has_limit": False,
+            "allowed": True,
+        }
 
     # Get current usage for this month
     current_month = datetime.now(UTC).strftime("%Y-%m")
     result = await db.execute(
-        select(func.coalesce(func.sum(UsageTracking.quantity), 0))
-        .where(
+        select(func.coalesce(func.sum(UsageTracking.quantity), 0)).where(
             UsageTracking.user_id == user_id,
             UsageTracking.metric_type == metric_type,
             UsageTracking.period_month == current_month,
@@ -264,11 +308,25 @@ async def track_usage(
 
 REGION_MAP = {
     "AR": "AR",
-    "CL": "LATAM", "UY": "LATAM", "PY": "LATAM", "BO": "LATAM",
-    "PE": "LATAM", "EC": "LATAM", "CO": "LATAM", "VE": "LATAM",
-    "BR": "LATAM", "MX": "LATAM", "GT": "LATAM", "SV": "LATAM",
-    "HN": "LATAM", "NI": "LATAM", "CR": "LATAM", "PA": "LATAM",
-    "DO": "LATAM", "CU": "LATAM", "PR": "LATAM",
+    "CL": "LATAM",
+    "UY": "LATAM",
+    "PY": "LATAM",
+    "BO": "LATAM",
+    "PE": "LATAM",
+    "EC": "LATAM",
+    "CO": "LATAM",
+    "VE": "LATAM",
+    "BR": "LATAM",
+    "MX": "LATAM",
+    "GT": "LATAM",
+    "SV": "LATAM",
+    "HN": "LATAM",
+    "NI": "LATAM",
+    "CR": "LATAM",
+    "PA": "LATAM",
+    "DO": "LATAM",
+    "CU": "LATAM",
+    "PR": "LATAM",
 }
 
 
@@ -279,23 +337,37 @@ def get_region_from_country(country_code: str | None) -> str:
     return REGION_MAP.get(country_code.upper(), "INTL")
 
 
-def get_plan_price(plan: SubscriptionPlan, region: str, billing_cycle: str) -> tuple[float, str]:
+def get_plan_price(
+    plan: SubscriptionPlan, region: str, billing_cycle: str
+) -> tuple[float, str]:
     """Get price and currency for a plan based on region and billing cycle.
-    
+
     Returns:
         tuple of (price, currency)
     """
     if billing_cycle not in ("monthly", "yearly"):
         billing_cycle = "monthly"
-    
+
     if region == "AR":
-        price = plan.price_monthly_ars if billing_cycle == "monthly" else plan.price_yearly_ars
+        price = (
+            plan.price_monthly_ars
+            if billing_cycle == "monthly"
+            else plan.price_yearly_ars
+        )
         return float(price or 0), "ARS"
     elif region == "LATAM":
-        price = plan.price_monthly_latam_usd if billing_cycle == "monthly" else plan.price_yearly_latam_usd
+        price = (
+            plan.price_monthly_latam_usd
+            if billing_cycle == "monthly"
+            else plan.price_yearly_latam_usd
+        )
         return float(price or 0), "USD"
     else:
-        price = plan.price_monthly_usd if billing_cycle == "monthly" else plan.price_yearly_usd
+        price = (
+            plan.price_monthly_usd
+            if billing_cycle == "monthly"
+            else plan.price_yearly_usd
+        )
         return float(price or 0), "USD"
 
 
@@ -303,12 +375,14 @@ def get_plan_price(plan: SubscriptionPlan, region: str, billing_cycle: str) -> t
 # Invoice helpers
 # =============================================================================
 
+
 async def generate_invoice_number(db: AsyncSession) -> str:
     """Generate a unique invoice number (SELL-YYYY-XXXXX format)."""
     from sqlalchemy import func
+
     current_year = datetime.now(UTC).year
     prefix = f"SELL-{current_year}"
-    
+
     result = await db.execute(
         select(func.count(Invoice.id)).where(Invoice.invoice_number.like(f"{prefix}-%"))
     )
@@ -328,17 +402,17 @@ async def create_invoice(
 ) -> Invoice:
     """Create an invoice for a payment."""
     invoice_number = await generate_invoice_number(db)
-    
+
     # Determine invoice type based on region and user tax status
     invoice_type = "INTL"
     if region == "AR":
         # Will be determined by AFIP integration (A, B, or C)
         invoice_type = "C"  # Default to consumidor final
-    
+
     period_days = 30 if billing_cycle == "monthly" else 365
     period_start = datetime.now(UTC)
     period_end = period_start + timedelta(days=period_days)
-    
+
     invoice = Invoice(
         user_id=user_id,
         transaction_id=transaction_id,
@@ -361,6 +435,7 @@ async def create_invoice(
 # =============================================================================
 # Bank Transfer Order Helpers
 # =============================================================================
+
 
 async def generate_bank_transfer_order(
     db: AsyncSession,
@@ -433,6 +508,7 @@ async def generate_bank_transfer_order(
     if getattr(user, "email", None):
         from app.core.email_service import send_email
         from app.domains.subscriptions.email_templates import transfer_order_created
+
         subject, html, text = transfer_order_created(
             order_number=order.order_number,
             plan_name=plan.name,
@@ -441,7 +517,9 @@ async def generate_bank_transfer_order(
             alias=order.alias or "",
             cbu=order.cbu,
             holder=order.account_holder or "SellIA",
-            expires_at=order.expires_at.strftime("%d/%m/%Y %H:%M") if order.expires_at else "",
+            expires_at=(
+                order.expires_at.strftime("%d/%m/%Y %H:%M") if order.expires_at else ""
+            ),
         )
         await send_email(user.email, subject, html, text)
 

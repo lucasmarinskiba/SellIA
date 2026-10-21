@@ -38,7 +38,9 @@ async def generate_ai_response(
         (response_text, confidence) — confidence 0.0 means "escalate to human"
     """
     # 1. Search FAQ and KB for relevant content
-    kb_results = await search_kb_and_faq(db, business_id, ticket_title + " " + ticket_description)
+    kb_results = await search_kb_and_faq(
+        db, business_id, ticket_title + " " + ticket_description
+    )
 
     context = ""
     if kb_results:
@@ -102,6 +104,7 @@ Provide a helpful response. If you cannot help, respond with exactly "ESCALATE".
                 from app.domains.consumo.service import (
                     get_or_create_quality_gate_config,
                 )
+
                 qg = await get_or_create_quality_gate_config(db, user_id)
                 if qg.enabled and confidence < qg.min_confidence_threshold:
                     # Store as draft suggestion but don't send to user
@@ -133,4 +136,7 @@ async def should_escalate(
     user_msgs = [m for m in messages if m.sender_type.value == "user"]
     ai_msgs = [m for m in messages if m.sender_type.value == "ai"]
 
-    return bool(len(ai_msgs) >= MAX_AI_MESSAGES_BEFORE_ESCALATE and len(user_msgs) > len(ai_msgs))
+    return bool(
+        len(ai_msgs) >= MAX_AI_MESSAGES_BEFORE_ESCALATE
+        and len(user_msgs) > len(ai_msgs)
+    )

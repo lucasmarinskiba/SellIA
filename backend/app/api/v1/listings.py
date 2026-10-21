@@ -25,7 +25,7 @@ async def create_listing(
         "stock": stock,
         "platform": platform,
         "message": "Listing created successfully",
-        "status": "active"
+        "status": "active",
     }
 
 
@@ -42,10 +42,46 @@ async def get_listings(
 ):
     """Get listings with advanced filtering."""
     listings = [
-        {"id": "LST-001", "product": "iPhone 15 Pro", "platform": "Mercado Libre", "price": 999, "stock": 12, "views": 1234, "rating": 4.8, "status": "active"},
-        {"id": "LST-002", "product": "AirPods Pro", "platform": "Amazon", "price": 249, "stock": 45, "views": 856, "rating": 4.6, "status": "active"},
-        {"id": "LST-003", "product": "MacBook Air M3", "platform": "Hotmart", "price": 1299, "stock": 5, "views": 432, "rating": 4.9, "status": "active"},
-        {"id": "LST-004", "product": "iPad Pro 12.9\"", "platform": "Mercado Libre", "price": 799, "stock": 0, "views": 567, "rating": 4.7, "status": "out_of_stock"},
+        {
+            "id": "LST-001",
+            "product": "iPhone 15 Pro",
+            "platform": "Mercado Libre",
+            "price": 999,
+            "stock": 12,
+            "views": 1234,
+            "rating": 4.8,
+            "status": "active",
+        },
+        {
+            "id": "LST-002",
+            "product": "AirPods Pro",
+            "platform": "Amazon",
+            "price": 249,
+            "stock": 45,
+            "views": 856,
+            "rating": 4.6,
+            "status": "active",
+        },
+        {
+            "id": "LST-003",
+            "product": "MacBook Air M3",
+            "platform": "Hotmart",
+            "price": 1299,
+            "stock": 5,
+            "views": 432,
+            "rating": 4.9,
+            "status": "active",
+        },
+        {
+            "id": "LST-004",
+            "product": 'iPad Pro 12.9"',
+            "platform": "Mercado Libre",
+            "price": 799,
+            "stock": 0,
+            "views": 567,
+            "rating": 4.7,
+            "status": "out_of_stock",
+        },
     ]
 
     # Apply filters
@@ -73,17 +109,22 @@ async def get_listings(
             "stock_status": stock_status,
             "search": search,
         },
-        "listings": filtered[skip : skip + limit]
+        "listings": filtered[skip : skip + limit],
     }
 
 
 @router.put("/{listing_id}")
-async def update_listing(listing_id: str, user_id: str = Query(...), price: float = Query(None), stock: int = Query(None)):
+async def update_listing(
+    listing_id: str,
+    user_id: str = Query(...),
+    price: float = Query(None),
+    stock: int = Query(None),
+):
     """Update listing details."""
     return {
         "listing_id": listing_id,
         "message": "Listing updated successfully",
-        "updated_fields": {"price": price, "stock": stock}
+        "updated_fields": {"price": price, "stock": stock},
     }
 
 
@@ -93,5 +134,5 @@ async def delete_listing(listing_id: str, user_id: str = Query(...)):
     return {
         "listing_id": listing_id,
         "message": "Listing deleted successfully",
-        "status": "deleted"
+        "status": "deleted",
     }

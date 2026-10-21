@@ -113,7 +113,9 @@ class RateLimiter:
             "requests_limit_day": tier_limit["per_day"],
             "minute_reset_at": limit.minute_reset_at.isoformat(),
             "day_reset_at": limit.day_reset_at.isoformat(),
-            "retry_after_seconds": (limit.minute_reset_at - now).total_seconds() if not minute_ok else 0,
+            "retry_after_seconds": (
+                (limit.minute_reset_at - now).total_seconds() if not minute_ok else 0
+            ),
         }
 
         return allowed, info
@@ -192,7 +194,9 @@ class RequestDeduplicator:
         if signature in self.signatures:
             cached = self.signatures[signature]
             if now - cached.created_at < self.cache_ttl:
-                logger.info(f"Duplicate request detected: {signature}, returning cached response")
+                logger.info(
+                    f"Duplicate request detected: {signature}, returning cached response"
+                )
                 return True, cached
             else:
                 # Expired, remove it
@@ -289,7 +293,9 @@ class CircuitBreaker:
 
         if self.state == self.State.OPEN:
             # Check if timeout expired
-            if utc_now() - self.last_failure_at > timedelta(seconds=self.timeout_seconds):
+            if utc_now() - self.last_failure_at > timedelta(
+                seconds=self.timeout_seconds
+            ):
                 self.state = self.State.HALF_OPEN
                 logger.info(f"CircuitBreaker {self.name}: OPEN → HALF_OPEN")
             else:
@@ -319,9 +325,14 @@ class CircuitBreaker:
         self.failure_count += 1
         self.last_failure_at = utc_now()
 
-        if self.failure_count >= self.failure_threshold and self.state != self.State.OPEN:
+        if (
+            self.failure_count >= self.failure_threshold
+            and self.state != self.State.OPEN
+        ):
             self.state = self.State.OPEN
-            logger.error(f"CircuitBreaker {self.name}: CLOSED → OPEN (failures: {self.failure_count})")
+            logger.error(
+                f"CircuitBreaker {self.name}: CLOSED → OPEN (failures: {self.failure_count})"
+            )
 
     def get_status(self) -> dict:
         """Get circuit breaker status."""
@@ -330,14 +341,17 @@ class CircuitBreaker:
             "name": self.name,
             "state": self.state.value,
             "failure_count": self.failure_count,
-            "last_failure_at": self.last_failure_at.isoformat() if self.last_failure_at else None,
-            "last_success_at": self.last_success_at.isoformat() if self.last_success_at else None,
+            "last_failure_at": (
+                self.last_failure_at.isoformat() if self.last_failure_at else None
+            ),
+            "last_success_at": (
+                self.last_success_at.isoformat() if self.last_success_at else None
+            ),
         }
 
 
 class CircuitBreakerOpen(Exception):
     """Circuit breaker is open."""
-
 
 
 # Singleton instances

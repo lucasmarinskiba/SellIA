@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 class DisputeReason(Enum):
     """Categorías de reclamo."""
+
     PRODUCT_DAMAGED = "producto_dañado"
     PRODUCT_DIFFERENT = "producto_diferente"
     NOT_ARRIVED = "no_llegó"
@@ -34,6 +35,7 @@ class DisputeReason(Enum):
 
 class RefundStrategy(Enum):
     """Estrategias de resolución."""
+
     FULL_REFUND = "full_refund"
     PARTIAL_REFUND = "partial_refund"  # 50-70%
     REPLACEMENT = "replacement"  # Nuevo producto
@@ -43,6 +45,7 @@ class RefundStrategy(Enum):
 
 class RefundChannel(Enum):
     """Canales de reembolso."""
+
     ORIGINAL_PAYMENT = "original_payment"  # Back to card/PayPal
     WALLET = "wallet"  # Crédito en SellIA wallet
     BANK_TRANSFER = "bank_transfer"  # Transferencia bancaria
@@ -51,6 +54,7 @@ class RefundChannel(Enum):
 @dataclass
 class RefundRequest:
     """Solicitud de reembolso."""
+
     order_id: str
     reason: DisputeReason
     description: str
@@ -65,6 +69,7 @@ class RefundRequest:
 @dataclass
 class RefundAnalysis:
     """Análisis de reclamo."""
+
     request: RefundRequest
     confidence: float  # 0-1
     strategy: RefundStrategy
@@ -135,10 +140,16 @@ class RefundAutomationComplete:
         refund_amount = self._calculate_refund_amount(reason, strategy, order_amount)
 
         # Generar recomendación
-        recommendation_text = self._get_recommendation_text(reason, strategy, refund_amount)
+        recommendation_text = self._get_recommendation_text(
+            reason, strategy, refund_amount
+        )
 
         # Auto-approve si alta confianza y sin fraude
-        auto_approve = confidence >= 0.8 and fraud_score < 0.5 and strategy != RefundStrategy.ESCALATE
+        auto_approve = (
+            confidence >= 0.8
+            and fraud_score < 0.5
+            and strategy != RefundStrategy.ESCALATE
+        )
 
         analysis = RefundAnalysis(
             request=RefundRequest(
@@ -282,7 +293,9 @@ class RefundAutomationComplete:
 
         return min(score, 1.0)
 
-    def _recommend_strategy(self, reason: DisputeReason, confidence: float) -> RefundStrategy:
+    def _recommend_strategy(
+        self, reason: DisputeReason, confidence: float
+    ) -> RefundStrategy:
         """Recomienda estrategia de resolución."""
 
         # Alta confianza (>= 0.8)
@@ -403,7 +416,10 @@ class RefundAutomationComplete:
                     order_id, refund_amount, refund_channel
                 )
             else:
-                return {"status": "error", "error": f"Unknown payment method: {payment_method}"}
+                return {
+                    "status": "error",
+                    "error": f"Unknown payment method: {payment_method}",
+                }
 
             if refund_result["status"] != "success":
                 logger.error(f"Refund processing failed: {refund_result}")
@@ -457,7 +473,9 @@ class RefundAutomationComplete:
         """Procesa refund en Mercado Libre."""
 
         try:
-            refund_result = await self.ml.process_refund(order_id, amount, "customer_request")
+            refund_result = await self.ml.process_refund(
+                order_id, amount, "customer_request"
+            )
             return refund_result
         except Exception as e:
             logger.exception("ML refund error")
@@ -598,7 +616,10 @@ class RefundAutomationComplete:
             )
 
             if not replacement_order:
-                return {"status": "error", "error": "Failed to create replacement order"}
+                return {
+                    "status": "error",
+                    "error": "Failed to create replacement order",
+                }
 
             # Generar shipping label
             shipping_label = await self._generate_return_label(order_id)
@@ -653,7 +674,9 @@ class RefundAutomationComplete:
         Puede usarse en futuras compras.
         """
 
-        logger.info(f"Issuing store credit: customer={customer_id}, amount=${amount:.2f}")
+        logger.info(
+            f"Issuing store credit: customer={customer_id}, amount=${amount:.2f}"
+        )
 
         # TODO: Implementar integración con wallet/DB
 

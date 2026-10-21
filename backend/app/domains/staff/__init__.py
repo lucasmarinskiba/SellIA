@@ -25,5 +25,5 @@ __all__ = [
     "TaskPriority",
     "TaskStatus",
     "TaskTemplate",
-    "TaskType"
+    "TaskType",
 ]

@@ -21,6 +21,7 @@ from app.core.database import Base
 
 class ScoreType(str, Enum):
     """Predictive score types."""
+
     LEAD_SCORE = "lead_score"
     CHURN_RISK = "churn_risk"
     CLV_FORECAST = "clv_forecast"
@@ -29,6 +30,7 @@ class ScoreType(str, Enum):
 
 class SegmentationType(str, Enum):
     """Segmentation types."""
+
     RULE_BASED = "rule_based"
     BEHAVIORAL = "behavioral"
     PREDICTIVE = "predictive"
@@ -41,10 +43,16 @@ class SegmentationType(str, Enum):
 
 class DynamicSegment(Base):
     """Dynamic customer segments."""
+
     __tablename__ = "dynamic_segments"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     name = Column(String(255), nullable=False)
     description = Column(String(500), nullable=True)
@@ -74,12 +82,28 @@ class DynamicSegment(Base):
 
 class SegmentMembership(Base):
     """Customer segment membership."""
+
     __tablename__ = "segment_memberships"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    segment_id = Column(UUID(as_uuid=True), ForeignKey("dynamic_segments.id", ondelete="CASCADE"), nullable=False, index=True)
-    customer_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    segment_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("dynamic_segments.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    customer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     joined_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
     left_at = Column(DateTime(UTC), nullable=True)
@@ -98,14 +122,24 @@ class SegmentMembership(Base):
 
 class LookalikeAudience(Base):
     """Lookalike audiences from high-value customers."""
+
     __tablename__ = "lookalike_audiences"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     name = Column(String(255), nullable=False)
     description = Column(String(500), nullable=True)
-    source_segment_id = Column(UUID(as_uuid=True), ForeignKey("dynamic_segments.id", ondelete="CASCADE"), nullable=True)
+    source_segment_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("dynamic_segments.id", ondelete="CASCADE"),
+        nullable=True,
+    )
     source_customer_ids = Column(JSONB, nullable=True)
 
     similarity_threshold = Column(Float, default=0.75)
@@ -128,11 +162,19 @@ class LookalikeAudience(Base):
 
 class PredictionLog(Base):
     """Audit log of predictions."""
+
     __tablename__ = "prediction_logs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    customer_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    customer_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True
+    )
 
     prediction_type = Column(String(50), nullable=False)
     input_data = Column(JSONB, nullable=True)
@@ -151,10 +193,17 @@ class PredictionLog(Base):
 
 class PredictiveMetrics(Base):
     """Aggregated predictive metrics."""
+
     __tablename__ = "predictive_metrics"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
 
     avg_lead_score = Column(Float, default=0)
     high_potential_count = Column(Integer, default=0)
@@ -177,6 +226,4 @@ class PredictiveMetrics(Base):
 
     updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
-    __table_args__ = (
-        Index("idx_business_metrics", "business_id"),
-    )
+    __table_args__ = (Index("idx_business_metrics", "business_id"),)

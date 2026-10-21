@@ -27,15 +27,18 @@ def require_limit(metric_type: str, quantity: int = 1, track_after: bool = True)
     Note: automatic post-tracking requires wrapping the endpoint, which is complex.
     For simplicity, set track_after=False and call track_usage manually in the endpoint.
     """
+
     async def _check_limit(
         db: Annotated[AsyncSession, Depends(get_db)],
         current_user: Annotated[User, Depends(get_current_active_user)],
     ):
-        result = await check_subscription_limit(db, current_user.id, metric_type, quantity)
+        result = await check_subscription_limit(
+            db, current_user.id, metric_type, quantity
+        )
         if not result["allowed"]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Límite alcanzado para {metric_type}. Usados: {result['used']}/{result['limit']}"
+                detail=f"Límite alcanzado para {metric_type}. Usados: {result['used']}/{result['limit']}",
             )
         return result
 
@@ -53,6 +56,6 @@ async def enforce_limit(
     if not result["allowed"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Límite alcanzado para {metric_type}. Usados: {result['used']}/{result['limit']}"
+            detail=f"Límite alcanzado para {metric_type}. Usados: {result['used']}/{result['limit']}",
         )
     return result

@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 class TechStackLayer(str, Enum):
     """Technology stack layers."""
+
     FRONTEND = "frontend"
     BACKEND = "backend"
     DATABASE = "database"
@@ -26,6 +27,7 @@ class TechStackLayer(str, Enum):
 
 class GrowthHackingTactic(str, Enum):
     """Growth hacking tactics."""
+
     VIRAL = "viral"
     CONTENT = "content"
     PRODUCT = "product"
@@ -281,7 +283,7 @@ class DevelopmentAgent:
         company_stage: str,
         expected_scale: str,
         team_expertise: list[str],
-        budget: float
+        budget: float,
     ) -> dict[str, Any]:
         """Recommend technology stack."""
         return {
@@ -302,10 +304,7 @@ class DevelopmentAgent:
 
     @staticmethod
     def design_growth_hack(
-        product: str,
-        target_users: str,
-        budget: float,
-        timeline_months: int
+        product: str, target_users: str, budget: float, timeline_months: int
     ) -> dict[str, Any]:
         """Design growth hacking experiment."""
         return {
@@ -327,9 +326,7 @@ class DevelopmentAgent:
 
     @staticmethod
     def create_mvp_roadmap(
-        product_vision: str,
-        target_launch_date: str,
-        team_size: int
+        product_vision: str, target_launch_date: str, team_size: int
     ) -> dict[str, Any]:
         """Create MVP development roadmap."""
         return {
@@ -365,8 +362,7 @@ class DevelopmentAgent:
 
     @staticmethod
     def prioritize_features(
-        features: list[dict[str, Any]],
-        framework: str = "rice"
+        features: list[dict[str, Any]], framework: str = "rice"
     ) -> dict[str, Any]:
         """Prioritize features using selected framework."""
         return {
@@ -379,8 +375,7 @@ class DevelopmentAgent:
 
     @staticmethod
     def assess_technical_debt(
-        codebase_metrics: dict[str, Any],
-        team_velocity: int
+        codebase_metrics: dict[str, Any], team_velocity: int
     ) -> dict[str, Any]:
         """Assess technical debt in codebase."""
         return {
@@ -399,8 +394,7 @@ class DevelopmentAgent:
 
     @staticmethod
     def identify_automation_opportunities(
-        current_processes: list[str],
-        team_size: int
+        current_processes: list[str], team_size: int
     ) -> dict[str, Any]:
         """Identify automation opportunities."""
         return {
@@ -421,9 +415,7 @@ class DevelopmentAgent:
 
     @staticmethod
     def design_architecture(
-        product_type: str,
-        expected_users: int,
-        data_volume_gb: int
+        product_type: str, expected_users: int, data_volume_gb: int
     ) -> dict[str, Any]:
         """Design system architecture."""
         return {

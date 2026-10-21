@@ -1,6 +1,5 @@
 """Mission WebSocket Endpoint"""
 
-
 import logging
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
@@ -19,13 +18,13 @@ async def mission_websocket(
     token: str | None = Query(None),
 ):
     """WebSocket for real-time mission progress updates.
-    
+
     Connect with: wss://host/ws/missions?token=<jwt>
-    
+
     Incoming messages:
     - {"type": "ping"} -> pong response
     - {"type": "approve_step", "mission_id": "...", "step_id": "..."} -> approve a waiting step
-    
+
     Outgoing messages:
     - {"type": "mission_progress", "mission_id": "...", "step_id": "...", "status": "..."}
     - {"type": "mission_status", "mission_id": "...", "status": "...", "message": "..."}
@@ -51,7 +50,9 @@ async def mission_websocket(
             msg_type = data.get("type", "")
 
             if msg_type == "ping":
-                await websocket.send_json({"type": "pong", "timestamp": str(__import__('datetime').utc_now())})
+                await websocket.send_json(
+                    {"type": "pong", "timestamp": str(__import__("datetime").utc_now())}
+                )
 
             elif msg_type == "approve_step":
                 # Handle step approval via websocket
@@ -61,19 +62,25 @@ async def mission_websocket(
                 from app.core.database import AsyncSessionLocal
                 from app.domains.missions.schemas import MissionStepUpdate
                 from app.domains.missions.services import MissionService
+
                 async with AsyncSessionLocal() as db:
                     service = MissionService(db)
                     await service.update_step(
-                        mission_id=__import__('uuid').UUID(mission_id),
-                        step_id=__import__('uuid').UUID(step_id),
+                        mission_id=__import__("uuid").UUID(mission_id),
+                        step_id=__import__("uuid").UUID(step_id),
                         user_id=user.id,
-                        data=MissionStepUpdate(status="completed", approved_by_user=True),
+                        data=MissionStepUpdate(
+                            status="completed", approved_by_user=True
+                        ),
                     )
-                await mission_ws_manager.broadcast(user_id, {
-                    "type": "step_approved",
-                    "mission_id": mission_id,
-                    "step_id": step_id,
-                })
+                await mission_ws_manager.broadcast(
+                    user_id,
+                    {
+                        "type": "step_approved",
+                        "mission_id": mission_id,
+                        "step_id": step_id,
+                    },
+                )
 
     except WebSocketDisconnect:
         mission_ws_manager.disconnect(user_id, websocket)

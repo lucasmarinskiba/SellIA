@@ -55,8 +55,11 @@ async def generate_health_report(db: AsyncSession) -> SystemHealthReport:
     # 2. Tickets de soporte no resueltos
     try:
         from app.domains.support.models import SupportTicket, TicketStatus
+
         result = await db.execute(
-            select(func.count()).select_from(SupportTicket).where(
+            select(func.count())
+            .select_from(SupportTicket)
+            .where(
                 SupportTicket.status.in_([TicketStatus.OPEN, TicketStatus.ESCALATED])
             )
         )
@@ -67,6 +70,7 @@ async def generate_health_report(db: AsyncSession) -> SystemHealthReport:
     # 3. Feedback themes (top categorías reportadas)
     try:
         from app.domains.feedback.models import UserFeedback
+
         result = await db.execute(
             select(UserFeedback.category, func.count())
             .where(UserFeedback.created_at >= datetime.now(UTC) - timedelta(days=7))
@@ -74,18 +78,23 @@ async def generate_health_report(db: AsyncSession) -> SystemHealthReport:
             .order_by(desc(func.count()))
             .limit(5)
         )
-        report.top_feedback_themes = [f"{cat}: {count}" for cat, count in result.all() if cat]
+        report.top_feedback_themes = [
+            f"{cat}: {count}" for cat, count in result.all() if cat
+        ]
     except Exception as e:
         logger.warning(f"Could not collect feedback themes: {e}", exc_info=True)
 
     # 4. Conversaciones fallidas (sin respuesta AI)
     try:
         from app.domains.channels.models import Message
+
         result = await db.execute(
-            select(func.count()).select_from(Message).where(
+            select(func.count())
+            .select_from(Message)
+            .where(
                 Message.direction == "inbound",
                 Message.created_at >= datetime.now(UTC) - timedelta(days=1),
-                Message.content == ""  # fallback: no outbound response
+                Message.content == "",  # fallback: no outbound response
             )
         )
         report.conversation_failures = result.scalar() or 0
@@ -98,7 +107,9 @@ async def generate_health_report(db: AsyncSession) -> SystemHealthReport:
     # 6. Recomendaciones automáticas básicas
     report.recommendations = _generate_basic_recommendations(report)
 
-    logger.info(f"System health report generated: {report.unresolved_tickets} unresolved tickets, {len(report.top_feedback_themes)} feedback themes")
+    logger.info(
+        f"System health report generated: {report.unresolved_tickets} unresolved tickets, {len(report.top_feedback_themes)} feedback themes"
+    )
     return report
 
 
@@ -115,11 +126,28 @@ async def _collect_prometheus_metrics() -> dict[str, Any]:
             SELLIA_LOGINS,
             SELLIA_NEW_DEVICES,
         )
-        metrics["total_logins"] = SELLIA_LOGINS._value.sum() if hasattr(SELLIA_LOGINS, '_value') else 0
-        metrics["failed_logins"] = SELLIA_FAILED_LOGINS._value.sum() if hasattr(SELLIA_FAILED_LOGINS, '_value') else 0
-        metrics["geofence_violations"] = SELLIA_GEOFENCE_VIOLATIONS._value if hasattr(SELLIA_GEOFENCE_VIOLATIONS, '_value') else 0
-        metrics["new_devices"] = SELLIA_NEW_DEVICES._value if hasattr(SELLIA_NEW_DEVICES, '_value') else 0
-        metrics["active_sessions"] = SELLIA_ACTIVE_SESSIONS._value.get() if hasattr(SELLIA_ACTIVE_SESSIONS, '_value') else 0
+
+        metrics["total_logins"] = (
+            SELLIA_LOGINS._value.sum() if hasattr(SELLIA_LOGINS, "_value") else 0
+        )
+        metrics["failed_logins"] = (
+            SELLIA_FAILED_LOGINS._value.sum()
+            if hasattr(SELLIA_FAILED_LOGINS, "_value")
+            else 0
+        )
+        metrics["geofence_violations"] = (
+            SELLIA_GEOFENCE_VIOLATIONS._value
+            if hasattr(SELLIA_GEOFENCE_VIOLATIONS, "_value")
+            else 0
+        )
+        metrics["new_devices"] = (
+            SELLIA_NEW_DEVICES._value if hasattr(SELLIA_NEW_DEVICES, "_value") else 0
+        )
+        metrics["active_sessions"] = (
+            SELLIA_ACTIVE_SESSIONS._value.get()
+            if hasattr(SELLIA_ACTIVE_SESSIONS, "_value")
+            else 0
+        )
     except Exception as e:
         logger.warning(f"Could not collect Prometheus metrics: {e}", exc_info=True)
     return metrics
@@ -136,9 +164,15 @@ def _generate_basic_recommendations(report: SystemHealthReport) -> list[str]:
     """Genera recomendaciones básicas basadas en el reporte."""
     recs = []
     if report.unresolved_tickets > 10:
-        recs.append(f"Hay {report.unresolved_tickets} tickets sin resolver. Considerar aumentar el equipo de soporte o mejorar las respuestas automáticas de IA.")
+        recs.append(
+            f"Hay {report.unresolved_tickets} tickets sin resolver. Considerar aumentar el equipo de soporte o mejorar las respuestas automáticas de IA."
+        )
     if report.conversation_failures > 20:
-        recs.append(f"{report.conversation_failures} conversaciones fallidas en 24h. Revisar configuración de agentes IA y prompts.")
+        recs.append(
+            f"{report.conversation_failures} conversaciones fallidas en 24h. Revisar configuración de agentes IA y prompts."
+        )
     if len(report.top_feedback_themes) > 0:
-        recs.append(f"Temas de feedback más frecuentes: {', '.join(report.top_feedback_themes[:3])}.")
+        recs.append(
+            f"Temas de feedback más frecuentes: {', '.join(report.top_feedback_themes[:3])}."
+        )
     return recs

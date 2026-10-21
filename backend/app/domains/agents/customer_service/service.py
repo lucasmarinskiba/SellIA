@@ -58,9 +58,7 @@ async def handle_customer_message(
     # 2. Search FAQ/docs
     doc_service = DocumentService(db)
     doc_results = await doc_service.search_documents(business_id, message, k=3)
-    faq_context = "\n".join(
-        f"- {r['content'][:500]}" for r in doc_results
-    )
+    faq_context = "\n".join(f"- {r['content'][:500]}" for r in doc_results)
     query_confidence = 0.5
     if doc_results:
         # Simple confidence heuristic based on top score
@@ -76,9 +74,7 @@ async def handle_customer_message(
         customer_id=customer_id,
         k=5,
     )
-    memory_context = "\n".join(
-        f"- {chunk.content[:300]}" for chunk in memory_chunks
-    )
+    memory_context = "\n".join(f"- {chunk.content[:300]}" for chunk in memory_chunks)
 
     # 4. Generate response
     system_prompt = (
@@ -112,10 +108,7 @@ async def handle_customer_message(
     )
 
     if escalated:
-        response_text = (
-            f"{response_text}\n\n"
-            f"{config.fallback_message}"
-        )
+        response_text = f"{response_text}\n\n" f"{config.fallback_message}"
 
     # 6. Log interaction
     interaction = ServiceInteraction(
@@ -124,8 +117,16 @@ async def handle_customer_message(
         channel=channel,
         customer_id=customer_id,
         messages=[
-            {"role": "user", "content": message, "created_at": datetime.now(UTC).isoformat()},
-            {"role": "bot", "content": response_text, "created_at": datetime.now(UTC).isoformat()},
+            {
+                "role": "user",
+                "content": message,
+                "created_at": datetime.now(UTC).isoformat(),
+            },
+            {
+                "role": "bot",
+                "content": response_text,
+                "created_at": datetime.now(UTC).isoformat(),
+            },
         ],
         resolved=not escalated,
         escalated=escalated,
@@ -200,7 +201,9 @@ async def list_interactions(
     return result.scalars().all()
 
 
-async def get_interaction(db: AsyncSession, interaction_id: uuid.UUID) -> ServiceInteraction | None:
+async def get_interaction(
+    db: AsyncSession, interaction_id: uuid.UUID
+) -> ServiceInteraction | None:
     result = await db.execute(
         select(ServiceInteraction).where(ServiceInteraction.id == interaction_id)
     )
@@ -236,7 +239,9 @@ async def create_or_update_config(
     return config
 
 
-async def get_config_by_business(db: AsyncSession, business_id: uuid.UUID) -> ServiceBotConfig | None:
+async def get_config_by_business(
+    db: AsyncSession, business_id: uuid.UUID
+) -> ServiceBotConfig | None:
     result = await db.execute(
         select(ServiceBotConfig).where(
             ServiceBotConfig.business_id == business_id,

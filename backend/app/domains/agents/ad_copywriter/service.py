@@ -61,7 +61,9 @@ class AdCopywriterService:
         logger.info(f"Ad campaign {campaign.id} created with {len(variants)} variants")
         return campaign
 
-    async def _analyze_audience(self, business: Business, product: CatalogItem) -> dict[str, Any]:
+    async def _analyze_audience(
+        self, business: Business, product: CatalogItem
+    ) -> dict[str, Any]:
         ctx = await get_agent_prompt_context(self.db, business.id)
         context_block = format_business_context_for_prompt(ctx)
 
@@ -116,7 +118,9 @@ class AdCopywriterService:
 
         fomo_context = ""
         if campaign.target_audience and isinstance(campaign.target_audience, dict):
-            fomo_trigger = campaign.target_audience.get("fomo_trigger", "oferta limitada")
+            fomo_trigger = campaign.target_audience.get(
+                "fomo_trigger", "oferta limitada"
+            )
             fomo_context = f" Integra urgencia/FOMO usando: {fomo_trigger}."
 
         prompt = (
@@ -198,15 +202,19 @@ class AdCopywriterService:
         )
         campaigns = total_result.scalars().all()
         total = len(campaigns)
-        return {"total": total, "campaigns": campaigns[offset:offset + limit]}
+        return {"total": total, "campaigns": campaigns[offset : offset + limit]}
 
-    async def get_campaign(self, campaign_id: uuid.UUID, business_id: uuid.UUID) -> AdCampaign | None:
+    async def get_campaign(
+        self, campaign_id: uuid.UUID, business_id: uuid.UUID
+    ) -> AdCampaign | None:
         campaign = await self.db.get(AdCampaign, campaign_id)
         if not campaign or campaign.business_id != business_id:
             return None
         return campaign
 
-    async def get_campaign_with_variants(self, campaign_id: uuid.UUID, business_id: uuid.UUID) -> dict[str, Any] | None:
+    async def get_campaign_with_variants(
+        self, campaign_id: uuid.UUID, business_id: uuid.UUID
+    ) -> dict[str, Any] | None:
         campaign = await self.get_campaign(campaign_id, business_id)
         if not campaign:
             return None
@@ -219,7 +227,9 @@ class AdCopywriterService:
             "variants": variants,
         }
 
-    async def export_campaign(self, campaign_id: uuid.UUID, platform: str, business_id: uuid.UUID) -> dict[str, Any]:
+    async def export_campaign(
+        self, campaign_id: uuid.UUID, platform: str, business_id: uuid.UUID
+    ) -> dict[str, Any]:
         data = await self.get_campaign_with_variants(campaign_id, business_id)
         if not data:
             raise ValueError("Campaign not found")

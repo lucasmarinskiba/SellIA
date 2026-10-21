@@ -296,7 +296,9 @@ class SellIAOrchestrator:
             if not disabled_keys:
                 return "Todas las capacidades del Mapa de Interacciones del Cerebro están activadas para este negocio."
 
-            names_by_id = {c.id: c.name for c in get_brain_registry().all_capabilities()}
+            names_by_id = {
+                c.id: c.name for c in get_brain_registry().all_capabilities()
+            }
             disabled_names = [
                 names_by_id.get(toggle_key_to_brain_id(k), toggle_key_to_brain_id(k))
                 for k in disabled_keys
@@ -364,10 +366,14 @@ class SellIAOrchestrator:
             # distinguish "never touched" from "explicitly chose local" --
             # only treat a NON-default value as a real, confirmed signal.
             if ctx and ctx.geographic_reach and ctx.geographic_reach.value != "local":
-                countries = f" ({', '.join(ctx.target_countries)})" if ctx.target_countries else ""
+                countries = (
+                    f" ({', '.join(ctx.target_countries)})"
+                    if ctx.target_countries
+                    else ""
+                )
                 return f"CONFIRMADO por el usuario: alcance '{ctx.geographic_reach.value}'{countries}. Nunca sugieras otro alcance sobre esto."
 
-            country = (ctx.country if ctx and ctx.country else "tu país")
+            country = ctx.country if ctx and ctx.country else "tu país"
 
             channels_result = await self.db.execute(
                 select(ChannelConnection.platform).where(
@@ -383,25 +389,34 @@ class SellIAOrchestrator:
             ]
             if not hints:
                 return "Sin alcance geográfico confirmado ni marketplaces conectados que sugieran uno -- preguntá qué alcance busca el usuario antes de asumir."
-            return "SUGERENCIA (sin confirmar todavía) según sus marketplaces conectados: " + "; ".join(hints)
+            return (
+                "SUGERENCIA (sin confirmar todavía) según sus marketplaces conectados: "
+                + "; ".join(hints)
+            )
         except Exception:
             logger.exception("_build_market_reach_context: error inesperado")
             return ""
 
-    async def _build_knowledge_context(self, business_id: str | None, user_input: str) -> str:
+    async def _build_knowledge_context(
+        self, business_id: str | None, user_input: str
+    ) -> str:
         """Best-effort grounding in the real sales/negotiation/persuasion
         library (backend/app/core/knowledge/) via the existing
         RetrieveKnowledgeTool, instead of the LLM inventing tactics from
         pretraining alone. Silent no-op on any failure."""
         try:
             tool = RetrieveKnowledgeTool()
-            result = await tool.execute(db=self.db, business_id=business_id, topic=user_input, k=3)
+            result = await tool.execute(
+                db=self.db, business_id=business_id, topic=user_input, k=3
+            )
             items = result.get("results", [])
             if not items:
                 return "(sin resultados relevantes en la biblioteca para este mensaje)"
             lines = []
             for it in items:
-                lines.append(f"- [{it.get('category', '')}] {it.get('principle', '')}: {it.get('tactic', '')}")
+                lines.append(
+                    f"- [{it.get('category', '')}] {it.get('principle', '')}: {it.get('tactic', '')}"
+                )
             return "\n".join(lines)
         except Exception:
             logger.exception("_build_knowledge_context: error inesperado")
@@ -435,9 +450,12 @@ class SellIAOrchestrator:
         system_prompt = SELLIA_SYSTEM_PROMPT.format(
             agents_summary=agents_summary,
             capability_status=capability_status or "No disponible.",
-            knowledge_context=knowledge_context or "(sin resultados relevantes en la biblioteca para este mensaje)",
-            business_context=business_context or "(sin perfil de negocio disponible -- respondé en general o preguntá por su rubro/nicho si hace falta)",
-            market_reach=market_reach or "Sin datos de alcance geográfico -- preguntá qué mercado/región busca el usuario antes de asumir.",
+            knowledge_context=knowledge_context
+            or "(sin resultados relevantes en la biblioteca para este mensaje)",
+            business_context=business_context
+            or "(sin perfil de negocio disponible -- respondé en general o preguntá por su rubro/nicho si hace falta)",
+            market_reach=market_reach
+            or "Sin datos de alcance geográfico -- preguntá qué mercado/región busca el usuario antes de asumir.",
         )
         messages = [SystemMessage(content=system_prompt)]
 
@@ -468,13 +486,18 @@ class SellIAOrchestrator:
         market_reach = await self._build_market_reach_context(business_id)
 
         messages = self._build_llm_messages(
-            user_input, agents_summary, conversation_history,
-            capability_status=capability_status, knowledge_context=knowledge_context,
-            business_context=business_context, market_reach=market_reach,
+            user_input,
+            agents_summary,
+            conversation_history,
+            capability_status=capability_status,
+            knowledge_context=knowledge_context,
+            business_context=business_context,
+            market_reach=market_reach,
         )
 
         try:
             from app.domains.agents.llm_provider import generate_with_fallback
+
             response = await generate_with_fallback(
                 db=self.db,
                 business_id=business_id,
@@ -528,9 +551,13 @@ class SellIAOrchestrator:
         market_reach = await self._build_market_reach_context(business_id)
 
         messages = self._build_llm_messages(
-            user_input, agents_summary, conversation_history,
-            capability_status=capability_status, knowledge_context=knowledge_context,
-            business_context=business_context, market_reach=market_reach,
+            user_input,
+            agents_summary,
+            conversation_history,
+            capability_status=capability_status,
+            knowledge_context=knowledge_context,
+            business_context=business_context,
+            market_reach=market_reach,
         )
 
         api_key = await self._resolve_api_key(user_id)
@@ -548,6 +575,7 @@ class SellIAOrchestrator:
                 from langchain_ollama import ChatOllama
 
                 from app.core.config import get_settings
+
                 settings = get_settings()
                 llm = ChatOllama(
                     model="llama3.1",
@@ -572,10 +600,12 @@ class SellIAOrchestrator:
 
         except Exception as e:
             logger.exception("process_intent_stream: error inesperado")
-            yield json.dumps({
-                "type": "error",
-                "message": f"Error: {str(e)[:200]}",
-            })
+            yield json.dumps(
+                {
+                    "type": "error",
+                    "message": f"Error: {str(e)[:200]}",
+                }
+            )
 
     async def _execute_action_if_needed(
         self,
@@ -620,12 +650,16 @@ class SellIAOrchestrator:
                 if "message" in execution_result:
                     action["response"] = execution_result["message"]
             else:
-                action["execution_error"] = execution_result.get("error", "Error desconocido")
+                action["execution_error"] = execution_result.get(
+                    "error", "Error desconocido"
+                )
 
         return action
 
     @staticmethod
-    def _resolve_action_brain_id(action_type: str, action: dict[str, Any]) -> str | None:
+    def _resolve_action_brain_id(
+        action_type: str, action: dict[str, Any]
+    ) -> str | None:
         """Best-effort mapping from an about-to-execute action to a Brain
         Interaction Map node id, so the capability gate below has something
         to check. Only covers the cases we can name with confidence today
@@ -637,14 +671,17 @@ class SellIAOrchestrator:
 
         if action_type == "SETUP_AUTOMATION":
             haystack = " ".join(
-                str(action.get(f, "")) for f in ("automation_name", "trigger", "content_request")
+                str(action.get(f, ""))
+                for f in ("automation_name", "trigger", "content_request")
             ).lower()
             if "fomo" in haystack:
                 return "automation.fomo_campaigns"
 
         return None
 
-    async def _is_capability_disabled(self, business_id: str | None, brain_id: str) -> bool:
+    async def _is_capability_disabled(
+        self, business_id: str | None, brain_id: str
+    ) -> bool:
         """Checks the same AutomationToggle rows the Brain Interaction Map's
         ON/OFF buttons write to (see app/api/v1/brain.py's /brain/toggles and
         app/core/brain/toggle_mapping.py). No business (anonymous/demo

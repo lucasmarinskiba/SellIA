@@ -12,7 +12,9 @@ class BaseChannelConnector(ABC):
         self.settings = settings
 
     @abstractmethod
-    async def send_message(self, recipient_id: str, content: str, content_type: str = "text") -> dict[str, Any]:
+    async def send_message(
+        self, recipient_id: str, content: str, content_type: str = "text"
+    ) -> dict[str, Any]:
         """Envía un mensaje al destinatario."""
 
     @abstractmethod

@@ -66,12 +66,12 @@ async def qualify_lead(
     system_prompt = (
         "Eres un experto en calificación de leads BANT. "
         "Analiza la conversación y devuelve SOLO un JSON válido con esta estructura exacta:\n"
-        '{\n'
+        "{\n"
         '  "budget": {"score": 0-100, "reasoning": "..."},\n'
         '  "authority": {"score": 0-100, "reasoning": "..."},\n'
         '  "need": {"score": 0-100, "reasoning": "..."},\n'
         '  "timeline": {"score": 0-100, "reasoning": "..."}\n'
-        '}\n'
+        "}\n"
         "Reglas:\n"
         "- budget: 100 = presupuesto claro y suficiente, 0 = sin presupuesto o muy bajo.\n"
         "- authority: 100 = decisor final, 0 = sin influencia.\n"
@@ -258,7 +258,9 @@ async def get_qualified_leads(
     return result.scalars().all()
 
 
-async def get_qualification(db: AsyncSession, qualification_id: uuid.UUID) -> LeadQualification | None:
+async def get_qualification(
+    db: AsyncSession, qualification_id: uuid.UUID
+) -> LeadQualification | None:
     result = await db.execute(
         select(LeadQualification).where(LeadQualification.id == qualification_id)
     )

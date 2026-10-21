@@ -4,7 +4,6 @@ Pricing: ~$0.015/image (via API credits)
 Strengths: Artistic quality, Alchemy, photo-real, fine-tuned models
 """
 
-
 import logging
 from typing import ClassVar
 
@@ -47,7 +46,9 @@ class LeonardoProvider(BaseProvider):
         return bool(settings.LEONARDO_API_KEY)
 
     def estimate_cost(self, config: GenerationConfig) -> float:
-        cost = LEONARDO_COSTS.get(config.quality, LEONARDO_COSTS[ContentQuality.STANDARD])
+        cost = LEONARDO_COSTS.get(
+            config.quality, LEONARDO_COSTS[ContentQuality.STANDARD]
+        )
         return cost * config.num_variations
 
     def get_pricing_table(self) -> dict[str, float]:
@@ -58,7 +59,9 @@ class LeonardoProvider(BaseProvider):
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         if not self.is_available:
-            return GenerationResult(success=False, error_message="LEONARDO_API_KEY no configurada")
+            return GenerationResult(
+                success=False, error_message="LEONARDO_API_KEY no configurada"
+            )
 
         try:
             import aiohttp
@@ -83,21 +86,27 @@ class LeonardoProvider(BaseProvider):
                 payload["alchemy"] = True
                 payload["photoReal"] = True
 
-            async with aiohttp.ClientSession() as session, session.post(
-                "https://cloud.leonardo.ai/api/rest/v1/generations",
-                headers=headers,
-                json=payload,
-            ) as resp:
+            async with (
+                aiohttp.ClientSession() as session,
+                session.post(
+                    "https://cloud.leonardo.ai/api/rest/v1/generations",
+                    headers=headers,
+                    json=payload,
+                ) as resp,
+            ):
                 data = await resp.json()
 
             generation_id = data.get("sdGenerationJob", {}).get("generationId")
             if not generation_id:
-                return GenerationResult(success=False, error_message="Leonardo no devolvió generationId")
+                return GenerationResult(
+                    success=False, error_message="Leonardo no devolvió generationId"
+                )
 
             # Poll for result
             image_url = None
             for _ in range(30):
                 import asyncio
+
                 await asyncio.sleep(2)
                 async with (
                     aiohttp.ClientSession() as session,
@@ -107,7 +116,9 @@ class LeonardoProvider(BaseProvider):
                     ) as poll_resp,
                 ):
                     poll_data = await poll_resp.json()
-                    images = poll_data.get("generations_by_pk", {}).get("generated_images", [])
+                    images = poll_data.get("generations_by_pk", {}).get(
+                        "generated_images", []
+                    )
                     if images:
                         image_url = images[0].get("url")
                         break
@@ -119,7 +130,10 @@ class LeonardoProvider(BaseProvider):
             image_bytes = await download_url(image_url)
             compressed = None
             if image_bytes:
-                compressed = compress_image(image_bytes, quality=smart_quality_for_size(get_image_size_kb(image_bytes)))
+                compressed = compress_image(
+                    image_bytes,
+                    quality=smart_quality_for_size(get_image_size_kb(image_bytes)),
+                )
 
             cost = self.estimate_cost(config)
 
@@ -128,7 +142,11 @@ class LeonardoProvider(BaseProvider):
                 url=image_url,
                 local_path=compressed,
                 cost_usd=cost,
-                model_used="leonardo-phoenix" if config.quality == ContentQuality.PREMIUM else "leonardo-default",
+                model_used=(
+                    "leonardo-phoenix"
+                    if config.quality == ContentQuality.PREMIUM
+                    else "leonardo-default"
+                ),
                 quality_tier=config.quality,
                 width=config.width or 1024,
                 height=config.height or 1024,

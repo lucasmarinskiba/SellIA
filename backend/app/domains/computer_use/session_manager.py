@@ -89,7 +89,9 @@ class ComputerUseSessionManager:
         self._stop_event = asyncio.Event()
 
         # Screenshot storage
-        self._screenshots_dir = os.path.join(os.getcwd(), "storage", "screenshots", self.session_id)
+        self._screenshots_dir = os.path.join(
+            os.getcwd(), "storage", "screenshots", self.session_id
+        )
         os.makedirs(self._screenshots_dir, exist_ok=True)
         self._cleanup_done = False
         self._session_start_time = None
@@ -100,7 +102,9 @@ class ComputerUseSessionManager:
         try:
             await ws_manager.send_message(self.session_id, message)
         except Exception as e:
-            logger.warning(f"WS send failed for session {self.session_id}: {e}", exc_info=True)
+            logger.warning(
+                f"WS send failed for session {self.session_id}: {e}", exc_info=True
+            )
 
     async def start(self) -> None:
         """Inicia la sesión de computer use."""
@@ -124,15 +128,24 @@ class ComputerUseSessionManager:
             # Update DB status
             await self._update_session_status("running")
 
-            await self._send_ws({
-                "type": "status",
-                "data": {"status": "running", "message": "Sesión iniciada", "step": 0, "total_steps": self.max_steps},
-            })
+            await self._send_ws(
+                {
+                    "type": "status",
+                    "data": {
+                        "status": "running",
+                        "message": "Sesión iniciada",
+                        "step": 0,
+                        "total_steps": self.max_steps,
+                    },
+                }
+            )
 
             if self.start_url:
                 nav_result = await self.browser.navigate(self.start_url)
                 if not nav_result.get("success"):
-                    await self._fail(f"No se pudo navegar a {self.start_url}: {nav_result.get('error')}")
+                    await self._fail(
+                        f"No se pudo navegar a {self.start_url}: {nav_result.get('error')}"
+                    )
                     return
 
             # Run the main loop
@@ -156,15 +169,29 @@ class ComputerUseSessionManager:
 
                 # Check if paused
                 if not self._pause_event.is_set():
-                    await self._send_ws({
-                        "type": "status",
-                        "data": {"status": "paused", "message": "Sesión pausada por el usuario", "step": self.current_step, "total_steps": self.max_steps},
-                    })
+                    await self._send_ws(
+                        {
+                            "type": "status",
+                            "data": {
+                                "status": "paused",
+                                "message": "Sesión pausada por el usuario",
+                                "step": self.current_step,
+                                "total_steps": self.max_steps,
+                            },
+                        }
+                    )
                     await self._pause_event.wait()
-                    await self._send_ws({
-                        "type": "status",
-                        "data": {"status": "running", "message": "Sesión reanudada", "step": self.current_step, "total_steps": self.max_steps},
-                    })
+                    await self._send_ws(
+                        {
+                            "type": "status",
+                            "data": {
+                                "status": "running",
+                                "message": "Sesión reanudada",
+                                "step": self.current_step,
+                                "total_steps": self.max_steps,
+                            },
+                        }
+                    )
                     if self._stop_event.is_set():
                         await self._stop()
                         return
@@ -181,31 +208,43 @@ class ComputerUseSessionManager:
                     return
 
                 # Save screenshot to disk
-                screenshot_path = os.path.join(self._screenshots_dir, f"step_{self.current_step}.jpg")
-                await asyncio.to_thread(write_file, screenshot_path, "wb", data=screenshot_bytes)
-                relative_path = f"screenshots/{self.session_id}/step_{self.current_step}.jpg"
+                screenshot_path = os.path.join(
+                    self._screenshots_dir, f"step_{self.current_step}.jpg"
+                )
+                await asyncio.to_thread(
+                    write_file, screenshot_path, "wb", data=screenshot_bytes
+                )
+                relative_path = (
+                    f"screenshots/{self.session_id}/step_{self.current_step}.jpg"
+                )
 
                 # 2. Get page info
                 page_info = await self.browser.get_page_info()
 
                 # 3. Send screenshot to frontend
-                await self._send_ws({
-                    "type": "screenshot",
-                    "data": {
-                        "image_base64": base64.b64encode(screenshot_bytes).decode("utf-8"),
-                        "step": self.current_step,
-                        "url": page_info.get("url", ""),
-                    },
-                })
+                await self._send_ws(
+                    {
+                        "type": "screenshot",
+                        "data": {
+                            "image_base64": base64.b64encode(screenshot_bytes).decode(
+                                "utf-8"
+                            ),
+                            "step": self.current_step,
+                            "url": page_info.get("url", ""),
+                        },
+                    }
+                )
 
                 # 4. Check user chat messages
                 user_message = None
                 if self.user_chat_queue:
                     user_message = self.user_chat_queue.pop(0)
-                    await self._send_ws({
-                        "type": "chat",
-                        "data": {"role": "user", "content": user_message},
-                    })
+                    await self._send_ws(
+                        {
+                            "type": "chat",
+                            "data": {"role": "user", "content": user_message},
+                        }
+                    )
                     await self._save_message("user", user_message)
 
                 # 5. Call vision agent
@@ -218,15 +257,17 @@ class ComputerUseSessionManager:
                 )
 
                 # 6. Send action to frontend
-                await self._send_ws({
-                    "type": "action",
-                    "data": {
-                        "action_type": action.action_type,
-                        "params": action.params,
-                        "reason": action.reason,
-                        "step": self.current_step,
-                    },
-                })
+                await self._send_ws(
+                    {
+                        "type": "action",
+                        "data": {
+                            "action_type": action.action_type,
+                            "params": action.params,
+                            "reason": action.reason,
+                            "step": self.current_step,
+                        },
+                    }
+                )
 
                 # 7. Save step to DB
                 await self._save_step(
@@ -243,13 +284,15 @@ class ComputerUseSessionManager:
                 await self._update_step_result(self.current_step, execution_result)
 
                 # Add to history
-                self.history.append({
-                    "step_number": self.current_step,
-                    "action_type": action.action_type,
-                    "params": action.params,
-                    "reason": action.reason,
-                    "result": execution_result,
-                })
+                self.history.append(
+                    {
+                        "step_number": self.current_step,
+                        "action_type": action.action_type,
+                        "params": action.params,
+                        "reason": action.reason,
+                        "result": execution_result,
+                    }
+                )
 
                 # 9. Check if done or error
                 if action.action_type == "done":
@@ -260,7 +303,9 @@ class ComputerUseSessionManager:
                     return
 
                 if action.action_type == "error":
-                    await self._fail(action.params.get("message", "Error desconocido del agente"))
+                    await self._fail(
+                        action.params.get("message", "Error desconocido del agente")
+                    )
                     return
 
                 # Update session progress
@@ -275,7 +320,9 @@ class ComputerUseSessionManager:
 
             # Max steps reached
             summary = await self.vision.generate_summary(self.history)
-            await self._complete(f"{summary}\n\n(Límite de {self.max_steps} pasos alcanzado)")
+            await self._complete(
+                f"{summary}\n\n(Límite de {self.max_steps} pasos alcanzado)"
+            )
 
         except asyncio.CancelledError:
             logger.info(f"Session {self.session_id} cancelled")
@@ -299,20 +346,32 @@ class ComputerUseSessionManager:
             elif action.action_type == "type":
                 result = await self.browser.type(params["text"])
             elif action.action_type == "scroll":
-                result = await self.browser.scroll(params.get("direction", "down"), params.get("amount", 500))
+                result = await self.browser.scroll(
+                    params.get("direction", "down"), params.get("amount", 500)
+                )
             elif action.action_type == "navigate":
                 result = await self.browser.navigate(params["url"])
             elif action.action_type == "wait":
                 result = await self.browser.wait(params.get("seconds", 2))
-            elif action.action_type == "screenshot" or action.action_type in ("done", "error"):
+            elif action.action_type == "screenshot" or action.action_type in (
+                "done",
+                "error",
+            ):
                 result = {"success": True}
             else:
-                result = {"success": False, "error": f"Acción no soportada: {action.action_type}"}
+                result = {
+                    "success": False,
+                    "error": f"Acción no soportada: {action.action_type}",
+                }
         except Exception as e:
             logger.exception("_execute_action: error inesperado")
             result = {"success": False, "error": str(e)}
 
-        return "success" if result.get("success") else result.get("error", "Error desconocido")
+        return (
+            "success"
+            if result.get("success")
+            else result.get("error", "Error desconocido")
+        )
 
     async def pause(self) -> None:
         """Pausa la sesión."""
@@ -343,11 +402,20 @@ class ComputerUseSessionManager:
         await self._update_session_status("stopped")
         COMPUTER_USE_SESSIONS_STOPPED.inc()
         if self._session_start_time:
-            COMPUTER_USE_SESSION_DURATION.observe(time.time() - self._session_start_time)
-        await self._send_ws({
-            "type": "status",
-            "data": {"status": "stopped", "message": "Sesión detenida por el usuario", "step": self.current_step, "total_steps": self.max_steps},
-        })
+            COMPUTER_USE_SESSION_DURATION.observe(
+                time.time() - self._session_start_time
+            )
+        await self._send_ws(
+            {
+                "type": "status",
+                "data": {
+                    "status": "stopped",
+                    "message": "Sesión detenida por el usuario",
+                    "step": self.current_step,
+                    "total_steps": self.max_steps,
+                },
+            }
+        )
 
     async def _complete(self, summary: str) -> None:
         """Marca la sesión como completada."""
@@ -356,32 +424,56 @@ class ComputerUseSessionManager:
         await self._update_session_status("completed", result_data={"summary": summary})
         COMPUTER_USE_SESSIONS_COMPLETED.labels(provider=self._provider_name).inc()
         if self._session_start_time:
-            COMPUTER_USE_SESSION_DURATION.observe(time.time() - self._session_start_time)
-        await self._send_ws({
-            "type": "completed",
-            "data": {"result": summary, "total_steps": self.current_step},
-        })
-        await self._send_ws({
-            "type": "status",
-            "data": {"status": "completed", "message": summary, "step": self.current_step, "total_steps": self.max_steps},
-        })
+            COMPUTER_USE_SESSION_DURATION.observe(
+                time.time() - self._session_start_time
+            )
+        await self._send_ws(
+            {
+                "type": "completed",
+                "data": {"result": summary, "total_steps": self.current_step},
+            }
+        )
+        await self._send_ws(
+            {
+                "type": "status",
+                "data": {
+                    "status": "completed",
+                    "message": summary,
+                    "step": self.current_step,
+                    "total_steps": self.max_steps,
+                },
+            }
+        )
 
     async def _fail(self, error_message: str) -> None:
         """Marca la sesión como fallida."""
         self.status = "failed"
         await self._cleanup()
         await self._update_session_status("failed", error_message=error_message)
-        COMPUTER_USE_SESSIONS_FAILED.labels(provider=self._provider_name, reason=error_message[:50]).inc()
+        COMPUTER_USE_SESSIONS_FAILED.labels(
+            provider=self._provider_name, reason=error_message[:50]
+        ).inc()
         if self._session_start_time:
-            COMPUTER_USE_SESSION_DURATION.observe(time.time() - self._session_start_time)
-        await self._send_ws({
-            "type": "error",
-            "data": {"message": error_message},
-        })
-        await self._send_ws({
-            "type": "status",
-            "data": {"status": "failed", "message": error_message, "step": self.current_step, "total_steps": self.max_steps},
-        })
+            COMPUTER_USE_SESSION_DURATION.observe(
+                time.time() - self._session_start_time
+            )
+        await self._send_ws(
+            {
+                "type": "error",
+                "data": {"message": error_message},
+            }
+        )
+        await self._send_ws(
+            {
+                "type": "status",
+                "data": {
+                    "status": "failed",
+                    "message": error_message,
+                    "step": self.current_step,
+                    "total_steps": self.max_steps,
+                },
+            }
+        )
 
     async def _cleanup(self) -> None:
         """Limpia recursos del navegador. Garantizado idempotente."""
@@ -398,19 +490,29 @@ class ComputerUseSessionManager:
     async def send_chat_message(self, message: str) -> None:
         """Recibe un mensaje de chat del usuario."""
         self.user_chat_queue.append(message)
-        await self._send_ws({
-            "type": "chat",
-            "data": {"role": "user", "content": message},
-        })
+        await self._send_ws(
+            {
+                "type": "chat",
+                "data": {"role": "user", "content": message},
+            }
+        )
         await self._save_message("user", message)
 
     # Database helpers
 
-    async def _update_session_status(self, status: str, result_data: dict | None = None, error_message: str | None = None) -> None:
+    async def _update_session_status(
+        self,
+        status: str,
+        result_data: dict | None = None,
+        error_message: str | None = None,
+    ) -> None:
         try:
             from sqlalchemy import select
+
             result = await self.db.execute(
-                select(ComputerUseSession).where(ComputerUseSession.id == UUID(self.session_id))
+                select(ComputerUseSession).where(
+                    ComputerUseSession.id == UUID(self.session_id)
+                )
             )
             session = result.scalar_one_or_none()
             if session:
@@ -431,8 +533,11 @@ class ComputerUseSessionManager:
     async def _update_session_progress(self, current_url: str | None) -> None:
         try:
             from sqlalchemy import select
+
             result = await self.db.execute(
-                select(ComputerUseSession).where(ComputerUseSession.id == UUID(self.session_id))
+                select(ComputerUseSession).where(
+                    ComputerUseSession.id == UUID(self.session_id)
+                )
             )
             session = result.scalar_one_or_none()
             if session:
@@ -467,9 +572,12 @@ class ComputerUseSessionManager:
             logger.exception("DB save step error")
             await self.db.rollback()
 
-    async def _update_step_result(self, step_number: int, execution_result: str) -> None:
+    async def _update_step_result(
+        self, step_number: int, execution_result: str
+    ) -> None:
         try:
             from sqlalchemy import select
+
             result = await self.db.execute(
                 select(ComputerUseStep).where(
                     ComputerUseStep.session_id == UUID(self.session_id),

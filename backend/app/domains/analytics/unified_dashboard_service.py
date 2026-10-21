@@ -21,10 +21,7 @@ class UnifiedDashboardService:
 
     @staticmethod
     def aggregate_location_day(
-        location_id: UUID,
-        business_id: UUID,
-        date: str,
-        db: Session = None
+        location_id: UUID, business_id: UUID, date: str, db: Session = None
     ) -> dict:
         """Aggregate all metrics for location on given date."""
         if not db:
@@ -41,37 +38,51 @@ class UnifiedDashboardService:
         date_end = date_start + timedelta(days=1)
 
         # Foot traffic
-        checkins = db.query(LocationCheckin).filter(
-            LocationCheckin.location_id == location_id,
-            LocationCheckin.created_at >= date_start,
-            LocationCheckin.created_at < date_end
-        ).all()
+        checkins = (
+            db.query(LocationCheckin)
+            .filter(
+                LocationCheckin.location_id == location_id,
+                LocationCheckin.created_at >= date_start,
+                LocationCheckin.created_at < date_end,
+            )
+            .all()
+        )
 
         total_visitors = len(checkins)
-        avg_dwell = sum(c.dwell_seconds for c in checkins if c.dwell_seconds) // max(len([c for c in checkins if c.dwell_seconds]), 1)
+        avg_dwell = sum(c.dwell_seconds for c in checkins if c.dwell_seconds) // max(
+            len([c for c in checkins if c.dwell_seconds]), 1
+        )
         peak_hour = None
         if checkins:
             hours = [c.checkin_time.hour for c in checkins]
             peak_hour = max(set(hours), key=hours.count) if hours else None
 
         # Staff
-        tasks = db.query(StaffTask).filter(
-            StaffTask.location_id == location_id,
-            StaffTask.assigned_at >= date_start,
-            StaffTask.assigned_at < date_end
-        ).all()
+        tasks = (
+            db.query(StaffTask)
+            .filter(
+                StaffTask.location_id == location_id,
+                StaffTask.assigned_at >= date_start,
+                StaffTask.assigned_at < date_end,
+            )
+            .all()
+        )
 
         tasks_completed = len([t for t in tasks if t.status == TaskStatus.COMPLETED])
         tasks_assigned = len(tasks)
         task_completion_rate = (tasks_completed / max(tasks_assigned, 1)) * 100
 
         # Feedback
-        feedback_list = db.query(LocationFeedback).filter(
-            LocationFeedback.location_id == location_id,
-            LocationFeedback.created_at >= date_start,
-            LocationFeedback.created_at < date_end,
-            LocationFeedback.nps_score.isnot(None)
-        ).all()
+        feedback_list = (
+            db.query(LocationFeedback)
+            .filter(
+                LocationFeedback.location_id == location_id,
+                LocationFeedback.created_at >= date_start,
+                LocationFeedback.created_at < date_end,
+                LocationFeedback.nps_score.isnot(None),
+            )
+            .all()
+        )
 
         nps_scores = [f.nps_score for f in feedback_list]
         nps_avg = sum(nps_scores) / len(nps_scores) if nps_scores else 0
@@ -84,11 +95,15 @@ class UnifiedDashboardService:
         sentiment_negative_pct = (negative_count / max(len(sentiments), 1)) * 100
 
         # Revenue
-        transactions = db.query(PricingTransaction).filter(
-            PricingTransaction.location_id == location_id,
-            PricingTransaction.created_at >= date_start,
-            PricingTransaction.created_at < date_end
-        ).all()
+        transactions = (
+            db.query(PricingTransaction)
+            .filter(
+                PricingTransaction.location_id == location_id,
+                PricingTransaction.created_at >= date_start,
+                PricingTransaction.created_at < date_end,
+            )
+            .all()
+        )
 
         base_revenue = sum(float(t.base_price) for t in transactions)
         final_revenue = sum(float(t.final_price) for t in transactions)
@@ -96,10 +111,14 @@ class UnifiedDashboardService:
         revenue_per_visitor = final_revenue / max(total_visitors, 1)
 
         # Check or create metric
-        existing = db.query(UnifiedLocationMetric).filter(
-            UnifiedLocationMetric.location_id == location_id,
-            UnifiedLocationMetric.date == date
-        ).first()
+        existing = (
+            db.query(UnifiedLocationMetric)
+            .filter(
+                UnifiedLocationMetric.location_id == location_id,
+                UnifiedLocationMetric.date == date,
+            )
+            .first()
+        )
 
         if existing:
             existing.total_visitors = total_visitors
@@ -110,8 +129,12 @@ class UnifiedDashboardService:
             existing.task_completion_rate = Decimal(str(task_completion_rate))
             existing.nps_avg = Decimal(str(round(nps_avg, 1)))
             existing.nps_detractors = nps_detractors
-            existing.sentiment_positive_pct = Decimal(str(round(sentiment_positive_pct, 2)))
-            existing.sentiment_negative_pct = Decimal(str(round(sentiment_negative_pct, 2)))
+            existing.sentiment_positive_pct = Decimal(
+                str(round(sentiment_positive_pct, 2))
+            )
+            existing.sentiment_negative_pct = Decimal(
+                str(round(sentiment_negative_pct, 2))
+            )
             existing.base_revenue = Decimal(str(base_revenue))
             existing.final_revenue = Decimal(str(final_revenue))
             existing.total_discounts = Decimal(str(total_discounts))
@@ -134,7 +157,7 @@ class UnifiedDashboardService:
                 base_revenue=Decimal(str(base_revenue)),
                 final_revenue=Decimal(str(final_revenue)),
                 total_discounts=Decimal(str(total_discounts)),
-                revenue_per_visitor=Decimal(str(round(revenue_per_visitor, 2)))
+                revenue_per_visitor=Decimal(str(round(revenue_per_visitor, 2))),
             )
             db.add(existing)
 
@@ -149,14 +172,12 @@ class UnifiedDashboardService:
             "visitors": total_visitors,
             "revenue": float(final_revenue),
             "nps_avg": float(nps_avg),
-            "task_completion": int(task_completion_rate)
+            "task_completion": int(task_completion_rate),
         }
 
     @staticmethod
     def generate_business_summary(
-        business_id: UUID,
-        date: str | None = None,
-        db: Session = None
+        business_id: UUID, date: str | None = None, db: Session = None
     ) -> dict:
         """Generate high-level business summary."""
         if not db:
@@ -174,34 +195,50 @@ class UnifiedDashboardService:
         cutoff = datetime.now(UTC) - timedelta(days=30)
         cutoff_str = cutoff.strftime("%Y-%m-%d")
 
-        metrics = db.query(UnifiedLocationMetric).filter(
-            UnifiedLocationMetric.business_id == business_id,
-            UnifiedLocationMetric.date >= cutoff_str
-        ).all()
+        metrics = (
+            db.query(UnifiedLocationMetric)
+            .filter(
+                UnifiedLocationMetric.business_id == business_id,
+                UnifiedLocationMetric.date >= cutoff_str,
+            )
+            .all()
+        )
 
         if not metrics:
             return {"summary_generated": False, "reason": "No metrics available"}
 
         total_visitors = sum(m.total_visitors for m in metrics)
         total_revenue = sum(float(m.final_revenue) for m in metrics)
-        avg_nps = sum(float(m.nps_avg) for m in metrics) / len(metrics) if metrics else 0
-        avg_task_completion = sum(float(m.task_completion_rate) for m in metrics) / len(metrics)
+        avg_nps = (
+            sum(float(m.nps_avg) for m in metrics) / len(metrics) if metrics else 0
+        )
+        avg_task_completion = sum(float(m.task_completion_rate) for m in metrics) / len(
+            metrics
+        )
 
         # Check or create summary
-        existing = db.query(BusinessDashboardSummary).filter(
-            BusinessDashboardSummary.business_id == business_id
-        ).first()
+        existing = (
+            db.query(BusinessDashboardSummary)
+            .filter(BusinessDashboardSummary.business_id == business_id)
+            .first()
+        )
 
         if existing:
             existing.date = date
             existing.total_locations = len(locations)
             existing.active_locations = active_locations
             existing.total_visitors_month = total_visitors
-            existing.avg_visitors_per_location = Decimal(str(total_visitors / max(active_locations, 1)))
+            existing.avg_visitors_per_location = Decimal(
+                str(total_visitors / max(active_locations, 1))
+            )
             existing.avg_nps_by_location = Decimal(str(round(avg_nps, 1)))
             existing.total_revenue_month = Decimal(str(total_revenue))
-            existing.revenue_per_location = Decimal(str(total_revenue / max(active_locations, 1)))
-            existing.overall_health_score = int(min(100, (avg_task_completion + (avg_nps * 10)) / 2))
+            existing.revenue_per_location = Decimal(
+                str(total_revenue / max(active_locations, 1))
+            )
+            existing.overall_health_score = int(
+                min(100, (avg_task_completion + (avg_nps * 10)) / 2)
+            )
         else:
             existing = BusinessDashboardSummary(
                 business_id=business_id,
@@ -209,11 +246,17 @@ class UnifiedDashboardService:
                 total_locations=len(locations),
                 active_locations=active_locations,
                 total_visitors_month=total_visitors,
-                avg_visitors_per_location=Decimal(str(total_visitors / max(active_locations, 1))),
+                avg_visitors_per_location=Decimal(
+                    str(total_visitors / max(active_locations, 1))
+                ),
                 avg_nps_by_location=Decimal(str(round(avg_nps, 1))),
                 total_revenue_month=Decimal(str(total_revenue)),
-                revenue_per_location=Decimal(str(total_revenue / max(active_locations, 1))),
-                overall_health_score=int(min(100, (avg_task_completion + (avg_nps * 10)) / 2))
+                revenue_per_location=Decimal(
+                    str(total_revenue / max(active_locations, 1))
+                ),
+                overall_health_score=int(
+                    min(100, (avg_task_completion + (avg_nps * 10)) / 2)
+                ),
             )
             db.add(existing)
 
@@ -228,23 +271,23 @@ class UnifiedDashboardService:
             "visitors_month": total_visitors,
             "revenue_month": float(total_revenue),
             "avg_nps": float(avg_nps),
-            "health_score": existing.overall_health_score
+            "health_score": existing.overall_health_score,
         }
 
     @staticmethod
-    def compare_locations(
-        business_id: UUID,
-        date: str,
-        db: Session = None
-    ) -> dict:
+    def compare_locations(business_id: UUID, date: str, db: Session = None) -> dict:
         """Compare metrics across locations to identify top/bottom performers."""
         if not db:
             raise ValueError("Database session required")
 
-        metrics = db.query(UnifiedLocationMetric).filter(
-            UnifiedLocationMetric.business_id == business_id,
-            UnifiedLocationMetric.date == date
-        ).all()
+        metrics = (
+            db.query(UnifiedLocationMetric)
+            .filter(
+                UnifiedLocationMetric.business_id == business_id,
+                UnifiedLocationMetric.date == date,
+            )
+            .all()
+        )
 
         if not metrics:
             return {"comparison_generated": False}
@@ -259,22 +302,40 @@ class UnifiedDashboardService:
         revenue_values = [float(m.final_revenue) for m in metrics]
         nps_values = [float(m.nps_avg) for m in metrics]
 
-        visitor_variance = (max(visitor_values) - min(visitor_values)) / max(sum(visitor_values) / len(visitor_values), 1) * 100 if visitor_values else 0
-        revenue_variance = (max(revenue_values) - min(revenue_values)) / max(sum(revenue_values) / len(revenue_values), 1) * 100 if revenue_values else 0
+        visitor_variance = (
+            (max(visitor_values) - min(visitor_values))
+            / max(sum(visitor_values) / len(visitor_values), 1)
+            * 100
+            if visitor_values
+            else 0
+        )
+        revenue_variance = (
+            (max(revenue_values) - min(revenue_values))
+            / max(sum(revenue_values) / len(revenue_values), 1)
+            * 100
+            if revenue_values
+            else 0
+        )
         nps_variance = max(nps_values) - min(nps_values) if nps_values else 0
 
         comparison = LocationComparison(
             business_id=business_id,
             date=date,
-            location_id_best_visitors=by_visitors[0].location_id if by_visitors else None,
+            location_id_best_visitors=(
+                by_visitors[0].location_id if by_visitors else None
+            ),
             location_id_best_revenue=by_revenue[0].location_id if by_revenue else None,
             location_id_best_nps=by_nps[0].location_id if by_nps else None,
-            location_id_lowest_visitors=by_visitors[-1].location_id if by_visitors else None,
-            location_id_lowest_revenue=by_revenue[-1].location_id if by_revenue else None,
+            location_id_lowest_visitors=(
+                by_visitors[-1].location_id if by_visitors else None
+            ),
+            location_id_lowest_revenue=(
+                by_revenue[-1].location_id if by_revenue else None
+            ),
             location_id_lowest_nps=by_nps[-1].location_id if by_nps else None,
             visitor_variance_pct=Decimal(str(round(visitor_variance, 2))),
             revenue_variance_pct=Decimal(str(round(revenue_variance, 2))),
-            nps_variance=Decimal(str(round(nps_variance, 1)))
+            nps_variance=Decimal(str(round(nps_variance, 1))),
         )
 
         db.add(comparison)
@@ -288,5 +349,5 @@ class UnifiedDashboardService:
             "best_revenue": str(by_revenue[0].location_id) if by_revenue else None,
             "best_nps": str(by_nps[0].location_id) if by_nps else None,
             "visitor_variance_pct": float(visitor_variance),
-            "revenue_variance_pct": float(revenue_variance)
+            "revenue_variance_pct": float(revenue_variance),
         }

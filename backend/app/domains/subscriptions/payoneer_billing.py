@@ -100,7 +100,10 @@ async def create_payoneer_checkout(
     charges_url = f"{base_url}/programs/{program_id}/charges"
 
     frontend_url = settings.FRONTEND_URL or "http://localhost:3000"
-    success = success_url or f"{frontend_url}/dashboard/planes?status=success&provider=payoneer"
+    success = (
+        success_url
+        or f"{frontend_url}/dashboard/planes?status=success&provider=payoneer"
+    )
     cancel = cancel_url or f"{frontend_url}/dashboard/planes?status=cancel"
 
     payload = {
@@ -134,7 +137,9 @@ async def create_payoneer_checkout(
     if not charge_id or not checkout_url:
         raise RuntimeError(f"Payoneer response missing id or checkout_url: {data}")
 
-    logger.info(f"Payoneer checkout created: charge={charge_id}, plan={plan_slug}, user={user_id}")
+    logger.info(
+        f"Payoneer checkout created: charge={charge_id}, plan={plan_slug}, user={user_id}"
+    )
 
     return {
         "charge_id": charge_id,
@@ -195,7 +200,9 @@ def process_payoneer_webhook(payload: dict[str, Any]) -> dict[str, Any]:
     status = data.get("status")
     metadata = data.get("metadata", {})
 
-    logger.info(f"Payoneer webhook: event={event_type}, charge={charge_id}, status={status}")
+    logger.info(
+        f"Payoneer webhook: event={event_type}, charge={charge_id}, status={status}"
+    )
 
     result = {
         "processed": False,

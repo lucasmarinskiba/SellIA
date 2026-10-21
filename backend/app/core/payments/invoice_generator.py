@@ -24,7 +24,9 @@ logger = logging.getLogger(__name__)
 
 try:
     from reportlab.lib import colors
-    from reportlab.lib.pagesizes import A4, letter  # noqa: F401 - sonda de disponibilidad
+
+    # sonda de disponibilidad
+    from reportlab.lib.pagesizes import A4, letter  # noqa: F401
     from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
     from reportlab.lib.units import inch
     from reportlab.platypus import (
@@ -34,6 +36,7 @@ try:
         Table,
         TableStyle,
     )
+
     HAS_REPORTLAB = True
 except ImportError:
     HAS_REPORTLAB = False
@@ -42,6 +45,7 @@ except ImportError:
 
 class InvoiceStatus(str, Enum):
     """Invoice statuses."""
+
     DRAFT = "draft"
     SENT = "sent"
     VIEWED = "viewed"
@@ -359,11 +363,13 @@ class InvoiceGenerator:
 
         details_table = Table(details_data)
         details_table.setStyle(
-            TableStyle([
-                ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
-                ("FONTSIZE", (0, 0), (-1, -1), 10),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ])
+            TableStyle(
+                [
+                    ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+                    ("FONTSIZE", (0, 0), (-1, -1), 10),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ]
+            )
         )
         elements.append(details_table)
         elements.append(Spacer(1, 0.3 * inch))
@@ -374,31 +380,37 @@ class InvoiceGenerator:
             qty = item.get("qty", 1)
             unit_price = item.get("unit_price", 0)
             line_total = qty * unit_price
-            table_data.append([
-                item.get("name", "Item"),
-                str(qty),
-                f"${unit_price:.2f}",
-                f"${line_total:.2f}",
-            ])
+            table_data.append(
+                [
+                    item.get("name", "Item"),
+                    str(qty),
+                    f"${unit_price:.2f}",
+                    f"${line_total:.2f}",
+                ]
+            )
 
         # Add totals
         table_data.append(["", "", "Subtotal:", f"${amount_subtotal:.2f}"])
         table_data.append(["", "", "Tax:", f"${amount_tax:.2f}"])
         table_data.append(["", "", "TOTAL:", f"${amount_due:.2f}"])
 
-        items_table = Table(table_data, colWidths=[3 * inch, 0.75 * inch, 1 * inch, 1 * inch])
+        items_table = Table(
+            table_data, colWidths=[3 * inch, 0.75 * inch, 1 * inch, 1 * inch]
+        )
         items_table.setStyle(
-            TableStyle([
-                ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, 0), 10),
-                ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
-                ("BACKGROUND", (0, -1), (-1, -1), colors.beige),
-                ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
-                ("GRID", (0, 0), (-1, -1), 1, colors.black),
-            ])
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 0), (-1, 0), 10),
+                    ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+                    ("BACKGROUND", (0, -1), (-1, -1), colors.beige),
+                    ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+                    ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                ]
+            )
         )
         elements.append(items_table)
 

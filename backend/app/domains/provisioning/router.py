@@ -59,8 +59,12 @@ async def list_resource_requests(
     *,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-    resource_type: str | None = Query(None, pattern="^(ssl_certificate|s3_bucket|dns_record)$"),
-    status: str | None = Query(None, pattern="^(pending|processing|completed|failed|cancelled)$"),
+    resource_type: str | None = Query(
+        None, pattern="^(ssl_certificate|s3_bucket|dns_record)$"
+    ),
+    status: str | None = Query(
+        None, pattern="^(pending|processing|completed|failed|cancelled)$"
+    ),
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
 ):
@@ -103,7 +107,9 @@ async def update_resource_request(
 ):
     # Solo admins pueden actualizar manualmente
     if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Solo administradores pueden actualizar solicitudes")
+        raise HTTPException(
+            status_code=403, detail="Solo administradores pueden actualizar solicitudes"
+        )
 
     request = await provisioning_service.get_request(db, request_id)
     if not request:

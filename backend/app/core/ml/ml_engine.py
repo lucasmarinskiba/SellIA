@@ -108,10 +108,14 @@ class FeatureEngineer:
                 "std": float(self.scaler.scale_[i]),
             }
 
-        logger.info(f"Extracted {len(self.feature_names)} features from {len(data)} records")
+        logger.info(
+            f"Extracted {len(self.feature_names)} features from {len(data)} records"
+        )
         return X_normalized, y
 
-    def add_interaction_features(self, X: np.ndarray, feature_indices: list[tuple[int, int]]) -> np.ndarray:
+    def add_interaction_features(
+        self, X: np.ndarray, feature_indices: list[tuple[int, int]]
+    ) -> np.ndarray:
         """Add interaction terms between features."""
         interactions = []
         for i, j in feature_indices:
@@ -138,7 +142,9 @@ class FeatureEngineer:
 class SupervisedLearner:
     """Train and predict on labeled data (regression/classification)."""
 
-    def __init__(self, model_type: ModelType = ModelType.REGRESSION, random_state: int = 42):
+    def __init__(
+        self, model_type: ModelType = ModelType.REGRESSION, random_state: int = 42
+    ):
         self.model_type = model_type
         self.random_state = random_state
         self.model = None
@@ -158,7 +164,9 @@ class SupervisedLearner:
         hyperparams: dict[str, Any] | None = None,
     ) -> ModelMetrics:
         """Train supervised model with cross-validation."""
-        self.feature_names = feature_names or [f"feature_{i}" for i in range(X.shape[1])]
+        self.feature_names = feature_names or [
+            f"feature_{i}" for i in range(X.shape[1])
+        ]
 
         # Split data
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
@@ -265,7 +273,9 @@ class UnsupervisedLearner:
         """Fit clustering model."""
         from sklearn.metrics import silhouette_score
 
-        self.model = KMeans(n_clusters=self.n_clusters, random_state=self.random_state, n_init=10)
+        self.model = KMeans(
+            n_clusters=self.n_clusters, random_state=self.random_state, n_init=10
+        )
         self.labels = self.model.fit_predict(X)
         self.centers = self.model.cluster_centers_
         self.inertia = float(self.model.inertia_)
@@ -279,7 +289,10 @@ class UnsupervisedLearner:
             "n_clusters": self.n_clusters,
             "inertia": self.inertia,
             "silhouette_score": self.silhouette_score,
-            "cluster_sizes": {int(k): int(v) for k, v in zip(*np.unique(self.labels, return_counts=True))},
+            "cluster_sizes": {
+                int(k): int(v)
+                for k, v in zip(*np.unique(self.labels, return_counts=True))
+            },
         }
 
     def predict(self, X: np.ndarray) -> np.ndarray:
@@ -288,7 +301,9 @@ class UnsupervisedLearner:
             raise ValueError("Model not fitted. Call fit() first.")
         return self.model.predict(X)
 
-    def get_cluster_profiles(self, X: np.ndarray, feature_names: list[str]) -> list[dict[str, Any]]:
+    def get_cluster_profiles(
+        self, X: np.ndarray, feature_names: list[str]
+    ) -> list[dict[str, Any]]:
         """Get profiles of each cluster."""
         profiles = []
         for cluster_id in range(self.n_clusters):
@@ -318,7 +333,12 @@ class UnsupervisedLearner:
 class ReinforcementLearner:
     """Q-learning based optimization (negotiation strategy, pricing, etc.)."""
 
-    def __init__(self, learning_rate: float = 0.1, discount_factor: float = 0.95, epsilon: float = 0.1):
+    def __init__(
+        self,
+        learning_rate: float = 0.1,
+        discount_factor: float = 0.95,
+        epsilon: float = 0.1,
+    ):
         self.learning_rate = learning_rate
         self.discount_factor = discount_factor
         self.epsilon = epsilon
@@ -331,7 +351,9 @@ class ReinforcementLearner:
         if state not in self.q_table:
             self.q_table[state] = {action: 0.0 for action in actions}
 
-    def choose_action(self, state: tuple[Any, ...], actions: list[str], training: bool = True) -> str:
+    def choose_action(
+        self, state: tuple[Any, ...], actions: list[str], training: bool = True
+    ) -> str:
         """Choose action using epsilon-greedy strategy."""
         self.initialize_state(state, actions)
 
@@ -340,10 +362,17 @@ class ReinforcementLearner:
         else:
             q_values = self.q_table[state]
             max_q = max(q_values.values())
-            return np.random.choice([a for a, q in q_values.items() if q == max_q])  # Exploit
+            return np.random.choice(
+                [a for a, q in q_values.items() if q == max_q]
+            )  # Exploit
 
     def update_q_value(
-        self, state: tuple[Any, ...], action: str, reward: float, next_state: tuple[Any, ...], actions: list[str]
+        self,
+        state: tuple[Any, ...],
+        action: str,
+        reward: float,
+        next_state: tuple[Any, ...],
+        actions: list[str],
     ) -> None:
         """Update Q-value using Bellman equation."""
         self.initialize_state(state, actions)
@@ -351,10 +380,14 @@ class ReinforcementLearner:
 
         current_q = self.q_table[state][action]
         max_next_q = max(self.q_table[next_state].values())
-        new_q = current_q + self.learning_rate * (reward + self.discount_factor * max_next_q - current_q)
+        new_q = current_q + self.learning_rate * (
+            reward + self.discount_factor * max_next_q - current_q
+        )
         self.q_table[state][action] = new_q
 
-    def learn_from_episode(self, episodes: int, actions: list[str], reward_fn: callable) -> list[float]:
+    def learn_from_episode(
+        self, episodes: int, actions: list[str], reward_fn: callable
+    ) -> list[float]:
         """Run training episodes and collect rewards."""
         rewards = []
         for episode in range(episodes):
@@ -402,7 +435,9 @@ class ModelEvaluator:
         self.model_registry = model_registry or {}
         self.evaluation_history: list[dict[str, Any]] = []
 
-    def compare_models(self, models: list[Any], X: np.ndarray, y: np.ndarray, cv: int = 5) -> dict[str, Any]:
+    def compare_models(
+        self, models: list[Any], X: np.ndarray, y: np.ndarray, cv: int = 5
+    ) -> dict[str, Any]:
         """Compare multiple models using cross-validation."""
         comparison = {}
 
@@ -443,7 +478,9 @@ class ModelEvaluator:
         """Get evaluation history for a model."""
         return [r for r in self.evaluation_history if r["model_name"] == model_name]
 
-    def get_best_model(self, model_name: str, metric: str = "test_score") -> dict[str, Any] | None:
+    def get_best_model(
+        self, model_name: str, metric: str = "test_score"
+    ) -> dict[str, Any] | None:
         """Get best model version by metric."""
         history = self.get_model_history(model_name)
         if not history:

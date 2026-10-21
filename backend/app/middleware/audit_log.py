@@ -69,6 +69,7 @@ class DataAccessAuditMiddleware(BaseHTTPMiddleware):
                     await db.commit()
 
             import asyncio
+
             asyncio.create_task(_log())
         except Exception:
             logger.exception("dispatch: error inesperado")

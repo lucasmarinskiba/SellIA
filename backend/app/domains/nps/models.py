@@ -13,15 +13,27 @@ from app.core.database import Base
 
 class FeedbackNPSResponse(Base):
     """Net Promoter Score response."""
+
     __tablename__ = "feedback_nps_responses"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="SET NULL"), nullable=True)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     score = Column(Integer, nullable=False)  # 0-10
     feedback = Column(Text(), nullable=True)
-    category = Column(String(50), nullable=True)  # product | support | onboarding | pricing
+    category = Column(
+        String(50), nullable=True
+    )  # product | support | onboarding | pricing
 
     # Follow-up
     follow_up_allowed = Column(Boolean, default=False, nullable=False)
@@ -33,18 +45,32 @@ class FeedbackNPSResponse(Base):
 
 class FeedbackItem(Base):
     """General feedback item."""
+
     __tablename__ = "general_feedback_items"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
-    feedback_type = Column(String(50), nullable=False)  # feature_request | bug | praise | complaint | other
+    feedback_type = Column(
+        String(50), nullable=False
+    )  # feature_request | bug | praise | complaint | other
     message = Column(Text(), nullable=False)
     context = Column(Text(), nullable=True)  # Where in the app
     screenshot_url = Column(String(500), nullable=True)
 
-    status = Column(String(20), default="new", nullable=False)  # new | reviewed | in_progress | resolved | closed
+    status = Column(
+        String(20), default="new", nullable=False
+    )  # new | reviewed | in_progress | resolved | closed
     admin_response = Column(Text(), nullable=True)
 
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )

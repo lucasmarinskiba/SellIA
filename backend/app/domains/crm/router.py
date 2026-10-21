@@ -33,6 +33,7 @@ router = APIRouter(prefix="/crm", tags=["crm"])
 
 # ========== Pipelines ==========
 
+
 @router.get("/pipelines", response_model=list[PipelineResponse])
 async def list_pipelines(
     business_id: Annotated[UUID, Query()],
@@ -40,15 +41,19 @@ async def list_pipelines(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
-        select(Pipeline).where(
+        select(Pipeline)
+        .where(
             Pipeline.business_id == business_id,
             Pipeline.is_active == True,
-        ).order_by(Pipeline.is_default.desc(), Pipeline.created_at)
+        )
+        .order_by(Pipeline.is_default.desc(), Pipeline.created_at)
     )
     return result.scalars().all()
 
 
-@router.post("/pipelines", response_model=PipelineResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/pipelines", response_model=PipelineResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_pipeline(
     data: PipelineCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -96,6 +101,7 @@ async def delete_pipeline(
 
 # ========== Deals ==========
 
+
 @router.get("/deals", response_model=list[DealResponse])
 async def list_deals(
     business_id: Annotated[UUID, Query()],
@@ -117,7 +123,9 @@ async def list_deals(
         query = query.where(
             Deal.title.ilike(f"%{search}%") | Deal.contact_name.ilike(f"%{search}%")
         )
-    result = await db.execute(query.order_by(desc(Deal.priority), desc(Deal.updated_at)))
+    result = await db.execute(
+        query.order_by(desc(Deal.priority), desc(Deal.updated_at))
+    )
     return result.scalars().all()
 
 
@@ -142,15 +150,18 @@ async def create_deal(
             if conversation:
                 # Get last messages for context
                 result = await db.execute(
-                    select(Message).where(
-                        Message.conversation_id == conversation.id
-                    ).order_by(Message.created_at.desc()).limit(10)
+                    select(Message)
+                    .where(Message.conversation_id == conversation.id)
+                    .order_by(Message.created_at.desc())
+                    .limit(10)
                 )
                 messages = list(reversed(result.scalars().all()))
-                conversation_summary = "\n".join([
-                    f"{'Lead' if m.direction.value == 'inbound' else 'Agent'}: {m.content[:200]}"
-                    for m in messages
-                ])
+                conversation_summary = "\n".join(
+                    [
+                        f"{'Lead' if m.direction.value == 'inbound' else 'Agent'}: {m.content[:200]}"
+                        for m in messages
+                    ]
+                )
 
                 custom_prompt = f"""Based on this conversation summary, write:
 1. A concise deal title (max 8 words) describing the opportunity
@@ -189,6 +200,7 @@ DESCRIPTION: <deal description>"""
         except Exception as e:
             logger.exception("create_deal: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Deal AI generation error: {e}")
 
     deal = Deal(**deal_data)
@@ -216,15 +228,18 @@ async def _generate_close_reason_if_missing(db, deal, business_id):
             return
 
         result = await db.execute(
-            select(Message).where(
-                Message.conversation_id == conversation.id
-            ).order_by(Message.created_at.desc()).limit(15)
+            select(Message)
+            .where(Message.conversation_id == conversation.id)
+            .order_by(Message.created_at.desc())
+            .limit(15)
         )
         messages = list(reversed(result.scalars().all()))
-        conversation_summary = "\n".join([
-            f"{'Lead' if m.direction.value == 'inbound' else 'Agent'}: {m.content[:250]}"
-            for m in messages
-        ])
+        conversation_summary = "\n".join(
+            [
+                f"{'Lead' if m.direction.value == 'inbound' else 'Agent'}: {m.content[:250]}"
+                for m in messages
+            ]
+        )
 
         outcome = "GANADO" if deal.stage == LeadStage.CLOSED_WON else "PERDIDO"
         custom_prompt = f"""Analiza esta conversación y genera un brief de cierre profesional.
@@ -254,6 +269,7 @@ Genera UNA SOLA ORACIÓN que explique por qué se cerró este deal. Sé objetivo
     except Exception as e:
         logger.exception("_generate_close_reason_if_missing: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).error(f"Close reason generation error: {e}")
 
 
@@ -282,7 +298,10 @@ async def update_deal(
     await db.commit()
 
     # Auto-generate close reason if deal is now closed and lacks one
-    if deal.stage in (LeadStage.CLOSED_WON, LeadStage.CLOSED_LOST) and not deal.close_reason:
+    if (
+        deal.stage in (LeadStage.CLOSED_WON, LeadStage.CLOSED_LOST)
+        and not deal.close_reason
+    ):
         await _generate_close_reason_if_missing(db, deal, deal.business_id)
         await db.refresh(deal)
 
@@ -312,19 +331,26 @@ async def move_deal(
     await db.commit()
 
     # Auto-generate close reason if deal is now closed and lacks one
-    if deal.stage in (LeadStage.CLOSED_WON, LeadStage.CLOSED_LOST) and not deal.close_reason:
+    if (
+        deal.stage in (LeadStage.CLOSED_WON, LeadStage.CLOSED_LOST)
+        and not deal.close_reason
+    ):
         await _generate_close_reason_if_missing(db, deal, deal.business_id)
         await db.refresh(deal)
 
     # Auto-generate proposal when reaching PROPOSAL_SENT
-    if data.stage == LeadStage.PROPOSAL_SENT.value and not deal.extra_data.get("proposal"):
+    if data.stage == LeadStage.PROPOSAL_SENT.value and not deal.extra_data.get(
+        "proposal"
+    ):
         try:
             from app.domains.crm.proposals import generate_deal_proposal
+
             await generate_deal_proposal(db, deal, deal.business_id)
             await db.refresh(deal)
         except Exception as e:
             logger.exception("move_deal: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Auto-proposal generation error: {e}")
 
     await db.refresh(deal)
@@ -370,7 +396,9 @@ async def pricing_recommendation_endpoint(
 
     recommendation = await generate_pricing_recommendation(db, deal, deal.business_id)
     if not recommendation:
-        raise HTTPException(status_code=500, detail="No se pudo generar la recomendación de precios")
+        raise HTTPException(
+            status_code=500, detail="No se pudo generar la recomendación de precios"
+        )
 
     await db.commit()
     await db.refresh(deal)
@@ -392,20 +420,25 @@ async def assign_recommendation_endpoint(
     conversation_summary = "Sin conversación disponible."
     if deal.conversation_id:
         msg_result = await db.execute(
-            select(Message).where(
-                Message.conversation_id == deal.conversation_id
-            ).order_by(Message.created_at.desc()).limit(10)
+            select(Message)
+            .where(Message.conversation_id == deal.conversation_id)
+            .order_by(Message.created_at.desc())
+            .limit(10)
         )
         messages = list(reversed(msg_result.scalars().all()))
-        conversation_summary = "\n".join([
-            f"{'Lead' if m.direction.value == 'inbound' else 'Agent'}: {m.content[:200]}"
-            for m in messages
-        ])
+        conversation_summary = "\n".join(
+            [
+                f"{'Lead' if m.direction.value == 'inbound' else 'Agent'}: {m.content[:200]}"
+                for m in messages
+            ]
+        )
 
     from app.domains.agents.ai_reply import generate_raw_ai_response
     from app.domains.agents.prompts import compose_system_prompt
 
-    system_prompt = compose_system_prompt(base_slug="sales-manager", voice_slug="hormozi")
+    system_prompt = compose_system_prompt(
+        base_slug="sales-manager", voice_slug="hormozi"
+    )
     user_prompt = f"""Recomienda una estrategia de asignación y manejo para este deal.
 
 DEAL: {deal.title}
@@ -433,7 +466,9 @@ ESTIMATED_CLOSE: <estimación de días para cerrar>"""
     )
 
     if not ai_response:
-        raise HTTPException(status_code=500, detail="No se pudo generar la recomendación")
+        raise HTTPException(
+            status_code=500, detail="No se pudo generar la recomendación"
+        )
 
     # Parse and store
     recommendation = {
@@ -490,6 +525,7 @@ async def delete_deal(
 
 # ========== Lead Scores ==========
 
+
 @router.get("/lead-scores", response_model=list[LeadScoreResponse])
 async def list_lead_scores(
     business_id: Annotated[UUID, Query()],
@@ -524,6 +560,7 @@ async def get_lead_score(
 
 # ========== Summary ==========
 
+
 @router.get("/summary", response_model=CRMSummaryResponse)
 async def get_crm_summary(
     business_id: Annotated[UUID, Query()],
@@ -554,9 +591,21 @@ async def get_crm_summary(
     avg_deal_value = (total_value / total_deals) if total_deals > 0 else 0.0
 
     # Lead classifications
-    hot = await db.execute(select(func.count(LeadScore.id)).where(LeadScore.business_id == business_id, LeadScore.classification == "hot"))
-    warm = await db.execute(select(func.count(LeadScore.id)).where(LeadScore.business_id == business_id, LeadScore.classification == "warm"))
-    cold = await db.execute(select(func.count(LeadScore.id)).where(LeadScore.business_id == business_id, LeadScore.classification == "cold"))
+    hot = await db.execute(
+        select(func.count(LeadScore.id)).where(
+            LeadScore.business_id == business_id, LeadScore.classification == "hot"
+        )
+    )
+    warm = await db.execute(
+        select(func.count(LeadScore.id)).where(
+            LeadScore.business_id == business_id, LeadScore.classification == "warm"
+        )
+    )
+    cold = await db.execute(
+        select(func.count(LeadScore.id)).where(
+            LeadScore.business_id == business_id, LeadScore.classification == "cold"
+        )
+    )
 
     return CRMSummaryResponse(
         total_deals=total_deals,

@@ -114,7 +114,9 @@ async def get_html(
     if not os.path.exists(deck.html_url):
         raise HTTPException(status_code=404, detail="HTML file missing")
 
-    return FileResponse(deck.html_url, media_type="text/html", filename=f"deck_{deck_id}.html")
+    return FileResponse(
+        deck.html_url, media_type="text/html", filename=f"deck_{deck_id}.html"
+    )
 
 
 @router.get("/decks/{deck_id}/pdf")
@@ -136,4 +138,6 @@ async def get_pdf(
     else:
         pdf_path = deck.pdf_url
 
-    return FileResponse(pdf_path, media_type="application/pdf", filename=f"deck_{deck_id}.pdf")
+    return FileResponse(
+        pdf_path, media_type="application/pdf", filename=f"deck_{deck_id}.pdf"
+    )

@@ -54,6 +54,7 @@ router = APIRouter(prefix="/api/v1/platforms", tags=["platforms"])
 
 class WebhookResponse(BaseModel):
     """Standard webhook response."""
+
     status: str
     message: str
     correlation_id: str
@@ -61,6 +62,7 @@ class WebhookResponse(BaseModel):
 
 class PlatformConfig(BaseModel):
     """Platform configuration."""
+
     platform_type: str
     api_key: str
     webhook_url: str
@@ -70,6 +72,7 @@ class PlatformConfig(BaseModel):
 
 class OrderSyncRequest(BaseModel):
     """Order sync request."""
+
     platform_type: str
     force_refresh: bool = False
     page: int = 1
@@ -78,6 +81,7 @@ class OrderSyncRequest(BaseModel):
 
 class SyncResponse(BaseModel):
     """Sync operation response."""
+
     status: str
     synced_count: int
     duration_seconds: float
@@ -86,6 +90,7 @@ class SyncResponse(BaseModel):
 
 class AlertRequest(BaseModel):
     """Alert notification request."""
+
     title: str
     message: str
     level: str = "info"  # info, warning, error, critical
@@ -93,6 +98,7 @@ class AlertRequest(BaseModel):
 
 
 # ========== FACEBOOK SHOP ENDPOINTS ==========
+
 
 @router.post("/facebook-shop/webhooks/orders")
 async def facebook_shop_webhook_orders(
@@ -191,6 +197,7 @@ async def facebook_shop_sync_products(
         SyncResponse
     """
     import time
+
     start_time = time.time()
     correlation_id = str(uuid.uuid4())
 
@@ -250,6 +257,7 @@ async def facebook_shop_get_order(
 
 # ========== INSTAGRAM SHOP ENDPOINTS ==========
 
+
 @router.post("/instagram-shop/webhooks/orders")
 async def instagram_shop_webhook_orders(
     request: Request,
@@ -285,6 +293,7 @@ async def instagram_shop_sync_products(
 ) -> SyncResponse:
     """Sync products to Instagram Shop."""
     import time
+
     start_time = time.time()
 
     try:
@@ -333,6 +342,7 @@ async def instagram_shop_analytics(
 
 
 # ========== TIKTOK SHOP ENDPOINTS ==========
+
 
 @router.post("/tiktok-shop/webhooks/orders")
 async def tiktok_shop_webhook_orders(
@@ -385,11 +395,15 @@ async def tiktok_shop_config(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-async def _get_tiktok_shop_connection(account_id: str, db: AsyncSession) -> ChannelConnection:
+async def _get_tiktok_shop_connection(
+    account_id: str, db: AsyncSession
+) -> ChannelConnection:
     try:
         business_uuid = uuid.UUID(account_id)
     except ValueError:
-        raise HTTPException(status_code=422, detail="account_id debe ser un UUID de business válido")
+        raise HTTPException(
+            status_code=422, detail="account_id debe ser un UUID de business válido"
+        )
 
     result = await db.execute(
         select(ChannelConnection).where(
@@ -403,7 +417,7 @@ async def _get_tiktok_shop_connection(account_id: str, db: AsyncSession) -> Chan
         raise HTTPException(
             status_code=404,
             detail="No hay conexión de TikTok Shop configurada para este business_id. "
-                   "Crear una vía POST /api/v1/businesses/{business_id}/channels con platform=tiktok_shop.",
+            "Crear una vía POST /api/v1/businesses/{business_id}/channels con platform=tiktok_shop.",
         )
     return connection
 
@@ -416,11 +430,15 @@ async def tiktok_shop_sync_orders(
 ) -> SyncResponse:
     """Sync orders reales desde TikTok Shop Seller API."""
     import time
+
     start_time = time.time()
 
     connection = await _get_tiktok_shop_connection(account_id, db)
     from app.domains.channels.connectors import get_connector
-    connector = get_connector(ChannelPlatform.TIKTOK_SHOP, connection.credentials, connection.settings)
+
+    connector = get_connector(
+        ChannelPlatform.TIKTOK_SHOP, connection.credentials, connection.settings
+    )
 
     try:
         orders = await connector.list_orders(page=request.page, page_size=request.limit)
@@ -428,16 +446,26 @@ async def tiktok_shop_sync_orders(
 
         if orders is None:
             connection.status = ChannelStatus.ERROR
-            connection.status_message = "list_orders devolvió error - ver logs de TikTok API"
+            connection.status_message = (
+                "list_orders devolvió error - ver logs de TikTok API"
+            )
             await db.commit()
-            return SyncResponse(status="error", synced_count=0, duration_seconds=duration,
-                                 errors=["TikTok Shop API no devolvió órdenes - credenciales inválidas o error de API"])
+            return SyncResponse(
+                status="error",
+                synced_count=0,
+                duration_seconds=duration,
+                errors=[
+                    "TikTok Shop API no devolvió órdenes - credenciales inválidas o error de API"
+                ],
+            )
 
         connection.status = ChannelStatus.CONNECTED
         connection.last_sync_at = datetime.now(UTC)
         await db.commit()
 
-        return SyncResponse(status="success", synced_count=len(orders), duration_seconds=duration)
+        return SyncResponse(
+            status="success", synced_count=len(orders), duration_seconds=duration
+        )
 
     except Exception as e:
         logger.exception("tiktok_shop_sync_orders: error inesperado")
@@ -448,6 +476,7 @@ async def tiktok_shop_sync_orders(
 
 
 # ========== CALENDLY ENDPOINTS ==========
+
 
 @router.post("/calendly/webhooks/events")
 async def calendly_webhook_events(
@@ -523,6 +552,7 @@ async def calendly_list_events(
 
 
 # ========== SLACK ENDPOINTS ==========
+
 
 @router.post("/slack/commands")
 async def slack_command_handler(
@@ -609,6 +639,7 @@ async def slack_send_alert(
 
 # ========== TELEGRAM ENDPOINTS ==========
 
+
 @router.post("/telegram/webhooks/updates")
 async def telegram_webhook_updates(
     request: Request,
@@ -685,6 +716,7 @@ async def telegram_send_notification(
 
 # ========== HEALTH & STATUS ==========
 
+
 @router.get("/health")
 async def platforms_health() -> dict[str, Any]:
     """Check health of all platform integrations."""
@@ -738,7 +770,11 @@ async def platforms_status(
                     "connected": connection.status == ChannelStatus.CONNECTED,
                     "status": connection.status.value,
                     "status_message": connection.status_message,
-                    "last_sync": connection.last_sync_at.isoformat() if connection.last_sync_at else None,
+                    "last_sync": (
+                        connection.last_sync_at.isoformat()
+                        if connection.last_sync_at
+                        else None
+                    ),
                 }
         except ValueError:
             pass  # account_id no es UUID válido - se reporta como no conectado
@@ -746,12 +782,28 @@ async def platforms_status(
         return {
             "account_id": account_id,
             "platforms": {
-                "facebook_shop": {"connected": False, "last_sync": None, "implemented": False},
-                "instagram_shop": {"connected": False, "last_sync": None, "implemented": False},
+                "facebook_shop": {
+                    "connected": False,
+                    "last_sync": None,
+                    "implemented": False,
+                },
+                "instagram_shop": {
+                    "connected": False,
+                    "last_sync": None,
+                    "implemented": False,
+                },
                 "tiktok_shop": {**tiktok_status, "implemented": True},
-                "calendly": {"connected": False, "last_sync": None, "implemented": False},
+                "calendly": {
+                    "connected": False,
+                    "last_sync": None,
+                    "implemented": False,
+                },
                 "slack": {"connected": False, "last_sync": None, "implemented": False},
-                "telegram": {"connected": False, "last_sync": None, "implemented": False},
+                "telegram": {
+                    "connected": False,
+                    "last_sync": None,
+                    "implemented": False,
+                },
             },
         }
 

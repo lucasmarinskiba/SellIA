@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 class SalesMethodology(str, Enum):
     """Sales methodologies and frameworks."""
+
     MEDDIC = "meddic"  # Metrics, Economic Buyer, Decision Criteria, Decision Process, Identify Pain, Champion
     SANDLER = "sandler"  # Bonding & Rapport, Up-Front Contracts, Pain, Budget, Decision Process, Non-Conclusion
     CONSULTATIVE = "consultative"  # Listen, understand, recommend, align
@@ -28,6 +29,7 @@ class SalesMethodology(str, Enum):
 
 class SalesStage(str, Enum):
     """Sales pipeline stages."""
+
     PROSPECTING = "prospecting"
     FIRST_CONTACT = "first_contact"
     DISCOVERY = "discovery"
@@ -41,6 +43,7 @@ class SalesStage(str, Enum):
 
 class ObjectionType(str, Enum):
     """Types of sales objections."""
+
     PRICE = "price"  # Too expensive
     COMPETITION = "competition"  # We prefer competitor
     TIMING = "timing"  # Not the right time
@@ -53,6 +56,7 @@ class ObjectionType(str, Enum):
 @dataclass
 class SalesPlaybook:
     """Sales playbook entry."""
+
     name: str
     description: str
     use_case: str
@@ -90,7 +94,6 @@ class SalesAgent:
                 "Who can advocate for us internally?",
             ],
         },
-
         SalesMethodology.SANDLER: {
             "name": "Sandler Selling System",
             "description": "Consultative approach that treats sales as mutual problem-solving",
@@ -114,7 +117,6 @@ class SalesAgent:
                 "What's the timeline?",
             ],
         },
-
         SalesMethodology.CONSULTATIVE: {
             "name": "Consultative Selling",
             "description": "Focus on understanding customer needs and providing tailored solutions",
@@ -137,7 +139,6 @@ class SalesAgent:
                 "What's preventing you from achieving that?",
             ],
         },
-
         SalesMethodology.CHALLENGER_SALE: {
             "name": "Challenger Sale",
             "description": "Seller teaches, tailors, and takes control of complex sales",
@@ -159,7 +160,6 @@ class SalesAgent:
                 "Based on that, here's what I'd recommend...",
             ],
         },
-
         SalesMethodology.SPIN_SELLING: {
             "name": "SPIN Selling",
             "description": "Question-based approach to uncover buyer needs",
@@ -180,7 +180,6 @@ class SalesAgent:
                 "Need-Payoff": "Would it be helpful if we could...?",
             },
         },
-
         SalesMethodology.CONCEPTUAL_SELLING: {
             "name": "Conceptual Selling",
             "description": "Focus on buyer's objectives and establishing mutual understanding",
@@ -212,7 +211,7 @@ class SalesAgent:
             success_criteria=[
                 "Response rate > 5%",
                 "Meeting scheduled",
-                "Discovery call booked"
+                "Discovery call booked",
             ],
             template="""
 Hi [Name],
@@ -232,9 +231,8 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
                 "Keep initial message concise (2-3 sentences)",
                 "Include clear call-to-action",
                 "Follow up 3-7 days if no response",
-            ]
+            ],
         ),
-
         "discovery_call": SalesPlaybook(
             name="Discovery Call Framework",
             description="Structured discovery conversation with qualified lead",
@@ -244,7 +242,7 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
                 "Understanding of prospect's main challenges",
                 "Identified economic buyer",
                 "Timeline established",
-                "Next step scheduled"
+                "Next step scheduled",
             ],
             template="""
 1. RAPPORT (5 min)
@@ -278,9 +276,8 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
                 "Identify specific pain and desired outcomes",
                 "Find economic buyer early",
                 "Establish realistic timeline",
-            ]
+            ],
         ),
-
         "objection_handling": SalesPlaybook(
             name="Objection Handling Framework",
             description="Structured approach to common sales objections",
@@ -289,7 +286,7 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
             success_criteria=[
                 "Objection addressed",
                 "Trust maintained",
-                "Deal moves forward"
+                "Deal moves forward",
             ],
             template="""
 1. LISTEN
@@ -319,9 +316,8 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
                 "Use specific case studies as proof",
                 "Never argue with prospect",
                 "Reframe objection as valid point",
-            ]
+            ],
         ),
-
         "closing": SalesPlaybook(
             name="Closing Techniques",
             description="Ethical approaches to closing sales",
@@ -330,7 +326,7 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
             success_criteria=[
                 "Agreement signed",
                 "Payment terms confirmed",
-                "Implementation plan agreed"
+                "Implementation plan agreed",
             ],
             template="""
 1. TRIAL CLOSE
@@ -360,7 +356,7 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
                 "Address remaining concerns",
                 "Get everything in writing",
                 "Confirm next steps in detail",
-            ]
+            ],
         ),
     }
 
@@ -378,7 +374,6 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
                 "Let's look at your pain cost vs. our investment cost.",
             ],
         },
-
         ObjectionType.COMPETITION: {
             "reframe": "Learn what competitor offers",
             "questions": [
@@ -392,7 +387,6 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
                 "Many clients chose us because...",
             ],
         },
-
         ObjectionType.TIMING: {
             "reframe": "Create urgency or adjust timeline",
             "questions": [
@@ -406,7 +400,6 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
                 "Would a phased approach work better?",
             ],
         },
-
         ObjectionType.AUTHORITY: {
             "reframe": "Identify true decision maker",
             "questions": [
@@ -420,7 +413,6 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
                 "Would a formal proposal help with your review?",
             ],
         },
-
         ObjectionType.IMPLEMENTATION: {
             "reframe": "Break down implementation into manageable pieces",
             "questions": [
@@ -434,7 +426,6 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
                 "Let's create a detailed implementation plan.",
             ],
         },
-
         ObjectionType.PAIN: {
             "reframe": "Increase pain perception",
             "questions": [
@@ -448,7 +439,6 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
                 "The cost of status quo is typically...",
             ],
         },
-
         ObjectionType.PRODUCT: {
             "reframe": "Understand what's missing",
             "questions": [
@@ -490,13 +480,19 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
 
             # Deal size matching
             size_range = methodology.get("deal_size", "")
-            if deal_size < 10000 and "$" in size_range and "K" in size_range or deal_size > 50000 and "50K" in size_range:
+            if (
+                deal_size < 10000
+                and "$" in size_range
+                and "K" in size_range
+                or deal_size > 50000
+                and "50K" in size_range
+            ):
                 score += 20
 
             # Complexity matching
             if complexity == "complex" and methodology_key in [
                 SalesMethodology.MEDDIC,
-                SalesMethodology.CHALLENGER_SALE
+                SalesMethodology.CHALLENGER_SALE,
             ]:
                 score += 30
 
@@ -519,10 +515,12 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
             }
 
             for method_key, score in sorted_methodologies[1:4]:
-                recommendation["secondary"].append({
-                    "methodology": SalesAgent.METHODOLOGIES[method_key]["name"],
-                    "key": method_key,
-                })
+                recommendation["secondary"].append(
+                    {
+                        "methodology": SalesAgent.METHODOLOGIES[method_key]["name"],
+                        "key": method_key,
+                    }
+                )
 
         return recommendation
 
@@ -536,7 +534,7 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
                     "Research target accounts",
                     "Build contact list",
                     "Personalize outreach",
-                    "Set outreach cadence"
+                    "Set outreach cadence",
                 ],
                 "success_metric": "Response rate > 5%",
                 "duration": "Ongoing",
@@ -547,7 +545,7 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
                     "Personalized email/outreach",
                     "Cold call with research",
                     "Referral introduction",
-                    "Warm handoff"
+                    "Warm handoff",
                 ],
                 "success_metric": "Meeting scheduled",
                 "duration": "1-2 weeks",
@@ -558,7 +556,7 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
                     "Active listening",
                     "Problem questioning",
                     "Timeline exploration",
-                    "Stakeholder mapping"
+                    "Stakeholder mapping",
                 ],
                 "success_metric": "Clear pain identified",
                 "duration": "1-2 weeks",
@@ -569,7 +567,7 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
                     "Budget confirmation",
                     "Authority mapping",
                     "Priority assessment",
-                    "Timeline clarification"
+                    "Timeline clarification",
                 ],
                 "success_metric": "Lead qualified for proposal",
                 "duration": "1 week",
@@ -580,7 +578,7 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
                     "Deep dive meetings",
                     "Requirements gathering",
                     "Technical assessment",
-                    "ROI calculation"
+                    "ROI calculation",
                 ],
                 "success_metric": "Detailed requirements doc",
                 "duration": "2-4 weeks",
@@ -591,7 +589,7 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
                     "Custom proposal creation",
                     "Presentation preparation",
                     "Proposal walkthrough",
-                    "Q&A preparation"
+                    "Q&A preparation",
                 ],
                 "success_metric": "Proposal accepted for review",
                 "duration": "1-2 weeks",
@@ -602,7 +600,7 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
                     "Terms negotiation",
                     "Objection handling",
                     "Approval process support",
-                    "Stakeholder management"
+                    "Stakeholder management",
                 ],
                 "success_metric": "Agreement in principle",
                 "duration": "2-4 weeks",
@@ -613,7 +611,7 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
                     "Trial closes",
                     "Contract negotiation",
                     "Signature collection",
-                    "Kickoff scheduling"
+                    "Kickoff scheduling",
                 ],
                 "success_metric": "Contract signed",
                 "duration": "1-2 weeks",
@@ -624,7 +622,7 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
                     "Implementation planning",
                     "Onboarding support",
                     "Value realization",
-                    "Expansion planning"
+                    "Expansion planning",
                 ],
                 "success_metric": "Customer onboarded",
                 "duration": "Ongoing",
@@ -635,8 +633,7 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
 
     @staticmethod
     def handle_objection(
-        objection_type: ObjectionType,
-        specific_context: str | None = None
+        objection_type: ObjectionType, specific_context: str | None = None
     ) -> dict[str, Any]:
         """Get structured response to objection."""
         objection_response = SalesAgent.OBJECTION_RESPONSES.get(objection_type, {})
@@ -658,7 +655,7 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
     def create_sales_script(
         scenario: str,
         prospect_context: dict[str, Any],
-        methodology: SalesMethodology | None = None
+        methodology: SalesMethodology | None = None,
     ) -> dict[str, Any]:
         """Create customized sales script."""
         script_structure = {

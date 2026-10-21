@@ -46,7 +46,9 @@ class CacheControlMiddleware(BaseHTTPMiddleware):
 
         # Aplicar no-cache en rutas sensibles
         if any(path.startswith(p) for p in self.SENSITIVE_PREFIXES):
-            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, private"
+            response.headers["Cache-Control"] = (
+                "no-store, no-cache, must-revalidate, private"
+            )
             response.headers["Pragma"] = "no-cache"
             response.headers["Expires"] = "0"
 

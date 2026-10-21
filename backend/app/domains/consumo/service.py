@@ -34,6 +34,7 @@ logger = get_logger(__name__)
 
 # ===== COST ATTRIBUTION =====
 
+
 async def get_cost_attribution_summary(
     db: AsyncSession,
     user_id: uuid.UUID | None = None,
@@ -73,11 +74,19 @@ async def get_cost_attribution_summary(
         "total_cost_usd": round(total_cost, 4),
         "total_tokens_input": total_input,
         "total_tokens_output": total_output,
-        "avg_latency_ms": round(sum(latencies) / len(latencies), 2) if latencies else None,
-        "cache_hit_rate": round(cache_hits / total_calls * 100, 1) if total_calls else 0,
-        "by_provider": [{"name": k, "cost_usd": round(v, 4)} for k, v in by_provider.items()],
+        "avg_latency_ms": (
+            round(sum(latencies) / len(latencies), 2) if latencies else None
+        ),
+        "cache_hit_rate": (
+            round(cache_hits / total_calls * 100, 1) if total_calls else 0
+        ),
+        "by_provider": [
+            {"name": k, "cost_usd": round(v, 4)} for k, v in by_provider.items()
+        ],
         "by_model": [{"name": k, "cost_usd": round(v, 4)} for k, v in by_model.items()],
-        "by_task_type": [{"name": k, "cost_usd": round(v, 4)} for k, v in by_task.items()],
+        "by_task_type": [
+            {"name": k, "cost_usd": round(v, 4)} for k, v in by_task.items()
+        ],
         "period_days": days,
     }
 
@@ -96,9 +105,13 @@ async def get_user_margins(db: AsyncSession, days: int = 30) -> list[dict[str, A
         )
         .join(Subscription, Subscription.user_id == User.id)
         .join(SubscriptionPlan, SubscriptionPlan.id == Subscription.plan_id)
-        .outerjoin(AICallLog, and_(AICallLog.user_id == User.id, AICallLog.created_at >= since))
+        .outerjoin(
+            AICallLog, and_(AICallLog.user_id == User.id, AICallLog.created_at >= since)
+        )
         .where(Subscription.status == "active")
-        .group_by(User.id, User.email, SubscriptionPlan.name, SubscriptionPlan.price_monthly)
+        .group_by(
+            User.id, User.email, SubscriptionPlan.name, SubscriptionPlan.price_monthly
+        )
     )
 
     margins = []
@@ -108,17 +121,23 @@ async def get_user_margins(db: AsyncSession, days: int = 30) -> list[dict[str, A
         ai_cost = float(ai_cost or 0)
         margin = plan_price - ai_cost
         margin_pct = round(margin / plan_price * 100, 1) if plan_price else 0
-        risk = "danger" if margin_pct < 20 else ("warning" if margin_pct < 50 else "healthy")
-        margins.append({
-            "user_id": user_id,
-            "email": email,
-            "plan_name": plan_name,
-            "plan_price_usd": plan_price,
-            "ai_cost_usd": round(ai_cost, 4),
-            "margin_usd": round(margin, 4),
-            "margin_percent": margin_pct,
-            "risk_level": risk,
-        })
+        risk = (
+            "danger"
+            if margin_pct < 20
+            else ("warning" if margin_pct < 50 else "healthy")
+        )
+        margins.append(
+            {
+                "user_id": user_id,
+                "email": email,
+                "plan_name": plan_name,
+                "plan_price_usd": plan_price,
+                "ai_cost_usd": round(ai_cost, 4),
+                "margin_usd": round(margin, 4),
+                "margin_percent": margin_pct,
+                "risk_level": risk,
+            }
+        )
     return margins
 
 
@@ -158,7 +177,10 @@ async def log_ai_call(
 
 # ===== QUALITY GATE =====
 
-async def get_or_create_quality_gate_config(db: AsyncSession, user_id: uuid.UUID) -> QualityGateConfig:
+
+async def get_or_create_quality_gate_config(
+    db: AsyncSession, user_id: uuid.UUID
+) -> QualityGateConfig:
     result = await db.execute(
         select(QualityGateConfig).where(QualityGateConfig.user_id == user_id)
     )
@@ -185,7 +207,10 @@ async def update_quality_gate_config(
 
 # ===== PLAN RECOMMENDATION =====
 
-async def get_plan_recommendation(db: AsyncSession, user_id: uuid.UUID) -> dict[str, Any]:
+
+async def get_plan_recommendation(
+    db: AsyncSession, user_id: uuid.UUID
+) -> dict[str, Any]:
     """Analyze usage and suggest keep/upgrade/downgrade."""
     from sqlalchemy import select
 
@@ -197,7 +222,10 @@ async def get_plan_recommendation(db: AsyncSession, user_id: uuid.UUID) -> dict[
     )
     row = sub_result.first()
     if not row:
-        return {"recommendation": "no_active_subscription", "reason": "No hay suscripción activa"}
+        return {
+            "recommendation": "no_active_subscription",
+            "reason": "No hay suscripción activa",
+        }
 
     _sub, plan = row
     plan_limits = plan.limits or {}
@@ -242,7 +270,10 @@ async def get_plan_recommendation(db: AsyncSession, user_id: uuid.UUID) -> dict[
 
 # ===== ONBOARDING =====
 
-async def get_or_create_onboarding_progress(db: AsyncSession, user_id: uuid.UUID) -> OnboardingProgress:
+
+async def get_or_create_onboarding_progress(
+    db: AsyncSession, user_id: uuid.UUID
+) -> OnboardingProgress:
     result = await db.execute(
         select(OnboardingProgress).where(OnboardingProgress.user_id == user_id)
     )
@@ -255,7 +286,9 @@ async def get_or_create_onboarding_progress(db: AsyncSession, user_id: uuid.UUID
     return prog
 
 
-async def refresh_onboarding_progress(db: AsyncSession, user_id: uuid.UUID) -> OnboardingProgress:
+async def refresh_onboarding_progress(
+    db: AsyncSession, user_id: uuid.UUID
+) -> OnboardingProgress:
     """Check actual DB state and update onboarding progress."""
     prog = await get_or_create_onboarding_progress(db, user_id)
 
@@ -267,7 +300,9 @@ async def refresh_onboarding_progress(db: AsyncSession, user_id: uuid.UUID) -> O
 
     # Check channels
     ch_result = await db.execute(
-        select(func.count(ChannelConnection.id)).where(ChannelConnection.user_id == user_id)
+        select(func.count(ChannelConnection.id)).where(
+            ChannelConnection.user_id == user_id
+        )
     )
     prog.channel_connected = (ch_result.scalar() or 0) > 0
 
@@ -284,8 +319,15 @@ async def refresh_onboarding_progress(db: AsyncSession, user_id: uuid.UUID) -> O
     prog.first_conversation = (conv_result.scalar() or 0) > 0
 
     # Calculate progress
-    steps = [prog.account_created, prog.business_created, prog.channel_connected,
-             prog.agent_configured, prog.first_conversation, prog.catalog_added, prog.automation_created]
+    steps = [
+        prog.account_created,
+        prog.business_created,
+        prog.channel_connected,
+        prog.agent_configured,
+        prog.first_conversation,
+        prog.catalog_added,
+        prog.automation_created,
+    ]
     prog.progress_percent = int(sum(steps) / len(steps) * 100)
 
     # Determine current step
@@ -309,28 +351,42 @@ async def refresh_onboarding_progress(db: AsyncSession, user_id: uuid.UUID) -> O
     return prog
 
 
-async def generate_onboarding_help(db: AsyncSession, user_id: uuid.UUID, current_step: str, context: str | None) -> dict[str, Any]:
+async def generate_onboarding_help(
+    db: AsyncSession, user_id: uuid.UUID, current_step: str, context: str | None
+) -> dict[str, Any]:
     """Generate contextual help for the current onboarding step."""
     step_guides = {
         "business_created": {
             "message": "Primero necesitás crear un negocio. Esto nos permite organizar tus canales, catálogo y agentes.",
             "action": "Ir a Negocios → Nuevo Negocio",
-            "resources": ["/dashboard/negocios", "https://docs.sellia.com/crear-negocio"],
+            "resources": [
+                "/dashboard/negocios",
+                "https://docs.sellia.com/crear-negocio",
+            ],
         },
         "channel_connected": {
             "message": "Conectá WhatsApp, Instagram o Telegram para que tu agente pueda recibir mensajes reales.",
             "action": "Ir a Canales → Conectar",
-            "resources": ["/dashboard/canales", "https://docs.sellia.com/conectar-whatsapp"],
+            "resources": [
+                "/dashboard/canales",
+                "https://docs.sellia.com/conectar-whatsapp",
+            ],
         },
         "agent_configured": {
             "message": "Configurá tu agente con su personalidad, tono y objetivo de venta.",
             "action": "Ir a Agentes → Configurar",
-            "resources": ["/dashboard/agentes", "https://docs.sellia.com/configurar-agente"],
+            "resources": [
+                "/dashboard/agentes",
+                "https://docs.sellia.com/configurar-agente",
+            ],
         },
         "first_conversation": {
             "message": "¡Excelente! Ahora probá tu agente enviándote un mensaje de prueba.",
             "action": "Ir a Conversaciones → Nueva Prueba",
-            "resources": ["/dashboard/conversaciones", "https://docs.sellia.com/probar-agente"],
+            "resources": [
+                "/dashboard/conversaciones",
+                "https://docs.sellia.com/probar-agente",
+            ],
         },
         "catalog_added": {
             "message": "Agregá productos a tu catálogo para que el agente pueda venderlos.",
@@ -340,7 +396,10 @@ async def generate_onboarding_help(db: AsyncSession, user_id: uuid.UUID, current
         "automation_created": {
             "message": "Creá tu primera automatización para responder cuando no estés.",
             "action": "Ir a Automatizaciones → Nueva",
-            "resources": ["/dashboard/automatizaciones", "https://docs.sellia.com/automatizaciones"],
+            "resources": [
+                "/dashboard/automatizaciones",
+                "https://docs.sellia.com/automatizaciones",
+            ],
         },
         "completed": {
             "message": "¡Felicitaciones! Tenés todo configurado. Revisá el panel de analytics para ver resultados.",
@@ -366,6 +425,7 @@ async def generate_onboarding_help(db: AsyncSession, user_id: uuid.UUID, current
 
 
 # ===== PREDICTIVE CHURN SHIELD =====
+
 
 async def run_churn_analysis(db: AsyncSession) -> list[ChurnRiskSignal]:
     """Analyze all active users for churn risk signals. Runs daily via Celery."""
@@ -409,7 +469,9 @@ async def run_churn_analysis(db: AsyncSession) -> list[ChurnRiskSignal]:
         )
         conv_count = conv_result.scalar() or 0
         if conv_count == 0:
-            signals.append({"type": "zero_conversations_7d", "value": True, "weight": 0.25})
+            signals.append(
+                {"type": "zero_conversations_7d", "value": True, "weight": 0.25}
+            )
             score += 0.25
 
         # Signal 3: Zero leads/messages
@@ -442,7 +504,9 @@ async def run_churn_analysis(db: AsyncSession) -> list[ChurnRiskSignal]:
             score += 0.10
 
         if score >= 0.40:
-            level = "critical" if score >= 0.70 else ("high" if score >= 0.55 else "medium")
+            level = (
+                "critical" if score >= 0.70 else ("high" if score >= 0.55 else "medium")
+            )
             risk = ChurnRiskSignal(
                 user_id=user.id,
                 business_id=sub.business_id,
@@ -453,13 +517,17 @@ async def run_churn_analysis(db: AsyncSession) -> list[ChurnRiskSignal]:
             )
             db.add(risk)
             signals_created.append(risk)
-            logger.info(f"Churn risk detected for user {user.id}: score={score}, level={level}")
+            logger.info(
+                f"Churn risk detected for user {user.id}: score={score}, level={level}"
+            )
 
     await db.commit()
     return signals_created
 
 
-async def get_pending_churn_signals(db: AsyncSession, limit: int = 50) -> list[ChurnRiskSignal]:
+async def get_pending_churn_signals(
+    db: AsyncSession, limit: int = 50
+) -> list[ChurnRiskSignal]:
     """Get unresolved churn signals for admin action."""
     result = await db.execute(
         select(ChurnRiskSignal)
@@ -470,10 +538,12 @@ async def get_pending_churn_signals(db: AsyncSession, limit: int = 50) -> list[C
     return result.scalars().all()
 
 
-
 # ===== CONSUMO ADVANCED ANALYTICS =====
 
-async def get_usage_heatmap(db: AsyncSession, user_id: uuid.UUID, days: int = 30) -> list[dict[str, Any]]:
+
+async def get_usage_heatmap(
+    db: AsyncSession, user_id: uuid.UUID, days: int = 30
+) -> list[dict[str, Any]]:
     """Return AI usage heatmap by hour of day and day of week."""
     since = datetime.now(UTC) - timedelta(days=days)
     result = await db.execute(
@@ -499,7 +569,9 @@ async def get_usage_heatmap(db: AsyncSession, user_id: uuid.UUID, days: int = 30
     return list(heatmap.values())
 
 
-async def get_monthly_comparison(db: AsyncSession, user_id: uuid.UUID) -> dict[str, Any]:
+async def get_monthly_comparison(
+    db: AsyncSession, user_id: uuid.UUID
+) -> dict[str, Any]:
     """Compare current month vs previous month."""
     now = datetime.now(UTC)
     current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -519,7 +591,11 @@ async def get_monthly_comparison(db: AsyncSession, user_id: uuid.UUID) -> dict[s
             "cost": round(sum(l.cost_usd for l in logs), 4),
             "tokens_input": sum(l.tokens_input for l in logs),
             "tokens_output": sum(l.tokens_output for l in logs),
-            "avg_latency": round(sum(l.latency_ms for l in logs if l.latency_ms) / max(len([l for l in logs if l.latency_ms]), 1), 2),
+            "avg_latency": round(
+                sum(l.latency_ms for l in logs if l.latency_ms)
+                / max(len([l for l in logs if l.latency_ms]), 1),
+                2,
+            ),
         }
 
     current = await get_month_stats(current_month_start, now)
@@ -536,13 +612,21 @@ async def get_monthly_comparison(db: AsyncSession, user_id: uuid.UUID) -> dict[s
         "changes": {
             "calls": pct_change(current["calls"], previous["calls"]),
             "cost": pct_change(current["cost"], previous["cost"]),
-            "tokens_input": pct_change(current["tokens_input"], previous["tokens_input"]),
+            "tokens_input": pct_change(
+                current["tokens_input"], previous["tokens_input"]
+            ),
         },
-        "trend": "up" if current["cost"] > previous["cost"] else "down" if current["cost"] < previous["cost"] else "stable",
+        "trend": (
+            "up"
+            if current["cost"] > previous["cost"]
+            else "down" if current["cost"] < previous["cost"] else "stable"
+        ),
     }
 
 
-async def get_cost_per_lead(db: AsyncSession, user_id: uuid.UUID, days: int = 30) -> dict[str, Any]:
+async def get_cost_per_lead(
+    db: AsyncSession, user_id: uuid.UUID, days: int = 30
+) -> dict[str, Any]:
     """Calculate AI cost per lead and per conversation."""
     since = datetime.now(UTC) - timedelta(days=days)
 
@@ -566,6 +650,7 @@ async def get_cost_per_lead(db: AsyncSession, user_id: uuid.UUID, days: int = 30
 
     # Get messages
     from app.domains.channels.models import Message
+
     msg_result = await db.execute(
         select(func.count(Message.id)).where(
             Message.user_id == user_id,

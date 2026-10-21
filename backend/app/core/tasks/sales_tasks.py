@@ -61,7 +61,7 @@ def run_sales_cycle_task(self, cycle_data: dict[str, Any]) -> dict[str, Any]:
     except Exception as e:
         logger.exception(f"Error in sales cycle {cycle_data.get('id')}")
         # Retry con exponential backoff
-        raise self.retry(exc=e, countdown=60 * (2 ** self.request.retries))
+        raise self.retry(exc=e, countdown=60 * (2**self.request.retries))
 
 
 @app.task

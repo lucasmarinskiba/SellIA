@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class Escalation:
     """Representa escalación a humano."""
+
     id: str
     job_id: str
     job_type: str
@@ -182,10 +183,7 @@ class EscalationHandler:
         """Estadísticas de escalaciones."""
         async with self.lock:
             cutoff = utc_now() - timedelta(hours=hours)
-            recent = [
-                e for e in self.escalations.values()
-                if e.created_at >= cutoff
-            ]
+            recent = [e for e in self.escalations.values() if e.created_at >= cutoff]
 
             by_severity = {
                 "critical": len([e for e in recent if e.severity == "critical"]),
@@ -249,8 +247,7 @@ ACTION REQUIRED: Review and resolve this escalation in the dashboard.
             return None
 
         total_time = sum(
-            (e.resolved_at - e.created_at).total_seconds()
-            for e in resolved
+            (e.resolved_at - e.created_at).total_seconds() for e in resolved
         )
         return total_time / len(resolved)
 
@@ -261,7 +258,8 @@ ACTION REQUIRED: Review and resolve this escalation in the dashboard.
             original_count = len(self.escalations)
 
             escalations_to_keep = {
-                eid: e for eid, e in self.escalations.items()
+                eid: e
+                for eid, e in self.escalations.items()
                 if e.created_at >= cutoff or not e.resolved
             }
 

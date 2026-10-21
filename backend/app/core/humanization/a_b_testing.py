@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 
 class ExperimentType(str, Enum):
     """Type of A/B test"""
+
     TONE = "tone"
     CTA = "cta"
     PERSONALIZATION = "personalization"
@@ -45,6 +46,7 @@ class ExperimentType(str, Enum):
 
 class VariantStatus(str, Enum):
     """Status of variant"""
+
     ACTIVE = "active"
     PAUSED = "paused"
     WINNER = "winner"
@@ -54,6 +56,7 @@ class VariantStatus(str, Enum):
 @dataclass
 class Variant:
     """A/B test variant"""
+
     variant_id: str
     name: str
     test_type: ExperimentType
@@ -82,10 +85,18 @@ class Variant:
             return {}
 
         return {
-            "open_rate": self.open_count / self.sent_count if self.sent_count > 0 else 0,
-            "click_rate": self.click_count / self.sent_count if self.sent_count > 0 else 0,
-            "reply_rate": self.reply_count / self.sent_count if self.sent_count > 0 else 0,
-            "conversion_rate": self.conversion_count / self.sent_count if self.sent_count > 0 else 0,
+            "open_rate": (
+                self.open_count / self.sent_count if self.sent_count > 0 else 0
+            ),
+            "click_rate": (
+                self.click_count / self.sent_count if self.sent_count > 0 else 0
+            ),
+            "reply_rate": (
+                self.reply_count / self.sent_count if self.sent_count > 0 else 0
+            ),
+            "conversion_rate": (
+                self.conversion_count / self.sent_count if self.sent_count > 0 else 0
+            ),
             "humanness_score": self.humanness_score,
         }
 
@@ -93,6 +104,7 @@ class Variant:
 @dataclass
 class ABTest:
     """A/B test configuration"""
+
     test_id: str
     name: str
     test_type: ExperimentType
@@ -106,7 +118,9 @@ class ABTest:
     # Test config
     sample_size: int = 100  # Minimum samples per variant
     duration_days: int = 7
-    split_percentage: dict[str, int] = field(default_factory=dict)  # {variant_id: percentage}
+    split_percentage: dict[str, int] = field(
+        default_factory=dict
+    )  # {variant_id: percentage}
     min_conversion_difference: float = 0.05  # 5% minimum to declare winner
 
     # Status
@@ -242,7 +256,9 @@ class ABTestingEngine:
         Returns:
             ABTest instance
         """
-        test_id = f"test_{test_name.lower().replace(' ', '_')}_{int(utc_now().timestamp())}"
+        test_id = (
+            f"test_{test_name.lower().replace(' ', '_')}_{int(utc_now().timestamp())}"
+        )
 
         # Create control variant
         control = Variant(
@@ -391,7 +407,9 @@ class ABTestingEngine:
             if variant.variant_id == variant_id:
                 # Update humanness score (exponential moving average)
                 alpha = 0.2  # Smoothing factor
-                variant.humanness_score = (alpha * score) + ((1 - alpha) * variant.humanness_score)
+                variant.humanness_score = (alpha * score) + (
+                    (1 - alpha) * variant.humanness_score
+                )
                 return True
 
         return False
@@ -460,13 +478,19 @@ class ABTestingEngine:
 
             # Mark variants
             for stat in variant_stats:
-                stat["is_winner"] = (stat["variant_id"] == best_variant["variant_id"]) if status == "winner_found" else False
+                stat["is_winner"] = (
+                    (stat["variant_id"] == best_variant["variant_id"])
+                    if status == "winner_found"
+                    else False
+                )
 
             # Generate recommendation
             if status == "winner_found":
                 recommendation = f"Winner: {best_variant['name']} (Improvement: {conversion_difference*100:.1f}%)"
             else:
-                recommendation = f"Continue testing (Current best: {best_variant['name']})"
+                recommendation = (
+                    f"Continue testing (Current best: {best_variant['name']})"
+                )
 
             return {
                 "test_id": test_id,
@@ -527,7 +551,7 @@ class ABTestingEngine:
             "best_performer": max(
                 (v for v in analysis.get("variants", [])),
                 key=lambda x: x["conversion_rate"],
-                default={}
+                default={},
             ).get("name", "N/A"),
             "recommendation": analysis.get("recommendation", "N/A"),
             "confidence": f"{analysis.get('confidence_level', 0)*100:.0f}%",
@@ -567,16 +591,20 @@ class ABTestingEngine:
             return False, 1.0
 
         # Expected difference under null hypothesis (both have same rate)
-        pool_rate = (variant_a_conversions + variant_b_conversions) / (variant_a_total + variant_b_total)
-        expected_diff = pool_rate * (1 - pool_rate) * (1/variant_a_total + 1/variant_b_total)
+        pool_rate = (variant_a_conversions + variant_b_conversions) / (
+            variant_a_total + variant_b_total
+        )
+        expected_diff = (
+            pool_rate * (1 - pool_rate) * (1 / variant_a_total + 1 / variant_b_total)
+        )
 
         if expected_diff == 0:
             return False, 1.0
 
-        z_score = abs(rate_a - rate_b) / (expected_diff ** 0.5)
+        z_score = abs(rate_a - rate_b) / (expected_diff**0.5)
 
         # Approximate p-value (simplified)
-        p_value = 1 / (1 + (z_score ** 2))
+        p_value = 1 / (1 + (z_score**2))
 
         is_significant = p_value < (1 - confidence_level)
 

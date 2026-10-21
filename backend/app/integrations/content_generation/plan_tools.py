@@ -10,6 +10,7 @@ from dataclasses import dataclass
 @dataclass
 class ToolInfo:
     """Metadatos de una herramienta de IA generativa."""
+
     slug: str
     name: str
     category: str  # image, video, audio, copy, design, presentation
@@ -127,7 +128,6 @@ TOOL_REGISTRY: dict[str, ToolInfo] = {
         requires_api_key=False,
         fallback_tool="kimi",
     ),
-
     # === STARTER TIER (+6 herramientas = 15 total) ===
     "dalle3": ToolInfo(
         slug="dalle3",
@@ -206,7 +206,6 @@ TOOL_REGISTRY: dict[str, ToolInfo] = {
         requires_api_key=True,
         fallback_tool="",
     ),
-
     # === PRO TIER (+6 herramientas = 21 total) ===
     "midjourney": ToolInfo(
         slug="midjourney",
@@ -274,7 +273,6 @@ TOOL_REGISTRY: dict[str, ToolInfo] = {
         requires_api_key=True,
         fallback_tool="beautifulai",
     ),
-
     # === ENTERPRISE TIER (+7 herramientas = 26 total) ===
     "seedance": ToolInfo(
         slug="seedance",
@@ -373,42 +371,95 @@ TOOL_REGISTRY: dict[str, ToolInfo] = {
 
 PLAN_CONTENT_TOOLS: dict[str, list[str]] = {
     "free": [
-        "chatgpt", "canva", "capcut", "ideogram",
-        "replicate_flux_schnell", "fal_flux_pro", "gpt_image_mini",
-        "kimi", "ollama",
+        "chatgpt",
+        "canva",
+        "capcut",
+        "ideogram",
+        "replicate_flux_schnell",
+        "fal_flux_pro",
+        "gpt_image_mini",
+        "kimi",
+        "ollama",
     ],
     "starter": [
         # Hereda todo de free
-        "chatgpt", "canva", "capcut", "ideogram",
-        "replicate_flux_schnell", "fal_flux_pro", "gpt_image_mini",
-        "kimi", "ollama",
+        "chatgpt",
+        "canva",
+        "capcut",
+        "ideogram",
+        "replicate_flux_schnell",
+        "fal_flux_pro",
+        "gpt_image_mini",
+        "kimi",
+        "ollama",
         # Nuevas
-        "dalle3", "leonardo", "photoroom", "opusclip",
-        "copyai", "jasper", "beautifulai",
+        "dalle3",
+        "leonardo",
+        "photoroom",
+        "opusclip",
+        "copyai",
+        "jasper",
+        "beautifulai",
     ],
     "pro": [
         # Hereda todo de starter
-        "chatgpt", "canva", "capcut", "ideogram",
-        "replicate_flux_schnell", "fal_flux_pro", "gpt_image_mini",
-        "kimi", "ollama",
-        "dalle3", "leonardo", "photoroom", "opusclip",
-        "copyai", "jasper", "beautifulai",
+        "chatgpt",
+        "canva",
+        "capcut",
+        "ideogram",
+        "replicate_flux_schnell",
+        "fal_flux_pro",
+        "gpt_image_mini",
+        "kimi",
+        "ollama",
+        "dalle3",
+        "leonardo",
+        "photoroom",
+        "opusclip",
+        "copyai",
+        "jasper",
+        "beautifulai",
         # Nuevas
-        "midjourney", "runway", "heygen", "pika",
-        "elevenlabs", "gamma",
+        "midjourney",
+        "runway",
+        "heygen",
+        "pika",
+        "elevenlabs",
+        "gamma",
     ],
     "enterprise": [
         # Hereda todo de pro
-        "chatgpt", "canva", "capcut", "ideogram",
-        "replicate_flux_schnell", "fal_flux_pro", "gpt_image_mini",
-        "kimi", "ollama",
-        "dalle3", "leonardo", "photoroom", "opusclip",
-        "copyai", "jasper", "beautifulai",
-        "midjourney", "runway", "heygen", "pika",
-        "elevenlabs", "gamma",
+        "chatgpt",
+        "canva",
+        "capcut",
+        "ideogram",
+        "replicate_flux_schnell",
+        "fal_flux_pro",
+        "gpt_image_mini",
+        "kimi",
+        "ollama",
+        "dalle3",
+        "leonardo",
+        "photoroom",
+        "opusclip",
+        "copyai",
+        "jasper",
+        "beautifulai",
+        "midjourney",
+        "runway",
+        "heygen",
+        "pika",
+        "elevenlabs",
+        "gamma",
         # Nuevas
-        "seedance", "kling", "sora", "sd35",
-        "adcreative", "writesonic", "luma", "custom_api",
+        "seedance",
+        "kling",
+        "sora",
+        "sd35",
+        "adcreative",
+        "writesonic",
+        "luma",
+        "custom_api",
     ],
 }
 
@@ -416,6 +467,7 @@ PLAN_CONTENT_TOOLS: dict[str, list[str]] = {
 # ============================================================================
 # FUNCIONES DE UTILIDAD
 # ============================================================================
+
 
 def get_tools_for_plan(plan_tier: str) -> list[str]:
     """Retorna lista de slugs de herramientas disponibles para un plan."""
@@ -437,7 +489,8 @@ def get_tools_by_category(plan_tier: str, category: str) -> list[ToolInfo]:
     """Filtra herramientas por categoría para un plan."""
     allowed_slugs = set(get_tools_for_plan(plan_tier))
     return [
-        tool for slug, tool in TOOL_REGISTRY.items()
+        tool
+        for slug, tool in TOOL_REGISTRY.items()
         if slug in allowed_slugs and tool.category == category
     ]
 

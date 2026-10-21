@@ -25,25 +25,49 @@ logger = get_logger(__name__)
 
 # Spanish buying signals (keywords that indicate purchase intent)
 BUYING_SIGNALS = [
-    r"\bs[ií]\b", r"\bquiero\b", r"\bcompro\b", r"\bpago\b",
-    r"\benv[ií]ame\b", r"\bpasame\b", r"\bpásame\b",
-    r"\bme interesa\b", r"\blo tomo\b", r"\bagenda\b",
-    r"\bhacelo\b", r"\bhagamos\b", r"\bconfirmo\b",
-    r"\bperfecto\b", r"\bdale\b", r"\bva\b",
-    r"\bmándame\b", r"\bmandame\b",
-    r"\bcomprar\b", r"\badquirir\b",
-    r"\borden\b", r"\bpedido\b",
-    r"\blink de pago\b", r"\bdatos para transferir\b",
-    r"\bcuento\b", r"\bhacemos\b",
+    r"\bs[ií]\b",
+    r"\bquiero\b",
+    r"\bcompro\b",
+    r"\bpago\b",
+    r"\benv[ií]ame\b",
+    r"\bpasame\b",
+    r"\bpásame\b",
+    r"\bme interesa\b",
+    r"\blo tomo\b",
+    r"\bagenda\b",
+    r"\bhacelo\b",
+    r"\bhagamos\b",
+    r"\bconfirmo\b",
+    r"\bperfecto\b",
+    r"\bdale\b",
+    r"\bva\b",
+    r"\bmándame\b",
+    r"\bmandame\b",
+    r"\bcomprar\b",
+    r"\badquirir\b",
+    r"\borden\b",
+    r"\bpedido\b",
+    r"\blink de pago\b",
+    r"\bdatos para transferir\b",
+    r"\bcuento\b",
+    r"\bhacemos\b",
 ]
 
 # Signals that indicate doubt (don't auto-close)
 DOUBT_SIGNALS = [
-    r"\bpensarlo\b", r"\bconsultar\b", r"\bdudas?\b",
-    r"\bcaro\b", r"\bcarísimo\b", r"\bmejorar\b",
-    r"\bdescuento\b", r"\bpromoción\b", r"\boferta\b",
-    r"\bmás barato\b", r"\bcompetencia\b",
-    r"\bno s[eé]\b", r"\btodav[ií]a no\b",
+    r"\bpensarlo\b",
+    r"\bconsultar\b",
+    r"\bdudas?\b",
+    r"\bcaro\b",
+    r"\bcarísimo\b",
+    r"\bmejorar\b",
+    r"\bdescuento\b",
+    r"\bpromoción\b",
+    r"\boferta\b",
+    r"\bmás barato\b",
+    r"\bcompetencia\b",
+    r"\bno s[eé]\b",
+    r"\btodav[ií]a no\b",
 ]
 
 
@@ -81,10 +105,17 @@ class AutoCloseEvaluator:
 
         # Check if autopilot allows auto-close for this business
         config_result = await self.db.execute(
-            select(AutopilotConfig).where(AutopilotConfig.business_id == deal.business_id)
+            select(AutopilotConfig).where(
+                AutopilotConfig.business_id == deal.business_id
+            )
         )
         config = config_result.scalar_one_or_none()
-        if not config or not config.is_active or config.is_paused or not config.auto_close_deals:
+        if (
+            not config
+            or not config.is_active
+            or config.is_paused
+            or not config.auto_close_deals
+        ):
             return None
 
         # Check amount threshold
@@ -97,9 +128,12 @@ class AutoCloseEvaluator:
 
         # Get recent messages
         messages_result = await self.db.execute(
-            select(Message).where(
+            select(Message)
+            .where(
                 Message.conversation_id == deal.conversation_id,
-            ).order_by(Message.created_at.desc()).limit(10)
+            )
+            .order_by(Message.created_at.desc())
+            .limit(10)
         )
         messages = messages_result.scalars().all()
 
@@ -126,7 +160,9 @@ class AutoCloseEvaluator:
                         doubt_score += 1
 
         # Decision logic
-        if (buying_score >= 2 and doubt_score == 0 and latest_inbound) and deal.stage in ["negotiating", "proposal_sent", "qualified"]:
+        if (
+            buying_score >= 2 and doubt_score == 0 and latest_inbound
+        ) and deal.stage in ["negotiating", "proposal_sent", "qualified"]:
             return await self._auto_close_deal(deal, latest_inbound, config)
 
         # Check if order already exists for this deal (payment received)
@@ -139,7 +175,9 @@ class AutoCloseEvaluator:
         existing_order = order_result.scalar_one_or_none()
         if existing_order:
             # Payment received but deal not closed — auto-close
-            return await self._auto_close_deal(deal, None, config, reason="Payment received")
+            return await self._auto_close_deal(
+                deal, None, config, reason="Payment received"
+            )
 
         return None
 
@@ -158,7 +196,9 @@ class AutoCloseEvaluator:
         deal.stage = "closed_won"
         deal.actual_close_date = datetime.now(UTC)
         deal.probability = 100
-        deal.close_reason = reason or "Auto-closed: buying signal detected in conversation"
+        deal.close_reason = (
+            reason or "Auto-closed: buying signal detected in conversation"
+        )
         deal.updated_at = datetime.now(UTC)
 
         await self.db.commit()
@@ -174,7 +214,9 @@ class AutoCloseEvaluator:
             context_data={
                 "old_stage": old_stage,
                 "new_stage": "closed_won",
-                "trigger_message_id": str(trigger_message.id) if trigger_message else None,
+                "trigger_message_id": (
+                    str(trigger_message.id) if trigger_message else None
+                ),
                 "deal_value": float(deal.value) if deal.value else 0,
             },
             revenue_impact=deal.value,
@@ -182,6 +224,7 @@ class AutoCloseEvaluator:
 
         # Send thank you message
         from app.domains.agents.ai_reply import generate_ai_response
+
         if deal.conversation_id:
             try:
                 await generate_ai_response(
@@ -192,7 +235,10 @@ class AutoCloseEvaluator:
                     personality_slug="post-venta",
                 )
             except Exception as e:
-                logger.warning(f"Failed to send thank you message for deal {deal.id}: {e}", exc_info=True)
+                logger.warning(
+                    f"Failed to send thank you message for deal {deal.id}: {e}",
+                    exc_info=True,
+                )
 
         logger.info(f"Auto-closed deal {deal.id} for business {deal.business_id}")
 

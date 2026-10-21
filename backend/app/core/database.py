@@ -9,8 +9,12 @@ settings = get_settings()
 
 # Build connect_args for SSL in production
 connect_args = {}
-if settings.ENVIRONMENT == "production" and settings.DB_SSL_MODE not in ("disable", "allow"):
+if settings.ENVIRONMENT == "production" and settings.DB_SSL_MODE not in (
+    "disable",
+    "allow",
+):
     import ssl
+
     ssl_context = ssl.create_default_context()
     if settings.DB_SSL_MODE in ("verify-ca", "verify-full") and settings.DB_SSL_CA:
         ssl_context.load_verify_locations(settings.DB_SSL_CA)

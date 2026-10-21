@@ -4,7 +4,6 @@ Pricing: ~$0.05/second (via fal.ai)
 Strengths: 3D video, NeRF, product visualization
 """
 
-
 import logging
 from typing import ClassVar
 
@@ -37,10 +36,13 @@ class LumaProvider(BaseProvider):
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         if not self.is_available:
-            return GenerationResult(success=False, error_message="FAL_KEY no configurada para Luma")
+            return GenerationResult(
+                success=False, error_message="FAL_KEY no configurada para Luma"
+            )
 
         try:
             import fal_client
+
             fal_client.api_key = settings.FAL_KEY
 
             result = await fal_client.subscribe_async(
@@ -55,10 +57,16 @@ class LumaProvider(BaseProvider):
             if hasattr(result, "video") and result.video:
                 video_url = result.video.url
             elif isinstance(result, dict):
-                video_url = result.get("video", {}).get("url") if isinstance(result.get("video"), dict) else result.get("video")
+                video_url = (
+                    result.get("video", {}).get("url")
+                    if isinstance(result.get("video"), dict)
+                    else result.get("video")
+                )
 
             if not video_url:
-                return GenerationResult(success=False, error_message="Luma no devolvió video")
+                return GenerationResult(
+                    success=False, error_message="Luma no devolvió video"
+                )
 
             duration = config.duration_seconds or 5
             return GenerationResult(

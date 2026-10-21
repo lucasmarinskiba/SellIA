@@ -18,17 +18,19 @@ from app.domains.businesses.models import BusinessType
 
 class FunnelStage(str, Enum):
     """Stages of the customer journey a SellIA agent operates across."""
-    AWARENESS = "awareness"        # Crear la necesidad
-    URGENCY = "urgency"            # Crear FOMO / escasez
-    ACQUISITION = "acquisition"    # Atraer clientes / generar leads
-    CONVERSION = "conversion"      # Que paguen / cerrar la venta
-    RETENTION = "retention"        # Fidelizarlos
-    EXPANSION = "expansion"        # Upsell, cross-sell, referidos
+
+    AWARENESS = "awareness"  # Crear la necesidad
+    URGENCY = "urgency"  # Crear FOMO / escasez
+    ACQUISITION = "acquisition"  # Atraer clientes / generar leads
+    CONVERSION = "conversion"  # Que paguen / cerrar la venta
+    RETENTION = "retention"  # Fidelizarlos
+    EXPANSION = "expansion"  # Upsell, cross-sell, referidos
 
 
 @dataclass
 class FunnelSpecialist:
     """A specialist agent for one funnel stage."""
+
     stage: FunnelStage
     name: str
     mission: str

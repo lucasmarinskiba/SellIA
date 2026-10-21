@@ -20,9 +20,7 @@ def get_customer_360_profile(
 ):
     """Get complete 360 customer profile."""
     return Customer360Service.get_customer_360_profile(
-        customer_id=customer_id,
-        business_id=business_id,
-        db=db
+        customer_id=customer_id, business_id=business_id, db=db
     )
 
 
@@ -32,10 +30,7 @@ def get_customer_scores(
     db: Annotated[Session, Depends(get_db)],
 ):
     """Get customer scores."""
-    return Customer360Service.get_customer_scores(
-        customer_id=customer_id,
-        db=db
-    )
+    return Customer360Service.get_customer_scores(customer_id=customer_id, db=db)
 
 
 @router.post("/customers/{customer_id}/scores/calculate")
@@ -46,9 +41,7 @@ def calculate_customer_scores(
 ):
     """Calculate/update customer scores."""
     return Customer360Service.calculate_customer_scores(
-        customer_id=customer_id,
-        business_id=business_id,
-        db=db
+        customer_id=customer_id, business_id=business_id, db=db
     )
 
 
@@ -60,9 +53,7 @@ def get_customer_insights(
 ):
     """Get customer insights."""
     return Customer360Service.get_customer_insights(
-        customer_id=customer_id,
-        limit=limit,
-        db=db
+        customer_id=customer_id, limit=limit, db=db
     )
 
 
@@ -72,10 +63,7 @@ def dismiss_insight(
     db: Annotated[Session, Depends(get_db)],
 ):
     """Dismiss insight."""
-    return Customer360Service.dismiss_insight(
-        insight_id=insight_id,
-        db=db
-    )
+    return Customer360Service.dismiss_insight(insight_id=insight_id, db=db)
 
 
 @router.post("/insights/{insight_id}/action")
@@ -84,10 +72,7 @@ def mark_insight_actioned(
     db: Annotated[Session, Depends(get_db)],
 ):
     """Mark insight as actioned."""
-    return Customer360Service.mark_insight_actioned(
-        insight_id=insight_id,
-        db=db
-    )
+    return Customer360Service.mark_insight_actioned(insight_id=insight_id, db=db)
 
 
 @router.get("/customers/segment/{segment_id}")
@@ -99,10 +84,7 @@ def get_segment_customers(
 ):
     """Get all customers in segment."""
     return Customer360Service.get_segment_customers(
-        business_id=business_id,
-        segment_name=segment_id,
-        limit=limit,
-        db=db
+        business_id=business_id, segment_name=segment_id, limit=limit, db=db
     )
 
 
@@ -115,8 +97,5 @@ def search_customers(
 ):
     """Search customers."""
     return Customer360Service.search_customers(
-        business_id=business_id,
-        query=query,
-        limit=limit,
-        db=db
+        business_id=business_id, query=query, limit=limit, db=db
     )

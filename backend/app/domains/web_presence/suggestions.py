@@ -35,7 +35,9 @@ def _derive_url(platform: ChannelPlatform, credentials: dict[str, Any]) -> str |
 
 
 async def suggest_links_from_channels(
-    db: AsyncSession, user_id: uuid.UUID, business_ids: list[uuid.UUID],
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    business_ids: list[uuid.UUID],
 ) -> list[dict[str, Any]]:
     """One suggestion per connected platform not already covered by a saved
     BusinessLink -- `derivable=True` entries carry a real `url` ready to add
@@ -66,7 +68,11 @@ async def suggest_links_from_channels(
     suggestions: list[dict[str, Any]] = []
     seen_platforms: set[str] = set()
     for channel in channels:
-        platform_slug = channel.platform.value if hasattr(channel.platform, "value") else str(channel.platform)
+        platform_slug = (
+            channel.platform.value
+            if hasattr(channel.platform, "value")
+            else str(channel.platform)
+        )
         if platform_slug not in PLATFORM_KINDS or platform_slug in seen_platforms:
             continue
         if platform_slug in existing_platforms:
@@ -78,11 +84,13 @@ async def suggest_links_from_channels(
         if url and url in existing_urls:
             continue
 
-        suggestions.append({
-            "platform": platform_slug,
-            "label": label,
-            "url": url,
-            "derivable": url is not None,
-        })
+        suggestions.append(
+            {
+                "platform": platform_slug,
+                "label": label,
+                "url": url,
+                "derivable": url is not None,
+            }
+        )
 
     return suggestions

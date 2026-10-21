@@ -34,7 +34,7 @@ class CustomerFOMOTemplates:
                     "high_traffic": "{count}+ visitantes - ¡Muy popular!",
                     "flash_sale": "{count} comprando EN ESTE MOMENTO",
                 },
-                color_scheme={"primary": "#FF6B6B", "secondary": "#FFE66D"}
+                color_scheme={"primary": "#FF6B6B", "secondary": "#FFE66D"},
             ),
             widgets=[
                 CustomerFOMOWidgetConfig(
@@ -129,7 +129,7 @@ class CustomerFOMOTemplates:
                     "low": "¡ÚLTIMO! Solo {count} quedan - apúrate",
                     "critical": "¡AGOTÁNDOSE! 1 de {total}",
                 },
-                color_scheme={"primary": "#FF6B6B", "secondary": "#FFE66D"}
+                color_scheme={"primary": "#FF6B6B", "secondary": "#FFE66D"},
             ),
             widgets=[
                 CustomerFOMOWidgetConfig(
@@ -170,7 +170,7 @@ class CustomerFOMOTemplates:
                         "email_1": "Olvidaste tu carrito - Completa tu compra ahora",
                         "email_2": "2 personas más compraron esto - Último inventario",
                         "email_3": "Descuento extra 10% - Solo para ti",
-                    }
+                    },
                 ),
             ],
             expected_conversion_lift=0.42,
@@ -200,7 +200,7 @@ class CustomerFOMOTemplates:
                 CustomerFOMOWidgetConfig(
                     widget_type=WidgetType.COUNTDOWN,
                     position="top-center",
-                )
+                ),
             ],
             automations=[
                 CustomerFOMOAutomationConfig(
@@ -304,9 +304,24 @@ class CustomerFOMOCampaignService:
             "conversion_lift": 0.35,
             "roi": 3.42,
             "daily_breakdown": [
-                {"date": "2026-08-27", "impressions": 5140, "conversions": 142, "revenue": 4271.50},
-                {"date": "2026-08-28", "impressions": 5210, "conversions": 150, "revenue": 4515.00},
-                {"date": "2026-08-29", "impressions": 5070, "conversions": 135, "revenue": 4054.00},
+                {
+                    "date": "2026-08-27",
+                    "impressions": 5140,
+                    "conversions": 142,
+                    "revenue": 4271.50,
+                },
+                {
+                    "date": "2026-08-28",
+                    "impressions": 5210,
+                    "conversions": 150,
+                    "revenue": 4515.00,
+                },
+                {
+                    "date": "2026-08-29",
+                    "impressions": 5070,
+                    "conversions": 135,
+                    "revenue": 4054.00,
+                },
             ],
         }
 
@@ -320,15 +335,50 @@ class CustomerFOMOCampaignService:
         """Create multi-step automation sequence"""
         sequences = {
             "cart_abandonment": [
-                {"step": 1, "delay_minutes": 5, "channel": "email", "message_key": "email_1"},
-                {"step": 2, "delay_minutes": 120, "channel": "email", "message_key": "email_2"},
-                {"step": 3, "delay_minutes": 1440, "channel": "sms", "message_key": "sms_1"},
+                {
+                    "step": 1,
+                    "delay_minutes": 5,
+                    "channel": "email",
+                    "message_key": "email_1",
+                },
+                {
+                    "step": 2,
+                    "delay_minutes": 120,
+                    "channel": "email",
+                    "message_key": "email_2",
+                },
+                {
+                    "step": 3,
+                    "delay_minutes": 1440,
+                    "channel": "sms",
+                    "message_key": "sms_1",
+                },
             ],
             "flash_sale": [
-                {"step": 1, "delay_minutes": 0, "channel": "email", "message_key": "launch"},
-                {"step": 2, "delay_minutes": 240, "channel": "sms", "message_key": "reminder_4h"},
-                {"step": 3, "delay_minutes": 1380, "channel": "sms", "message_key": "final_1h"},
-                {"step": 4, "delay_minutes": 1410, "channel": "email", "message_key": "last_30min"},
+                {
+                    "step": 1,
+                    "delay_minutes": 0,
+                    "channel": "email",
+                    "message_key": "launch",
+                },
+                {
+                    "step": 2,
+                    "delay_minutes": 240,
+                    "channel": "sms",
+                    "message_key": "reminder_4h",
+                },
+                {
+                    "step": 3,
+                    "delay_minutes": 1380,
+                    "channel": "sms",
+                    "message_key": "final_1h",
+                },
+                {
+                    "step": 4,
+                    "delay_minutes": 1410,
+                    "channel": "email",
+                    "message_key": "last_30min",
+                },
             ],
         }
 
@@ -385,7 +435,11 @@ class CustomerFOMOCampaignService:
         baseline_conversion: float,
     ) -> dict[str, Any]:
         """Calculate campaign ROI and lift"""
-        lift = (revenue - (baseline_conversion * 100)) / (baseline_conversion * 100) if baseline_conversion > 0 else 0
+        lift = (
+            (revenue - (baseline_conversion * 100)) / (baseline_conversion * 100)
+            if baseline_conversion > 0
+            else 0
+        )
         roi = ((revenue - cost) / cost * 100) if cost > 0 else 0
 
         return {
@@ -431,10 +485,12 @@ class CustomerFOMOCampaignService:
         if format == "csv":
             return "date,impressions,clicks,conversions,revenue,roi\n2026-08-27,5140,950,142,4271.50,3.42"
         elif format == "json":
-            return json.dumps({
-                "campaign_id": campaign_id,
-                "export_date": utc_now().isoformat(),
-                "data": []
-            })
+            return json.dumps(
+                {
+                    "campaign_id": campaign_id,
+                    "export_date": utc_now().isoformat(),
+                    "data": [],
+                }
+            )
         else:
             return ""

@@ -20,9 +20,7 @@ def calculate_rfm_segments(
 ):
     """Calculate RFM segments for all customers."""
     return SegmentationService.calculate_rfm_scores(
-        business_id=business_id,
-        days_window=days_window,
-        db=db
+        business_id=business_id, days_window=days_window, db=db
     )
 
 
@@ -32,10 +30,7 @@ def calculate_churn_risk(
     db: Annotated[Session, Depends(get_db)],
 ):
     """Predict churn risk for customers."""
-    return SegmentationService.calculate_churn_risk(
-        business_id=business_id,
-        db=db
-    )
+    return SegmentationService.calculate_churn_risk(business_id=business_id, db=db)
 
 
 @router.post("/businesses/{business_id}/calculate-clv")
@@ -44,10 +39,7 @@ def calculate_clv_scores(
     db: Annotated[Session, Depends(get_db)],
 ):
     """Calculate Customer Lifetime Value scores."""
-    return SegmentationService.calculate_clv_scores(
-        business_id=business_id,
-        db=db
-    )
+    return SegmentationService.calculate_clv_scores(business_id=business_id, db=db)
 
 
 @router.get("/businesses/{business_id}/segmentation-summary")
@@ -58,7 +50,5 @@ def get_segment_summary(
 ):
     """Get segmentation summary and metrics."""
     return SegmentationService.get_segment_summary(
-        business_id=business_id,
-        date=date,
-        db=db
+        business_id=business_id, date=date, db=db
     )

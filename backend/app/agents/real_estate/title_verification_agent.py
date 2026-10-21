@@ -149,7 +149,9 @@ class TitleVerificationAgent:
             estimated_clear = utc_now() + timedelta(days=days_to_clear)
 
         # Generate attorney recommendation
-        attorney_rec = self._generate_attorney_recommendation(liens, encumbrances, other_issues, title_clear)
+        attorney_rec = self._generate_attorney_recommendation(
+            liens, encumbrances, other_issues, title_clear
+        )
 
         report = TitleReport(
             property_id=property_id,
@@ -165,12 +167,19 @@ class TitleVerificationAgent:
         )
 
         self.title_reports[property_id] = report
-        logger.info(f"Title search for {property_id}: clear={title_clear}, issues={len(liens + encumbrances + other_issues)}")
+        logger.info(
+            f"Title search for {property_id}: clear={title_clear}, issues={len(liens + encumbrances + other_issues)}"
+        )
 
         return report
 
-    def _generate_attorney_recommendation(self, liens: list[TitleIssue], encumbrances: list[TitleIssue], other_issues: list[TitleIssue],
-                                        title_clear: bool) -> str:
+    def _generate_attorney_recommendation(
+        self,
+        liens: list[TitleIssue],
+        encumbrances: list[TitleIssue],
+        other_issues: list[TitleIssue],
+        title_clear: bool,
+    ) -> str:
         """Generate attorney recommendation."""
         if title_clear:
             return "Title is clear. Proceed with title insurance and closing."
@@ -187,7 +196,9 @@ class TitleVerificationAgent:
 
         return "Consult title attorney for detailed review."
 
-    def resolve_title_issue(self, property_id: str, issue_type: str, resolution_action: str) -> dict[str, Any]:
+    def resolve_title_issue(
+        self, property_id: str, issue_type: str, resolution_action: str
+    ) -> dict[str, Any]:
         """Record title issue resolution."""
         if property_id not in self.title_reports:
             return {"error": "Title report not found"}
@@ -199,7 +210,9 @@ class TitleVerificationAgent:
             for issue in issue_list:
                 if issue.issue_type == issue_type:
                     issue_list.remove(issue)
-                    logger.info(f"Resolved {issue_type} for {property_id}: {resolution_action}")
+                    logger.info(
+                        f"Resolved {issue_type} for {property_id}: {resolution_action}"
+                    )
 
         # Update title clear status
         report.title_clear = len(report.liens) == 0 and len(report.other_issues) == 0
@@ -226,10 +239,12 @@ class TitleVerificationAgent:
             "insurance_commitment_amount": 300000,  # Purchase price
             "title_status": "Clear" if report.title_clear else "Subject to",
             "subject_to_items": [
-                {"item": f"{issue.issue_type}: {issue.description}"} for issue in report.liens + report.other_issues
+                {"item": f"{issue.issue_type}: {issue.description}"}
+                for issue in report.liens + report.other_issues
             ],
             "exceptions": [
-                {"exception": f"{easement.description}"} for easement in report.easements
+                {"exception": f"{easement.description}"}
+                for easement in report.easements
             ],
         }
 
@@ -246,7 +261,11 @@ class TitleVerificationAgent:
             "lender_policy_available": True,
             "owner_policy_cost": report.title_insurance_cost,
             "lender_policy_cost": report.title_insurance_cost * 0.5,
-            "recommendation": "Obtain both owner's and lender's policies" if report.title_clear else "Resolve title issues first",
+            "recommendation": (
+                "Obtain both owner's and lender's policies"
+                if report.title_clear
+                else "Resolve title issues first"
+            ),
             "coverage_includes": [
                 "Loss from defects in title",
                 "Hidden liens or encumbrances",

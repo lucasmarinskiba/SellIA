@@ -220,7 +220,9 @@ class RealEstateKnowledgeBase:
 
         return inheritance_info.get(region, {})
 
-    def get_rights_and_restrictions(self, property_type: str, region: str) -> dict[str, Any]:
+    def get_rights_and_restrictions(
+        self, property_type: str, region: str
+    ) -> dict[str, Any]:
         """Get rights and restrictions info."""
         info = {
             "derechos_piso": {
@@ -262,7 +264,9 @@ class RealEstateKnowledgeBase:
 
         return info
 
-    def get_market_trends(self, region: str, property_type: str = "residential") -> dict[str, Any]:
+    def get_market_trends(
+        self, region: str, property_type: str = "residential"
+    ) -> dict[str, Any]:
         """Get market trend data."""
         return {
             "region": region,
@@ -288,12 +292,21 @@ class RealEstateKnowledgeBase:
         for region, regs in self.regional_regulations.items():
             for key, value in regs.items():
                 if query.lower() in str(value).lower():
-                    results.append({"type": "regulation", "region": region, "field": key, "value": value})
+                    results.append(
+                        {
+                            "type": "regulation",
+                            "region": region,
+                            "field": key,
+                            "value": value,
+                        }
+                    )
 
         # Search in requirements
         for region, reqs in self.compliance_requirements.items():
             for req in reqs:
                 if query.lower() in req.lower():
-                    results.append({"type": "requirement", "region": region, "requirement": req})
+                    results.append(
+                        {"type": "requirement", "region": region, "requirement": req}
+                    )
 
         return results

@@ -93,7 +93,9 @@ class OrchestratorV2:
         self.knowledge_base = knowledge_base
         self.agents: dict[str, Any] = {}
         self.conversations: dict[str, ConversationState] = {}
-        self.phase_workflows: dict[DialoguePhase, list[str]] = self._init_phase_workflows()
+        self.phase_workflows: dict[DialoguePhase, list[str]] = (
+            self._init_phase_workflows()
+        )
         self._initialize_agents()
 
     def _init_phase_workflows(self) -> dict[DialoguePhase, list[str]]:
@@ -101,16 +103,27 @@ class OrchestratorV2:
         return {
             DialoguePhase.GREETING: ["welcome_agent"],
             DialoguePhase.LEAD_CAPTURE: ["lead_capture_agent", "contact_agent"],
-            DialoguePhase.LEAD_QUALIFICATION: ["lead_scorer_agent", "motivation_analyzer_agent"],
+            DialoguePhase.LEAD_QUALIFICATION: [
+                "lead_scorer_agent",
+                "motivation_analyzer_agent",
+            ],
             DialoguePhase.PROPERTY_ANALYSIS: [
                 "property_analyzer_agent",
                 "valuation_agent",
                 "inspection_agent",
                 "market_comps_agent",
             ],
-            DialoguePhase.MARKET_ANALYSIS: ["market_intelligence_agent", "neighborhood_analyzer_agent", "competitor_analyzer_agent"],
+            DialoguePhase.MARKET_ANALYSIS: [
+                "market_intelligence_agent",
+                "neighborhood_analyzer_agent",
+                "competitor_analyzer_agent",
+            ],
             DialoguePhase.RIGHTS_ANALYSIS: ["rights_analyzer_agent"],
-            DialoguePhase.LEGAL_CHECK: ["legal_compliance_agent", "document_checker_agent", "disclosure_agent"],
+            DialoguePhase.LEGAL_CHECK: [
+                "legal_compliance_agent",
+                "document_checker_agent",
+                "disclosure_agent",
+            ],
             DialoguePhase.FINANCING_DISCUSSION: [
                 "financing_advisor_agent",
                 "mortgage_calculator_agent",
@@ -122,9 +135,21 @@ class OrchestratorV2:
                 "terms_negotiator_agent",
                 "contingency_agent",
             ],
-            DialoguePhase.CONTRACT_REVIEW: ["contract_generator_agent", "contract_reviewer_agent", "escrow_agent"],
-            DialoguePhase.CLOSING: ["closing_coordinator_agent", "title_verification_agent", "final_walkthrough_agent"],
-            DialoguePhase.POST_SALE: ["retention_agent", "referral_agent", "support_agent"],
+            DialoguePhase.CONTRACT_REVIEW: [
+                "contract_generator_agent",
+                "contract_reviewer_agent",
+                "escrow_agent",
+            ],
+            DialoguePhase.CLOSING: [
+                "closing_coordinator_agent",
+                "title_verification_agent",
+                "final_walkthrough_agent",
+            ],
+            DialoguePhase.POST_SALE: [
+                "retention_agent",
+                "referral_agent",
+                "support_agent",
+            ],
         }
 
     def _initialize_agents(self) -> None:
@@ -183,7 +208,9 @@ class OrchestratorV2:
         logger.info(f"Started conversation: {session_id}")
         return state
 
-    async def process_message(self, session_id: str, user_message: str) -> dict[str, Any]:
+    async def process_message(
+        self, session_id: str, user_message: str
+    ) -> dict[str, Any]:
         """Process user message and route to appropriate agents."""
         if session_id not in self.conversations:
             return {"error": "Session not found"}
@@ -219,7 +246,9 @@ class OrchestratorV2:
             "property": state.property_item.__dict__ if state.property_item else None,
         }
 
-    async def _run_agent(self, agent_id: str, state: ConversationState, user_message: str) -> dict[str, Any] | None:
+    async def _run_agent(
+        self, agent_id: str, state: ConversationState, user_message: str
+    ) -> dict[str, Any] | None:
         """Run individual agent."""
         if agent_id not in self.agents:
             logger.warning(f"Agent not found: {agent_id}")
@@ -240,7 +269,9 @@ class OrchestratorV2:
 
         return response
 
-    def _generate_agent_response(self, agent_id: str, state: ConversationState, user_message: str) -> str:
+    def _generate_agent_response(
+        self, agent_id: str, state: ConversationState, user_message: str
+    ) -> str:
         """Generate agent response (would be replaced with actual agent logic)."""
         response_templates = {
             "welcome_agent": "Welcome to our real estate service! How can I assist you today?",
@@ -252,37 +283,55 @@ class OrchestratorV2:
             "negotiation_agent": "Let's discuss the terms that work best for you.",
         }
 
-        return response_templates.get(agent_id, f"Processing your request with {agent_id}...")
+        return response_templates.get(
+            agent_id, f"Processing your request with {agent_id}..."
+        )
 
-    def _generate_recommendations(self, agent_id: str, state: ConversationState) -> list[dict[str, Any]]:
+    def _generate_recommendations(
+        self, agent_id: str, state: ConversationState
+    ) -> list[dict[str, Any]]:
         """Generate agent recommendations."""
         recommendations = []
 
         if agent_id == "lead_scorer_agent" and state.lead:
-            recommendations.append({
-                "type": "lead_quality",
-                "score": state.lead.score,
-                "action": "proceed" if state.lead.score > 70 else "qualify_further",
-            })
+            recommendations.append(
+                {
+                    "type": "lead_quality",
+                    "score": state.lead.score,
+                    "action": "proceed" if state.lead.score > 70 else "qualify_further",
+                }
+            )
 
         if agent_id == "negotiation_agent" and state.property_item:
-            recommendations.append({
-                "type": "offer_strategy",
-                "suggested_price": state.property_item.asking_price * 0.95,
-                "rationale": "Below-ask offer in current market conditions",
-            })
+            recommendations.append(
+                {
+                    "type": "offer_strategy",
+                    "suggested_price": state.property_item.asking_price * 0.95,
+                    "rationale": "Below-ask offer in current market conditions",
+                }
+            )
 
         return recommendations
 
-    def _determine_next_phase(self, state: ConversationState, responses: list[dict[str, Any]]) -> DialoguePhase:
+    def _determine_next_phase(
+        self, state: ConversationState, responses: list[dict[str, Any]]
+    ) -> DialoguePhase:
         """Determine next conversation phase."""
         if state.phase == DialoguePhase.GREETING and state.message_count > 1:
             return DialoguePhase.LEAD_CAPTURE
 
-        if state.phase == DialoguePhase.LEAD_CAPTURE and state.lead and state.lead.prequalified:
+        if (
+            state.phase == DialoguePhase.LEAD_CAPTURE
+            and state.lead
+            and state.lead.prequalified
+        ):
             return DialoguePhase.LEAD_QUALIFICATION
 
-        if state.phase == DialoguePhase.LEAD_QUALIFICATION and state.lead and state.lead.score > 70:
+        if (
+            state.phase == DialoguePhase.LEAD_QUALIFICATION
+            and state.lead
+            and state.lead.score > 70
+        ):
             return DialoguePhase.PROPERTY_ANALYSIS
 
         if state.phase == DialoguePhase.PROPERTY_ANALYSIS and state.property_item:

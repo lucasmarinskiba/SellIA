@@ -40,7 +40,9 @@ class FinanceService:
         result = await self.db.execute(q)
         return result.scalars().all()
 
-    async def create_payment_reminder(self, business_id: UUID, order_id: UUID, **kwargs) -> PaymentReminder:
+    async def create_payment_reminder(
+        self, business_id: UUID, order_id: UUID, **kwargs
+    ) -> PaymentReminder:
         reminder = PaymentReminder(business_id=business_id, order_id=order_id, **kwargs)
         self.db.add(reminder)
         await self.db.commit()
@@ -52,13 +54,15 @@ class FinanceService:
         result = await self.db.execute(
             select(PaymentReminder).where(
                 PaymentReminder.business_id == business_id,
-                PaymentReminder.status == 'pending',
+                PaymentReminder.status == "pending",
                 PaymentReminder.scheduled_at <= now,
             )
         )
         return result.scalars().all()
 
-    async def generate_ar_snapshot(self, business_id: UUID) -> AccountsReceivableSnapshot:
+    async def generate_ar_snapshot(
+        self, business_id: UUID
+    ) -> AccountsReceivableSnapshot:
         now = datetime.now(UTC)
         result = await self.db.execute(
             select(
@@ -66,7 +70,7 @@ class FinanceService:
                 func.sum(SalesInvoice.total_amount - SalesInvoice.paid_amount),
             ).where(
                 SalesInvoice.business_id == business_id,
-                SalesInvoice.status.in_(['sent', 'overdue']),
+                SalesInvoice.status.in_(["sent", "overdue"]),
             )
         )
         invoice_count, total_outstanding = result.one() or (0, Decimal(0))
@@ -77,7 +81,7 @@ class FinanceService:
                 func.sum(SalesInvoice.total_amount - SalesInvoice.paid_amount),
             ).where(
                 SalesInvoice.business_id == business_id,
-                SalesInvoice.status == 'overdue',
+                SalesInvoice.status == "overdue",
             )
         )
         overdue_count, total_overdue = overdue_result.one() or (0, Decimal(0))

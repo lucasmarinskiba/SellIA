@@ -44,28 +44,36 @@ async def generate_pricing_recommendation(
 
     # Recent messages for price sensitivity analysis
     result = await db.execute(
-        select(Message).where(
-            Message.conversation_id == conversation.id
-        ).order_by(Message.created_at.desc()).limit(20)
+        select(Message)
+        .where(Message.conversation_id == conversation.id)
+        .order_by(Message.created_at.desc())
+        .limit(20)
     )
     messages = list(reversed(result.scalars().all()))
-    conversation_summary = "\n".join([
-        f"{'Lead' if m.direction.value == 'inbound' else 'Agent'}: {m.content[:250]}"
-        for m in messages
-    ])
+    conversation_summary = "\n".join(
+        [
+            f"{'Lead' if m.direction.value == 'inbound' else 'Agent'}: {m.content[:250]}"
+            for m in messages
+        ]
+    )
 
     # Catalog context
     result = await db.execute(
-        select(CatalogItem).where(
+        select(CatalogItem)
+        .where(
             CatalogItem.business_id == business_id,
             CatalogItem.is_active == True,
-        ).limit(10)
+        )
+        .limit(10)
     )
     catalog_items = result.scalars().all()
-    catalog_summary = "\n".join([
-        f"- {item.name}: ${item.price} {item.currency}"
-        for item in catalog_items
-    ]) if catalog_items else "Sin catálogo."
+    catalog_summary = (
+        "\n".join(
+            [f"- {item.name}: ${item.price} {item.currency}" for item in catalog_items]
+        )
+        if catalog_items
+        else "Sin catálogo."
+    )
 
     # Pipeline context: avg deal value, similar deals
     result = await db.execute(
@@ -125,7 +133,9 @@ CONFIDENCE: <alta/media/baja>"""
         "objection_prep": "",
         "confidence": "",
         "raw": ai_response,
-        "generated_at": __import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat(),
+        "generated_at": __import__("datetime")
+        .datetime.now(__import__("datetime").timezone.utc)
+        .isoformat(),
     }
 
     current_key = None

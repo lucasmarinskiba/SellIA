@@ -50,6 +50,7 @@ async def create_request(
 
     # Encolar worker Celery (emula SQS) — lazy import para evitar circularidad
     from app.tasks.provisioning_tasks import process_resource_request
+
     process_resource_request.delay(str(request.id))
     logger.info(f"Provisioning request {request.id} queued for {data.resource_type}")
 
@@ -63,10 +64,11 @@ async def get_request(db: AsyncSession, request_id: UUID) -> ResourceRequest | N
     return result.scalar_one_or_none()
 
 
-async def get_request_detail(db: AsyncSession, request_id: UUID) -> ResourceRequest | None:
+async def get_request_detail(
+    db: AsyncSession, request_id: UUID
+) -> ResourceRequest | None:
     result = await db.execute(
-        select(ResourceRequest)
-        .where(ResourceRequest.id == request_id)
+        select(ResourceRequest).where(ResourceRequest.id == request_id)
     )
     return result.scalar_one_or_none()
 

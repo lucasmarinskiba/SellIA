@@ -36,7 +36,9 @@ class SEOPipeline:
     ) -> GeneratedContent:
         """Generate a complete SEO-optimized blog post."""
         # Generate article
-        article = await self._generate_article(business_id, keyword, search_intent, word_count)
+        article = await self._generate_article(
+            business_id, keyword, search_intent, word_count
+        )
 
         # Generate meta
         meta = await self._generate_meta_tags(business_id, keyword, article)
@@ -109,6 +111,7 @@ La guía debe:
                 temperature=0.7,
             )
             import json
+
             article = json.loads(response or "{}")
         except Exception:
             logger.exception("Failed to generate guide")
@@ -188,6 +191,7 @@ Requisitos:
                 temperature=0.7,
             )
             import json
+
             return json.loads(response or "{}")
         except Exception:
             logger.exception("Article generation failed")
@@ -227,6 +231,7 @@ Responde en JSON:
                 temperature=0.5,
             )
             import json
+
             return json.loads(response or "{}")
         except Exception:
             logger.exception("Meta generation failed")
@@ -267,10 +272,14 @@ Responde en JSON:
         platform: str | None = None,
     ) -> list[ContentCalendar]:
         """Get scheduled content."""
-        query = select(ContentCalendar).where(
-            ContentCalendar.business_id == business_id,
-            ContentCalendar.status == "scheduled",
-        ).order_by(ContentCalendar.scheduled_at)
+        query = (
+            select(ContentCalendar)
+            .where(
+                ContentCalendar.business_id == business_id,
+                ContentCalendar.status == "scheduled",
+            )
+            .order_by(ContentCalendar.scheduled_at)
+        )
         if platform:
             query = query.where(ContentCalendar.platform == platform)
         result = await self.db.execute(query)
@@ -286,6 +295,7 @@ Responde en JSON:
 
         # Count inbound leads attributed to this content
         from app.domains.growth.models import InboundLead
+
         leads_result = await self.db.execute(
             select(func.count(InboundLead.id)).where(
                 InboundLead.source_detail.contains(str(content_id)),
@@ -299,7 +309,9 @@ Responde en JSON:
             "type": content.content_type,
             "status": content.status,
             "leads_generated": leads_generated,
-            "created_at": content.created_at.isoformat() if content.created_at else None,
+            "created_at": (
+                content.created_at.isoformat() if content.created_at else None
+            ),
         }
 
     # ========== Batch Operations ==========

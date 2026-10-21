@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 
 try:
     from pywebpush import WebPushException, webpush
+
     WEBPUSH_AVAILABLE = True
 except ImportError:
     webpush = None
@@ -55,11 +56,13 @@ async def send_push_notification(
     """
     if not WEBPUSH_AVAILABLE:
         from app.core.logger import get_logger
+
         get_logger(__name__).warning("pywebpush no instalado. Push omitido.")
         return
 
     if not VAPID_PRIVATE_KEY:
         from app.core.logger import get_logger
+
         get_logger(__name__).warning("VAPID_PRIVATE_KEY no configurada. Push omitido.")
         return
 
@@ -74,16 +77,18 @@ async def send_push_notification(
     if not subscriptions:
         return
 
-    payload = json.dumps({
-        "title": title,
-        "body": body,
-        "icon": icon,
-        "badge": badge,
-        "url": url,
-        "tag": tag,
-        "requireInteraction": require_interaction,
-        "timestamp": datetime.now(UTC).isoformat(),
-    })
+    payload = json.dumps(
+        {
+            "title": title,
+            "body": body,
+            "icon": icon,
+            "badge": badge,
+            "url": url,
+            "tag": tag,
+            "requireInteraction": require_interaction,
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+    )
 
     for sub in subscriptions:
         try:
@@ -106,10 +111,12 @@ async def send_push_notification(
                 await db.commit()
             else:
                 from app.core.logger import get_logger
+
                 get_logger(__name__).error(f"Error enviando push: {e}")
         except Exception as e:
             logger.exception("send_push_notification: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Error inesperado: {e}")
 
 

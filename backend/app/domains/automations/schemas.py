@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # ========== Workflow Schemas ==========
 
+
 class WorkflowBase(BaseModel):
     name: str
     description: str | None = None
@@ -46,6 +47,7 @@ class WorkflowResponse(WorkflowBase):
 
 
 # ========== Workflow Variant Schemas ==========
+
 
 class WorkflowVariantBase(BaseModel):
     variant_name: str
@@ -90,6 +92,7 @@ class WorkflowABTestResult(BaseModel):
 
 # ========== Email Template Schemas ==========
 
+
 class EmailTemplateBase(BaseModel):
     name: str
     subject: str
@@ -124,6 +127,7 @@ class EmailTemplateResponse(EmailTemplateBase):
 
 
 # ========== Email Sequence Schemas ==========
+
 
 class SequenceStepBase(BaseModel):
     step_order: int
@@ -187,6 +191,7 @@ class EmailSequenceUpdate(BaseModel):
 
 # ========== Sequence Subscription Schemas ==========
 
+
 class SequenceSubscriptionBase(BaseModel):
     sequence_id: UUID
     conversation_id: UUID
@@ -206,6 +211,7 @@ class SequenceSubscriptionResponse(SequenceSubscriptionBase):
 
 
 # ========== Sequence Email Log Schemas ==========
+
 
 class SequenceEmailLogBase(BaseModel):
     subscription_id: UUID
@@ -231,6 +237,7 @@ class SequenceEmailLogResponse(SequenceEmailLogBase):
 
 # ========== Sequence Analytics Schemas ==========
 
+
 class SequenceAnalytics(BaseModel):
     sequence_id: UUID
     total_subscribers: int
@@ -243,6 +250,7 @@ class SequenceAnalytics(BaseModel):
 
 
 # ========== Chatbot Rule Schemas ==========
+
 
 class ChatbotRuleBase(BaseModel):
     name: str
@@ -283,6 +291,7 @@ class ChatbotRuleResponse(ChatbotRuleBase):
 
 
 # ========== Content Generation Schemas ==========
+
 
 class GeneratedContentBase(BaseModel):
     content_type: str
@@ -396,6 +405,7 @@ class ContentGenerationResponse(BaseModel):
 
 # ========== Automation Toggles Schemas ==========
 
+
 class AutomationToggleBase(BaseModel):
     toggle_key: str
     category: str  # "agent" | "automation" | "feature" | "integration"
@@ -457,6 +467,7 @@ class ToggleDashboardResponse(BaseModel):
 
 # ========== Toggle Schedule Schemas ==========
 
+
 class ToggleScheduleBase(BaseModel):
     toggle_id: UUID
     start_time: datetime
@@ -497,6 +508,7 @@ class ToggleScheduleResponse(ToggleScheduleBase):
 
 
 # ========== Toggle Notification Schemas ==========
+
 
 class ToggleNotificationRuleBase(BaseModel):
     toggle_id: UUID

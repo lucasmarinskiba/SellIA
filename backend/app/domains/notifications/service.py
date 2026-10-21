@@ -114,7 +114,9 @@ class NotificationService:
     async def _send_in_app(self, delivery: NotificationDelivery) -> None:
         """Send in-app notification (via WebSocket)."""
         # In production, emit WebSocket event
-        logger.info(f"[IN_APP] To user {delivery.user_id}: {delivery.notification_type}")
+        logger.info(
+            f"[IN_APP] To user {delivery.user_id}: {delivery.notification_type}"
+        )
 
 
 class BriefingDeliveryService:
@@ -124,7 +126,9 @@ class BriefingDeliveryService:
         self.db = db
         self.notification = NotificationService(db)
 
-    async def deliver_daily_briefing(self, business_id: uuid.UUID) -> dict[str, Any] | None:
+    async def deliver_daily_briefing(
+        self, business_id: uuid.UUID
+    ) -> dict[str, Any] | None:
         """Generate and deliver daily briefing."""
         from app.domains.autopilot.service import AutopilotReportService
         from app.domains.orchestration.director import SellIADirector
@@ -146,7 +150,9 @@ class BriefingDeliveryService:
         report = await report_service.get_latest_report(business_id)
 
         # Build messages
-        summary = report.ai_summary if report else "No hay actividad automática reciente."
+        summary = (
+            report.ai_summary if report else "No hay actividad automática reciente."
+        )
 
         whatsapp_message = f"📊 Briefing SellIA\n\n{summary}\n\nAcciones hoy: {report.leads_contacted if report else 0} leads, {report.deals_closed if report else 0} deals cerrados."
 
@@ -203,7 +209,11 @@ class HandoffAlertService:
 
         # Determine priority
         priority = "critical" if urgency == "critical" else "high"
-        channels = ["whatsapp", "push", "email", "in_app"] if urgency == "critical" else ["email", "in_app"]
+        channels = (
+            ["whatsapp", "push", "email", "in_app"]
+            if urgency == "critical"
+            else ["email", "in_app"]
+        )
 
         message_short = f"🚨 Handoff urgente: {reason[:200]}"
         message = f"""

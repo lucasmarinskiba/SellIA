@@ -117,7 +117,11 @@ class ABTestEngine:
             query = query.where(and_(*filters))
             count_query = count_query.where(and_(*filters))
 
-        query = query.order_by(PromptExperiment.created_at.desc()).limit(limit).offset(offset)
+        query = (
+            query.order_by(PromptExperiment.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
 
         result = await db.execute(query)
         experiments = result.scalars().all()
@@ -271,7 +275,11 @@ class ABTestEngine:
         )
         if variant:
             query = query.where(PromptExperimentResult.variant == variant)
-        query = query.order_by(PromptExperimentResult.created_at.desc()).limit(limit).offset(offset)
+        query = (
+            query.order_by(PromptExperimentResult.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
         result = await db.execute(query)
         return list(result.scalars().all())
 
@@ -296,9 +304,17 @@ class ABTestEngine:
                 func.count(PromptExperimentResult.id).label("n"),
                 func.sum(
                     case(
-                        (PromptExperimentResult.outcome.in_(
-                            ["lead_generated", "sale_closed", "objection_overcome", "converted"]
-                        ), 1),
+                        (
+                            PromptExperimentResult.outcome.in_(
+                                [
+                                    "lead_generated",
+                                    "sale_closed",
+                                    "objection_overcome",
+                                    "converted",
+                                ]
+                            ),
+                            1,
+                        ),
                         else_=0,
                     )
                 ).label("conversions"),
@@ -307,7 +323,10 @@ class ABTestEngine:
             .group_by(PromptExperimentResult.variant)
         )
         result = await db.execute(stmt)
-        rows = {r.variant: {"n": r.n, "conversions": r.conversions or 0} for r in result.all()}
+        rows = {
+            r.variant: {"n": r.n, "conversions": r.conversions or 0}
+            for r in result.all()
+        }
 
         # Real revenue attributed to each variant (from record_result's
         # optional `revenue` arg -- populated with the real Deal.final_value
@@ -316,7 +335,9 @@ class ABTestEngine:
         revenue_stmt = (
             select(
                 PromptExperimentResult.variant,
-                func.coalesce(func.sum(PromptExperimentResult.revenue), 0).label("revenue"),
+                func.coalesce(func.sum(PromptExperimentResult.revenue), 0).label(
+                    "revenue"
+                ),
             )
             .where(PromptExperimentResult.experiment_id == experiment_id)
             .group_by(PromptExperimentResult.variant)
@@ -414,12 +435,19 @@ class ABTestEngine:
             experiment_id = uuid.UUID(tracking["experiment_id"])
             variant = tracking["variant"]
             await ABTestEngine.record_result(
-                db, experiment_id=experiment_id, conversation_id=conversation.id,
-                variant=variant, outcome=outcome, revenue=revenue,
+                db,
+                experiment_id=experiment_id,
+                conversation_id=conversation.id,
+                variant=variant,
+                outcome=outcome,
+                revenue=revenue,
             )
             await ABTestEngine.check_auto_promote(db, experiment_id)
         except Exception as e:
-            logger.warning(f"Failed to record AB outcome for key '{tracking_key}': {e}", exc_info=True)
+            logger.warning(
+                f"Failed to record AB outcome for key '{tracking_key}': {e}",
+                exc_info=True,
+            )
 
     @staticmethod
     async def check_auto_promote(

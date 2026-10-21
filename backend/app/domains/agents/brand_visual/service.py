@@ -140,7 +140,9 @@ class BrandVisualService:
 
         job.assets = {
             "logos": logo_urls,
-            "templates": [a.file_url for a in assets if a.asset_type == "social_template"],
+            "templates": [
+                a.file_url for a in assets if a.asset_type == "social_template"
+            ],
             "mockups": [a.file_url for a in assets if a.asset_type == "mockup"],
             "guidelines": f"/storage/media/brand/guidelines_{job.id}.md",
         }
@@ -177,7 +179,9 @@ class BrandVisualService:
             for asset in assets:
                 local_path = STORAGE_DIR / Path(asset.file_url).name
                 if local_path.exists():
-                    zf.write(local_path, arcname=f"{asset.asset_type}/{local_path.name}")
+                    zf.write(
+                        local_path, arcname=f"{asset.asset_type}/{local_path.name}"
+                    )
                 else:
                     # For remote URLs, add a text reference
                     zf.writestr(
@@ -319,12 +323,29 @@ class BrandVisualService:
                     content = data["choices"][0]["message"]["content"]
                     return json.loads(content)
             except Exception as e:
-                logger.warning(f"OpenAI typography generation failed: {e}", exc_info=True)
+                logger.warning(
+                    f"OpenAI typography generation failed: {e}", exc_info=True
+                )
 
         return [
-            {"name": "Inter", "category": "sans-serif", "usage": "Headings & UI", "weights": [400, 600, 700]},
-            {"name": "Merriweather", "category": "serif", "usage": "Body text", "weights": [400, 700]},
-            {"name": "JetBrains Mono", "category": "monospace", "usage": "Code & data", "weights": [400]},
+            {
+                "name": "Inter",
+                "category": "sans-serif",
+                "usage": "Headings & UI",
+                "weights": [400, 600, 700],
+            },
+            {
+                "name": "Merriweather",
+                "category": "serif",
+                "usage": "Body text",
+                "weights": [400, 700],
+            },
+            {
+                "name": "JetBrains Mono",
+                "category": "monospace",
+                "usage": "Code & data",
+                "weights": [400],
+            },
         ]
 
     async def _generate_social_template(
@@ -341,7 +362,9 @@ class BrandVisualService:
             f"{industry} industry. Primary color {primary_color}. "
             f"Clean layout with space for headline and body text. Modern design."
         )
-        return await self._generate_image(prompt, settings, f"template_{platform}") or ""
+        return (
+            await self._generate_image(prompt, settings, f"template_{platform}") or ""
+        )
 
     async def _generate_mockup(
         self,
@@ -356,7 +379,9 @@ class BrandVisualService:
         )
         return await self._generate_image(prompt, settings, "mockup") or ""
 
-    async def _generate_image(self, prompt: str, settings: Any, suffix: str) -> str | None:
+    async def _generate_image(
+        self, prompt: str, settings: Any, suffix: str
+    ) -> str | None:
         """Generate image via DALL-E 3 or Stable Diffusion fallback."""
         job_id = uuid.uuid4()
         file_name = f"brand_{job_id}_{suffix}.png"
@@ -386,7 +411,9 @@ class BrandVisualService:
                     # Download and store locally
                     img_resp = await client.get(image_url, timeout=httpx.Timeout(60.0))
                     img_resp.raise_for_status()
-                    await asyncio.to_thread(write_file, file_path, "wb", data=img_resp.content)
+                    await asyncio.to_thread(
+                        write_file, file_path, "wb", data=img_resp.content
+                    )
                     return f"/storage/media/brand/{file_name}"
             except Exception as e:
                 logger.warning(f"DALL-E 3 generation failed: {e}", exc_info=True)
@@ -408,10 +435,14 @@ class BrandVisualService:
                         },
                     )
                     response.raise_for_status()
-                    await asyncio.to_thread(write_file, file_path, "wb", data=response.content)
+                    await asyncio.to_thread(
+                        write_file, file_path, "wb", data=response.content
+                    )
                     return f"/storage/media/brand/{file_name}"
             except Exception as e:
-                logger.warning(f"Stable Diffusion generation failed: {e}", exc_info=True)
+                logger.warning(
+                    f"Stable Diffusion generation failed: {e}", exc_info=True
+                )
 
         # Development fallback
         logger.info("Image generation fallback: returning placeholder")
@@ -438,7 +469,9 @@ class BrandVisualService:
         lines.append("")
         lines.append("## Typography")
         for f in fonts:
-            lines.append(f"- **{f.get('name', '')}** ({f.get('category', '')}) — {f.get('usage', '')}")
+            lines.append(
+                f"- **{f.get('name', '')}** ({f.get('category', '')}) — {f.get('usage', '')}"
+            )
         lines.append("")
         lines.append("## Logos")
         for idx, url in enumerate(logo_urls, 1):

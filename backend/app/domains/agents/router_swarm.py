@@ -37,7 +37,9 @@ async def execute_swarm(
     """Execute a multi-agent swarm task."""
     if business_id:
         result = await db.execute(
-            select(Business).where(Business.id == business_id).where(Business.user_id == current_user.id)
+            select(Business)
+            .where(Business.id == business_id)
+            .where(Business.user_id == current_user.id)
         )
         business = result.scalar_one_or_none()
         if not business:
@@ -55,7 +57,10 @@ async def execute_swarm(
     return SwarmExecuteResponse(
         session_id=result["session_id"],
         final_response=result["final_response"],
-        agent_contributions=[SwarmAgentContribution.model_validate(m) for m in result["agent_contributions"]],
+        agent_contributions=[
+            SwarmAgentContribution.model_validate(m)
+            for m in result["agent_contributions"]
+        ],
         reasoning=result["reasoning"],
         consensus_reached=result["consensus_reached"],
         rounds=result["rounds"],
@@ -73,7 +78,9 @@ async def list_swarm_sessions(
 
     if business_id:
         result = await db.execute(
-            select(Business).where(Business.id == business_id).where(Business.user_id == current_user.id)
+            select(Business)
+            .where(Business.id == business_id)
+            .where(Business.user_id == current_user.id)
         )
         business = result.scalar_one_or_none()
         if not business:
@@ -94,11 +101,15 @@ async def list_swarm_sessions(
     response = []
     for session in sessions:
         msg_result = await db.execute(
-            select(SwarmMessage).where(SwarmMessage.session_id == session.id).order_by(SwarmMessage.created_at)
+            select(SwarmMessage)
+            .where(SwarmMessage.session_id == session.id)
+            .order_by(SwarmMessage.created_at)
         )
         messages = msg_result.scalars().all()
         session_data = SwarmSessionResponse.model_validate(session)
-        session_data.messages = [SwarmMessageResponse.model_validate(m) for m in messages]
+        session_data.messages = [
+            SwarmMessageResponse.model_validate(m) for m in messages
+        ]
         response.append(session_data)
 
     return response
@@ -111,23 +122,25 @@ async def get_swarm_session(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Get a single swarm session with all messages."""
-    result = await db.execute(
-        select(SwarmSession).where(SwarmSession.id == session_id)
-    )
+    result = await db.execute(select(SwarmSession).where(SwarmSession.id == session_id))
     session = result.scalar_one_or_none()
     if not session:
         raise HTTPException(status_code=404, detail="Sesión no encontrada")
 
     # Verify ownership via business
     result = await db.execute(
-        select(Business).where(Business.id == session.business_id).where(Business.user_id == current_user.id)
+        select(Business)
+        .where(Business.id == session.business_id)
+        .where(Business.user_id == current_user.id)
     )
     business = result.scalar_one_or_none()
     if not business:
         raise HTTPException(status_code=403, detail="No tenés acceso a esta sesión")
 
     msg_result = await db.execute(
-        select(SwarmMessage).where(SwarmMessage.session_id == session.id).order_by(SwarmMessage.created_at)
+        select(SwarmMessage)
+        .where(SwarmMessage.session_id == session.id)
+        .order_by(SwarmMessage.created_at)
     )
     messages = msg_result.scalars().all()
 

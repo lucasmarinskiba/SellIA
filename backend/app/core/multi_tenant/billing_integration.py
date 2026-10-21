@@ -20,6 +20,7 @@ logger = get_logger(__name__)
 
 class BillingStatus(str, Enum):
     """Billing status lifecycle."""
+
     PENDING = "pending"
     PAID = "paid"
     FAILED = "failed"
@@ -54,9 +55,7 @@ class BillingService:
         billing_obj.api_calls_used += 1
 
         # Check against limit
-        tenant = await self.db.execute(
-            select(Tenant).where(Tenant.id == tenant_id)
-        )
+        tenant = await self.db.execute(select(Tenant).where(Tenant.id == tenant_id))
         tenant_obj = tenant.scalar_one_or_none()
 
         if billing_obj.api_calls_used > tenant_obj.max_monthly_api_calls:
@@ -126,9 +125,7 @@ class BillingService:
         if not billing_obj:
             raise AppException("Billing record not found", status_code=404)
 
-        tenant = await self.db.execute(
-            select(Tenant).where(Tenant.id == tenant_id)
-        )
+        tenant = await self.db.execute(select(Tenant).where(Tenant.id == tenant_id))
         tenant_obj = tenant.scalar_one_or_none()
 
         # Calculate overage (simplified: $0.001 per API call above limit)
@@ -185,6 +182,7 @@ class BillingService:
 
         # Generate invoice number
         import uuid
+
         billing_obj.invoice_number = f"INV-{datetime.now(UTC).strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
 
         # Reset for next period
@@ -282,15 +280,15 @@ class BillingService:
         if not billing_obj:
             raise AppException("Billing record not found", status_code=404)
 
-        tenant = await self.db.execute(
-            select(Tenant).where(Tenant.id == tenant_id)
-        )
+        tenant = await self.db.execute(select(Tenant).where(Tenant.id == tenant_id))
         tenant_obj = tenant.scalar_one_or_none()
 
         # Percent utilization
         api_call_percent = (
-            (billing_obj.api_calls_used / tenant_obj.max_monthly_api_calls) * 100
-        ) if tenant_obj.max_monthly_api_calls > 0 else 0
+            ((billing_obj.api_calls_used / tenant_obj.max_monthly_api_calls) * 100)
+            if tenant_obj.max_monthly_api_calls > 0
+            else 0
+        )
 
         return {
             "billing_period_start": billing_obj.billing_period_start.isoformat(),

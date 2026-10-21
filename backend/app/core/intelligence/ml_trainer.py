@@ -41,7 +41,9 @@ class SimpleIntentClassifier:
                 logger.warning("Not enough data to train intent classifier")
                 return 0.0
 
-            X_train, X_test, y_train, y_test = train_test_split(texts, labels, test_size=0.2, random_state=42)
+            X_train, X_test, y_train, y_test = train_test_split(
+                texts, labels, test_size=0.2, random_state=42
+            )
 
             self.vectorizer = TfidfVectorizer(max_features=5000, ngram_range=(1, 2))
             X_train_vec = self.vectorizer.fit_transform(X_train)
@@ -53,7 +55,9 @@ class SimpleIntentClassifier:
             self.accuracy = self.classifier.score(X_test_vec, y_test)
             self.version = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
 
-            logger.info(f"Trained intent classifier v{self.version} with accuracy {self.accuracy:.3f}")
+            logger.info(
+                f"Trained intent classifier v{self.version} with accuracy {self.accuracy:.3f}"
+            )
             return self.accuracy
         except Exception:
             logger.exception("Failed to train intent classifier")
@@ -67,7 +71,15 @@ class SimpleIntentClassifier:
 
     def save(self, path: str):
         with open(path, "wb") as f:
-            pickle.dump({"vectorizer": self.vectorizer, "classifier": self.classifier, "version": self.version, "accuracy": self.accuracy}, f)
+            pickle.dump(
+                {
+                    "vectorizer": self.vectorizer,
+                    "classifier": self.classifier,
+                    "version": self.version,
+                    "accuracy": self.accuracy,
+                },
+                f,
+            )
 
     def load(self, path: str) -> bool:
         try:

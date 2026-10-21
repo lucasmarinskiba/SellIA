@@ -63,8 +63,12 @@ async def platform_pnl(
         "period_days": days,
         "platforms": [],
         "consolidated": {
-            "revenue": 0.0, "orders": 0, "known_costs": 0.0,
-            "margin": None, "margin_complete": False, "currency": None,
+            "revenue": 0.0,
+            "orders": 0,
+            "known_costs": 0.0,
+            "margin": None,
+            "margin_complete": False,
+            "currency": None,
         },
         "generated_at": now.isoformat(),
     }
@@ -111,7 +115,9 @@ async def platform_pnl(
     for platform, platform_orders in sorted(by_platform.items()):
         # COMPLETED, not PAID: PaymentStatus has no PAID member, and
         # referencing one raises AttributeError the moment an order exists.
-        paid = [o for o in platform_orders if o.payment_status == PaymentStatus.COMPLETED]
+        paid = [
+            o for o in platform_orders if o.payment_status == PaymentStatus.COMPLETED
+        ]
         revenue = sum((o.total_amount or ZERO) for o in paid) or ZERO
         shipping = sum((o.shipping_cost or ZERO) for o in paid) or ZERO
         for order in platform_orders:
@@ -172,24 +178,27 @@ async def platform_pnl(
         total_known_costs += known_costs
         total_orders += len(paid)
 
-        rows.append({
-            "platform": platform,
-            "orders": len(paid),
-            "orders_total": len(platform_orders),
-            "revenue": _money(revenue),
-            "costs": costs,
-            "known_costs": _money(known_costs),
-            "margin": _money(revenue - known_costs) if complete else None,
-            "margin_percent": (
-                round(float((revenue - known_costs) / revenue * 100), 1)
-                if complete and revenue else None
-            ),
-            "margin_complete": complete,
-            "missing": missing,
-            "currency": next(
-                (o.currency for o in platform_orders if o.currency), None
-            ),
-        })
+        rows.append(
+            {
+                "platform": platform,
+                "orders": len(paid),
+                "orders_total": len(platform_orders),
+                "revenue": _money(revenue),
+                "costs": costs,
+                "known_costs": _money(known_costs),
+                "margin": _money(revenue - known_costs) if complete else None,
+                "margin_percent": (
+                    round(float((revenue - known_costs) / revenue * 100), 1)
+                    if complete and revenue
+                    else None
+                ),
+                "margin_complete": complete,
+                "missing": missing,
+                "currency": next(
+                    (o.currency for o in platform_orders if o.currency), None
+                ),
+            }
+        )
 
     # Measure the mix BEFORE consuming the set: a consolidated total across two
     # currencies is not a number, and saying which case we are in matters more
@@ -202,7 +211,8 @@ async def platform_pnl(
     # invites the seller to believe their books are done.
     nothing_known = total_revenue == ZERO and total_known_costs == ZERO
     consolidated_margin = (
-        None if (nothing_known or not all_complete)
+        None
+        if (nothing_known or not all_complete)
         else _money(total_revenue - total_known_costs)
     )
 

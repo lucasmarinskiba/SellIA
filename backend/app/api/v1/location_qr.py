@@ -27,8 +27,8 @@ async def get_location_qr_codes(location_id: UUID) -> dict:
             "usage": {
                 "visitor_checkin": "Customers scan to check in",
                 "feedback": "Customers scan to submit NPS feedback",
-                "staff_checkin": "Staff scans to start shift"
-            }
+                "staff_checkin": "Staff scans to start shift",
+            },
         }
     except Exception as e:
         logger.exception("get_location_qr_codes: error inesperado")
@@ -36,14 +36,13 @@ async def get_location_qr_codes(location_id: UUID) -> dict:
 
 
 @router.get("/locations/{location_id}/qr-code")
-async def get_single_qr(
-    location_id: UUID,
-    qr_type: str = "visitor_checkin"
-) -> dict:
+async def get_single_qr(location_id: UUID, qr_type: str = "visitor_checkin") -> dict:
     """Generate single QR code by type."""
     valid_types = ["visitor_checkin", "feedback", "staff_checkin"]
     if qr_type not in valid_types:
-        raise HTTPException(status_code=400, detail=f"QR type must be one of: {valid_types}")
+        raise HTTPException(
+            status_code=400, detail=f"QR type must be one of: {valid_types}"
+        )
 
     try:
         result = LocationQRGenerator.generate_checkin_qr(location_id, None, qr_type)
@@ -59,7 +58,9 @@ async def parse_qr(payload: str) -> dict:
     try:
         result = LocationQRGenerator.parse_qr_payload(payload)
         if not result["valid"]:
-            raise HTTPException(status_code=400, detail=result.get("error", "Invalid QR"))
+            raise HTTPException(
+                status_code=400, detail=result.get("error", "Invalid QR")
+            )
         return result
     except Exception as e:
         logger.exception("parse_qr: error inesperado")

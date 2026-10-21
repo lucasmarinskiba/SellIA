@@ -156,10 +156,13 @@ Previous actions:
             history = []
 
         screenshot_base64 = self._encode_image(screenshot_bytes)
-        messages = self._build_messages(screenshot_base64, task, history, user_message, page_info)
+        messages = self._build_messages(
+            screenshot_base64, task, history, user_message, page_info
+        )
 
         try:
             from langchain_openai import ChatOpenAI
+
             llm = ChatOpenAI(
                 model=self.model,
                 api_key=self.api_key,
@@ -186,6 +189,7 @@ Previous actions:
 
         try:
             from langchain_openai import ChatOpenAI
+
             llm = ChatOpenAI(
                 model="gpt-4o-mini",
                 api_key=self.api_key,

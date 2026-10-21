@@ -22,5 +22,5 @@ __all__ = [
     "close_db",
     "engine",
     "get_db",
-    "init_db"
+    "init_db",
 ]

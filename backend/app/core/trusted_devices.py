@@ -20,9 +20,12 @@ from app.domains.security.models import TrustedDevice
 logger = get_logger(__name__)
 
 
-def get_device_fingerprint(ip: str, user_agent: str | None, accept_lang: str | None) -> str:
+def get_device_fingerprint(
+    ip: str, user_agent: str | None, accept_lang: str | None
+) -> str:
     """Genera un fingerprint del dispositivo."""
     import hashlib
+
     raw = f"{ip}:{user_agent or ''}:{accept_lang or ''}"
     return hashlib.sha256(raw.encode()).hexdigest()[:32]
 
@@ -83,7 +86,9 @@ async def record_device_login(
     return device, is_new
 
 
-async def trust_device(db: AsyncSession, device_id: uuid.UUID, user_id: uuid.UUID) -> TrustedDevice | None:
+async def trust_device(
+    db: AsyncSession, device_id: uuid.UUID, user_id: uuid.UUID
+) -> TrustedDevice | None:
     """Marca un dispositivo como de confianza.
 
     `user_id` is required and filtered on -- this used to look up the
@@ -95,7 +100,9 @@ async def trust_device(db: AsyncSession, device_id: uuid.UUID, user_id: uuid.UUI
     specific device_id it was handed.
     """
     result = await db.execute(
-        select(TrustedDevice).where(TrustedDevice.id == device_id, TrustedDevice.user_id == user_id)
+        select(TrustedDevice).where(
+            TrustedDevice.id == device_id, TrustedDevice.user_id == user_id
+        )
     )
     device = result.scalar_one_or_none()
     if device:
@@ -106,10 +113,14 @@ async def trust_device(db: AsyncSession, device_id: uuid.UUID, user_id: uuid.UUI
     return device
 
 
-async def block_device(db: AsyncSession, device_id: uuid.UUID, user_id: uuid.UUID) -> TrustedDevice | None:
+async def block_device(
+    db: AsyncSession, device_id: uuid.UUID, user_id: uuid.UUID
+) -> TrustedDevice | None:
     """Bloquea un dispositivo. See trust_device's docstring -- same IDOR fix."""
     result = await db.execute(
-        select(TrustedDevice).where(TrustedDevice.id == device_id, TrustedDevice.user_id == user_id)
+        select(TrustedDevice).where(
+            TrustedDevice.id == device_id, TrustedDevice.user_id == user_id
+        )
     )
     device = result.scalar_one_or_none()
     if device:
@@ -120,16 +131,21 @@ async def block_device(db: AsyncSession, device_id: uuid.UUID, user_id: uuid.UUI
     return device
 
 
-async def list_user_devices(db: AsyncSession, user_id: uuid.UUID) -> list[TrustedDevice]:
+async def list_user_devices(
+    db: AsyncSession, user_id: uuid.UUID
+) -> list[TrustedDevice]:
     """Lista todos los dispositivos de un usuario."""
     result = await db.execute(
-        select(TrustedDevice).where(TrustedDevice.user_id == user_id)
+        select(TrustedDevice)
+        .where(TrustedDevice.user_id == user_id)
         .order_by(desc(TrustedDevice.last_seen_at))
     )
     return list(result.scalars().all())
 
 
-async def is_device_trusted(db: AsyncSession, user_id: uuid.UUID, fingerprint: str) -> bool:
+async def is_device_trusted(
+    db: AsyncSession, user_id: uuid.UUID, fingerprint: str
+) -> bool:
     """Verifica si un dispositivo es de confianza."""
     device = await get_trusted_device(db, user_id, fingerprint)
     if not device:
@@ -147,7 +163,9 @@ async def is_device_trusted(db: AsyncSession, user_id: uuid.UUID, fingerprint: s
     return False
 
 
-async def check_suspicious_device_activity(db: AsyncSession, user_id: uuid.UUID) -> bool:
+async def check_suspicious_device_activity(
+    db: AsyncSession, user_id: uuid.UUID
+) -> bool:
     """Detecta si hay más de 5 dispositivos nuevos en 24h."""
     since = datetime.now(UTC) - timedelta(hours=24)
     result = await db.execute(

@@ -24,6 +24,7 @@ from app.core.clock import utc_now
 
 class MessagePriority(str, Enum):
     """Message priority levels"""
+
     LOW = "low"
     NORMAL = "normal"
     HIGH = "high"
@@ -33,6 +34,7 @@ class MessagePriority(str, Enum):
 @dataclass
 class Message:
     """Message unit"""
+
     id: str
     content: str
     user_id: str
@@ -43,13 +45,16 @@ class Message:
 
     def get_cache_key(self) -> str:
         """Generate cache key for response caching"""
-        content_hash = hashlib.md5(self.content.encode(), usedforsecurity=False).hexdigest()
+        content_hash = hashlib.md5(
+            self.content.encode(), usedforsecurity=False
+        ).hexdigest()
         return f"response:{self.user_id}:{self.channel}:{content_hash}"
 
 
 @dataclass
 class Response:
     """Response unit"""
+
     id: str
     message_id: str
     content: str
@@ -96,7 +101,8 @@ class ResponseCache:
         """Remove expired entries. Returns count removed."""
         current_time = time.time()
         expired = [
-            key for key, (_, created_at) in self.cache.items()
+            key
+            for key, (_, created_at) in self.cache.items()
             if current_time - created_at > self.ttl_seconds
         ]
         for key in expired:
@@ -111,7 +117,7 @@ class ResponseCache:
             "size": len(self.cache),
             "max_size": self.max_size,
             "ttl_seconds": self.ttl_seconds,
-            "utilization": len(self.cache) / self.max_size
+            "utilization": len(self.cache) / self.max_size,
         }
 
 
@@ -128,7 +134,7 @@ class MessageQueue:
             "total_processed": 0,
             "total_errors": 0,
             "total_batched": 0,
-            "latencies": []
+            "latencies": [],
         }
 
     async def enqueue(self, message: Message) -> bool:
@@ -144,8 +150,12 @@ class MessageQueue:
         batch = []
 
         # Collect from highest to lowest priority
-        for priority in [MessagePriority.URGENT, MessagePriority.HIGH,
-                        MessagePriority.NORMAL, MessagePriority.LOW]:
+        for priority in [
+            MessagePriority.URGENT,
+            MessagePriority.HIGH,
+            MessagePriority.NORMAL,
+            MessagePriority.LOW,
+        ]:
             queue = self.queues[priority]
             while len(batch) < batch_size and not queue.empty():
                 try:
@@ -159,8 +169,7 @@ class MessageQueue:
     def queue_sizes(self) -> dict[str, int]:
         """Get current queue sizes by priority"""
         return {
-            priority.value: queue.qsize()
-            for priority, queue in self.queues.items()
+            priority.value: queue.qsize() for priority, queue in self.queues.items()
         }
 
     def stats(self) -> dict[str, Any]:
@@ -172,8 +181,12 @@ class MessageQueue:
             "total_batched": self.metrics["total_batched"],
             "queue_sizes": self.queue_sizes(),
             "avg_latency_ms": sum(latencies) / len(latencies) if latencies else 0,
-            "p99_latency_ms": sorted(latencies)[int(len(latencies) * 0.99)] if latencies else 0,
-            "p95_latency_ms": sorted(latencies)[int(len(latencies) * 0.95)] if latencies else 0,
+            "p99_latency_ms": (
+                sorted(latencies)[int(len(latencies) * 0.99)] if latencies else 0
+            ),
+            "p95_latency_ms": (
+                sorted(latencies)[int(len(latencies) * 0.95)] if latencies else 0
+            ),
         }
 
 
@@ -190,7 +203,7 @@ class LatencyTracker:
         """Record latency. Returns True if within SLA, False if violation"""
         self.latencies.append(latency_ms)
         if len(self.latencies) > self.window_size:
-            self.latencies = self.latencies[-self.window_size:]
+            self.latencies = self.latencies[-self.window_size :]
 
         is_compliant = latency_ms <= self.sla_ms
         if not is_compliant:
@@ -207,7 +220,7 @@ class LatencyTracker:
                 "p99_ms": 0,
                 "p95_ms": 0,
                 "sla_compliance": 1.0,
-                "violations": 0
+                "violations": 0,
             }
 
         sorted_latencies = sorted(self.latencies)
@@ -220,7 +233,7 @@ class LatencyTracker:
             "p99_ms": sorted_latencies[int(n * 0.99)] if n > 0 else 0,
             "p95_ms": sorted_latencies[int(n * 0.95)] if n > 0 else 0,
             "sla_compliance": (n - self.violations) / n if n > 0 else 1.0,
-            "violations": self.violations
+            "violations": self.violations,
         }
 
 
@@ -264,7 +277,7 @@ class ResponseEngine:
             content=response_content,
             generated_at=utc_now(),
             latency_ms=latency_ms,
-            from_cache=False
+            from_cache=False,
         )
 
         # Cache response
@@ -301,7 +314,7 @@ class ResponseEngine:
         return {
             "queue": self.queue.stats(),
             "cache": self.cache.stats() if self.cache else None,
-            "latency": self.latency_tracker.get_stats()
+            "latency": self.latency_tracker.get_stats(),
         }
 
     async def health_check(self) -> dict[str, Any]:
@@ -312,7 +325,7 @@ class ResponseEngine:
             "queue_depth": sum(metrics["queue"]["queue_sizes"].values()),
             "cache_utilization": metrics["cache"]["utilization"] if self.cache else 0,
             "sla_compliant": metrics["latency"]["sla_compliance"] >= 0.99,
-            "metrics": metrics
+            "metrics": metrics,
         }
 
 

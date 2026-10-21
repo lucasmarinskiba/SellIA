@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 try:
     from statsmodels.tsa.exponential_smoothing.ets import ETSModel
     from statsmodels.tsa.statespace.sarimax import SARIMAX
+
     _HAS_STATSMODELS = True
 except Exception:  # noqa: BLE001
     ETSModel = None
@@ -44,7 +45,9 @@ class ETSStatsmodelsForecaster(Forecaster):
         self.sigma = self._residual_sigma(np.asarray(self.res.resid))
         return self
 
-    def predict(self, horizon, future_index, future_exog=None, quantiles=DEFAULT_QUANTILES):
+    def predict(
+        self, horizon, future_index, future_exog=None, quantiles=DEFAULT_QUANTILES
+    ):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             fc = self.res.get_forecast(horizon)
@@ -56,6 +59,7 @@ class ETSStatsmodelsForecaster(Forecaster):
         q_out = {}
         for q in quantiles:
             from app.domains.forecasting.models.base import _ppf_approx
+
             q_out[q] = np.clip(mean + _ppf_approx(q) * se, 0.0, None)
         return ForecastResult(self.name, horizon, future_index, mean, q_out)
 
@@ -78,8 +82,11 @@ class SarimaForecaster(Forecaster):
             for order, sorder in candidates:
                 try:
                     res = SARIMAX(
-                        y, order=order, seasonal_order=sorder,
-                        enforce_stationarity=False, enforce_invertibility=False,
+                        y,
+                        order=order,
+                        seasonal_order=sorder,
+                        enforce_stationarity=False,
+                        enforce_invertibility=False,
                     ).fit(disp=False)
                     if best is None or res.aic < best.aic:
                         best = res
@@ -92,7 +99,9 @@ class SarimaForecaster(Forecaster):
         self.sigma = self._residual_sigma(np.asarray(self.res.resid))
         return self
 
-    def predict(self, horizon, future_index, future_exog=None, quantiles=DEFAULT_QUANTILES):
+    def predict(
+        self, horizon, future_index, future_exog=None, quantiles=DEFAULT_QUANTILES
+    ):
         from app.domains.forecasting.models.base import _ppf_approx
 
         with warnings.catch_warnings():

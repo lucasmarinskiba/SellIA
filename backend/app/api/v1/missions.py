@@ -39,6 +39,7 @@ def get_service(
 
 # ─── Misiones ──────────────────────────────────────────────────────────────────
 
+
 @router.post("", response_model=MissionRead, status_code=status.HTTP_201_CREATED)
 async def create_mission(
     data: MissionCreate,
@@ -49,7 +50,11 @@ async def create_mission(
     return await service.create_custom(user.id, data)
 
 
-@router.post("/from-playbook/{playbook_slug}", response_model=MissionRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/from-playbook/{playbook_slug}",
+    response_model=MissionRead,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_mission_from_playbook(
     playbook_slug: str,
     request: MissionLaunchRequest,
@@ -75,10 +80,13 @@ async def list_missions(
     offset: Annotated[int, Query(ge=0)] = 0,
 ):
     """Listar misiones del usuario autenticado."""
-    return await service.list_by_user(user.id, status=status, category=category, limit=limit, offset=offset)
+    return await service.list_by_user(
+        user.id, status=status, category=category, limit=limit, offset=offset
+    )
 
 
 # ─── Diagnósticos ──────────────────────────────────────────────────────────────
+
 
 @router.post("/diagnostics/run", response_model=DiagnosticRunResponse)
 async def run_diagnostic(
@@ -95,6 +103,7 @@ async def run_diagnostic(
     info_count = sum(1 for d in diagnostics if d.severity == "info")
 
     from app.domains.missions.playbook_library import get_recommended_playbooks
+
     recommended = get_recommended_playbooks(diagnostics)
 
     return DiagnosticRunResponse(
@@ -114,7 +123,9 @@ async def list_diagnostics(
     is_resolved: Annotated[bool | None, Query()] = None,
 ):
     """Listar diagnósticos del usuario."""
-    return await service.list_diagnostics(user.id, business_id=business_id, is_resolved=is_resolved)
+    return await service.list_diagnostics(
+        user.id, business_id=business_id, is_resolved=is_resolved
+    )
 
 
 @router.post("/diagnostics/{diagnostic_id}/resolve")
@@ -131,6 +142,7 @@ async def resolve_diagnostic(
 
 
 # ─── Playbooks ─────────────────────────────────────────────────────────────────
+
 
 @router.get("/playbooks", response_model=list[PlaybookRead])
 async def list_playbooks(
@@ -156,6 +168,7 @@ async def get_playbook_detail(
 
 
 # ─── Shipping Assistant ────────────────────────────────────────────────────────
+
 
 @router.post("/shipping/recommendations")
 async def shipping_recommendations(
@@ -186,8 +199,10 @@ async def shipping_estimate_costs(
     """Estimar costos de envío."""
     assistant = ShippingConnectorAssistant()
     return assistant.estimate_shipping_costs(
-        request.get("origin"), request.get("destination"),
-        request.get("weight"), request.get("dimensions")
+        request.get("origin"),
+        request.get("destination"),
+        request.get("weight"),
+        request.get("dimensions"),
     )
 
 
@@ -202,6 +217,7 @@ async def cross_border_requirements(
 
 
 # ─── Ad Spend Assistant ────────────────────────────────────────────────────────
+
 
 @router.post("/ads/platform-recommendations")
 async def ads_platform_recommendations(
@@ -223,7 +239,7 @@ async def ads_budget_allocation(
     return assistant.generate_budget_allocation(
         request.get("monthly_budget", 500),
         request.get("business_type", "ecommerce"),
-        request.get("goal", "sales")
+        request.get("goal", "sales"),
     )
 
 
@@ -235,8 +251,7 @@ async def ads_campaign_steps(
     """Pasos para crear campaña en una plataforma."""
     assistant = AdSpendAssistant()
     return assistant.get_campaign_setup_steps(
-        request.get("platform", "meta"),
-        request.get("objective", "conversions")
+        request.get("platform", "meta"), request.get("objective", "conversions")
     )
 
 
@@ -250,7 +265,7 @@ async def ads_estimate_cpa(
     return assistant.estimate_cpa(
         request.get("business_type", "ecommerce"),
         request.get("platform", "meta"),
-        request.get("country", "AR")
+        request.get("country", "AR"),
     )
 
 
@@ -262,12 +277,12 @@ async def ads_creative_recommendations(
     """Recomendaciones de creativos por plataforma."""
     assistant = AdSpendAssistant()
     return assistant.get_ad_creatives_recommendations(
-        request.get("platform", "meta"),
-        request.get("business_type", "ecommerce")
+        request.get("platform", "meta"), request.get("business_type", "ecommerce")
     )
 
 
 # ─── Operaciones sobre misión específica ───────────────────────────────────────
+
 
 @router.get("/{mission_id}", response_model=MissionRead)
 async def get_mission(
@@ -304,9 +319,13 @@ async def approve_mission(
     service: Annotated[MissionService, Depends(get_service)],
 ):
     """Aprobar una misión propuesta."""
-    mission = await service.approve(mission_id, user.id, approve_all_steps=request.approve_all_steps)
+    mission = await service.approve(
+        mission_id, user.id, approve_all_steps=request.approve_all_steps
+    )
     if not mission:
-        raise HTTPException(status_code=404, detail="Misión no encontrada o no puede ser aprobada")
+        raise HTTPException(
+            status_code=404, detail="Misión no encontrada o no puede ser aprobada"
+        )
     return mission
 
 
@@ -319,7 +338,9 @@ async def start_mission(
     """Iniciar una misión aprobada."""
     mission = await service.start(mission_id, user.id)
     if not mission:
-        raise HTTPException(status_code=400, detail="Misión no encontrada o no está aprobada")
+        raise HTTPException(
+            status_code=400, detail="Misión no encontrada o no está aprobada"
+        )
     return mission
 
 
@@ -349,8 +370,13 @@ async def cancel_mission(
     if not mission:
         raise HTTPException(status_code=404, detail="Misión no encontrada")
     if mission.status not in ("approved", "running", "proposed"):
-        raise HTTPException(status_code=400, detail="La misión no puede ser cancelada en su estado actual")
-    updated = await service.update(mission_id, user.id, MissionUpdate(status="cancelled"))
+        raise HTTPException(
+            status_code=400,
+            detail="La misión no puede ser cancelada en su estado actual",
+        )
+    updated = await service.update(
+        mission_id, user.id, MissionUpdate(status="cancelled")
+    )
     if not updated:
         raise HTTPException(status_code=400, detail="No se pudo cancelar la misión")
     return updated
@@ -369,5 +395,6 @@ async def delete_mission(
     from sqlalchemy import delete
 
     from app.domains.missions.models import Mission as MissionModel
+
     await service.db.execute(delete(MissionModel).where(MissionModel.id == mission_id))
     await service.db.commit()

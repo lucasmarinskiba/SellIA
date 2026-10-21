@@ -16,6 +16,7 @@ Sin estas dos variables, publish_image()/publish_reel() fallan con
 InstagramNotConfiguredError en vez de simular un post exitoso — coherente
 con la regla de integridad del framework FOMO: nada se "publica" si no es real.
 """
+
 import asyncio
 import logging
 import os
@@ -43,8 +44,12 @@ class InstagramGraphPublisher:
     GRAPH_API_BASE = "https://graph.facebook.com/v19.0"
     TIMEOUT = 30
 
-    def __init__(self, business_account_id: str | None = None, access_token: str | None = None):
-        self.business_account_id = business_account_id or os.getenv("INSTAGRAM_BUSINESS_ACCOUNT_ID")
+    def __init__(
+        self, business_account_id: str | None = None, access_token: str | None = None
+    ):
+        self.business_account_id = business_account_id or os.getenv(
+            "INSTAGRAM_BUSINESS_ACCOUNT_ID"
+        )
         self.access_token = access_token or os.getenv("INSTAGRAM_ACCESS_TOKEN")
 
     def is_configured(self) -> bool:
@@ -82,7 +87,10 @@ class InstagramGraphPublisher:
 
             permalink_resp = await client.get(
                 f"{self.GRAPH_API_BASE}/{media_id}",
-                params={"fields": "permalink,timestamp", "access_token": self.access_token},
+                params={
+                    "fields": "permalink,timestamp",
+                    "access_token": self.access_token,
+                },
             )
             self._raise_for_graph_error(permalink_resp)
             permalink_data = permalink_resp.json()
@@ -93,7 +101,9 @@ class InstagramGraphPublisher:
             "posted_at": permalink_data.get("timestamp"),
         }
 
-    async def publish_reel(self, video_url: str, caption: str, cover_url: str | None = None) -> dict:
+    async def publish_reel(
+        self, video_url: str, caption: str, cover_url: str | None = None
+    ) -> dict:
         """Publica un reel. Video necesita procesamiento async -> polling de status_code."""
         self._require_configured()
 
@@ -129,7 +139,10 @@ class InstagramGraphPublisher:
 
             permalink_resp = await client.get(
                 f"{self.GRAPH_API_BASE}/{media_id}",
-                params={"fields": "permalink,timestamp", "access_token": self.access_token},
+                params={
+                    "fields": "permalink,timestamp",
+                    "access_token": self.access_token,
+                },
             )
             self._raise_for_graph_error(permalink_resp)
             permalink_data = permalink_resp.json()
@@ -141,7 +154,11 @@ class InstagramGraphPublisher:
         }
 
     async def _poll_container_ready(
-        self, client: httpx.AsyncClient, creation_id: str, max_attempts: int = 20, interval_seconds: int = 5
+        self,
+        client: httpx.AsyncClient,
+        creation_id: str,
+        max_attempts: int = 20,
+        interval_seconds: int = 5,
     ) -> str:
         for _ in range(max_attempts):
             resp = await client.get(
@@ -163,5 +180,9 @@ class InstagramGraphPublisher:
             except Exception:
                 logger.exception("_raise_for_graph_error: error inesperado")
                 detail = {"raw": response.text}
-            error_message = detail.get("error", {}).get("message", "Error desconocido de Graph API")
-            raise InstagramPublishError(f"Graph API error: {error_message}", detail=detail)
+            error_message = detail.get("error", {}).get(
+                "message", "Error desconocido de Graph API"
+            )
+            raise InstagramPublishError(
+                f"Graph API error: {error_message}", detail=detail
+            )

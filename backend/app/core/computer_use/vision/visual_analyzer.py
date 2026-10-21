@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class TextRegion:
     """Texto extraído con posición."""
+
     text: str
     x: int
     y: int
@@ -34,6 +35,7 @@ class TextRegion:
 @dataclass
 class ButtonDetection:
     """Botón detectado en pantalla."""
+
     label: str
     x: int
     y: int
@@ -47,6 +49,7 @@ class ButtonDetection:
 @dataclass
 class FormField:
     """Campo de formulario detectado."""
+
     label: str
     field_type: str  # "input", "select", "textarea", "checkbox", "radio"
     x: int
@@ -61,6 +64,7 @@ class FormField:
 @dataclass
 class LayoutRegion:
     """Región de layout (header, nav, content, footer)."""
+
     region_type: str  # "header", "nav", "content", "footer", "sidebar"
     x: int
     y: int
@@ -72,6 +76,7 @@ class LayoutRegion:
 @dataclass
 class PageAnalysis:
     """Análisis completo de página."""
+
     page_type: str  # "login", "product", "checkout", "list", "form", "unknown"
     title: str | None = None
     url: str | None = None
@@ -115,6 +120,7 @@ class VisualAnalyzer:
         """Verifica si Tesseract está disponible localmente."""
         try:
             import pytesseract
+
             pytesseract.get_tesseract_version()
             return True
         except Exception:
@@ -122,10 +128,7 @@ class VisualAnalyzer:
             return False
 
     async def analyze_screenshot(
-        self,
-        screenshot_bytes: bytes,
-        url: str | None = None,
-        backend: str = "claude"
+        self, screenshot_bytes: bytes, url: str | None = None, backend: str = "claude"
     ) -> PageAnalysis:
         """Analiza un screenshot completo.
 
@@ -151,9 +154,7 @@ class VisualAnalyzer:
                 raise ValueError(f"No vision backend available: {backend}")
 
     async def _analyze_with_claude(
-        self,
-        screenshot_bytes: bytes,
-        url: str | None = None
+        self, screenshot_bytes: bytes, url: str | None = None
     ) -> PageAnalysis:
         """Claude Vision para análisis profundo."""
         logger.info("Analyzing screenshot with Claude Vision")
@@ -226,9 +227,7 @@ Responde SOLO en JSON válido:
             raise
 
     async def _analyze_with_google_vision(
-        self,
-        screenshot_bytes: bytes,
-        url: str | None = None
+        self, screenshot_bytes: bytes, url: str | None = None
     ) -> PageAnalysis:
         """Google Cloud Vision API para OCR + object detection."""
         logger.info("Analyzing screenshot with Google Vision API")
@@ -241,8 +240,7 @@ Responde SOLO en JSON válido:
 
             # OCR
             response = await asyncio.to_thread(
-                client.document_text_detection,
-                image=image
+                client.document_text_detection, image=image
             )
 
             texts = response.text_annotations
@@ -250,8 +248,7 @@ Responde SOLO en JSON válido:
 
             # Object detection
             response_objects = await asyncio.to_thread(
-                client.object_localization,
-                image=image
+                client.object_localization, image=image
             )
 
             analysis = PageAnalysis(
@@ -259,7 +256,7 @@ Responde SOLO en JSON válido:
                 url=url,
                 all_text=all_text,
                 images_detected=len(response_objects.localized_object_annotations),
-                raw_response={"google_vision": "analyzed"}
+                raw_response={"google_vision": "analyzed"},
             )
 
             return analysis
@@ -269,9 +266,7 @@ Responde SOLO en JSON válido:
             raise
 
     async def _analyze_with_tesseract(
-        self,
-        screenshot_bytes: bytes,
-        url: str | None = None
+        self, screenshot_bytes: bytes, url: str | None = None
     ) -> PageAnalysis:
         """Tesseract OCR local para modo offline."""
         logger.info("Analyzing screenshot with Tesseract OCR")
@@ -288,7 +283,11 @@ Responde SOLO en JSON válido:
             analysis = PageAnalysis(
                 page_type="unknown",
                 url=url,
-                all_text=[TextRegion(text=text, x=0, y=0, width=100, height=100, confidence=0.7)],
+                all_text=[
+                    TextRegion(
+                        text=text, x=0, y=0, width=100, height=100, confidence=0.7
+                    )
+                ],
             )
 
             return analysis
@@ -298,9 +297,7 @@ Responde SOLO en JSON válido:
             raise
 
     def _parse_claude_response(
-        self,
-        data: dict[str, Any],
-        url: str | None = None
+        self, data: dict[str, Any], url: str | None = None
     ) -> PageAnalysis:
         """Parsea respuesta JSON de Claude."""
         # Parsear texto
@@ -311,7 +308,7 @@ Responde SOLO en JSON válido:
                 y=int(t.get("y", 0)),
                 width=int(t.get("width", 100)),
                 height=int(t.get("height", 20)),
-                confidence=t.get("confidence", 0.9)
+                confidence=t.get("confidence", 0.9),
             )
             for t in data.get("all_text", [])
         ]
@@ -326,7 +323,7 @@ Responde SOLO en JSON válido:
                 height=int(b.get("height", 40)),
                 color=b.get("color", "#000000"),
                 shape=b.get("shape", "rectangular"),
-                confidence=b.get("confidence", 0.9)
+                confidence=b.get("confidence", 0.9),
             )
             for b in data.get("buttons", [])
         ]
@@ -342,7 +339,7 @@ Responde SOLO en JSON válido:
                 height=int(f.get("height", 30)),
                 required=f.get("required", False),
                 placeholder=f.get("placeholder"),
-                confidence=f.get("confidence", 0.9)
+                confidence=f.get("confidence", 0.9),
             )
             for f in data.get("form_fields", [])
         ]
@@ -355,7 +352,7 @@ Responde SOLO en JSON válido:
                 y=int(r.get("y", 0)),
                 width=int(r.get("width", 100)),
                 height=int(r.get("height", 20)),
-                elements_count=r.get("elements_count", 0)
+                elements_count=r.get("elements_count", 0),
             )
             for r in data.get("layout_regions", [])
         ]
@@ -371,7 +368,7 @@ Responde SOLO en JSON válido:
             navigation_items=data.get("navigation_items", []),
             images_detected=data.get("images_detected", 0),
             confidence_score=data.get("confidence_score", 0.85),
-            raw_response=data
+            raw_response=data,
         )
 
     def _parse_google_text_detection(self, texts) -> list[TextRegion]:
@@ -385,54 +382,42 @@ Responde SOLO en JSON válido:
                 width = vertices[2].x - vertices[0].x
                 height = vertices[2].y - vertices[0].y
 
-                regions.append(TextRegion(
-                    text=text_annotation.description,
-                    x=int(x),
-                    y=int(y),
-                    width=int(width),
-                    height=int(height),
-                    confidence=0.9
-                ))
+                regions.append(
+                    TextRegion(
+                        text=text_annotation.description,
+                        x=int(x),
+                        y=int(y),
+                        width=int(width),
+                        height=int(height),
+                        confidence=0.9,
+                    )
+                )
         return regions
 
     async def extract_text(
-        self,
-        screenshot_bytes: bytes,
-        backend: str = "claude"
+        self, screenshot_bytes: bytes, backend: str = "claude"
     ) -> str:
         """Extrae solo el texto del screenshot."""
         analysis = await self.analyze_screenshot(screenshot_bytes, backend=backend)
         text_content = "\n".join([t.text for t in analysis.all_text])
         return text_content
 
-    async def detect_buttons(
-        self,
-        screenshot_bytes: bytes
-    ) -> list[ButtonDetection]:
+    async def detect_buttons(self, screenshot_bytes: bytes) -> list[ButtonDetection]:
         """Detecta solo botones."""
         analysis = await self.analyze_screenshot(screenshot_bytes)
         return analysis.buttons
 
-    async def detect_form_fields(
-        self,
-        screenshot_bytes: bytes
-    ) -> list[FormField]:
+    async def detect_form_fields(self, screenshot_bytes: bytes) -> list[FormField]:
         """Detecta solo campos de formulario."""
         analysis = await self.analyze_screenshot(screenshot_bytes)
         return analysis.form_fields
 
-    async def classify_page_type(
-        self,
-        screenshot_bytes: bytes
-    ) -> str:
+    async def classify_page_type(self, screenshot_bytes: bytes) -> str:
         """Clasifica el tipo de página."""
         analysis = await self.analyze_screenshot(screenshot_bytes)
         return analysis.page_type
 
-    async def get_layout_structure(
-        self,
-        screenshot_bytes: bytes
-    ) -> list[LayoutRegion]:
+    async def get_layout_structure(self, screenshot_bytes: bytes) -> list[LayoutRegion]:
         """Obtiene la estructura del layout."""
         analysis = await self.analyze_screenshot(screenshot_bytes)
         return analysis.layout_regions
@@ -452,11 +437,15 @@ Responde SOLO en JSON válido:
 
         lines.append(f"\nBUTTONS ({len(analysis.buttons)}):")
         for btn in analysis.buttons:
-            lines.append(f"  - '{btn.label}' {btn.color} @({btn.x},{btn.y}) {btn.shape}")
+            lines.append(
+                f"  - '{btn.label}' {btn.color} @({btn.x},{btn.y}) {btn.shape}"
+            )
 
         lines.append(f"\nFORM FIELDS ({len(analysis.form_fields)}):")
         for field in analysis.form_fields:
-            lines.append(f"  - '{field.label}' ({field.field_type}) @({field.x},{field.y})")
+            lines.append(
+                f"  - '{field.label}' ({field.field_type}) @({field.x},{field.y})"
+            )
 
         lines.append(f"\nLAYOUT REGIONS ({len(analysis.layout_regions)}):")
         for region in analysis.layout_regions:

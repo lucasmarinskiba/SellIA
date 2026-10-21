@@ -21,7 +21,9 @@ from app.domains.users.models import User
 router = APIRouter(prefix="/app-builder", tags=["app-builder"])
 
 
-@router.post("/generate", response_model=AppBuildJobResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/generate", response_model=AppBuildJobResponse, status_code=status.HTTP_201_CREATED
+)
 async def generate_app(
     data: AppBuildJobCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -63,7 +65,12 @@ async def get_job(
     from sqlalchemy import select
 
     from app.domains.agents.app_builder.models import AppFeature
-    result = await db.execute(select(AppFeature).where(AppFeature.job_id == job_id).order_by(AppFeature.priority.desc()))
+
+    result = await db.execute(
+        select(AppFeature)
+        .where(AppFeature.job_id == job_id)
+        .order_by(AppFeature.priority.desc())
+    )
     features = result.scalars().all()
     base = {
         "id": job.id,

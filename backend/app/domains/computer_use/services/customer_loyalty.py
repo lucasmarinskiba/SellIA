@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 class EmailSequenceType(str, Enum):
     """Tipos de secuencias de email."""
+
     WELCOME = "welcome"  # Post-compra
     ONBOARDING = "onboarding"  # Introducción
     UPSELL = "upsell"  # Vender más
@@ -25,6 +26,7 @@ class EmailSequenceType(str, Enum):
 
 class CustomerSegment(str, Enum):
     """Segmentación de clientes."""
+
     NEW = "new"  # <30 days
     ACTIVE = "active"  # Recent activity
     AT_RISK = "at_risk"  # Inactivos
@@ -205,7 +207,10 @@ class CustomerLoyaltyEngine:
         try:
             # Obtener o crear sequence
             welcome_seq = list(self.sequences.values())
-            if not welcome_seq or welcome_seq[0].sequence_type != EmailSequenceType.WELCOME:
+            if (
+                not welcome_seq
+                or welcome_seq[0].sequence_type != EmailSequenceType.WELCOME
+            ):
                 welcome_seq = await self.create_email_sequence(
                     name="Welcome Sequence",
                     sequence_type=EmailSequenceType.WELCOME,
@@ -326,7 +331,9 @@ class CustomerLoyaltyEngine:
                 else:
                     stats["failed"] += 1
 
-            self.logger.info(f"Win-back campaign: {stats['sent']} sent, {stats['failed']} failed")
+            self.logger.info(
+                f"Win-back campaign: {stats['sent']} sent, {stats['failed']} failed"
+            )
 
             return stats
 
@@ -345,7 +352,9 @@ class CustomerLoyaltyEngine:
             # LTV = (Avg Purchase Value × Purchase Frequency) / Churn Rate
             total_spent = sum(p.get("amount", 0) for p in purchases)
             avg_purchase = total_spent / len(purchases) if purchases else 0
-            purchase_frequency = len(purchases) / 12  # per month (assuming 1 year history)
+            purchase_frequency = (
+                len(purchases) / 12
+            )  # per month (assuming 1 year history)
 
             ltv = (avg_purchase * purchase_frequency) / (churn_probability or 0.1)
 

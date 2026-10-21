@@ -57,7 +57,9 @@ class GoogleCalendarConnector:
         )
 
         flow.redirect_uri = self.redirect_uri
-        auth_url, _state = flow.authorization_url(access_type="offline", prompt="consent")
+        auth_url, _state = flow.authorization_url(
+            access_type="offline", prompt="consent"
+        )
 
         return auth_url
 
@@ -115,21 +117,33 @@ class GoogleCalendarConnector:
             end_time = datetime.combine(date.date(), (working_hours[1], 0))
 
             # Obtener eventos del día
-            events_result = service.events().list(
-                calendarId="primary",
-                timeMin=start_time.isoformat() + "Z",
-                timeMax=end_time.isoformat() + "Z",
-                singleEvents=True,
-                orderBy="startTime",
-            ).execute()
+            events_result = (
+                service.events()
+                .list(
+                    calendarId="primary",
+                    timeMin=start_time.isoformat() + "Z",
+                    timeMax=end_time.isoformat() + "Z",
+                    singleEvents=True,
+                    orderBy="startTime",
+                )
+                .execute()
+            )
 
             events = events_result.get("items", [])
 
             # Calcular slots libres
-            busy_times = [(
-                datetime.fromisoformat(e["start"].get("dateTime", "").replace("Z", "")),
-                datetime.fromisoformat(e["end"].get("dateTime", "").replace("Z", "")),
-            ) for e in events if "dateTime" in e["start"]]
+            busy_times = [
+                (
+                    datetime.fromisoformat(
+                        e["start"].get("dateTime", "").replace("Z", "")
+                    ),
+                    datetime.fromisoformat(
+                        e["end"].get("dateTime", "").replace("Z", "")
+                    ),
+                )
+                for e in events
+                if "dateTime" in e["start"]
+            ]
 
             slots = []
             current = start_time
@@ -138,16 +152,23 @@ class GoogleCalendarConnector:
                 # Verificar si slot está libre
                 is_free = True
                 for busy_start, busy_end in busy_times:
-                    if current < busy_end and current + timedelta(minutes=duration_minutes) > busy_start:
+                    if (
+                        current < busy_end
+                        and current + timedelta(minutes=duration_minutes) > busy_start
+                    ):
                         is_free = False
                         break
 
                 if is_free:
-                    slots.append({
-                        "start": current.isoformat(),
-                        "end": (current + timedelta(minutes=duration_minutes)).isoformat(),
-                        "duration_minutes": duration_minutes,
-                    })
+                    slots.append(
+                        {
+                            "start": current.isoformat(),
+                            "end": (
+                                current + timedelta(minutes=duration_minutes)
+                            ).isoformat(),
+                            "duration_minutes": duration_minutes,
+                        }
+                    )
 
                 current += timedelta(minutes=30)
 
@@ -204,12 +225,16 @@ class GoogleCalendarConnector:
                     "entryPoints": [{"entryPointType": "video", "uri": meeting_url}]
                 }
 
-            event_result = service.events().insert(
-                calendarId="primary",
-                body=event,
-                conferenceDataVersion=1,
-                sendNotifications=True,
-            ).execute()
+            event_result = (
+                service.events()
+                .insert(
+                    calendarId="primary",
+                    body=event,
+                    conferenceDataVersion=1,
+                    sendNotifications=True,
+                )
+                .execute()
+            )
 
             event_id = event_result.get("id")
 

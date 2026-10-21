@@ -73,9 +73,7 @@ class APIKeyService:
             NOTE: Only return plaintext to user once. Never log it.
         """
         # Check tenant exists
-        tenant = await self.db.execute(
-            select(Tenant).where(Tenant.id == tenant_id)
-        )
+        tenant = await self.db.execute(select(Tenant).where(Tenant.id == tenant_id))
         if not tenant.scalar_one_or_none():
             raise AppException("Tenant not found", status_code=404)
 
@@ -91,9 +89,7 @@ class APIKeyService:
         )
         active_keys = len(key_count.all())
 
-        tenant_obj = await self.db.execute(
-            select(Tenant).where(Tenant.id == tenant_id)
-        )
+        tenant_obj = await self.db.execute(select(Tenant).where(Tenant.id == tenant_id))
         tenant_obj = tenant_obj.scalar_one()
 
         if active_keys >= tenant_obj.max_api_keys:
@@ -177,7 +173,9 @@ class APIKeyService:
             return None
 
         # Check IP whitelist
-        if (api_key.ip_whitelist and ip_address) and not self._check_ip_whitelist(ip_address, api_key.ip_whitelist):
+        if (api_key.ip_whitelist and ip_address) and not self._check_ip_whitelist(
+            ip_address, api_key.ip_whitelist
+        ):
             logger.warning(
                 "API key access denied by IP whitelist",
                 extra={
@@ -326,6 +324,7 @@ class APIKeyService:
         """
         try:
             import ipaddress
+
             client = ipaddress.ip_address(client_ip)
             for cidr in whitelist:
                 if client in ipaddress.ip_network(cidr, strict=False):

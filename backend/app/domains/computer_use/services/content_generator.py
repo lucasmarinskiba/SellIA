@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 class ContentStyle(str, Enum):
     """Estilos de contenido."""
+
     EDUCATIONAL = "educational"  # Tips, how-to
     MOTIVATIONAL = "motivational"  # Inspiración
     ENTERTAINING = "entertaining"  # Diversión
@@ -35,7 +36,7 @@ class ContentTemplate:
             "No es suerte, es {strategy}.\n\n{explanation}\n\n{hashtags}",
         ],
         ContentStyle.TESTIMONIAL: [
-            "\"Ganamos {amount} en {timeframe}\" - {customer}\n\n{story}\n\n¿Vos querés lo mismo?\n\n{hashtags}",
+            '"Ganamos {amount} en {timeframe}" - {customer}\n\n{story}\n\n¿Vos querés lo mismo?\n\n{hashtags}',
             "Cliente: {name}\nResultado: {result}\nTiempo: {time}\n\n{detail}\n\n{hashtags}",
         ],
         ContentStyle.ENTERTAINING: [
@@ -72,7 +73,9 @@ class ContentTemplate:
         """Genera caption automático."""
         try:
             # Seleccionar template
-            templates = self.TEMPLATES.get(style, self.TEMPLATES[ContentStyle.EDUCATIONAL])
+            templates = self.TEMPLATES.get(
+                style, self.TEMPLATES[ContentStyle.EDUCATIONAL]
+            )
             template = templates[0]  # Usar primer template por ahora
 
             # Contexto base
@@ -120,7 +123,9 @@ class ContentTemplate:
             if len(caption) > 2200:
                 caption = caption[:2197] + "..."
 
-            self.logger.info(f"Generated caption: {len(caption)} chars | style={style.value}")
+            self.logger.info(
+                f"Generated caption: {len(caption)} chars | style={style.value}"
+            )
 
             return caption
 
@@ -131,6 +136,7 @@ class ContentTemplate:
     def _get_tip_number(self) -> str:
         """Random tip number 1-10."""
         import random
+
         return str(random.randint(1, 10))
 
     def _generate_hashtags(self, trending_topic: str, platform: str) -> str:

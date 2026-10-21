@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 class ProductInput(BaseModel):
     """Información producto para análisis."""
+
     product_name: str
     product_description: str
     price: float
@@ -34,6 +35,7 @@ class ProductInput(BaseModel):
 
 class PerformanceInput(BaseModel):
     """Datos performance para optimización."""
+
     conversion_rate: float
     mrr: float
     reviews_avg: float
@@ -43,6 +45,7 @@ class PerformanceInput(BaseModel):
 
 class IntelligenceReport(BaseModel):
     """Reporte completo inteligencia."""
+
     market_analysis: dict[str, Any]
     strategy: dict[str, Any]
     recommendations: list[str]
@@ -179,7 +182,9 @@ async def optimize_strategy(
     """
 
     try:
-        logger.info(f"Optimizando estrategia para: {product_name}, iteración {iteration}")
+        logger.info(
+            f"Optimizando estrategia para: {product_name}, iteración {iteration}"
+        )
 
         performance_data = {
             "conversion_rate": performance.conversion_rate,
@@ -213,9 +218,9 @@ async def optimize_strategy(
             "recommended_changes": optimized.get("changes_recommended", []),
             "escalation_plan": escalation,
             "next_iteration_focus": (
-                "A/B test messaging" if performance.conversion_rate < 2
-                else "Scale winners" if performance.mrr > 3000
-                else "Improve retention"
+                "A/B test messaging"
+                if performance.conversion_rate < 2
+                else "Scale winners" if performance.mrr > 3000 else "Improve retention"
             ),
             "optimized_strategy": optimized,
         }

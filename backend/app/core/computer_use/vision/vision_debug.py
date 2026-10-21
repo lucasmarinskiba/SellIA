@@ -26,7 +26,7 @@ class VisionDebugAnnotator:
     def annotate_with_buttons(
         screenshot_bytes: bytes,
         buttons: list[dict[str, Any]],
-        output_path: str | None = None
+        output_path: str | None = None,
     ) -> bytes:
         """Anota screenshot mostrando botones detectados.
 
@@ -44,7 +44,7 @@ class VisionDebugAnnotator:
             from PIL import Image, ImageDraw
 
             image = Image.open(io.BytesIO(screenshot_bytes))
-            draw = ImageDraw.Draw(image, 'RGBA')
+            draw = ImageDraw.Draw(image, "RGBA")
 
             for btn in buttons:
                 x = btn.get("x", 0)
@@ -53,16 +53,12 @@ class VisionDebugAnnotator:
                 height = btn.get("height", 30)
 
                 # Dibujar rectángulo alrededor del botón
-                draw.rectangle(
-                    [x, y, x + width, y + height],
-                    outline='red',
-                    width=3
-                )
+                draw.rectangle([x, y, x + width, y + height], outline="red", width=3)
 
                 # Dibujar label
                 label = btn.get("label", "")
                 try:
-                    draw.text((x + 5, y + 5), label, fill='red')
+                    draw.text((x + 5, y + 5), label, fill="red")
                 except Exception:
                     logger.exception("annotate_with_buttons: error inesperado")
 
@@ -83,7 +79,7 @@ class VisionDebugAnnotator:
     def annotate_with_form_fields(
         screenshot_bytes: bytes,
         fields: list[dict[str, Any]],
-        output_path: str | None = None
+        output_path: str | None = None,
     ) -> bytes:
         """Anota campos de formulario."""
         try:
@@ -92,7 +88,7 @@ class VisionDebugAnnotator:
             from PIL import Image, ImageDraw
 
             image = Image.open(io.BytesIO(screenshot_bytes))
-            draw = ImageDraw.Draw(image, 'RGBA')
+            draw = ImageDraw.Draw(image, "RGBA")
 
             for field in fields:
                 x = field.get("x", 0)
@@ -112,11 +108,7 @@ class VisionDebugAnnotator:
                 color = color_map.get(field_type, "gray")
 
                 # Dibujar rectángulo
-                draw.rectangle(
-                    [x, y, x + width, y + height],
-                    outline=color,
-                    width=2
-                )
+                draw.rectangle([x, y, x + width, y + height], outline=color, width=2)
 
                 # Dibujar label con tipo
                 label_text = f"{label} ({field_type})"
@@ -141,7 +133,7 @@ class VisionDebugAnnotator:
     def annotate_with_all_elements(
         screenshot_bytes: bytes,
         analysis: dict[str, Any],
-        output_path: str | None = None
+        output_path: str | None = None,
     ) -> bytes:
         """Anota con TODOS los elementos detectados."""
         try:
@@ -150,7 +142,7 @@ class VisionDebugAnnotator:
             from PIL import Image, ImageDraw
 
             image = Image.open(io.BytesIO(screenshot_bytes))
-            draw = ImageDraw.Draw(image, 'RGBA')
+            draw = ImageDraw.Draw(image, "RGBA")
 
             # Botones (rojo)
             for btn in analysis.get("buttons", []):
@@ -184,11 +176,7 @@ class VisionDebugAnnotator:
         width = element.get("width", 50)
         height = element.get("height", 30)
 
-        draw.rectangle(
-            [x, y, x + width, y + height],
-            outline=color,
-            width=2
-        )
+        draw.rectangle([x, y, x + width, y + height], outline=color, width=2)
 
         # Pequeño label en corner
         try:
@@ -198,9 +186,7 @@ class VisionDebugAnnotator:
 
     @staticmethod
     def create_comparison_image(
-        before_bytes: bytes,
-        after_bytes: bytes,
-        output_path: str | None = None
+        before_bytes: bytes, after_bytes: bytes, output_path: str | None = None
     ) -> bytes:
         """Crea imagen comparativa before/after."""
         try:
@@ -217,9 +203,7 @@ class VisionDebugAnnotator:
 
             # Crear imagen side-by-side
             comparison = Image.new(
-                'RGB',
-                (size[0] * 2 + 20, size[1] + 40),
-                color='white'
+                "RGB", (size[0] * 2 + 20, size[1] + 40), color="white"
             )
 
             # Pegar imágenes
@@ -229,9 +213,10 @@ class VisionDebugAnnotator:
             # Agregar labels
             try:
                 from PIL import ImageDraw
+
                 draw = ImageDraw.Draw(comparison)
-                draw.text((20, 10), "BEFORE", fill='black')
-                draw.text((size[0] + 20, 10), "AFTER", fill='black')
+                draw.text((20, 10), "BEFORE", fill="black")
+                draw.text((size[0] + 20, 10), "AFTER", fill="black")
             except Exception:
                 logger.exception("create_comparison_image: error inesperado")
 
@@ -263,7 +248,7 @@ class VisionDebugLogger:
         step: int,
         screenshot_path: str | None,
         analysis: dict[str, Any],
-        action_taken: str | None = None
+        action_taken: str | None = None,
     ) -> None:
         """Registra análisis de screenshot."""
         entry = {
@@ -288,7 +273,7 @@ class VisionDebugLogger:
         step: int,
         search_query: str,
         found_element: dict[str, Any] | None = None,
-        confidence: float = 0.0
+        confidence: float = 0.0,
     ) -> None:
         """Registra búsqueda de elemento."""
         entry = {
@@ -310,7 +295,7 @@ class VisionDebugLogger:
         action: str,
         target: str | None,
         result: str,
-        error: str | None = None
+        error: str | None = None,
     ) -> None:
         """Registra ejecución de acción."""
         entry = {
@@ -331,7 +316,7 @@ class VisionDebugLogger:
         step: int,
         action: str,
         confirmation_result: str,
-        details: dict[str, Any] | None = None
+        details: dict[str, Any] | None = None,
     ) -> None:
         """Registra confirmación de acción."""
         entry = {
@@ -349,8 +334,8 @@ class VisionDebugLogger:
     def _write_log_entry(self, entry: dict[str, Any]) -> None:
         """Escribe entrada en log."""
         try:
-            with open(self.log_file, 'a') as f:
-                f.write(json.dumps(entry) + '\n')
+            with open(self.log_file, "a") as f:
+                f.write(json.dumps(entry) + "\n")
         except Exception:
             logger.exception("Failed to write log entry")
 
@@ -393,9 +378,9 @@ class VisionDebugLogger:
                 lines.append("\nLast Event:")
                 lines.append(f"  Time: {last.get('timestamp')}")
                 lines.append(f"  Type: {last.get('event_type')}")
-                if 'action' in last:
+                if "action" in last:
                     lines.append(f"  Action: {last.get('action')}")
-                if 'result' in last:
+                if "result" in last:
                     lines.append(f"  Result: {last.get('result')}")
 
         return "\n".join(lines)
@@ -416,8 +401,7 @@ class VisionComparator:
 
     @staticmethod
     def compare_analyses(
-        analysis1: dict[str, Any],
-        analysis2: dict[str, Any]
+        analysis1: dict[str, Any], analysis2: dict[str, Any]
     ) -> dict[str, Any]:
         """Compara dos análisis."""
         return {
@@ -428,13 +412,15 @@ class VisionComparator:
                 len(analysis2.get("buttons", [])) - len(analysis1.get("buttons", []))
             ),
             "fields_diff": (
-                len(analysis2.get("form_fields", [])) - len(analysis1.get("form_fields", []))
+                len(analysis2.get("form_fields", []))
+                - len(analysis1.get("form_fields", []))
             ),
             "text_regions_diff": (
                 len(analysis2.get("all_text", [])) - len(analysis1.get("all_text", []))
             ),
             "confidence_diff": (
-                analysis2.get("confidence_score", 0) - analysis1.get("confidence_score", 0)
+                analysis2.get("confidence_score", 0)
+                - analysis1.get("confidence_score", 0)
             ),
         }
 

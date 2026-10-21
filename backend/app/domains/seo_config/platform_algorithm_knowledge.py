@@ -24,7 +24,9 @@ from dataclasses import dataclass, field
 OFFICIAL = "official"
 COMMUNITY = "community"
 
-MEASURED = "measured"  # a connector fetches real ranking signals from the platform's API
+MEASURED = (
+    "measured"  # a connector fetches real ranking signals from the platform's API
+)
 WEB_AUDIT = "web_audit"  # own store / generic web: scored by the real on-page audit (web_presence)
 GUIDANCE_ONLY = "guidance_only"  # no connector or audit path yet: guidance, not a score
 
@@ -54,7 +56,10 @@ class PlatformProfile:
 
 _PROFILES: tuple[PlatformProfile, ...] = (
     PlatformProfile(
-        key="mercado-libre", label="Mercado Libre", kind="marketplace", coverage=MEASURED,
+        key="mercado-libre",
+        label="Mercado Libre",
+        kind="marketplace",
+        coverage=MEASURED,
         aliases=("mercadolibre", "mercado_libre", "meli", "ml"),
         summary=(
             "El orden de búsqueda combina reputación del vendedor, calidad de la ficha, competitividad "
@@ -66,28 +71,51 @@ _PROFILES: tuple[PlatformProfile, ...] = (
             "salud por publicación (Reputation Health Gauge) y la mecánica de catálogo; el resto es consenso de vendedores."
         ),
         factors=(
-            RankingFactor("Reputación del vendedor", OFFICIAL,
-                          "Ventana de 60 días (con 40+ ventas). Reclamos por debajo de 3% (1% para MercadoLíder), "
-                          "cancelaciones propias, despachos tarde (más de 10% penaliza) y mediaciones.",
-                          ("seller_claims_rate", "seller_cancellation_rate", "seller_reputation_level", "seller_has_unhealthy_items")),
-            RankingFactor("Catálogo y Buy Box", OFFICIAL,
-                          "En productos de catálogo la ficha la fija Mercado Libre; los vendedores solo compiten en "
-                          "precio, cuotas, envío y garantía por la oferta destacada.",
-                          ("buy_box_winner",)),
-            RankingFactor("Logística (Full / Flex)", OFFICIAL,
-                          "Mercado Envíos Full y Flex reciben distintivos de envío preferenciales; el peso exacto en el ranking no está publicado.",
-                          ("shipping_tier",)),
-            RankingFactor("Calidad de la ficha", COMMUNITY,
-                          "Título con palabras clave reales y atributos (sin relleno), categoría correcta, atributos "
-                          "requeridos completos y fotos suficientes (se recomiendan 6 o más).",
-                          ("listing_completeness_pct", "title_length_score", "photo_count")),
-            RankingFactor("Respuesta a preguntas", COMMUNITY,
-                          "Responder rápido sube la confianza y la conversión. Los umbrales (más de 90% respondidas, "
-                          "promedio menor a 60 min) son buena práctica de vendedores, no un SLA de Mercado Libre.",
-                          ("question_response_latency_minutes", "question_answer_rate_pct")),
-            RankingFactor("Conversión visitas → ventas", COMMUNITY,
-                          "Se la describe como la señal que más rápido mueve el ranking. SellIA mide las ventas con órdenes reales; "
-                          "los clics no los expone Mercado Libre a los vendedores."),
+            RankingFactor(
+                "Reputación del vendedor",
+                OFFICIAL,
+                "Ventana de 60 días (con 40+ ventas). Reclamos por debajo de 3% (1% para MercadoLíder), "
+                "cancelaciones propias, despachos tarde (más de 10% penaliza) y mediaciones.",
+                (
+                    "seller_claims_rate",
+                    "seller_cancellation_rate",
+                    "seller_reputation_level",
+                    "seller_has_unhealthy_items",
+                ),
+            ),
+            RankingFactor(
+                "Catálogo y Buy Box",
+                OFFICIAL,
+                "En productos de catálogo la ficha la fija Mercado Libre; los vendedores solo compiten en "
+                "precio, cuotas, envío y garantía por la oferta destacada.",
+                ("buy_box_winner",),
+            ),
+            RankingFactor(
+                "Logística (Full / Flex)",
+                OFFICIAL,
+                "Mercado Envíos Full y Flex reciben distintivos de envío preferenciales; el peso exacto en el ranking no está publicado.",
+                ("shipping_tier",),
+            ),
+            RankingFactor(
+                "Calidad de la ficha",
+                COMMUNITY,
+                "Título con palabras clave reales y atributos (sin relleno), categoría correcta, atributos "
+                "requeridos completos y fotos suficientes (se recomiendan 6 o más).",
+                ("listing_completeness_pct", "title_length_score", "photo_count"),
+            ),
+            RankingFactor(
+                "Respuesta a preguntas",
+                COMMUNITY,
+                "Responder rápido sube la confianza y la conversión. Los umbrales (más de 90% respondidas, "
+                "promedio menor a 60 min) son buena práctica de vendedores, no un SLA de Mercado Libre.",
+                ("question_response_latency_minutes", "question_answer_rate_pct"),
+            ),
+            RankingFactor(
+                "Conversión visitas → ventas",
+                COMMUNITY,
+                "Se la describe como la señal que más rápido mueve el ranking. SellIA mide las ventas con órdenes reales; "
+                "los clics no los expone Mercado Libre a los vendedores.",
+            ),
         ),
         not_measurable=(
             "Precio frente a la competencia: no hay una fuente de precios de competidores conectada.",
@@ -103,7 +131,10 @@ _PROFILES: tuple[PlatformProfile, ...] = (
         ),
     ),
     PlatformProfile(
-        key="amazon", label="Amazon", kind="marketplace", coverage=MEASURED,
+        key="amazon",
+        label="Amazon",
+        kind="marketplace",
+        coverage=MEASURED,
         aliases=("amazon-seller", "amazon_seller", "amazon-sp-api"),
         summary=(
             "Amazon privilegia listings comprables, con stock y precio competitivo, de vendedores con métricas de "
@@ -114,30 +145,60 @@ _PROFILES: tuple[PlatformProfile, ...] = (
             "de salud de cuenta con umbrales y los factores generales de elegibilidad del Featured Offer."
         ),
         factors=(
-            RankingFactor("Salud de la cuenta (ODR, envíos tardíos, tracking válido)", OFFICIAL,
-                          "Order Defect Rate por debajo de 1%, envíos tardíos por debajo de 4% y tracking válido por encima de 95%. "
-                          "Perder estándar puede costar el Buy Box hasta 60 días.",
-                          ("account_odr_pct", "account_lsr_pct", "account_vtr_pct")),
-            RankingFactor("Precio para el Featured Offer", OFFICIAL,
-                          "Amazon calcula el precio esperado para ganar el Featured Offer (FOEP). El precio es un factor real, "
-                          "pero no el principal: las métricas de cuenta pueden descalificar aunque el precio sea el mejor.",
-                          ("price_vs_foep_ratio", "foep_price", "current_price")),
-            RankingFactor("Estado del listing", OFFICIAL,
-                          "Un listing suprimido o no BUYABLE no puede ganar el Buy Box.",
-                          ("listing_buyable", "listing_issues_count")),
-            RankingFactor("Stock disponible", OFFICIAL,
-                          "Las ofertas sin inventario pierden visibilidad y elegibilidad.", ("in_stock",)),
-            RankingFactor("Método de cumplimiento (FBA / FBM)", COMMUNITY,
-                          "FBA y Seller-Fulfilled Prime suelen recibir trato preferencial porque Amazon controla la promesa de entrega; no está publicado.",
-                          ("fulfillment_method",)),
-            RankingFactor("Contenido del catálogo", COMMUNITY,
-                          "Título, bullets e imágenes. Amazon indica que A+ Content se asocia a mayor conversión, no a un impulso directo del ranking.",
-                          ("catalog_completeness_pct", "bullet_count", "image_count", "title_length")),
-            RankingFactor("Ranking de ventas (BSR)", OFFICIAL,
-                          "Métrica real de ranking por categoría; sirve como indicador de velocidad de ventas, sin escala absoluta para puntuarla.",
-                          ("best_sellers_rank",)),
-            RankingFactor("Conversión, velocidad de ventas y reseñas", COMMUNITY,
-                          "El consenso los ubica entre los factores más pesados. SellIA no los puntúa hoy."),
+            RankingFactor(
+                "Salud de la cuenta (ODR, envíos tardíos, tracking válido)",
+                OFFICIAL,
+                "Order Defect Rate por debajo de 1%, envíos tardíos por debajo de 4% y tracking válido por encima de 95%. "
+                "Perder estándar puede costar el Buy Box hasta 60 días.",
+                ("account_odr_pct", "account_lsr_pct", "account_vtr_pct"),
+            ),
+            RankingFactor(
+                "Precio para el Featured Offer",
+                OFFICIAL,
+                "Amazon calcula el precio esperado para ganar el Featured Offer (FOEP). El precio es un factor real, "
+                "pero no el principal: las métricas de cuenta pueden descalificar aunque el precio sea el mejor.",
+                ("price_vs_foep_ratio", "foep_price", "current_price"),
+            ),
+            RankingFactor(
+                "Estado del listing",
+                OFFICIAL,
+                "Un listing suprimido o no BUYABLE no puede ganar el Buy Box.",
+                ("listing_buyable", "listing_issues_count"),
+            ),
+            RankingFactor(
+                "Stock disponible",
+                OFFICIAL,
+                "Las ofertas sin inventario pierden visibilidad y elegibilidad.",
+                ("in_stock",),
+            ),
+            RankingFactor(
+                "Método de cumplimiento (FBA / FBM)",
+                COMMUNITY,
+                "FBA y Seller-Fulfilled Prime suelen recibir trato preferencial porque Amazon controla la promesa de entrega; no está publicado.",
+                ("fulfillment_method",),
+            ),
+            RankingFactor(
+                "Contenido del catálogo",
+                COMMUNITY,
+                "Título, bullets e imágenes. Amazon indica que A+ Content se asocia a mayor conversión, no a un impulso directo del ranking.",
+                (
+                    "catalog_completeness_pct",
+                    "bullet_count",
+                    "image_count",
+                    "title_length",
+                ),
+            ),
+            RankingFactor(
+                "Ranking de ventas (BSR)",
+                OFFICIAL,
+                "Métrica real de ranking por categoría; sirve como indicador de velocidad de ventas, sin escala absoluta para puntuarla.",
+                ("best_sellers_rank",),
+            ),
+            RankingFactor(
+                "Conversión, velocidad de ventas y reseñas",
+                COMMUNITY,
+                "El consenso los ubica entre los factores más pesados. SellIA no los puntúa hoy.",
+            ),
         ),
         not_measurable=(
             "Reseñas (calificación, cantidad y velocidad): no se confirmó un endpoint de la API que las entregue.",
@@ -152,7 +213,10 @@ _PROFILES: tuple[PlatformProfile, ...] = (
         ),
     ),
     PlatformProfile(
-        key="hotmart", label="Hotmart", kind="marketplace", coverage=MEASURED,
+        key="hotmart",
+        label="Hotmart",
+        kind="marketplace",
+        coverage=MEASURED,
         aliases=("hotmart-producer", "hotmart_producer"),
         summary=(
             "El Mercado de Afiliados filtra y ordena por Temperature (desempeño del producto) y exige un Blueprint "
@@ -164,17 +228,36 @@ _PROFILES: tuple[PlatformProfile, ...] = (
             "No publica las fórmulas."
         ),
         factors=(
-            RankingFactor("Reembolsos", OFFICIAL,
-                          "La tasa de reembolso es uno de los insumos documentados de la Temperature.", ("refund_rate_pct",)),
-            RankingFactor("Frecuencia y recencia de ventas", OFFICIAL,
-                          "También insumo documentado de la Temperature.", ("sales_velocity",)),
-            RankingFactor("Contracargos y disputas", COMMUNITY,
-                          "No es un insumo documentado; se los vigila por su efecto en la reputación del productor.", ("chargeback_rate_pct",)),
-            RankingFactor("Finalización de la compra", COMMUNITY,
-                          "Proxy de fricción del checkout: ventas pagas sobre intentos de compra.", ("approval_rate_pct",)),
-            RankingFactor("Blueprint (calidad del producto y su página)", OFFICIAL,
-                          "Evalúa nombre, categoría, organización del contenido, página de ventas, relación precio-valor, "
-                          "competitividad de la comisión y materiales para afiliados."),
+            RankingFactor(
+                "Reembolsos",
+                OFFICIAL,
+                "La tasa de reembolso es uno de los insumos documentados de la Temperature.",
+                ("refund_rate_pct",),
+            ),
+            RankingFactor(
+                "Frecuencia y recencia de ventas",
+                OFFICIAL,
+                "También insumo documentado de la Temperature.",
+                ("sales_velocity",),
+            ),
+            RankingFactor(
+                "Contracargos y disputas",
+                COMMUNITY,
+                "No es un insumo documentado; se los vigila por su efecto en la reputación del productor.",
+                ("chargeback_rate_pct",),
+            ),
+            RankingFactor(
+                "Finalización de la compra",
+                COMMUNITY,
+                "Proxy de fricción del checkout: ventas pagas sobre intentos de compra.",
+                ("approval_rate_pct",),
+            ),
+            RankingFactor(
+                "Blueprint (calidad del producto y su página)",
+                OFFICIAL,
+                "Evalúa nombre, categoría, organización del contenido, página de ventas, relación precio-valor, "
+                "competitividad de la comisión y materiales para afiliados.",
+            ),
         ),
         not_measurable=(
             "La Temperature y el Blueprint reales: Hotmart no los expone por ninguna API. SellIA calcula proxies con tus transacciones reales.",
@@ -188,7 +271,10 @@ _PROFILES: tuple[PlatformProfile, ...] = (
         ),
     ),
     PlatformProfile(
-        key="instagram", label="Instagram", kind="social", coverage=MEASURED,
+        key="instagram",
+        label="Instagram",
+        kind="social",
+        coverage=MEASURED,
         aliases=("ig", "instagram-business", "instagram_business"),
         summary=(
             "Instagram pondera cuánto se mira y se comparte el contenido, no cuántos likes junta. Los Reels se rankean por "
@@ -199,20 +285,42 @@ _PROFILES: tuple[PlatformProfile, ...] = (
             "envíos por DM por alcance y likes por alcance. No publica los pesos exactos."
         ),
         factors=(
-            RankingFactor("Envíos por DM por alcance", OFFICIAL,
-                          "Meta indicó que los envíos pesan más que los likes para llegar a quienes no te siguen; la magnitud exacta no es oficial.",
-                          ("sends_per_reach",)),
-            RankingFactor("Tiempo de reproducción y repeticiones (Reels)", OFFICIAL,
-                          "Los Reels se ordenan por tiempo total visto y repeticiones, no por cantidad de vistas.",
-                          ("watch_time_seconds", "replay_rate_pct")),
-            RankingFactor("Likes por alcance", OFFICIAL, "Una de las tres señales principales que Meta nombró.", ("likes_per_reach",)),
-            RankingFactor("Guardados y comentarios", COMMUNITY,
-                          "Se los trata como señales de calidad; Meta no dio su peso.", ("saves_per_reach", "comments_per_reach")),
-            RankingFactor("Palabras clave en descripción, bio y texto alternativo", OFFICIAL,
-                          "Meta indicó que hoy impulsan el descubrimiento en la búsqueda; los hashtags perdieron peso.",
-                          ("alt_text_present", "hashtag_count")),
-            RankingFactor("Regularidad de publicación", COMMUNITY,
-                          "Muy repetida por la comunidad; Meta no confirmó su efecto.", ("posting_cadence_days",)),
+            RankingFactor(
+                "Envíos por DM por alcance",
+                OFFICIAL,
+                "Meta indicó que los envíos pesan más que los likes para llegar a quienes no te siguen; la magnitud exacta no es oficial.",
+                ("sends_per_reach",),
+            ),
+            RankingFactor(
+                "Tiempo de reproducción y repeticiones (Reels)",
+                OFFICIAL,
+                "Los Reels se ordenan por tiempo total visto y repeticiones, no por cantidad de vistas.",
+                ("watch_time_seconds", "replay_rate_pct"),
+            ),
+            RankingFactor(
+                "Likes por alcance",
+                OFFICIAL,
+                "Una de las tres señales principales que Meta nombró.",
+                ("likes_per_reach",),
+            ),
+            RankingFactor(
+                "Guardados y comentarios",
+                COMMUNITY,
+                "Se los trata como señales de calidad; Meta no dio su peso.",
+                ("saves_per_reach", "comments_per_reach"),
+            ),
+            RankingFactor(
+                "Palabras clave en descripción, bio y texto alternativo",
+                OFFICIAL,
+                "Meta indicó que hoy impulsan el descubrimiento en la búsqueda; los hashtags perdieron peso.",
+                ("alt_text_present", "hashtag_count"),
+            ),
+            RankingFactor(
+                "Regularidad de publicación",
+                COMMUNITY,
+                "Muy repetida por la comunidad; Meta no confirmó su efecto.",
+                ("posting_cadence_days",),
+            ),
         ),
         not_measurable=(
             "Cobertura de palabras clave objetivo en la descripción: requiere una lista de palabras clave por negocio que aún no existe.",
@@ -225,7 +333,10 @@ _PROFILES: tuple[PlatformProfile, ...] = (
         ),
     ),
     PlatformProfile(
-        key="shopify", label="Shopify", kind="own_store", coverage=WEB_AUDIT,
+        key="shopify",
+        label="Shopify",
+        kind="own_store",
+        coverage=WEB_AUDIT,
         aliases=("shopify-store",),
         summary=(
             "Tu tienda vive en tu propio dominio: no hay un ranking de marketplace que compare vendedores. Se posiciona "
@@ -236,12 +347,20 @@ _PROFILES: tuple[PlatformProfile, ...] = (
             "pero no publica la fórmula de relevancia."
         ),
         factors=(
-            RankingFactor("SEO del sitio (Google)", OFFICIAL,
-                          "Título, meta descripción, H1, texto alternativo, datos estructurados, HTTPS y velocidad; SellIA los mide leyendo tus páginas reales."),
-            RankingFactor("Búsqueda interna de la tienda", OFFICIAL,
-                          "Sinónimos y refuerzos manuales dentro de tu propia tienda; no afecta el posicionamiento frente a otros vendedores."),
+            RankingFactor(
+                "SEO del sitio (Google)",
+                OFFICIAL,
+                "Título, meta descripción, H1, texto alternativo, datos estructurados, HTTPS y velocidad; SellIA los mide leyendo tus páginas reales.",
+            ),
+            RankingFactor(
+                "Búsqueda interna de la tienda",
+                OFFICIAL,
+                "Sinónimos y refuerzos manuales dentro de tu propia tienda; no afecta el posicionamiento frente a otros vendedores.",
+            ),
         ),
-        not_measurable=("Relevancia interna de la búsqueda de la tienda: la fórmula no es pública.",),
+        not_measurable=(
+            "Relevancia interna de la búsqueda de la tienda: la fórmula no es pública.",
+        ),
         playbook=(
             "Optimizá título, meta descripción y H1 de cada producto.",
             "Agregá datos estructurados (schema.org) y texto alternativo en imágenes.",
@@ -249,13 +368,19 @@ _PROFILES: tuple[PlatformProfile, ...] = (
         ),
     ),
     PlatformProfile(
-        key="tiendanube", label="Tienda Nube", kind="own_store", coverage=WEB_AUDIT,
+        key="tiendanube",
+        label="Tienda Nube",
+        kind="own_store",
+        coverage=WEB_AUDIT,
         aliases=("tienda-nube", "tienda_nube", "nuvemshop"),
         summary="Tienda propia en tu dominio: el posicionamiento es SEO web estándar orientado a Google.",
         disclosure="No se encontró evidencia de un algoritmo propietario de ranking entre vendedores; su propio contenido trata el posicionamiento como SEO web.",
         factors=(
-            RankingFactor("SEO del sitio (Google)", COMMUNITY,
-                          "Títulos, meta descripciones, velocidad y contenido; SellIA los mide leyendo tus páginas reales."),
+            RankingFactor(
+                "SEO del sitio (Google)",
+                COMMUNITY,
+                "Títulos, meta descripciones, velocidad y contenido; SellIA los mide leyendo tus páginas reales.",
+            ),
         ),
         playbook=(
             "Optimizá título y descripción de cada producto.",
@@ -263,63 +388,145 @@ _PROFILES: tuple[PlatformProfile, ...] = (
         ),
     ),
     PlatformProfile(
-        key="woocommerce", label="WooCommerce", kind="own_store", coverage=WEB_AUDIT,
+        key="woocommerce",
+        label="WooCommerce",
+        kind="own_store",
+        coverage=WEB_AUDIT,
         aliases=("woo", "woo-commerce"),
         summary="Tienda propia en tu dominio: el posicionamiento es SEO web estándar orientado a Google.",
         disclosure="Al ser una tienda en tu propio dominio no hay ranking entre vendedores; rige el SEO de Google.",
         factors=(
-            RankingFactor("SEO del sitio (Google)", COMMUNITY,
-                          "Títulos, meta descripciones, datos estructurados y velocidad; SellIA los mide leyendo tus páginas reales."),
+            RankingFactor(
+                "SEO del sitio (Google)",
+                COMMUNITY,
+                "Títulos, meta descripciones, datos estructurados y velocidad; SellIA los mide leyendo tus páginas reales.",
+            ),
         ),
-        playbook=("Optimizá título, meta descripción y datos estructurados de cada producto.",),
+        playbook=(
+            "Optimizá título, meta descripción y datos estructurados de cada producto.",
+        ),
     ),
     PlatformProfile(
-        key="etsy", label="Etsy", kind="marketplace", coverage=GUIDANCE_ONLY,
+        key="etsy",
+        label="Etsy",
+        kind="marketplace",
+        coverage=GUIDANCE_ONLY,
         aliases=("etsy-shop",),
         summary="Etsy rankea por relevancia de palabras clave, calidad del listing y experiencia del cliente.",
         disclosure="Etsy divulga oficialmente sus factores de ranking en su página de transparencia, sin pesos.",
         factors=(
-            RankingFactor("Relevancia", OFFICIAL, "Coincidencia de palabras clave con la búsqueda; condiciona a los demás factores."),
-            RankingFactor("Puntaje de calidad del listing", OFFICIAL, "Aproxima la conversión de vistas a favoritos, carritos y ventas."),
-            RankingFactor("Experiencia del cliente y del mercado", OFFICIAL, "Reseñas, envíos, resolución de casos y tiempo de respuesta."),
-            RankingFactor("Precio de envío, recencia, personalización y ubicación", OFFICIAL, "Factores adicionales divulgados por Etsy."),
+            RankingFactor(
+                "Relevancia",
+                OFFICIAL,
+                "Coincidencia de palabras clave con la búsqueda; condiciona a los demás factores.",
+            ),
+            RankingFactor(
+                "Puntaje de calidad del listing",
+                OFFICIAL,
+                "Aproxima la conversión de vistas a favoritos, carritos y ventas.",
+            ),
+            RankingFactor(
+                "Experiencia del cliente y del mercado",
+                OFFICIAL,
+                "Reseñas, envíos, resolución de casos y tiempo de respuesta.",
+            ),
+            RankingFactor(
+                "Precio de envío, recencia, personalización y ubicación",
+                OFFICIAL,
+                "Factores adicionales divulgados por Etsy.",
+            ),
         ),
-        not_measurable=("SellIA aún no tiene un conector que traiga estas señales de Etsy: hoy es solo guía, sin puntaje.",),
+        not_measurable=(
+            "SellIA aún no tiene un conector que traiga estas señales de Etsy: hoy es solo guía, sin puntaje.",
+        ),
         playbook=(
             "Usá en el título y las etiquetas las palabras que tu cliente realmente busca.",
             "Mantené buenas reseñas, envíos claros y respuesta rápida.",
         ),
     ),
     PlatformProfile(
-        key="custom", label="Sitio web propio (Google)", kind="generic_web", coverage=WEB_AUDIT,
+        key="custom",
+        label="Sitio web propio (Google)",
+        kind="generic_web",
+        coverage=WEB_AUDIT,
         aliases=("website", "web", "sitio", "otro", "google"),
         summary="Se posiciona con SEO web: contenido útil, sitio rápido y confiable, y datos estructurados.",
         disclosure="Google confirma que Core Web Vitals y E-E-A-T existen como factores, pero no publica sus pesos.",
         factors=(
-            RankingFactor("Core Web Vitals", OFFICIAL, "Google publica los umbrales: LCP menor a 2,5 s, INP menor a 200 ms, CLS menor a 0,1."),
-            RankingFactor("Experiencia, pericia, autoridad y confianza (E-E-A-T)", OFFICIAL, "Google lo describe como criterio de calidad; el peso no está publicado."),
-            RankingFactor("Datos estructurados", OFFICIAL, "No suben la posición por sí solos según Google, pero habilitan resultados enriquecidos que mejoran el clic."),
-            RankingFactor("Rastreo e indexación", OFFICIAL, "HTTPS, robots.txt, sitemap y ausencia de bloqueos; SellIA los mide leyendo tus páginas reales."),
-            RankingFactor("Enlaces entrantes relevantes", COMMUNITY, "Consenso del sector: cuenta más la relevancia temática que la cantidad."),
+            RankingFactor(
+                "Core Web Vitals",
+                OFFICIAL,
+                "Google publica los umbrales: LCP menor a 2,5 s, INP menor a 200 ms, CLS menor a 0,1.",
+            ),
+            RankingFactor(
+                "Experiencia, pericia, autoridad y confianza (E-E-A-T)",
+                OFFICIAL,
+                "Google lo describe como criterio de calidad; el peso no está publicado.",
+            ),
+            RankingFactor(
+                "Datos estructurados",
+                OFFICIAL,
+                "No suben la posición por sí solos según Google, pero habilitan resultados enriquecidos que mejoran el clic.",
+            ),
+            RankingFactor(
+                "Rastreo e indexación",
+                OFFICIAL,
+                "HTTPS, robots.txt, sitemap y ausencia de bloqueos; SellIA los mide leyendo tus páginas reales.",
+            ),
+            RankingFactor(
+                "Enlaces entrantes relevantes",
+                COMMUNITY,
+                "Consenso del sector: cuenta más la relevancia temática que la cantidad.",
+            ),
         ),
-        not_measurable=("Volumen de búsqueda, dificultad de palabras clave y Core Web Vitals de laboratorio requieren APIs pagas que no están conectadas.",),
+        not_measurable=(
+            "Volumen de búsqueda, dificultad de palabras clave y Core Web Vitals de laboratorio requieren APIs pagas que no están conectadas.",
+        ),
         playbook=(
             "Corregí primero los hallazgos críticos de la auditoría real de tus páginas.",
             "Sumá datos estructurados y verificá que Google pueda rastrear y indexar.",
         ),
     ),
     # Researched = False: listed so the UI can say "no hay análisis todavía" instead of guessing.
-    PlatformProfile(key="tiktok", label="TikTok", kind="social", coverage=GUIDANCE_ONLY, researched=False,
-                    summary="Sin investigación verificada todavía.", disclosure="No se muestran factores para no inventarlos.",
-                    aliases=("tik-tok", "tiktok-shop", "tiktok_shop")),
-    PlatformProfile(key="facebook", label="Facebook", kind="social", coverage=GUIDANCE_ONLY, researched=False,
-                    summary="Sin investigación verificada todavía.", disclosure="No se muestran factores para no inventarlos.",
-                    aliases=("facebook-marketplace", "facebook_marketplace", "fb", "meta")),
-    PlatformProfile(key="youtube", label="YouTube", kind="social", coverage=GUIDANCE_ONLY, researched=False,
-                    summary="Sin investigación verificada todavía.", disclosure="No se muestran factores para no inventarlos.",
-                    aliases=("yt",)),
-    PlatformProfile(key="ebay", label="eBay", kind="marketplace", coverage=GUIDANCE_ONLY, researched=False,
-                    summary="Sin investigación verificada todavía.", disclosure="No se muestran factores para no inventarlos."),
+    PlatformProfile(
+        key="tiktok",
+        label="TikTok",
+        kind="social",
+        coverage=GUIDANCE_ONLY,
+        researched=False,
+        summary="Sin investigación verificada todavía.",
+        disclosure="No se muestran factores para no inventarlos.",
+        aliases=("tik-tok", "tiktok-shop", "tiktok_shop"),
+    ),
+    PlatformProfile(
+        key="facebook",
+        label="Facebook",
+        kind="social",
+        coverage=GUIDANCE_ONLY,
+        researched=False,
+        summary="Sin investigación verificada todavía.",
+        disclosure="No se muestran factores para no inventarlos.",
+        aliases=("facebook-marketplace", "facebook_marketplace", "fb", "meta"),
+    ),
+    PlatformProfile(
+        key="youtube",
+        label="YouTube",
+        kind="social",
+        coverage=GUIDANCE_ONLY,
+        researched=False,
+        summary="Sin investigación verificada todavía.",
+        disclosure="No se muestran factores para no inventarlos.",
+        aliases=("yt",),
+    ),
+    PlatformProfile(
+        key="ebay",
+        label="eBay",
+        kind="marketplace",
+        coverage=GUIDANCE_ONLY,
+        researched=False,
+        summary="Sin investigación verificada todavía.",
+        disclosure="No se muestran factores para no inventarlos.",
+    ),
 )
 
 PROFILES: dict[str, PlatformProfile] = {p.key: p for p in _PROFILES}
@@ -365,7 +572,12 @@ def profile_to_dict(profile: PlatformProfile) -> dict:
         "summary": profile.summary,
         "disclosure": profile.disclosure,
         "factors": [
-            {"name": f.name, "evidence": f.evidence, "note": f.note, "measured_by": list(f.measured_by)}
+            {
+                "name": f.name,
+                "evidence": f.evidence,
+                "note": f.note,
+                "measured_by": list(f.measured_by),
+            }
             for f in profile.factors
         ],
         "not_measurable": list(profile.not_measurable),
@@ -375,12 +587,17 @@ def profile_to_dict(profile: PlatformProfile) -> dict:
 
 def render_library_items() -> list[dict]:
     """The items the AI agents read for the platforms researched in this module.
-    Written to library/marketplace_algorithm_mastery.json; a test keeps the file in sync."""
+    Written to library/marketplace_algorithm_mastery.json; a test keeps the file in sync.
+    """
     items = []
     for item_id, keys in (
-        ("algo_001", ("mercado-libre",)), ("algo_002", ("amazon",)), ("algo_006", ("hotmart",)),
-        ("algo_007", ("instagram",)), ("algo_008", ("etsy",)),
-        ("algo_009", ("shopify", "tiendanube", "woocommerce")), ("algo_010", ("custom",)),
+        ("algo_001", ("mercado-libre",)),
+        ("algo_002", ("amazon",)),
+        ("algo_006", ("hotmart",)),
+        ("algo_007", ("instagram",)),
+        ("algo_008", ("etsy",)),
+        ("algo_009", ("shopify", "tiendanube", "woocommerce")),
+        ("algo_010", ("custom",)),
     ):
         profiles = [PROFILES[k] for k in keys]
         name = " / ".join(p.label for p in profiles)
@@ -392,9 +609,19 @@ def render_library_items() -> list[dict]:
             if official:
                 text += " Documentado por la plataforma: " + "; ".join(official) + "."
             if community:
-                text += " Consenso de vendedores (no oficial): " + "; ".join(community) + "."
+                text += (
+                    " Consenso de vendedores (no oficial): "
+                    + "; ".join(community)
+                    + "."
+                )
             if p.not_measurable:
                 text += " Lo que no se puede medir: " + " ".join(p.not_measurable)
             parts.append(text if len(profiles) == 1 else f"[{p.label}] {text}")
-        items.append({"id": item_id, "name": f"{name}: cómo posiciona", "tactic": " ".join(parts)})
+        items.append(
+            {
+                "id": item_id,
+                "name": f"{name}: cómo posiciona",
+                "tactic": " ".join(parts),
+            }
+        )
     return items

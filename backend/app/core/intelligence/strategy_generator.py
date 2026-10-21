@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 class StrategyType(str, Enum):
     """Tipos estrategia."""
+
     GROWTH = "growth"  # Adquisición agresiva
     PREMIUM = "premium"  # Posicionamiento luxury
     BUDGET = "budget"  # Volumen, bajo precio
@@ -50,7 +51,9 @@ class StrategyGenerator:
         logger.info(f"Generando estrategia para: {product_name} ({category})")
 
         # 1. Detectar segmento
-        segment = StrategyGenerator._detect_segment(price, price_avg_market, competition)
+        segment = StrategyGenerator._detect_segment(
+            price, price_avg_market, competition
+        )
 
         # 2. Seleccionar canales
         channels = StrategyGenerator._select_channels(category, segment, demand)
@@ -114,7 +117,10 @@ class StrategyGenerator:
             },
         }
 
-        base = channels.get(category, {"primary": "owned_channels", "secondary": "paid", "tertiary": "organic"})
+        base = channels.get(
+            category,
+            {"primary": "owned_channels", "secondary": "paid", "tertiary": "organic"},
+        )
 
         # Ajustar por segmento
         if segment == "premium":
@@ -134,57 +140,71 @@ class StrategyGenerator:
 
         # Táctica 1: Pricing
         if segment == "premium":
-            tactics.append({
-                "name": "Premium positioning + value storytelling",
-                "action": "Enfatizar quality, exclusivity, resultado",
-                "channel": "email + personal demo",
-                "timeline": "Día 1-7",
-            })
+            tactics.append(
+                {
+                    "name": "Premium positioning + value storytelling",
+                    "action": "Enfatizar quality, exclusivity, resultado",
+                    "channel": "email + personal demo",
+                    "timeline": "Día 1-7",
+                }
+            )
         elif segment == "budget":
-            tactics.append({
-                "name": "Volume + affordability messaging",
-                "action": "Marketplace + ads con 'best price'",
-                "channel": "marketplace + google ads",
-                "timeline": "Día 1+",
-            })
+            tactics.append(
+                {
+                    "name": "Volume + affordability messaging",
+                    "action": "Marketplace + ads con 'best price'",
+                    "channel": "marketplace + google ads",
+                    "timeline": "Día 1+",
+                }
+            )
 
         # Táctica 2: Diferenciación
-        tactics.append({
-            "name": "Unique value prop (UVP) clara",
-            "action": f"Definir qué hace {category} distinto. Ej: 'Único con X'",
-            "channel": "landing page + email",
-            "timeline": "Día 1-3",
-        })
+        tactics.append(
+            {
+                "name": "Unique value prop (UVP) clara",
+                "action": f"Definir qué hace {category} distinto. Ej: 'Único con X'",
+                "channel": "landing page + email",
+                "timeline": "Día 1-3",
+            }
+        )
 
         # Táctica 3: Social proof
-        tactics.append({
-            "name": "Early reviews + testimonials",
-            "action": "Pedir reviews a primeros 10 customers (ofreciendo descuento)",
-            "channel": "producto + email",
-            "timeline": "Día 14+",
-        })
+        tactics.append(
+            {
+                "name": "Early reviews + testimonials",
+                "action": "Pedir reviews a primeros 10 customers (ofreciendo descuento)",
+                "channel": "producto + email",
+                "timeline": "Día 14+",
+            }
+        )
 
         # Táctica 4: Content si demand alto
         if demand == "Alto":
-            tactics.append({
-                "name": "Educational content marketing",
-                "action": "Blog posts, videos explicativos",
-                "channel": "blog + youtube",
-                "timeline": "Semana 2+",
-            })
+            tactics.append(
+                {
+                    "name": "Educational content marketing",
+                    "action": "Blog posts, videos explicativos",
+                    "channel": "blog + youtube",
+                    "timeline": "Semana 2+",
+                }
+            )
 
         # Táctica 5: Automation
-        tactics.append({
-            "name": "Email sequences automáticas",
-            "action": "Welcome (día 0) → Value (día 1) → Offer (día 2)",
-            "channel": "email",
-            "timeline": "Día 1+",
-        })
+        tactics.append(
+            {
+                "name": "Email sequences automáticas",
+                "action": "Welcome (día 0) → Value (día 1) → Offer (día 2)",
+                "channel": "email",
+                "timeline": "Día 1+",
+            }
+        )
 
         return tactics[:4]  # Top 4
 
     @staticmethod
-    def _generate_roadmap(segment: str, channels: dict[str, str], tactics: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def _generate_roadmap(
+        segment: str, channels: dict[str, str], tactics: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """Genera roadmap 90 días."""
 
         return [
@@ -211,7 +231,9 @@ class StrategyGenerator:
         ]
 
     @staticmethod
-    def _define_kpis(segment: str, category: str, market_price_avg: float) -> dict[str, Any]:
+    def _define_kpis(
+        segment: str, category: str, market_price_avg: float
+    ) -> dict[str, Any]:
         """Define KPIs para medir éxito."""
 
         kpis = {
@@ -220,7 +242,9 @@ class StrategyGenerator:
             "cac_payback": "6-12 meses" if segment == "premium" else "1-3 meses",
             "customer_reviews": "Mín 10 reviews, avg 4.5+/5",
             "email_engagement": "25%+ open rate, 5%+ click-through",
-            "content_reach": "1000+ monthly views" if category == "servicios" else "N/A",
+            "content_reach": (
+                "1000+ monthly views" if category == "servicios" else "N/A"
+            ),
         }
 
         return kpis
@@ -248,30 +272,38 @@ class StrategyOptimizer:
         # Analizar conversion rate
         conversion = performance_data.get("conversion_rate", 0)
         if conversion < 1:
-            changes.append({
-                "issue": "Conversion rate bajo (<1%)",
-                "recommendation": "Revisar landing page UX, CTA clarity, pricing",
-                "action": "A/B test headline + CTA copy",
-            })
+            changes.append(
+                {
+                    "issue": "Conversion rate bajo (<1%)",
+                    "recommendation": "Revisar landing page UX, CTA clarity, pricing",
+                    "action": "A/B test headline + CTA copy",
+                }
+            )
 
         # Analizar channel performance
         channel_perf = performance_data.get("channel_performance", {})
-        worst_channel = min(channel_perf, key=channel_perf.get) if channel_perf else None
+        worst_channel = (
+            min(channel_perf, key=channel_perf.get) if channel_perf else None
+        )
         if worst_channel and channel_perf[worst_channel] < 0.5:
-            changes.append({
-                "issue": f"Channel {worst_channel} underperforming",
-                "recommendation": "Pause or pivot away from underperforming channel",
-                "action": f"Redirect budget from {worst_channel} to top performer",
-            })
+            changes.append(
+                {
+                    "issue": f"Channel {worst_channel} underperforming",
+                    "recommendation": "Pause or pivot away from underperforming channel",
+                    "action": f"Redirect budget from {worst_channel} to top performer",
+                }
+            )
 
         # Analizar reviews
         reviews_avg = performance_data.get("review_score_avg", 0)
         if reviews_avg < 4.0:
-            changes.append({
-                "issue": "Customer satisfaction low (<4.0/5)",
-                "recommendation": "Onboarding, support, product improvements needed",
-                "action": "Conduct customer interviews to understand pain points",
-            })
+            changes.append(
+                {
+                    "issue": "Customer satisfaction low (<4.0/5)",
+                    "recommendation": "Onboarding, support, product improvements needed",
+                    "action": "Conduct customer interviews to understand pain points",
+                }
+            )
 
         optimized_strategy = current_strategy.copy()
         optimized_strategy["optimization_iteration"] = iteration

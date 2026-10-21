@@ -59,7 +59,11 @@ class NegotiationAgent:
         self.negotiations: dict[str, list[dict[str, Any]]] = {}
 
     def create_offer(
-        self, property_id: str, lead_id: str, strategy: NegotiationStrategy, property_value: float
+        self,
+        property_id: str,
+        lead_id: str,
+        strategy: NegotiationStrategy,
+        property_value: float,
     ) -> dict[str, Any]:
         """Create initial offer based on strategy."""
         # Calculate opening offer
@@ -98,7 +102,9 @@ class NegotiationAgent:
             "expected_close": (utc_now() + timedelta(days=45)).isoformat(),
         }
 
-    def submit_offer(self, offer_id: str, additional_terms: dict[str, Any] | None = None) -> dict[str, Any]:
+    def submit_offer(
+        self, offer_id: str, additional_terms: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Submit offer to seller."""
         if offer_id not in self.offers:
             return {"error": "Offer not found"}
@@ -109,12 +115,14 @@ class NegotiationAgent:
         if offer_id not in self.negotiations:
             self.negotiations[offer_id] = []
 
-        self.negotiations[offer_id].append({
-            "round": 1,
-            "timestamp": utc_now(),
-            "action": "submitted",
-            "terms": offer_record["offer_terms"].__dict__,
-        })
+        self.negotiations[offer_id].append(
+            {
+                "round": 1,
+                "timestamp": utc_now(),
+                "action": "submitted",
+                "terms": offer_record["offer_terms"].__dict__,
+            }
+        )
 
         logger.info(f"Submitted offer: {offer_id}")
 
@@ -124,7 +132,9 @@ class NegotiationAgent:
             "submission_time": utc_now().isoformat(),
         }
 
-    def process_counter_offer(self, offer_id: str, counter_terms: dict[str, Any]) -> dict[str, Any]:
+    def process_counter_offer(
+        self, offer_id: str, counter_terms: dict[str, Any]
+    ) -> dict[str, Any]:
         """Process seller's counter offer."""
         if offer_id not in self.offers:
             return {"error": "Offer not found"}
@@ -134,22 +144,29 @@ class NegotiationAgent:
         offer_record["rounds"] += 1
 
         # Extract counter terms
-        counter_price = counter_terms.get("counter_price", offer_record["offer_terms"].offer_price)
+        counter_price = counter_terms.get(
+            "counter_price", offer_record["offer_terms"].offer_price
+        )
         counter_terms_list = counter_terms.get("terms", [])
 
         # Evaluate counter
         evaluation = self._evaluate_counter_offer(
-            counter_price, strategy.walk_away_price, offer_record["offer_terms"].offer_price, strategy
+            counter_price,
+            strategy.walk_away_price,
+            offer_record["offer_terms"].offer_price,
+            strategy,
         )
 
         # Store negotiation round
-        self.negotiations[offer_id].append({
-            "round": offer_record["rounds"],
-            "timestamp": utc_now(),
-            "action": "counter_received",
-            "counter_price": counter_price,
-            "counter_terms": counter_terms_list,
-        })
+        self.negotiations[offer_id].append(
+            {
+                "round": offer_record["rounds"],
+                "timestamp": utc_now(),
+                "action": "counter_received",
+                "counter_price": counter_price,
+                "counter_terms": counter_terms_list,
+            }
+        )
 
         logger.info(f"Counter offer received for {offer_id}: ${counter_price:,.0f}")
 
@@ -157,11 +174,21 @@ class NegotiationAgent:
             "offer_id": offer_id,
             "counter_price": counter_price,
             "evaluation": evaluation,
-            "recommendation": self._generate_counter_recommendation(counter_price, strategy),
-            "suggested_response": self._suggest_response_to_counter(counter_price, strategy),
+            "recommendation": self._generate_counter_recommendation(
+                counter_price, strategy
+            ),
+            "suggested_response": self._suggest_response_to_counter(
+                counter_price, strategy
+            ),
         }
 
-    def _evaluate_counter_offer(self, counter_price: float, walk_away: float, original_offer: float, strategy: NegotiationStrategy) -> dict[str, Any]:
+    def _evaluate_counter_offer(
+        self,
+        counter_price: float,
+        walk_away: float,
+        original_offer: float,
+        strategy: NegotiationStrategy,
+    ) -> dict[str, Any]:
         """Evaluate acceptability of counter offer."""
         spread = original_offer - counter_price
         spread_pct = (spread / original_offer) * 100
@@ -177,7 +204,9 @@ class NegotiationAgent:
             "distance_to_walk_away": counter_price - walk_away,
         }
 
-    def _generate_counter_recommendation(self, counter_price: float, strategy: NegotiationStrategy) -> str:
+    def _generate_counter_recommendation(
+        self, counter_price: float, strategy: NegotiationStrategy
+    ) -> str:
         """Generate recommendation on counter offer."""
         if counter_price >= strategy.walk_away_price * 1.02:
             return "ACCEPT - Price within acceptable range"
@@ -188,7 +217,9 @@ class NegotiationAgent:
         else:
             return "REJECT - Below acceptable minimum"
 
-    def _suggest_response_to_counter(self, counter_price: float, strategy: NegotiationStrategy) -> dict[str, Any]:
+    def _suggest_response_to_counter(
+        self, counter_price: float, strategy: NegotiationStrategy
+    ) -> dict[str, Any]:
         """Suggest response to counter offer."""
         midpoint = (strategy.walk_away_price + counter_price) / 2
 
@@ -215,11 +246,13 @@ class NegotiationAgent:
         offer_record = self.offers[offer_id]
         offer_record["status"] = OfferStatus.ACCEPTED
 
-        self.negotiations[offer_id].append({
-            "round": "final",
-            "timestamp": utc_now(),
-            "action": "accepted",
-        })
+        self.negotiations[offer_id].append(
+            {
+                "round": "final",
+                "timestamp": utc_now(),
+                "action": "accepted",
+            }
+        )
 
         offer_terms = offer_record["offer_terms"]
 
@@ -251,8 +284,11 @@ class NegotiationAgent:
             return None
 
         history = self.negotiations[offer_id]
-        prices = [round_data.get("counter_price") or round_data.get("terms", {}).get("price")
-                  for round_data in history if "counter_price" in round_data or "price" in round_data.get("terms", {})]
+        prices = [
+            round_data.get("counter_price") or round_data.get("terms", {}).get("price")
+            for round_data in history
+            if "counter_price" in round_data or "price" in round_data.get("terms", {})
+        ]
 
         if len(prices) >= 2:
             # Calculate average move

@@ -17,7 +17,9 @@ async def _require_member(business_id: UUID, user: User, db: AsyncSession) -> st
     """Any real team member (owner/admin/member) can read team data."""
     role = await TeamManager.get_member_role(business_id, user.id, db)
     if not role:
-        raise HTTPException(status_code=404, detail="Negocio no encontrado o sin acceso")
+        raise HTTPException(
+            status_code=404, detail="Negocio no encontrado o sin acceso"
+        )
     return role
 
 
@@ -42,9 +44,15 @@ async def add_team_member(
     try:
         role_enum = BusinessMemberRole(role)
     except ValueError:
-        raise HTTPException(status_code=400, detail=f"Rol inválido: {role} (admin, member)")
+        raise HTTPException(
+            status_code=400, detail=f"Rol inválido: {role} (admin, member)"
+        )
     member = await TeamManager.add_team_member(business_id, user_id, role_enum, db)
-    return {"status": "added", "user_id": str(member.user_id), "role": member.role.value}
+    return {
+        "status": "added",
+        "user_id": str(member.user_id),
+        "role": member.role.value,
+    }
 
 
 @router.get("/teams/members/{business_id}")
@@ -69,7 +77,10 @@ async def remove_team_member(
     """Remove a team member."""
     await _require_admin(business_id, current_user, db)
     success = await TeamManager.remove_team_member(business_id, member_user_id, db)
-    return {"status": "removed" if success else "not_found", "user_id": str(member_user_id)}
+    return {
+        "status": "removed" if success else "not_found",
+        "user_id": str(member_user_id),
+    }
 
 
 @router.post("/teams/deals/{business_id}/assign")
@@ -83,7 +94,11 @@ async def assign_deal(
     """Assign a deal to a team member."""
     await _require_admin(business_id, current_user, db)
     success = await TeamManager.assign_deal(business_id, deal_id, member_user_id, db)
-    return {"status": "assigned" if success else "not_found", "deal_id": str(deal_id), "member_user_id": str(member_user_id)}
+    return {
+        "status": "assigned" if success else "not_found",
+        "deal_id": str(deal_id),
+        "member_user_id": str(member_user_id),
+    }
 
 
 @router.delete("/teams/deals/{business_id}/{deal_id}/assign")
@@ -112,7 +127,15 @@ async def get_member_deals(
     return {
         "member_user_id": str(member_user_id),
         "total": len(deals),
-        "deals": [{"id": str(d.id), "title": d.title, "stage": d.stage.value, "value": float(d.value) if d.value is not None else None} for d in deals],
+        "deals": [
+            {
+                "id": str(d.id),
+                "title": d.title,
+                "stage": d.stage.value,
+                "value": float(d.value) if d.value is not None else None,
+            }
+            for d in deals
+        ],
     }
 
 
@@ -188,13 +211,21 @@ async def create_delegation(
         deals = await TeamManager.get_member_deals(business_id, current_user.id, db)
         owned_ids = {d.id for d in deals}
         if not set(deal_ids).issubset(owned_ids):
-            raise HTTPException(status_code=403, detail="Solo podés delegar tus propios deals")
+            raise HTTPException(
+                status_code=403, detail="Solo podés delegar tus propios deals"
+            )
 
-    delegation = await TeamManager.create_delegation(business_id, current_user.id, to_user_id, deal_ids, reason, db, duration_hours)
+    delegation = await TeamManager.create_delegation(
+        business_id, current_user.id, to_user_id, deal_ids, reason, db, duration_hours
+    )
     return {
-        "status": "created", "delegation_id": str(delegation.id), "to_user_id": str(to_user_id),
+        "status": "created",
+        "delegation_id": str(delegation.id),
+        "to_user_id": str(to_user_id),
         "deal_ids": [str(d) for d in deal_ids],
-        "expires_at": delegation.expires_at.isoformat() if delegation.expires_at else None,
+        "expires_at": (
+            delegation.expires_at.isoformat() if delegation.expires_at else None
+        ),
     }
 
 
@@ -208,8 +239,13 @@ async def approve_delegation(
     """Approve a delegation request. Only the recipient (to_user_id) or an
     owner/admin can decide it."""
     await _require_member(business_id, current_user, db)
-    success = await TeamManager.decide_delegation(business_id, delegation_id, "approved", db)
-    return {"status": "approved" if success else "not_found", "delegation_id": str(delegation_id)}
+    success = await TeamManager.decide_delegation(
+        business_id, delegation_id, "approved", db
+    )
+    return {
+        "status": "approved" if success else "not_found",
+        "delegation_id": str(delegation_id),
+    }
 
 
 @router.post("/teams/delegation/{business_id}/{delegation_id}/reject")
@@ -221,8 +257,13 @@ async def reject_delegation(
 ):
     """Reject a delegation request."""
     await _require_member(business_id, current_user, db)
-    success = await TeamManager.decide_delegation(business_id, delegation_id, "rejected", db)
-    return {"status": "rejected" if success else "not_found", "delegation_id": str(delegation_id)}
+    success = await TeamManager.decide_delegation(
+        business_id, delegation_id, "rejected", db
+    )
+    return {
+        "status": "rejected" if success else "not_found",
+        "delegation_id": str(delegation_id),
+    }
 
 
 @router.get("/teams/delegations/pending/{business_id}")
@@ -233,13 +274,18 @@ async def list_pending_delegations(
 ):
     """List delegation requests pending the caller's own decision."""
     await _require_member(business_id, current_user, db)
-    delegations = await TeamManager.get_pending_delegations(business_id, current_user.id, db)
+    delegations = await TeamManager.get_pending_delegations(
+        business_id, current_user.id, db
+    )
     return {
         "total_pending": len(delegations),
         "delegations": [
             {
-                "id": str(d.id), "from_user_id": str(d.from_user_id), "to_user_id": str(d.to_user_id),
-                "deal_ids": d.deal_ids, "reason": d.reason,
+                "id": str(d.id),
+                "from_user_id": str(d.from_user_id),
+                "to_user_id": str(d.to_user_id),
+                "deal_ids": d.deal_ids,
+                "reason": d.reason,
                 "created_at": d.created_at.isoformat() if d.created_at else None,
                 "expires_at": d.expires_at.isoformat() if d.expires_at else None,
             }

@@ -49,7 +49,9 @@ async def list_orders(
     status: str | None = None,
     search: str | None = None,
 ):
-    query = select(Order).where(Order.business_id == business_id, Order.is_active == True)
+    query = select(Order).where(
+        Order.business_id == business_id, Order.is_active == True
+    )
     if status:
         parsed = status_flow.parse_status(status)
         if not parsed:
@@ -60,9 +62,9 @@ async def list_orders(
         # ciphertext and never matches — searching them needs decryption, which
         # /orders/table does. Here, only the columns stored in clear.
         query = query.where(
-            Order.order_number.ilike(f"%{search}%") |
-            Order.external_id.ilike(f"%{search}%") |
-            Order.tracking_number.ilike(f"%{search}%")
+            Order.order_number.ilike(f"%{search}%")
+            | Order.external_id.ilike(f"%{search}%")
+            | Order.tracking_number.ilike(f"%{search}%")
         )
     result = await db.execute(query.order_by(desc(Order.created_at)))
     return result.scalars().all()
@@ -88,7 +90,9 @@ async def create_order(
     # means "delivered but unpaid" is still believed.
     status_value = payload.get("status")
     if "payment_status" not in data.model_fields_set and status_value in (
-        OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED,
+        OrderStatus.PAID,
+        OrderStatus.SHIPPED,
+        OrderStatus.DELIVERED,
     ):
         payload["payment_status"] = PaymentStatus.COMPLETED
         if not payload.get("paid_at"):
@@ -140,7 +144,9 @@ async def create_order(
     # Increment workflow conversion_count if attributed to a workflow
     if order.source_workflow_id:
         try:
-            wf_result = await db.execute(select(Workflow).where(Workflow.id == order.source_workflow_id))
+            wf_result = await db.execute(
+                select(Workflow).where(Workflow.id == order.source_workflow_id)
+            )
             wf = wf_result.scalar_one_or_none()
             if wf:
                 wf.conversion_count = (wf.conversion_count or 0) + 1
@@ -148,6 +154,7 @@ async def create_order(
         except Exception as e:
             logger.exception("create_order: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Error updating workflow conversion_count: {e}")
 
     # Emit event for alert engine
@@ -212,7 +219,9 @@ async def orders_spreadsheet(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_active_user)],
     search: str | None = None,
-    status_in: Annotated[str | None, Query(description="Lista separada por comas")] = None,
+    status_in: Annotated[
+        str | None, Query(description="Lista separada por comas")
+    ] = None,
     payment_status: str | None = None,
     platform: str | None = None,
     channel: str | None = None,
@@ -229,9 +238,21 @@ async def orders_spreadsheet(
 ):
     """A page of the orders sheet, with totals and facets over the whole filter."""
     query = _table_query(
-        search, status_in, payment_status, platform, channel, currency,
-        date_from, date_to, amount_min, amount_max, has_tracking,
-        sort_by, sort_dir, page, page_size,
+        search,
+        status_in,
+        payment_status,
+        platform,
+        channel,
+        currency,
+        date_from,
+        date_to,
+        amount_min,
+        amount_max,
+        has_tracking,
+        sort_by,
+        sort_dir,
+        page,
+        page_size,
     )
     data = await orders_table.fetch_table(db, business_id, query)
     data["columns"] = [
@@ -268,9 +289,21 @@ async def export_orders_csv(
     export is a copy of the view, not a way around the masking policy.
     """
     query = _table_query(
-        search, status_in, payment_status, platform, channel, currency,
-        date_from, date_to, amount_min, amount_max, has_tracking,
-        sort_by, sort_dir, 1, limit,
+        search,
+        status_in,
+        payment_status,
+        platform,
+        channel,
+        currency,
+        date_from,
+        date_to,
+        amount_min,
+        amount_max,
+        has_tracking,
+        sort_by,
+        sort_dir,
+        1,
+        limit,
     )
     data = await orders_table.fetch_table(db, business_id, query)
 
@@ -279,15 +312,32 @@ async def export_orders_csv(
     writer = csv.writer(buffer, delimiter=";")
     writer.writerow([label for _, label in orders_table.EXPORT_COLUMNS])
     for row in data["rows"]:
-        writer.writerow([row.get(key, "") if row.get(key) is not None else "" for key, _ in orders_table.EXPORT_COLUMNS])
+        writer.writerow(
+            [
+                row.get(key, "") if row.get(key) is not None else ""
+                for key, _ in orders_table.EXPORT_COLUMNS
+            ]
+        )
     writer.writerow([])
     for total in data["totals"]:
-        writer.writerow([
-            f"TOTAL {total['currency']}", "", "", "", "", "", "",
-            total["orders"], total["revenue"], total["currency"],
-        ])
+        writer.writerow(
+            [
+                f"TOTAL {total['currency']}",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                total["orders"],
+                total["revenue"],
+                total["currency"],
+            ]
+        )
     if data["total"] > len(data["rows"]):
-        writer.writerow([f"Exportadas {len(data['rows'])} de {data['total']} órdenes del filtro"])
+        writer.writerow(
+            [f"Exportadas {len(data['rows'])} de {data['total']} órdenes del filtro"]
+        )
 
     payload = "﻿" + buffer.getvalue()
     stamp = datetime.now(UTC).strftime("%Y%m%d")
@@ -317,7 +367,9 @@ async def bulk_update_status(
     """
     new_status = status_flow.parse_status(data.status)
     if not new_status:
-        raise HTTPException(status_code=422, detail=f"Estado desconocido: {data.status}")
+        raise HTTPException(
+            status_code=422, detail=f"Estado desconocido: {data.status}"
+        )
 
     result = await db.execute(select(Order).where(Order.id.in_(data.order_ids)))
     orders = result.scalars().all()
@@ -332,14 +384,18 @@ async def bulk_update_status(
             changed += 1
             if verdict.get("fires_service_paid"):
                 pending_triggers.append(status_flow.service_paid_payload(order))
-        outcomes.append({
-            "order_id": str(order.id),
-            "changed": verdict["changed"],
-            "reason": verdict.get("reason"),
-        })
+        outcomes.append(
+            {
+                "order_id": str(order.id),
+                "changed": verdict["changed"],
+                "reason": verdict.get("reason"),
+            }
+        )
     for missing in data.order_ids:
         if missing not in found:
-            outcomes.append({"order_id": str(missing), "changed": False, "reason": "No encontrada"})
+            outcomes.append(
+                {"order_id": str(missing), "changed": False, "reason": "No encontrada"}
+            )
 
     if changed:
         await db.commit()
@@ -390,9 +446,15 @@ async def update_order(
     if raw_status is not None:
         new_status = status_flow.parse_status(raw_status)
         if not new_status:
-            raise HTTPException(status_code=422, detail=f"Estado desconocido: {raw_status}")
+            raise HTTPException(
+                status_code=422, detail=f"Estado desconocido: {raw_status}"
+            )
         verdict = status_flow.apply_status(order, new_status)
-        if not verdict["changed"] and verdict.get("reason") and new_status.value != (order.status.value if order.status else None):
+        if (
+            not verdict["changed"]
+            and verdict.get("reason")
+            and new_status.value != (order.status.value if order.status else None)
+        ):
             raise HTTPException(status_code=409, detail=verdict["reason"])
         if verdict.get("fires_service_paid"):
             trigger_payload = status_flow.service_paid_payload(order)
@@ -424,6 +486,7 @@ async def delete_order(
 
 # ========== Revenue & Analytics ==========
 
+
 @router.get("/revenue/summary", response_model=RevenueSummary)
 async def get_revenue_summary(
     business_id: Annotated[UUID, Query()],
@@ -435,60 +498,98 @@ async def get_revenue_summary(
 
     # Total revenue
     total_result = await db.execute(
-        select(func.coalesce(func.sum(Order.total_amount), 0), func.count(Order.id))
-        .where(Order.business_id == business_id, Order.is_active == True, Order.created_at >= since)
+        select(
+            func.coalesce(func.sum(Order.total_amount), 0), func.count(Order.id)
+        ).where(
+            Order.business_id == business_id,
+            Order.is_active == True,
+            Order.created_at >= since,
+        )
     )
     total_revenue, total_orders = total_result.one()
 
     # Paid orders
     paid_result = await db.execute(
-        select(func.count(Order.id))
-        .where(Order.business_id == business_id, Order.status == OrderStatus.PAID, Order.created_at >= since)
+        select(func.count(Order.id)).where(
+            Order.business_id == business_id,
+            Order.status == OrderStatus.PAID,
+            Order.created_at >= since,
+        )
     )
     paid_orders = paid_result.scalar() or 0
 
     # Pending orders
     pending_result = await db.execute(
-        select(func.count(Order.id))
-        .where(Order.business_id == business_id, Order.status == OrderStatus.PENDING, Order.created_at >= since)
+        select(func.count(Order.id)).where(
+            Order.business_id == business_id,
+            Order.status == OrderStatus.PENDING,
+            Order.created_at >= since,
+        )
     )
     pending_orders = pending_result.scalar() or 0
 
     # Refunded
     refunded_result = await db.execute(
-        select(func.coalesce(func.sum(Order.total_amount), 0))
-        .where(Order.business_id == business_id, Order.status == OrderStatus.REFUNDED, Order.created_at >= since)
+        select(func.coalesce(func.sum(Order.total_amount), 0)).where(
+            Order.business_id == business_id,
+            Order.status == OrderStatus.REFUNDED,
+            Order.created_at >= since,
+        )
     )
     refunded_amount = refunded_result.scalar() or 0
 
     # By channel
     channel_result = await db.execute(
         select(Order.source_channel, func.coalesce(func.sum(Order.total_amount), 0))
-        .where(Order.business_id == business_id, Order.is_active == True, Order.created_at >= since)
+        .where(
+            Order.business_id == business_id,
+            Order.is_active == True,
+            Order.created_at >= since,
+        )
         .group_by(Order.source_channel)
     )
-    revenue_by_channel = {row[0] or "unknown": float(row[1]) for row in channel_result.all()}
+    revenue_by_channel = {
+        row[0] or "unknown": float(row[1]) for row in channel_result.all()
+    }
 
     # By platform
     platform_result = await db.execute(
         select(Order.external_platform, func.coalesce(func.sum(Order.total_amount), 0))
-        .where(Order.business_id == business_id, Order.is_active == True, Order.created_at >= since)
+        .where(
+            Order.business_id == business_id,
+            Order.is_active == True,
+            Order.created_at >= since,
+        )
         .group_by(Order.external_platform)
     )
-    revenue_by_platform = {row[0] or "manual": float(row[1]) for row in platform_result.all()}
+    revenue_by_platform = {
+        row[0] or "manual": float(row[1]) for row in platform_result.all()
+    }
 
     # By status
     status_result = await db.execute(
         select(Order.status, func.count(Order.id))
-        .where(Order.business_id == business_id, Order.is_active == True, Order.created_at >= since)
+        .where(
+            Order.business_id == business_id,
+            Order.is_active == True,
+            Order.created_at >= since,
+        )
         .group_by(Order.status)
     )
     orders_by_status = {row[0]: row[1] for row in status_result.all()}
 
     # Trend
     trend_result = await db.execute(
-        select(func.date(Order.created_at), func.coalesce(func.sum(Order.total_amount), 0), func.count(Order.id))
-        .where(Order.business_id == business_id, Order.is_active == True, Order.created_at >= since)
+        select(
+            func.date(Order.created_at),
+            func.coalesce(func.sum(Order.total_amount), 0),
+            func.count(Order.id),
+        )
+        .where(
+            Order.business_id == business_id,
+            Order.is_active == True,
+            Order.created_at >= since,
+        )
         .group_by(func.date(Order.created_at))
         .order_by(func.date(Order.created_at))
     )
@@ -523,15 +624,24 @@ async def get_attribution_summary(
 
     # Total
     total_result = await db.execute(
-        select(func.coalesce(func.sum(RevenueEvent.amount), 0), func.count(RevenueEvent.id))
-        .where(RevenueEvent.business_id == business_id, RevenueEvent.created_at >= since)
+        select(
+            func.coalesce(func.sum(RevenueEvent.amount), 0), func.count(RevenueEvent.id)
+        ).where(
+            RevenueEvent.business_id == business_id, RevenueEvent.created_at >= since
+        )
     )
     total_revenue, total_events = total_result.one()
 
     # By channel
     channel_result = await db.execute(
-        select(RevenueEvent.source_channel, func.coalesce(func.sum(RevenueEvent.amount), 0), func.count(RevenueEvent.id))
-        .where(RevenueEvent.business_id == business_id, RevenueEvent.created_at >= since)
+        select(
+            RevenueEvent.source_channel,
+            func.coalesce(func.sum(RevenueEvent.amount), 0),
+            func.count(RevenueEvent.id),
+        )
+        .where(
+            RevenueEvent.business_id == business_id, RevenueEvent.created_at >= since
+        )
         .group_by(RevenueEvent.source_channel)
         .order_by(desc(func.sum(RevenueEvent.amount)))
     )
@@ -542,42 +652,76 @@ async def get_attribution_summary(
 
     # By workflow
     wf_result = await db.execute(
-        select(RevenueEvent.source_workflow_id, func.coalesce(func.sum(RevenueEvent.amount), 0), func.count(RevenueEvent.id))
-        .where(RevenueEvent.business_id == business_id, RevenueEvent.created_at >= since)
+        select(
+            RevenueEvent.source_workflow_id,
+            func.coalesce(func.sum(RevenueEvent.amount), 0),
+            func.count(RevenueEvent.id),
+        )
+        .where(
+            RevenueEvent.business_id == business_id, RevenueEvent.created_at >= since
+        )
         .group_by(RevenueEvent.source_workflow_id)
         .order_by(desc(func.sum(RevenueEvent.amount)))
     )
     by_workflow = [
-        {"workflow_id": str(row[0]) if row[0] else None, "revenue": float(row[1]), "orders": row[2]}
+        {
+            "workflow_id": str(row[0]) if row[0] else None,
+            "revenue": float(row[1]),
+            "orders": row[2],
+        }
         for row in wf_result.all()
     ]
 
     # By agent
     agent_result = await db.execute(
-        select(RevenueEvent.source_agent_id, func.coalesce(func.sum(RevenueEvent.amount), 0), func.count(RevenueEvent.id))
-        .where(RevenueEvent.business_id == business_id, RevenueEvent.created_at >= since)
+        select(
+            RevenueEvent.source_agent_id,
+            func.coalesce(func.sum(RevenueEvent.amount), 0),
+            func.count(RevenueEvent.id),
+        )
+        .where(
+            RevenueEvent.business_id == business_id, RevenueEvent.created_at >= since
+        )
         .group_by(RevenueEvent.source_agent_id)
         .order_by(desc(func.sum(RevenueEvent.amount)))
     )
     by_agent = [
-        {"agent_id": str(row[0]) if row[0] else None, "revenue": float(row[1]), "orders": row[2]}
+        {
+            "agent_id": str(row[0]) if row[0] else None,
+            "revenue": float(row[1]),
+            "orders": row[2],
+        }
         for row in agent_result.all()
     ]
 
     # First vs Last touch from orders
     first_touch_result = await db.execute(
-        select(Order.first_touch_channel, func.coalesce(func.sum(Order.total_amount), 0))
-        .where(Order.business_id == business_id, Order.is_active == True, Order.created_at >= since)
+        select(
+            Order.first_touch_channel, func.coalesce(func.sum(Order.total_amount), 0)
+        )
+        .where(
+            Order.business_id == business_id,
+            Order.is_active == True,
+            Order.created_at >= since,
+        )
         .group_by(Order.first_touch_channel)
     )
-    first_touch_revenue = {row[0] or "unknown": float(row[1]) for row in first_touch_result.all()}
+    first_touch_revenue = {
+        row[0] or "unknown": float(row[1]) for row in first_touch_result.all()
+    }
 
     last_touch_result = await db.execute(
         select(Order.last_touch_channel, func.coalesce(func.sum(Order.total_amount), 0))
-        .where(Order.business_id == business_id, Order.is_active == True, Order.created_at >= since)
+        .where(
+            Order.business_id == business_id,
+            Order.is_active == True,
+            Order.created_at >= since,
+        )
         .group_by(Order.last_touch_channel)
     )
-    last_touch_revenue = {row[0] or "unknown": float(row[1]) for row in last_touch_result.all()}
+    last_touch_revenue = {
+        row[0] or "unknown": float(row[1]) for row in last_touch_result.all()
+    }
 
     return AttributionSummary(
         total_revenue=float(total_revenue or 0),
@@ -590,8 +734,8 @@ async def get_attribution_summary(
     )
 
 
-
 # ========== Service Lifecycle Endpoints ==========
+
 
 @router.get("/{order_id}/service-delivery", response_model=dict)
 async def get_order_service_delivery(
@@ -601,14 +745,20 @@ async def get_order_service_delivery(
 ):
     """Get service delivery and appointments linked to an order."""
     result = await db.execute(
-        select(ServiceDelivery).where(ServiceDelivery.order_id == order_id, ServiceDelivery.is_active == True)
+        select(ServiceDelivery).where(
+            ServiceDelivery.order_id == order_id, ServiceDelivery.is_active == True
+        )
     )
     delivery = result.scalar_one_or_none()
 
     appointments = []
     if delivery:
         appt_result = await db.execute(
-            select(Appointment).where(Appointment.service_delivery_id == delivery.id, Appointment.is_active == True)
+            select(Appointment)
+            .where(
+                Appointment.service_delivery_id == delivery.id,
+                Appointment.is_active == True,
+            )
             .order_by(Appointment.start_time)
         )
         appointments = appt_result.scalars().all()
@@ -652,10 +802,13 @@ async def schedule_service_for_order(
 
     # Create appointment linked to delivery
     from datetime import timedelta
+
     start = data.get("scheduled_at")
     if start:
         start_dt = datetime.fromisoformat(start) if isinstance(start, str) else start
-        end_dt = start_dt + timedelta(minutes=data.get("estimated_duration_minutes", 60))
+        end_dt = start_dt + timedelta(
+            minutes=data.get("estimated_duration_minutes", 60)
+        )
         appt_data = {
             "service_delivery_id": delivery.id,
             "order_id": order_id,
@@ -667,7 +820,10 @@ async def schedule_service_for_order(
             "end_time": end_dt,
             "modality": data.get("modality"),
             "solution_type": data.get("solution_type"),
-            "service_name": data.get("service_name", order.items[0].get("name") if order.items else "Servicio"),
+            "service_name": data.get(
+                "service_name",
+                order.items[0].get("name") if order.items else "Servicio",
+            ),
             "location_address": data.get("location_address", {}),
             "meeting_url": data.get("meeting_url"),
         }
@@ -697,11 +853,15 @@ async def start_service_for_order(
 ):
     """Mark service as in-progress for an order."""
     result = await db.execute(
-        select(ServiceDelivery).where(ServiceDelivery.order_id == order_id, ServiceDelivery.is_active == True)
+        select(ServiceDelivery).where(
+            ServiceDelivery.order_id == order_id, ServiceDelivery.is_active == True
+        )
     )
     delivery = result.scalar_one_or_none()
     if not delivery:
-        raise HTTPException(status_code=404, detail="No hay entrega de servicio para esta orden")
+        raise HTTPException(
+            status_code=404, detail="No hay entrega de servicio para esta orden"
+        )
 
     delivery.status = ServiceDeliveryStatus.IN_PROGRESS
     delivery.started_at = datetime.now(UTC)
@@ -719,13 +879,18 @@ async def complete_service_for_order(
 ):
     """Mark service as completed for an order."""
     result = await db.execute(
-        select(ServiceDelivery).where(ServiceDelivery.order_id == order_id, ServiceDelivery.is_active == True)
+        select(ServiceDelivery).where(
+            ServiceDelivery.order_id == order_id, ServiceDelivery.is_active == True
+        )
     )
     delivery = result.scalar_one_or_none()
     if not delivery:
-        raise HTTPException(status_code=404, detail="No hay entrega de servicio para esta orden")
+        raise HTTPException(
+            status_code=404, detail="No hay entrega de servicio para esta orden"
+        )
 
     from app.domains.services.services import complete_service_delivery
+
     await complete_service_delivery(db, delivery)
 
     # Update order
@@ -747,11 +912,15 @@ async def add_service_notes(
 ):
     """Add provider notes, diagnosis, materials to a service delivery."""
     result = await db.execute(
-        select(ServiceDelivery).where(ServiceDelivery.order_id == order_id, ServiceDelivery.is_active == True)
+        select(ServiceDelivery).where(
+            ServiceDelivery.order_id == order_id, ServiceDelivery.is_active == True
+        )
     )
     delivery = result.scalar_one_or_none()
     if not delivery:
-        raise HTTPException(status_code=404, detail="No hay entrega de servicio para esta orden")
+        raise HTTPException(
+            status_code=404, detail="No hay entrega de servicio para esta orden"
+        )
 
     if data.get("provider_notes"):
         delivery.provider_notes = data["provider_notes"]

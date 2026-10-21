@@ -76,7 +76,10 @@ class JobQueue:
                 platform = job.payload.get("platform", "default")
 
                 # Check if we can process this platform
-                if self.platform_active_count[platform] >= self.max_concurrent_per_platform:
+                if (
+                    self.platform_active_count[platform]
+                    >= self.max_concurrent_per_platform
+                ):
                     logger.debug(
                         f"Rate limit reached for {platform}. "
                         f"Job {job.id} re-queued."
@@ -106,13 +109,15 @@ class JobQueue:
     async def mark_dead_letter(self, job: Any, reason: str) -> None:
         """Mueve job a dead letter queue (sin salida)."""
         async with self.lock:
-            self.dead_letter_queue.append({
-                "job_id": job.id,
-                "job_type": job.job_type.value,
-                "reason": reason,
-                "timestamp": utc_now().isoformat(),
-                "payload": job.payload,
-            })
+            self.dead_letter_queue.append(
+                {
+                    "job_id": job.id,
+                    "job_type": job.job_type.value,
+                    "reason": reason,
+                    "timestamp": utc_now().isoformat(),
+                    "payload": job.payload,
+                }
+            )
             logger.warning(f"Job moved to DLQ: {job.id} ({reason})")
 
     def size(self) -> int:
@@ -152,7 +157,8 @@ class JobQueue:
             original_count = len(self.dead_letter_queue)
 
             self.dead_letter_queue = [
-                dlq for dlq in self.dead_letter_queue
+                dlq
+                for dlq in self.dead_letter_queue
                 if datetime.fromisoformat(dlq["timestamp"]).timestamp() > cutoff_time
             ]
 
@@ -225,7 +231,11 @@ class BatchJobQueue(JobQueue):
 
         batch_job = Job(
             id=str(uuid.uuid4()),
-            job_type=JobType[batch_key.upper()] if batch_key.upper() in JobType.__members__ else JobType.POST_PRODUCT,
+            job_type=(
+                JobType[batch_key.upper()]
+                if batch_key.upper() in JobType.__members__
+                else JobType.POST_PRODUCT
+            ),
             priority=Priority.NORMAL,
             payload={
                 "batch_key": batch_key,

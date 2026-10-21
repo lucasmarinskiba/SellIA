@@ -1,4 +1,5 @@
 """Phase X6: FOMO Dynamics - Ultra-Potent FOMO Engine."""
+
 import enum
 import uuid
 from datetime import UTC, datetime
@@ -58,16 +59,26 @@ class DynamicOffer(Base):
     # Social proof
     purchases_count = Column(Integer, default=0)
     viewers_count = Column(Integer, default=0)
-    social_proof_message = Column(String(500), nullable=True)  # "{N} people bought this today"
+    social_proof_message = Column(
+        String(500), nullable=True
+    )  # "{N} people bought this today"
 
     # Personalization
-    target_user_segment = Column(String(100), nullable=True)  # VIP, new_users, frequent_buyers
-    personalization_score = Column(Float, default=0)  # 0-1 how personalized for each user
+    target_user_segment = Column(
+        String(100), nullable=True
+    )  # VIP, new_users, frequent_buyers
+    personalization_score = Column(
+        Float, default=0
+    )  # 0-1 how personalized for each user
 
     # Messaging
-    headline = Column(String(200), nullable=False)  # "Grab yours before stock runs out!"
+    headline = Column(
+        String(200), nullable=False
+    )  # "Grab yours before stock runs out!"
     description = Column(Text, nullable=True)
-    urgency_badge = Column(String(50), nullable=True)  # "Only 5 left", "Ends in 2h", "Limited edition"
+    urgency_badge = Column(
+        String(50), nullable=True
+    )  # "Only 5 left", "Ends in 2h", "Limited edition"
     cta_text = Column(String(100), default="Buy Now")
 
     # Tracking
@@ -83,7 +94,9 @@ class PriceElasticity(Base):
     product_id = Column(String(36), nullable=False, index=True)
 
     # Elasticity data
-    elasticity_coefficient = Column(Float, default=-1.2)  # < -1 = elastic, > -1 = inelastic
+    elasticity_coefficient = Column(
+        Float, default=-1.2
+    )  # < -1 = elastic, > -1 = inelastic
     current_demand = Column(Integer, default=0)
     previous_price = Column(Float, nullable=True)
     previous_quantity = Column(Integer, nullable=True)
@@ -99,7 +112,9 @@ class FOMOBadge(Base):
     offer_id = Column(String(36), nullable=False)
 
     # Badge data
-    badge_type = Column(String(50), nullable=False)  # "stock_alert", "time_alert", "price_increase", "best_seller"
+    badge_type = Column(
+        String(50), nullable=False
+    )  # "stock_alert", "time_alert", "price_increase", "best_seller"
     urgency_level = Column(Integer, default=1)  # 1-5, 5 = most urgent
     badge_text = Column(String(100), nullable=False)
     badge_color = Column(String(20), default="red")  # red, orange, yellow
@@ -149,11 +164,17 @@ class PersonalizedFOMO(Base):
 
     # Personalization strategy
     trigger_message = Column(String(300), nullable=True)  # Custom message for this user
-    trigger_type = Column(String(50), nullable=True)  # "price_drop", "back_in_stock", "friend_bought", "trending"
-    persuasion_angle = Column(String(100), nullable=True)  # "scarcity", "urgency", "social_proof", "quality"
+    trigger_type = Column(
+        String(50), nullable=True
+    )  # "price_drop", "back_in_stock", "friend_bought", "trending"
+    persuasion_angle = Column(
+        String(100), nullable=True
+    )  # "scarcity", "urgency", "social_proof", "quality"
 
     # Effectiveness
-    conversion_probability = Column(Float, default=0)  # 0-1 estimated chance they'll buy
+    conversion_probability = Column(
+        Float, default=0
+    )  # 0-1 estimated chance they'll buy
     recommended_offer = Column(String(500), nullable=True)  # Best offer for this user
 
     created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))

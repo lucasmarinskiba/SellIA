@@ -130,20 +130,27 @@ _COLUMN_PATCHES: list[str] = [
 ]
 
 
-_PATCH_TARGET = re.compile(r"ALTER TABLE (\w+) ADD COLUMN IF NOT EXISTS (\w+)", re.IGNORECASE)
+_PATCH_TARGET = re.compile(
+    r"ALTER TABLE (\w+) ADD COLUMN IF NOT EXISTS (\w+)", re.IGNORECASE
+)
 
 
 async def _existing_bt_columns(engine) -> set[tuple[str, str]] | None:
     """(table, column) pairs already present on the bt_* tables, or None if unreadable."""
     try:
         async with engine.connect() as conn:
-            result = await conn.execute(text(
-                "SELECT table_name, column_name FROM information_schema.columns "
-                "WHERE table_schema = current_schema() AND table_name LIKE 'bt\\_%'"
-            ))
+            result = await conn.execute(
+                text(
+                    "SELECT table_name, column_name FROM information_schema.columns "
+                    "WHERE table_schema = current_schema() AND table_name LIKE 'bt\\_%'"
+                )
+            )
             return {(row[0], row[1]) for row in result}
     except Exception as e:  # noqa: BLE001
-        logger.warning("brand_transformation bootstrap: could not read existing columns: %s", str(e)[:120])
+        logger.warning(
+            "brand_transformation bootstrap: could not read existing columns: %s",
+            str(e)[:120],
+        )
         return None
 
 
@@ -162,7 +169,8 @@ async def ensure_brand_transformation_tables() -> None:
         except Exception as e:  # noqa: BLE001
             logger.warning(
                 "brand_transformation bootstrap: table %s skipped: %s",
-                table.name, str(e)[:160],
+                table.name,
+                str(e)[:160],
             )
 
     # `ADD COLUMN IF NOT EXISTS` is a no-op on an up-to-date table, but Postgres
@@ -176,7 +184,11 @@ async def ensure_brand_transformation_tables() -> None:
     patched = 0
     for stmt in _COLUMN_PATCHES:
         target = _PATCH_TARGET.match(stmt)
-        if existing_columns is not None and target and target.groups() in existing_columns:
+        if (
+            existing_columns is not None
+            and target
+            and target.groups() in existing_columns
+        ):
             patched += 1
             continue
         try:
@@ -184,7 +196,11 @@ async def ensure_brand_transformation_tables() -> None:
                 await conn.execute(text(stmt))
             patched += 1
         except Exception as e:  # noqa: BLE001
-            logger.warning("brand_transformation bootstrap: column patch skipped (%s): %s", stmt[:60], str(e)[:120])
+            logger.warning(
+                "brand_transformation bootstrap: column patch skipped (%s): %s",
+                stmt[:60],
+                str(e)[:120],
+            )
 
     # Bridge targets that the positioning bridge writes to — small self-contained
     # FK graphs (monitors -> businesses, battlecards -> users). Provisioned here
@@ -197,22 +213,35 @@ async def ensure_brand_transformation_tables() -> None:
             CompetitiveMonitor,
         )
 
-        _bridge_tables += [CompetitiveMonitor.__table__, CompetitiveBattlecard.__table__]
+        _bridge_tables += [
+            CompetitiveMonitor.__table__,
+            CompetitiveBattlecard.__table__,
+        ]
     except Exception as e:  # noqa: BLE001
-        logger.warning("brand_transformation bootstrap: competitive models import skipped: %s", str(e)[:120])
+        logger.warning(
+            "brand_transformation bootstrap: competitive models import skipped: %s",
+            str(e)[:120],
+        )
     try:
         from app.domains.ai_content_generation.models import ContentTemplate
 
         _bridge_tables += [ContentTemplate.__table__]
     except Exception as e:  # noqa: BLE001
-        logger.warning("brand_transformation bootstrap: content template model import skipped: %s", str(e)[:120])
+        logger.warning(
+            "brand_transformation bootstrap: content template model import skipped: %s",
+            str(e)[:120],
+        )
 
     for t in _bridge_tables:
         try:
             async with engine.begin() as conn:
                 await conn.run_sync(lambda c, tt=t: tt.create(bind=c, checkfirst=True))
         except Exception as e:  # noqa: BLE001
-            logger.warning("brand_transformation bootstrap: bridge table %s skipped: %s", t.name, str(e)[:120])
+            logger.warning(
+                "brand_transformation bootstrap: bridge table %s skipped: %s",
+                t.name,
+                str(e)[:120],
+            )
 
     # generated_content: its ORM model's product_id FK targets `products`, which
     # lives on a different declarative Base, so t.create() can't resolve it.
@@ -239,9 +268,15 @@ async def ensure_brand_transformation_tables() -> None:
         async with engine.begin() as conn:
             await conn.execute(text(_GENERATED_CONTENT_DDL))
     except Exception as e:  # noqa: BLE001
-        logger.warning("brand_transformation bootstrap: generated_content DDL skipped: %s", str(e)[:120])
+        logger.warning(
+            "brand_transformation bootstrap: generated_content DDL skipped: %s",
+            str(e)[:120],
+        )
 
     logger.info(
         "✅ brand_transformation tables ensured (%s/%s, %s/%s column patches)",
-        created, len(BRAND_TRANSFORMATION_TABLES), patched, len(_COLUMN_PATCHES),
+        created,
+        len(BRAND_TRANSFORMATION_TABLES),
+        patched,
+        len(_COLUMN_PATCHES),
     )

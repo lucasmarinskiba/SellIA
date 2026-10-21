@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 class StoryType(str, Enum):
     """Types of stories."""
+
     ORIGIN = "origin"  # How company started
     MISSION = "mission"  # What company stands for
     CUSTOMER = "customer"  # Customer success story
@@ -27,6 +28,7 @@ class StoryType(str, Enum):
 
 class CommunicationFramework(str, Enum):
     """Communication story frameworks."""
+
     HEROS_JOURNEY = "heros_journey"  # Hero's Journey framework
     PIXAR = "pixar"  # Pixar story structure
     TED = "ted"  # TED talk structure
@@ -375,10 +377,7 @@ class StorytellingAgent:
 
     @staticmethod
     def craft_brand_story(
-        company_name: str,
-        founder_origin: str,
-        mission: str,
-        target_audience: str
+        company_name: str, founder_origin: str, mission: str, target_audience: str
     ) -> dict[str, Any]:
         """Craft compelling brand story."""
         return {
@@ -409,32 +408,34 @@ class StorytellingAgent:
         customer_role: str,
         initial_challenge: str,
         solution_provided: str,
-        results: dict[str, Any]
+        results: dict[str, Any],
     ) -> dict[str, Any]:
         """Create structured customer case study."""
         case_study = StorytellingAgent.CUSTOMER_STORY_FRAMEWORK.copy()
-        case_study.update({
-            "customer": customer_name,
-            "role": customer_role,
-            "challenge": initial_challenge,
-            "solution": solution_provided,
-            "results": results,
-            "structure": [
-                "1. Introduction (who, what, context)",
-                "2. Challenge (problem, stakes, impact)",
-                "3. Solution (how we helped, implementation)",
-                "4. Results (quantified + qualitative)",
-                "5. Quote (testimonial from customer)",
-                "6. Call to action (similar customers)",
-            ],
-            "formats": [
-                "1-page PDF",
-                "Video testimonial (3-5 min)",
-                "Blog post",
-                "Case study page on website",
-                "LinkedIn article",
-            ],
-        })
+        case_study.update(
+            {
+                "customer": customer_name,
+                "role": customer_role,
+                "challenge": initial_challenge,
+                "solution": solution_provided,
+                "results": results,
+                "structure": [
+                    "1. Introduction (who, what, context)",
+                    "2. Challenge (problem, stakes, impact)",
+                    "3. Solution (how we helped, implementation)",
+                    "4. Results (quantified + qualitative)",
+                    "5. Quote (testimonial from customer)",
+                    "6. Call to action (similar customers)",
+                ],
+                "formats": [
+                    "1-page PDF",
+                    "Video testimonial (3-5 min)",
+                    "Blog post",
+                    "Case study page on website",
+                    "LinkedIn article",
+                ],
+            }
+        )
 
         return case_study
 
@@ -444,7 +445,7 @@ class StorytellingAgent:
         problem: str,
         solution: str,
         market_size: str,
-        target_customer: str
+        target_customer: str,
     ) -> dict[str, Any]:
         """Build compelling pitch narrative."""
         return {
@@ -469,9 +470,7 @@ class StorytellingAgent:
 
     @staticmethod
     def design_investor_pitch(
-        company: str,
-        funding_amount: float,
-        use_of_funds: dict[str, float]
+        company: str, funding_amount: float, use_of_funds: dict[str, float]
     ) -> dict[str, Any]:
         """Design investor pitch deck."""
         return {
@@ -516,16 +515,18 @@ class StorytellingAgent:
         ordinary_world: str,
         call_to_adventure: str,
         climax: str,
-        resolution: str
+        resolution: str,
     ) -> dict[str, Any]:
         """Apply Hero's Journey framework to your story."""
         journey = []
         for stage in StorytellingAgent.HEROS_JOURNEY["structure"]:
-            journey.append({
-                "stage": stage["stage"],
-                "description": stage["description"],
-                "in_your_story": "",
-            })
+            journey.append(
+                {
+                    "stage": stage["stage"],
+                    "description": stage["description"],
+                    "in_your_story": "",
+                }
+            )
 
         return {
             "protagonist": protagonist,
@@ -538,8 +539,7 @@ class StorytellingAgent:
 
     @staticmethod
     def create_content_narratives(
-        primary_story: str,
-        target_segments: list[str]
+        primary_story: str, target_segments: list[str]
     ) -> dict[str, Any]:
         """Create tailored narratives for different audience segments."""
         return {

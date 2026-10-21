@@ -46,24 +46,36 @@ async def get_catalog(
         MessageDirection,
     )
 
-    biz_result = await db.execute(select(Business.id, Business.name).where(Business.user_id == user.id))
+    biz_result = await db.execute(
+        select(Business.id, Business.name).where(Business.user_id == user.id)
+    )
     businesses = biz_result.all()
     business_ids = [b[0] for b in businesses]
 
     connections: dict[str, dict[str, Any]] = {}
     if business_ids:
         conn_result = await db.execute(
-            select(ChannelConnection).where(ChannelConnection.business_id.in_(business_ids))
+            select(ChannelConnection).where(
+                ChannelConnection.business_id.in_(business_ids)
+            )
         )
         for conn in conn_result.scalars().all():
-            platform = conn.platform.value if hasattr(conn.platform, "value") else str(conn.platform)
+            platform = (
+                conn.platform.value
+                if hasattr(conn.platform, "value")
+                else str(conn.platform)
+            )
 
             # Real traffic on this connection -- the only proof it works.
             counts = await db.execute(
                 select(
                     func.count(Conversation.id.distinct()),
-                    func.count(Message.id).filter(Message.direction == MessageDirection.INBOUND),
-                    func.count(Message.id).filter(Message.direction == MessageDirection.OUTBOUND),
+                    func.count(Message.id).filter(
+                        Message.direction == MessageDirection.INBOUND
+                    ),
+                    func.count(Message.id).filter(
+                        Message.direction == MessageDirection.OUTBOUND
+                    ),
                 )
                 .select_from(Conversation)
                 .outerjoin(Message, Message.conversation_id == Conversation.id)
@@ -75,11 +87,17 @@ async def get_catalog(
                 "id": str(conn.id),
                 "business_id": str(conn.business_id),
                 "name": conn.name,
-                "status": conn.status.value if hasattr(conn.status, "value") else str(conn.status),
+                "status": (
+                    conn.status.value
+                    if hasattr(conn.status, "value")
+                    else str(conn.status)
+                ),
                 "status_message": conn.status_message,
                 "is_active": bool(conn.is_active),
                 "webhook_url": conn.webhook_url,
-                "last_sync_at": conn.last_sync_at.isoformat() if conn.last_sync_at else None,
+                "last_sync_at": (
+                    conn.last_sync_at.isoformat() if conn.last_sync_at else None
+                ),
                 "credentials": mask_credentials(conn.credentials),
                 "missing_required": missing_required(platform, conn.credentials),
                 "traffic": {
@@ -93,13 +111,15 @@ async def get_catalog(
     entries = []
     for entry in catalog_entries():
         connection = connections.get(entry["platform"])
-        entries.append({
-            **entry,
-            "connection": connection,
-            # "Conectado" is not a checkbox: it means credentials complete AND
-            # the platform has actually delivered or accepted a message.
-            "state": _state_for(connection),
-        })
+        entries.append(
+            {
+                **entry,
+                "connection": connection,
+                # "Conectado" is not a checkbox: it means credentials complete AND
+                # the platform has actually delivered or accepted a message.
+                "state": _state_for(connection),
+            }
+        )
 
     return {
         "business_id": str(business_ids[0]) if business_ids else None,
@@ -114,6 +134,9 @@ def _state_for(connection: dict[str, Any] | None) -> str:
         return "not_connected"
     if connection["missing_required"]:
         return "incomplete"
-    if connection["traffic"]["inbound_messages"] or connection["traffic"]["outbound_messages"]:
+    if (
+        connection["traffic"]["inbound_messages"]
+        or connection["traffic"]["outbound_messages"]
+    ):
         return "live"
     return "configured"

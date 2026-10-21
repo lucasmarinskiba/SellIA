@@ -4,7 +4,6 @@ Pricing: ~$0.02/image
 Strengths: Background removal, product photography, batch editing
 """
 
-
 import logging
 from typing import ClassVar
 
@@ -42,7 +41,9 @@ class PhotoroomProvider(BaseProvider):
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         if not self.is_available:
-            return GenerationResult(success=False, error_message="PHOTOROOM_API_KEY no configurada")
+            return GenerationResult(
+                success=False, error_message="PHOTOROOM_API_KEY no configurada"
+            )
 
         try:
             import aiohttp
@@ -62,14 +63,23 @@ class PhotoroomProvider(BaseProvider):
             ) as resp:
                 data = await resp.json()
 
-            image_url = data.get("image", {}).get("url") if isinstance(data.get("image"), dict) else data.get("images", [{}])[0].get("url")
+            image_url = (
+                data.get("image", {}).get("url")
+                if isinstance(data.get("image"), dict)
+                else data.get("images", [{}])[0].get("url")
+            )
             if not image_url:
-                return GenerationResult(success=False, error_message="Photoroom no devolvió imagen")
+                return GenerationResult(
+                    success=False, error_message="Photoroom no devolvió imagen"
+                )
 
             image_bytes = await download_url(image_url)
             compressed = None
             if image_bytes:
-                compressed = compress_image(image_bytes, quality=smart_quality_for_size(get_image_size_kb(image_bytes)))
+                compressed = compress_image(
+                    image_bytes,
+                    quality=smart_quality_for_size(get_image_size_kb(image_bytes)),
+                )
 
             return GenerationResult(
                 success=True,

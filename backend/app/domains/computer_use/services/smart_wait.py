@@ -31,12 +31,18 @@ class SmartWait:
             elif state == "hidden":
                 await page.wait_for_selector(selector, state="hidden", timeout=timeout)
             elif state == "attached":
-                await page.wait_for_selector(selector, state="attached", timeout=timeout)
+                await page.wait_for_selector(
+                    selector, state="attached", timeout=timeout
+                )
             elif state == "detached":
-                await page.wait_for_selector(selector, state="detached", timeout=timeout)
+                await page.wait_for_selector(
+                    selector, state="detached", timeout=timeout
+                )
             return True
         except Exception as e:
-            logger.warning(f"SmartWait: element {selector} not {state}: {e}", exc_info=True)
+            logger.warning(
+                f"SmartWait: element {selector} not {state}: {e}", exc_info=True
+            )
             return False
 
     async def wait_for_navigation(
@@ -65,6 +71,7 @@ class SmartWait:
     ) -> bool:
         """Espera a que aparezca un texto en la página."""
         import time
+
         start = time.time() * 1000
         while (time.time() * 1000 - start) < timeout:
             try:
@@ -92,6 +99,7 @@ class SmartWait:
     ) -> bool:
         """Espera a que el DOM esté estable (sin cambios por N ms)."""
         import time
+
         start = time.time() * 1000
         last_html = ""
         stable_since = None
@@ -126,7 +134,9 @@ class SmartWait:
                 pass
             return True
         except Exception as e:
-            logger.warning(f"SmartWait: request {url_pattern} not seen: {e}", exc_info=True)
+            logger.warning(
+                f"SmartWait: request {url_pattern} not seen: {e}", exc_info=True
+            )
             return False
 
     async def wait_for_console_message(

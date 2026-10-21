@@ -39,7 +39,9 @@ async def mercado_libre_callback(
     """Handle Mercado Libre OAuth callback."""
     try:
         token_data = await MercadoLibreOAuth.exchange_code(code)
-        seller_info = await MercadoLibreOAuth.get_seller_info(token_data["access_token"])
+        seller_info = await MercadoLibreOAuth.get_seller_info(
+            token_data["access_token"]
+        )
 
         cred = await store_platform_credential(
             db=db,
@@ -153,7 +155,9 @@ async def get_platform_status(
         status[platform] = {
             "connected": cred is not None,
             "seller_username": cred.seller_username if cred else None,
-            "last_sync": cred.last_sync_at.isoformat() if cred and cred.last_sync_at else None,
+            "last_sync": (
+                cred.last_sync_at.isoformat() if cred and cred.last_sync_at else None
+            ),
         }
 
     return status

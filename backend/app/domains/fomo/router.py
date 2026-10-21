@@ -109,17 +109,17 @@ async def log_event(
     )
 
     # Record metric
-    if event_type == 'purchase' and metadata:
-        revenue = metadata.get('revenue')
+    if event_type == "purchase" and metadata:
+        revenue = metadata.get("revenue")
         if revenue:
             await fomo_service.record_metric(
                 db,
                 campaign_id,
-                'conversion',
+                "conversion",
                 Decimal(str(revenue)),
             )
     else:
-        await fomo_service.record_metric(db, campaign_id, 'impression')
+        await fomo_service.record_metric(db, campaign_id, "impression")
 
     await db.commit()
     return {"id": str(event.id), "event_type": event.event_type}
@@ -182,7 +182,7 @@ async def record_ab_view(
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Record view for A/B test."""
-    if variant not in ['A', 'B']:
+    if variant not in ["A", "B"]:
         raise HTTPException(status_code=400, detail="Variant must be A or B")
 
     await fomo_service.record_ab_test_view(db, test_id, variant)
@@ -197,7 +197,7 @@ async def record_ab_conversion(
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Record conversion for A/B test."""
-    if variant not in ['A', 'B']:
+    if variant not in ["A", "B"]:
         raise HTTPException(status_code=400, detail="Variant must be A or B")
 
     await fomo_service.record_ab_test_conversion(db, test_id, variant)
@@ -258,13 +258,15 @@ async def get_all_campaigns_with_analytics(
 
     for campaign in campaigns:
         summary = await fomo_service.get_summary_metrics(db, campaign.id)
-        result.append({
-            "id": str(campaign.id),
-            "name": campaign.name,
-            "status": campaign.status,
-            "campaign_type": campaign.campaign_type,
-            "summary": summary,
-        })
+        result.append(
+            {
+                "id": str(campaign.id),
+                "name": campaign.name,
+                "status": campaign.status,
+                "campaign_type": campaign.campaign_type,
+                "summary": summary,
+            }
+        )
 
     return result
 

@@ -4,7 +4,6 @@ Pricing: ~$0.01/generation
 Strengths: Emails, sequences, blog posts, brand voice consistency
 """
 
-
 import logging
 from typing import ClassVar
 
@@ -36,7 +35,9 @@ class JasperProvider(BaseProvider):
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         if not self.is_available:
-            return GenerationResult(success=False, error_message="JASPER_API_KEY no configurada")
+            return GenerationResult(
+                success=False, error_message="JASPER_API_KEY no configurada"
+            )
 
         try:
             import aiohttp
@@ -60,7 +61,9 @@ class JasperProvider(BaseProvider):
 
             text = data.get("text") or data.get("content")
             if not text:
-                return GenerationResult(success=False, error_message="Jasper no devolvió texto")
+                return GenerationResult(
+                    success=False, error_message="Jasper no devolvió texto"
+                )
 
             return GenerationResult(
                 success=True,

@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 # MERCADO LIBRE HANDLER — Marketplace LATAM Leader
 # ============================================================================
 
+
 class MercadoLibreComputerUseHandler:
     """
     Automatización completa de Mercado Libre vía Computer Use.
@@ -73,7 +74,9 @@ class MercadoLibreComputerUseHandler:
             await self.browser_utils.click_by_vision("Login button or Continue button")
 
             # 5. Espera dashboard
-            await self.browser_utils.wait_for_element("Seller dashboard or Account page", timeout=15)
+            await self.browser_utils.wait_for_element(
+                "Seller dashboard or Account page", timeout=15
+            )
 
             logger.info("Mercado Libre authentication successful")
             self.is_authenticated = True
@@ -126,7 +129,9 @@ class MercadoLibreComputerUseHandler:
             # await computer_use.navigate(f"{self.base_url}/mylogin/seller")
 
             # Busca botón "Crear publicación" o "Vender"
-            await self.browser_utils.click_by_vision("Vender button or Create listing button")
+            await self.browser_utils.click_by_vision(
+                "Vender button or Create listing button"
+            )
 
             # 2. Selecciona categoría
             await self.browser_utils.wait_for_element("Category selector", timeout=10)
@@ -144,17 +149,23 @@ class MercadoLibreComputerUseHandler:
             # 5. Sube fotos
             if photos:
                 for i, photo_path in enumerate(photos[:10]):  # Máximo 10 fotos
-                    await self.browser_utils.click_by_vision("Upload photo button or Add photo")
+                    await self.browser_utils.click_by_vision(
+                        "Upload photo button or Add photo"
+                    )
                     # En producción: upload file via Computer Use
                     logger.info(f"Uploading photo {i+1}/{len(photos)}")
                     await asyncio.sleep(2)  # Espera upload
 
             # 6. Selecciona método envío
-            await self.browser_utils.click_by_vision("Shipping method dropdown or Envío")
+            await self.browser_utils.click_by_vision(
+                "Shipping method dropdown or Envío"
+            )
             await self.browser_utils.click_by_vision(f"Shipping: {shipping_method}")
 
             # 7. Publica
-            await self.browser_utils.click_by_vision("Publish button or Publicar button", )
+            await self.browser_utils.click_by_vision(
+                "Publish button or Publicar button",
+            )
             await self.browser_utils.wait_for_element(
                 "Success message or Product published confirmation",
                 timeout=15,
@@ -202,7 +213,9 @@ class MercadoLibreComputerUseHandler:
             # await computer_use.navigate(f"{self.base_url}/mylogin/questions")
 
             # 2. Espera lista de preguntas
-            await self.browser_utils.wait_for_element("Questions list or Preguntas section", timeout=10)
+            await self.browser_utils.wait_for_element(
+                "Questions list or Preguntas section", timeout=10
+            )
 
             # 3. Extrae preguntas sin respuesta
             questions = []
@@ -226,11 +239,17 @@ class MercadoLibreComputerUseHandler:
                     # En producción: response_text = await llm.generate_response(question)
 
                     # Escribe respuesta
-                    await self.browser_utils.click_by_vision("Response textarea or Responder")
-                    await self.browser_utils.type_in_field("Response field", response_text)
+                    await self.browser_utils.click_by_vision(
+                        "Response textarea or Responder"
+                    )
+                    await self.browser_utils.type_in_field(
+                        "Response field", response_text
+                    )
 
                     # Publica
-                    await self.browser_utils.click_by_vision("Publish response button or Responder button")
+                    await self.browser_utils.click_by_vision(
+                        "Publish response button or Responder button"
+                    )
 
                     logger.info(f"Responded to question {i+1}")
 
@@ -267,13 +286,19 @@ class MercadoLibreComputerUseHandler:
             await self.browser_utils.click_by_vision(f"Order {order_id} or Click order")
 
             # 3. Confirma pago
-            await self.browser_utils.click_by_vision("Confirm payment button or Confirmar pago")
+            await self.browser_utils.click_by_vision(
+                "Confirm payment button or Confirmar pago"
+            )
 
             # 4. Genera envío
-            await self.browser_utils.click_by_vision("Generate shipping label or Generar envío")
+            await self.browser_utils.click_by_vision(
+                "Generate shipping label or Generar envío"
+            )
 
             # 5. Espera shipping label
-            await self.browser_utils.wait_for_element("Shipping label generated", timeout=10)
+            await self.browser_utils.wait_for_element(
+                "Shipping label generated", timeout=10
+            )
 
             # 6. Notifica comprador
             await self.browser_utils.click_by_vision("Notify buyer button")
@@ -289,6 +314,7 @@ class MercadoLibreComputerUseHandler:
 # ============================================================================
 # SHOPIFY HANDLER — Owned E-Commerce Store
 # ============================================================================
+
 
 class ShopifyComputerUseHandler:
     """
@@ -338,13 +364,18 @@ class ShopifyComputerUseHandler:
             await asyncio.sleep(2)
             screenshot = await self.browser_utils.screenshot_and_analyze()
 
-            if "2fa" in str(screenshot).lower() or "two-factor" in str(screenshot).lower():
+            if (
+                "2fa" in str(screenshot).lower()
+                or "two-factor" in str(screenshot).lower()
+            ):
                 logger.info("2FA required, waiting for manual confirmation")
                 # En producción, escalará a usuario
                 return False
 
             # 5. Verifica acceso
-            await self.browser_utils.wait_for_element("Shopify dashboard or Products page", timeout=10)
+            await self.browser_utils.wait_for_element(
+                "Shopify dashboard or Products page", timeout=10
+            )
 
             logger.info("Shopify authentication successful")
             self.is_authenticated = True
@@ -392,11 +423,15 @@ class ShopifyComputerUseHandler:
             await self.browser_utils.screenshot_and_analyze()
 
             # 2. Busca "Add product" o "Create"
-            await self.browser_utils.click_by_vision("Add product button or Create product")
+            await self.browser_utils.click_by_vision(
+                "Add product button or Create product"
+            )
 
             # 3. Rellena información
             await self.browser_utils.type_in_field("Product title field", name)
-            await self.browser_utils.type_in_field("Product description field", description)
+            await self.browser_utils.type_in_field(
+                "Product description field", description
+            )
 
             # 4. Rellena pricing
             await self.browser_utils.click_by_vision("Pricing section or Price")
@@ -416,7 +451,9 @@ class ShopifyComputerUseHandler:
 
             # 7. Guarda
             await self.browser_utils.click_by_vision("Save product button or Save")
-            await self.browser_utils.wait_for_element("Product saved or Success message", timeout=15)
+            await self.browser_utils.wait_for_element(
+                "Product saved or Success message", timeout=15
+            )
 
             logger.info(f"Shopify product created: {name}")
             return {"success": True, "product_name": name}
@@ -488,7 +525,9 @@ class ShopifyComputerUseHandler:
 
             # 4. Fulfillment
             await self.browser_utils.click_by_vision("Fulfill order button")
-            await self.browser_utils.click_by_vision("Confirm fulfillment or Create shipment")
+            await self.browser_utils.click_by_vision(
+                "Confirm fulfillment or Create shipment"
+            )
 
             logger.info(f"Order processed: {order_number}")
             return True
@@ -501,6 +540,7 @@ class ShopifyComputerUseHandler:
 # ============================================================================
 # FACEBOOK HANDLER — Marketplace + Messenger
 # ============================================================================
+
 
 class FacebookComputerUseHandler:
     """
@@ -531,7 +571,9 @@ class FacebookComputerUseHandler:
 
             # Login
             await self.browser_utils.click_by_vision("Log In button")
-            await self.browser_utils.wait_for_element("Facebook feed or Home", timeout=10)
+            await self.browser_utils.wait_for_element(
+                "Facebook feed or Home", timeout=10
+            )
 
             logger.info("Facebook authentication successful")
             self.is_authenticated = True
@@ -572,7 +614,9 @@ class FacebookComputerUseHandler:
             await self.browser_utils.click_by_vision("Marketplace icon or Marketplace")
 
             # 2. Busca "Sell something"
-            await self.browser_utils.click_by_vision("Sell something button or Create new listing")
+            await self.browser_utils.click_by_vision(
+                "Sell something button or Create new listing"
+            )
 
             # 3. Rellena campos
             await self.browser_utils.type_in_field("Item name field", title)
@@ -633,7 +677,9 @@ class FacebookComputerUseHandler:
 
             # 4. Responde cada uno
             for msg in messages:
-                await self.browser_utils.click_by_vision(f"Message from {msg.get('sender')}")
+                await self.browser_utils.click_by_vision(
+                    f"Message from {msg.get('sender')}"
+                )
 
                 # Genera respuesta
                 response = "Thanks for your interest!"
@@ -653,6 +699,7 @@ class FacebookComputerUseHandler:
 # ============================================================================
 # WHATSAPP HANDLER — Direct Messaging
 # ============================================================================
+
 
 class WhatsAppComputerUseHandler:
     """
@@ -693,7 +740,9 @@ class WhatsAppComputerUseHandler:
             logger.info("Waiting for authentication...")
 
             # 3. Espera autenticación (puede tardar)
-            await self.browser_utils.wait_for_element("Chat list or Conversations", timeout=60)
+            await self.browser_utils.wait_for_element(
+                "Chat list or Conversations", timeout=60
+            )
 
             logger.info("WhatsApp Web authenticated")
             self.is_authenticated = True
@@ -723,7 +772,9 @@ class WhatsAppComputerUseHandler:
             await self.browser_utils.click_by_vision("New chat button or Search")
 
             # 2. Ingresa teléfono
-            await self.browser_utils.type_in_field("Search or phone field", phone_number)
+            await self.browser_utils.type_in_field(
+                "Search or phone field", phone_number
+            )
 
             # 3. Selecciona contacto
             await self.browser_utils.click_by_vision(f"Contact {phone_number}")
@@ -819,6 +870,7 @@ class WhatsAppComputerUseHandler:
 # ============================================================================
 # EMAIL HANDLER — Gmail / Outlook
 # ============================================================================
+
 
 class EmailComputerUseHandler:
     """
@@ -959,7 +1011,9 @@ class EmailComputerUseHandler:
                 if success:
                     sent_count += 1
 
-            logger.info(f"Nurture sequence completed: {sent_count}/{len(emails)} emails sent")
+            logger.info(
+                f"Nurture sequence completed: {sent_count}/{len(emails)} emails sent"
+            )
             return sent_count
 
         except Exception:
@@ -970,6 +1024,7 @@ class EmailComputerUseHandler:
 # ============================================================================
 # HANDLER FACTORY
 # ============================================================================
+
 
 class PlatformHandlerFactory:
     """Factory para crear handlers de plataforma."""

@@ -21,6 +21,7 @@ from app.core.database import Base
 
 class AttributionModel(str, Enum):
     """Attribution models."""
+
     FIRST_TOUCH = "first_touch"
     LAST_TOUCH = "last_touch"
     LINEAR = "linear"
@@ -30,11 +31,22 @@ class AttributionModel(str, Enum):
 
 class Touchpoint(Base):
     """Customer journey touchpoint."""
+
     __tablename__ = "touchpoints"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    customer_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    customer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Touchpoint details
     channel = Column(String(50), nullable=False)  # email, sms, web, social, ads, direct
@@ -43,7 +55,9 @@ class Touchpoint(Base):
     campaign = Column(String(255), nullable=True)  # campaign name/id
 
     # Interaction
-    interaction_type = Column(String(50), nullable=False)  # click, view, form_submit, chat, call
+    interaction_type = Column(
+        String(50), nullable=False
+    )  # click, view, form_submit, chat, call
     interaction_data = Column(JSONB, nullable=True)  # {utm_params, referrer, device}
 
     # Timing
@@ -60,11 +74,22 @@ class Touchpoint(Base):
 
 class CustomerJourney(Base):
     """Complete customer journey from first to conversion."""
+
     __tablename__ = "customer_journeys"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    customer_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    customer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Journey timeline
     first_touch_at = Column(DateTime(UTC), nullable=False)
@@ -91,15 +116,27 @@ class CustomerJourney(Base):
 
 class AttributionCredit(Base):
     """Revenue attribution to touchpoint."""
+
     __tablename__ = "attribution_credits"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Transaction & Touchpoint
     order_id = Column(UUID(as_uuid=True), nullable=False, index=True)
-    touchpoint_id = Column(UUID(as_uuid=True), ForeignKey("touchpoints.id", ondelete="CASCADE"), nullable=False)
-    customer_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    touchpoint_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("touchpoints.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    customer_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
 
     # Attribution
     attribution_model = Column(String(50), nullable=False)  # AttributionModel value
@@ -121,10 +158,16 @@ class AttributionCredit(Base):
 
 class ChannelPerformance(Base):
     """Channel-level attribution metrics."""
+
     __tablename__ = "channel_performance"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Period
     period_start = Column(DateTime(UTC), nullable=False)
@@ -154,10 +197,16 @@ class ChannelPerformance(Base):
 
 class AttributionMetrics(Base):
     """Aggregated attribution metrics."""
+
     __tablename__ = "attribution_metrics"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, unique=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
 
     # Overall metrics
     total_journeys = Column(Integer, default=0)
@@ -177,6 +226,4 @@ class AttributionMetrics(Base):
     # Timeline
     last_calculated_at = Column(DateTime(UTC), nullable=True)
 
-    __table_args__ = (
-        Index("idx_business_metrics", "business_id"),
-    )
+    __table_args__ = (Index("idx_business_metrics", "business_id"),)

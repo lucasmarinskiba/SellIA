@@ -24,7 +24,9 @@ class SellIAActionExecutor:
         self.business_id = business_id
         self.agent_service = AgentService(db)
 
-    async def execute(self, action_type: str, parameters: dict[str, Any]) -> dict[str, Any]:
+    async def execute(
+        self, action_type: str, parameters: dict[str, Any]
+    ) -> dict[str, Any]:
         """Ejecuta una acción y retorna resultado estructurado."""
         executors = {
             "CREATE_SEQUENCE": self._create_sequence,
@@ -111,8 +113,16 @@ class SellIAActionExecutor:
             "system_prompt_preview": system_prompt[:300] + "...",
             "next_suggested_stage": next_stage.value if next_stage else None,
             "next_actions": [
-                {"label": f"Abrir chat de {label}", "action": "CREATE_CONVERSATION", "agent_slug": f"pipeline-{stage.value}"},
-                {"label": "Ver pipeline completo", "action": "NAVIGATE", "target": "pipeline"},
+                {
+                    "label": f"Abrir chat de {label}",
+                    "action": "CREATE_CONVERSATION",
+                    "agent_slug": f"pipeline-{stage.value}",
+                },
+                {
+                    "label": "Ver pipeline completo",
+                    "action": "NAVIGATE",
+                    "target": "pipeline",
+                },
             ],
         }
 
@@ -213,7 +223,7 @@ class SellIAActionExecutor:
         situation_analysis = ""
         if situation:
             situation_analysis = (
-                f"Situación analizada: \"{situation[:200]}\"\n\n"
+                f'Situación analizada: "{situation[:200]}"\n\n'
                 f"Movimiento de apertura recomendado: {profile['opening_move']}\n"
                 f"Frase clave: {profile['key_phrase']}"
             )
@@ -225,8 +235,16 @@ class SellIAActionExecutor:
             "situation": situation,
             "situation_analysis": situation_analysis,
             "next_actions": [
-                {"label": f"Chatear con {profile['name']}", "action": "CREATE_CONVERSATION", "agent_slug": expert},
-                {"label": "Cambiar experto", "action": "ASK_CLARIFICATION", "question": "¿Qué otro experto en negociación quieres consultar?"},
+                {
+                    "label": f"Chatear con {profile['name']}",
+                    "action": "CREATE_CONVERSATION",
+                    "agent_slug": expert,
+                },
+                {
+                    "label": "Cambiar experto",
+                    "action": "ASK_CLARIFICATION",
+                    "question": "¿Qué otro experto en negociación quieres consultar?",
+                },
             ],
         }
 
@@ -250,15 +268,42 @@ class SellIAActionExecutor:
 
         core_offer_value = price_point * 10 if price_point else 10000
         value_stack = [
-            {"item": f"Core: {product_name}", "description": "La solución principal.", "real_value": f"${core_offer_value:,}", "your_value": "INCLUIDO"},
-            {"item": "Bono 1: Fast Start (7 días)", "description": "Guía de arranque para ver resultados inmediatos.", "real_value": "$497", "your_value": "INCLUIDO"},
-            {"item": "Bono 2: Templates & Scripts", "description": "Biblioteca de plantillas listas para usar.", "real_value": "$297", "your_value": "INCLUIDO"},
-            {"item": "Bono 3: Comunidad privada", "description": "Acceso a red de pares y accountability.", "real_value": "$197/mes", "your_value": "INCLUIDO"},
-            {"item": "Bono 4: Soporte prioritario 30d", "description": "Acceso directo para resolver dudas en <24h.", "real_value": "$500", "your_value": "INCLUIDO"},
+            {
+                "item": f"Core: {product_name}",
+                "description": "La solución principal.",
+                "real_value": f"${core_offer_value:,}",
+                "your_value": "INCLUIDO",
+            },
+            {
+                "item": "Bono 1: Fast Start (7 días)",
+                "description": "Guía de arranque para ver resultados inmediatos.",
+                "real_value": "$497",
+                "your_value": "INCLUIDO",
+            },
+            {
+                "item": "Bono 2: Templates & Scripts",
+                "description": "Biblioteca de plantillas listas para usar.",
+                "real_value": "$297",
+                "your_value": "INCLUIDO",
+            },
+            {
+                "item": "Bono 3: Comunidad privada",
+                "description": "Acceso a red de pares y accountability.",
+                "real_value": "$197/mes",
+                "your_value": "INCLUIDO",
+            },
+            {
+                "item": "Bono 4: Soporte prioritario 30d",
+                "description": "Acceso directo para resolver dudas en <24h.",
+                "real_value": "$500",
+                "your_value": "INCLUIDO",
+            },
         ]
 
         total_perceived_value = core_offer_value + 497 + 297 + (197 * 3) + 500
-        actual_price = price_point if price_point else round(total_perceived_value * 0.1)
+        actual_price = (
+            price_point if price_point else round(total_perceived_value * 0.1)
+        )
 
         guarantee = {
             "type": "Garantía de resultado o devolución",
@@ -269,15 +314,26 @@ class SellIAActionExecutor:
         objection_handlers = []
         if pain_points:
             for pain in pain_points[:3]:
-                objection_handlers.append({
-                    "objection": f"¿Y si {pain}?",
-                    "response": f"Exactamente por eso incluimos [bono específico que resuelve '{pain}'].",
-                })
+                objection_handlers.append(
+                    {
+                        "objection": f"¿Y si {pain}?",
+                        "response": f"Exactamente por eso incluimos [bono específico que resuelve '{pain}'].",
+                    }
+                )
         else:
             objection_handlers = [
-                {"objection": "Es muy caro", "response": f"Si el problema te cuesta ${actual_price * 5:,}/año, este es el ROI más alto posible."},
-                {"objection": "No tengo tiempo", "response": "Diseñado para personas ocupadas. 30 min/día con nuestro método."},
-                {"objection": "No sé si funciona para mí", "response": "Tienes garantía total. Si no funciona, te devolvemos el 100%."},
+                {
+                    "objection": "Es muy caro",
+                    "response": f"Si el problema te cuesta ${actual_price * 5:,}/año, este es el ROI más alto posible.",
+                },
+                {
+                    "objection": "No tengo tiempo",
+                    "response": "Diseñado para personas ocupadas. 30 min/día con nuestro método.",
+                },
+                {
+                    "objection": "No sé si funciona para mí",
+                    "response": "Tienes garantía total. Si no funciona, te devolvemos el 100%.",
+                },
             ]
 
         offer_summary = {
@@ -297,8 +353,17 @@ class SellIAActionExecutor:
             "offer": offer_summary,
             "hormozi_principle": "El precio justo es 1/10 del valor percibido total.",
             "next_actions": [
-                {"label": "Chatear con Alex Hormozi AI", "action": "CREATE_CONVERSATION", "agent_slug": "alex-hormozi"},
-                {"label": "Generar página de ventas", "action": "GENERATE_CONTENT", "agent_slug": "alex-cattoni", "content_request": f"Escribe la página de ventas para: {product_name}"},
+                {
+                    "label": "Chatear con Alex Hormozi AI",
+                    "action": "CREATE_CONVERSATION",
+                    "agent_slug": "alex-hormozi",
+                },
+                {
+                    "label": "Generar página de ventas",
+                    "action": "GENERATE_CONTENT",
+                    "agent_slug": "alex-cattoni",
+                    "content_request": f"Escribe la página de ventas para: {product_name}",
+                },
             ],
         }
 
@@ -314,30 +379,49 @@ class SellIAActionExecutor:
             from app.domains.agents.autonomous.operations_center import (
                 get_operations_center,
             )
+
             center = await get_operations_center(self.db)
             snapshot = await center.run_quick_health_check()
             health_data = snapshot.to_dict()
 
             score = health_data.get("health_score", 0)
             if score >= 90:
-                status_label, status_msg = "🟢 Excelente", "Todos los sistemas operando normalmente."
+                status_label, status_msg = (
+                    "🟢 Excelente",
+                    "Todos los sistemas operando normalmente.",
+                )
             elif score >= 70:
-                status_label, status_msg = "🟡 Bueno", "Sistemas operando bien con observaciones menores."
+                status_label, status_msg = (
+                    "🟡 Bueno",
+                    "Sistemas operando bien con observaciones menores.",
+                )
             elif score >= 50:
-                status_label, status_msg = "🟠 Atención requerida", "Hay issues activos que requieren revisión."
+                status_label, status_msg = (
+                    "🟠 Atención requerida",
+                    "Hay issues activos que requieren revisión.",
+                )
             else:
-                status_label, status_msg = "🔴 Crítico", "El sistema tiene problemas críticos activos."
+                status_label, status_msg = (
+                    "🔴 Crítico",
+                    "El sistema tiene problemas críticos activos.",
+                )
 
             recommendations = []
             if include_recommendations:
                 threats = health_data.get("active_threats", 0)
                 faults = health_data.get("active_faults", 0)
                 if threats > 0:
-                    recommendations.append(f"⚠️ {threats} amenaza(s) activa(s) — revisar en /dashboard/autonomo")
+                    recommendations.append(
+                        f"⚠️ {threats} amenaza(s) activa(s) — revisar en /dashboard/autonomo"
+                    )
                 if faults > 0:
-                    recommendations.append(f"🔧 {faults} falla(s) en proceso de reparación automática")
+                    recommendations.append(
+                        f"🔧 {faults} falla(s) en proceso de reparación automática"
+                    )
                 if score < 70:
-                    recommendations.append("📊 Considera revisar los logs del sistema autónomo")
+                    recommendations.append(
+                        "📊 Considera revisar los logs del sistema autónomo"
+                    )
                 if not recommendations:
                     recommendations.append("✅ No se requieren acciones inmediatas")
 
@@ -349,7 +433,11 @@ class SellIAActionExecutor:
                 "recommendations": recommendations,
                 "navigate_to": "/dashboard/autonomo",
                 "next_actions": [
-                    {"label": "Ver dashboard autónomo", "action": "NAVIGATE", "target": "autonomo"},
+                    {
+                        "label": "Ver dashboard autónomo",
+                        "action": "NAVIGATE",
+                        "target": "autonomo",
+                    },
                 ],
             }
         except Exception:
@@ -359,10 +447,16 @@ class SellIAActionExecutor:
                 "health_score": 75,
                 "status_label": "🟡 Iniciando",
                 "health_data": {"status": "initializing"},
-                "recommendations": ["El sistema autónomo está arrancando. Disponible en unos minutos."],
+                "recommendations": [
+                    "El sistema autónomo está arrancando. Disponible en unos minutos."
+                ],
                 "navigate_to": "/dashboard/autonomo",
                 "next_actions": [
-                    {"label": "Ver dashboard autónomo", "action": "NAVIGATE", "target": "autonomo"},
+                    {
+                        "label": "Ver dashboard autónomo",
+                        "action": "NAVIGATE",
+                        "target": "autonomo",
+                    },
                 ],
             }
 
@@ -391,8 +485,16 @@ class SellIAActionExecutor:
             "message": f"Secuencia de {sequence_type} '{sequence_name}' generada con {len(steps)} pasos.",
             "sequence": sequence_data,
             "next_actions": [
-                {"label": "Guardar secuencia", "action": "SAVE_SEQUENCE", "data": sequence_data},
-                {"label": "Editar pasos", "action": "EDIT_SEQUENCE", "data": sequence_data},
+                {
+                    "label": "Guardar secuencia",
+                    "action": "SAVE_SEQUENCE",
+                    "data": sequence_data,
+                },
+                {
+                    "label": "Editar pasos",
+                    "action": "EDIT_SEQUENCE",
+                    "data": sequence_data,
+                },
             ],
         }
 
@@ -400,24 +502,77 @@ class SellIAActionExecutor:
         """Genera pasos por defecto según tipo de secuencia."""
         if seq_type == "email":
             return [
-                {"step": 1, "delay": "immediately", "subject": f"Bienvenido: {name}", "content": "Email de bienvenida y presentación de valor."},
-                {"step": 2, "delay": "2d", "subject": "Tu problema y nuestra solución", "content": "Email educativo sobre el problema que resuelves."},
-                {"step": 3, "delay": "4d", "subject": "Caso de éxito", "content": "Testimonio o case study de un cliente satisfecho."},
-                {"step": 4, "delay": "3d", "subject": "Oferta especial por tiempo limitado", "content": "Presentación de oferta con urgencia ética."},
-                {"step": 5, "delay": "2d", "subject": "Última oportunidad", "content": "Email de cierre con escasez y llamado a la acción."},
+                {
+                    "step": 1,
+                    "delay": "immediately",
+                    "subject": f"Bienvenido: {name}",
+                    "content": "Email de bienvenida y presentación de valor.",
+                },
+                {
+                    "step": 2,
+                    "delay": "2d",
+                    "subject": "Tu problema y nuestra solución",
+                    "content": "Email educativo sobre el problema que resuelves.",
+                },
+                {
+                    "step": 3,
+                    "delay": "4d",
+                    "subject": "Caso de éxito",
+                    "content": "Testimonio o case study de un cliente satisfecho.",
+                },
+                {
+                    "step": 4,
+                    "delay": "3d",
+                    "subject": "Oferta especial por tiempo limitado",
+                    "content": "Presentación de oferta con urgencia ética.",
+                },
+                {
+                    "step": 5,
+                    "delay": "2d",
+                    "subject": "Última oportunidad",
+                    "content": "Email de cierre con escasez y llamado a la acción.",
+                },
             ]
         elif seq_type == "whatsapp":
             return [
-                {"step": 1, "delay": "immediately", "content": "¡Hola! Gracias por tu interés. Soy [nombre] y te ayudo con [solución]."},
-                {"step": 2, "delay": "1d", "content": "¿Sabías que [dato relevante sobre su problema]? Te cuento más..."},
-                {"step": 3, "delay": "2d", "content": "Muchos clientes me preguntan [pregunta frecuente]. Aquí la respuesta:"},
-                {"step": 4, "delay": "2d", "content": "Tengo una propuesta especial para ti. ¿Podemos hablar 10 minutos?"},
+                {
+                    "step": 1,
+                    "delay": "immediately",
+                    "content": "¡Hola! Gracias por tu interés. Soy [nombre] y te ayudo con [solución].",
+                },
+                {
+                    "step": 2,
+                    "delay": "1d",
+                    "content": "¿Sabías que [dato relevante sobre su problema]? Te cuento más...",
+                },
+                {
+                    "step": 3,
+                    "delay": "2d",
+                    "content": "Muchos clientes me preguntan [pregunta frecuente]. Aquí la respuesta:",
+                },
+                {
+                    "step": 4,
+                    "delay": "2d",
+                    "content": "Tengo una propuesta especial para ti. ¿Podemos hablar 10 minutos?",
+                },
             ]
         else:  # sms
             return [
-                {"step": 1, "delay": "immediately", "content": "Gracias por suscribirte. Responde SÍ para recibir tu guía gratuita."},
-                {"step": 2, "delay": "1d", "content": "Tu guía: [link]. ¿Te gustaría una consulta gratuita de 15 min?"},
-                {"step": 3, "delay": "3d", "content": "Oferta exclusiva solo para suscriptores: 20% OFF. Válido 48hs. [link]"},
+                {
+                    "step": 1,
+                    "delay": "immediately",
+                    "content": "Gracias por suscribirte. Responde SÍ para recibir tu guía gratuita.",
+                },
+                {
+                    "step": 2,
+                    "delay": "1d",
+                    "content": "Tu guía: [link]. ¿Te gustaría una consulta gratuita de 15 min?",
+                },
+                {
+                    "step": 3,
+                    "delay": "3d",
+                    "content": "Oferta exclusiva solo para suscriptores: 20% OFF. Válido 48hs. [link]",
+                },
             ]
 
     def _calculate_sequence_duration(self, steps: list[dict]) -> str:
@@ -427,7 +582,9 @@ class SellIAActionExecutor:
             delay = step.get("delay", "")
             if "d" in delay:
                 try:
-                    total_days += int(delay.replace("d", "").replace("immediately", "0"))
+                    total_days += int(
+                        delay.replace("d", "").replace("immediately", "0")
+                    )
                 except Exception:
                     logger.exception("_calculate_sequence_duration: error inesperado")
         return f"{total_days} días"
@@ -451,8 +608,16 @@ class SellIAActionExecutor:
             "automation": automation_data,
             "navigate_to": "/dashboard/automatizaciones/builder",
             "next_actions": [
-                {"label": "Abrir en builder", "action": "NAVIGATE", "target": "automatizaciones"},
-                {"label": "Guardar borrador", "action": "SAVE_AUTOMATION", "data": automation_data},
+                {
+                    "label": "Abrir en builder",
+                    "action": "NAVIGATE",
+                    "target": "automatizaciones",
+                },
+                {
+                    "label": "Guardar borrador",
+                    "action": "SAVE_AUTOMATION",
+                    "data": automation_data,
+                },
             ],
         }
 
@@ -460,12 +625,14 @@ class SellIAActionExecutor:
         """Construye nodos de automatización para el builder."""
         nodes = [{"id": "trigger", "type": "trigger", "data": {"event": trigger}}]
         for i, action in enumerate(actions):
-            nodes.append({
-                "id": f"action_{i}",
-                "type": "action",
-                "data": {"action": action},
-                "position": {"x": 250, "y": (i + 1) * 100},
-            })
+            nodes.append(
+                {
+                    "id": f"action_{i}",
+                    "type": "action",
+                    "data": {"action": action},
+                    "position": {"x": 250, "y": (i + 1) * 100},
+                }
+            )
         return nodes
 
     async def _generate_playbook(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -477,29 +644,68 @@ class SellIAActionExecutor:
             "sales": {
                 "title": f"Playbook de Ventas: {topic}",
                 "sections": [
-                    {"name": "Perfil de Cliente Ideal", "content": "Define quién es tu cliente perfecto: demografía, psicografía, dolores, deseos."},
-                    {"name": "Proceso de Ventas", "content": "Pasos del primer contacto al cierre: prospectar, calificar, presentar, cerrar, seguir."},
-                    {"name": "Scripts de Llamada", "content": "Apertura, descubrimiento, presentación, manejo de objeciones, cierre."},
-                    {"name": "Objeciones y Respuestas", "content": "Las 10 objeciones más comunes y respuestas probadas para cada una."},
-                    {"name": "KPIs y Métricas", "content": "Qué medir: leads, conversiones, ticket promedio, ciclo de venta, LTV."},
+                    {
+                        "name": "Perfil de Cliente Ideal",
+                        "content": "Define quién es tu cliente perfecto: demografía, psicografía, dolores, deseos.",
+                    },
+                    {
+                        "name": "Proceso de Ventas",
+                        "content": "Pasos del primer contacto al cierre: prospectar, calificar, presentar, cerrar, seguir.",
+                    },
+                    {
+                        "name": "Scripts de Llamada",
+                        "content": "Apertura, descubrimiento, presentación, manejo de objeciones, cierre.",
+                    },
+                    {
+                        "name": "Objeciones y Respuestas",
+                        "content": "Las 10 objeciones más comunes y respuestas probadas para cada una.",
+                    },
+                    {
+                        "name": "KPIs y Métricas",
+                        "content": "Qué medir: leads, conversiones, ticket promedio, ciclo de venta, LTV.",
+                    },
                 ],
             },
             "onboarding": {
                 "title": f"Playbook de Onboarding: {topic}",
                 "sections": [
-                    {"name": "Primeros 24hs", "content": "Bienvenida, acceso, tour, quick win."},
-                    {"name": "Semana 1", "content": "Configuración, integraciones, primer objetivo."},
-                    {"name": "Mes 1", "content": "Adopción avanzada, métricas, revisión."},
-                    {"name": "Checkpoints", "content": "Puntos de verificación a 30, 60, 90 días."},
+                    {
+                        "name": "Primeros 24hs",
+                        "content": "Bienvenida, acceso, tour, quick win.",
+                    },
+                    {
+                        "name": "Semana 1",
+                        "content": "Configuración, integraciones, primer objetivo.",
+                    },
+                    {
+                        "name": "Mes 1",
+                        "content": "Adopción avanzada, métricas, revisión.",
+                    },
+                    {
+                        "name": "Checkpoints",
+                        "content": "Puntos de verificación a 30, 60, 90 días.",
+                    },
                 ],
             },
             "retention": {
                 "title": f"Playbook de Retención: {topic}",
                 "sections": [
-                    {"name": "Señales de Alerta", "content": "Indicadores tempranos de churn: uso decreciente, tickets de soporte, feedback."},
-                    {"name": "Intervenciones Proactivas", "content": "Acciones para re-engagement antes de que se vayan."},
-                    {"name": "Programa de Lealtad", "content": "Recompensas, beneficios, comunidad exclusiva."},
-                    {"name": "Recuperación", "content": "Campañas win-back, ofertas especiales, llamadas personales."},
+                    {
+                        "name": "Señales de Alerta",
+                        "content": "Indicadores tempranos de churn: uso decreciente, tickets de soporte, feedback.",
+                    },
+                    {
+                        "name": "Intervenciones Proactivas",
+                        "content": "Acciones para re-engagement antes de que se vayan.",
+                    },
+                    {
+                        "name": "Programa de Lealtad",
+                        "content": "Recompensas, beneficios, comunidad exclusiva.",
+                    },
+                    {
+                        "name": "Recuperación",
+                        "content": "Campañas win-back, ofertas especiales, llamadas personales.",
+                    },
                 ],
             },
         }
@@ -510,8 +716,16 @@ class SellIAActionExecutor:
             "message": f"Playbook '{playbook['title']}' generado con {len(playbook['sections'])} secciones.",
             "playbook": playbook,
             "next_actions": [
-                {"label": "Descargar como PDF", "action": "EXPORT_PLAYBOOK", "data": playbook},
-                {"label": "Editar contenido", "action": "EDIT_PLAYBOOK", "data": playbook},
+                {
+                    "label": "Descargar como PDF",
+                    "action": "EXPORT_PLAYBOOK",
+                    "data": playbook,
+                },
+                {
+                    "label": "Editar contenido",
+                    "action": "EDIT_PLAYBOOK",
+                    "data": playbook,
+                },
             ],
         }
 
@@ -521,7 +735,13 @@ class SellIAActionExecutor:
 
         analyses = {
             "general": {
-                "metrics": ["Ingresos mensuales", "Margen de beneficio", "CAC", "LTV", "Churn rate"],
+                "metrics": [
+                    "Ingresos mensuales",
+                    "Margen de beneficio",
+                    "CAC",
+                    "LTV",
+                    "Churn rate",
+                ],
                 "recommendations": [
                     "Implementa seguimiento de métricas en dashboard",
                     "Automatiza reportes semanales",
@@ -529,7 +749,12 @@ class SellIAActionExecutor:
                 ],
             },
             "sales": {
-                "metrics": ["Pipeline value", "Win rate", "Sales cycle length", "Quota attainment"],
+                "metrics": [
+                    "Pipeline value",
+                    "Win rate",
+                    "Sales cycle length",
+                    "Quota attainment",
+                ],
                 "recommendations": [
                     "Revisa funnel conversion por etapa",
                     "Implementa scoring de leads",
@@ -537,7 +762,13 @@ class SellIAActionExecutor:
                 ],
             },
             "marketing": {
-                "metrics": ["ROAS", "CPA", "Engagement rate", "Traffic sources", "Conversion rate"],
+                "metrics": [
+                    "ROAS",
+                    "CPA",
+                    "Engagement rate",
+                    "Traffic sources",
+                    "Conversion rate",
+                ],
                 "recommendations": [
                     "Audita canales de adquisición",
                     "Testea creatividades A/B",
@@ -545,7 +776,12 @@ class SellIAActionExecutor:
                 ],
             },
             "operations": {
-                "metrics": ["OEE", "Defect rate", "Delivery time", "Inventory turnover"],
+                "metrics": [
+                    "OEE",
+                    "Defect rate",
+                    "Delivery time",
+                    "Inventory turnover",
+                ],
                 "recommendations": [
                     "Implementa 5S en áreas clave",
                     "Mapea flujo de valor",
@@ -560,8 +796,16 @@ class SellIAActionExecutor:
             "message": f"Análisis de negocio ({analysis_type}) completado. Aquí tus hallazgos:",
             "analysis": analysis,
             "next_actions": [
-                {"label": "Ver métricas en dashboard", "action": "NAVIGATE", "target": "analytics"},
-                {"label": "Hablar con experto", "action": "SUGGEST_AGENTS", "agents": ["kpi-tracker", "data-analyst"]},
+                {
+                    "label": "Ver métricas en dashboard",
+                    "action": "NAVIGATE",
+                    "target": "analytics",
+                },
+                {
+                    "label": "Hablar con experto",
+                    "action": "SUGGEST_AGENTS",
+                    "agents": ["kpi-tracker", "data-analyst"],
+                },
             ],
         }
 
@@ -575,21 +819,35 @@ class SellIAActionExecutor:
         calendar = []
 
         platform_templates = {
-            "tiktok": ["Trend jacking", "Educación rápida", "Behind the scenes", "Storytelling", "CTA directo"],
-            "instagram": ["Carrusel educativo", "Reels viral", "Stories interactivas", "Post de valor", "Live"],
+            "tiktok": [
+                "Trend jacking",
+                "Educación rápida",
+                "Behind the scenes",
+                "Storytelling",
+                "CTA directo",
+            ],
+            "instagram": [
+                "Carrusel educativo",
+                "Reels viral",
+                "Stories interactivas",
+                "Post de valor",
+                "Live",
+            ],
             "email": ["Newsletter", "Promoción", "Case study", "Tips", "Comunidad"],
         }
 
         for day in range(1, days + 1):
             for platform in platforms:
                 templates = platform_templates.get(platform, ["Contenido de valor"])
-                calendar.append({
-                    "day": day,
-                    "platform": platform,
-                    "type": templates[day % len(templates)],
-                    "topic": topics[day % len(topics)],
-                    "status": "planned",
-                })
+                calendar.append(
+                    {
+                        "day": day,
+                        "platform": platform,
+                        "type": templates[day % len(templates)],
+                        "topic": topics[day % len(topics)],
+                        "status": "planned",
+                    }
+                )
 
         return {
             "message": f"Calendario de contenido {period} generado: {len(calendar)} piezas para {', '.join(platforms)}.",
@@ -600,8 +858,16 @@ class SellIAActionExecutor:
                 "days": calendar[:14] if period == "monthly" else calendar,
             },
             "next_actions": [
-                {"label": "Exportar calendario", "action": "EXPORT_CALENDAR", "data": calendar},
-                {"label": "Asignar a equipo", "action": "ASSIGN_CALENDAR", "data": calendar},
+                {
+                    "label": "Exportar calendario",
+                    "action": "EXPORT_CALENDAR",
+                    "data": calendar,
+                },
+                {
+                    "label": "Asignar a equipo",
+                    "action": "ASSIGN_CALENDAR",
+                    "data": calendar,
+                },
             ],
         }
 
@@ -620,19 +886,25 @@ class SellIAActionExecutor:
 
         expert_responses = []
         for p in selected:
-            expert_responses.append({
-                "agent_slug": p.slug,
-                "agent_name": p.name,
-                "agent_emoji": p.emoji,
-                "perspective": f"Desde la perspectiva de {p.name} ({p.tagline}): este tema requiere {p.expertise[0] if p.expertise else 'análisis experto'}.",
-            })
+            expert_responses.append(
+                {
+                    "agent_slug": p.slug,
+                    "agent_name": p.name,
+                    "agent_emoji": p.emoji,
+                    "perspective": f"Desde la perspectiva de {p.name} ({p.tagline}): este tema requiere {p.expertise[0] if p.expertise else 'análisis experto'}.",
+                }
+            )
 
         return {
             "message": f"Consulté a {len(expert_responses)} expertos sobre: {question}",
             "experts": expert_responses,
             "question": question,
             "next_actions": [
-                {"label": "Abrir chats con expertos", "action": "CREATE_CONVERSATIONS", "slugs": agent_slugs},
+                {
+                    "label": "Abrir chats con expertos",
+                    "action": "CREATE_CONVERSATIONS",
+                    "slugs": agent_slugs,
+                },
                 {"label": "Nueva consulta", "action": "ASK_CLARIFICATION"},
             ],
         }
@@ -645,7 +917,10 @@ class SellIAActionExecutor:
         url = params.get("url")
 
         if not task:
-            return {"success": False, "error": "Se requiere una descripción de la tarea"}
+            return {
+                "success": False,
+                "error": "Se requiere una descripción de la tarea",
+            }
 
         try:
             result = await create_computer_use_from_orchestrator(
@@ -663,7 +938,11 @@ class SellIAActionExecutor:
                 "task": result.task,
                 "navigate_to": "/dashboard/caja-de-cristal",
                 "next_actions": [
-                    {"label": "Abrir Caja de Cristal", "action": "NAVIGATE", "target": "caja-de-cristal"},
+                    {
+                        "label": "Abrir Caja de Cristal",
+                        "action": "NAVIGATE",
+                        "target": "caja-de-cristal",
+                    },
                 ],
             }
         except Exception as e:

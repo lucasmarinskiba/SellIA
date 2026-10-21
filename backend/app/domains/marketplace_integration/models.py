@@ -1,4 +1,5 @@
 """Phase 44: Multi-Platform Marketplace Integration."""
+
 import uuid
 from datetime import UTC, datetime
 from enum import Enum
@@ -30,10 +31,16 @@ class PlatformType(str, Enum):
     CLICKBANK = "clickbank"
     ALIEXPRESS = "aliexpress"
 
+
 class MarketplaceConnection(Base):
     __tablename__ = "marketplace_connections"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     platform = Column(String(50), nullable=False)  # amazon, mercado_libre, etc
     account_name = Column(String(255), nullable=False)
     auth_token = Column(Text, nullable=True)
@@ -45,11 +52,20 @@ class MarketplaceConnection(Base):
     sync_config = Column(JSONB, nullable=True)
     created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
+
 class ProductSync(Base):
     __tablename__ = "product_syncs"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False)
-    connection_id = Column(UUID(as_uuid=True), ForeignKey("marketplace_connections.id", ondelete="CASCADE"), nullable=False)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    connection_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("marketplace_connections.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     local_sku = Column(String(255), nullable=False)
     platform_sku = Column(String(255), nullable=False)
     platform_id = Column(String(255), nullable=False)
@@ -61,11 +77,20 @@ class ProductSync(Base):
     auto_sync = Column(Boolean, default=True)
     created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
+
 class DynamicPricing(Base):
     __tablename__ = "dynamic_pricing"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False)
-    product_sync_id = Column(UUID(as_uuid=True), ForeignKey("product_syncs.id", ondelete="CASCADE"), nullable=False)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    product_sync_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("product_syncs.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     base_price = Column(Float, default=0)
     current_price = Column(Float, default=0)
     competitor_price = Column(Float, nullable=True)
@@ -75,10 +100,16 @@ class DynamicPricing(Base):
     price_history = Column(JSONB, nullable=True)
     last_updated = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
+
 class MarketplaceMetrics(Base):
     __tablename__ = "marketplace_metrics"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, unique=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
     total_platforms_connected = Column(Integer, default=0)
     total_products_synced = Column(Integer, default=0)
     total_inventory_value = Column(Float, default=0)

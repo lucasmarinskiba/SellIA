@@ -37,7 +37,7 @@ class MultiTenantManager:
             api_calls_per_month=tier_config["api_calls"],
             campaigns_limit=tier_config["campaigns"],
             custom_domain=tier_config["custom_domain"],
-            sso_enabled=tier_config["sso"]
+            sso_enabled=tier_config["sso"],
         )
 
         logger.info(f"Tenant created: {tenant.tenant_id}")
@@ -53,7 +53,7 @@ class MultiTenantManager:
                 "campaigns": 1,
                 "custom_domain": False,
                 "sso": False,
-                "price": 0
+                "price": 0,
             },
             "pro": {
                 "users": 5,
@@ -61,7 +61,7 @@ class MultiTenantManager:
                 "campaigns": 10,
                 "custom_domain": True,
                 "sso": False,
-                "price": 99
+                "price": 99,
             },
             "enterprise": {
                 "users": 999,
@@ -69,8 +69,8 @@ class MultiTenantManager:
                 "campaigns": 999,
                 "custom_domain": True,
                 "sso": True,
-                "price": 999
-            }
+                "price": 999,
+            },
         }
 
         return configs.get(tier, configs["pro"])
@@ -85,7 +85,7 @@ class MultiTenantManager:
             "tenant_id": tenant_id,
             "new_tier": new_tier,
             "features_added": self._get_new_features(new_tier),
-            "effective_immediately": True
+            "effective_immediately": True,
         }
 
     def _get_new_features(self, tier: str) -> list[str]:
@@ -94,7 +94,12 @@ class MultiTenantManager:
         if tier == "pro":
             return ["Custom domain", "Multiple users", "API access"]
         elif tier == "enterprise":
-            return ["SSO", "Dedicated support", "Custom integrations", "White-label option"]
+            return [
+                "SSO",
+                "Dedicated support",
+                "Custom integrations",
+                "White-label option",
+            ]
         return []
 
     def get_tenant_usage(self, tenant_id: str) -> dict[str, Any]:
@@ -110,7 +115,7 @@ class MultiTenantManager:
             "campaigns_limit": 10,
             "storage_used_gb": 2.5,
             "storage_limit_gb": 10,
-            "usage_percent": 45
+            "usage_percent": 45,
         }
 
     def get_billing_summary(self, tenant_id: str) -> dict[str, Any]:
@@ -124,5 +129,5 @@ class MultiTenantManager:
             "billing_date": "2026-09-10",
             "next_charge": "2026-09-10",
             "payment_method": "Credit card",
-            "status": "active"
+            "status": "active",
         }

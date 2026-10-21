@@ -75,18 +75,66 @@ class InvestorPitchService:
         context_block = format_business_context_for_prompt(ctx)
 
         slide_definitions = [
-            {"number": 1, "title": "Problem", "prompt": f"Describe el problema principal que resuelve {business.name} en 2-3 oraciones."},
-            {"number": 2, "title": "Solution", "prompt": f"Describe la solución de {business.name}. {business.description or ''}"},
-            {"number": 3, "title": "Product", "prompt": f"Describe el producto/servicio principal de {business.name}."},
-            {"number": 4, "title": "Market", "prompt": f"TAM: ${metrics['tam']:,}. Describe el tamaño de mercado y oportunidad."},
-            {"number": 5, "title": "Traction", "prompt": f"Traction: {metrics['traction']}. Resume métricas clave de crecimiento."},
-            {"number": 6, "title": "Business Model", "prompt": f"MRR: ${metrics['mrr']:,}. CAC: ${metrics['cac']}. LTV: ${metrics['ltv']}. Explica el modelo de negocio."},
-            {"number": 7, "title": "Competition", "prompt": f"Analiza 2-3 competidores y la ventaja diferencial de {business.name}."},
-            {"number": 8, "title": "Go-to-Market", "prompt": f"Estrategia de adquisición y canales principales de {business.name}."},
-            {"number": 9, "title": "Team", "prompt": f"Equipo de {metrics['team_size']} personas. Describe el equipo fundador."},
-            {"number": 10, "title": "Financials", "prompt": f"Crecimiento: {metrics['growth_rate']}% MoM. Proyecta ingresos 3 años."},
-            {"number": 11, "title": "The Ask", "prompt": f"Define la ronda de inversión buscada y uso de fondos para {business.name}."},
-            {"number": 12, "title": "Contact", "prompt": f"Información de contacto para invertir en {business.name}."},
+            {
+                "number": 1,
+                "title": "Problem",
+                "prompt": f"Describe el problema principal que resuelve {business.name} en 2-3 oraciones.",
+            },
+            {
+                "number": 2,
+                "title": "Solution",
+                "prompt": f"Describe la solución de {business.name}. {business.description or ''}",
+            },
+            {
+                "number": 3,
+                "title": "Product",
+                "prompt": f"Describe el producto/servicio principal de {business.name}.",
+            },
+            {
+                "number": 4,
+                "title": "Market",
+                "prompt": f"TAM: ${metrics['tam']:,}. Describe el tamaño de mercado y oportunidad.",
+            },
+            {
+                "number": 5,
+                "title": "Traction",
+                "prompt": f"Traction: {metrics['traction']}. Resume métricas clave de crecimiento.",
+            },
+            {
+                "number": 6,
+                "title": "Business Model",
+                "prompt": f"MRR: ${metrics['mrr']:,}. CAC: ${metrics['cac']}. LTV: ${metrics['ltv']}. Explica el modelo de negocio.",
+            },
+            {
+                "number": 7,
+                "title": "Competition",
+                "prompt": f"Analiza 2-3 competidores y la ventaja diferencial de {business.name}.",
+            },
+            {
+                "number": 8,
+                "title": "Go-to-Market",
+                "prompt": f"Estrategia de adquisición y canales principales de {business.name}.",
+            },
+            {
+                "number": 9,
+                "title": "Team",
+                "prompt": f"Equipo de {metrics['team_size']} personas. Describe el equipo fundador.",
+            },
+            {
+                "number": 10,
+                "title": "Financials",
+                "prompt": f"Crecimiento: {metrics['growth_rate']}% MoM. Proyecta ingresos 3 años.",
+            },
+            {
+                "number": 11,
+                "title": "The Ask",
+                "prompt": f"Define la ronda de inversión buscada y uso de fondos para {business.name}.",
+            },
+            {
+                "number": 12,
+                "title": "Contact",
+                "prompt": f"Información de contacto para invertir en {business.name}.",
+            },
         ]
 
         slides = []
@@ -94,14 +142,17 @@ class InvestorPitchService:
             user_prompt = sd["prompt"]
             if context_block:
                 user_prompt = f"{context_block}\n\n{user_prompt}"
-            content = await generate_raw_ai_response(
-                db=self.db,
-                business_id=business.id,
-                system_prompt="Eres un experto en creación de pitch decks para inversores. Genera contenido claro, conciso y convincente.",
-                user_prompt=user_prompt,
-                max_tokens=600,
-                temperature=0.7,
-            ) or "Contenido pendiente."
+            content = (
+                await generate_raw_ai_response(
+                    db=self.db,
+                    business_id=business.id,
+                    system_prompt="Eres un experto en creación de pitch decks para inversores. Genera contenido claro, conciso y convincente.",
+                    user_prompt=user_prompt,
+                    max_tokens=600,
+                    temperature=0.7,
+                )
+                or "Contenido pendiente."
+            )
 
             chart_data = {}
             if sd["title"] == "Financials":
@@ -143,7 +194,9 @@ class InvestorPitchService:
             )
         return slides
 
-    async def _generate_html_deck(self, deck: PitchDeck, slides: list[PitchSlide]) -> str:
+    async def _generate_html_deck(
+        self, deck: PitchDeck, slides: list[PitchSlide]
+    ) -> str:
         html_parts = [
             "<!DOCTYPE html>",
             '<html lang="es">',
@@ -167,7 +220,9 @@ class InvestorPitchService:
             html_parts.append(f"<h2>{slide.slide_number}. {slide.title}</h2>")
             html_parts.append(f"<p>{slide.content.replace(chr(10), '<br>')}</p>")
             if slide.chart_data:
-                html_parts.append(f'<pre class="chart">{json.dumps(slide.chart_data, ensure_ascii=False, indent=2)}</pre>')
+                html_parts.append(
+                    f'<pre class="chart">{json.dumps(slide.chart_data, ensure_ascii=False, indent=2)}</pre>'
+                )
             html_parts.append("</div>")
 
         html_parts.extend(["</body>", "</html>"])
@@ -175,7 +230,9 @@ class InvestorPitchService:
         storage_dir = os.path.join(os.getcwd(), "storage", "exports", "pitch_decks")
         os.makedirs(storage_dir, exist_ok=True)
         html_path = os.path.join(storage_dir, f"deck_{deck.id}.html")
-        await asyncio.to_thread(write_file, html_path, "w", encoding="utf-8", data="\n".join(html_parts))
+        await asyncio.to_thread(
+            write_file, html_path, "w", encoding="utf-8", data="\n".join(html_parts)
+        )
 
         return html_path
 
@@ -185,7 +242,9 @@ class InvestorPitchService:
             raise ValueError("Deck not found")
 
         slides_result = await self.db.execute(
-            select(PitchSlide).where(PitchSlide.deck_id == deck_id).order_by(PitchSlide.slide_number)
+            select(PitchSlide)
+            .where(PitchSlide.deck_id == deck_id)
+            .order_by(PitchSlide.slide_number)
         )
         slides = slides_result.scalars().all()
 
@@ -195,6 +254,7 @@ class InvestorPitchService:
         pdf_path = os.path.join(storage_dir, f"deck_{deck_id}.pdf")
 
         from playwright.async_api import async_playwright
+
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
             page = await browser.new_page()
@@ -202,7 +262,12 @@ class InvestorPitchService:
             await page.pdf(
                 path=pdf_path,
                 format="A4",
-                margin={"top": "20px", "right": "20px", "bottom": "20px", "left": "20px"},
+                margin={
+                    "top": "20px",
+                    "right": "20px",
+                    "bottom": "20px",
+                    "left": "20px",
+                },
                 print_background=True,
             )
             await browser.close()
@@ -212,7 +277,9 @@ class InvestorPitchService:
         logger.info(f"PDF exported: {pdf_path}")
         return pdf_path
 
-    async def _build_html_for_pdf(self, deck: PitchDeck, slides: list[PitchSlide]) -> str:
+    async def _build_html_for_pdf(
+        self, deck: PitchDeck, slides: list[PitchSlide]
+    ) -> str:
         html_parts = [
             "<!DOCTYPE html>",
             '<html lang="es">',
@@ -234,30 +301,40 @@ class InvestorPitchService:
             html_parts.append(f"<h2>{slide.slide_number}. {slide.title}</h2>")
             html_parts.append(f"<p>{slide.content.replace(chr(10), '<br>')}</p>")
             if slide.chart_data:
-                html_parts.append(f'<pre class="chart">{json.dumps(slide.chart_data, ensure_ascii=False, indent=2)}</pre>')
+                html_parts.append(
+                    f'<pre class="chart">{json.dumps(slide.chart_data, ensure_ascii=False, indent=2)}</pre>'
+                )
             html_parts.append("</div>")
         html_parts.extend(["</body>", "</html>"])
         return "\n".join(html_parts)
 
-    async def list_decks(self, business_id: uuid.UUID, limit: int = 50, offset: int = 0) -> dict[str, Any]:
+    async def list_decks(
+        self, business_id: uuid.UUID, limit: int = 50, offset: int = 0
+    ) -> dict[str, Any]:
         result = await self.db.execute(
             select(PitchDeck).where(PitchDeck.business_id == business_id)
         )
         decks = result.scalars().all()
-        return {"total": len(decks), "decks": decks[offset:offset + limit]}
+        return {"total": len(decks), "decks": decks[offset : offset + limit]}
 
-    async def get_deck(self, deck_id: uuid.UUID, business_id: uuid.UUID) -> PitchDeck | None:
+    async def get_deck(
+        self, deck_id: uuid.UUID, business_id: uuid.UUID
+    ) -> PitchDeck | None:
         deck = await self.db.get(PitchDeck, deck_id)
         if not deck or deck.business_id != business_id:
             return None
         return deck
 
-    async def get_deck_with_slides(self, deck_id: uuid.UUID, business_id: uuid.UUID) -> dict[str, Any] | None:
+    async def get_deck_with_slides(
+        self, deck_id: uuid.UUID, business_id: uuid.UUID
+    ) -> dict[str, Any] | None:
         deck = await self.get_deck(deck_id, business_id)
         if not deck:
             return None
         result = await self.db.execute(
-            select(PitchSlide).where(PitchSlide.deck_id == deck_id).order_by(PitchSlide.slide_number)
+            select(PitchSlide)
+            .where(PitchSlide.deck_id == deck_id)
+            .order_by(PitchSlide.slide_number)
         )
         slides = result.scalars().all()
         return {"deck": deck, "slides": slides}

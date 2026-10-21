@@ -23,7 +23,7 @@ _fernet_secret = os.environ.get("FERNET_SECRET", settings.SECRET_KEY)
 
 # Derivar clave Fernet (debe ser de 32 bytes)
 _fernet_key = base64.urlsafe_b64encode(
-    hashlib.sha256(_fernet_secret.encode()).digest()[:32].ljust(32, b'0')
+    hashlib.sha256(_fernet_secret.encode()).digest()[:32].ljust(32, b"0")
 )
 _fernet = Fernet(_fernet_key)
 

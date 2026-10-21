@@ -38,8 +38,8 @@ from app.core.database import Base
 
 
 class LinkKind(str, enum.Enum):
-    WEBSITE = "website"          # su web propia / landing / blog
-    SOCIAL = "social"            # perfil de red social
+    WEBSITE = "website"  # su web propia / landing / blog
+    SOCIAL = "social"  # perfil de red social
     MARKETPLACE = "marketplace"  # tienda o publicación en un marketplace
     OTHER = "other"
 
@@ -77,7 +77,10 @@ class BusinessLink(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     business_id = Column(UUID(as_uuid=True), nullable=True, index=True)
 
@@ -93,8 +96,8 @@ class BusinessLink(Base):
     # ── last REAL fetch of this URL (all NULL until it has been audited) ──
     last_checked_at = Column(DateTime(timezone=True), nullable=True)
     http_status = Column(Integer, nullable=True)
-    final_url = Column(String(1024), nullable=True)      # after redirects
-    response_ms = Column(Integer, nullable=True)         # measured, not estimated
+    final_url = Column(String(1024), nullable=True)  # after redirects
+    response_ms = Column(Integer, nullable=True)  # measured, not estimated
     content_bytes = Column(Integer, nullable=True)
     fetch_error = Column(String(300), nullable=True)
 

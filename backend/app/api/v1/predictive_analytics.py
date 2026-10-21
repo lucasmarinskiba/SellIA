@@ -59,7 +59,7 @@ def predict_churn(
         days_since_purchase=request.days_since_purchase,
         purchase_frequency=request.purchase_frequency,
         engagement_score=request.engagement_score or Decimal(5),
-        db=db
+        db=db,
     )
 
 
@@ -70,13 +70,15 @@ def predict_purchase_timing(
     db: Annotated[Session, Depends(get_db)],
 ):
     """Predict next purchase timing."""
-    last_purchase = datetime.fromisoformat(f"{request.last_purchase_date}T00:00:00+00:00")
+    last_purchase = datetime.fromisoformat(
+        f"{request.last_purchase_date}T00:00:00+00:00"
+    )
     return PredictiveAnalyticsService.predict_purchase_timing(
         business_id=business_id,
         customer_id=request.customer_id,
         avg_purchase_interval=request.avg_purchase_interval,
         last_purchase_date=last_purchase,
-        db=db
+        db=db,
     )
 
 
@@ -92,7 +94,7 @@ def forecast_demand(
         product_category=request.product_category,
         historical_units=request.historical_units,
         forecast_days=request.forecast_days,
-        db=db
+        db=db,
     )
 
 
@@ -108,7 +110,7 @@ def forecast_revenue(
         historical_revenue=request.historical_revenue,
         new_customer_ratio=request.new_customer_ratio,
         forecast_horizon=request.forecast_horizon,
-        db=db
+        db=db,
     )
 
 
@@ -124,5 +126,5 @@ def evaluate_accuracy(
         prediction_type=request.prediction_type,
         predictions=request.predictions,
         actuals=request.actuals,
-        db=db
+        db=db,
     )

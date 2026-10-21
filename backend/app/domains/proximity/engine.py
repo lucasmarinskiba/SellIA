@@ -1,4 +1,5 @@
 """Phase 5B: Proximity Engine & Geofence Detection."""
+
 from math import asin, cos, radians, sin, sqrt
 from uuid import UUID
 
@@ -41,7 +42,9 @@ class ProximityEngine:
         locations = result.scalars().all()
         nearby = []
         for loc in locations:
-            distance = ProximityEngine.haversine_distance(user_lat, user_lon, loc.latitude, loc.longitude)
+            distance = ProximityEngine.haversine_distance(
+                user_lat, user_lon, loc.latitude, loc.longitude
+            )
             if distance <= loc.geofence_radius_km:
                 nearby.append((loc, distance))
         return nearby
@@ -54,7 +57,9 @@ class ProximityEngine:
         location: LocationProfile,
         distance_km: float,
     ) -> ProximityEvent | None:
-        event = await LocationService.log_proximity_event(db, business_id, user_id, location.id, distance_km)
+        event = await LocationService.log_proximity_event(
+            db, business_id, user_id, location.id, distance_km
+        )
         return event
 
     @staticmethod
@@ -65,17 +70,27 @@ class ProximityEngine:
         max_distance_km: float = 5,
     ) -> list[dict]:
         from sqlalchemy import select
+
         result = await db.execute(
-            select(ProximityEvent).where(
+            select(ProximityEvent)
+            .where(
                 and_(
                     ProximityEvent.business_id == business_id,
                     ProximityEvent.location_id == location_id,
                     ProximityEvent.distance_km <= max_distance_km,
                 )
-            ).order_by(ProximityEvent.created_at.desc())
+            )
+            .order_by(ProximityEvent.created_at.desc())
         )
         events = result.scalars().all()
-        return [{"user_id": e.user_id, "distance_km": e.distance_km, "detected_at": e.created_at} for e in events]
+        return [
+            {
+                "user_id": e.user_id,
+                "distance_km": e.distance_km,
+                "detected_at": e.created_at,
+            }
+            for e in events
+        ]
 
     @staticmethod
     async def get_proximity_history(
@@ -84,13 +99,24 @@ class ProximityEngine:
         user_id: UUID,
     ) -> list[dict]:
         from sqlalchemy import select
+
         result = await db.execute(
-            select(ProximityEvent).where(
+            select(ProximityEvent)
+            .where(
                 and_(
                     ProximityEvent.business_id == business_id,
                     ProximityEvent.user_id == user_id,
                 )
-            ).order_by(ProximityEvent.created_at.desc())
+            )
+            .order_by(ProximityEvent.created_at.desc())
         )
         events = result.scalars().all()
-        return [{"location_id": e.location_id, "distance_km": e.distance_km, "event_type": e.event_type, "detected_at": e.created_at} for e in events]
+        return [
+            {
+                "location_id": e.location_id,
+                "distance_km": e.distance_km,
+                "event_type": e.event_type,
+                "detected_at": e.created_at,
+            }
+            for e in events
+        ]

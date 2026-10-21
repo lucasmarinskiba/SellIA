@@ -42,7 +42,7 @@ async def _get_business_for_user(
 
 def _validate_subdomain(subdomain: str) -> bool:
     """Validate subdomain format (alphanumeric + hyphens, 3-63 chars)."""
-    pattern = r'^[a-z0-9]([a-z0-9-]{1,61}[a-z0-9])?$'
+    pattern = r"^[a-z0-9]([a-z0-9-]{1,61}[a-z0-9])?$"
     return bool(re.match(pattern, subdomain.lower()))
 
 
@@ -56,10 +56,16 @@ async def check_subdomain_available(
     single boolean for the exact string queried."""
     subdomain = subdomain.lower()
     if not _validate_subdomain(subdomain):
-        return {"available": False, "reason": "Solo letras, números y guiones (3-63 caracteres)"}
+        return {
+            "available": False,
+            "reason": "Solo letras, números y guiones (3-63 caracteres)",
+        }
     result = await db.execute(select(Domain).where(Domain.subdomain == subdomain))
     taken = result.scalar_one_or_none() is not None
-    return {"available": not taken, "reason": "Subdominio no disponible" if taken else None}
+    return {
+        "available": not taken,
+        "reason": "Subdominio no disponible" if taken else None,
+    }
 
 
 @router.post("/onboarding/complete", response_model=WebsiteResponse)
@@ -72,7 +78,10 @@ async def complete_onboarding(
 
     # Validate subdomain
     if not _validate_subdomain(req.subdomain):
-        raise HTTPException(status_code=400, detail="Subdominio inválido. Solo letras, números y guiones.")
+        raise HTTPException(
+            status_code=400,
+            detail="Subdominio inválido. Solo letras, números y guiones.",
+        )
 
     # Check if subdomain already taken
     domain_check = await db.execute(
@@ -138,7 +147,11 @@ async def complete_onboarding(
     return website
 
 
-@router.post("/businesses/{business_id}/website", response_model=WebsiteResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/businesses/{business_id}/website",
+    response_model=WebsiteResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_website(
     business_id: UUID,
     req: WebsiteCreate,
@@ -204,9 +217,7 @@ async def get_website(
     """Get website for a business."""
     await _get_business_for_user(business_id, current_user, db)
 
-    result = await db.execute(
-        select(Website).where(Website.business_id == business_id)
-    )
+    result = await db.execute(select(Website).where(Website.business_id == business_id))
     website = result.scalar_one_or_none()
     if not website:
         raise HTTPException(status_code=404, detail="Website no encontrado")
@@ -224,9 +235,7 @@ async def update_website(
     """Update website."""
     await _get_business_for_user(business_id, current_user, db)
 
-    result = await db.execute(
-        select(Website).where(Website.business_id == business_id)
-    )
+    result = await db.execute(select(Website).where(Website.business_id == business_id))
     website = result.scalar_one_or_none()
     if not website:
         raise HTTPException(status_code=404, detail="Website no encontrado")
@@ -242,6 +251,7 @@ async def update_website(
 
     if req.status == WebsiteStatus.PUBLISHED:
         from datetime import datetime
+
         website.published_at = datetime.now(UTC)
 
     await db.commit()
@@ -249,7 +259,9 @@ async def update_website(
     return website
 
 
-@router.post("/businesses/{business_id}/website/publish", response_model=WebsiteResponse)
+@router.post(
+    "/businesses/{business_id}/website/publish", response_model=WebsiteResponse
+)
 async def publish_website(
     business_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -258,14 +270,13 @@ async def publish_website(
     """Publish website (make it live)."""
     await _get_business_for_user(business_id, current_user, db)
 
-    result = await db.execute(
-        select(Website).where(Website.business_id == business_id)
-    )
+    result = await db.execute(select(Website).where(Website.business_id == business_id))
     website = result.scalar_one_or_none()
     if not website:
         raise HTTPException(status_code=404, detail="Website no encontrado")
 
     from datetime import datetime
+
     website.status = WebsiteStatus.PUBLISHED
     website.published_at = datetime.now(UTC)
 
@@ -283,9 +294,7 @@ async def get_domain(
     """Get domain info for business website."""
     await _get_business_for_user(business_id, current_user, db)
 
-    result = await db.execute(
-        select(Website).where(Website.business_id == business_id)
-    )
+    result = await db.execute(select(Website).where(Website.business_id == business_id))
     website = result.scalar_one_or_none()
     if not website:
         raise HTTPException(status_code=404, detail="Website no encontrado")
@@ -310,9 +319,7 @@ async def update_domain(
     """Update domain (e.g., add custom domain)."""
     await _get_business_for_user(business_id, current_user, db)
 
-    result = await db.execute(
-        select(Website).where(Website.business_id == business_id)
-    )
+    result = await db.execute(select(Website).where(Website.business_id == business_id))
     website = result.scalar_one_or_none()
     if not website:
         raise HTTPException(status_code=404, detail="Website no encontrado")
@@ -328,12 +335,13 @@ async def update_domain(
         # Check if custom domain already taken
         custom_check = await db.execute(
             select(Domain).where(
-                Domain.custom_domain == req.custom_domain,
-                Domain.id != domain.id
+                Domain.custom_domain == req.custom_domain, Domain.id != domain.id
             )
         )
         if custom_check.scalar_one_or_none():
-            raise HTTPException(status_code=400, detail="Dominio personalizado ya en uso")
+            raise HTTPException(
+                status_code=400, detail="Dominio personalizado ya en uso"
+            )
 
         domain.custom_domain = req.custom_domain
         domain.is_verified = False  # Needs DNS verification

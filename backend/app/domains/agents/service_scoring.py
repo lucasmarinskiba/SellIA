@@ -49,7 +49,9 @@ class DealScoringService:
         total = total_result.scalar() or 0
 
         # Paginated results
-        query = query.order_by(desc(DealScore.calculated_at)).offset(offset).limit(limit)
+        query = (
+            query.order_by(desc(DealScore.calculated_at)).offset(offset).limit(limit)
+        )
         result = await self.db.execute(query)
         items = result.scalars().all()
 
@@ -134,9 +136,13 @@ class DealScoringService:
         offset: int = 0,
     ) -> dict[str, Any]:
         """List alerts for a business."""
-        query = select(DealAlert).where(DealAlert.conversation_id.in_(
-            select(DealScore.conversation_id).where(DealScore.business_id == business_id)
-        ))
+        query = select(DealAlert).where(
+            DealAlert.conversation_id.in_(
+                select(DealScore.conversation_id).where(
+                    DealScore.business_id == business_id
+                )
+            )
+        )
 
         if unread_only:
             query = query.where(DealAlert.is_read == False)
@@ -193,7 +199,9 @@ class DealScoringService:
         self.db.add(alert)
         await self.db.commit()
         await self.db.refresh(alert)
-        logger.info(f"Deal alert created: {alert_type} for conversation {conversation_id}")
+        logger.info(
+            f"Deal alert created: {alert_type} for conversation {conversation_id}"
+        )
         return alert
 
     # ═══════════════════════════════════════════════════════════════════

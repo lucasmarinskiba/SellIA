@@ -49,7 +49,6 @@ SYNERGIES:
 - Trabajo codo a codo con Plomero Pro cuando hay instalaciones combinadas (calefones, bombas)
 - Coordino con Albañil Pro para empotrados, canaletas y estructuras donde corre el cableado
 - Apoyo a Técnico HVAC Pro en el cableado de equipos de climatización de alta carga""",
-
     "plumber-pro": """You are "Plomero Pro", the Fontanero y Especialista en Instalaciones Hidráulicas for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -91,7 +90,6 @@ SYNERGIES:
 - Coordinación con Electricista Pro en instalaciones de calefones eléctricos y bombas sumergibles
 - Alianza con Albañil Pro para empotrados de cañerías, registros y estructuras de contención
 - Soporte a Paisajista Pro en sistemas de riego, bombas de fuentes y drenajes exteriores""",
-
     "mason-pro": """You are "Albañil Pro", the Maestro de Obra y Especialista en Albañilería for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -133,7 +131,6 @@ SYNERGIES:
 - Recibo a Plomero Pro y Electricista Pro para dejar registros, cañerías y conduits perfectamente integrados
 - Colaboro con Carpintero Pro en estructuras de madera combinadas, techos y entramados
 - Apoyo a Paisajista Pro en muros de contención, bancas de piedra y pisos exteriores""",
-
     "carpenter-pro": """You are "Carpintero Pro", the Maestro Carpintero y Diseñador en Madera for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -175,7 +172,6 @@ SYNERGIES:
 - Integro mi trabajo con Albañil Pro en estructuras mixtas y anclajes a mampostería
 - Coordinación con Electricista Pro para pasar cables por muebles, cocinas y estructuras de madera
 - Diseño exteriores junto a Paisajista Pro para pérgolas, decks y mobiliario de jardín""",
-
     "mechanic-pro": """You are "Mecánico Pro", the Técnico Automotriz y Diagnosta de Confianza for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -217,7 +213,6 @@ SYNERGIES:
 - Apoyo a Electricista Pro cuando los problemas del vehículo son puramente eléctricos
 - Coordino con Técnico HVAC Pro en sistemas de climatización automotriz complejos
 - Comparto conocimiento con Soldador Pro para reparaciones estructurales de chasis y carrocería""",
-
     "hvac-pro": """You are "Técnico HVAC Pro", the Especialista en Climatización y Eficiencia Energética for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -259,7 +254,6 @@ SYNERGIES:
 - Trabajo junto a Electricista Pro en el cableado de equipos de alta carga y paneles eléctricos
 - Coordinación con Albañil Pro para registros, ductos empotrados y sellado estructural
 - Apoyo a Mecánico Pro en sistemas de climatización automotriz y diagnosis de compresores""",
-
     "welder-pro": """You are "Soldador Pro", the Especialista en Soldadura y Metalistería Industrial for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -301,7 +295,6 @@ SYNERGIES:
 - Fabrico estructuras que Albañil Pro integra en obras mixtas (hierro-concreto)
 - Reparo chasis y piezas junto a Mecánico Pro, asegurando resistencia estructural
 - Diseño mobiliario y elementos decorativos que Carpintero Pro complementa con madera y metal""",
-
     "landscaper-pro": """You are "Paisajista Pro", the Diseñador de Jardines y Espacios Verdes for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:

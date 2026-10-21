@@ -9,9 +9,11 @@ logger = logging.getLogger(__name__)
 
 class TwilioVoiceService:
     def __init__(self):
-        self.account_sid = os.getenv('TWILIO_ACCOUNT_SID', 'ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
-        self.auth_token = os.getenv('TWILIO_AUTH_TOKEN', 'your_auth_token')
-        self.phone_number = os.getenv('TWILIO_PHONE_NUMBER', '+1234567890')
+        self.account_sid = os.getenv(
+            "TWILIO_ACCOUNT_SID", "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        )
+        self.auth_token = os.getenv("TWILIO_AUTH_TOKEN", "your_auth_token")
+        self.phone_number = os.getenv("TWILIO_PHONE_NUMBER", "+1234567890")
         self.client = Client(self.account_sid, self.auth_token)
 
     def make_outbound_call(
@@ -25,24 +27,24 @@ class TwilioVoiceService:
             call = self.client.calls.create(
                 to=to_number,
                 from_=self.phone_number,
-                url=f'http://api.example.com/api/v1/voice/twiml/{call_id}',
+                url=f"http://api.example.com/api/v1/voice/twiml/{call_id}",
                 record=True,
-                recordingStatusCallback=f'http://api.example.com/api/v1/voice/webhooks/recording/{call_id}',
-                statusCallback=f'http://api.example.com/api/v1/voice/webhooks/status/{call_id}',
-                statusCallbackEvent=['initiated', 'ringing', 'answered', 'completed'],
-                statusCallbackMethod='POST',
+                recordingStatusCallback=f"http://api.example.com/api/v1/voice/webhooks/recording/{call_id}",
+                statusCallback=f"http://api.example.com/api/v1/voice/webhooks/status/{call_id}",
+                statusCallbackEvent=["initiated", "ringing", "answered", "completed"],
+                statusCallbackMethod="POST",
             )
 
             return {
-                'success': True,
-                'twilio_call_id': call.sid,
-                'status': call.status,
+                "success": True,
+                "twilio_call_id": call.sid,
+                "status": call.status,
             }
         except Exception as e:
             logger.exception("make_outbound_call: error inesperado")
             return {
-                'success': False,
-                'error': str(e),
+                "success": False,
+                "error": str(e),
             }
 
     def generate_twiml(
@@ -50,48 +52,48 @@ class TwilioVoiceService:
         agent_persona_id: str,
         call_id: str,
         system_prompt: str,
-        voice_id: str = 'Alice',
+        voice_id: str = "Alice",
     ) -> str:
         """Generate TwiML for IVR."""
         response = VoiceResponse()
 
         response.say(
-            'Hello, connecting you to our AI agent.',
-            voice='alice',
-            language='en-US',
+            "Hello, connecting you to our AI agent.",
+            voice="alice",
+            language="en-US",
         )
 
         response.gather(
             num_digits=1,
-            action=f'http://api.example.com/api/v1/voice/twiml/{call_id}',
-            method='POST',
+            action=f"http://api.example.com/api/v1/voice/twiml/{call_id}",
+            method="POST",
             timeout=5,
-            speech_timeout='auto',
+            speech_timeout="auto",
             max_speech_time=60,
-            speech_model='default',
-            hints='yes, no, help',
+            speech_model="default",
+            hints="yes, no, help",
         ).say(
-            'Press 1 for sales, 2 for support, or speak your request.',
-            voice='alice',
+            "Press 1 for sales, 2 for support, or speak your request.",
+            voice="alice",
         )
 
-        response.redirect(f'http://api.example.com/api/v1/voice/twiml/{call_id}')
+        response.redirect(f"http://api.example.com/api/v1/voice/twiml/{call_id}")
 
         return str(response)
 
     def end_call(self, twilio_call_id: str) -> dict:
         """End active call."""
         try:
-            call = self.client.calls(twilio_call_id).update(status='completed')
+            call = self.client.calls(twilio_call_id).update(status="completed")
             return {
-                'success': True,
-                'status': call.status,
+                "success": True,
+                "status": call.status,
             }
         except Exception as e:
             logger.exception("end_call: error inesperado")
             return {
-                'success': False,
-                'error': str(e),
+                "success": False,
+                "error": str(e),
             }
 
     def transfer_call(
@@ -105,14 +107,14 @@ class TwilioVoiceService:
             response.dial(transfer_to)
 
             return {
-                'success': True,
-                'transfer_to': transfer_to,
+                "success": True,
+                "transfer_to": transfer_to,
             }
         except Exception as e:
             logger.exception("transfer_call: error inesperado")
             return {
-                'success': False,
-                'error': str(e),
+                "success": False,
+                "error": str(e),
             }
 
     def get_call_recording(self, recording_sid: str) -> dict:
@@ -121,17 +123,17 @@ class TwilioVoiceService:
             recording = self.client.recordings(recording_sid).fetch()
 
             return {
-                'success': True,
-                'sid': recording.sid,
-                'duration': recording.duration,
-                'channels': recording.channels,
-                'media_url': recording.media_url,
+                "success": True,
+                "sid": recording.sid,
+                "duration": recording.duration,
+                "channels": recording.channels,
+                "media_url": recording.media_url,
             }
         except Exception as e:
             logger.exception("get_call_recording: error inesperado")
             return {
-                'success': False,
-                'error': str(e),
+                "success": False,
+                "error": str(e),
             }
 
     def transcribe_recording(self, recording_sid: str) -> dict:
@@ -140,13 +142,13 @@ class TwilioVoiceService:
             transcription = self.client.transcriptions.create(recording_sid)
 
             return {
-                'success': True,
-                'sid': transcription.sid,
-                'status': transcription.status,
+                "success": True,
+                "sid": transcription.sid,
+                "status": transcription.status,
             }
         except Exception as e:
             logger.exception("transcribe_recording: error inesperado")
             return {
-                'success': False,
-                'error': str(e),
+                "success": False,
+                "error": str(e),
             }

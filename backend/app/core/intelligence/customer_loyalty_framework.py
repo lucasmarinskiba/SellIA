@@ -15,9 +15,21 @@ class CustomerLoyaltyFramework:
 
     # Health scoring thresholds
     HEALTH_SIGNALS: ClassVar[dict] = {
-        "healthy": {"usage_trend": "up", "engagement": "high", "support_tickets": "low"},
-        "at_risk": {"usage_trend": "flat", "engagement": "medium", "support_tickets": "medium"},
-        "churn_risk": {"usage_trend": "down", "engagement": "low", "support_tickets": "high"},
+        "healthy": {
+            "usage_trend": "up",
+            "engagement": "high",
+            "support_tickets": "low",
+        },
+        "at_risk": {
+            "usage_trend": "flat",
+            "engagement": "medium",
+            "support_tickets": "medium",
+        },
+        "churn_risk": {
+            "usage_trend": "down",
+            "engagement": "low",
+            "support_tickets": "high",
+        },
     }
 
     @staticmethod
@@ -129,7 +141,9 @@ class CustomerLoyaltyFramework:
         ]
 
     @staticmethod
-    def build_nps_optimization_plan(nps_segments: dict[str, list[str]]) -> dict[str, Any]:
+    def build_nps_optimization_plan(
+        nps_segments: dict[str, list[str]],
+    ) -> dict[str, Any]:
         """
         Optimiza NPS por segment (promoters, passives, detractors).
 
@@ -186,7 +200,7 @@ class CustomerLoyaltyFramework:
         # Project 5 years
         ltv = 0
         for year in range(5):
-            annual_value = arpu * 12 * cohort_retention ** year * margin
+            annual_value = arpu * 12 * cohort_retention**year * margin
             ltv += annual_value
 
         # Expansion LTV (upsell, cross-sell)
@@ -220,7 +234,11 @@ class CustomerLoyaltyFramework:
         )
 
         if is_ready:
-            upsell_type = "upgrade_to_pro" if customer.get("current_plan") == "starter" else "add_on"
+            upsell_type = (
+                "upgrade_to_pro"
+                if customer.get("current_plan") == "starter"
+                else "add_on"
+            )
             upsell_product = customer.get("next_logical_upsell", "")
 
             return {

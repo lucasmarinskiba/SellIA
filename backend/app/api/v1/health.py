@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 class ComponentHealth(BaseModel):
     """Status de un componente."""
+
     name: str
     status: str  # "OK", "DEGRADED", "DOWN"
     latency_ms: float
@@ -28,6 +29,7 @@ class ComponentHealth(BaseModel):
 
 class SystemHealth(BaseModel):
     """Health del sistema completo."""
+
     overall_status: str  # "HEALTHY", "DEGRADED", "DOWN"
     components: list[ComponentHealth]
     uptime_hours: float
@@ -45,28 +47,28 @@ async def health_check():
                 status="OK",
                 latency_ms=45.2,
                 last_check=utc_now(),
-                error_message=None
+                error_message=None,
             ),
             ComponentHealth(
                 name="analytics_dashboard",
                 status="OK",
                 latency_ms=120.5,
                 last_check=utc_now(),
-                error_message=None
+                error_message=None,
             ),
             ComponentHealth(
                 name="crm_sync",
                 status="DEGRADED",  # Ej: API lenta
                 latency_ms=2500.0,
                 last_check=utc_now(),
-                error_message="Salesforce API latency high (>2s)"
+                error_message="Salesforce API latency high (>2s)",
             ),
             ComponentHealth(
                 name="knowledge_engine",
                 status="OK",
                 latency_ms=12.1,
                 last_check=utc_now(),
-                error_message=None
+                error_message=None,
             ),
         ]
 
@@ -84,7 +86,7 @@ async def health_check():
             overall_status=overall,
             components=components,
             uptime_hours=2160.5,  # Ej: 90 días
-            error_rate_last_hour=0.002  # 0.2%
+            error_rate_last_hour=0.002,  # 0.2%
         )
 
     except Exception:
@@ -109,8 +111,8 @@ async def readiness_check():
             "knowledge_loaded": True,
             "brain_graph_ready": True,
             "database_connected": True,
-            "auth_service": "OK"
-        }
+            "auth_service": "OK",
+        },
     }
 
 
@@ -118,7 +120,4 @@ async def readiness_check():
 async def liveness_check():
     """¿Sistema vivo?"""
 
-    return {
-        "alive": True,
-        "timestamp": utc_now().isoformat()
-    }
+    return {"alive": True, "timestamp": utc_now().isoformat()}

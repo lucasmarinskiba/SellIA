@@ -35,6 +35,7 @@ _ORDER_STATUS_LABELS = {
 
 class WooCommerceConnector(BaseChannelConnector):
     """Conector para WooCommerce webhooks (pedidos, clientes)."""
+
     platform = "woocommerce"
 
     def __init__(self, credentials: dict[str, Any], settings: dict[str, Any]):
@@ -44,7 +45,9 @@ class WooCommerceConnector(BaseChannelConnector):
         self.consumer_secret = credentials.get("consumer_secret")
         self.webhook_secret = credentials.get("webhook_secret")
 
-    async def send_message(self, recipient_id: str, content: str, content_type: str = "text") -> dict[str, Any]:
+    async def send_message(
+        self, recipient_id: str, content: str, content_type: str = "text"
+    ) -> dict[str, Any]:
         """WooCommerce doesn't have a native messaging channel."""
         return {"status": "logged", "note": "WooCommerce no soporta mensajería directa"}
 
@@ -77,7 +80,8 @@ class WooCommerceConnector(BaseChannelConnector):
                 platform=ChannelPlatform.WOOCOMMERCE,
                 external_id=str(order_id),
                 sender_id=str(billing.get("email", order_id)),
-                sender_name=f"{billing.get('first_name', '')} {billing.get('last_name', '')}".strip() or "Cliente WooCommerce",
+                sender_name=f"{billing.get('first_name', '')} {billing.get('last_name', '')}".strip()
+                or "Cliente WooCommerce",
                 sender_email=billing.get("email", ""),
                 sender_phone=billing.get("phone", ""),
                 content=content,
@@ -94,7 +98,8 @@ class WooCommerceConnector(BaseChannelConnector):
                 platform=ChannelPlatform.WOOCOMMERCE,
                 external_id=str(customer_id),
                 sender_id=str(customer_id),
-                sender_name=f"{customer.get('first_name', '')} {customer.get('last_name', '')}".strip() or "Cliente WooCommerce",
+                sender_name=f"{customer.get('first_name', '')} {customer.get('last_name', '')}".strip()
+                or "Cliente WooCommerce",
                 sender_email=customer.get("email", billing.get("email", "")),
                 sender_phone=billing.get("phone", ""),
                 content="Nuevo cliente registrado en WooCommerce",
@@ -128,6 +133,7 @@ class WooCommerceConnector(BaseChannelConnector):
             return False
         try:
             import httpx
+
             url = f"{self.site_url.rstrip('/')}/wp-json/wc/v3/system_status"
             async with httpx.AsyncClient() as client:
                 response = await client.get(

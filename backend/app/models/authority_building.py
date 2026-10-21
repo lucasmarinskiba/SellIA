@@ -11,6 +11,7 @@ from app.core.database import Base
 
 class Testimonial(Base):
     """Customer testimonials + video reviews."""
+
     __tablename__ = "testimonials"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -30,20 +31,25 @@ class Testimonial(Base):
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     __table_args__ = (
-        Index('idx_seller_testimonials', 'seller_id', 'is_verified'),
-        Index('idx_featured', 'seller_id', 'is_featured'),
+        Index("idx_seller_testimonials", "seller_id", "is_verified"),
+        Index("idx_featured", "seller_id", "is_featured"),
     )
 
 
 class Award(Base):
     """Awards, certifications, badges."""
+
     __tablename__ = "awards"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     seller_id = Column(String(255), nullable=False)
     name = Column(String(255), nullable=False)  # "Best Seller 2024", "Industry Leader"
-    issuer = Column(String(255), nullable=False)  # Platform/org that issued (ML, Amazon, TrustPilot)
-    category = Column(String(50), nullable=False)  # bestseller, top_rated, certified, award
+    issuer = Column(
+        String(255), nullable=False
+    )  # Platform/org that issued (ML, Amazon, TrustPilot)
+    category = Column(
+        String(50), nullable=False
+    )  # bestseller, top_rated, certified, award
     badge_url = Column(String(500), nullable=True)  # Badge image
     certificate_url = Column(String(500), nullable=True)  # PDF certificate
     awarded_date = Column(DateTime, nullable=False)
@@ -53,18 +59,21 @@ class Award(Base):
     created_at = Column(DateTime, default=utc_now)
 
     __table_args__ = (
-        Index('idx_seller_awards', 'seller_id', 'is_active'),
-        Index('idx_category', 'category', 'awarded_date'),
+        Index("idx_seller_awards", "seller_id", "is_active"),
+        Index("idx_category", "category", "awarded_date"),
     )
 
 
 class Review(Base):
     """Aggregated reviews from all platforms (unified view)."""
+
     __tablename__ = "platform_reviews"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     seller_id = Column(String(255), nullable=False)
-    platform = Column(String(50), nullable=False)  # mercado_libre, amazon, hotmart, trustpilot
+    platform = Column(
+        String(50), nullable=False
+    )  # mercado_libre, amazon, hotmart, trustpilot
     platform_review_id = Column(String(255), nullable=True)
     reviewer_name = Column(String(255), nullable=False)
     rating = Column(Integer, nullable=False)  # 1-5 stars
@@ -78,13 +87,14 @@ class Review(Base):
     created_at = Column(DateTime, default=utc_now)
 
     __table_args__ = (
-        Index('idx_seller_reviews', 'seller_id', 'rating'),
-        Index('idx_platform_reviews', 'platform', 'review_date'),
+        Index("idx_seller_reviews", "seller_id", "rating"),
+        Index("idx_platform_reviews", "platform", "review_date"),
     )
 
 
 class TrustScore(Base):
     """Overall trust/authority score (calculated daily)."""
+
     __tablename__ = "trust_scores"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -104,13 +114,12 @@ class TrustScore(Base):
 
     created_at = Column(DateTime, default=utc_now)
 
-    __table_args__ = (
-        Index('idx_trust_seller', 'seller_id', 'score_date'),
-    )
+    __table_args__ = (Index("idx_trust_seller", "seller_id", "score_date"),)
 
 
 class SellerBio(Base):
     """Seller biography + expertise (E-E-A-T signals)."""
+
     __tablename__ = "seller_bios"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -134,6 +143,4 @@ class SellerBio(Base):
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
-    __table_args__ = (
-        Index('idx_seller_bio', 'seller_id'),
-    )
+    __table_args__ = (Index("idx_seller_bio", "seller_id"),)

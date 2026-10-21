@@ -82,19 +82,22 @@ class SellIABrainV3:
         Returns comprehensive report on: virtue, values alignment, ethics, authenticity
         """
 
-        virtue_score = self.virtue_agent.score_virtue(message, product, delivery, audience)
+        virtue_score = self.virtue_agent.score_virtue(
+            message, product, delivery, audience
+        )
         ethical_score = self.ethics_framework.ethical_score(message, product, audience)
-        authenticity_score = self.authenticity_engine.authenticity_score(message, audience, [])
+        authenticity_score = self.authenticity_engine.authenticity_score(
+            message, audience, []
+        )
 
         values_alignment = self.values_agent.alignment_report(
-            {"primary_values": audience.get("values", [])},
-            [{"description": message}]
+            {"primary_values": audience.get("values", [])}, [{"description": message}]
         )
 
         all_passed = (
-            virtue_score.get("passed", False) and
-            ethical_score.get("passed", False) and
-            authenticity_score.get("passed", False)
+            virtue_score.get("passed", False)
+            and ethical_score.get("passed", False)
+            and authenticity_score.get("passed", False)
         )
 
         return {
@@ -107,7 +110,8 @@ class SellIABrainV3:
                 "values_alignment": values_alignment.get("total_recommendations", 0),
             },
             "recommendations": [
-                s for d in [
+                s
+                for d in [
                     virtue_score.get("violations", []),
                     ethical_score.get("issues", []),
                     authenticity_score.get("issues", []),
@@ -150,9 +154,7 @@ class SellIABrainV3:
         )
 
         # Step 3: Ensure values alignment
-        user_values = self.values_agent.extract_user_values(
-            author_profile, [], []
-        )
+        user_values = self.values_agent.extract_user_values(author_profile, [], [])
         values_check = self.values_agent.score_recommendation_alignment(
             {"description": response["response_text"]},
             user_values,
@@ -247,6 +249,7 @@ class SellIABrainV3:
 # ============================================================================
 # FACTORY FUNCTION
 # ============================================================================
+
 
 def create_sellias_brain() -> SellIABrainV3:
     """Factory function to create SellIA Brain v3 instance."""

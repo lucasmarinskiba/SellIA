@@ -27,5 +27,7 @@ async def ensure_ledger_tables() -> None:
                 )
             created += 1
         except Exception as e:  # noqa: BLE001
-            logger.warning("ledger bootstrap: table %s skipped: %s", table.name, str(e)[:160])
+            logger.warning(
+                "ledger bootstrap: table %s skipped: %s", table.name, str(e)[:160]
+            )
     logger.info("✅ ledger tables ensured (%s/%s)", created, len(LEDGER_TABLES))

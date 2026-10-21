@@ -47,7 +47,9 @@ class OrdersScheduler:
         Ejecuta automáticamente cada N minutos.
         """
 
-        logger.info(f"Adding ML sync job for seller {seller_id} (every {interval_minutes}min)")
+        logger.info(
+            f"Adding ML sync job for seller {seller_id} (every {interval_minutes}min)"
+        )
 
         job_id = f"ml_sync_{seller_id}"
 
@@ -166,7 +168,9 @@ class OrdersScheduler:
                 {
                     "id": job.id,
                     "name": job.name,
-                    "next_run": job.next_run_time.isoformat() if job.next_run_time else None,
+                    "next_run": (
+                        job.next_run_time.isoformat() if job.next_run_time else None
+                    ),
                     "trigger": str(job.trigger),
                 }
                 for job in jobs

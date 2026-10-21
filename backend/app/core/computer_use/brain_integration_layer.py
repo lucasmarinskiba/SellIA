@@ -21,7 +21,9 @@ class BrainIntegrationLayer:
 
     async def decide_action(
         self,
-        situation: dict[str, Any],  # {"platform": "mercadolibre", "action_type": "list_product", "context": {...}}
+        situation: dict[
+            str, Any
+        ],  # {"platform": "mercadolibre", "action_type": "list_product", "context": {...}}
         available_strategies: list[str],
     ) -> dict[str, Any]:
         """
@@ -151,15 +153,25 @@ class BrainIntegrationLayer:
 
         # Platform-specific factors
         if platform == "mercadolibre":
-            analysis["key_factors"].append("ML ranking depends on title+price+seller_stats")
-            analysis["opportunities"].append("Optimize title for search (high keyword relevance)")
+            analysis["key_factors"].append(
+                "ML ranking depends on title+price+seller_stats"
+            )
+            analysis["opportunities"].append(
+                "Optimize title for search (high keyword relevance)"
+            )
 
         elif platform == "amazon":
-            analysis["key_factors"].append("Amazon A9 focuses on reviews and conversion rate")
-            analysis["risks"].append("New listings have low visibility, need reviews early")
+            analysis["key_factors"].append(
+                "Amazon A9 focuses on reviews and conversion rate"
+            )
+            analysis["risks"].append(
+                "New listings have low visibility, need reviews early"
+            )
 
         elif platform == "tiktok_shop":
-            analysis["key_factors"].append("TikTok rewards video recency and engagement")
+            analysis["key_factors"].append(
+                "TikTok rewards video recency and engagement"
+            )
             analysis["opportunities"].append("Create short videos for organic reach")
 
         # Action-specific considerations
@@ -168,7 +180,9 @@ class BrainIntegrationLayer:
             analysis["opportunities"].append("Use trending keywords in title")
 
         elif action_type == "set_price":
-            analysis["key_factors"].append("Price is psychological trigger and competitiveness signal")
+            analysis["key_factors"].append(
+                "Price is psychological trigger and competitiveness signal"
+            )
             if context.get("competition_price"):
                 analysis["key_factors"].append(
                     f"Competitor priced at {context['competition_price']}, opportunity for positioning"
@@ -176,7 +190,9 @@ class BrainIntegrationLayer:
 
         elif action_type == "negotiate_deal":
             analysis["key_factors"].append("Early anchoring critical (set precedent)")
-            analysis["opportunities"].append("Identify buyer's real objection vs surface objection")
+            analysis["opportunities"].append(
+                "Identify buyer's real objection vs surface objection"
+            )
 
         return analysis
 
@@ -214,7 +230,9 @@ class BrainIntegrationLayer:
 
         # Retorna estrategia con máxima puntuación
         best_strategy = max(strategy_scores.items(), key=lambda x: x[1])[0]
-        logger.info(f"Recommended strategy: {best_strategy} (score: {strategy_scores[best_strategy]})")
+        logger.info(
+            f"Recommended strategy: {best_strategy} (score: {strategy_scores[best_strategy]})"
+        )
 
         return best_strategy
 
@@ -241,15 +259,27 @@ class BrainIntegrationLayer:
 
         # Tácticas para listar producto
         if action_type == "list_product":
-            tactics["parameters"]["title_optimization"] = "Use 3-5 keywords, brand + main_benefit + unique_angle"
-            tactics["parameters"]["description_structure"] = "Problem → Solution → Proof → Call-to-action"
-            tactics["copy"]["title_template"] = f"{situation.get('product_name', 'Product')} - {situation.get('main_benefit', 'Premium Quality')}"
-            tactics["parameters"]["price_positioning"] = self._price_strategy(situation, strategy)
+            tactics["parameters"][
+                "title_optimization"
+            ] = "Use 3-5 keywords, brand + main_benefit + unique_angle"
+            tactics["parameters"][
+                "description_structure"
+            ] = "Problem → Solution → Proof → Call-to-action"
+            tactics["copy"][
+                "title_template"
+            ] = f"{situation.get('product_name', 'Product')} - {situation.get('main_benefit', 'Premium Quality')}"
+            tactics["parameters"]["price_positioning"] = self._price_strategy(
+                situation, strategy
+            )
 
         # Tácticas para set price
         elif action_type == "set_price":
-            tactics["parameters"]["pricing_method"] = "Psychological pricing (e.g., $29.99 not $30)"
-            tactics["parameters"]["competitor_positioning"] = "Price 5-10% below if positioning as value, or 10-20% above if premium"
+            tactics["parameters"][
+                "pricing_method"
+            ] = "Psychological pricing (e.g., $29.99 not $30)"
+            tactics["parameters"][
+                "competitor_positioning"
+            ] = "Price 5-10% below if positioning as value, or 10-20% above if premium"
             base_price = situation.get("base_price", 0)
             tactics["parameters"]["recommended_price"] = self._calculate_optimal_price(
                 base_price, situation, knowledge
@@ -265,24 +295,45 @@ class BrainIntegrationLayer:
                 "Proof (testimonial, guarantee)",
                 "Call-to-action (create urgency)",
             ]
-            tactics["parameters"]["length"] = "100-300 words (sweet spot for conversion)"
-            tactics["parameters"]["tone"] = "Conversational, benefit-focused, no hyperbole"
+            tactics["parameters"][
+                "length"
+            ] = "100-300 words (sweet spot for conversion)"
+            tactics["parameters"][
+                "tone"
+            ] = "Conversational, benefit-focused, no hyperbole"
 
         # Tácticas para negociar
         elif action_type == "negotiate_deal":
-            tactics["parameters"]["anchor_technique"] = "Start with ambitious ask (sets negotiation window)"
-            tactics["parameters"]["concession_order"] = ["Bundle discount", "Payment terms", "Exclusivity", "Volume discount"]
-            tactics["parameters"]["walk_away_power"] = "Prepare alternative buyer (leverage)"
+            tactics["parameters"][
+                "anchor_technique"
+            ] = "Start with ambitious ask (sets negotiation window)"
+            tactics["parameters"]["concession_order"] = [
+                "Bundle discount",
+                "Payment terms",
+                "Exclusivity",
+                "Volume discount",
+            ]
+            tactics["parameters"][
+                "walk_away_power"
+            ] = "Prepare alternative buyer (leverage)"
 
         # Tácticas para cerrar
         elif action_type == "close_sale":
-            tactics["parameters"]["close_type"] = "Assumptive close (assume buyer will proceed)"
-            tactics["parameters"]["objection_handler"] = "Listen to real objection, reframe, offer solution"
-            tactics["parameters"]["trial_close"] = "Ask low-commitment question (gauge readiness)"
+            tactics["parameters"][
+                "close_type"
+            ] = "Assumptive close (assume buyer will proceed)"
+            tactics["parameters"][
+                "objection_handler"
+            ] = "Listen to real objection, reframe, offer solution"
+            tactics["parameters"][
+                "trial_close"
+            ] = "Ask low-commitment question (gauge readiness)"
 
         return tactics
 
-    def _price_strategy(self, situation: dict[str, Any], strategy: str) -> dict[str, Any]:
+    def _price_strategy(
+        self, situation: dict[str, Any], strategy: str
+    ) -> dict[str, Any]:
         """Determina estrategia de precio."""
         base_price = situation.get("base_price", 100)
         competitor_price = situation.get("competitor_price", base_price)

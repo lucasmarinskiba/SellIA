@@ -4,7 +4,6 @@ Pricing: ~$2/min video
 Strengths: Realistic avatars, multilingual, lip sync
 """
 
-
 import logging
 from typing import ClassVar
 
@@ -37,7 +36,9 @@ class HeyGenProvider(BaseProvider):
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         if not self.is_available:
-            return GenerationResult(success=False, error_message="HEYGEN_API_KEY no configurada")
+            return GenerationResult(
+                success=False, error_message="HEYGEN_API_KEY no configurada"
+            )
 
         try:
             import aiohttp
@@ -48,28 +49,43 @@ class HeyGenProvider(BaseProvider):
             }
 
             payload = {
-                "video_inputs": [{
-                    "character": {"type": "avatar", "avatar_id": "Daisy-inskirt-20220818"},
-                    "voice": {"type": "text", "input_text": config.prompt, "voice_id": "2d5b0e6cf36f460aa7fc47e3eb5a4b66"},
-                }],
+                "video_inputs": [
+                    {
+                        "character": {
+                            "type": "avatar",
+                            "avatar_id": "Daisy-inskirt-20220818",
+                        },
+                        "voice": {
+                            "type": "text",
+                            "input_text": config.prompt,
+                            "voice_id": "2d5b0e6cf36f460aa7fc47e3eb5a4b66",
+                        },
+                    }
+                ],
                 "dimension": {"width": 1080, "height": 1920},
             }
 
-            async with aiohttp.ClientSession() as session, session.post(
-                "https://api.heygen.com/v2/video/generate",
-                headers=headers,
-                json=payload,
-            ) as resp:
+            async with (
+                aiohttp.ClientSession() as session,
+                session.post(
+                    "https://api.heygen.com/v2/video/generate",
+                    headers=headers,
+                    json=payload,
+                ) as resp,
+            ):
                 data = await resp.json()
 
             video_id = data.get("data", {}).get("video_id")
             if not video_id:
-                return GenerationResult(success=False, error_message="HeyGen no devolvió video_id")
+                return GenerationResult(
+                    success=False, error_message="HeyGen no devolvió video_id"
+                )
 
             # Poll
             video_url = None
             for _ in range(40):
                 import asyncio
+
                 await asyncio.sleep(5)
                 async with (
                     aiohttp.ClientSession() as session,

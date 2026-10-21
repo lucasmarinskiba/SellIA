@@ -33,6 +33,7 @@ async def _process_batch_async(task_self, batch_job_id: str):
     async with AsyncSessionLocal() as db:
         # Fetch the batch job
         from app.domains.provisioning.models import ResourceJob
+
         result = await db.execute(
             select(ResourceJob).where(ResourceJob.id == batch_job_id)
         )
@@ -65,24 +66,33 @@ async def _process_batch_async(task_self, batch_job_id: str):
             )
             from app.domains.agents.llm_router import route_model
 
-            provider_name, model, _ = route_model(structured_prompt, ollama_available=False)
+            provider_name, model, _ = route_model(
+                structured_prompt, ollama_available=False
+            )
 
             messages = [
-                SystemMessage(content="You are a batch content generator. Respond ONLY with a JSON object where keys are item IDs and values are the generated content."),
+                SystemMessage(
+                    content="You are a batch content generator. Respond ONLY with a JSON object where keys are item IDs and values are the generated content."
+                ),
                 HumanMessage(content=structured_prompt),
             ]
 
             response = None
             if provider_name == "openai":
                 from app.core.config import get_settings
+
                 key = get_settings().OPENAI_API_KEY
                 response = await OpenAIProvider().generate(messages, key or "", model)
             elif provider_name == "anthropic":
                 from app.core.config import get_settings
+
                 key = get_settings().ANTHROPIC_API_KEY
-                response = await AnthropicProvider().generate(messages, key or "", model)
+                response = await AnthropicProvider().generate(
+                    messages, key or "", model
+                )
             elif provider_name == "kimi":
                 from app.core.config import get_settings
+
                 key = get_settings().KIMI_API_KEY
                 response = await KimiProvider().generate(messages, key or "", model)
             elif provider_name == "ollama":
@@ -100,26 +110,32 @@ async def _process_batch_async(task_self, batch_job_id: str):
 
             # Update job result
             await provisioning_service.update_job(
-                db, job, "completed",
+                db,
+                job,
+                "completed",
                 result={
                     "task_type": task_type,
                     "items_generated": len(items),
                     "provider": provider_name,
                     "model": model,
                     "outputs": parsed,
-                }
+                },
             )
 
             await provisioning_service.add_event(
-                db, job.request_id, "step_completed",
+                db,
+                job.request_id,
+                "step_completed",
                 f"Batch generation completed: {len(items)} items via {provider_name}/{model}",
-                {"items": len(items), "provider": provider_name, "model": model}
+                {"items": len(items), "provider": provider_name, "model": model},
             )
 
             logger.info(f"Batch job {batch_job_id}: generated {len(items)} items")
 
         except Exception as exc:
-            await provisioning_service.update_job(db, job, "failed", error_message=str(exc))
+            await provisioning_service.update_job(
+                db, job, "failed", error_message=str(exc)
+            )
             raise task_self.retry(exc=exc) from exc
 
 
@@ -139,7 +155,9 @@ def _build_batch_prompt(task_type: str, items: list[dict[str, Any]]) -> str:
         lines.append(f"  [{item_id}] {context}")
 
     lines.append("")
-    lines.append("Respond with valid JSON only. Example: {\"item-1\": \"Generated text...\", ...}")
+    lines.append(
+        'Respond with valid JSON only. Example: {"item-1": "Generated text...", ...}'
+    )
     return "\n".join(lines)
 
 

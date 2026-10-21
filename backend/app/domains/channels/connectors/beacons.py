@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 class BeaconsConnector(BaseChannelConnector):
     """Conector para Beacons (link-in-bio, monetización, forms)."""
+
     platform = "beacons"
     BASE_URL = "https://api.beacons.ai/v1"
 
@@ -25,13 +26,15 @@ class BeaconsConnector(BaseChannelConnector):
         self.creator_id = credentials.get("creator_id")
         self.webhook_secret = credentials.get("webhook_secret")
 
-    async def send_message(self, recipient_id: str, content: str, content_type: str = "text") -> dict[str, Any]:
+    async def send_message(
+        self, recipient_id: str, content: str, content_type: str = "text"
+    ) -> dict[str, Any]:
         """Beacons no tiene mensajería directa; log para tracking."""
         return {"status": "logged", "note": "Beacons no soporta mensajería directa"}
 
     async def parse_webhook(self, raw_payload: dict[str, Any]) -> WebhookPayload:
         """Parse Beacons webhook payload.
-        
+
         Beacons sends events like:
         - contact_form_submission
         - store_purchase
@@ -114,7 +117,10 @@ class BeaconsConnector(BaseChannelConnector):
             return True
         import hashlib
         import hmac
-        expected = hmac.new(self.webhook_secret.encode(), raw_body, hashlib.sha256).hexdigest()
+
+        expected = hmac.new(
+            self.webhook_secret.encode(), raw_body, hashlib.sha256
+        ).hexdigest()
         return hmac.compare_digest(expected, signature)
 
     async def get_links(self) -> list[dict[str, Any]]:
@@ -122,6 +128,7 @@ class BeaconsConnector(BaseChannelConnector):
         if not self.api_key or not self.creator_id:
             raise ValueError("Faltan credenciales de Beacons")
         import httpx
+
         url = f"{self.BASE_URL}/creators/{self.creator_id}/links"
         headers = {"Authorization": f"Bearer {self.api_key}"}
         async with httpx.AsyncClient() as client:
@@ -134,6 +141,7 @@ class BeaconsConnector(BaseChannelConnector):
         if not self.api_key or not self.creator_id:
             raise ValueError("Faltan credenciales de Beacons")
         import httpx
+
         url = f"{self.BASE_URL}/creators/{self.creator_id}/store/products"
         headers = {"Authorization": f"Bearer {self.api_key}"}
         async with httpx.AsyncClient() as client:
@@ -146,6 +154,7 @@ class BeaconsConnector(BaseChannelConnector):
         if not self.api_key or not self.creator_id:
             raise ValueError("Faltan credenciales de Beacons")
         import httpx
+
         url = f"{self.BASE_URL}/creators/{self.creator_id}/store/products"
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -173,6 +182,7 @@ class BeaconsConnector(BaseChannelConnector):
             return False
         try:
             import httpx
+
             url = f"{self.BASE_URL}/creators/{self.creator_id}"
             headers = {"Authorization": f"Bearer {self.api_key}"}
             async with httpx.AsyncClient() as client:

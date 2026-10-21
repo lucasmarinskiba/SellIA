@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 class Product(BaseModel):
     """Producto en catálogo."""
+
     id: str | None = None
     name: str
     description: str
@@ -42,6 +43,7 @@ class Product(BaseModel):
 
 class CartItem(BaseModel):
     """Item en carrito."""
+
     product_id: str
     qty: int
     price_snapshot: float
@@ -49,13 +51,16 @@ class CartItem(BaseModel):
 
 class OrderRequest(BaseModel):
     """Request para crear orden."""
+
     items: list[CartItem]
     payment_method: str
     discount_pct: float = 0.0
 
 
 @router.get("/products", tags=["catalog"])
-async def list_products(category: str | None = None, tag: str | None = None, limit: int = 50):
+async def list_products(
+    category: str | None = None, tag: str | None = None, limit: int = 50
+):
     """Lista productos con filtros opcionales desde DB."""
     try:
         async with AsyncSessionLocal() as db:
@@ -87,10 +92,7 @@ async def list_products(category: str | None = None, tag: str | None = None, lim
                 for p in products[:limit]
             ]
 
-            return {
-                "total": len(products),
-                "products": products_list
-            }
+            return {"total": len(products), "products": products_list}
     except Exception as e:
         logger.exception("Error listando productos")
         raise HTTPException(status_code=500, detail=str(e))
@@ -118,7 +120,9 @@ async def get_product(product_id: str):
                 "category": product.category,
                 "images": product.images or [],
                 "tags": product.tags or [],
-                "created_at": product.created_at.isoformat() if product.created_at else None,
+                "created_at": (
+                    product.created_at.isoformat() if product.created_at else None
+                ),
             }
     except HTTPException:
         raise
@@ -182,12 +186,13 @@ async def checkout(order_req: OrderRequest, user_id: str):
                 product = result.scalars().first()
 
                 if not product:
-                    raise HTTPException(status_code=404, detail=f"Product {item.product_id} not found")
+                    raise HTTPException(
+                        status_code=404, detail=f"Product {item.product_id} not found"
+                    )
 
                 if product.stock_qty < item.qty:
                     raise HTTPException(
-                        status_code=400,
-                        detail=f"Insufficient stock: {product.name}"
+                        status_code=400, detail=f"Insufficient stock: {product.name}"
                     )
 
             # Calcular totales
@@ -196,7 +201,9 @@ async def checkout(order_req: OrderRequest, user_id: str):
             total = subtotal - discount_amount
 
             # Crear orden
-            order_id = f"ORD-{utc_now().strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
+            order_id = (
+                f"ORD-{utc_now().strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
+            )
             db_order = OrderModel(
                 id=order_id,
                 customer_email="",  # TODO: Obtener de context
@@ -230,7 +237,7 @@ async def checkout(order_req: OrderRequest, user_id: str):
                 "order_id": order_id,
                 "total": total,
                 "payment_method": order_req.payment_method,
-                "next": "Integration with Stripe checkout"
+                "next": "Integration with Stripe checkout",
             }
 
     except HTTPException:
@@ -257,10 +264,12 @@ async def get_orders(user_id: str):
                         "id": o.id,
                         "status": o.status,
                         "amount": o.amount,
-                        "created_at": o.created_at.isoformat() if o.created_at else None,
+                        "created_at": (
+                            o.created_at.isoformat() if o.created_at else None
+                        ),
                     }
                     for o in orders
-                ]
+                ],
             }
     except Exception as e:
         logger.exception("Error obteniendo órdenes")
@@ -284,10 +293,12 @@ async def get_order_details(order_id: str):
                     "id": order.id,
                     "status": order.status,
                     "amount": order.amount,
-                    "created_at": order.created_at.isoformat() if order.created_at else None,
+                    "created_at": (
+                        order.created_at.isoformat() if order.created_at else None
+                    ),
                 },
                 "invoice_url": f"/invoices/{order_id}.pdf",
-                "tracking": {"status": "pending", "eta": None}
+                "tracking": {"status": "pending", "eta": None},
             }
     except HTTPException:
         raise

@@ -24,7 +24,9 @@ async def get_db():
         yield session
 
 
-@router.post("/plans", response_model=FinancialPlanOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/plans", response_model=FinancialPlanOut, status_code=status.HTTP_201_CREATED
+)
 async def create_plan(
     data: FinancialPlanCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -34,6 +36,7 @@ async def create_plan(
     from sqlalchemy import select
 
     from app.domains.businesses.models import Business
+
     result = await db.execute(
         select(Business).where(Business.user_id == current_user.id).limit(1)
     )
@@ -60,6 +63,7 @@ async def list_plans(
     from sqlalchemy import select
 
     from app.domains.businesses.models import Business
+
     result = await db.execute(
         select(Business).where(Business.user_id == current_user.id).limit(1)
     )
@@ -100,7 +104,9 @@ async def export_plan(
         return PlainTextResponse(
             content=exported["content"],
             media_type="application/json",
-            headers={"Content-Disposition": f"attachment; filename={exported['filename']}"},
+            headers={
+                "Content-Disposition": f"attachment; filename={exported['filename']}"
+            },
         )
     return PlainTextResponse(
         content=exported["content"],

@@ -42,7 +42,9 @@ async def track_event(
 
 @router.get("/funnel/conversion")
 async def get_conversion_funnel(
-    funnel_name: str = Query("default", description="Funnel: default|premium|testimonials"),
+    funnel_name: str = Query(
+        "default", description="Funnel: default|premium|testimonials"
+    ),
     days: int = Query(7, ge=1, le=90),
 ) -> dict[str, Any]:
     """
@@ -159,7 +161,9 @@ async def get_conversion_funnel(
         "stages": funnel["stages"],
         "summary": {
             "total_entries": funnel["stages"][0]["value"] if funnel["stages"] else 0,
-            "total_conversions": funnel["stages"][-1]["value"] if funnel["stages"] else 0,
+            "total_conversions": (
+                funnel["stages"][-1]["value"] if funnel["stages"] else 0
+            ),
             "overall_conversion_rate": (
                 (funnel["stages"][-1]["value"] / funnel["stages"][0]["value"] * 100)
                 if funnel["stages"]

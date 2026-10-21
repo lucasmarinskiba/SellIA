@@ -1,6 +1,5 @@
 """Email authentication API endpoints."""
 
-
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -107,7 +106,11 @@ def request_approval(
         role=request.role,
     )
 
-    message = "Approval request submitted" if not result.auto_approved else "Account auto-approved!"
+    message = (
+        "Approval request submitted"
+        if not result.auto_approved
+        else "Account auto-approved!"
+    )
 
     return ApprovalResponse(
         success=True,
@@ -157,7 +160,9 @@ def admin_approve_account(
         raise HTTPException(status_code=400, detail="Invalid action")
 
     if not success:
-        raise HTTPException(status_code=400, detail="Approval not found or already processed")
+        raise HTTPException(
+            status_code=400, detail="Approval not found or already processed"
+        )
 
     return {"success": True, "action": request.action}
 

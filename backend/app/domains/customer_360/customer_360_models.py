@@ -21,6 +21,7 @@ from app.core.database import Base
 
 class LifecycleStage(str, Enum):
     """Customer lifecycle stages."""
+
     PROSPECT = "prospect"
     LEAD = "lead"
     CUSTOMER = "customer"
@@ -32,11 +33,23 @@ class LifecycleStage(str, Enum):
 
 class CustomerProfile(Base):
     """Unified customer profile."""
+
     __tablename__ = "customer_profiles"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    customer_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True, unique=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    customer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        unique=True,
+    )
 
     # Identity
     first_name = Column(String(100), nullable=True)
@@ -58,7 +71,9 @@ class CustomerProfile(Base):
     lifecycle_stage_updated_at = Column(DateTime(UTC), nullable=True)
 
     # Preferences
-    preferences = Column(JSONB, nullable=True)  # Language, timezone, notification prefs, etc.
+    preferences = Column(
+        JSONB, nullable=True
+    )  # Language, timezone, notification prefs, etc.
     tags = Column(JSONB, default=list)  # Custom tags/labels
     source = Column(String(100), nullable=True)  # How customer was acquired
 
@@ -81,11 +96,23 @@ class CustomerProfile(Base):
 
 class CustomerScores(Base):
     """Customer scoring & predictions."""
+
     __tablename__ = "customer_scores"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    customer_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True, unique=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    customer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        unique=True,
+    )
 
     # RFM Scores (0-100)
     recency_score = Column(Integer, default=0)
@@ -127,15 +154,30 @@ class CustomerScores(Base):
 
 class CustomerSegmentMembership(Base):
     """Customer segment membership."""
+
     __tablename__ = "customer_segment_memberships"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    customer_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    customer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Segment
-    segment_name = Column(String(100), nullable=False)  # "VIP", "At-Risk", "High-Growth", etc.
-    segment_type = Column(String(50), nullable=False)  # "rfm", "behavioral", "predictive", "manual"
+    segment_name = Column(
+        String(100), nullable=False
+    )  # "VIP", "At-Risk", "High-Growth", etc.
+    segment_type = Column(
+        String(50), nullable=False
+    )  # "rfm", "behavioral", "predictive", "manual"
 
     # Membership
     joined_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
@@ -153,14 +195,27 @@ class CustomerSegmentMembership(Base):
 
 class CustomerInsights(Base):
     """AI-generated customer insights & recommendations."""
+
     __tablename__ = "customer_insights"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    customer_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    customer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Insight
-    insight_type = Column(String(50), nullable=False)  # "opportunity", "risk", "recommendation", "anomaly"
+    insight_type = Column(
+        String(50), nullable=False
+    )  # "opportunity", "risk", "recommendation", "anomaly"
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=False)
     confidence_score = Column(Integer, default=0)  # 0-100
@@ -169,7 +224,9 @@ class CustomerInsights(Base):
     recommended_action = Column(String(255), nullable=True)
     recommended_channel = Column(String(50), nullable=True)
     estimated_impact = Column(Integer, nullable=True)  # Expected revenue/outcome
-    impact_metric = Column(String(50), nullable=True)  # "revenue", "engagement", "retention"
+    impact_metric = Column(
+        String(50), nullable=True
+    )  # "revenue", "engagement", "retention"
 
     # Status
     is_actioned = Column(Boolean, default=False)
@@ -188,11 +245,23 @@ class CustomerInsights(Base):
 
 class Customer360Metadata(Base):
     """Metadata for 360 profile assembly."""
+
     __tablename__ = "customer_360_metadata"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    customer_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True, unique=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    customer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        unique=True,
+    )
 
     # Data Completeness
     profile_completeness_pct = Column(Integer, default=0)  # % of fields filled
@@ -218,6 +287,4 @@ class Customer360Metadata(Base):
     created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
     updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
-    __table_args__ = (
-        Index("idx_business_customer_360", "business_id", "customer_id"),
-    )
+    __table_args__ = (Index("idx_business_customer_360", "business_id", "customer_id"),)

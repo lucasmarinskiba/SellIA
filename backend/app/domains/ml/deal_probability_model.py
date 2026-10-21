@@ -60,7 +60,10 @@ class DealProbabilityModel:
             try:
                 self.load_model(str(MODEL_PATH))
             except Exception as e:
-                logger.warning(f"Failed to load default model: {e}. Using random forest fallback.", exc_info=True)
+                logger.warning(
+                    f"Failed to load default model: {e}. Using random forest fallback.",
+                    exc_info=True,
+                )
                 self._create_fallback_model()
         else:
             logger.info("No model found. Using random forest fallback.")
@@ -75,7 +78,9 @@ class DealProbabilityModel:
                 self.model_version = model_data.get("version", "1.0.0")
                 self.training_date = model_data.get("training_date")
                 self.auc_score = model_data.get("auc_score")
-            logger.info(f"Loaded model version {self.model_version} (AUC: {self.auc_score})")
+            logger.info(
+                f"Loaded model version {self.model_version} (AUC: {self.auc_score})"
+            )
         except Exception:
             logger.exception("Error loading model")
             self._create_fallback_model()
@@ -130,7 +135,8 @@ class DealProbabilityModel:
         engagement_events = deal_data.get("engagement_events", [])
         if engagement_events:
             recent_events = [
-                e for e in engagement_events
+                e
+                for e in engagement_events
                 if (now - datetime.fromisoformat(e.get("timestamp", ""))).days <= 7
             ]
             engagement_velocity = len(recent_events) / 7.0
@@ -141,10 +147,15 @@ class DealProbabilityModel:
         stakeholder_count = len(deal_data.get("stakeholders", []))
         features.append(min(stakeholder_count, 10))  # Cap at 10
 
-        economic_buyer_engaged = 1.0 if any(
-            s.get("buyer_role") == "economic_buyer" and s.get("engagement_score", 0) > 30
-            for s in deal_data.get("stakeholders", [])
-        ) else 0.0
+        economic_buyer_engaged = (
+            1.0
+            if any(
+                s.get("buyer_role") == "economic_buyer"
+                and s.get("engagement_score", 0) > 30
+                for s in deal_data.get("stakeholders", [])
+            )
+            else 0.0
+        )
         features.append(economic_buyer_engaged)
 
         buyer_response_time = deal_data.get("avg_buyer_response_time_hours", 48)
@@ -154,21 +165,30 @@ class DealProbabilityModel:
         features.append(proposal_sent)
 
         if deal_data.get("proposal_sent_at"):
-            proposal_age = (now - datetime.fromisoformat(deal_data["proposal_sent_at"])).days
+            proposal_age = (
+                now - datetime.fromisoformat(deal_data["proposal_sent_at"])
+            ).days
             proposal_days_old = min(proposal_age, 90)
         else:
             proposal_days_old = 0.0
         features.append(proposal_days_old)
 
-        meetings_30d = len([
-            e for e in engagement_events
-            if e.get("event_type") == "meeting"
-            and (now - datetime.fromisoformat(e.get("timestamp", ""))).days <= 30
-        ])
+        meetings_30d = len(
+            [
+                e
+                for e in engagement_events
+                if e.get("event_type") == "meeting"
+                and (now - datetime.fromisoformat(e.get("timestamp", ""))).days <= 30
+            ]
+        )
         features.append(min(meetings_30d, 20))
 
-        email_opens = len([e for e in engagement_events if e.get("event_type") == "email_open"])
-        email_sends = len([e for e in engagement_events if e.get("event_type") == "email_send"])
+        email_opens = len(
+            [e for e in engagement_events if e.get("event_type") == "email_open"]
+        )
+        email_sends = len(
+            [e for e in engagement_events if e.get("event_type") == "email_send"]
+        )
         email_open_rate = (email_opens / email_sends) if email_sends > 0 else 0.0
         features.append(email_open_rate)
 
@@ -181,7 +201,9 @@ class DealProbabilityModel:
         timeline_confirmed = 1.0 if deal_data.get("timeline_confirmed") else 0.0
         features.append(timeline_confirmed)
 
-        decision_process_mapped = 1.0 if len(deal_data.get("stakeholders", [])) >= 3 else 0.0
+        decision_process_mapped = (
+            1.0 if len(deal_data.get("stakeholders", [])) >= 3 else 0.0
+        )
         features.append(decision_process_mapped)
 
         multiple_stakeholders = 1.0 if stakeholder_count >= 3 else 0.0
@@ -213,14 +235,14 @@ class DealProbabilityModel:
             probability = float(self.model.predict_proba(features)[0][1] * 100)
 
             try:
-                self.model.predict(
-                    features, pred_leaf=True
-                )
+                self.model.predict(features, pred_leaf=True)
                 confidence = float(
                     min(
                         (
-                            abs(self.model.predict_proba(features)[0][0]
-                                - self.model.predict_proba(features)[0][1])
+                            abs(
+                                self.model.predict_proba(features)[0][0]
+                                - self.model.predict_proba(features)[0][1]
+                            )
                             + 0.5
                         )
                         * 100,
@@ -229,8 +251,13 @@ class DealProbabilityModel:
                 )
             except Exception:
                 logger.exception("predict: error inesperado")
-                confidence = float(abs(self.model.predict_proba(features)[0][0]
-                    - self.model.predict_proba(features)[0][1]) * 100)
+                confidence = float(
+                    abs(
+                        self.model.predict_proba(features)[0][0]
+                        - self.model.predict_proba(features)[0][1]
+                    )
+                    * 100
+                )
 
             std_error = (probability * (100 - probability)) ** 0.5 / np.sqrt(10)
             z_90 = 1.645
@@ -324,7 +351,9 @@ class DealProbabilityModel:
 
         try:
             importance_dict = dict(zip(self.FEATURES, self.model.feature_importances_))
-            return dict(sorted(importance_dict.items(), key=lambda x: x[1], reverse=True))
+            return dict(
+                sorted(importance_dict.items(), key=lambda x: x[1], reverse=True)
+            )
         except Exception:
             logger.exception("Error getting feature importance")
             return {}

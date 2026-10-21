@@ -21,8 +21,7 @@ import logging
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 logger = logging.getLogger(__name__)
@@ -33,7 +32,9 @@ logger = logging.getLogger(__name__)
 
 __version__ = "2.0.0"
 __author__ = "Sales Automation Team"
-__description__ = "Production-ready Computer Use Orchestrator for multi-platform sales automation"
+__description__ = (
+    "Production-ready Computer Use Orchestrator for multi-platform sales automation"
+)
 __status__ = "PRODUCTION"
 
 # ============================================================================
@@ -89,6 +90,7 @@ except ImportError as e:
 # ============================================================================
 # CONVENIENCE FUNCTIONS
 # ============================================================================
+
 
 async def create_orchestrator() -> ComputerUseOrchestrator:
     """
@@ -160,8 +162,22 @@ MEDIUM_BUSINESS_CONFIG = {
 }
 
 ENTERPRISE_CONFIG = {
-    "platforms": ["mercado_libre", "shopify", "facebook", "whatsapp", "email", "linkedin"],
-    "strategies": ["post_product", "respond_inquiry", "negotiate_deal", "close_sale", "capture_lead", "send_campaign"],
+    "platforms": [
+        "mercado_libre",
+        "shopify",
+        "facebook",
+        "whatsapp",
+        "email",
+        "linkedin",
+    ],
+    "strategies": [
+        "post_product",
+        "respond_inquiry",
+        "negotiate_deal",
+        "close_sale",
+        "capture_lead",
+        "send_campaign",
+    ],
     "daily_limits": {
         "listings": 200,
         "responses": 1000,

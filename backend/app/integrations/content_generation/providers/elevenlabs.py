@@ -8,7 +8,6 @@ Pricing (2025-2026):
 Usado para voiceovers en videos y audio para Reels/ads.
 """
 
-
 import logging
 from typing import ClassVar
 
@@ -57,7 +56,11 @@ class ElevenLabsProvider(BaseProvider):
     def estimate_cost(self, config: GenerationConfig) -> float:
         text = config.prompt
         char_count = len(text)
-        cost_per_1k = ELEVENLABS_COSTS["tts-premium"] if config.quality == ContentQuality.PREMIUM else ELEVENLABS_COSTS["tts-standard"]
+        cost_per_1k = (
+            ELEVENLABS_COSTS["tts-premium"]
+            if config.quality == ContentQuality.PREMIUM
+            else ELEVENLABS_COSTS["tts-standard"]
+        )
         return (char_count / 1000) * cost_per_1k
 
     def get_pricing_table(self) -> dict[str, float]:
@@ -77,7 +80,9 @@ class ElevenLabsProvider(BaseProvider):
 
             text = config.prompt
             language = config.extra_params.get("language", "es")
-            voice_id = config.extra_params.get("voice_id", DEFAULT_VOICES.get(language, DEFAULT_VOICES["es"]))
+            voice_id = config.extra_params.get(
+                "voice_id", DEFAULT_VOICES.get(language, DEFAULT_VOICES["es"])
+            )
             model = config.extra_params.get("model", "eleven_multilingual_v2")
 
             # Generar audio

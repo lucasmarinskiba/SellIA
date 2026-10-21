@@ -59,7 +59,9 @@ class StripeConnector:
 
             checkout_url = session.url
 
-            logger.info(f"Checkout session created: {session.id} | ${amount_cents / 100}")
+            logger.info(
+                f"Checkout session created: {session.id} | ${amount_cents / 100}"
+            )
 
             return True, checkout_url
 

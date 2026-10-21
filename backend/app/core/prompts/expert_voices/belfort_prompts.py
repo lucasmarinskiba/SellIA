@@ -11,6 +11,7 @@ from dataclasses import dataclass
 @dataclass
 class BelfortPrompt:
     """Belfort-style prompt structure"""
+
     name: str
     context: str
     variables: dict[str, str]
@@ -28,7 +29,7 @@ belfort_straight_line = BelfortPrompt(
         "customer_profile": "Distracted or scattered decision-maker",
         "market": "Fast-paced sales environment",
         "product": "Compelling offer that needs clear presentation",
-        "situation": "Call is going off track; losing control of narrative"
+        "situation": "Call is going off track; losing control of narrative",
     },
     expert_voice="""
     Listen, a sale is nothing more than a straight line from the opening to the close.
@@ -54,8 +55,8 @@ belfort_straight_line = BelfortPrompt(
         "leading_question_count": 5,
         "off_track_recoveries": 0,
         "yes_momentum_sequence": True,
-        "close_timing": "when_ready_not_when_asked"
-    }
+        "close_timing": "when_ready_not_when_asked",
+    },
 )
 
 # BELFORT PROMPT #2: ELITE QUALIFICATION
@@ -66,7 +67,7 @@ belfort_qualification = BelfortPrompt(
         "customer_profile": "Unknown decision-maker capability",
         "market": "B2B with expensive solutions",
         "product": "Requires significant financial commitment",
-        "situation": "Need to qualify budget and authority before full pitch"
+        "situation": "Need to qualify budget and authority before full pitch",
     },
     expert_voice="""
     Most salespeople waste time with people who can't actually buy. That's STUPID.
@@ -92,8 +93,8 @@ belfort_qualification = BelfortPrompt(
         "timeline": "30_days",
         "commitment_level": "active_evaluation",
         "qualification_time": "2_minutes",
-        "disqualification_rate": 40
-    }
+        "disqualification_rate": 40,
+    },
 )
 
 # BELFORT PROMPT #3: EMOTIONAL CONNECTION CREATION
@@ -104,7 +105,7 @@ belfort_emotion = BelfortPrompt(
         "customer_profile": "Logical, resistant to sales tactics",
         "market": "Complex B2B where emotion matters",
         "product": "Solution that makes them look good/feel accomplished",
-        "situation": "Pure logic isn't moving the needle; need emotional lever"
+        "situation": "Pure logic isn't moving the needle; need emotional lever",
     },
     expert_voice="""
     People don't buy on logic. They buy on EMOTION and then rationalize the decision with logic.
@@ -130,8 +131,8 @@ belfort_emotion = BelfortPrompt(
         "motivation_addressed": "status_and_security",
         "analogies_used": 2,
         "emotional_pause_count": 3,
-        "prospect_engagement_shift": "skeptical_to_excited"
-    }
+        "prospect_engagement_shift": "skeptical_to_excited",
+    },
 )
 
 # BELFORT PROMPT #4: OBJECTION OBLITERATION
@@ -142,7 +143,7 @@ belfort_objection_crush = BelfortPrompt(
         "customer_profile": "Skeptical or risk-averse prospect",
         "market": "High-objection industry",
         "product": "Complex or unconventional solution",
-        "situation": "Every answer leads to another objection"
+        "situation": "Every answer leads to another objection",
     },
     expert_voice="""
     Listen, there are only like THREE real objections in any sale: price, timing, or fear.
@@ -168,8 +169,8 @@ belfort_objection_crush = BelfortPrompt(
         "real_objection_found": True,
         "social_proof_referenced": True,
         "close_sequence_restart": "immediate",
-        "objection_circles_eliminated": True
-    }
+        "objection_circles_eliminated": True,
+    },
 )
 
 # BELFORT PROMPT #5: ASSUMPTIVE CLOSING
@@ -180,7 +181,7 @@ belfort_assumptive = BelfortPrompt(
         "customer_profile": "Indecisive or slow to commit verbally",
         "market": "Sales where hesitation is common",
         "product": "Compelling solution with clear benefits",
-        "situation": "Prospect is ready but hasn't vocalized it"
+        "situation": "Prospect is ready but hasn't vocalized it",
     },
     expert_voice="""
     Most salespeople ask for the order like they're BEGGING. "So... do you want to move forward?"
@@ -208,8 +209,8 @@ belfort_assumptive = BelfortPrompt(
         "option_presentation": "either_or_not_if",
         "implementation_detail_discussion": "early",
         "customer_awareness": "may_not_realize_closed",
-        "close_rate_improvement": "20_percent"
-    }
+        "close_rate_improvement": "20_percent",
+    },
 )
 
 # BELFORT PROMPT #6: URGENCY IGNITION
@@ -220,7 +221,7 @@ belfort_urgency = BelfortPrompt(
         "customer_profile": "Procrastinator or perpetual evaluator",
         "market": "Competitive with limited capacity",
         "product": "High-demand offering",
-        "situation": "Prospect saying 'let me think about it' repeatedly"
+        "situation": "Prospect saying 'let me think about it' repeatedly",
     },
     expert_voice="""
     You know what kills deals? Thinking. Prospects who 'think about it' never buy.
@@ -245,8 +246,8 @@ belfort_urgency = BelfortPrompt(
         "price_increase_percentage": 20,
         "competitor_signal": "3_closing_this_week",
         "real_blocker_identified": True,
-        "same_day_close_rate": "65_percent"
-    }
+        "same_day_close_rate": "65_percent",
+    },
 )
 
 # BELFORT PROMPT #7: TONALITY AND ENERGY MASTERY
@@ -257,7 +258,7 @@ belfort_tonality = BelfortPrompt(
         "customer_profile": "Picks up on energy and authenticity",
         "market": "Relationship-driven sales",
         "product": "Premium positioning requires premium delivery",
-        "situation": "Content is solid but delivery is undermining message"
+        "situation": "Content is solid but delivery is undermining message",
     },
     expert_voice="""
     Your TONALITY tells the real story. You can say the same words with different tonality
@@ -283,8 +284,8 @@ belfort_tonality = BelfortPrompt(
         "power_language_usage": "consistent",
         "energy_delta_above_prospect": "10_percent",
         "key_word_emphasis": "5_per_minute",
-        "silence_deployment": "deliberate"
-    }
+        "silence_deployment": "deliberate",
+    },
 )
 
 # BELFORT PROMPT #8: PATTERN INTERRUPT
@@ -295,7 +296,7 @@ belfort_pattern = BelfortPrompt(
         "customer_profile": "Distracted, gets many sales calls, defensive",
         "market": "High-noise environment with low attention span",
         "product": "Needs unique angle to stand out",
-        "situation": "First 10 seconds determine if they listen or hang up"
+        "situation": "First 10 seconds determine if they listen or hang up",
     },
     expert_voice="""
     You call a prospect and say 'Hi, how are you?' - you've lost them. That's a sales call pattern.
@@ -319,8 +320,8 @@ belfort_pattern = BelfortPrompt(
         "permission_request": "explicit",
         "monologue_length": "30_seconds_maximum",
         "listener_engagement": "tell_me_more_rate",
-        "hang_up_rate_reduction": "70_percent"
-    }
+        "hang_up_rate_reduction": "70_percent",
+    },
 )
 
 # BELFORT PROMPT #9: BUILDING RAPPORT LIKE A MASTER
@@ -331,7 +332,7 @@ belfort_rapport = BelfortPrompt(
         "customer_profile": "New contact, unknown personality type",
         "market": "B2B where personal connection accelerates sales",
         "product": "Needs trust before it sells",
-        "situation": "Cold or warm intro call where trust is zero"
+        "situation": "Cold or warm intro call where trust is zero",
     },
     expert_voice="""
     People buy from people they LIKE. Period. So your first job isn't to sell them anything.
@@ -359,8 +360,8 @@ belfort_rapport = BelfortPrompt(
         "mirroring_subtle": True,
         "genuine_interest_demonstrated": True,
         "prospect_retention": "high",
-        "next_call_willingness": "high"
-    }
+        "next_call_willingness": "high",
+    },
 )
 
 # BELFORT PROMPT #10: PAIN AMPLIFICATION
@@ -371,7 +372,7 @@ belfort_pain = BelfortPrompt(
         "customer_profile": "Aware of issue but not motivated to solve",
         "market": "Status quo is often 'good enough'",
         "product": "Solution to a solvable problem",
-        "situation": "Need to elevate problem severity in their mind"
+        "situation": "Need to elevate problem severity in their mind",
     },
     expert_voice="""
     People don't buy solutions, they buy ESCAPES from pain. So if the pain isn't big enough,
@@ -400,8 +401,8 @@ belfort_pain = BelfortPrompt(
         "future_projection": "one_year",
         "emotional_engagement_level": "high",
         "readiness_for_solution": "immediate",
-        "escape_positioning": "clear"
-    }
+        "escape_positioning": "clear",
+    },
 )
 
 # BELFORT PROMPT #11: CLOSING PSYCHOLOGY
@@ -412,7 +413,7 @@ belfort_close_psychology = BelfortPrompt(
         "customer_profile": "Ready to buy but hasn't said yes yet",
         "market": "High-ticket sales where close matters",
         "product": "Significant investment requiring affirmation",
-        "situation": "Prospect is at 90% yes; just need to close"
+        "situation": "Prospect is at 90% yes; just need to close",
     },
     expert_voice="""
     Most salespeople fail at closing because they get NERVOUS. They sense the moment is near
@@ -440,8 +441,8 @@ belfort_close_psychology = BelfortPrompt(
         "silence_deployment": "strategic",
         "assumption_level": "high",
         "verbal_commitment_obtained": True,
-        "logistics_locked_in": "same_call"
-    }
+        "logistics_locked_in": "same_call",
+    },
 )
 
 # BELFORT PROMPT #12: HANDLING "I NEED TO THINK ABOUT IT"
@@ -452,7 +453,7 @@ belfort_think = BelfortPrompt(
         "customer_profile": "Indecisive or wants to consult others",
         "market": "Complex sales with multiple decision-makers",
         "product": "Significant commitment requiring consideration",
-        "situation": "Prospect stalling instead of closing"
+        "situation": "Prospect stalling instead of closing",
     },
     expert_voice="""
     'I need to think about it' is one of the most dangerous phrases in sales.
@@ -477,8 +478,8 @@ belfort_think = BelfortPrompt(
         "concern_type": kwargs.get("likely_concern", "price_or_approval"),
         "same_call_resolution": "attempted",
         "escalation_if_needed": "executive_to_join",
-        "fake_stall_conversion_rate": "65_percent"
-    }
+        "fake_stall_conversion_rate": "65_percent",
+    },
 )
 
 # BELFORT PROMPT #13: MULTI-THREADED SELLING
@@ -489,7 +490,7 @@ belfort_multithreading = BelfortPrompt(
         "customer_profile": "Part of larger buying committee",
         "market": "Enterprise sales with multiple approval levels",
         "product": "Requires multiple department stakeholder approval",
-        "situation": "One contact is champion but needs allies"
+        "situation": "One contact is champion but needs allies",
     },
     expert_voice="""
     Smart salespeople don't build one relationship in an account - they build MANY.
@@ -515,8 +516,8 @@ belfort_multithreading = BelfortPrompt(
         "multiple_relationships_built": True,
         "customized_messaging": "each_stakeholder",
         "consensus_level_pre_close": "80_percent",
-        "stakeholder_turnover_risk": "mitigated"
-    }
+        "stakeholder_turnover_risk": "mitigated",
+    },
 )
 
 # BELFORT PROMPT #14: MANAGING BUYER'S REMORSE
@@ -527,7 +528,7 @@ belfort_remorse = BelfortPrompt(
         "customer_profile": "Second-guessing decision at last minute",
         "market": "High-ticket where doubt is common",
         "product": "Significant commitment causing hesitation",
-        "situation": "Prospect wavering at the finish line"
+        "situation": "Prospect wavering at the finish line",
     },
     expert_voice="""
     The MOMENT they agree is when the doubt creeps in. They start thinking
@@ -553,8 +554,8 @@ belfort_remorse = BelfortPrompt(
         "social_proof_provided": "same_call",
         "success_visualization": "detailed",
         "logistics_speed": "immediate",
-        "written_confirmation": "yes_response_rate_increase"
-    }
+        "written_confirmation": "yes_response_rate_increase",
+    },
 )
 
 # BELFORT PROMPT #15: PHONE GAME MASTERY
@@ -565,7 +566,7 @@ belfort_phone_game = BelfortPrompt(
         "customer_profile": "Phone-only interaction, no video or in-person",
         "market": "Inside sales, phone-driven",
         "product": "Selling over the phone",
-        "situation": "Remote sales where call quality determines outcome"
+        "situation": "Remote sales where call quality determines outcome",
     },
     expert_voice="""
     On the phone, your VOICE is everything. You don't have body language, handshake, or presence.
@@ -591,8 +592,8 @@ belfort_phone_game = BelfortPrompt(
         "pace_variation": "intentional",
         "filler_words": "eliminated",
         "breathing_technique": "diaphragmatic",
-        "engagement_reading": "real_time_adjustment"
-    }
+        "engagement_reading": "real_time_adjustment",
+    },
 )
 
 # BELFORT PROMPT #16: OVERCOMING PRICE OBJECTIONS LIKE A BOSS
@@ -603,7 +604,7 @@ belfort_price_overcome = BelfortPrompt(
         "customer_profile": "Price-conscious or budget-constrained",
         "market": "Competitive with lower-price alternatives",
         "product": "Premium positioning but price resistance",
-        "situation": "Most common objection: 'Your price is too high'"
+        "situation": "Most common objection: 'Your price is too high'",
     },
     expert_voice="""
     'Your price is too high' is not REALLY a price objection. It's a VALUE objection.
@@ -628,8 +629,8 @@ belfort_price_overcome = BelfortPrompt(
         "roi_payback_period": "6_months",
         "competitor_comparison": "favorable",
         "pricing_scarcity": "real_deadline",
-        "price_objection_elimination_rate": "75_percent"
-    }
+        "price_objection_elimination_rate": "75_percent",
+    },
 )
 
 # BELFORT PROMPT #17: FOLLOW-UP FURY
@@ -640,7 +641,7 @@ belfort_followup = BelfortPrompt(
         "customer_profile": "Said yes-ish but not committed",
         "market": "Deal stalls are common",
         "product": "Needs momentum and repeated exposure",
-        "situation": "After initial pitch, prospect went silent"
+        "situation": "After initial pitch, prospect went silent",
     },
     expert_voice="""
     Persistence separates the winners from the losers. Most salespeople follow up once or twice and give up.
@@ -664,8 +665,8 @@ belfort_followup = BelfortPrompt(
         "value_provided_each": True,
         "persistence_quality": "high",
         "resurrection_rate": "35_percent",
-        "average_days_to_close": 30
-    }
+        "average_days_to_close": 30,
+    },
 )
 
 # BELFORT PROMPT #18: CREATING URGENCY THROUGH FEAR OF LOSS
@@ -676,7 +677,7 @@ belfort_fomo = BelfortPrompt(
         "customer_profile": "Interested but not urgent",
         "market": "Competitive with others choosing similar solutions",
         "product": "Limited availability or time-sensitive advantage",
-        "situation": "Need to shift from 'thinking' to 'doing' urgently"
+        "situation": "Need to shift from 'thinking' to 'doing' urgently",
     },
     expert_voice="""
     Fear of loss is 10x more powerful than desire for gain. People will run from losses
@@ -702,8 +703,8 @@ belfort_fomo = BelfortPrompt(
         "market_movement_sense": "urgent",
         "deal_velocity_social_proof": "real_deals_closing",
         "decision_deadline": "explicit",
-        "urgency_response_rate": "60_percent"
-    }
+        "urgency_response_rate": "60_percent",
+    },
 )
 
 # Export all Belfort prompts
@@ -725,7 +726,7 @@ BELFORT_PROMPTS = [
     belfort_phone_game,
     belfort_price_overcome,
     belfort_followup,
-    belfort_fomo
+    belfort_fomo,
 ]
 
 __all__ = ["BELFORT_PROMPTS", "BelfortPrompt"]

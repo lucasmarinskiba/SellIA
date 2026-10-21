@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 class PublishingStrategy(str, Enum):
     """Estrategias de publicación."""
+
     DAILY = "daily"  # 1 post/día
     TWICE_DAILY = "twice_daily"  # 2 posts/día
     AGGRESSIVE = "aggressive"  # 3-4 posts/día
@@ -58,7 +59,9 @@ class ScheduledPost:
             "priority": self.priority,
             "status": self.status,
             "created_at": self.created_at.isoformat(),
-            "published_at": self.published_at.isoformat() if self.published_at else None,
+            "published_at": (
+                self.published_at.isoformat() if self.published_at else None
+            ),
         }
 
 
@@ -86,7 +89,9 @@ class PublishScheduler:
                 scheduled_time = custom_time
 
             # Crear post
-            post_id = f"post_{utc_now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
+            post_id = (
+                f"post_{utc_now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
+            )
 
             post = ScheduledPost(
                 post_id=post_id,
@@ -99,7 +104,9 @@ class PublishScheduler:
 
             self.scheduled_posts[post_id] = post
 
-            self.logger.info(f"Post scheduled: {post_id} at {scheduled_time.isoformat()}")
+            self.logger.info(
+                f"Post scheduled: {post_id} at {scheduled_time.isoformat()}"
+            )
 
             return post
 
@@ -161,8 +168,10 @@ class PublishScheduler:
 
         # Filtrar posts scheduled y ordenar por tiempo
         pending = [
-            post for post in self.scheduled_posts.values()
-            if post.status == "scheduled" and post.scheduled_time <= now + timedelta(hours=1)
+            post
+            for post in self.scheduled_posts.values()
+            if post.status == "scheduled"
+            and post.scheduled_time <= now + timedelta(hours=1)
         ]
 
         pending.sort(key=lambda p: p.scheduled_time)

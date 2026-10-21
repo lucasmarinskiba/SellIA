@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 class NegotiationStage(str, Enum):
     """Etapas negociación."""
+
     OPENING = "opening"  # Presentación + rapport
     DISCOVERY = "discovery"  # Entender needs + pain points
     POSITIONING = "positioning"  # Reframe value según buyer
@@ -90,7 +91,9 @@ class NegotiationEngine:
         else:
             return "pragmático"  # Precio + rapidez
 
-    def _extract_pain_points(self, buyer: dict[str, Any], product: dict[str, Any]) -> list[str]:
+    def _extract_pain_points(
+        self, buyer: dict[str, Any], product: dict[str, Any]
+    ) -> list[str]:
         """Extrae dolor del buyer (qué problema tienen)."""
 
         pain_points = []
@@ -121,33 +124,41 @@ class NegotiationEngine:
 
         # Análitico: siempre pide proof
         if buyer_type == "analítico":
-            objections.append({
-                "type": "proof_required",
-                "likely": True,
-                "handling": "case_study + numbers + testimonials",
-            })
+            objections.append(
+                {
+                    "type": "proof_required",
+                    "likely": True,
+                    "handling": "case_study + numbers + testimonials",
+                }
+            )
 
         # Precio: siempre aparece
-        objections.append({
-            "type": "price_objection",
-            "likely": True,
-            "handling": "value_reframe + payment_plan + comparison",
-        })
+        objections.append(
+            {
+                "type": "price_objection",
+                "likely": True,
+                "handling": "value_reframe + payment_plan + comparison",
+            }
+        )
 
         # Timing: "voy a pensarlo"
-        objections.append({
-            "type": "timing_delay",
-            "likely": True,
-            "handling": "scarcity + micro_commitment + follow_up",
-        })
+        objections.append(
+            {
+                "type": "timing_delay",
+                "likely": True,
+                "handling": "scarcity + micro_commitment + follow_up",
+            }
+        )
 
         # Autoridad: "quiero consejo de otro experto"
         if buyer_type == "autoridad":
-            objections.append({
-                "type": "authority_seek",
-                "likely": True,
-                "handling": "social_proof + partnerships + guarantee",
-            })
+            objections.append(
+                {
+                    "type": "authority_seek",
+                    "likely": True,
+                    "handling": "social_proof + partnerships + guarantee",
+                }
+            )
 
         return objections
 
@@ -183,7 +194,9 @@ class NegotiationEngine:
 
         return leverage
 
-    def _calculate_walk_away_threshold(self, buyer: dict[str, Any], price: float) -> dict[str, Any]:
+    def _calculate_walk_away_threshold(
+        self, buyer: dict[str, Any], price: float
+    ) -> dict[str, Any]:
         """Trump: cuándo caminar. Si buyer no valora → walk away."""
 
         # Si buyer regatea >30% del precio = walk away
@@ -215,24 +228,28 @@ class NegotiationEngine:
         sequence = []
 
         # 1. OPENING: Rapport + credibilidad
-        sequence.append({
-            "stage": NegotiationStage.OPENING.value,
-            "action": "establish_rapport",
-            "content": "Personalizado según buyer type",
-            "goal": "Trusted advisor, not salesman",
-        })
+        sequence.append(
+            {
+                "stage": NegotiationStage.OPENING.value,
+                "action": "establish_rapport",
+                "content": "Personalizado según buyer type",
+                "goal": "Trusted advisor, not salesman",
+            }
+        )
 
         # 2. DISCOVERY: Entender needs
-        sequence.append({
-            "stage": NegotiationStage.DISCOVERY.value,
-            "action": "ask_questions",
-            "questions": [
-                "¿Cuál es tu biggest pain right now?",
-                "Si solucionáramos eso, ¿qué cambiaría para ti?",
-                "¿Cuánto tiempo llevas batallando con esto?",
-            ],
-            "goal": "Map pain → product fit",
-        })
+        sequence.append(
+            {
+                "stage": NegotiationStage.DISCOVERY.value,
+                "action": "ask_questions",
+                "questions": [
+                    "¿Cuál es tu biggest pain right now?",
+                    "Si solucionáramos eso, ¿qué cambiaría para ti?",
+                    "¿Cuánto tiempo llevas batallando con esto?",
+                ],
+                "goal": "Map pain → product fit",
+            }
+        )
 
         # 3. POSITIONING: Reframe value (Trump: repositiona según buyer)
         if buyer_type == "analítico":
@@ -242,62 +259,70 @@ class NegotiationEngine:
         else:
             value_pitch = "Balanced: value + proof + risk reversal"
 
-        sequence.append({
-            "stage": NegotiationStage.POSITIONING.value,
-            "action": "reframe_product",
-            "pitch": value_pitch,
-            "tactics": leverage,
-            "goal": "Buyer sees value > price",
-        })
+        sequence.append(
+            {
+                "stage": NegotiationStage.POSITIONING.value,
+                "action": "reframe_product",
+                "pitch": value_pitch,
+                "tactics": leverage,
+                "goal": "Buyer sees value > price",
+            }
+        )
 
         # 4. OBJECTION HANDLING (Belfort: saber de antemano)
         for obj in objections:
-            sequence.append({
-                "stage": NegotiationStage.OBJECTION_HANDLING.value,
-                "objection_type": obj["type"],
-                "response": obj["handling"],
-                "tactic": "Acknowledge → Reframe → Offer alternative",
-            })
+            sequence.append(
+                {
+                    "stage": NegotiationStage.OBJECTION_HANDLING.value,
+                    "objection_type": obj["type"],
+                    "response": obj["handling"],
+                    "tactic": "Acknowledge → Reframe → Offer alternative",
+                }
+            )
 
         # 5. CLOSING: Deal structure + urgency
-        sequence.append({
-            "stage": NegotiationStage.CLOSING.value,
-            "action": "present_deal",
-            "deal_options": [
-                {
-                    "name": "Standard",
-                    "price": price,
-                    "terms": "Net 30",
-                    "guarantee": "30-day money back",
-                },
-                {
-                    "name": "Payment Plan",
-                    "price": price,
-                    "terms": "3x installments",
-                    "guarantee": "30-day money back per installment",
-                },
-                {
-                    "name": "Premium Bundle",
-                    "price": price * 1.5,
-                    "terms": "Net 15 + priority support",
-                    "guarantee": "60-day money back",
-                },
-            ],
-            "urgency_tactic": "Only 3 spots left this month",
-            "goal": "Buyer picks option, commits",
-        })
+        sequence.append(
+            {
+                "stage": NegotiationStage.CLOSING.value,
+                "action": "present_deal",
+                "deal_options": [
+                    {
+                        "name": "Standard",
+                        "price": price,
+                        "terms": "Net 30",
+                        "guarantee": "30-day money back",
+                    },
+                    {
+                        "name": "Payment Plan",
+                        "price": price,
+                        "terms": "3x installments",
+                        "guarantee": "30-day money back per installment",
+                    },
+                    {
+                        "name": "Premium Bundle",
+                        "price": price * 1.5,
+                        "terms": "Net 15 + priority support",
+                        "guarantee": "60-day money back",
+                    },
+                ],
+                "urgency_tactic": "Only 3 spots left this month",
+                "goal": "Buyer picks option, commits",
+            }
+        )
 
         # 6. MICRO-COMMITMENTS (Belfort: small yes → big yes)
-        sequence.append({
-            "stage": NegotiationStage.FOLLOW_UP.value,
-            "action": "micro_commitments",
-            "commitments": [
-                "Can I send you a proposal? (Yes = micro-commit)",
-                "If numbers look good, you'd be interested? (Yes = stronger)",
-                "Can I block time for implementation? (Yes = almost done)",
-            ],
-            "goal": "Each yes makes next yes easier",
-        })
+        sequence.append(
+            {
+                "stage": NegotiationStage.FOLLOW_UP.value,
+                "action": "micro_commitments",
+                "commitments": [
+                    "Can I send you a proposal? (Yes = micro-commit)",
+                    "If numbers look good, you'd be interested? (Yes = stronger)",
+                    "Can I block time for implementation? (Yes = almost done)",
+                ],
+                "goal": "Each yes makes next yes easier",
+            }
+        )
 
         return sequence
 
@@ -310,7 +335,9 @@ class NegotiationEngine:
     ) -> dict[str, Any]:
         """Ejecuta negociación según secuencia (via Computer Use)."""
 
-        logger.info(f"Executing negotiation for {buyer.get('email')} at stage {current_stage}")
+        logger.info(
+            f"Executing negotiation for {buyer.get('email')} at stage {current_stage}"
+        )
 
         strategy = await self.generate_negotiation_strategy(product, buyer, price)
 

@@ -18,7 +18,9 @@ class PlatformListingSyncConnector(ABC):
         self.credentials = credentials
 
     @abstractmethod
-    async def update_listing_title(self, external_id: str, title: str) -> dict[str, Any]:
+    async def update_listing_title(
+        self, external_id: str, title: str
+    ) -> dict[str, Any]:
         """Update listing title on platform.
 
         Args:
@@ -30,7 +32,9 @@ class PlatformListingSyncConnector(ABC):
         """
 
     @abstractmethod
-    async def update_listing_description(self, external_id: str, description: str) -> dict[str, Any]:
+    async def update_listing_description(
+        self, external_id: str, description: str
+    ) -> dict[str, Any]:
         """Update listing description/body on platform.
 
         Args:

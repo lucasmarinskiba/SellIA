@@ -24,25 +24,41 @@ logger = get_logger(__name__)
 CUSTOMER_TYPES = {
     "indeciso": {
         "description": "Cliente indeciso que necesita mucha información antes de decidir.",
-        "common_objections": ["Necesito pensarlo", "Déjame consultar con mi pareje", "No estoy seguro/a"],
+        "common_objections": [
+            "Necesito pensarlo",
+            "Déjame consultar con mi pareje",
+            "No estoy seguro/a",
+        ],
         "budget_range": "medio-bajo",
         "decision_speed": "lento",
     },
     "aggressive": {
         "description": "Cliente agresivo que presiona por descuentos y respuestas inmediatas.",
-        "common_objections": ["Me lo dan más barato en otro lado", "No me interesa si no hay descuento", "Respondeme ya"],
+        "common_objections": [
+            "Me lo dan más barato en otro lado",
+            "No me interesa si no hay descuento",
+            "Respondeme ya",
+        ],
         "budget_range": "variable",
         "decision_speed": "rápido",
     },
     "price-sensitive": {
         "description": "Cliente muy enfocado en el precio, compara constantemente.",
-        "common_objections": ["Es muy caro", "¿No tienen algo más barato?", "¿Me pueden hacer un precio?"],
+        "common_objections": [
+            "Es muy caro",
+            "¿No tienen algo más barato?",
+            "¿Me pueden hacer un precio?",
+        ],
         "budget_range": "bajo",
         "decision_speed": "medio",
     },
     "feature-focused": {
         "description": "Cliente técnico que pregunta por características y especificaciones.",
-        "common_objections": ["No tiene la función X", "Prefiero la versión Pro", "¿Soporta integración con Z?"],
+        "common_objections": [
+            "No tiene la función X",
+            "Prefiero la versión Pro",
+            "¿Soporta integración con Z?",
+        ],
         "budget_range": "alto",
         "decision_speed": "lento",
     },
@@ -54,13 +70,21 @@ CUSTOMER_TYPES = {
     },
     "friendly": {
         "description": "Cliente amable y colaborativo, fácil de tratar pero puede no comprar.",
-        "common_objections": ["Me encanta pero no puedo ahora", "Quizás el mes que viene", "Gracias por la info"],
+        "common_objections": [
+            "Me encanta pero no puedo ahora",
+            "Quizás el mes que viene",
+            "Gracias por la info",
+        ],
         "budget_range": "medio",
         "decision_speed": "medio",
     },
     "skeptical": {
         "description": "Cliente escéptico que desconfía de todo hasta ver pruebas.",
-        "common_objections": ["¿Por qué debería confiar?", "Demostrame que funciona", "Suena demasiado bueno"],
+        "common_objections": [
+            "¿Por qué debería confiar?",
+            "Demostrame que funciona",
+            "Suena demasiado bueno",
+        ],
         "budget_range": "medio",
         "decision_speed": "lento",
     },
@@ -164,15 +188,21 @@ class SimulationEngine:
     # Persona generation
     # ------------------------------------------------------------------
 
-    async def create_customer_persona(self, difficulty: str = "medium") -> dict[str, Any]:
+    async def create_customer_persona(
+        self, difficulty: str = "medium"
+    ) -> dict[str, Any]:
         """Generate a synthetic customer profile using the LLM."""
         if not self.business_id:
             # Fallback to deterministic persona based on difficulty
             return self._fallback_persona(difficulty)
 
         messages = [
-            SystemMessage(content="You generate realistic customer personas for sales training."),
-            HumanMessage(content=PERSONA_GENERATION_PROMPT.format(difficulty=difficulty)),
+            SystemMessage(
+                content="You generate realistic customer personas for sales training."
+            ),
+            HumanMessage(
+                content=PERSONA_GENERATION_PROMPT.format(difficulty=difficulty)
+            ),
         ]
 
         response = await generate_with_fallback(
@@ -190,11 +220,19 @@ class SimulationEngine:
             try:
                 persona = json.loads(response.content.strip())
                 # Validate required keys
-                required = {"customer_type", "personality_description", "common_objections", "budget_range", "decision_speed"}
+                required = {
+                    "customer_type",
+                    "personality_description",
+                    "common_objections",
+                    "budget_range",
+                    "decision_speed",
+                }
                 if required.issubset(persona.keys()):
                     return persona
             except json.JSONDecodeError:
-                logger.warning("LLM returned invalid JSON for persona generation, using fallback.")
+                logger.warning(
+                    "LLM returned invalid JSON for persona generation, using fallback."
+                )
 
         return self._fallback_persona(difficulty)
 
@@ -277,7 +315,14 @@ class SimulationEngine:
                 agent_objective=scenario.objective,
                 conversation_history=messages_log,
             )
-            messages_log.append({"role": "customer", "content": customer_msg, "turn": 0, "timestamp": datetime.now(UTC).isoformat()})
+            messages_log.append(
+                {
+                    "role": "customer",
+                    "content": customer_msg,
+                    "turn": 0,
+                    "timestamp": datetime.now(UTC).isoformat(),
+                }
+            )
 
             for turn in range(1, self.max_turns + 1):
 
@@ -288,10 +333,19 @@ class SimulationEngine:
                     scenario_description=scenario.description or "",
                     conversation_history=messages_log,
                 )
-                messages_log.append({"role": "agent", "content": agent_msg, "turn": turn, "timestamp": datetime.now(UTC).isoformat()})
+                messages_log.append(
+                    {
+                        "role": "agent",
+                        "content": agent_msg,
+                        "turn": turn,
+                        "timestamp": datetime.now(UTC).isoformat(),
+                    }
+                )
 
                 # Check for objective achievement signals from agent message
-                if self._check_agent_objective_achievement(agent_msg, scenario.objective):
+                if self._check_agent_objective_achievement(
+                    agent_msg, scenario.objective
+                ):
                     objective_achieved = True
 
                 # Customer responds
@@ -300,14 +354,23 @@ class SimulationEngine:
                     agent_objective=scenario.objective,
                     conversation_history=messages_log,
                 )
-                messages_log.append({"role": "customer", "content": customer_msg, "turn": turn, "timestamp": datetime.now(UTC).isoformat()})
+                messages_log.append(
+                    {
+                        "role": "customer",
+                        "content": customer_msg,
+                        "turn": turn,
+                        "timestamp": datetime.now(UTC).isoformat(),
+                    }
+                )
 
                 # Check for conversation end signals
                 if self._check_conversation_end(customer_msg):
                     break
 
                 # If objective achieved and customer seems satisfied, end early
-                if objective_achieved and self._check_customer_satisfaction(customer_msg):
+                if objective_achieved and self._check_customer_satisfaction(
+                    customer_msg
+                ):
                     break
 
             # Update run with conversation
@@ -342,7 +405,9 @@ class SimulationEngine:
         try:
             result = await self.db.execute(
                 select(AgentConfig.id)
-                .join(AgentPersonality, AgentConfig.personality_id == AgentPersonality.id)
+                .join(
+                    AgentPersonality, AgentConfig.personality_id == AgentPersonality.id
+                )
                 .where(AgentPersonality.slug == agent_type)
                 .limit(1)
             )
@@ -399,7 +464,9 @@ class SimulationEngine:
         """Generate the simulated customer's next message using the LLM."""
         system_prompt = CUSTOMER_SYSTEM_PROMPT_TEMPLATE.format(
             customer_type=persona.get("customer_type", "friendly"),
-            personality_description=persona.get("personality_description", "Cliente genérico."),
+            personality_description=persona.get(
+                "personality_description", "Cliente genérico."
+            ),
             common_objections=", ".join(persona.get("common_objections", [])),
             budget_range=persona.get("budget_range", "medio"),
             decision_speed=persona.get("decision_speed", "medio"),
@@ -428,26 +495,75 @@ class SimulationEngine:
             return response.content.strip()
         return "Mmm, no sé..."
 
-    def _check_agent_objective_achievement(self, agent_msg: str, objective: str) -> bool:
+    def _check_agent_objective_achievement(
+        self, agent_msg: str, objective: str
+    ) -> bool:
         """Quick heuristic to detect if the agent claims to have achieved the objective."""
         msg_lower = agent_msg.lower()
         signals = {
-            "close_sale": ["comprar", "compra", "pedido", "orden", "pag", "cerramos", "listo", "envío"],
-            "set_appointment": ["agendar", "cita", "reunión", "calendario", "horario", "disponible"],
-            "gather_info": ["datos", "información", "email", "teléfono", "contacto", "nombre"],
-            "handle_complaint": ["solución", "resolver", "reembolso", "disculpa", "ayudar", "arreglar"],
+            "close_sale": [
+                "comprar",
+                "compra",
+                "pedido",
+                "orden",
+                "pag",
+                "cerramos",
+                "listo",
+                "envío",
+            ],
+            "set_appointment": [
+                "agendar",
+                "cita",
+                "reunión",
+                "calendario",
+                "horario",
+                "disponible",
+            ],
+            "gather_info": [
+                "datos",
+                "información",
+                "email",
+                "teléfono",
+                "contacto",
+                "nombre",
+            ],
+            "handle_complaint": [
+                "solución",
+                "resolver",
+                "reembolso",
+                "disculpa",
+                "ayudar",
+                "arreglar",
+            ],
         }
         keywords = signals.get(objective, [])
         return any(k in msg_lower for k in keywords)
 
     def _check_conversation_end(self, customer_msg: str) -> bool:
         """Detect explicit conversation end signals from customer."""
-        signals = ["fin_conversacion", "listo_cierre", "ok_agendado", "no me interesa", "adiós", "hasta luego"]
+        signals = [
+            "fin_conversacion",
+            "listo_cierre",
+            "ok_agendado",
+            "no me interesa",
+            "adiós",
+            "hasta luego",
+        ]
         return any(s in customer_msg.lower() for s in signals)
 
     def _check_customer_satisfaction(self, customer_msg: str) -> bool:
         """Heuristic: customer seems satisfied and ready to wrap up."""
-        positive = ["gracias", "perfecto", "genial", "excelente", "me sirve", "ok", "dale", "hagámoslo", "confirmo"]
+        positive = [
+            "gracias",
+            "perfecto",
+            "genial",
+            "excelente",
+            "me sirve",
+            "ok",
+            "dale",
+            "hagámoslo",
+            "confirmo",
+        ]
         return any(p in customer_msg.lower() for p in positive)
 
     # ------------------------------------------------------------------
@@ -476,7 +592,9 @@ class SimulationEngine:
             for m in run.messages
         )
 
-        success_criteria = json.dumps(scenario.success_criteria or {}, ensure_ascii=False)
+        success_criteria = json.dumps(
+            scenario.success_criteria or {}, ensure_ascii=False
+        )
 
         eval_prompt = EVALUATION_SYSTEM_PROMPT.format(
             objective=scenario.objective,

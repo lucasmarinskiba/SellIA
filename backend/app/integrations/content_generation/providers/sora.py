@@ -4,7 +4,6 @@ Pricing: ~$0.20-$0.50/second (estimated)
 Strengths: Photorealism, physics, narrative video
 """
 
-
 import logging
 from typing import ClassVar
 
@@ -37,10 +36,13 @@ class SoraProvider(BaseProvider):
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         if not self.is_available:
-            return GenerationResult(success=False, error_message="OPENAI_API_KEY no configurada para Sora")
+            return GenerationResult(
+                success=False, error_message="OPENAI_API_KEY no configurada para Sora"
+            )
 
         try:
             from openai import AsyncOpenAI
+
             client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
             # Sora API (when publicly available)
@@ -53,7 +55,9 @@ class SoraProvider(BaseProvider):
 
             video_url = response.data[0].url if response.data else None
             if not video_url:
-                return GenerationResult(success=False, error_message="Sora no devolvió video")
+                return GenerationResult(
+                    success=False, error_message="Sora no devolvió video"
+                )
 
             duration = config.duration_seconds or 5
             return GenerationResult(

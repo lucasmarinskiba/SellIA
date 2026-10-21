@@ -21,7 +21,11 @@ from app.domains.users.models import User
 router = APIRouter(prefix="/agents/viral-video", tags=["viral-video"])
 
 
-@router.post("/generate", response_model=VideoGenerationJobResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/generate",
+    response_model=VideoGenerationJobResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def generate_video(
     req: ViralVideoGenerateRequest,
     db: Annotated[AsyncSession, Depends(get_db)],

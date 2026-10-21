@@ -23,25 +23,23 @@ class NotificationService:
 
     @staticmethod
     def set_notification_preferences(
-        user_id: UUID,
-        business_id: UUID,
-        preferences: dict,
-        db: Session = None
+        user_id: UUID, business_id: UUID, preferences: dict, db: Session = None
     ) -> dict:
         """Set user notification preferences."""
         if not db:
             raise ValueError("Database session required")
 
-        pref = db.query(NotificationPreference).filter(
-            NotificationPreference.user_id == user_id,
-            NotificationPreference.business_id == business_id
-        ).first()
+        pref = (
+            db.query(NotificationPreference)
+            .filter(
+                NotificationPreference.user_id == user_id,
+                NotificationPreference.business_id == business_id,
+            )
+            .first()
+        )
 
         if not pref:
-            pref = NotificationPreference(
-                user_id=user_id,
-                business_id=business_id
-            )
+            pref = NotificationPreference(user_id=user_id, business_id=business_id)
 
         # Update preferences
         for key, value in preferences.items():
@@ -64,18 +62,20 @@ class NotificationService:
 
     @staticmethod
     def get_notification_preferences(
-        user_id: UUID,
-        business_id: UUID,
-        db: Session = None
+        user_id: UUID, business_id: UUID, db: Session = None
     ) -> dict:
         """Get user notification preferences."""
         if not db:
             raise ValueError("Database session required")
 
-        pref = db.query(NotificationPreference).filter(
-            NotificationPreference.user_id == user_id,
-            NotificationPreference.business_id == business_id
-        ).first()
+        pref = (
+            db.query(NotificationPreference)
+            .filter(
+                NotificationPreference.user_id == user_id,
+                NotificationPreference.business_id == business_id,
+            )
+            .first()
+        )
 
         if not pref:
             return {"message": "No preferences found"}
@@ -99,7 +99,7 @@ class NotificationService:
         channels: list[str],
         priority: str = AlertPriority.MEDIUM.value,
         enabled: bool = True,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Create alert rule."""
         if not db:
@@ -112,7 +112,7 @@ class NotificationService:
             condition_json=condition_json,
             channels=channels,
             priority=priority,
-            enabled=enabled
+            enabled=enabled,
         )
 
         db.add(rule)
@@ -126,15 +126,11 @@ class NotificationService:
             "name": name,
             "alert_type": alert_type,
             "priority": priority,
-            "enabled": enabled
+            "enabled": enabled,
         }
 
     @staticmethod
-    def update_alert_rule(
-        rule_id: UUID,
-        updates: dict,
-        db: Session = None
-    ) -> dict:
+    def update_alert_rule(rule_id: UUID, updates: dict, db: Session = None) -> dict:
         """Update alert rule."""
         if not db:
             raise ValueError("Database session required")
@@ -154,9 +150,7 @@ class NotificationService:
 
     @staticmethod
     def get_alert_rules(
-        business_id: UUID,
-        enabled_only: bool = True,
-        db: Session = None
+        business_id: UUID, enabled_only: bool = True, db: Session = None
     ) -> list[dict]:
         """Get alert rules."""
         if not db:
@@ -176,7 +170,9 @@ class NotificationService:
                 "priority": r.priority,
                 "channels": r.channels,
                 "enabled": r.enabled,
-                "last_triggered": r.last_triggered_at.isoformat() if r.last_triggered_at else None,
+                "last_triggered": (
+                    r.last_triggered_at.isoformat() if r.last_triggered_at else None
+                ),
             }
             for r in rules
         ]
@@ -189,18 +185,22 @@ class NotificationService:
         alert_message: str,
         priority: str = AlertPriority.MEDIUM.value,
         target_user_ids: list[UUID] | None = None,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Trigger alert and send notifications."""
         if not db:
             raise ValueError("Database session required")
 
         # Get matching alert rules
-        rules = db.query(AlertRule).filter(
-            AlertRule.business_id == business_id,
-            AlertRule.alert_type == alert_type,
-            AlertRule.enabled == True
-        ).all()
+        rules = (
+            db.query(AlertRule)
+            .filter(
+                AlertRule.business_id == business_id,
+                AlertRule.alert_type == alert_type,
+                AlertRule.enabled == True,
+            )
+            .all()
+        )
 
         if not rules:
             logger.warning(f"No alert rules found for {alert_type}")
@@ -214,10 +214,14 @@ class NotificationService:
         for rule in rules:
             for user_id in target_user_ids:
                 # Check notification preferences
-                pref = db.query(NotificationPreference).filter(
-                    NotificationPreference.user_id == user_id,
-                    NotificationPreference.business_id == business_id
-                ).first()
+                pref = (
+                    db.query(NotificationPreference)
+                    .filter(
+                        NotificationPreference.user_id == user_id,
+                        NotificationPreference.business_id == business_id,
+                    )
+                    .first()
+                )
 
                 if not pref:
                     continue
@@ -237,8 +241,10 @@ class NotificationService:
                         alert_message=alert_message,
                         priority=priority,
                         channel=channel,
-                        recipient=NotificationService._get_recipient(user_id, channel, db),
-                        delivery_status="pending"
+                        recipient=NotificationService._get_recipient(
+                            user_id, channel, db
+                        ),
+                        delivery_status="pending",
                     )
                     db.add(log)
                     notified_count += 1
@@ -248,12 +254,11 @@ class NotificationService:
             rule.triggered_count_today += 1
 
         db.commit()
-        logger.info(f"Alert triggered: {alert_type} - {notified_count} notifications queued")
+        logger.info(
+            f"Alert triggered: {alert_type} - {notified_count} notifications queued"
+        )
 
-        return {
-            "alert_type": alert_type,
-            "notifications_queued": notified_count
-        }
+        return {"alert_type": alert_type, "notifications_queued": notified_count}
 
     @staticmethod
     def _should_send(channel: str, pref: NotificationPreference) -> bool:
@@ -275,10 +280,7 @@ class NotificationService:
 
     @staticmethod
     def get_notification_history(
-        user_id: UUID,
-        business_id: UUID,
-        days: int = 30,
-        db: Session = None
+        user_id: UUID, business_id: UUID, days: int = 30, db: Session = None
     ) -> list[dict]:
         """Get notification history."""
         if not db:
@@ -286,11 +288,16 @@ class NotificationService:
 
         cutoff = datetime.now(UTC) - timedelta(days=days)
 
-        logs = db.query(NotificationLog).filter(
-            NotificationLog.user_id == user_id,
-            NotificationLog.business_id == business_id,
-            NotificationLog.created_at >= cutoff
-        ).order_by(NotificationLog.created_at.desc()).all()
+        logs = (
+            db.query(NotificationLog)
+            .filter(
+                NotificationLog.user_id == user_id,
+                NotificationLog.business_id == business_id,
+                NotificationLog.created_at >= cutoff,
+            )
+            .order_by(NotificationLog.created_at.desc())
+            .all()
+        )
 
         return [
             {
@@ -309,15 +316,17 @@ class NotificationService:
 
     @staticmethod
     def mark_as_read(
-        notification_id: UUID,
-        action: str | None = None,
-        db: Session = None
+        notification_id: UUID, action: str | None = None, db: Session = None
     ) -> dict:
         """Mark notification as read."""
         if not db:
             raise ValueError("Database session required")
 
-        log = db.query(NotificationLog).filter(NotificationLog.id == notification_id).first()
+        log = (
+            db.query(NotificationLog)
+            .filter(NotificationLog.id == notification_id)
+            .first()
+        )
         if not log:
             raise ValueError("Notification not found")
 
@@ -330,9 +339,7 @@ class NotificationService:
 
     @staticmethod
     def get_notification_metrics(
-        business_id: UUID,
-        days: int = 30,
-        db: Session = None
+        business_id: UUID, days: int = 30, db: Session = None
     ) -> dict:
         """Get notification metrics."""
         if not db:
@@ -340,37 +347,59 @@ class NotificationService:
 
         cutoff = datetime.now(UTC) - timedelta(days=days)
 
-        total = db.query(func.count(NotificationLog.id)).filter(
-            NotificationLog.business_id == business_id,
-            NotificationLog.created_at >= cutoff
-        ).scalar() or 0
+        total = (
+            db.query(func.count(NotificationLog.id))
+            .filter(
+                NotificationLog.business_id == business_id,
+                NotificationLog.created_at >= cutoff,
+            )
+            .scalar()
+            or 0
+        )
 
-        successful = db.query(func.count(NotificationLog.id)).filter(
-            NotificationLog.business_id == business_id,
-            NotificationLog.delivery_status == "sent",
-            NotificationLog.created_at >= cutoff
-        ).scalar() or 0
+        successful = (
+            db.query(func.count(NotificationLog.id))
+            .filter(
+                NotificationLog.business_id == business_id,
+                NotificationLog.delivery_status == "sent",
+                NotificationLog.created_at >= cutoff,
+            )
+            .scalar()
+            or 0
+        )
 
-        failed = db.query(func.count(NotificationLog.id)).filter(
-            NotificationLog.business_id == business_id,
-            NotificationLog.delivery_status == "failed",
-            NotificationLog.created_at >= cutoff
-        ).scalar() or 0
+        failed = (
+            db.query(func.count(NotificationLog.id))
+            .filter(
+                NotificationLog.business_id == business_id,
+                NotificationLog.delivery_status == "failed",
+                NotificationLog.created_at >= cutoff,
+            )
+            .scalar()
+            or 0
+        )
 
-        read = db.query(func.count(NotificationLog.id)).filter(
-            NotificationLog.business_id == business_id,
-            NotificationLog.read_at.isnot(None),
-            NotificationLog.created_at >= cutoff
-        ).scalar() or 0
+        read = (
+            db.query(func.count(NotificationLog.id))
+            .filter(
+                NotificationLog.business_id == business_id,
+                NotificationLog.read_at.isnot(None),
+                NotificationLog.created_at >= cutoff,
+            )
+            .scalar()
+            or 0
+        )
 
         # Channel breakdown
-        channel_counts = db.query(
-            NotificationLog.channel,
-            func.count(NotificationLog.id)
-        ).filter(
-            NotificationLog.business_id == business_id,
-            NotificationLog.created_at >= cutoff
-        ).group_by(NotificationLog.channel).all()
+        channel_counts = (
+            db.query(NotificationLog.channel, func.count(NotificationLog.id))
+            .filter(
+                NotificationLog.business_id == business_id,
+                NotificationLog.created_at >= cutoff,
+            )
+            .group_by(NotificationLog.channel)
+            .all()
+        )
 
         return {
             "total_notifications": total,
@@ -379,5 +408,5 @@ class NotificationService:
             "read_count": read,
             "read_rate_pct": round((read / max(total, 1)) * 100, 2),
             "channels": {channel: count for channel, count in channel_counts},
-            "days": days
+            "days": days,
         }

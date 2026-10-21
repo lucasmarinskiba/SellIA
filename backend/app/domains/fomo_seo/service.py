@@ -105,7 +105,14 @@ class FOMOSEOCopyService:
         score = 50  # baseline
 
         # Power words in title
-        power_words = ["guaranteed", "proven", "exclusive", "limited", "special", "save"]
+        power_words = [
+            "guaranteed",
+            "proven",
+            "exclusive",
+            "limited",
+            "special",
+            "save",
+        ]
         if any(word in title.lower() for word in power_words):
             score += 15
 
@@ -200,20 +207,28 @@ class A_B_TestService:
         test.variant_a_clicks = variant_a_clicks
         test.variant_a_conversions = variant_a_conversions
         test.variant_a_ctr = (
-            (variant_a_clicks / variant_a_impressions * 100) if variant_a_impressions > 0 else 0
+            (variant_a_clicks / variant_a_impressions * 100)
+            if variant_a_impressions > 0
+            else 0
         )
         test.variant_a_conversion_rate = (
-            (variant_a_conversions / variant_a_clicks * 100) if variant_a_clicks > 0 else 0
+            (variant_a_conversions / variant_a_clicks * 100)
+            if variant_a_clicks > 0
+            else 0
         )
 
         test.variant_b_impressions = variant_b_impressions
         test.variant_b_clicks = variant_b_clicks
         test.variant_b_conversions = variant_b_conversions
         test.variant_b_ctr = (
-            (variant_b_clicks / variant_b_impressions * 100) if variant_b_impressions > 0 else 0
+            (variant_b_clicks / variant_b_impressions * 100)
+            if variant_b_impressions > 0
+            else 0
         )
         test.variant_b_conversion_rate = (
-            (variant_b_conversions / variant_b_clicks * 100) if variant_b_clicks > 0 else 0
+            (variant_b_conversions / variant_b_clicks * 100)
+            if variant_b_clicks > 0
+            else 0
         )
 
         # Determine winner (higher conversion rate wins)
@@ -229,13 +244,17 @@ class A_B_TestService:
     async def list_tests(self, business_id: uuid.UUID) -> list[A_B_TestCopy]:
         """List active tests."""
         tests = (
-            await self.db.execute(
-                select(A_B_TestCopy).where(
-                    and_(
-                        A_B_TestCopy.business_id == business_id,
-                        A_B_TestCopy.is_active,
+            (
+                await self.db.execute(
+                    select(A_B_TestCopy).where(
+                        and_(
+                            A_B_TestCopy.business_id == business_id,
+                            A_B_TestCopy.is_active,
+                        )
                     )
                 )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return tests

@@ -50,9 +50,19 @@ async def get_my_memory(
         satisfaction_score=memory.satisfaction_score,
         churn_risk_score=memory.churn_risk_score,
         lifetime_value_estimate=memory.lifetime_value_estimate,
-        last_active_business_id=str(memory.last_active_business_id) if memory.last_active_business_id else None,
-        last_active_conversation_id=str(memory.last_active_conversation_id) if memory.last_active_conversation_id else None,
-        last_active_agent_id=str(memory.last_active_agent_id) if memory.last_active_agent_id else None,
+        last_active_business_id=(
+            str(memory.last_active_business_id)
+            if memory.last_active_business_id
+            else None
+        ),
+        last_active_conversation_id=(
+            str(memory.last_active_conversation_id)
+            if memory.last_active_conversation_id
+            else None
+        ),
+        last_active_agent_id=(
+            str(memory.last_active_agent_id) if memory.last_active_agent_id else None
+        ),
         created_at=memory.created_at,
         updated_at=memory.updated_at,
         last_activity_at=memory.last_activity_at,
@@ -89,16 +99,30 @@ async def update_my_memory(
         satisfaction_score=memory.satisfaction_score,
         churn_risk_score=memory.churn_risk_score,
         lifetime_value_estimate=memory.lifetime_value_estimate,
-        last_active_business_id=str(memory.last_active_business_id) if memory.last_active_business_id else None,
-        last_active_conversation_id=str(memory.last_active_conversation_id) if memory.last_active_conversation_id else None,
-        last_active_agent_id=str(memory.last_active_agent_id) if memory.last_active_agent_id else None,
+        last_active_business_id=(
+            str(memory.last_active_business_id)
+            if memory.last_active_business_id
+            else None
+        ),
+        last_active_conversation_id=(
+            str(memory.last_active_conversation_id)
+            if memory.last_active_conversation_id
+            else None
+        ),
+        last_active_agent_id=(
+            str(memory.last_active_agent_id) if memory.last_active_agent_id else None
+        ),
         created_at=memory.created_at,
         updated_at=memory.updated_at,
         last_activity_at=memory.last_activity_at,
     )
 
 
-@router.post("/events", response_model=UserMemoryEventResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/events",
+    response_model=UserMemoryEventResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def log_memory_event(
     event: UserMemoryEventCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -113,7 +137,9 @@ async def log_memory_event(
         user_id=str(logged_event.user_id),
         event_type=logged_event.event_type,
         event_data=logged_event.event_data or {},
-        conversation_id=str(logged_event.conversation_id) if logged_event.conversation_id else None,
+        conversation_id=(
+            str(logged_event.conversation_id) if logged_event.conversation_id else None
+        ),
         business_id=str(logged_event.business_id) if logged_event.business_id else None,
         agent_id=str(logged_event.agent_id) if logged_event.agent_id else None,
         created_at=logged_event.created_at,
@@ -150,9 +176,19 @@ async def add_interest(
         satisfaction_score=memory.satisfaction_score,
         churn_risk_score=memory.churn_risk_score,
         lifetime_value_estimate=memory.lifetime_value_estimate,
-        last_active_business_id=str(memory.last_active_business_id) if memory.last_active_business_id else None,
-        last_active_conversation_id=str(memory.last_active_conversation_id) if memory.last_active_conversation_id else None,
-        last_active_agent_id=str(memory.last_active_agent_id) if memory.last_active_agent_id else None,
+        last_active_business_id=(
+            str(memory.last_active_business_id)
+            if memory.last_active_business_id
+            else None
+        ),
+        last_active_conversation_id=(
+            str(memory.last_active_conversation_id)
+            if memory.last_active_conversation_id
+            else None
+        ),
+        last_active_agent_id=(
+            str(memory.last_active_agent_id) if memory.last_active_agent_id else None
+        ),
         created_at=memory.created_at,
         updated_at=memory.updated_at,
         last_activity_at=memory.last_activity_at,
@@ -189,16 +225,30 @@ async def add_challenge(
         satisfaction_score=memory.satisfaction_score,
         churn_risk_score=memory.churn_risk_score,
         lifetime_value_estimate=memory.lifetime_value_estimate,
-        last_active_business_id=str(memory.last_active_business_id) if memory.last_active_business_id else None,
-        last_active_conversation_id=str(memory.last_active_conversation_id) if memory.last_active_conversation_id else None,
-        last_active_agent_id=str(memory.last_active_agent_id) if memory.last_active_agent_id else None,
+        last_active_business_id=(
+            str(memory.last_active_business_id)
+            if memory.last_active_business_id
+            else None
+        ),
+        last_active_conversation_id=(
+            str(memory.last_active_conversation_id)
+            if memory.last_active_conversation_id
+            else None
+        ),
+        last_active_agent_id=(
+            str(memory.last_active_agent_id) if memory.last_active_agent_id else None
+        ),
         created_at=memory.created_at,
         updated_at=memory.updated_at,
         last_activity_at=memory.last_activity_at,
     )
 
 
-@router.post("/preferences", response_model=UserPreferenceResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/preferences",
+    response_model=UserPreferenceResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def set_preference(
     pref_data: UserPreferenceUpdate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -206,7 +256,9 @@ async def set_preference(
 ):
     """Guardar una preferencia granular del usuario"""
     service = UserMemoryService(db)
-    pref = await service.set_preference(current_user.id, pref_data.preference_key, pref_data.preference_value)
+    pref = await service.set_preference(
+        current_user.id, pref_data.preference_key, pref_data.preference_value
+    )
 
     return UserPreferenceResponse(
         id=str(pref.id),
@@ -218,7 +270,9 @@ async def set_preference(
     )
 
 
-@router.get("/preferences/{preference_key}", response_model=UserPreferenceResponse | None)
+@router.get(
+    "/preferences/{preference_key}", response_model=UserPreferenceResponse | None
+)
 async def get_preference(
     preference_key: str,
     db: Annotated[AsyncSession, Depends(get_db)],

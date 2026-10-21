@@ -24,7 +24,11 @@ from app.domains.users.models import User
 router = APIRouter(prefix="/{business_id}/retention", tags=["Retention & Loyalty"])
 
 
-@router.post("/referral-programs", response_model=ReferralProgramResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/referral-programs",
+    response_model=ReferralProgramResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_referral_program(
     business_id: UUID,
     prog_in: ReferralProgramCreate,
@@ -44,11 +48,20 @@ async def list_referral_programs(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
-    result = await db.execute(select(ReferralProgram).where(ReferralProgram.business_id == business_id, ReferralProgram.is_active == True))
+    result = await db.execute(
+        select(ReferralProgram).where(
+            ReferralProgram.business_id == business_id,
+            ReferralProgram.is_active == True,
+        )
+    )
     return result.scalars().all()
 
 
-@router.post("/nps-campaigns", response_model=NpsCampaignResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/nps-campaigns",
+    response_model=NpsCampaignResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_nps_campaign(
     business_id: UUID,
     camp_in: NpsCampaignCreate,
@@ -56,7 +69,9 @@ async def create_nps_campaign(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = RetentionService(db)
-    camp = await service.create_nps_campaign(business_id=business_id, **camp_in.model_dump())
+    camp = await service.create_nps_campaign(
+        business_id=business_id, **camp_in.model_dump()
+    )
     return camp
 
 
@@ -77,7 +92,12 @@ async def get_customer_segments(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
-    result = await db.execute(select(CustomerSegment).where(CustomerSegment.business_id == business_id, CustomerSegment.is_active == True))
+    result = await db.execute(
+        select(CustomerSegment).where(
+            CustomerSegment.business_id == business_id,
+            CustomerSegment.is_active == True,
+        )
+    )
     return result.scalars().all()
 
 

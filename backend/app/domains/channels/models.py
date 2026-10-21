@@ -63,7 +63,12 @@ class ChannelConnection(Base):
     __tablename__ = "channel_connections"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     platform = Column(Enum(ChannelPlatform), nullable=False)
     name = Column(String(255), nullable=False)
     # MutableDict.as_mutable: without it, in-place edits like
@@ -76,12 +81,18 @@ class ChannelConnection(Base):
     status = Column(Enum(ChannelStatus), default=ChannelStatus.PENDING, nullable=False)
     status_message = Column(Text, nullable=True)
     webhook_url = Column(String(512), nullable=True)
-    webhook_token = Column(String(64), unique=True, nullable=False, default=_generate_webhook_token)
+    webhook_token = Column(
+        String(64), unique=True, nullable=False, default=_generate_webhook_token
+    )
     last_sync_at = Column(DateTime(timezone=True), nullable=True)
 
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
     business = relationship("Business", back_populates="channels")
 
@@ -96,25 +107,49 @@ class Conversation(Base):
     __tablename__ = "conversations"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    channel_connection_id = Column(UUID(as_uuid=True), ForeignKey("channel_connections.id", ondelete="SET NULL"), nullable=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    channel_connection_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("channel_connections.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     external_id = Column(String(255), nullable=True, index=True)
     lead_name = Column(String(255), nullable=True)
     lead_email = Column(String(255), nullable=True)
     lead_phone = Column(String(50), nullable=True)
     lead_source = Column(String(100), nullable=True)
-    status = Column(Enum(ConversationStatus), default=ConversationStatus.ACTIVE, nullable=False)
+    status = Column(
+        Enum(ConversationStatus), default=ConversationStatus.ACTIVE, nullable=False
+    )
     last_message_at = Column(DateTime(timezone=True), nullable=True)
-    last_followup_sent_at = Column(DateTime(timezone=True), nullable=True)  # cold-lead nudge dedup (Task 5)
-    followup_count = Column(Integer, default=0, nullable=False)  # caps nudges per conversation
+    last_followup_sent_at = Column(
+        DateTime(timezone=True), nullable=True
+    )  # cold-lead nudge dedup (Task 5)
+    followup_count = Column(
+        Integer, default=0, nullable=False
+    )  # caps nudges per conversation
     extra_data = Column(MutableDict.as_mutable(JSONB), default=dict, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
     business = relationship("Business", back_populates="conversations")
     channel = relationship("ChannelConnection")
-    messages = relationship("Message", back_populates="conversation", cascade="all, delete-orphan", order_by="Message.created_at")
+    messages = relationship(
+        "Message",
+        back_populates="conversation",
+        cascade="all, delete-orphan",
+        order_by="Message.created_at",
+    )
 
 
 class MessageDirection(str, enum.Enum):
@@ -134,7 +169,12 @@ class Message(Base):
     __tablename__ = "messages"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    conversation_id = Column(UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False, index=True)
+    conversation_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("conversations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     direction = Column(Enum(MessageDirection), nullable=False)
     content = Column(Text, nullable=False)
     content_type = Column(String(50), default="text", nullable=False)
@@ -142,10 +182,14 @@ class Message(Base):
     external_message_id = Column(String(255), nullable=True)
     extra_data = Column(JSONB, default=dict, nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
     __table_args__ = (
-        Index('ix_messages_conversation_created', 'conversation_id', 'created_at'),
+        Index("ix_messages_conversation_created", "conversation_id", "created_at"),
     )
 
     conversation = relationship("Conversation", back_populates="messages")
@@ -158,19 +202,32 @@ class BookingEvent(Base):
     Powers the real "tasa de agenda" (booking-rate) metric: bookings / qualified
     leads that received a booking invite.
     """
+
     __tablename__ = "booking_events"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    conversation_id = Column(UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="SET NULL"), nullable=True, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    conversation_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("conversations.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     source = Column(String(50), default="calendly", nullable=False)
     external_booking_id = Column(String(255), nullable=True)
     invitee_email = Column(String(255), nullable=True)
     invitee_phone = Column(String(50), nullable=True)
     scheduled_at = Column(DateTime(timezone=True), nullable=True)
-    status = Column(String(20), default="scheduled", nullable=False)  # scheduled, cancelled
+    status = Column(
+        String(20), default="scheduled", nullable=False
+    )  # scheduled, cancelled
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
-        Index('ix_booking_events_business_created', 'business_id', 'created_at'),
+        Index("ix_booking_events_business_created", "business_id", "created_at"),
     )

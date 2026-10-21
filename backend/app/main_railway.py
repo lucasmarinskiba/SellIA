@@ -2,6 +2,7 @@
 Entry point for Railway deployment.
 Loads what's available; skips broken modules gracefully.
 """
+
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -23,6 +24,7 @@ async def lifespan(app: FastAPI):
         try:
             import redis.asyncio as redis
             from fastapi_limiter import FastAPILimiter
+
             r = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
             await FastAPILimiter.init(r)
             logger.info("Rate limiter initialized")
@@ -86,7 +88,11 @@ async def health():
 async def memory_test():
     """Test endpoint to verify memory routes are loaded"""
     logger.info("Memory test endpoint called")
-    return {"status": "ok", "message": "memory router working", "timestamp": str(__import__('datetime').utc_now())}
+    return {
+        "status": "ok",
+        "message": "memory router working",
+        "timestamp": str(__import__("datetime").utc_now()),
+    }
 
 
 # Load routers that work — skip any that fail
@@ -113,6 +119,8 @@ try_include("app.api.v1.businesses.router", "/api/v1/businesses", ["businesses"]
 try_include("app.domains.webhooks.router.router", "/api/v1", ["webhooks"])
 try_include("app.api.v1.conversations.router", "/api/v1/businesses", ["conversations"])
 try_include("app.api.v1.catalog.router", "/api/v1/catalog", ["catalog"])
-try_include("app.api.v1.subscriptions.router", "/api/v1/subscriptions", ["subscriptions"])
+try_include(
+    "app.api.v1.subscriptions.router", "/api/v1/subscriptions", ["subscriptions"]
+)
 try_include("app.api.v1.agents.router", "/api/v1/agents", ["agents"])
 try_include("app.api.v1.analytics.router", "/api/v1", ["analytics"])

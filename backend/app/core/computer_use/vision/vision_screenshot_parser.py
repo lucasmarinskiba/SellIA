@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 class ViewportSize(Enum):
     """Tamaño de viewport detectado."""
+
     MOBILE = "mobile"  # < 600px
     TABLET = "tablet"  # 600-1000px
     DESKTOP = "desktop"  # >= 1000px
@@ -31,6 +32,7 @@ class ViewportSize(Enum):
 @dataclass
 class ImageContent:
     """Información de imagen detectada."""
+
     url: str | None = None
     alt_text: str | None = None
     x: int = 0
@@ -44,6 +46,7 @@ class ImageContent:
 @dataclass
 class Heading:
     """Encabezado (H1-H6)."""
+
     level: int  # 1-6
     text: str
     x: int
@@ -55,6 +58,7 @@ class Heading:
 @dataclass
 class PageMetadata:
     """Metadata extraído de página."""
+
     title: str
     description: str | None = None
     lang: str = "es"
@@ -67,6 +71,7 @@ class PageMetadata:
 @dataclass
 class PageStructure:
     """Estructura completa de página."""
+
     metadata: PageMetadata
     headings: list[Heading]
     images: list[ImageContent]
@@ -88,9 +93,7 @@ class VisionScreenshotParser:
         self.anthropic = anthropic_client
 
     async def parse_complete_page(
-        self,
-        screenshot_bytes: bytes,
-        url: str | None = None
+        self, screenshot_bytes: bytes, url: str | None = None
     ) -> PageStructure:
         """Parsea completamente una página."""
         if not self.anthropic:
@@ -181,10 +184,7 @@ Responde SOLO en JSON:
             logger.error(f"Page parsing failed: {e}")
             raise
 
-    async def extract_all_text(
-        self,
-        screenshot_bytes: bytes
-    ) -> str:
+    async def extract_all_text(self, screenshot_bytes: bytes) -> str:
         """Extrae todo el texto de la página."""
         logger.info("Extracting all text")
 
@@ -236,8 +236,7 @@ Responde SOLO el texto concatenado (no JSON)."""
             return ""
 
     async def identify_all_ui_elements(
-        self,
-        screenshot_bytes: bytes
+        self, screenshot_bytes: bytes
     ) -> dict[str, list[dict[str, Any]]]:
         """Identifica TODOS los elementos UI."""
         logger.info("Identifying all UI elements")
@@ -318,9 +317,7 @@ Responde SOLO en JSON:
             return {}
 
     async def detect_viewport_size(
-        self,
-        screenshot_bytes: bytes,
-        actual_width: int | None = None
+        self, screenshot_bytes: bytes, actual_width: int | None = None
     ) -> tuple[ViewportSize, bool]:
         """Detecta tamaño de viewport y si es responsive.
 
@@ -388,18 +385,17 @@ Responde SOLO: {"viewport_size": "mobile|tablet|desktop", "is_responsive": true|
             }
 
             return (
-                size_map.get(data.get("viewport_size", "desktop"), ViewportSize.DESKTOP),
-                data.get("is_responsive", False)
+                size_map.get(
+                    data.get("viewport_size", "desktop"), ViewportSize.DESKTOP
+                ),
+                data.get("is_responsive", False),
             )
 
         except Exception:
             logger.exception("Viewport detection failed")
             return ViewportSize.DESKTOP, False
 
-    async def identify_images(
-        self,
-        screenshot_bytes: bytes
-    ) -> list[ImageContent]:
+    async def identify_images(self, screenshot_bytes: bytes) -> list[ImageContent]:
         """Identifica todas las imágenes en la página."""
         logger.info("Identifying images")
 
@@ -454,14 +450,16 @@ Responde SOLO en JSON:
 
             images = []
             for img_data in data.get("images", []):
-                images.append(ImageContent(
-                    alt_text=img_data.get("alt_text"),
-                    content_type=img_data.get("content_type", "unknown"),
-                    x=img_data.get("x", 0),
-                    y=img_data.get("y", 0),
-                    width=img_data.get("width", 0),
-                    height=img_data.get("height", 0),
-                ))
+                images.append(
+                    ImageContent(
+                        alt_text=img_data.get("alt_text"),
+                        content_type=img_data.get("content_type", "unknown"),
+                        x=img_data.get("x", 0),
+                        y=img_data.get("y", 0),
+                        width=img_data.get("width", 0),
+                        height=img_data.get("height", 0),
+                    )
+                )
 
             return images
 
@@ -546,19 +544,21 @@ Responde SOLO en JSON:
         for h in structure.headings[:5]:
             lines.append(f"  H{h.level}: {h.text}")
 
-        lines.extend([
-            "",
-            "ELEMENTS:",
-            f"  Total: {structure.element_count}",
-            f"  Buttons: {structure.button_count}",
-            f"  Links: {structure.link_count}",
-            f"  Forms: {structure.form_count}",
-            f"  Tables: {structure.table_count}",
-            f"  Lists: {structure.list_count}",
-            f"  Images: {len(structure.images)}",
-            "",
-            "IMAGES:",
-        ])
+        lines.extend(
+            [
+                "",
+                "ELEMENTS:",
+                f"  Total: {structure.element_count}",
+                f"  Buttons: {structure.button_count}",
+                f"  Links: {structure.link_count}",
+                f"  Forms: {structure.form_count}",
+                f"  Tables: {structure.table_count}",
+                f"  Lists: {structure.list_count}",
+                f"  Images: {len(structure.images)}",
+                "",
+                "IMAGES:",
+            ]
+        )
 
         for img in structure.images[:5]:
             lines.append(f"  - {img.alt_text or 'no alt'} ({img.content_type})")

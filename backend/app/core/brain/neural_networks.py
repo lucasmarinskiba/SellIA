@@ -25,20 +25,19 @@ from app.core.clock import utc_now
 @dataclass
 class ConditionalProbabilityTable:
     """Tabla de probabilidad condicional: P(node | parents)."""
+
     node_name: str
     parent_names: list[str] = field(default_factory=list)
-    probabilities: dict[tuple[Any, ...], dict[str, float]] = field(
-        default_factory=dict
-    )
+    probabilities: dict[tuple[Any, ...], dict[str, float]] = field(default_factory=dict)
 
-    def get_probability(self, parent_values: tuple[Any, ...],
-                       node_value: str) -> float:
+    def get_probability(self, parent_values: tuple[Any, ...], node_value: str) -> float:
         """Obtiene P(node=node_value | parents=parent_values)."""
         key = parent_values if parent_values else ()
         return self.probabilities.get(key, {}).get(node_value, 0.5)
 
-    def set_probability(self, parent_values: tuple[Any, ...],
-                       node_value: str, prob: float) -> None:
+    def set_probability(
+        self, parent_values: tuple[Any, ...], node_value: str, prob: float
+    ) -> None:
         """Establece probabilidad."""
         key = parent_values if parent_values else ()
         if key not in self.probabilities:
@@ -49,6 +48,7 @@ class ConditionalProbabilityTable:
 @dataclass
 class BayesianNode:
     """Nodo en red Bayesiana."""
+
     name: str
     possible_values: list[str]
     cpt: ConditionalProbabilityTable
@@ -142,8 +142,9 @@ class BayesianNetwork:
 
         return prob
 
-    def _get_parent_value_combinations(self,
-                                       parents: list[BayesianNode]) -> list[tuple[str, ...]]:
+    def _get_parent_value_combinations(
+        self, parents: list[BayesianNode]
+    ) -> list[tuple[str, ...]]:
         """Genera todas las combinaciones de valores de parents."""
         if not parents:
             return [()]
@@ -155,8 +156,9 @@ class BayesianNetwork:
                 result.append((value,) + combo)
         return result
 
-    def _compute_parent_joint_prob(self, parent_values: tuple[str, ...],
-                                   parent_names: list[str]) -> float:
+    def _compute_parent_joint_prob(
+        self, parent_values: tuple[str, ...], parent_names: list[str]
+    ) -> float:
         """Computa P(parent1=v1, parent2=v2, ...) recursivamente."""
         if not parent_names:
             return 1.0
@@ -175,10 +177,11 @@ class BayesianNetwork:
 @dataclass
 class CausalEdge:
     """Relación causal: X → Y (direccionada)."""
+
     source: str
     target: str
     strength: float = 0.7  # 0–1, confianza
-    mechanism: str = ""    # Cómo causa X a Y?
+    mechanism: str = ""  # Cómo causa X a Y?
     conditions: list[str] = field(default_factory=list)  # Cuándo aplica?
 
 
@@ -211,8 +214,9 @@ class CausalGraph:
         """¿Qué causa 'cause'?"""
         return self.edges.get(cause, [])
 
-    def counterfactual_inference(self, intervention: dict[str, Any],
-                                 target: str) -> dict[str, Any]:
+    def counterfactual_inference(
+        self, intervention: dict[str, Any], target: str
+    ) -> dict[str, Any]:
         """Inferencia contrafáctica: ¿Qué pasaría si hacemos X?"""
         # If we set 'source' to value, what happens to target?
         result = {}
@@ -221,8 +225,9 @@ class CausalGraph:
             result[source] = effects
         return result
 
-    def _trace_effects(self, source: str, value: Any, target: str,
-                      depth: int) -> dict[str, Any]:
+    def _trace_effects(
+        self, source: str, value: Any, target: str, depth: int
+    ) -> dict[str, Any]:
         """Traza efectos de intervención."""
         if depth == 0 or source not in self.edges:
             return {}
@@ -251,6 +256,7 @@ class CausalGraph:
 @dataclass
 class State:
     """Estado: vector de features."""
+
     features: dict[str, float]
     timestamp: str = ""
 
@@ -260,14 +266,17 @@ class State:
 
     def distance_to(self, other: State) -> float:
         """Distancia Euclidiana a otro estado."""
-        diff = sum((self.features.get(k, 0) - other.features.get(k, 0)) ** 2
-                   for k in set(self.features.keys()) | set(other.features.keys()))
-        return diff ** 0.5
+        diff = sum(
+            (self.features.get(k, 0) - other.features.get(k, 0)) ** 2
+            for k in set(self.features.keys()) | set(other.features.keys())
+        )
+        return diff**0.5
 
 
 @dataclass
 class Action:
     """Acción: cambio en el estado."""
+
     name: str
     params: dict[str, Any] = field(default_factory=dict)
 
@@ -275,6 +284,7 @@ class Action:
 @dataclass
 class Transition:
     """Transición: state → action → next_state + reward."""
+
     state: State
     action: Action
     next_state: State
@@ -285,8 +295,12 @@ class Transition:
 class ReinforcementLearner:
     """Learner Q-learning para optimización de políticas."""
 
-    def __init__(self, learning_rate: float = 0.1, discount_factor: float = 0.9,
-                 exploration_rate: float = 0.1):
+    def __init__(
+        self,
+        learning_rate: float = 0.1,
+        discount_factor: float = 0.9,
+        exploration_rate: float = 0.1,
+    ):
         self.learning_rate = learning_rate
         self.discount_factor = discount_factor
         self.exploration_rate = exploration_rate
@@ -297,8 +311,9 @@ class ReinforcementLearner:
         """Registra transición para aprender."""
         self.transitions.append(transition)
 
-    def update_q_value(self, state_key: str, action_name: str,
-                      reward: float, next_state_value: float) -> float:
+    def update_q_value(
+        self, state_key: str, action_name: str, reward: float, next_state_value: float
+    ) -> float:
         """Q-learning update: Q(s,a) ← Q(s,a) + α(r + γ max_a' Q(s',a') - Q(s,a))."""
         if state_key not in self.q_table:
             self.q_table[state_key] = {}
@@ -325,7 +340,9 @@ class ReinforcementLearner:
         policy = {}
         for action, q_value in q_values.items():
             # Softmax
-            policy[action] = (q_value - (max_q - 1)) if q_values else 1.0 / len(q_values)
+            policy[action] = (
+                (q_value - (max_q - 1)) if q_values else 1.0 / len(q_values)
+            )
         return policy
 
     def learn_from_episodes(self) -> None:
@@ -334,12 +351,10 @@ class ReinforcementLearner:
             state_key = json.dumps(transition.state.features, sort_keys=True)
             next_state_key = json.dumps(transition.next_state.features, sort_keys=True)
             next_best_q = max(
-                self.q_table.get(next_state_key, {}).values(),
-                default=0.0
+                self.q_table.get(next_state_key, {}).values(), default=0.0
             )
             self.update_q_value(
-                state_key, transition.action.name,
-                transition.reward, next_best_q
+                state_key, transition.action.name, transition.reward, next_best_q
             )
 
 
@@ -380,8 +395,7 @@ class SalesClosurePathway:
             "closure_probability",
             ["high", "medium", "low"],
             ConditionalProbabilityTable(
-                "closure_probability",
-                ["deal_value", "buyer_authority"]
+                "closure_probability", ["deal_value", "buyer_authority"]
             ),
         )
         # P(closure | deal, authority)
@@ -397,7 +411,9 @@ class SalesClosurePathway:
         self.network.add_edge("deal_value", "closure_probability")
         self.network.add_edge("buyer_authority", "closure_probability")
 
-    def predict_closure(self, deal_value: str, buyer_authority: str) -> dict[str, float]:
+    def predict_closure(
+        self, deal_value: str, buyer_authority: str
+    ) -> dict[str, float]:
         """Predice probabilidad de cierre."""
         self.network.set_evidence("deal_value", deal_value)
         self.network.set_evidence("buyer_authority", buyer_authority)
@@ -414,38 +430,50 @@ class ChurnPreventionPathway:
     def _build_causal_graph(self) -> None:
         """Construye grafo causal."""
         # Causas de churn
-        self.causal_graph.add_edge(CausalEdge(
-            "inactivity",
-            "churn",
-            strength=0.8,
-            mechanism="No se ve valor si no usa"
-        ))
-        self.causal_graph.add_edge(CausalEdge(
-            "support_tickets_unresolved",
-            "churn",
-            strength=0.7,
-            mechanism="Frustración por falta de soporte"
-        ))
-        self.causal_graph.add_edge(CausalEdge(
-            "competitor_offer",
-            "churn",
-            strength=0.6,
-            mechanism="Atractivo de alternativa"
-        ))
-        self.causal_graph.add_edge(CausalEdge(
-            "product_upgrade",
-            "retention",
-            strength=0.75,
-            mechanism="Más valor = más sticky"
-        ))
-        self.causal_graph.add_edge(CausalEdge(
-            "qbr_conducted",
-            "retention",
-            strength=0.8,
-            mechanism="Alineamiento + revisión de ROI"
-        ))
+        self.causal_graph.add_edge(
+            CausalEdge(
+                "inactivity",
+                "churn",
+                strength=0.8,
+                mechanism="No se ve valor si no usa",
+            )
+        )
+        self.causal_graph.add_edge(
+            CausalEdge(
+                "support_tickets_unresolved",
+                "churn",
+                strength=0.7,
+                mechanism="Frustración por falta de soporte",
+            )
+        )
+        self.causal_graph.add_edge(
+            CausalEdge(
+                "competitor_offer",
+                "churn",
+                strength=0.6,
+                mechanism="Atractivo de alternativa",
+            )
+        )
+        self.causal_graph.add_edge(
+            CausalEdge(
+                "product_upgrade",
+                "retention",
+                strength=0.75,
+                mechanism="Más valor = más sticky",
+            )
+        )
+        self.causal_graph.add_edge(
+            CausalEdge(
+                "qbr_conducted",
+                "retention",
+                strength=0.8,
+                mechanism="Alineamiento + revisión de ROI",
+            )
+        )
 
-    def predict_churn_and_intervene(self, indicators: dict[str, bool]) -> dict[str, Any]:
+    def predict_churn_and_intervene(
+        self, indicators: dict[str, bool]
+    ) -> dict[str, Any]:
         """Predice churn + recomienda intervención."""
         churn_causes = []
         if indicators.get("inactivity"):
@@ -454,8 +482,7 @@ class ChurnPreventionPathway:
             churn_causes.append("support_tickets_unresolved")
 
         interventions = self.causal_graph.counterfactual_inference(
-            {"support_tickets_unresolved": False, "qbr_conducted": True},
-            "churn"
+            {"support_tickets_unresolved": False, "qbr_conducted": True}, "churn"
         )
         return {
             "churn_causes": churn_causes,
@@ -469,7 +496,9 @@ class RevenueOptimizationPathway:
     def __init__(self):
         self.learner = ReinforcementLearner(learning_rate=0.15)
 
-    def optimize_pricing(self, current_state: State, possible_actions: list[Action]) -> Action:
+    def optimize_pricing(
+        self, current_state: State, possible_actions: list[Action]
+    ) -> Action:
         """Escoge mejor action para maximizar revenue."""
         state_key = json.dumps(current_state.features, sort_keys=True)
         policy = self.learner.get_policy(state_key)
@@ -517,7 +546,7 @@ class NeuralPathwayRegistry:
         if pathway_name == "sales_closure":
             return pathway.predict_closure(
                 inputs.get("deal_value", "medium"),
-                inputs.get("buyer_authority", "medium")
+                inputs.get("buyer_authority", "medium"),
             )
         elif pathway_name == "churn_prevention":
             return pathway.predict_churn_and_intervene(inputs)

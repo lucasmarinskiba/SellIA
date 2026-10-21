@@ -28,10 +28,21 @@ settings = get_settings()
 # Heavy / tracking resources never needed for automation
 _BLOCK_RESOURCE_TYPES = {"image", "media", "font"}
 _BLOCK_URL_PATTERNS = [
-    r"google-analytics", r"googletagmanager", r"facebook\.com/tr",
-    r"doubleclick", r"adsystem", r"adservice", r"/ads?[/?]",
-    r"analytics", r"hotjar", r"segment\.(io|com)", r"mixpanel",
-    r"fullstory", r"clarity\.ms", r"amplitude", r"intercom",
+    r"google-analytics",
+    r"googletagmanager",
+    r"facebook\.com/tr",
+    r"doubleclick",
+    r"adsystem",
+    r"adservice",
+    r"/ads?[/?]",
+    r"analytics",
+    r"hotjar",
+    r"segment\.(io|com)",
+    r"mixpanel",
+    r"fullstory",
+    r"clarity\.ms",
+    r"amplitude",
+    r"intercom",
 ]
 _BLOCK_URL_RE = re.compile("|".join(_BLOCK_URL_PATTERNS), re.IGNORECASE)
 
@@ -90,7 +101,10 @@ class BrowserService:
 
         if settings.COMPUTER_USE_BLOCK_RESOURCES:
             await self._page.route("**/*", self._route_handler)
-        logger.info("BrowserService started (block_resources=%s)", settings.COMPUTER_USE_BLOCK_RESOURCES)
+        logger.info(
+            "BrowserService started (block_resources=%s)",
+            settings.COMPUTER_USE_BLOCK_RESOURCES,
+        )
 
     async def _route_handler(self, route: Any, request: Any) -> None:
         """Aborta recursos pesados y trackers; deja pasar el resto."""
@@ -199,7 +213,9 @@ class BrowserService:
                 }
             except Exception as e:
                 last_err = str(e)
-                logger.warning(f"Navigation attempt {attempt + 1} failed: {e}", exc_info=True)
+                logger.warning(
+                    f"Navigation attempt {attempt + 1} failed: {e}", exc_info=True
+                )
         return {"success": False, "error": last_err}
 
     # ── screenshots ─────────────────────────────────────────────────────
@@ -229,10 +245,15 @@ class BrowserService:
         max_width = settings.COMPUTER_USE_MAX_SCREENSHOT_WIDTH
         if img.width > max_width:
             ratio = max_width / img.width
-            img = img.resize((max_width, int(img.height * ratio)), Image.Resampling.LANCZOS)
+            img = img.resize(
+                (max_width, int(img.height * ratio)), Image.Resampling.LANCZOS
+            )
         output = io.BytesIO()
         img.convert("RGB").save(
-            output, format="JPEG", quality=settings.COMPUTER_USE_SCREENSHOT_QUALITY, optimize=True
+            output,
+            format="JPEG",
+            quality=settings.COMPUTER_USE_SCREENSHOT_QUALITY,
+            optimize=True,
         )
         output.seek(0)
         return output.getvalue()
@@ -276,7 +297,9 @@ class BrowserService:
         if not self._page:
             raise RuntimeError("Browser not started")
         try:
-            await self._page.keyboard.type(text, delay=settings.COMPUTER_USE_TYPE_DELAY_MS)
+            await self._page.keyboard.type(
+                text, delay=settings.COMPUTER_USE_TYPE_DELAY_MS
+            )
             await self._settle()
             return {"success": True}
         except Exception as e:
@@ -327,7 +350,9 @@ class BrowserService:
         if not self._page:
             raise RuntimeError("Browser not started")
         try:
-            await self._page.click(selector, timeout=settings.COMPUTER_USE_SETTLE_TIMEOUT_MS)
+            await self._page.click(
+                selector, timeout=settings.COMPUTER_USE_SETTLE_TIMEOUT_MS
+            )
             await self._settle()
             return {"success": True}
         except Exception as e:
@@ -352,14 +377,18 @@ class BrowserService:
         if not self._page:
             raise RuntimeError("Browser not started")
         try:
-            await self._page.fill(selector, value, timeout=settings.COMPUTER_USE_SETTLE_TIMEOUT_MS)
+            await self._page.fill(
+                selector, value, timeout=settings.COMPUTER_USE_SETTLE_TIMEOUT_MS
+            )
             await self._settle()
             return {"success": True}
         except Exception as e:
             logger.exception("fill: error inesperado")
             return {"success": False, "error": str(e)}
 
-    async def wait_for_selector(self, selector: str, timeout_ms: int | None = None) -> dict:
+    async def wait_for_selector(
+        self, selector: str, timeout_ms: int | None = None
+    ) -> dict:
         """Espera a que aparezca un elemento (sincronización determinística)."""
         if not self._page:
             raise RuntimeError("Browser not started")

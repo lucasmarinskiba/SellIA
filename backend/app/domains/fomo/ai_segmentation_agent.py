@@ -122,7 +122,9 @@ class RFMCalculator:
         }
 
     @staticmethod
-    def score_quantile(value: float, sorted_values: list[float], reverse: bool = False) -> int:
+    def score_quantile(
+        value: float, sorted_values: list[float], reverse: bool = False
+    ) -> int:
         """Score 1-5 by quantile position within the customer base.
         reverse=True means LOWER raw value = HIGHER score (used for recency)."""
         if not sorted_values or len(sorted_values) == 1:
@@ -156,7 +158,9 @@ class RFMCalculator:
 
         raw = []
         for customer in customers:
-            rfm = RFMCalculator.compute_raw_rfm(customer.get("purchases", []), reference_date)
+            rfm = RFMCalculator.compute_raw_rfm(
+                customer.get("purchases", []), reference_date
+            )
             raw.append({"customer_id": customer["customer_id"], **rfm})
 
         recencies = [c["recency_days"] for c in raw]
@@ -165,20 +169,24 @@ class RFMCalculator:
 
         results = []
         for c in raw:
-            r_score = RFMCalculator.score_quantile(c["recency_days"], recencies, reverse=True)
+            r_score = RFMCalculator.score_quantile(
+                c["recency_days"], recencies, reverse=True
+            )
             f_score = RFMCalculator.score_quantile(c["frequency"], frequencies)
             m_score = RFMCalculator.score_quantile(c["monetary"], monetaries)
 
-            results.append({
-                "customer_id": c["customer_id"],
-                "recency_days": c["recency_days"],
-                "frequency": c["frequency"],
-                "monetary": round(c["monetary"], 2),
-                "r_score": r_score,
-                "f_score": f_score,
-                "m_score": m_score,
-                "rfm_score": f"{r_score}{f_score}{m_score}",
-            })
+            results.append(
+                {
+                    "customer_id": c["customer_id"],
+                    "recency_days": c["recency_days"],
+                    "frequency": c["frequency"],
+                    "monetary": round(c["monetary"], 2),
+                    "r_score": r_score,
+                    "f_score": f_score,
+                    "m_score": m_score,
+                    "rfm_score": f"{r_score}{f_score}{m_score}",
+                }
+            )
         return results
 
 
@@ -223,7 +231,9 @@ class RFMSegmentClassifier:
     def classify_batch(rfm_scores: list[dict[str, Any]]) -> list[dict[str, Any]]:
         results = []
         for c in rfm_scores:
-            segment = RFMSegmentClassifier.classify(c["r_score"], c["f_score"], c["m_score"])
+            segment = RFMSegmentClassifier.classify(
+                c["r_score"], c["f_score"], c["m_score"]
+            )
             results.append({**c, "segment": segment.value})
         return results
 
@@ -255,13 +265,15 @@ class ClusteringEngine:
             from sklearn.cluster import KMeans
             from sklearn.preprocessing import StandardScaler
         except ImportError:
-            logger.warning("sklearn/numpy unavailable — falling back to RFM rule-based segmentation")
+            logger.warning(
+                "sklearn/numpy unavailable — falling back to RFM rule-based segmentation"
+            )
             return RFMSegmentClassifier.classify_batch(rfm_scores), False
 
         try:
-            features = np.array([
-                [c["r_score"], c["f_score"], c["m_score"]] for c in rfm_scores
-            ])
+            features = np.array(
+                [[c["r_score"], c["f_score"], c["m_score"]] for c in rfm_scores]
+            )
             scaled = StandardScaler().fit_transform(features)
 
             k = n_clusters or min(8, max(2, len(rfm_scores) // 5))
@@ -272,12 +284,19 @@ class ClusteringEngine:
             # comparing its centroid's average RFM score to the rule thresholds
             results = []
             for c, cluster_id in zip(rfm_scores, labels):
-                segment = RFMSegmentClassifier.classify(c["r_score"], c["f_score"], c["m_score"])
-                results.append({**c, "segment": segment.value, "cluster_id": int(cluster_id)})
+                segment = RFMSegmentClassifier.classify(
+                    c["r_score"], c["f_score"], c["m_score"]
+                )
+                results.append(
+                    {**c, "segment": segment.value, "cluster_id": int(cluster_id)}
+                )
             return results, True
 
         except Exception as e:
-            logger.warning(f"KMeans clustering failed ({e}), falling back to RFM rules", exc_info=True)
+            logger.warning(
+                f"KMeans clustering failed ({e}), falling back to RFM rules",
+                exc_info=True,
+            )
             return RFMSegmentClassifier.classify_batch(rfm_scores), False
 
 
@@ -300,8 +319,8 @@ class FOMOFatigueDetector:
                 "sends_evaluated": len(send_history),
             }
 
-        recent = send_history[-FOMOFatigueDetector.FATIGUE_LOOKBACK_SENDS:]
-        earlier = send_history[:-FOMOFatigueDetector.FATIGUE_LOOKBACK_SENDS]
+        recent = send_history[-FOMOFatigueDetector.FATIGUE_LOOKBACK_SENDS :]
+        earlier = send_history[: -FOMOFatigueDetector.FATIGUE_LOOKBACK_SENDS]
 
         if not earlier:
             earlier = send_history[:1]
@@ -319,12 +338,16 @@ class FOMOFatigueDetector:
         # No historical engagement to decline from
         if earlier_rate == 0:
             consecutive_ignored = sum(
-                1 for s in send_history[-3:] if not s.get("opened") and not s.get("clicked")
+                1
+                for s in send_history[-3:]
+                if not s.get("opened") and not s.get("clicked")
             )
             fatigued = consecutive_ignored >= 3
             return {
                 "fatigued": fatigued,
-                "reason": "consecutive_no_engagement" if fatigued else "low_baseline_ok",
+                "reason": (
+                    "consecutive_no_engagement" if fatigued else "low_baseline_ok"
+                ),
                 "consecutive_ignored": consecutive_ignored,
                 "earlier_rate": round(earlier_rate, 3),
                 "recent_rate": round(recent_rate, 3),
@@ -374,14 +397,21 @@ class AICustomerSegmentationAgent:
     ) -> dict[str, Any]:
         """Full segmentation pipeline: RFM -> (cluster or rules) -> named segments"""
         if not customers:
-            return {"customers": [], "segment_distribution": {}, "used_clustering": False}
+            return {
+                "customers": [],
+                "segment_distribution": {},
+                "used_clustering": False,
+            }
 
         rfm_scores = RFMCalculator.compute_rfm_scores(customers, reference_date)
 
         if use_clustering:
             classified, used_clustering = ClusteringEngine.cluster_customers(rfm_scores)
         else:
-            classified, used_clustering = RFMSegmentClassifier.classify_batch(rfm_scores), False
+            classified, used_clustering = (
+                RFMSegmentClassifier.classify_batch(rfm_scores),
+                False,
+            )
 
         distribution: dict[str, int] = {}
         for c in classified:
@@ -431,18 +461,20 @@ class AICustomerSegmentationAgent:
             if not eligible:
                 excluded_count += 1
 
-            recommendations.append({
-                "customer_id": c["customer_id"],
-                "segment": c["segment"],
-                "rfm_score": c["rfm_score"],
-                "recommended_campaign_type": strategy["campaign_type"],
-                "recommended_tone": strategy["tone"],
-                "expected_lift": strategy["expected_lift"],
-                "send_frequency_days": strategy["send_frequency_days"],
-                "eligible_for_fomo": eligible,
-                "fatigue_status": fatigue_result,
-                "cooldown_recommendation": cooldown if not eligible else None,
-            })
+            recommendations.append(
+                {
+                    "customer_id": c["customer_id"],
+                    "segment": c["segment"],
+                    "rfm_score": c["rfm_score"],
+                    "recommended_campaign_type": strategy["campaign_type"],
+                    "recommended_tone": strategy["tone"],
+                    "expected_lift": strategy["expected_lift"],
+                    "send_frequency_days": strategy["send_frequency_days"],
+                    "eligible_for_fomo": eligible,
+                    "fatigue_status": fatigue_result,
+                    "cooldown_recommendation": cooldown if not eligible else None,
+                }
+            )
 
         return {
             "segment_distribution": segmentation["segment_distribution"],

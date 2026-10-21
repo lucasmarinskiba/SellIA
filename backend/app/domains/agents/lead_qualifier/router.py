@@ -69,7 +69,9 @@ async def get_lead(
     """Get qualification details for a lead."""
     lead = await lq_service.get_qualification(db, qualification_id)
     if not lead:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lead no encontrado")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Lead no encontrado"
+        )
     return lead
 
 
@@ -82,7 +84,9 @@ async def route_lead(
 ):
     """Manually route a lead to a destination."""
     try:
-        lead = await lq_service.route_lead(db, qualification_id, data.routing_destination)
+        lead = await lq_service.route_lead(
+            db, qualification_id, data.routing_destination
+        )
         return RouteLeadOut(
             qualification_id=lead.id,
             routing_destination=lead.routing_destination or "",

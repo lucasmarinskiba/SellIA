@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 
 # ========== Templates ==========
 
+
 class ComputerUseTemplateCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
     description: str | None = Field(None, max_length=1000)
@@ -39,6 +40,7 @@ class ComputerUseTemplateListResponse(BaseModel):
 
 
 # ========== Scheduled Tasks ==========
+
 
 class ComputerUseScheduledTaskCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
@@ -79,6 +81,7 @@ class ComputerUseScheduledTaskListResponse(BaseModel):
 
 # ========== Annotations ==========
 
+
 class ComputerUseAnnotationCreate(BaseModel):
     step_number: int = Field(..., ge=1)
     content: str = Field(..., min_length=1, max_length=2000)
@@ -102,6 +105,7 @@ class ComputerUseAnnotationResponse(BaseModel):
 
 
 # ========== Browser Profiles ==========
+
 
 class ComputerUseBrowserProfileCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
@@ -136,6 +140,7 @@ class ComputerUseBrowserProfileResponse(BaseModel):
 
 # ========== Proxy Configs ==========
 
+
 class ComputerUseProxyConfigCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
     proxy_type: str = Field("http", pattern="^(http|https|socks5)$")
@@ -165,6 +170,7 @@ class ComputerUseProxyConfigResponse(BaseModel):
 
 # ========== Session Sharing ==========
 
+
 class ComputerUseSessionShareCreate(BaseModel):
     shared_with_email: str | None = None
     shared_with_user_id: UUID | None = None
@@ -188,6 +194,7 @@ class ComputerUseSessionShareResponse(BaseModel):
 
 
 # ========== Batch Jobs ==========
+
 
 class ComputerUseBatchJobCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
@@ -221,6 +228,7 @@ class ComputerUseBatchJobResponse(BaseModel):
 
 # ========== Session Tags ==========
 
+
 class ComputerUseSessionTagCreate(BaseModel):
     tag: str = Field(..., min_length=1, max_length=50)
     color: str = "#3b82f6"
@@ -237,6 +245,7 @@ class ComputerUseSessionTagResponse(BaseModel):
 
 
 # ========== Webhooks ==========
+
 
 class ComputerUseSessionBookmarkCreate(BaseModel):
     step_number: int = Field(..., ge=1)
@@ -297,6 +306,7 @@ class ComputerUseWebhookResponse(BaseModel):
 
 # ========== Export / Replay ==========
 
+
 class ComputerUseExportRequest(BaseModel):
     format: str = Field("pdf", pattern="^(pdf|csv|json)$")
     include_screenshots: bool = True
@@ -324,6 +334,7 @@ class ComputerUseReplayResponse(BaseModel):
 
 # ========== Analytics ==========
 
+
 class ComputerUseAnalyticsSummary(BaseModel):
     total_sessions: int
     completed_sessions: int
@@ -348,6 +359,7 @@ class ComputerUseSessionFilter(BaseModel):
 
 
 # ========== Import Schemas (whitelist para evitar mass assignment) ==========
+
 
 class ComputerUseTemplateImport(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)

@@ -95,8 +95,12 @@ class ConversationListResponse(ConversationResponse):
     # itself (only channel_connection_id is), added here so the frontend
     # can show a platform badge without a second round-trip per conversation.
     platform: str | None = None
-    last_direction: str | None = None  # "inbound" | "outbound" of the most recent message
-    ai_responded: bool = False  # has the AI (an outbound message) ever replied in this thread
+    last_direction: str | None = (
+        None  # "inbound" | "outbound" of the most recent message
+    )
+    ai_responded: bool = (
+        False  # has the AI (an outbound message) ever replied in this thread
+    )
 
 
 # Message schemas

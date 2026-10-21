@@ -37,6 +37,7 @@ router = APIRouter(prefix="/autopilot", tags=["Autopilot"])
 # Config
 # ---------------------------------------------------------------------------
 
+
 @router.get("/config/{business_id}", response_model=AutopilotConfigResponse)
 async def get_autopilot_config(
     business_id: UUID,
@@ -70,6 +71,7 @@ async def update_autopilot_config(
 # Status & Overview
 # ---------------------------------------------------------------------------
 
+
 @router.get("/status/{business_id}", response_model=AutopilotStatusResponse)
 async def get_autopilot_status(
     business_id: UUID,
@@ -84,6 +86,7 @@ async def get_autopilot_status(
     # Get today's revenue
     today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
     from sqlalchemy import func as sa_func
+
     revenue_result = await db.execute(
         select(sa_func.sum(AutopilotActionLog.revenue_impact)).where(
             AutopilotActionLog.business_id == business_id,
@@ -120,21 +123,27 @@ async def get_autopilot_overview(
 
     # Pending actions
     pending_result = await db.execute(
-        select(AutopilotActionLog).where(
+        select(AutopilotActionLog)
+        .where(
             AutopilotActionLog.business_id == business_id,
             AutopilotActionLog.status == AutopilotActionStatus.PENDING_APPROVAL,
-        ).order_by(desc(AutopilotActionLog.created_at)).limit(10)
+        )
+        .order_by(desc(AutopilotActionLog.created_at))
+        .limit(10)
     )
     pending_actions = pending_result.scalars().all()
 
     # Escalations (last 24h)
     since = datetime.now(UTC) - timedelta(hours=24)
     escalated_result = await db.execute(
-        select(AutopilotActionLog).where(
+        select(AutopilotActionLog)
+        .where(
             AutopilotActionLog.business_id == business_id,
             AutopilotActionLog.status == AutopilotActionStatus.ESCALATED,
             AutopilotActionLog.created_at >= since,
-        ).order_by(desc(AutopilotActionLog.created_at)).limit(10)
+        )
+        .order_by(desc(AutopilotActionLog.created_at))
+        .limit(10)
     )
     escalations = escalated_result.scalars().all()
 
@@ -145,14 +154,18 @@ async def get_autopilot_overview(
         "leads_contacted_today": latest_report.leads_contacted if latest_report else 0,
     }
 
-    message = latest_report.ai_summary if latest_report else "No hay reporte disponible aún."
+    message = (
+        latest_report.ai_summary if latest_report else "No hay reporte disponible aún."
+    )
 
     return AutopilotOverviewResponse(
         business_id=business_id,
         message=message,
         period=period,
         summary=summary,
-        pending_actions=[AutopilotActionLogResponse.model_validate(a) for a in pending_actions],
+        pending_actions=[
+            AutopilotActionLogResponse.model_validate(a) for a in pending_actions
+        ],
         escalations=[AutopilotActionLogResponse.model_validate(a) for a in escalations],
     )
 
@@ -160,6 +173,7 @@ async def get_autopilot_overview(
 # ---------------------------------------------------------------------------
 # Audit Log
 # ---------------------------------------------------------------------------
+
 
 @router.get("/audit-log/{business_id}", response_model=list[AutopilotActionLogResponse])
 async def list_audit_logs(
@@ -182,7 +196,9 @@ async def list_audit_logs(
     if entity_type:
         query = query.where(AutopilotActionLog.entity_type == entity_type)
 
-    query = query.order_by(desc(AutopilotActionLog.created_at)).offset(offset).limit(limit)
+    query = (
+        query.order_by(desc(AutopilotActionLog.created_at)).offset(offset).limit(limit)
+    )
     result = await db.execute(query)
     logs = result.scalars().all()
     return [AutopilotActionLogResponse.model_validate(log) for log in logs]
@@ -192,6 +208,7 @@ async def list_audit_logs(
 # Approve / Reject
 # ---------------------------------------------------------------------------
 
+
 @router.post("/approve/{action_id}", response_model=AutopilotActionLogResponse)
 async def approve_action(
     action_id: UUID,
@@ -200,7 +217,9 @@ async def approve_action(
     req: AutopilotActionApproveRequest | None = None,
 ):
     engine = AutopilotEngine(db)
-    log = await engine.approve_action(action_id, current_user.id, req.reason if req else None)
+    log = await engine.approve_action(
+        action_id, current_user.id, req.reason if req else None
+    )
     if not log:
         raise HTTPException(status_code=404, detail="Action not found or not pending")
     return AutopilotActionLogResponse.model_validate(log)
@@ -223,6 +242,7 @@ async def reject_action(
 # ---------------------------------------------------------------------------
 # Pause / Resume
 # ---------------------------------------------------------------------------
+
 
 @router.post("/pause/{business_id}", response_model=AutopilotConfigResponse)
 async def pause_autopilot(
@@ -261,7 +281,10 @@ async def resume_autopilot(
 # Daily Reports
 # ---------------------------------------------------------------------------
 
-@router.get("/daily-reports/{business_id}", response_model=list[AutopilotDailyReportResponse])
+
+@router.get(
+    "/daily-reports/{business_id}", response_model=list[AutopilotDailyReportResponse]
+)
 async def list_daily_reports(
     business_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -269,9 +292,12 @@ async def list_daily_reports(
     limit: int = 30,
 ):
     result = await db.execute(
-        select(AutopilotDailyReport).where(
+        select(AutopilotDailyReport)
+        .where(
             AutopilotDailyReport.business_id == business_id,
-        ).order_by(desc(AutopilotDailyReport.report_date)).limit(limit)
+        )
+        .order_by(desc(AutopilotDailyReport.report_date))
+        .limit(limit)
     )
     reports = result.scalars().all()
     return [AutopilotDailyReportResponse.model_validate(r) for r in reports]
@@ -280,6 +306,7 @@ async def list_daily_reports(
 # ---------------------------------------------------------------------------
 # Overnight Report (Mientras Dormías)
 # ---------------------------------------------------------------------------
+
 
 @router.get("/overnight-report/{business_id}", response_model=OvernightReportResponse)
 async def get_overnight_report(

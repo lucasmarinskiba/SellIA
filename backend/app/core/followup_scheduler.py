@@ -14,7 +14,9 @@ from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 
-FOLLOWUP_SCAN_INTERVAL_SECONDS = 1800  # 30 min — cold-lead detection doesn't need tighter polling
+FOLLOWUP_SCAN_INTERVAL_SECONDS = (
+    1800  # 30 min — cold-lead detection doesn't need tighter polling
+)
 
 _running = False
 

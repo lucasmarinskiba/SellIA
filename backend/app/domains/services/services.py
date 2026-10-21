@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 # SERVICE DELIVERIES
 # ============================================================
 
+
 async def list_service_deliveries(
     db: AsyncSession,
     business_id: uuid.UUID,
@@ -47,16 +48,22 @@ async def list_service_deliveries(
     total_result = await db.execute(select(func.count()).select_from(query.subquery()))
     total = total_result.scalar() or 0
 
-    query = query.order_by(desc(ServiceDelivery.scheduled_at)).limit(limit).offset(offset)
+    query = (
+        query.order_by(desc(ServiceDelivery.scheduled_at)).limit(limit).offset(offset)
+    )
     result = await db.execute(query)
     return result.scalars().all(), total
 
 
-async def get_service_delivery(db: AsyncSession, delivery_id: uuid.UUID) -> ServiceDelivery | None:
+async def get_service_delivery(
+    db: AsyncSession, delivery_id: uuid.UUID
+) -> ServiceDelivery | None:
     return await db.get(ServiceDelivery, delivery_id)
 
 
-async def create_service_delivery(db: AsyncSession, business_id: uuid.UUID, data: dict[str, Any]) -> ServiceDelivery:
+async def create_service_delivery(
+    db: AsyncSession, business_id: uuid.UUID, data: dict[str, Any]
+) -> ServiceDelivery:
     delivery = ServiceDelivery(
         business_id=business_id,
         order_id=data["order_id"],
@@ -73,15 +80,20 @@ async def create_service_delivery(db: AsyncSession, business_id: uuid.UUID, data
     await db.commit()
     await db.refresh(delivery)
 
-    await emit_event("service_delivery_created", {
-        "delivery_id": str(delivery.id),
-        "order_id": str(delivery.order_id),
-        "business_id": str(business_id),
-    })
+    await emit_event(
+        "service_delivery_created",
+        {
+            "delivery_id": str(delivery.id),
+            "order_id": str(delivery.order_id),
+            "business_id": str(business_id),
+        },
+    )
     return delivery
 
 
-async def update_service_delivery(db: AsyncSession, delivery: ServiceDelivery, data: dict[str, Any]) -> ServiceDelivery:
+async def update_service_delivery(
+    db: AsyncSession, delivery: ServiceDelivery, data: dict[str, Any]
+) -> ServiceDelivery:
     for field, value in data.items():
         if value is not None and hasattr(delivery, field):
             setattr(delivery, field, value)
@@ -91,7 +103,9 @@ async def update_service_delivery(db: AsyncSession, delivery: ServiceDelivery, d
     return delivery
 
 
-async def complete_service_delivery(db: AsyncSession, delivery: ServiceDelivery) -> ServiceDelivery:
+async def complete_service_delivery(
+    db: AsyncSession, delivery: ServiceDelivery
+) -> ServiceDelivery:
     delivery.status = ServiceDeliveryStatus.COMPLETED
     delivery.completed_at = datetime.now(UTC)
 
@@ -104,14 +118,19 @@ async def complete_service_delivery(db: AsyncSession, delivery: ServiceDelivery)
     await db.commit()
     await db.refresh(delivery)
 
-    await emit_event("service_completed", {
-        "delivery_id": str(delivery.id),
-        "order_id": str(delivery.order_id),
-    })
+    await emit_event(
+        "service_completed",
+        {
+            "delivery_id": str(delivery.id),
+            "order_id": str(delivery.order_id),
+        },
+    )
     return delivery
 
 
-async def cancel_service_delivery(db: AsyncSession, delivery: ServiceDelivery) -> ServiceDelivery:
+async def cancel_service_delivery(
+    db: AsyncSession, delivery: ServiceDelivery
+) -> ServiceDelivery:
     delivery.status = ServiceDeliveryStatus.CANCELLED
     delivery.cancelled_at = datetime.now(UTC)
     await db.commit()
@@ -122,6 +141,7 @@ async def cancel_service_delivery(db: AsyncSession, delivery: ServiceDelivery) -
 # ============================================================
 # APPOINTMENTS
 # ============================================================
+
 
 async def list_appointments(
     db: AsyncSession,
@@ -151,11 +171,15 @@ async def list_appointments(
     return result.scalars().all(), total
 
 
-async def get_appointment(db: AsyncSession, appointment_id: uuid.UUID) -> Appointment | None:
+async def get_appointment(
+    db: AsyncSession, appointment_id: uuid.UUID
+) -> Appointment | None:
     return await db.get(Appointment, appointment_id)
 
 
-async def create_appointment(db: AsyncSession, business_id: uuid.UUID, data: dict[str, Any]) -> Appointment:
+async def create_appointment(
+    db: AsyncSession, business_id: uuid.UUID, data: dict[str, Any]
+) -> Appointment:
     appt = Appointment(
         business_id=business_id,
         service_delivery_id=data.get("service_delivery_id"),
@@ -186,15 +210,20 @@ async def create_appointment(db: AsyncSession, business_id: uuid.UUID, data: dic
             delivery.modality = appt.modality
             await db.commit()
 
-    await emit_event("appointment_scheduled", {
-        "appointment_id": str(appt.id),
-        "business_id": str(business_id),
-        "start_time": appt.start_time.isoformat(),
-    })
+    await emit_event(
+        "appointment_scheduled",
+        {
+            "appointment_id": str(appt.id),
+            "business_id": str(business_id),
+            "start_time": appt.start_time.isoformat(),
+        },
+    )
     return appt
 
 
-async def update_appointment(db: AsyncSession, appt: Appointment, data: dict[str, Any]) -> Appointment:
+async def update_appointment(
+    db: AsyncSession, appt: Appointment, data: dict[str, Any]
+) -> Appointment:
     for field, value in data.items():
         if value is not None and hasattr(appt, field):
             setattr(appt, field, value)
@@ -258,14 +287,19 @@ async def mark_no_show(db: AsyncSession, appt: Appointment) -> Appointment:
             delivery.status = ServiceDeliveryStatus.NO_SHOW
             await db.commit()
 
-    await emit_event("appointment_no_show", {
-        "appointment_id": str(appt.id),
-        "business_id": str(appt.business_id),
-    })
+    await emit_event(
+        "appointment_no_show",
+        {
+            "appointment_id": str(appt.id),
+            "business_id": str(appt.business_id),
+        },
+    )
     return appt
 
 
-async def send_appointment_reminder(db: AsyncSession, appt: Appointment, channel: str = "whatsapp") -> dict[str, Any]:
+async def send_appointment_reminder(
+    db: AsyncSession, appt: Appointment, channel: str = "whatsapp"
+) -> dict[str, Any]:
     """Send reminder to client about upcoming appointment."""
     message = (
         f"¡Hola {appt.client_name or ''}! 👋\n\n"
@@ -290,6 +324,7 @@ async def send_appointment_reminder(db: AsyncSession, appt: Appointment, channel
             pass
         elif channel in ("whatsapp", "sms", "telegram") and appt.client_phone:
             from app.domains.channels.models import ChannelConnection, ChannelPlatform
+
             result = await db.execute(
                 select(ChannelConnection).where(
                     ChannelConnection.business_id == appt.business_id,
@@ -315,7 +350,9 @@ async def send_appointment_reminder(db: AsyncSession, appt: Appointment, channel
         return {"success": False, "channel": channel, "message": f"Error: {e!s}"}
 
 
-async def request_confirmation(db: AsyncSession, appt: Appointment, channel: str = "whatsapp") -> dict[str, Any]:
+async def request_confirmation(
+    db: AsyncSession, appt: Appointment, channel: str = "whatsapp"
+) -> dict[str, Any]:
     message = (
         f"¡Hola {appt.client_name or ''}! 👋\n\n"
         f"Necesitamos que confirmes tu asistencia a la cita del {appt.start_time.strftime('%d/%m/%Y')} a las {appt.start_time.strftime('%H:%M')}.\n\n"
@@ -326,6 +363,7 @@ async def request_confirmation(db: AsyncSession, appt: Appointment, channel: str
     try:
         if channel in ("whatsapp", "sms") and appt.client_phone:
             from app.domains.channels.models import ChannelConnection, ChannelPlatform
+
             result = await db.execute(
                 select(ChannelConnection).where(
                     ChannelConnection.business_id == appt.business_id,
@@ -344,13 +382,19 @@ async def request_confirmation(db: AsyncSession, appt: Appointment, channel: str
 
         appt.confirmation_sent_at = datetime.now(UTC)
         await db.commit()
-        return {"success": True, "channel": channel, "message": "Solicitud de confirmación enviada"}
+        return {
+            "success": True,
+            "channel": channel,
+            "message": "Solicitud de confirmación enviada",
+        }
     except Exception as e:
         logger.exception("request_confirmation: error inesperado")
         return {"success": False, "channel": channel, "message": f"Error: {e!s}"}
 
 
-async def request_feedback(db: AsyncSession, appt: Appointment, channel: str = "whatsapp") -> dict[str, Any]:
+async def request_feedback(
+    db: AsyncSession, appt: Appointment, channel: str = "whatsapp"
+) -> dict[str, Any]:
     message = (
         f"¡Hola {appt.client_name or ''}! 🙏\n\n"
         f"Gracias por confiar en nosotros para *{appt.service_name or 'nuestro servicio'}*.\n\n"
@@ -361,6 +405,7 @@ async def request_feedback(db: AsyncSession, appt: Appointment, channel: str = "
     try:
         if channel in ("whatsapp", "sms") and appt.client_phone:
             from app.domains.channels.models import ChannelConnection, ChannelPlatform
+
             result = await db.execute(
                 select(ChannelConnection).where(
                     ChannelConnection.business_id == appt.business_id,
@@ -379,7 +424,11 @@ async def request_feedback(db: AsyncSession, appt: Appointment, channel: str = "
 
         appt.feedback_sent_at = datetime.now(UTC)
         await db.commit()
-        return {"success": True, "channel": channel, "message": "Solicitud de feedback enviada"}
+        return {
+            "success": True,
+            "channel": channel,
+            "message": "Solicitud de feedback enviada",
+        }
     except Exception as e:
         logger.exception("request_feedback: error inesperado")
         return {"success": False, "channel": channel, "message": f"Error: {e!s}"}
@@ -388,6 +437,7 @@ async def request_feedback(db: AsyncSession, appt: Appointment, channel: str = "
 # ============================================================
 # AUTOMATED CHECKS
 # ============================================================
+
 
 async def check_upcoming_appointments(db: AsyncSession) -> dict[str, Any]:
     """Find appointments in next 24h and 1h that haven't been reminded."""
@@ -400,7 +450,9 @@ async def check_upcoming_appointments(db: AsyncSession) -> dict[str, Any]:
         select(Appointment).where(
             Appointment.start_time <= in_24h,
             Appointment.start_time > now,
-            Appointment.status.in_([AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED]),
+            Appointment.status.in_(
+                [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED]
+            ),
             Appointment.reminder_sent_at.is_(None),
             Appointment.is_active == True,
         )
@@ -415,7 +467,9 @@ async def check_upcoming_appointments(db: AsyncSession) -> dict[str, Any]:
         select(Appointment).where(
             Appointment.start_time <= in_1h,
             Appointment.start_time > now,
-            Appointment.status.in_([AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED]),
+            Appointment.status.in_(
+                [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED]
+            ),
             Appointment.is_active == True,
         )
     )
@@ -423,7 +477,10 @@ async def check_upcoming_appointments(db: AsyncSession) -> dict[str, Any]:
 
     for appt in appts_1h:
         # Only re-remind if last reminder was more than 30 min ago
-        if appt.reminder_sent_at and (now - appt.reminder_sent_at).total_seconds() > 1800:
+        if (
+            appt.reminder_sent_at
+            and (now - appt.reminder_sent_at).total_seconds() > 1800
+        ):
             await send_appointment_reminder(db, appt)
 
     return {
@@ -438,7 +495,9 @@ async def process_no_shows(db: AsyncSession) -> int:
     result = await db.execute(
         select(Appointment).where(
             Appointment.end_time < now,
-            Appointment.status.in_([AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED]),
+            Appointment.status.in_(
+                [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED]
+            ),
             Appointment.is_active == True,
         )
     )

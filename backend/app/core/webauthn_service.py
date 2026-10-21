@@ -26,13 +26,13 @@ RP_ORIGIN = settings.WEBAUTHN_RP_ORIGIN or "http://localhost:3000"
 
 
 def _base64url_encode(data: bytes) -> str:
-    return base64.urlsafe_b64encode(data).rstrip(b'=').decode('ascii')
+    return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
 
 
 def _base64url_decode(data: str) -> bytes:
     padding = 4 - len(data) % 4
     if padding != 4:
-        data += '=' * padding
+        data += "=" * padding
     return base64.urlsafe_b64decode(data)
 
 
@@ -50,8 +50,8 @@ def generate_registration_options(user_id: uuid.UUID, username: str) -> dict[str
             "displayName": username,
         },
         "pubKeyCredParams": [
-            {"type": "public-key", "alg": -7},   # ES256
-            {"type": "public-key", "alg": -257}, # RS256
+            {"type": "public-key", "alg": -7},  # ES256
+            {"type": "public-key", "alg": -257},  # RS256
         ],
         "authenticatorSelection": {
             "residentKey": "preferred",
@@ -82,7 +82,9 @@ async def register_credential(
     """Registra una credencial WebAuthn."""
     # Check if already exists
     result = await db.execute(
-        select(WebAuthnCredential).where(WebAuthnCredential.credential_id == credential_id)
+        select(WebAuthnCredential).where(
+            WebAuthnCredential.credential_id == credential_id
+        )
     )
     existing = result.scalar_one_or_none()
     if existing:
@@ -107,7 +109,9 @@ async def register_credential(
     return cred
 
 
-async def get_user_credentials(db: AsyncSession, user_id: uuid.UUID) -> list[WebAuthnCredential]:
+async def get_user_credentials(
+    db: AsyncSession, user_id: uuid.UUID
+) -> list[WebAuthnCredential]:
     """Obtiene las credenciales de un usuario."""
     result = await db.execute(
         select(WebAuthnCredential).where(
@@ -136,7 +140,9 @@ async def verify_assertion(
 
     # Anti-replay: sign count must increase
     if new_sign_count <= cred.sign_count:
-        logger.warning(f"Possible replay attack: sign count {new_sign_count} <= {cred.sign_count}")
+        logger.warning(
+            f"Possible replay attack: sign count {new_sign_count} <= {cred.sign_count}"
+        )
         return False
 
     cred.sign_count = new_sign_count
@@ -145,7 +151,9 @@ async def verify_assertion(
     return True
 
 
-async def remove_credential(db: AsyncSession, cred_id: uuid.UUID, user_id: uuid.UUID) -> bool:
+async def remove_credential(
+    db: AsyncSession, cred_id: uuid.UUID, user_id: uuid.UUID
+) -> bool:
     """Elimina una credencial.
 
     `user_id` required and filtered on -- this used to look up cred_id
@@ -154,7 +162,9 @@ async def remove_credential(db: AsyncSession, cred_id: uuid.UUID, user_id: uuid.
     just never proven to own the specific credential being deleted).
     """
     result = await db.execute(
-        select(WebAuthnCredential).where(WebAuthnCredential.id == cred_id, WebAuthnCredential.user_id == user_id)
+        select(WebAuthnCredential).where(
+            WebAuthnCredential.id == cred_id, WebAuthnCredential.user_id == user_id
+        )
     )
     cred = result.scalar_one_or_none()
     if not cred:

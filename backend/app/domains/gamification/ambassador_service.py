@@ -15,11 +15,15 @@ from app.domains.gamification.ambassador_models import (
 
 
 async def list_certifications(db: AsyncSession) -> list[CertificationProgram]:
-    result = await db.execute(select(CertificationProgram).where(CertificationProgram.is_active == True))
+    result = await db.execute(
+        select(CertificationProgram).where(CertificationProgram.is_active == True)
+    )
     return result.scalars().all()
 
 
-async def get_user_certifications(db: AsyncSession, user_id: uuid.UUID) -> list[UserCertification]:
+async def get_user_certifications(
+    db: AsyncSession, user_id: uuid.UUID
+) -> list[UserCertification]:
     result = await db.execute(
         select(UserCertification)
         .where(UserCertification.user_id == user_id)
@@ -28,8 +32,12 @@ async def get_user_certifications(db: AsyncSession, user_id: uuid.UUID) -> list[
     return result.scalars().all()
 
 
-async def get_or_create_expert_profile(db: AsyncSession, user_id: uuid.UUID) -> PublicExpertProfile:
-    result = await db.execute(select(PublicExpertProfile).where(PublicExpertProfile.user_id == user_id))
+async def get_or_create_expert_profile(
+    db: AsyncSession, user_id: uuid.UUID
+) -> PublicExpertProfile:
+    result = await db.execute(
+        select(PublicExpertProfile).where(PublicExpertProfile.user_id == user_id)
+    )
     profile = result.scalar_one_or_none()
     if not profile:
         profile = PublicExpertProfile(
@@ -45,7 +53,9 @@ async def get_or_create_expert_profile(db: AsyncSession, user_id: uuid.UUID) -> 
     return profile
 
 
-async def publish_profile(db: AsyncSession, user_id: uuid.UUID, data: dict) -> PublicExpertProfile:
+async def publish_profile(
+    db: AsyncSession, user_id: uuid.UUID, data: dict
+) -> PublicExpertProfile:
     profile = await get_or_create_expert_profile(db, user_id)
     for field, value in data.items():
         if value is not None and hasattr(profile, field):

@@ -34,12 +34,14 @@ class MetricsCollector:
     """Colecta metrics en tiempo real."""
 
     def __init__(self):
-        self.metrics: dict[str, Any] = defaultdict(lambda: {
-            "count": 0,
-            "total": 0,
-            "min": float("inf"),
-            "max": 0,
-        })
+        self.metrics: dict[str, Any] = defaultdict(
+            lambda: {
+                "count": 0,
+                "total": 0,
+                "min": float("inf"),
+                "max": 0,
+            }
+        )
         self.events: list[dict[str, Any]] = []
         self.lock = asyncio.Lock()
         self.max_events = 10000  # Keep last N events
@@ -68,7 +70,7 @@ class MetricsCollector:
 
             # Cleanup old events
             if len(self.events) > self.max_events:
-                self.events = self.events[-self.max_events:]
+                self.events = self.events[-self.max_events :]
 
     async def get_metric(self, metric_name: str) -> dict[str, Any] | None:
         """Obtiene stats de un metric."""
@@ -165,39 +167,47 @@ class MonitoringDashboard:
         # High queue depth
         queue_stats = await self.job_queue.get_stats()
         if queue_stats["queued"] > 100:
-            alerts.append({
-                "severity": "high",
-                "message": f"Queue backing up: {queue_stats['queued']} jobs waiting",
-                "timestamp": utc_now().isoformat(),
-            })
+            alerts.append(
+                {
+                    "severity": "high",
+                    "message": f"Queue backing up: {queue_stats['queued']} jobs waiting",
+                    "timestamp": utc_now().isoformat(),
+                }
+            )
 
         # Dead letters
         if queue_stats["dead_letter"] > 10:
-            alerts.append({
-                "severity": "medium",
-                "message": f"{queue_stats['dead_letter']} jobs in dead letter queue",
-                "timestamp": utc_now().isoformat(),
-            })
+            alerts.append(
+                {
+                    "severity": "medium",
+                    "message": f"{queue_stats['dead_letter']} jobs in dead letter queue",
+                    "timestamp": utc_now().isoformat(),
+                }
+            )
 
         # High escalation rate
         escalations = await self.escalation_handler.get_pending_escalations(limit=1)
         if len(escalations) > 5:
-            alerts.append({
-                "severity": "high",
-                "message": f"{len(escalations)} unresolved escalations",
-                "timestamp": utc_now().isoformat(),
-            })
+            alerts.append(
+                {
+                    "severity": "high",
+                    "message": f"{len(escalations)} unresolved escalations",
+                    "timestamp": utc_now().isoformat(),
+                }
+            )
 
         # Low success rate
         stats = await self.state_manager.get_statistics(hours=1)
         success_rate_str = stats.get("success_rate", "0%")
         success_rate = float(success_rate_str.rstrip("%"))
         if success_rate < 80:
-            alerts.append({
-                "severity": "medium",
-                "message": f"Low success rate in last hour: {success_rate:.1f}%",
-                "timestamp": utc_now().isoformat(),
-            })
+            alerts.append(
+                {
+                    "severity": "medium",
+                    "message": f"Low success rate in last hour: {success_rate:.1f}%",
+                    "timestamp": utc_now().isoformat(),
+                }
+            )
 
         return alerts
 
@@ -227,7 +237,9 @@ class MonitoringDashboard:
     ) -> None:
         """Registra ciclo de automation engine."""
         await self.metrics_collector.record_metric("cycle.duration", duration)
-        await self.metrics_collector.record_metric("cycle.tasks_processed", tasks_processed)
+        await self.metrics_collector.record_metric(
+            "cycle.tasks_processed", tasks_processed
+        )
 
     async def record_error(self, error_type: str, error_msg: str) -> None:
         """Registra error."""
@@ -311,7 +323,9 @@ class DashboardAPI:
 
     async def get_jobs_table(self, limit: int = 50) -> list[dict[str, Any]]:
         """Obtiene tabla de jobs para UI."""
-        recent_jobs = await self.monitoring.state_manager.get_recent(hours=1, limit=limit)
+        recent_jobs = await self.monitoring.state_manager.get_recent(
+            hours=1, limit=limit
+        )
 
         return [
             {
@@ -319,7 +333,9 @@ class DashboardAPI:
                 "type": job.job_type.value,
                 "status": job.status.value,
                 "created_at": job.created_at.isoformat(),
-                "duration": f"{job.duration_seconds:.2f}s" if job.duration_seconds else "—",
+                "duration": (
+                    f"{job.duration_seconds:.2f}s" if job.duration_seconds else "—"
+                ),
                 "attempts": job.attempts,
             }
             for job in recent_jobs
@@ -327,7 +343,9 @@ class DashboardAPI:
 
     async def get_escalations_table(self, limit: int = 50) -> list[dict[str, Any]]:
         """Obtiene tabla de escalaciones para UI."""
-        escalations = await self.monitoring.escalation_handler.get_pending_escalations(limit=limit)
+        escalations = await self.monitoring.escalation_handler.get_pending_escalations(
+            limit=limit
+        )
 
         return [
             {

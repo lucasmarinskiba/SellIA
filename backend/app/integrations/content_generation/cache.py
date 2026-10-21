@@ -162,6 +162,7 @@ class ContentCache:
 
     def _today(self) -> str:
         from datetime import datetime
+
         return datetime.now(UTC).strftime("%Y-%m-%d")
 
     # ========== Bulk Operations ==========

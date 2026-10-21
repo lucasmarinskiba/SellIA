@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 class UserMemoryResponse(BaseModel):
     """Response model para UserMemory"""
+
     id: str
     user_id: str
 
@@ -51,6 +52,7 @@ class UserMemoryResponse(BaseModel):
 
 class UserMemoryUpdate(BaseModel):
     """Update model para UserMemory"""
+
     preferred_language: str | None = None
     preferred_tone: str | None = None
     industry_focus: str | None = None
@@ -72,6 +74,7 @@ class UserMemoryUpdate(BaseModel):
 
 class UserMemoryEventCreate(BaseModel):
     """Create model para eventos de memoria"""
+
     event_type: str  # message_sent, action_taken, feedback_given, etc.
     event_data: dict[str, Any] = Field(default_factory=dict)
     conversation_id: str | None = None
@@ -81,6 +84,7 @@ class UserMemoryEventCreate(BaseModel):
 
 class UserMemoryEventResponse(BaseModel):
     """Response model para eventos"""
+
     id: str
     user_id: str
     event_type: str
@@ -96,12 +100,14 @@ class UserMemoryEventResponse(BaseModel):
 
 class UserPreferenceUpdate(BaseModel):
     """Update model para UserPreference"""
+
     preference_key: str
     preference_value: dict[str, Any] = Field(default_factory=dict)
 
 
 class UserPreferenceResponse(BaseModel):
     """Response model para UserPreference"""
+
     id: str
     user_id: str
     preference_key: str

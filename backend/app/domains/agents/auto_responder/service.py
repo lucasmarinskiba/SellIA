@@ -16,13 +16,28 @@ from app.domains.memory.service import MemoryEngine
 logger = get_logger(__name__)
 
 BUY_SIGNALS = [
-    "comprar", "compro", "adquirir", "quiero", "precio", "cotización",
-    "cotizacion", "presupuesto", "pagar", "tarjeta", "transferencia",
-    "factura", "confirmo", "dale", "lo quiero", "me interesa",
+    "comprar",
+    "compro",
+    "adquirir",
+    "quiero",
+    "precio",
+    "cotización",
+    "cotizacion",
+    "presupuesto",
+    "pagar",
+    "tarjeta",
+    "transferencia",
+    "factura",
+    "confirmo",
+    "dale",
+    "lo quiero",
+    "me interesa",
 ]
 
 
-async def check_and_respond(db: AsyncSession, business_id: uuid.UUID) -> list[dict[str, Any]]:
+async def check_and_respond(
+    db: AsyncSession, business_id: uuid.UUID
+) -> list[dict[str, Any]]:
     """
     Celery task logic that checks for conversations matching trigger rules
     and sends auto-responses.
@@ -45,12 +60,13 @@ async def check_and_respond(db: AsyncSession, business_id: uuid.UUID) -> list[di
     now = datetime.now(UTC)
 
     for rule in rules:
-        matched_conversations = await _find_matching_conversations(db, business_id, rule, now)
+        matched_conversations = await _find_matching_conversations(
+            db, business_id, rule, now
+        )
         for conv in matched_conversations:
             # Skip if already auto-responded recently
             recent_log = await db.execute(
-                select(AutoResponseLog)
-                .where(
+                select(AutoResponseLog).where(
                     AutoResponseLog.conversation_id == conv.id,
                     AutoResponseLog.rule_id == rule.id,
                     AutoResponseLog.created_at >= now - timedelta(hours=1),
@@ -63,12 +79,18 @@ async def check_and_respond(db: AsyncSession, business_id: uuid.UUID) -> list[di
             memory_engine = MemoryEngine(db)
             customer_memories = []
             try:
-                customer_id = conv.extra_data.get("customer_id") if conv.extra_data else None
+                customer_id = (
+                    conv.extra_data.get("customer_id") if conv.extra_data else None
+                )
                 if customer_id:
-                    profile = await memory_engine.get_customer_profile_summary(uuid.UUID(customer_id))
+                    profile = await memory_engine.get_customer_profile_summary(
+                        uuid.UUID(customer_id)
+                    )
                     customer_memories = [profile] if profile else []
             except Exception as e:
-                logger.warning(f"Memory load failed for conversation {conv.id}: {e}", exc_info=True)
+                logger.warning(
+                    f"Memory load failed for conversation {conv.id}: {e}", exc_info=True
+                )
 
             # Check for buy-ready signals
             last_msg_result = await db.execute(
@@ -121,13 +143,15 @@ async def check_and_respond(db: AsyncSession, business_id: uuid.UUID) -> list[di
             )
             db.add(log)
 
-            results.append({
-                "conversation_id": conv.id,
-                "rule_id": rule.id,
-                "trigger_type": rule.trigger_type,
-                "response_sent": response_text,
-                "has_buy_signal": has_buy_signal,
-            })
+            results.append(
+                {
+                    "conversation_id": conv.id,
+                    "rule_id": rule.id,
+                    "trigger_type": rule.trigger_type,
+                    "response_sent": response_text,
+                    "has_buy_signal": has_buy_signal,
+                }
+            )
 
     await db.commit()
     return results
@@ -167,7 +191,9 @@ async def _find_matching_conversations(
             )
             for kw in keywords[1:]:
                 msg_stmt = msg_stmt.union(
-                    select(Message.conversation_id).where(Message.content.ilike(f"%{kw}%"))
+                    select(Message.conversation_id).where(
+                        Message.content.ilike(f"%{kw}%")
+                    )
                 )
             subq = msg_stmt.subquery()
             stmt = stmt.where(Conversation.id.in_(subq))
@@ -176,6 +202,7 @@ async def _find_matching_conversations(
         tz_name = rule.trigger_config.get("timezone", "UTC")
         try:
             import zoneinfo
+
             tz = zoneinfo.ZoneInfo(tz_name)
         except Exception:
             logger.exception("_find_matching_conversations: error inesperado")

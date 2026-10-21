@@ -17,11 +17,29 @@ logger = logging.getLogger(__name__)
 
 # Keywords que disparan escalamiento inmediato a CRITICAL
 URGENT_KEYWORDS = [
-    "hackeado", "hack", "robo", "fraude", "estafa", "phishing",
-    "no funciona", "caído", "down", "error crítico", "bloqueado",
-    "dinero", "pago", "cobro", "facturación", "tarjeta",
-    "urgente", "emergencia", "ahora", "inmediato",
-    "eliminar cuenta", "borrar datos", "gdpr",
+    "hackeado",
+    "hack",
+    "robo",
+    "fraude",
+    "estafa",
+    "phishing",
+    "no funciona",
+    "caído",
+    "down",
+    "error crítico",
+    "bloqueado",
+    "dinero",
+    "pago",
+    "cobro",
+    "facturación",
+    "tarjeta",
+    "urgente",
+    "emergencia",
+    "ahora",
+    "inmediato",
+    "eliminar cuenta",
+    "borrar datos",
+    "gdpr",
 ]
 
 
@@ -72,6 +90,7 @@ Classify this ticket:"""
             return TicketCategory.OTHER, TicketPriority.MEDIUM, 0.5
 
         import json
+
         data = json.loads(response.strip())
 
         category = _safe_category(data.get("category", "other"))

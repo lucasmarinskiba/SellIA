@@ -25,14 +25,90 @@ from app.domains.enterprise.forecasting_models import DealOutcome
 # linguistics library, just enough to keep "que", "the", "de" etc. from
 # drowning out actually distinctive words in the counts.
 _STOPWORDS = {
-    "el", "la", "los", "las", "un", "una", "unos", "unas", "de", "del", "al",
-    "que", "y", "o", "a", "en", "es", "por", "para", "con", "su", "sus", "se",
-    "lo", "le", "les", "te", "me", "mi", "tu", "nos", "si", "no", "ya", "muy",
-    "mas", "más", "pero", "como", "cuando", "donde", "qué", "esta", "este",
-    "esa", "ese", "eso", "esto", "hay", "ha", "he", "vas", "voy", "son",
-    "the", "an", "to", "of", "for", "and", "or", "is", "are", "in", "on",
-    "it", "you", "your", "we", "our", "i", "this", "that", "with", "be", "at",
-    "hola", "gracias", "buenas", "buenos", "dias", "días", "tardes", "noches",
+    "el",
+    "la",
+    "los",
+    "las",
+    "un",
+    "una",
+    "unos",
+    "unas",
+    "de",
+    "del",
+    "al",
+    "que",
+    "y",
+    "o",
+    "a",
+    "en",
+    "es",
+    "por",
+    "para",
+    "con",
+    "su",
+    "sus",
+    "se",
+    "lo",
+    "le",
+    "les",
+    "te",
+    "me",
+    "mi",
+    "tu",
+    "nos",
+    "si",
+    "no",
+    "ya",
+    "muy",
+    "mas",
+    "más",
+    "pero",
+    "como",
+    "cuando",
+    "donde",
+    "qué",
+    "esta",
+    "este",
+    "esa",
+    "ese",
+    "eso",
+    "esto",
+    "hay",
+    "ha",
+    "he",
+    "vas",
+    "voy",
+    "son",
+    "the",
+    "an",
+    "to",
+    "of",
+    "for",
+    "and",
+    "or",
+    "is",
+    "are",
+    "in",
+    "on",
+    "it",
+    "you",
+    "your",
+    "we",
+    "our",
+    "i",
+    "this",
+    "that",
+    "with",
+    "be",
+    "at",
+    "hola",
+    "gracias",
+    "buenas",
+    "buenos",
+    "dias",
+    "días",
+    "tardes",
+    "noches",
 }
 _WORD_RE = re.compile(r"[a-zA-Záéíóúñü]{3,}", re.IGNORECASE)
 
@@ -66,7 +142,9 @@ class ConversationPatternAnalyzer:
             if not conv_ids:
                 return None
             count_result = await db.execute(
-                select(func.count(Message.id)).where(Message.conversation_id.in_(conv_ids))
+                select(func.count(Message.id)).where(
+                    Message.conversation_id.in_(conv_ids)
+                )
             )
             total_messages = count_result.scalar() or 0
             return round(total_messages / len(conv_ids), 1)
@@ -76,12 +154,20 @@ class ConversationPatternAnalyzer:
             if not conv_ids:
                 return {}
             conv_result = await db.execute(
-                select(Conversation.id, Conversation.extra_data).where(Conversation.id.in_(conv_ids))
+                select(Conversation.id, Conversation.extra_data).where(
+                    Conversation.id.in_(conv_ids)
+                )
             )
             personality_by_conv = {}
             for conv_id, extra_data in conv_result.all():
-                tracking = (extra_data or {}).get("personality_ab") or (extra_data or {}).get("funnel_ab")
-                slug = tracking.get("agent_type") or tracking.get("stage") if tracking else None
+                tracking = (extra_data or {}).get("personality_ab") or (
+                    extra_data or {}
+                ).get("funnel_ab")
+                slug = (
+                    tracking.get("agent_type") or tracking.get("stage")
+                    if tracking
+                    else None
+                )
                 if slug:
                     personality_by_conv[conv_id] = slug
 
@@ -101,8 +187,24 @@ class ConversationPatternAnalyzer:
                 for slug, counts in tally.items()
             }
 
-        avg_days_won = round(sum(o.days_to_close for o, _ in won if o.days_to_close is not None) / max(len([o for o, _ in won if o.days_to_close is not None]), 1), 1) if won else None
-        avg_days_lost = round(sum(o.days_to_close for o, _ in lost if o.days_to_close is not None) / max(len([o for o, _ in lost if o.days_to_close is not None]), 1), 1) if lost else None
+        avg_days_won = (
+            round(
+                sum(o.days_to_close for o, _ in won if o.days_to_close is not None)
+                / max(len([o for o, _ in won if o.days_to_close is not None]), 1),
+                1,
+            )
+            if won
+            else None
+        )
+        avg_days_lost = (
+            round(
+                sum(o.days_to_close for o, _ in lost if o.days_to_close is not None)
+                / max(len([o for o, _ in lost if o.days_to_close is not None]), 1),
+                1,
+            )
+            if lost
+            else None
+        )
 
         return {
             "sample_size": {"won": len(won), "lost": len(lost)},
@@ -124,7 +226,9 @@ class ConversationPatternAnalyzer:
         result = await db.execute(
             select(DealOutcome.outcome, Deal.conversation_id)
             .join(Deal, Deal.id == DealOutcome.deal_id)
-            .where(DealOutcome.business_id == business_id, Deal.conversation_id.isnot(None))
+            .where(
+                DealOutcome.business_id == business_id, Deal.conversation_id.isnot(None)
+            )
         )
         rows = result.all()
         won_conv_ids = [c for outcome, c in rows if outcome == "won"]
@@ -148,7 +252,14 @@ class ConversationPatternAnalyzer:
         lost_counts = await _word_counts(lost_conv_ids)
 
         return {
-            "sample_size": {"won_conversations": len(won_conv_ids), "lost_conversations": len(lost_conv_ids)},
-            "top_words_in_won": [{"word": w, "count": c} for w, c in won_counts.most_common(limit)],
-            "top_words_in_lost": [{"word": w, "count": c} for w, c in lost_counts.most_common(limit)],
+            "sample_size": {
+                "won_conversations": len(won_conv_ids),
+                "lost_conversations": len(lost_conv_ids),
+            },
+            "top_words_in_won": [
+                {"word": w, "count": c} for w, c in won_counts.most_common(limit)
+            ],
+            "top_words_in_lost": [
+                {"word": w, "count": c} for w, c in lost_counts.most_common(limit)
+            ],
         }

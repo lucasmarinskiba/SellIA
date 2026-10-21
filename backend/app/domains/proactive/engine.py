@@ -34,52 +34,108 @@ OPPORTUNITY_TYPES = [
 # Detector relevance by business type (score 0-100)
 DETECTOR_RELEVANCE = {
     "cart_abandonment": {
-        "physical_products": 95, "digital_products": 90, "services": 30,
-        "consulting": 20, "software": 60, "food_beverage": 85,
-        "fashion_beauty": 95, "health_wellness": 80, "home_decor": 90,
-        "handcraft": 85, "other": 70,
+        "physical_products": 95,
+        "digital_products": 90,
+        "services": 30,
+        "consulting": 20,
+        "software": 60,
+        "food_beverage": 85,
+        "fashion_beauty": 95,
+        "health_wellness": 80,
+        "home_decor": 90,
+        "handcraft": 85,
+        "other": 70,
     },
     "re_engagement": {
-        "physical_products": 80, "digital_products": 85, "services": 90,
-        "consulting": 90, "software": 95, "food_beverage": 75,
-        "fashion_beauty": 80, "health_wellness": 85, "home_decor": 75,
-        "handcraft": 70, "other": 80,
+        "physical_products": 80,
+        "digital_products": 85,
+        "services": 90,
+        "consulting": 90,
+        "software": 95,
+        "food_beverage": 75,
+        "fashion_beauty": 80,
+        "health_wellness": 85,
+        "home_decor": 75,
+        "handcraft": 70,
+        "other": 80,
     },
     "product_recommendation": {
-        "physical_products": 95, "digital_products": 90, "services": 40,
-        "consulting": 30, "software": 70, "food_beverage": 80,
-        "fashion_beauty": 95, "health_wellness": 85, "home_decor": 90,
-        "handcraft": 85, "other": 75,
+        "physical_products": 95,
+        "digital_products": 90,
+        "services": 40,
+        "consulting": 30,
+        "software": 70,
+        "food_beverage": 80,
+        "fashion_beauty": 95,
+        "health_wellness": 85,
+        "home_decor": 90,
+        "handcraft": 85,
+        "other": 75,
     },
     "anniversary": {
-        "physical_products": 70, "digital_products": 70, "services": 80,
-        "consulting": 85, "software": 75, "food_beverage": 70,
-        "fashion_beauty": 75, "health_wellness": 80, "home_decor": 70,
-        "handcraft": 70, "other": 70,
+        "physical_products": 70,
+        "digital_products": 70,
+        "services": 80,
+        "consulting": 85,
+        "software": 75,
+        "food_beverage": 70,
+        "fashion_beauty": 75,
+        "health_wellness": 80,
+        "home_decor": 70,
+        "handcraft": 70,
+        "other": 70,
     },
     "birthday": {
-        "physical_products": 70, "digital_products": 70, "services": 80,
-        "consulting": 85, "software": 75, "food_beverage": 70,
-        "fashion_beauty": 75, "health_wellness": 80, "home_decor": 70,
-        "handcraft": 70, "other": 70,
+        "physical_products": 70,
+        "digital_products": 70,
+        "services": 80,
+        "consulting": 85,
+        "software": 75,
+        "food_beverage": 70,
+        "fashion_beauty": 75,
+        "health_wellness": 80,
+        "home_decor": 70,
+        "handcraft": 70,
+        "other": 70,
     },
     "price_drop": {
-        "physical_products": 90, "digital_products": 85, "services": 50,
-        "consulting": 40, "software": 70, "food_beverage": 75,
-        "fashion_beauty": 90, "health_wellness": 75, "home_decor": 85,
-        "handcraft": 80, "other": 70,
+        "physical_products": 90,
+        "digital_products": 85,
+        "services": 50,
+        "consulting": 40,
+        "software": 70,
+        "food_beverage": 75,
+        "fashion_beauty": 90,
+        "health_wellness": 75,
+        "home_decor": 85,
+        "handcraft": 80,
+        "other": 70,
     },
     "back_in_stock": {
-        "physical_products": 95, "digital_products": 20, "services": 10,
-        "consulting": 10, "software": 30, "food_beverage": 80,
-        "fashion_beauty": 90, "health_wellness": 70, "home_decor": 85,
-        "handcraft": 80, "other": 60,
+        "physical_products": 95,
+        "digital_products": 20,
+        "services": 10,
+        "consulting": 10,
+        "software": 30,
+        "food_beverage": 80,
+        "fashion_beauty": 90,
+        "health_wellness": 70,
+        "home_decor": 85,
+        "handcraft": 80,
+        "other": 60,
     },
     "churn_risk": {
-        "physical_products": 60, "digital_products": 80, "services": 85,
-        "consulting": 90, "software": 95, "food_beverage": 50,
-        "fashion_beauty": 60, "health_wellness": 75, "home_decor": 55,
-        "handcraft": 50, "other": 70,
+        "physical_products": 60,
+        "digital_products": 80,
+        "services": 85,
+        "consulting": 90,
+        "software": 95,
+        "food_beverage": 50,
+        "fashion_beauty": 60,
+        "health_wellness": 75,
+        "home_decor": 55,
+        "handcraft": 50,
+        "other": 70,
     },
 }
 
@@ -97,6 +153,7 @@ class ProactiveEngine:
             from sqlalchemy import select
 
             from app.domains.business_context.models import BusinessContext
+
             # SAVEPOINT: this lookup swallows its own failure, and a failed statement
             # would otherwise leave the shared transaction aborted for everything after it.
             async with self.db.begin_nested():
@@ -109,14 +166,19 @@ class ProactiveEngine:
             btype = result.scalar_one_or_none()
             return btype.value if btype else None
         except Exception as exc:
-            logger.debug(f"Could not load business_type for proactive engine: {exc}", exc_info=True)
+            logger.debug(
+                f"Could not load business_type for proactive engine: {exc}",
+                exc_info=True,
+            )
             return None
 
     # ------------------------------------------------------------------
     # Opportunity Detection
     # ------------------------------------------------------------------
 
-    async def detect_opportunities(self, business_id: uuid.UUID) -> list[OutreachOpportunity]:
+    async def detect_opportunities(
+        self, business_id: uuid.UUID
+    ) -> list[OutreachOpportunity]:
         """Run all opportunity detectors for a business and return created opportunities.
 
         Detectors are filtered by business type relevance so a software company
@@ -155,7 +217,9 @@ class ProactiveEngine:
             if business_type:
                 relevance = DETECTOR_RELEVANCE.get(opp_type, {}).get(business_type, 50)
                 if relevance < 40:
-                    logger.debug(f"Skipping detector {detector.__name__} for business {business_id} (type={business_type}, relevance={relevance})")
+                    logger.debug(
+                        f"Skipping detector {detector.__name__} for business {business_id} (type={business_type}, relevance={relevance})"
+                    )
                     continue
 
             try:
@@ -169,7 +233,9 @@ class ProactiveEngine:
                     detected = await detector(business_id, rules_by_type)
                 opportunities.extend(detected)
             except Exception:
-                logger.exception(f"Detector {detector.__name__} failed for business {business_id}")
+                logger.exception(
+                    f"Detector {detector.__name__} failed for business {business_id}"
+                )
 
         if opportunities:
             await self.db.commit()
@@ -191,13 +257,10 @@ class ProactiveEngine:
 
         since = datetime.now(UTC) - timedelta(hours=hours)
 
-        stmt = (
-            select(Order)
-            .where(
-                Order.business_id == business_id,
-                Order.status == "pending",
-                Order.created_at < since,
-            )
+        stmt = select(Order).where(
+            Order.business_id == business_id,
+            Order.status == "pending",
+            Order.created_at < since,
         )
         if min_value:
             stmt = stmt.where(Order.total_amount >= min_value)
@@ -207,7 +270,9 @@ class ProactiveEngine:
 
         created: list[OutreachOpportunity] = []
         for order in orders:
-            customer_id = await self._customer_id_from_conversation(order.conversation_id)
+            customer_id = await self._customer_id_from_conversation(
+                order.conversation_id
+            )
             if not customer_id:
                 continue
 
@@ -217,7 +282,9 @@ class ProactiveEngine:
                     OutreachOpportunity.business_id == business_id,
                     OutreachOpportunity.customer_id == customer_id,
                     OutreachOpportunity.opportunity_type == "cart_abandonment",
-                    OutreachOpportunity.trigger_data.contains({"order_id": str(order.id)}),
+                    OutreachOpportunity.trigger_data.contains(
+                        {"order_id": str(order.id)}
+                    ),
                 )
             )
             if existing.scalar_one_or_none():
@@ -227,10 +294,16 @@ class ProactiveEngine:
                 business_id=business_id,
                 customer_id=customer_id,
                 opportunity_type="cart_abandonment",
-                priority="high" if order.total_amount and float(order.total_amount) > 200 else "medium",
+                priority=(
+                    "high"
+                    if order.total_amount and float(order.total_amount) > 200
+                    else "medium"
+                ),
                 trigger_data={
                     "order_id": str(order.id),
-                    "total_amount": str(order.total_amount) if order.total_amount else None,
+                    "total_amount": (
+                        str(order.total_amount) if order.total_amount else None
+                    ),
                     "currency": order.currency,
                     "items": order.items,
                 },
@@ -255,13 +328,10 @@ class ProactiveEngine:
         since = datetime.now(UTC) - timedelta(days=days)
 
         # Find conversations for this business with last_message_at older than `since`
-        stmt = (
-            select(Conversation)
-            .where(
-                Conversation.business_id == business_id,
-                Conversation.is_active == True,
-                Conversation.last_message_at < since,
-            )
+        stmt = select(Conversation).where(
+            Conversation.business_id == business_id,
+            Conversation.is_active == True,
+            Conversation.last_message_at < since,
         )
         result = await self.db.execute(stmt)
         conversations = result.scalars().all()
@@ -290,7 +360,11 @@ class ProactiveEngine:
                 priority="medium",
                 trigger_data={
                     "conversation_id": str(conv.id),
-                    "last_message_at": conv.last_message_at.isoformat() if conv.last_message_at else None,
+                    "last_message_at": (
+                        conv.last_message_at.isoformat()
+                        if conv.last_message_at
+                        else None
+                    ),
                     "days_inactive": days,
                 },
                 suggested_channel=rules[0].channel if rules else "whatsapp",
@@ -353,7 +427,11 @@ class ProactiveEngine:
             items = catalog_items.scalars().all()
             recommended = None
             for item in items:
-                if mem.content and item.name and item.name.lower() in mem.content.lower():
+                if (
+                    mem.content
+                    and item.name
+                    and item.name.lower() in mem.content.lower()
+                ):
                     recommended = item
                     break
 
@@ -387,7 +465,9 @@ class ProactiveEngine:
             select(CustomerMemory)
             .where(
                 CustomerMemory.business_id == business_id,
-                CustomerMemory.memory_type.in_(["birthday", "anniversary", "preference"]),
+                CustomerMemory.memory_type.in_(
+                    ["birthday", "anniversary", "preference"]
+                ),
             )
             .order_by(desc(CustomerMemory.created_at))
         )
@@ -403,14 +483,23 @@ class ProactiveEngine:
                 continue
 
             content_lower = (mem.content or "").lower()
-            is_birthday = "cumpleaños" in content_lower or "birthday" in content_lower or mem.memory_type == "birthday"
-            is_anniversary = "aniversario" in content_lower or "anniversary" in content_lower or mem.memory_type == "anniversary"
+            is_birthday = (
+                "cumpleaños" in content_lower
+                or "birthday" in content_lower
+                or mem.memory_type == "birthday"
+            )
+            is_anniversary = (
+                "aniversario" in content_lower
+                or "anniversary" in content_lower
+                or mem.memory_type == "anniversary"
+            )
 
             if not is_birthday and not is_anniversary:
                 continue
 
             # Try to extract MM-DD from content for simple matching
             import re
+
             date_match = re.search(r"(\d{2})[/-](\d{2})", mem.content or "")
             if date_match:
                 mem_date = f"{date_match.group(1)}-{date_match.group(2)}"
@@ -464,13 +553,10 @@ class ProactiveEngine:
         since = datetime.now(UTC) - timedelta(days=inactive_days)
 
         # Find customers with negative memories
-        stmt = (
-            select(CustomerMemory)
-            .where(
-                CustomerMemory.business_id == business_id,
-                CustomerMemory.memory_type.in_(["pain_point", "objection"]),
-                CustomerMemory.confidence >= 0.6,
-            )
+        stmt = select(CustomerMemory).where(
+            CustomerMemory.business_id == business_id,
+            CustomerMemory.memory_type.in_(["pain_point", "objection"]),
+            CustomerMemory.confidence >= 0.6,
         )
         result = await self.db.execute(stmt)
         negative_memories = result.scalars().all()
@@ -538,15 +624,14 @@ class ProactiveEngine:
         Since there is no price history table, we look at catalog items
         with `extra_data` flags set by external sync processes.
         """
-        rules = rules_by_type.get("price_drop", []) + rules_by_type.get("back_in_stock", [])
+        rules = rules_by_type.get("price_drop", []) + rules_by_type.get(
+            "back_in_stock", []
+        )
 
-        stmt = (
-            select(CatalogItem)
-            .where(
-                CatalogItem.business_id == business_id,
-                CatalogItem.is_active == True,
-                CatalogItem.extra_data.contains({"recent_change": True}),
-            )
+        stmt = select(CatalogItem).where(
+            CatalogItem.business_id == business_id,
+            CatalogItem.is_active == True,
+            CatalogItem.extra_data.contains({"recent_change": True}),
         )
         result = await self.db.execute(stmt)
         items = result.scalars().all()
@@ -554,7 +639,9 @@ class ProactiveEngine:
         created: list[OutreachOpportunity] = []
         for item in items:
             change_type = item.extra_data.get("change_type", "price_drop")
-            opp_type = "back_in_stock" if change_type == "back_in_stock" else "price_drop"
+            opp_type = (
+                "back_in_stock" if change_type == "back_in_stock" else "price_drop"
+            )
 
             # Find customers interested in this item via memory similarity
             await self.memory.search_customer_memories(
@@ -565,8 +652,7 @@ class ProactiveEngine:
             # memory.search_customer_memories requires customer_id, so we do a broader search
             # Instead, fetch all preference memories for this business
             mem_result = await self.db.execute(
-                select(CustomerMemory)
-                .where(
+                select(CustomerMemory).where(
                     CustomerMemory.business_id == business_id,
                     CustomerMemory.memory_type.in_(["preference", "purchase_history"]),
                 )
@@ -585,7 +671,9 @@ class ProactiveEngine:
                             OutreachOpportunity.business_id == business_id,
                             OutreachOpportunity.customer_id == mem.customer_id,
                             OutreachOpportunity.opportunity_type == opp_type,
-                            OutreachOpportunity.trigger_data.contains({"item_id": str(item.id)}),
+                            OutreachOpportunity.trigger_data.contains(
+                                {"item_id": str(item.id)}
+                            ),
                         )
                     )
                     if existing.scalar_one_or_none():
@@ -599,7 +687,11 @@ class ProactiveEngine:
                         trigger_data={
                             "item_id": str(item.id),
                             "item_name": item.name,
-                            "old_price": str(item.extra_data.get("old_price")) if item.extra_data else None,
+                            "old_price": (
+                                str(item.extra_data.get("old_price"))
+                                if item.extra_data
+                                else None
+                            ),
                             "new_price": str(item.price) if item.price else None,
                         },
                         suggested_channel=rules[0].channel if rules else "whatsapp",
@@ -619,7 +711,9 @@ class ProactiveEngine:
     ) -> str | None:
         """Generate a personalized outreach message using LLM + CustomerMemory."""
         # Load customer profile
-        customer_profile = await self.memory.get_customer_profile_summary(opportunity.customer_id)
+        customer_profile = await self.memory.get_customer_profile_summary(
+            opportunity.customer_id
+        )
 
         # Build prompt
         system_prompt = (
@@ -647,7 +741,10 @@ class ProactiveEngine:
             "back_in_stock": "Avisar que un producto que le interesaba volvió a estar disponible.",
             "churn_risk": "Mensaje de empatía. Preguntar qué pasó, ofrecer solución. NO vender todavía.",
         }
-        instruction = type_instructions.get(opportunity.opportunity_type, "Generar un mensaje personalizado y relevante.")
+        instruction = type_instructions.get(
+            opportunity.opportunity_type,
+            "Generar un mensaje personalizado y relevante.",
+        )
         user_prompt_parts.append(f"Instrucción: {instruction}")
 
         user_prompt = "\n\n".join(user_prompt_parts)
@@ -663,7 +760,9 @@ class ProactiveEngine:
             )
             return message
         except Exception:
-            logger.exception(f"Failed to generate outreach message for opportunity {opportunity.id}")
+            logger.exception(
+                f"Failed to generate outreach message for opportunity {opportunity.id}"
+            )
             return None
 
     # ------------------------------------------------------------------
@@ -684,7 +783,9 @@ class ProactiveEngine:
         # Queue Celery task; Celery handles ETA internally if we pass countdown or eta
         if send_at and send_at > datetime.now(UTC):
             countdown = int((send_at - datetime.now(UTC)).total_seconds())
-            send_outreach_task.apply_async(args=[str(opportunity.id)], countdown=max(countdown, 0))
+            send_outreach_task.apply_async(
+                args=[str(opportunity.id)], countdown=max(countdown, 0)
+            )
         else:
             send_outreach_task.delay(str(opportunity.id))
 

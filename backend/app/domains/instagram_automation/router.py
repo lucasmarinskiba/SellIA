@@ -1,4 +1,5 @@
 """Instagram automation API: @sell_.ia + FOMO Intelligence + FeedIA synergy."""
+
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException
@@ -18,8 +19,9 @@ async def get_publisher_status() -> dict:
     return {
         "configured": publisher.is_configured(),
         "note": (
-            "Publicación en vivo habilitada." if publisher.is_configured() else
-            "Faltan INSTAGRAM_BUSINESS_ACCOUNT_ID / INSTAGRAM_ACCESS_TOKEN. "
+            "Publicación en vivo habilitada."
+            if publisher.is_configured()
+            else "Faltan INSTAGRAM_BUSINESS_ACCOUNT_ID / INSTAGRAM_ACCESS_TOKEN. "
             "Los posts se registran en la base pero quedan en pending_credentials "
             "hasta configurar el token de @sell_.ia en Meta Business Suite."
         ),
@@ -31,13 +33,25 @@ async def create_feedia_powered_post(
     business_id: Annotated[str, Body()],
     campaign_id: Annotated[str, Body()],
     content_type: Annotated[str, Body(description="reel | carousel | story | static")],
-    strategy_type: Annotated[str, Body(description="escasez_real | prueba_social | exclusividad | transparencia")],
-    real_data_source: Annotated[str, Body(description="De dónde sale el dato real del post")],
-    data_snapshot: Annotated[dict, Body(description="El dato real requerido por la estrategia elegida")],
+    strategy_type: Annotated[
+        str,
+        Body(description="escasez_real | prueba_social | exclusividad | transparencia"),
+    ],
+    real_data_source: Annotated[
+        str, Body(description="De dónde sale el dato real del post")
+    ],
+    data_snapshot: Annotated[
+        dict, Body(description="El dato real requerido por la estrategia elegida")
+    ],
     media_url: Annotated[str, Body()],
     db: Annotated[AsyncSession, Depends(get_db)],
     target_personality: Annotated[str, Body()] = "pragmatist",
-    publish_live: Annotated[bool, Body(description="Si true, publica de verdad en @sell_.ia (requiere credenciales)")] = False,
+    publish_live: Annotated[
+        bool,
+        Body(
+            description="Si true, publica de verdad en @sell_.ia (requiere credenciales)"
+        ),
+    ] = False,
 ) -> dict:
     """Registra la estrategia FOMO con dato real y arma/publica el post en @sell_.ia.
 
@@ -48,8 +62,16 @@ async def create_feedia_powered_post(
     """
     try:
         post = await InstagramAutomationAgent.create_feedia_powered_post(
-            db, campaign_id, content_type, business_id, strategy_type,
-            real_data_source, data_snapshot, media_url, target_personality, publish_live,
+            db,
+            campaign_id,
+            content_type,
+            business_id,
+            strategy_type,
+            real_data_source,
+            data_snapshot,
+            media_url,
+            target_personality,
+            publish_live,
         )
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
@@ -88,7 +110,9 @@ async def schedule_instagram_campaign(
         "num_posts": campaign.num_posts_planned,
         "frequency": campaign.post_frequency,
         "content_mix": campaign.content_mix,
-        "launched_at": campaign.launched_at.isoformat() if campaign.launched_at else None,
+        "launched_at": (
+            campaign.launched_at.isoformat() if campaign.launched_at else None
+        ),
     }
 
 
@@ -122,6 +146,7 @@ async def calculate_campaign_roi(
     avg_deal_value: Annotated[float, Body()] = 2999,
 ) -> dict:
     """Calculate Instagram campaign ROI."""
+
     # Mock campaign object
     class MockCampaign:
         id = campaign_id

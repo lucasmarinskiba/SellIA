@@ -40,11 +40,11 @@ LISTING_ACTION = "ROTATION_PROPOSAL"
 
 
 class Intent(str, Enum):
-    NONE = "none"          # not about token rotation: the normal assistant answers
+    NONE = "none"  # not about token rotation: the normal assistant answers
     LIST = "list"
     ACCEPT = "accept"
     REJECT = "reject"
-    UNCLEAR = "unclear"    # about rotation, but yes/no is not clear
+    UNCLEAR = "unclear"  # about rotation, but yes/no is not clear
 
 
 def _plain(text: str) -> str:
@@ -61,10 +61,18 @@ _REJECT_VERB = re.compile(
     r"\b(rechaz\w*|cancel\w*|ignor\w*|posterg\w*|despues|mas adelante|ahora no|todavia no|no quiero|no rotes|"
     r"deja\w*\s+(todo\s+)?(como|asi)|que siga igual)\b"
 )
-_REJECT_SHORT = re.compile(r"(^\W*no\b|\bno\W*$)")  # a short reply that starts or ends with "no"
-_SHORT_REPLY_WORDS = 8  # "no"/"sí" only count in a reply this short, not inside a long sentence
-_ACCEPT_EXPLICIT = re.compile(r"\b(acept\w*|aprueb\w*|aprob\w*|confirm\w*|autoriz\w*)\b")
-_ACCEPT_SHORT = re.compile(r"\b(si|dale|ok|okay|adelante|hacelo|hazlo|procede|procedan?|de acuerdo)\b")
+_REJECT_SHORT = re.compile(
+    r"(^\W*no\b|\bno\W*$)"
+)  # a short reply that starts or ends with "no"
+_SHORT_REPLY_WORDS = (
+    8  # "no"/"sí" only count in a reply this short, not inside a long sentence
+)
+_ACCEPT_EXPLICIT = re.compile(
+    r"\b(acept\w*|aprueb\w*|aprob\w*|confirm\w*|autoriz\w*)\b"
+)
+_ACCEPT_SHORT = re.compile(
+    r"\b(si|dale|ok|okay|adelante|hacelo|hazlo|procede|procedan?|de acuerdo)\b"
+)
 _ALL = re.compile(r"\b(todas|todos|ambas|ambos|las dos|los dos)\b")
 
 
@@ -76,8 +84,12 @@ def interpret(message: str, *, just_listed: bool) -> Intent:
         return Intent.NONE
 
     short_reply = len(text.split()) <= _SHORT_REPLY_WORDS
-    reject = bool(_REJECT_VERB.search(text)) or (short_reply and bool(_REJECT_SHORT.search(text)))
-    affirmative = _REJECT_VERB.sub(" ", text)  # "más adelante" is a no, its "adelante" is not a yes
+    reject = bool(_REJECT_VERB.search(text)) or (
+        short_reply and bool(_REJECT_SHORT.search(text))
+    )
+    affirmative = _REJECT_VERB.sub(
+        " ", text
+    )  # "más adelante" is a no, its "adelante" is not a yes
     explicit = bool(_ACCEPT_EXPLICIT.search(affirmative))
     accept = explicit or (short_reply and bool(_ACCEPT_SHORT.search(affirmative)))
 
@@ -112,18 +124,29 @@ class _Pending:
 
 async def _pending(db: AsyncSession, business_id: uuid.UUID) -> list[_Pending]:
     recs = (
-        await db.execute(
-            select(Recommendation).where(
-                Recommendation.business_id == business_id,
-                Recommendation.status == RecommendationStatus.PENDING,
-                Recommendation.context_data["kind"].astext == ROTATION_KIND,
-            ).order_by(Recommendation.created_at)
+        (
+            await db.execute(
+                select(Recommendation)
+                .where(
+                    Recommendation.business_id == business_id,
+                    Recommendation.status == RecommendationStatus.PENDING,
+                    Recommendation.context_data["kind"].astext == ROTATION_KIND,
+                )
+                .order_by(Recommendation.created_at)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     out: list[_Pending] = []
     for rec in recs:
         channel = (
-            await db.execute(select(ChannelConnection).where(ChannelConnection.id == uuid.UUID(str(rec.context_data["channel_id"]))))
+            await db.execute(
+                select(ChannelConnection).where(
+                    ChannelConnection.id
+                    == uuid.UUID(str(rec.context_data["channel_id"]))
+                )
+            )
         ).scalar_one_or_none()
         out.append(
             _Pending(
@@ -140,7 +163,9 @@ async def count_pending(db: AsyncSession, business_id: uuid.UUID) -> int:
 
 
 def _listing(pending: list[_Pending]) -> Reply:
-    lines = "\n".join(f"  {i}. «{p.channel_name}» ({p.platform})" for i, p in enumerate(pending, 1))
+    lines = "\n".join(
+        f"  {i}. «{p.channel_name}» ({p.platform})" for i, p in enumerate(pending, 1)
+    )
     text = (
         f"Tenés {len(pending)} renovación(es) de token de webhook pendiente(s):\n{lines}\n\n"
         "Si aceptás, se genera un token nuevo y la URL actual deja de funcionar: tenés que pegar la nueva "
@@ -159,7 +184,9 @@ def _select(pending: list[_Pending], message: str) -> list[_Pending] | None:
     text = _plain(message)
     if _ALL.search(text):
         return pending
-    named = [p for p in pending if _plain(p.channel_name) and _plain(p.channel_name) in text]
+    named = [
+        p for p in pending if _plain(p.channel_name) and _plain(p.channel_name) in text
+    ]
     return named or None
 
 
@@ -182,13 +209,21 @@ async def handle(
     if intent is Intent.NONE:
         return None
 
-    owned = await db.execute(select(Business.id).where(Business.id == business_id, Business.user_id == user_id))
+    owned = await db.execute(
+        select(Business.id).where(
+            Business.id == business_id, Business.user_id == user_id
+        )
+    )
     if owned.first() is None:
         return None
 
     pending = await _pending(db, business_id)
     if not pending:
-        return Reply("ROTATION_NONE", "No tenés renovaciones de token de webhook pendientes.", {"pending_rotations": 0})
+        return Reply(
+            "ROTATION_NONE",
+            "No tenés renovaciones de token de webhook pendientes.",
+            {"pending_rotations": 0},
+        )
 
     if intent in (Intent.LIST, Intent.UNCLEAR):
         return _listing(pending)
@@ -215,13 +250,23 @@ async def handle(
     parts: list[str] = []
     if done and intent is Intent.ACCEPT:
         parts.append(
-            "Listo, renové el token de " + ", ".join(done) + ". La URL anterior ya no funciona: copiá la nueva "
+            "Listo, renové el token de "
+            + ", ".join(done)
+            + ". La URL anterior ya no funciona: copiá la nueva "
             "desde Canales y pegala en la plataforma para que vuelvan a llegar los mensajes."
         )
     elif done:
-        parts.append("Entendido, no cambio nada en " + ", ".join(done) + ". Te lo vuelvo a proponer en 90 días.")
+        parts.append(
+            "Entendido, no cambio nada en "
+            + ", ".join(done)
+            + ". Te lo vuelvo a proponer en 90 días."
+        )
     if failed:
-        parts.append("No pude renovar " + ", ".join(failed) + ": el canal ya no existe o está inactivo.")
+        parts.append(
+            "No pude renovar "
+            + ", ".join(failed)
+            + ": el canal ya no existe o está inactivo."
+        )
     if left:
         parts.append(f"Todavía te quedan {left} pendiente(s).")
     action = "ROTATION_APPLIED" if intent is Intent.ACCEPT else "ROTATION_DISMISSED"

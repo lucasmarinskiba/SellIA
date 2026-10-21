@@ -20,6 +20,7 @@ PRECIOS: Poundstone
 COMUNIDAD: Spinks
 STARTUP: Ries
 """
+
 import logging
 import os
 

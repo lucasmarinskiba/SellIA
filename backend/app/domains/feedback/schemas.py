@@ -9,6 +9,7 @@ from app.domains.feedback.models import FeedbackSeverity, FeedbackStatus, Feedba
 
 # ===== Feedback Schemas =====
 
+
 class FeedbackCreate(BaseModel):
     type: FeedbackType
     title: str = Field(..., max_length=255)
@@ -59,6 +60,7 @@ class FeedbackListResponse(BaseModel):
 
 # ===== Vote Schemas =====
 
+
 class VoteResponse(BaseModel):
     id: uuid.UUID
     feedback_id: uuid.UUID
@@ -69,6 +71,7 @@ class VoteResponse(BaseModel):
 
 
 # ===== Comment Schemas =====
+
 
 class CommentCreate(BaseModel):
     content: str
@@ -86,6 +89,7 @@ class CommentResponse(BaseModel):
 
 
 # ===== System Improvement Schemas =====
+
 
 class SystemImprovementResponse(BaseModel):
     id: uuid.UUID
@@ -106,6 +110,7 @@ class SystemImprovementResponse(BaseModel):
 
 # ===== Roadmap Schema =====
 
+
 class RoadmapResponse(BaseModel):
     planned: list[SystemImprovementResponse]
     in_progress: list[SystemImprovementResponse]
@@ -113,6 +118,7 @@ class RoadmapResponse(BaseModel):
 
 
 # ===== Feature Flag Schemas =====
+
 
 class FeatureFlagResponse(BaseModel):
     id: uuid.UUID
@@ -127,6 +133,7 @@ class FeatureFlagResponse(BaseModel):
 
 
 # ===== Changelog Schema =====
+
 
 class ChangelogEntry(BaseModel):
     id: uuid.UUID

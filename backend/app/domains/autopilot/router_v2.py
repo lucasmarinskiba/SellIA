@@ -35,7 +35,9 @@ class SmartActionRouter:
         self.autopilot = AutopilotEngine(db)
         self.executor = AutopilotExecutor(db)
 
-    async def route_event(self, event_type: str, context: dict[str, Any]) -> list[dict[str, Any]]:
+    async def route_event(
+        self, event_type: str, context: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Main routing logic. Returns list of actions taken."""
         business_id = context.get("business_id")
         if not business_id:
@@ -105,12 +107,15 @@ class SmartActionRouter:
 
         return actions
 
-    async def _handle_buying_signal(self, context: dict, config: AutopilotConfig) -> dict | None:
+    async def _handle_buying_signal(
+        self, context: dict, config: AutopilotConfig
+    ) -> dict | None:
         """When buying signals are detected, close deal or send proposal."""
         conversation_id = uuid.UUID(context["conversation_id"])
 
         # Find open deal for this conversation
         from sqlalchemy import select
+
         result = await self.db.execute(
             select(Deal).where(
                 Deal.conversation_id == conversation_id,
@@ -131,6 +136,7 @@ class SmartActionRouter:
                 # Close the deal
                 deal.stage = "closed_won"
                 from datetime import datetime
+
                 deal.actual_close_date = datetime.now(UTC)
                 deal.close_reason = "Auto-closed: buying signal detected by AI"
                 await self.db.commit()
@@ -142,10 +148,17 @@ class SmartActionRouter:
                     entity_id=deal.id,
                     reason="AI detected buying signals in conversation",
                     status=AutopilotActionStatus.EXECUTED,
-                    context_data={"signals": context.get("signals", []), "urgency": context.get("urgency")},
+                    context_data={
+                        "signals": context.get("signals", []),
+                        "urgency": context.get("urgency"),
+                    },
                     revenue_impact=deal.value,
                 )
-                return {"action": "close_deal", "deal_id": str(deal.id), "log_id": str(log.id)}
+                return {
+                    "action": "close_deal",
+                    "deal_id": str(deal.id),
+                    "log_id": str(log.id),
+                }
 
         # If no deal or early stage, create deal
         if not deal and config.auto_move_deals:
@@ -170,11 +183,17 @@ class SmartActionRouter:
                     reason="AI detected buying signals, auto-created deal",
                     status=AutopilotActionStatus.EXECUTED,
                 )
-                return {"action": "create_deal", "deal_id": str(new_deal.id), "log_id": str(log.id)}
+                return {
+                    "action": "create_deal",
+                    "deal_id": str(new_deal.id),
+                    "log_id": str(log.id),
+                }
 
         return None
 
-    async def _handle_intent(self, context: dict, config: AutopilotConfig) -> dict | None:
+    async def _handle_intent(
+        self, context: dict, config: AutopilotConfig
+    ) -> dict | None:
         """Route based on detected intent."""
         intent_type = context.get("intent_type")
         conversation_id = uuid.UUID(context["conversation_id"])
@@ -182,6 +201,7 @@ class SmartActionRouter:
         if intent_type == "price_inquiry" and config.auto_send_followups:
             # Check lead score
             from sqlalchemy import select
+
             score_result = await self.db.execute(
                 select(LeadScore).where(LeadScore.conversation_id == conversation_id)
             )
@@ -194,6 +214,7 @@ class SmartActionRouter:
                 if can_send:
                     # Generate AI proposal
                     from app.domains.agents.ai_reply import generate_ai_response
+
                     try:
                         await generate_ai_response(
                             db=self.db,
@@ -211,9 +232,15 @@ class SmartActionRouter:
                             reason=f"Intent detected: price_inquiry (confidence: {context.get('confidence', 0)}). Lead score: {score.total_score}",
                             status=AutopilotActionStatus.EXECUTED,
                         )
-                        return {"action": "send_proposal", "conversation_id": str(conversation_id), "log_id": str(log.id)}
+                        return {
+                            "action": "send_proposal",
+                            "conversation_id": str(conversation_id),
+                            "log_id": str(log.id),
+                        }
                     except Exception as e:
-                        logger.warning(f"Failed to send AI proposal: {e}", exc_info=True)
+                        logger.warning(
+                            f"Failed to send AI proposal: {e}", exc_info=True
+                        )
 
         elif intent_type == "support" or intent_type == "complaint":
             if config.auto_escalate_to_human:
@@ -234,11 +261,17 @@ class SmartActionRouter:
                     reason=f"Intent detected: {intent_type}. Escalating to human agent.",
                     status=AutopilotActionStatus.EXECUTED,
                 )
-                return {"action": "escalate_human", "conversation_id": str(conversation_id), "log_id": str(log.id)}
+                return {
+                    "action": "escalate_human",
+                    "conversation_id": str(conversation_id),
+                    "log_id": str(log.id),
+                }
 
         return None
 
-    async def _handle_objection(self, context: dict, config: AutopilotConfig) -> dict | None:
+    async def _handle_objection(
+        self, context: dict, config: AutopilotConfig
+    ) -> dict | None:
         """When objections are raised, send counter-message via objection handler agent."""
         if not config.auto_send_followups:
             return None
@@ -254,6 +287,7 @@ class SmartActionRouter:
 
         # Generate objection-handling response
         from app.domains.agents.ai_reply import generate_ai_response
+
         try:
             objection_text = ", ".join(objections)
             await generate_ai_response(
@@ -272,18 +306,27 @@ class SmartActionRouter:
                 reason=f"Objections detected: {objection_text}",
                 status=AutopilotActionStatus.EXECUTED,
             )
-            return {"action": "handle_objection", "conversation_id": str(conversation_id), "log_id": str(log.id)}
+            return {
+                "action": "handle_objection",
+                "conversation_id": str(conversation_id),
+                "log_id": str(log.id),
+            }
         except Exception as e:
             logger.warning(f"Failed to handle objection: {e}", exc_info=True)
 
         return None
 
-    async def _handle_lead_score_change(self, context: dict, config: AutopilotConfig) -> dict | None:
+    async def _handle_lead_score_change(
+        self, context: dict, config: AutopilotConfig
+    ) -> dict | None:
         """When lead score changes significantly, take action."""
-        conversation_id = uuid.UUID(context.get("conversation_id", context.get("conversation_id")))
+        conversation_id = uuid.UUID(
+            context.get("conversation_id", context.get("conversation_id"))
+        )
 
         # Get current score
         from sqlalchemy import select
+
         score_result = await self.db.execute(
             select(LeadScore).where(LeadScore.conversation_id == conversation_id)
         )
@@ -322,11 +365,17 @@ class SmartActionRouter:
                         reason=f"Lead became HOT (score: {score.total_score}). Auto-created deal.",
                         status=AutopilotActionStatus.EXECUTED,
                     )
-                    return {"action": "create_deal", "deal_id": str(new_deal.id), "log_id": str(log.id)}
+                    return {
+                        "action": "create_deal",
+                        "deal_id": str(new_deal.id),
+                        "log_id": str(log.id),
+                    }
 
         return None
 
-    async def _handle_deal_stalled(self, context: dict, config: AutopilotConfig) -> dict | None:
+    async def _handle_deal_stalled(
+        self, context: dict, config: AutopilotConfig
+    ) -> dict | None:
         """Re-activate stalled deals."""
         if not config.auto_activate_recovery_workflows:
             return None
@@ -343,9 +392,15 @@ class SmartActionRouter:
             reason="Deal stalled for >3 days. Activating recovery workflow.",
             status=AutopilotActionStatus.EXECUTED,
         )
-        return {"action": "activate_recovery", "deal_id": deal_id, "log_id": str(log.id)}
+        return {
+            "action": "activate_recovery",
+            "deal_id": deal_id,
+            "log_id": str(log.id),
+        }
 
-    async def _handle_no_reply(self, context: dict, config: AutopilotConfig) -> dict | None:
+    async def _handle_no_reply(
+        self, context: dict, config: AutopilotConfig
+    ) -> dict | None:
         """Send re-engagement after no reply."""
         if not config.auto_send_followups:
             return None
@@ -361,6 +416,7 @@ class SmartActionRouter:
 
         # Generate context-aware re-engagement
         from app.domains.agents.ai_reply import generate_ai_response
+
         try:
             await generate_ai_response(
                 db=self.db,
@@ -378,13 +434,19 @@ class SmartActionRouter:
                 reason=f"No reply for {days} days. Sent re-engagement message.",
                 status=AutopilotActionStatus.EXECUTED,
             )
-            return {"action": "re_engagement", "conversation_id": str(conversation_id), "log_id": str(log.id)}
+            return {
+                "action": "re_engagement",
+                "conversation_id": str(conversation_id),
+                "log_id": str(log.id),
+            }
         except Exception as e:
             logger.warning(f"Failed to send re-engagement: {e}", exc_info=True)
 
         return None
 
-    async def _handle_health_declined(self, context: dict, config: AutopilotConfig) -> dict | None:
+    async def _handle_health_declined(
+        self, context: dict, config: AutopilotConfig
+    ) -> dict | None:
         """Activate recovery for declining health score."""
         if not config.auto_activate_recovery_workflows:
             return None
@@ -399,9 +461,15 @@ class SmartActionRouter:
             reason="Customer health score declined. Activating retention workflow.",
             status=AutopilotActionStatus.EXECUTED,
         )
-        return {"action": "activate_retention", "conversation_id": str(conversation_id), "log_id": str(log.id)}
+        return {
+            "action": "activate_retention",
+            "conversation_id": str(conversation_id),
+            "log_id": str(log.id),
+        }
 
-    async def _handle_churn_risk(self, context: dict, config: AutopilotConfig) -> dict | None:
+    async def _handle_churn_risk(
+        self, context: dict, config: AutopilotConfig
+    ) -> dict | None:
         """Handle churn risk detected."""
         conversation_id = uuid.UUID(context["conversation_id"])
         sentiment_score = context.get("sentiment_score", 0)
@@ -424,7 +492,11 @@ class SmartActionRouter:
                 reason=f"Critical churn risk detected (sentiment: {sentiment_score}). Immediate human escalation.",
                 status=AutopilotActionStatus.ESCALATED,
             )
-            return {"action": "escalate_churn", "conversation_id": str(conversation_id), "log_id": str(log.id)}
+            return {
+                "action": "escalate_churn",
+                "conversation_id": str(conversation_id),
+                "log_id": str(log.id),
+            }
 
         # Medium risk → activate recovery workflow
         if config.auto_activate_recovery_workflows:
@@ -436,11 +508,17 @@ class SmartActionRouter:
                 reason=f"Churn risk detected (sentiment: {sentiment_score}). Activating win-back workflow.",
                 status=AutopilotActionStatus.EXECUTED,
             )
-            return {"action": "activate_winback", "conversation_id": str(conversation_id), "log_id": str(log.id)}
+            return {
+                "action": "activate_winback",
+                "conversation_id": str(conversation_id),
+                "log_id": str(log.id),
+            }
 
         return None
 
-    async def _handle_inbound_lead(self, context: dict, config: AutopilotConfig) -> dict | None:
+    async def _handle_inbound_lead(
+        self, context: dict, config: AutopilotConfig
+    ) -> dict | None:
         """Handle new inbound lead capture."""
         lead_id = context.get("lead_id")
         source_type = context.get("source_type")
@@ -455,10 +533,16 @@ class SmartActionRouter:
                 reason=f"New organic lead from {source_type}. Enrolling in value sequence.",
                 status=AutopilotActionStatus.EXECUTED,
             )
-            return {"action": "enroll_value_sequence", "lead_id": lead_id, "log_id": str(log.id)}
+            return {
+                "action": "enroll_value_sequence",
+                "lead_id": lead_id,
+                "log_id": str(log.id),
+            }
         return None
 
-    async def _handle_lead_magnet_converted(self, context: dict, config: AutopilotConfig) -> dict | None:
+    async def _handle_lead_magnet_converted(
+        self, context: dict, config: AutopilotConfig
+    ) -> dict | None:
         """Handle lead magnet conversion."""
         conversation_id = context.get("conversation_id")
         log = await self.autopilot.log_action(
@@ -469,9 +553,15 @@ class SmartActionRouter:
             reason="Lead magnet converted. Scheduling personalized follow-up.",
             status=AutopilotActionStatus.EXECUTED,
         )
-        return {"action": "schedule_followup", "conversation_id": conversation_id, "log_id": str(log.id)}
+        return {
+            "action": "schedule_followup",
+            "conversation_id": conversation_id,
+            "log_id": str(log.id),
+        }
 
-    async def _handle_referral_signup(self, context: dict, config: AutopilotConfig) -> dict | None:
+    async def _handle_referral_signup(
+        self, context: dict, config: AutopilotConfig
+    ) -> dict | None:
         """Handle new referral signup."""
         new_conversation_id = context.get("new_conversation_id")
         log = await self.autopilot.log_action(
@@ -482,7 +572,11 @@ class SmartActionRouter:
             reason="New referral signup. Sending welcome sequence.",
             status=AutopilotActionStatus.EXECUTED,
         )
-        return {"action": "welcome_referral", "conversation_id": new_conversation_id, "log_id": str(log.id)}
+        return {
+            "action": "welcome_referral",
+            "conversation_id": new_conversation_id,
+            "log_id": str(log.id),
+        }
 
 
 # Singleton instance for event bus subscription
@@ -517,7 +611,9 @@ async def init_smart_router():
         for event in events:
             event_bus.subscribe(event, _on_event)
 
-        logger.info("SmartActionRouter initialized and subscribed to %d events", len(events))
+        logger.info(
+            "SmartActionRouter initialized and subscribed to %d events", len(events)
+        )
 
 
 async def _on_event(event_type: str, payload: dict):
@@ -531,6 +627,8 @@ async def _on_event(event_type: str, payload: dict):
             router = SmartActionRouter(db)
             actions = await router.route_event(event_type, payload)
             if actions:
-                logger.info(f"SmartActionRouter executed {len(actions)} actions for {event_type}")
+                logger.info(
+                    f"SmartActionRouter executed {len(actions)} actions for {event_type}"
+                )
     except Exception:
         logger.exception(f"SmartActionRouter error handling {event_type}")

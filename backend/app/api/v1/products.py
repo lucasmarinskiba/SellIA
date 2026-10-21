@@ -32,9 +32,13 @@ from app.domains.websites.models import Website
 router = APIRouter()
 
 
-async def _get_website_for_user(business_id: UUID, user: User, db: AsyncSession) -> Website:
+async def _get_website_for_user(
+    business_id: UUID, user: User, db: AsyncSession
+) -> Website:
     result = await db.execute(
-        select(Website).join(Business).where(
+        select(Website)
+        .join(Business)
+        .where(
             Business.id == business_id,
             Business.user_id == user.id,
             Business.is_active == True,
@@ -50,6 +54,7 @@ async def _get_website_for_user(business_id: UUID, user: User, db: AsyncSession)
 # PRODUCTS ENDPOINTS
 # ============================================================
 
+
 @router.post("/businesses/{business_id}/products")
 async def create_product(
     business_id: UUID,
@@ -63,7 +68,7 @@ async def create_product(
     product = Product(
         website_id=website.id,
         name=data.name,
-        slug=data.slug or data.name.lower().replace(' ', '-'),
+        slug=data.slug or data.name.lower().replace(" ", "-"),
         description=data.description,
         short_description=data.short_description,
         price=data.price,
@@ -180,7 +185,9 @@ async def update_product(
     if data.status:
         product.status = data.status
     if data.metadata is not None:
-        product.extra_data = data.metadata  # ORM attribute renamed; see Product.extra_data
+        product.extra_data = (
+            data.metadata
+        )  # ORM attribute renamed; see Product.extra_data
 
     product.updated_at = utc_now()
     await db.commit()
@@ -219,6 +226,7 @@ async def delete_product(
 # CART ENDPOINTS
 # ============================================================
 
+
 @router.post("/websites/{website_id}/cart/add")
 async def add_to_cart(
     website_id: UUID,
@@ -232,7 +240,7 @@ async def add_to_cart(
         select(ShoppingCart).where(
             ShoppingCart.website_id == website_id,
             ShoppingCart.session_id == session_id,
-            ShoppingCart.status == 'ACTIVE',
+            ShoppingCart.status == "ACTIVE",
         )
     )
     cart = cart_result.scalar_one_or_none()
@@ -241,7 +249,7 @@ async def add_to_cart(
         cart = ShoppingCart(
             website_id=website_id,
             session_id=session_id,
-            status='ACTIVE',
+            status="ACTIVE",
         )
         db.add(cart)
         await db.flush()
@@ -282,9 +290,7 @@ async def add_to_cart(
         db.add(item)
 
     # Recalculate cart totals
-    items_result = await db.execute(
-        select(CartItem).where(CartItem.cart_id == cart.id)
-    )
+    items_result = await db.execute(select(CartItem).where(CartItem.cart_id == cart.id))
     items = items_result.scalars().all()
 
     cart.subtotal = sum(item.line_total for item in items)
@@ -308,7 +314,7 @@ async def get_cart(
         select(ShoppingCart).where(
             ShoppingCart.website_id == website_id,
             ShoppingCart.session_id == session_id,
-            ShoppingCart.status == 'ACTIVE',
+            ShoppingCart.status == "ACTIVE",
         )
     )
     cart = result.scalar_one_or_none()
@@ -328,7 +334,9 @@ async def remove_from_cart(
 ):
     """Remove item from cart."""
     result = await db.execute(
-        select(CartItem).join(ShoppingCart).where(
+        select(CartItem)
+        .join(ShoppingCart)
+        .where(
             CartItem.id == item_id,
             ShoppingCart.website_id == website_id,
             ShoppingCart.session_id == session_id,
@@ -342,7 +350,9 @@ async def remove_from_cart(
     await db.delete(item)
 
     # Recalculate totals
-    cart_result = await db.execute(select(ShoppingCart).where(ShoppingCart.id == cart_id))
+    cart_result = await db.execute(
+        select(ShoppingCart).where(ShoppingCart.id == cart_id)
+    )
     cart = cart_result.scalar_one_or_none()
 
     items_result = await db.execute(select(CartItem).where(CartItem.cart_id == cart.id))
@@ -362,6 +372,7 @@ async def remove_from_cart(
 # ORDER ENDPOINTS
 # ============================================================
 
+
 @router.post("/websites/{website_id}/checkout")
 async def checkout(
     website_id: UUID,
@@ -375,7 +386,7 @@ async def checkout(
         select(ShoppingCart).where(
             ShoppingCart.website_id == website_id,
             ShoppingCart.session_id == session_id,
-            ShoppingCart.status == 'ACTIVE',
+            ShoppingCart.status == "ACTIVE",
         )
     )
     cart = cart_result.scalar_one_or_none()
@@ -394,8 +405,8 @@ async def checkout(
         website_id=website_id,
         order_number=order_number,
         session_id=session_id,
-        status='PENDING',
-        payment_status='UNPAID',
+        status="PENDING",
+        payment_status="UNPAID",
         subtotal=cart.subtotal,
         tax=cart.tax,
         shipping_cost=cart.shipping,
@@ -429,7 +440,7 @@ async def checkout(
         db.add(order_item)
 
     # Mark cart as converted
-    cart.status = 'CONVERTED'
+    cart.status = "CONVERTED"
     cart.updated_at = utc_now()
 
     await db.commit()
@@ -457,7 +468,9 @@ async def list_orders(
     if payment_status:
         query = query.where(Order.payment_status == payment_status)
 
-    result = await db.execute(query.order_by(Order.created_at.desc()).offset(skip).limit(limit))
+    result = await db.execute(
+        query.order_by(Order.created_at.desc()).offset(skip).limit(limit)
+    )
     orders = result.scalars().all()
 
     total_result = await db.execute(
@@ -517,11 +530,11 @@ async def update_order(
     if not order:
         raise HTTPException(status_code=404, detail="Orden no encontrada")
 
-    if 'status' in data:
-        order.status = data['status']
-    if 'payment_status' in data:
-        order.payment_status = data['payment_status']
-        if data['payment_status'] == 'PAID':
+    if "status" in data:
+        order.status = data["status"]
+    if "payment_status" in data:
+        order.payment_status = data["payment_status"]
+        if data["payment_status"] == "PAID":
             order.paid_at = utc_now()
 
     order.updated_at = utc_now()

@@ -5,7 +5,6 @@ Requires Ollama server running locally (default: http://localhost:11434).
 Recommended models: llama3.1, mistral, qwen2.5, phi4
 """
 
-
 import logging
 from typing import ClassVar
 
@@ -86,7 +85,9 @@ class OllamaProvider(BaseProvider):
 
             text = data.get("message", {}).get("content", "")
             if not text:
-                return GenerationResult(success=False, error_message="Ollama returned empty content")
+                return GenerationResult(
+                    success=False, error_message="Ollama returned empty content"
+                )
 
             return GenerationResult(
                 success=True,

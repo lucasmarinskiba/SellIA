@@ -25,7 +25,7 @@ class GeofenceTriggerService:
         user_lng: float,
         business_id: UUID,
         locations: list,  # List of Location objects with lat/lng
-        db: Session | None = None
+        db: Session | None = None,
     ) -> dict:
         """Check if user near any location. Auto check-in if enabled.
 
@@ -42,16 +42,21 @@ class GeofenceTriggerService:
 
             if distance_km <= GeofenceTriggerService.DEFAULT_RADIUS_KM:
                 # Check if user already checked in recently (avoid duplicates)
-                recent_checkin = db.query(LocationCheckin).filter(
-                    LocationCheckin.location_id == loc.id,
-                    LocationCheckin.user_id == user_id,
-                    LocationCheckin.checkin_time >= datetime.now(UTC) - timedelta(minutes=5)
-                ).first()
+                recent_checkin = (
+                    db.query(LocationCheckin)
+                    .filter(
+                        LocationCheckin.location_id == loc.id,
+                        LocationCheckin.user_id == user_id,
+                        LocationCheckin.checkin_time
+                        >= datetime.now(UTC) - timedelta(minutes=5),
+                    )
+                    .first()
+                )
 
                 if recent_checkin:
                     return {
                         "triggered": False,
-                        "reason": "Already checked in within 5 minutes"
+                        "reason": "Already checked in within 5 minutes",
                     }
 
                 # Auto check-in via geofence
@@ -61,10 +66,12 @@ class GeofenceTriggerService:
                         business_id=business_id,
                         checkin_type=CheckinType.GEOFENCE,
                         user_id=user_id,
-                        db=db
+                        db=db,
                     )
 
-                    logger.info(f"Geofence trigger: user {user_id} auto checked in to {loc.id}")
+                    logger.info(
+                        f"Geofence trigger: user {user_id} auto checked in to {loc.id}"
+                    )
 
                     return {
                         "triggered": True,
@@ -72,7 +79,7 @@ class GeofenceTriggerService:
                         "location_name": loc.name,
                         "checkin_id": str(checkin.id),
                         "distance_km": round(distance_km, 2),
-                        "message": f"Welcome to {loc.name}!"
+                        "message": f"Welcome to {loc.name}!",
                     }
                 except Exception as e:
                     logger.exception("Geofence auto check-in failed")
@@ -86,7 +93,7 @@ class GeofenceTriggerService:
         user_lng: float,
         business_id: UUID,
         locations: list,
-        radius_km: float = DEFAULT_RADIUS_KM
+        radius_km: float = DEFAULT_RADIUS_KM,
     ) -> list:
         """List all locations within radius."""
         nearby = []
@@ -96,14 +103,16 @@ class GeofenceTriggerService:
             )
 
             if distance_km <= radius_km:
-                nearby.append({
-                    "location_id": str(loc.id),
-                    "name": loc.name,
-                    "distance_km": round(distance_km, 2),
-                    "address": loc.address,
-                    "hours": loc.hours_json,
-                    "is_open_now": True  # TODO: compare with hours_json
-                })
+                nearby.append(
+                    {
+                        "location_id": str(loc.id),
+                        "name": loc.name,
+                        "distance_km": round(distance_km, 2),
+                        "address": loc.address,
+                        "hours": loc.hours_json,
+                        "is_open_now": True,  # TODO: compare with hours_json
+                    }
+                )
 
         return sorted(nearby, key=lambda x: x["distance_km"])
 

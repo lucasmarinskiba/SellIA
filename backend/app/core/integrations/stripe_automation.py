@@ -69,12 +69,14 @@ class StripeAutomation:
 
             # Metadata para tracking
             session_metadata = metadata or {}
-            session_metadata.update({
-                "product_id": product.get("id"),
-                "buyer_email": buyer.get("email"),
-                "buyer_phone": buyer.get("phone", ""),
-                "source": "sellias_automation",
-            })
+            session_metadata.update(
+                {
+                    "product_id": product.get("id"),
+                    "buyer_email": buyer.get("email"),
+                    "buyer_phone": buyer.get("phone", ""),
+                    "source": "sellias_automation",
+                }
+            )
 
             # Crear session
             session = stripe.checkout.Session.create(
@@ -173,17 +175,27 @@ class StripeAutomation:
             return {
                 "status": "error",
                 "error": "Invalid signature",
-                "code": "missing_signature"
+                "code": "missing_signature",
             }
 
         try:
-            event = stripe.Webhook.construct_event(payload, sig_header, self.webhook_secret)
+            event = stripe.Webhook.construct_event(
+                payload, sig_header, self.webhook_secret
+            )
         except ValueError as e:
             logger.error(f"Invalid payload: {e!s}")
-            return {"status": "error", "error": "Invalid payload", "code": "invalid_payload"}
+            return {
+                "status": "error",
+                "error": "Invalid payload",
+                "code": "invalid_payload",
+            }
         except stripe.error.SignatureError as e:
             logger.error(f"Invalid signature: {e!s}")
-            return {"status": "error", "error": "Invalid signature", "code": "invalid_signature"}
+            return {
+                "status": "error",
+                "error": "Invalid signature",
+                "code": "invalid_signature",
+            }
 
         # Handle event
         if event["type"] == "checkout.session.completed":
@@ -205,7 +217,9 @@ class StripeAutomation:
             logger.info(f"Unhandled event type: {event['type']}")
             return {"status": "ignored", "event_type": event["type"]}
 
-    async def _handle_checkout_complete(self, session: dict[str, Any]) -> dict[str, Any]:
+    async def _handle_checkout_complete(
+        self, session: dict[str, Any]
+    ) -> dict[str, Any]:
         """Maneja checkout completado."""
 
         logger.info(f"Checkout completed: {session['id']}")
@@ -228,7 +242,9 @@ class StripeAutomation:
             "fulfillment": fulfillment_result,
         }
 
-    async def _handle_payment_success(self, payment_intent: dict[str, Any]) -> dict[str, Any]:
+    async def _handle_payment_success(
+        self, payment_intent: dict[str, Any]
+    ) -> dict[str, Any]:
         """Maneja payment exitoso. Persiste en DB."""
 
         logger.info(f"Payment succeeded: {payment_intent['id']}")
@@ -251,7 +267,9 @@ class StripeAutomation:
                     status="succeeded",
                     payment_method=payment_intent.get("payment_method", "unknown"),
                     stripe_payment_intent_id=payment_intent["id"],
-                    stripe_charge_id=payment_intent.get("charges", {}).get("data", [{}])[0].get("id"),
+                    stripe_charge_id=payment_intent.get("charges", {})
+                    .get("data", [{}])[0]
+                    .get("id"),
                     receipt_url=payment_intent.get("receipt_email"),
                     completed_at=utc_now(),
                 )
@@ -270,7 +288,9 @@ class StripeAutomation:
             "payment_id": payment_intent["id"],
         }
 
-    async def _handle_payment_failed(self, payment_intent: dict[str, Any]) -> dict[str, Any]:
+    async def _handle_payment_failed(
+        self, payment_intent: dict[str, Any]
+    ) -> dict[str, Any]:
         """Maneja payment fallido."""
 
         logger.warning(f"Payment failed: {payment_intent['id']}")
@@ -279,7 +299,9 @@ class StripeAutomation:
         return {
             "status": "failed",
             "event": "payment_failed",
-            "reason": payment_intent.get("last_payment_error", {}).get("message", "Unknown"),
+            "reason": payment_intent.get("last_payment_error", {}).get(
+                "message", "Unknown"
+            ),
         }
 
     async def _handle_refund(self, charge: dict[str, Any]) -> dict[str, Any]:
@@ -295,7 +317,9 @@ class StripeAutomation:
             "amount_refunded": charge.get("amount_refunded", 0) / 100,
         }
 
-    async def _handle_subscription_update(self, subscription: dict[str, Any]) -> dict[str, Any]:
+    async def _handle_subscription_update(
+        self, subscription: dict[str, Any]
+    ) -> dict[str, Any]:
         """Maneja subscription update."""
 
         logger.info(f"Subscription updated: {subscription['id']}")
@@ -404,7 +428,9 @@ class StripeAutomation:
             # Crear invoice
             invoice = stripe.Invoice.create(
                 customer=customer.id,
-                due_date=int((datetime.now() + timedelta(days=due_date_days)).timestamp()),
+                due_date=int(
+                    (datetime.now() + timedelta(days=due_date_days)).timestamp()
+                ),
                 auto_advance=True,
             )
 
@@ -414,7 +440,11 @@ class StripeAutomation:
                 "status": "success",
                 "invoice_id": invoice.id,
                 "payment_url": invoice.hosted_invoice_url,
-                "due_date": datetime.fromtimestamp(invoice.due_date).isoformat() if invoice.due_date else None,
+                "due_date": (
+                    datetime.fromtimestamp(invoice.due_date).isoformat()
+                    if invoice.due_date
+                    else None
+                ),
             }
 
         except stripe.error.StripeError as e:

@@ -57,7 +57,11 @@ _STAGE_AGENTS = {
 
 def _to_dict(row) -> dict:
     return {
-        c.name: (str(v) if isinstance(v := getattr(row, c.name), (uuid.UUID, datetime)) else v)
+        c.name: (
+            str(v)
+            if isinstance(v := getattr(row, c.name), (uuid.UUID, datetime))
+            else v
+        )
         for c in row.__table__.columns
     }
 
@@ -100,7 +104,10 @@ class TransformationOrchestrator:
     )
 
     async def seed_default_automations(
-        self, business_id: uuid.UUID, program: TransformationProgram, owner_user_id: uuid.UUID | None = None,
+        self,
+        business_id: uuid.UUID,
+        program: TransformationProgram,
+        owner_user_id: uuid.UUID | None = None,
     ) -> list[BrandAutomation]:
         """One-shot: create the standing automation set for a program, skipping
         any type the business already has."""
@@ -113,10 +120,17 @@ class TransformationOrchestrator:
             cfg = {"profile": profile, "program_id": str(program.id), **extra}
             if owner_user_id is not None:
                 cfg["owner_user_id"] = str(owner_user_id)
-            created.append(await self.create_automation(business_id, atype, schedule, cfg))
+            created.append(
+                await self.create_automation(business_id, atype, schedule, cfg)
+            )
         return created
 
-    async def set_auto_bridges(self, program: TransformationProgram, auto_bridges: dict, owner_user_id: uuid.UUID | None = None) -> TransformationProgram:
+    async def set_auto_bridges(
+        self,
+        program: TransformationProgram,
+        auto_bridges: dict,
+        owner_user_id: uuid.UUID | None = None,
+    ) -> TransformationProgram:
         program.auto_bridges = auto_bridges or None
         if owner_user_id is not None:
             program.owner_user_id = owner_user_id
@@ -124,7 +138,9 @@ class TransformationOrchestrator:
         await self.db.refresh(program)
         return program
 
-    async def _run_stage_bridge(self, program: TransformationProgram, stage_key: str) -> dict | None:
+    async def _run_stage_bridge(
+        self, program: TransformationProgram, stage_key: str
+    ) -> dict | None:
         """After a stage completes, fire its bridge if the program opted in."""
         cfg = program.auto_bridges or {}
         try:
@@ -136,11 +152,15 @@ class TransformationOrchestrator:
                 st = await PositioningAgent(self.db).latest(program.business_id)
                 comps = cfg.get("competitors")  # optional [{name,url}]
                 if not comps:
-                    names = (program.metrics_board or {}).get("profile", {}).get("known_competitors") or []
+                    names = (program.metrics_board or {}).get("profile", {}).get(
+                        "known_competitors"
+                    ) or []
                     comps = [{"name": n} for n in names]
                 if st and comps and program.owner_user_id:
                     return await PositioningBridge(self.db).deploy(
-                        st, owner_user_id=program.owner_user_id, competitors=comps,
+                        st,
+                        owner_user_id=program.owner_user_id,
+                        competitors=comps,
                     )
             elif stage_key == "brand_identity" and cfg.get("assets"):
                 from app.domains.brand_transformation.identity_bridge import (
@@ -156,7 +176,8 @@ class TransformationOrchestrator:
                 pb = await FOMOEngineAgent(self.db).latest(program.business_id)
                 if pb and program.owner_user_id:
                     return await FOMOBridge(self.db).deploy(
-                        pb, owner_user_id=program.owner_user_id,
+                        pb,
+                        owner_user_id=program.owner_user_id,
                         activate=bool((cfg.get("fomo") or {}).get("activate", False)),
                     )
         except Exception as e:  # noqa: BLE001
@@ -167,17 +188,24 @@ class TransformationOrchestrator:
                 await self.db.rollback()
             except Exception:
                 logger.exception("_run_stage_bridge: error ignorado")
-            logger.warning("auto-bridge for stage %s failed: %s", stage_key, str(e)[:200])
+            logger.warning(
+                "auto-bridge for stage %s failed: %s", stage_key, str(e)[:200]
+            )
             return {"bridge_error": str(e)[:200]}
         return None
 
     async def get_program(self, program_id: uuid.UUID) -> TransformationProgram | None:
-        r = await self.db.execute(select(TransformationProgram).where(TransformationProgram.id == program_id))
+        r = await self.db.execute(
+            select(TransformationProgram).where(TransformationProgram.id == program_id)
+        )
         return r.scalar_one_or_none()
 
-    async def list_programs(self, business_id: uuid.UUID) -> list[TransformationProgram]:
+    async def list_programs(
+        self, business_id: uuid.UUID
+    ) -> list[TransformationProgram]:
         r = await self.db.execute(
-            select(TransformationProgram).where(TransformationProgram.business_id == business_id)
+            select(TransformationProgram)
+            .where(TransformationProgram.business_id == business_id)
             .order_by(desc(TransformationProgram.created_at))
         )
         return list(r.scalars().all())
@@ -205,15 +233,33 @@ class TransformationOrchestrator:
             # SEO-sensitive stages: check toggles before running
             seo_wrapper = SEOAwareAgentWrapper(self.db)
 
-            if stage_key == "positioning" and not await seo_wrapper.should_run_positioning_agent(program.business_id):
+            if (
+                stage_key == "positioning"
+                and not await seo_wrapper.should_run_positioning_agent(
+                    program.business_id
+                )
+            ):
                 # Positioning skipped due to disabled SEO — return stub
-                logger.info(f"Skipping positioning stage for business {program.business_id}: SEO disabled")
-                artifact = {"note": "Positioning stage skipped — SEO positioning disabled in seo_config"}
+                logger.info(
+                    f"Skipping positioning stage for business {program.business_id}: SEO disabled"
+                )
+                artifact = {
+                    "note": "Positioning stage skipped — SEO positioning disabled in seo_config"
+                }
                 artifact_id = None
-            elif stage_key == "fomo_engine" and not await seo_wrapper.should_run_fomo_engine_agent(program.business_id):
+            elif (
+                stage_key == "fomo_engine"
+                and not await seo_wrapper.should_run_fomo_engine_agent(
+                    program.business_id
+                )
+            ):
                 # FOMO skipped due to disabled SEO — return stub
-                logger.info(f"Skipping FOMO engine stage for business {program.business_id}: SEO disabled")
-                artifact = {"note": "FOMO engine stage skipped — SEO positioning disabled in seo_config"}
+                logger.info(
+                    f"Skipping FOMO engine stage for business {program.business_id}: SEO disabled"
+                )
+                artifact = {
+                    "note": "FOMO engine stage skipped — SEO positioning disabled in seo_config"
+                }
                 artifact_id = None
             else:
                 # Normal execution
@@ -229,9 +275,13 @@ class TransformationOrchestrator:
 
                 # Log successful execution of SEO agents
                 if stage_key == "positioning":
-                    await seo_wrapper.log_positioning_execution(program.business_id, "Generated positioning statement")
+                    await seo_wrapper.log_positioning_execution(
+                        program.business_id, "Generated positioning statement"
+                    )
                 elif stage_key == "fomo_engine":
-                    await seo_wrapper.log_fomo_execution(program.business_id, None, "Generated FOMO playbook")
+                    await seo_wrapper.log_fomo_execution(
+                        program.business_id, None, "Generated FOMO playbook"
+                    )
 
         # advance program
         completed = list(program.completed_stages or [])
@@ -260,7 +310,9 @@ class TransformationOrchestrator:
         if stage_key != "roadmap" and program.auto_bridges:
             bridge_result = await self._run_stage_bridge(program, stage_key)
             if bridge_result is not None:
-                await self.db.refresh(program)  # bridge may have rolled the session back
+                await self.db.refresh(
+                    program
+                )  # bridge may have rolled the session back
                 board = dict(program.metrics_board or {})
                 board[f"{stage_key}_bridge"] = bridge_result
                 program.metrics_board = board
@@ -278,7 +330,9 @@ class TransformationOrchestrator:
             "bridge_result": bridge_result,
         }
 
-    async def run_all(self, program: TransformationProgram, profile: dict | None = None) -> list[dict]:
+    async def run_all(
+        self, program: TransformationProgram, profile: dict | None = None
+    ) -> list[dict]:
         results = []
         for key in K.STAGE_ORDER:
             results.append(await self.run_stage(program, key, profile))
@@ -328,14 +382,26 @@ Return JSON:
   "must_fix_before_launch": ["the fails, in priority order"],
   "summary": "2-3 sentences — is this program internally consistent or is it drifting?"
 }}"""
-        d = await _draft_then_refine(prompt, {
-            "score": 60,
-            "checks": [{"id": c["id"], "verdict": "n/a", "contradiction": None, "fix": "Run the relevant stages first."} for c in K.COHERENCE_CHECKS],
-            "must_fix_before_launch": [],
-            "summary": "Not enough stages completed to judge coherence — run the full program, then re-audit.",
-        }, "Every verdict must cite the artifact text it's based on. 'warn' needs a "
-           "real tension, not a nitpick. The fix must be a concrete edit to one "
-           "named stage.")
+        d = await _draft_then_refine(
+            prompt,
+            {
+                "score": 60,
+                "checks": [
+                    {
+                        "id": c["id"],
+                        "verdict": "n/a",
+                        "contradiction": None,
+                        "fix": "Run the relevant stages first.",
+                    }
+                    for c in K.COHERENCE_CHECKS
+                ],
+                "must_fix_before_launch": [],
+                "summary": "Not enough stages completed to judge coherence — run the full program, then re-audit.",
+            },
+            "Every verdict must cite the artifact text it's based on. 'warn' needs a "
+            "real tension, not a nitpick. The fix must be a concrete edit to one "
+            "named stage.",
+        )
 
         program.coherence_audit = {
             "score": _int(d.get("score"), 0),
@@ -350,7 +416,9 @@ Return JSON:
 
     # ------------------------------------------------------------------ roadmap
 
-    async def _synthesize_roadmap(self, program: TransformationProgram, profile: dict) -> dict:
+    async def _synthesize_roadmap(
+        self, program: TransformationProgram, profile: dict
+    ) -> dict:
         """Etapa 7 — consolidate all stages into a sequenced execution plan.
 
         Not a to-do list: a dependency graph, a critical path, decision gates
@@ -395,53 +463,173 @@ Return JSON:
   "biggest_risk": "most likely derailment + the early-warning signal",
   "operating_rhythm_ref": "use the restructuring plan's operating_rhythm if present, else: weekly metrics + monthly retro + quarterly re-diagnosis"
 }}"""
-        d = await _draft_then_refine(prompt, {
-            "north_star": "Be the name customers say first in this category, at a price we set.",
-            "dependency_graph": [
-                {"move": "Lock positioning + POV", "stage": "positioning", "blocked_by": ["Diagnosis"], "unblocks": ["Brand identity", "Offer redesign", "Content engine"]},
-                {"move": "Ship grand-slam offer", "stage": "business_model", "blocked_by": ["Positioning"], "unblocks": ["GTM launch", "FOMO mechanisms"]},
-            ],
-            "critical_path": ["Diagnosis", "Positioning", "Offer redesign", "GTM launch", "Loop turning", "Moat move"],
-            "workstreams": [],
-            "roadmap": {
-                "90": {"theme": "prove the thesis", "entry_gate": "Diagnosis done, founder committed to a POV", "actions": [], "exit_gate": {"question": "Did the new positioning + offer beat the old on conversion?", "data_needed": "A/B or before/after conv. + qualitative", "calls": ["double down", "adjust", "pause"], "proceed_criteria": "conversion up or clear qualitative pull"}},
-                "180": {"theme": "compound it", "entry_gate": "90-day gate passed", "actions": [], "exit_gate": {"question": "Is the growth loop turning without founder push?", "data_needed": "loop turning_metric trend", "calls": ["scale spend", "fix the loop", "pause"], "proceed_criteria": "loop metric compounding 8+ weeks"}},
-                "365": {"theme": "own it", "entry_gate": "loop compounding", "actions": [], "exit_gate": {"question": "Does the market use our category frame / pay our price?", "data_needed": "inbound language, price realised, win rate", "calls": ["press the lead", "reposition", "hold"], "proceed_criteria": "category recognition + pricing power visible"}},
+        d = await _draft_then_refine(
+            prompt,
+            {
+                "north_star": "Be the name customers say first in this category, at a price we set.",
+                "dependency_graph": [
+                    {
+                        "move": "Lock positioning + POV",
+                        "stage": "positioning",
+                        "blocked_by": ["Diagnosis"],
+                        "unblocks": [
+                            "Brand identity",
+                            "Offer redesign",
+                            "Content engine",
+                        ],
+                    },
+                    {
+                        "move": "Ship grand-slam offer",
+                        "stage": "business_model",
+                        "blocked_by": ["Positioning"],
+                        "unblocks": ["GTM launch", "FOMO mechanisms"],
+                    },
+                ],
+                "critical_path": [
+                    "Diagnosis",
+                    "Positioning",
+                    "Offer redesign",
+                    "GTM launch",
+                    "Loop turning",
+                    "Moat move",
+                ],
+                "workstreams": [],
+                "roadmap": {
+                    "90": {
+                        "theme": "prove the thesis",
+                        "entry_gate": "Diagnosis done, founder committed to a POV",
+                        "actions": [],
+                        "exit_gate": {
+                            "question": "Did the new positioning + offer beat the old on conversion?",
+                            "data_needed": "A/B or before/after conv. + qualitative",
+                            "calls": ["double down", "adjust", "pause"],
+                            "proceed_criteria": "conversion up or clear qualitative pull",
+                        },
+                    },
+                    "180": {
+                        "theme": "compound it",
+                        "entry_gate": "90-day gate passed",
+                        "actions": [],
+                        "exit_gate": {
+                            "question": "Is the growth loop turning without founder push?",
+                            "data_needed": "loop turning_metric trend",
+                            "calls": ["scale spend", "fix the loop", "pause"],
+                            "proceed_criteria": "loop metric compounding 8+ weeks",
+                        },
+                    },
+                    "365": {
+                        "theme": "own it",
+                        "entry_gate": "loop compounding",
+                        "actions": [],
+                        "exit_gate": {
+                            "question": "Does the market use our category frame / pay our price?",
+                            "data_needed": "inbound language, price realised, win rate",
+                            "calls": ["press the lead", "reposition", "hold"],
+                            "proceed_criteria": "category recognition + pricing power visible",
+                        },
+                    },
+                },
+                "decision_gates": [
+                    {
+                        "day": 30,
+                        "question": "Is the POV landing with best-fit customers?",
+                        "data_needed": "10+ customer reactions",
+                        "possible_calls": ["proceed", "sharpen the enemy", "pause"],
+                    },
+                    {
+                        "day": 90,
+                        "question": "New positioning + offer beating the old?",
+                        "data_needed": "conversion delta",
+                        "possible_calls": ["double down", "adjust", "pause"],
+                    },
+                ],
+                "kill_switches": [
+                    {
+                        "condition": "Margin can't fund any brand investment for 12 months",
+                        "means": "Don't chase referent status — fix economics or pivot",
+                        "check_at": "day 30",
+                    },
+                    {
+                        "condition": "CAC payback past 4 months two months running",
+                        "means": "Pause acquisition spend",
+                        "check_at": "day 90 gate",
+                    },
+                ],
+                "resourcing": {
+                    "founder_time_split": {
+                        "positioning/brand": "40%",
+                        "gtm": "40%",
+                        "ops": "20%",
+                    },
+                    "outsource": ["design production", "content editing"],
+                    "the_one_hire": "none in first 90 days",
+                    "budget_shape": "60% content / 25% channels / 15% tools",
+                },
+                "leading_indicators": [
+                    {
+                        "metric": "best-fit trials started / week",
+                        "source": "signups tagged by ICP",
+                        "green": "growing wk/wk",
+                        "yellow": "flat",
+                        "red": "declining 3 wks",
+                        "forecasts_lagging_kpi": "MRR",
+                    },
+                    {
+                        "metric": "POV content shares",
+                        "source": "social + referral logs",
+                        "green": ">X",
+                        "yellow": "some",
+                        "red": "none",
+                        "forecasts_lagging_kpi": "organic acquisition",
+                    },
+                ],
+                "metrics_board": [],
+                "first_2_weeks": [
+                    {
+                        "action": "Publish the POV piece the positioning implies; pin everywhere",
+                        "owner": "founder",
+                    },
+                    {
+                        "action": "Rewrite homepage + hero around the one-liner and enemy",
+                        "owner": "founder",
+                    },
+                    {
+                        "action": "DM 10 best-fit customers for reactions to the new frame",
+                        "owner": "founder",
+                    },
+                ],
+                "sequencing_logic": "Positioning and offer land before any spend; spend before scale; moat moves only once the loop turns.",
+                "biggest_risk": "Executing tactics while skipping the positioning commitment underneath — early signal: the team can't state the enemy in one sentence.",
+                "operating_rhythm_ref": "weekly metrics + monthly retro + quarterly re-diagnosis",
             },
-            "decision_gates": [
-                {"day": 30, "question": "Is the POV landing with best-fit customers?", "data_needed": "10+ customer reactions", "possible_calls": ["proceed", "sharpen the enemy", "pause"]},
-                {"day": 90, "question": "New positioning + offer beating the old?", "data_needed": "conversion delta", "possible_calls": ["double down", "adjust", "pause"]},
-            ],
-            "kill_switches": [
-                {"condition": "Margin can't fund any brand investment for 12 months", "means": "Don't chase referent status — fix economics or pivot", "check_at": "day 30"},
-                {"condition": "CAC payback past 4 months two months running", "means": "Pause acquisition spend", "check_at": "day 90 gate"},
-            ],
-            "resourcing": {"founder_time_split": {"positioning/brand": "40%", "gtm": "40%", "ops": "20%"}, "outsource": ["design production", "content editing"], "the_one_hire": "none in first 90 days", "budget_shape": "60% content / 25% channels / 15% tools"},
-            "leading_indicators": [
-                {"metric": "best-fit trials started / week", "source": "signups tagged by ICP", "green": "growing wk/wk", "yellow": "flat", "red": "declining 3 wks", "forecasts_lagging_kpi": "MRR"},
-                {"metric": "POV content shares", "source": "social + referral logs", "green": ">X", "yellow": "some", "red": "none", "forecasts_lagging_kpi": "organic acquisition"},
-            ],
-            "metrics_board": [],
-            "first_2_weeks": [
-                {"action": "Publish the POV piece the positioning implies; pin everywhere", "owner": "founder"},
-                {"action": "Rewrite homepage + hero around the one-liner and enemy", "owner": "founder"},
-                {"action": "DM 10 best-fit customers for reactions to the new frame", "owner": "founder"},
-            ],
-            "sequencing_logic": "Positioning and offer land before any spend; spend before scale; moat moves only once the loop turns.",
-            "biggest_risk": "Executing tactics while skipping the positioning commitment underneath — early signal: the team can't state the enemy in one sentence.",
-            "operating_rhythm_ref": "weekly metrics + monthly retro + quarterly re-diagnosis",
-        }, "The dependency graph and critical path are the deliverable. Every "
-           "horizon needs a real 'pause' call. Leading indicators must forecast a "
-           "named lagging KPI, not duplicate it. Kill switches must be concrete "
-           "conditions, not 'if it's not working'.")
+            "The dependency graph and critical path are the deliverable. Every "
+            "horizon needs a real 'pause' call. Leading indicators must forecast a "
+            "named lagging KPI, not duplicate it. Kill switches must be concrete "
+            "conditions, not 'if it's not working'.",
+        )
 
         program.roadmap = {
-            k: d.get(k) for k in ("north_star", "roadmap", "workstreams", "sequencing_logic", "biggest_risk", "metrics_board")
+            k: d.get(k)
+            for k in (
+                "north_star",
+                "roadmap",
+                "workstreams",
+                "sequencing_logic",
+                "biggest_risk",
+                "metrics_board",
+            )
         }
         program.execution_plan = {
-            k: d.get(k) for k in (
-                "dependency_graph", "critical_path", "decision_gates", "kill_switches",
-                "resourcing", "leading_indicators", "first_2_weeks", "operating_rhythm_ref",
+            k: d.get(k)
+            for k in (
+                "dependency_graph",
+                "critical_path",
+                "decision_gates",
+                "kill_switches",
+                "resourcing",
+                "leading_indicators",
+                "first_2_weeks",
+                "operating_rhythm_ref",
             )
         }
         board = dict(program.metrics_board or {})
@@ -451,10 +639,18 @@ Return JSON:
 
     # ------------------------------------------------------------------ automations
 
-    async def create_automation(self, business_id: uuid.UUID, automation_type: str, schedule: str, config: dict | None) -> BrandAutomation:
+    async def create_automation(
+        self,
+        business_id: uuid.UUID,
+        automation_type: str,
+        schedule: str,
+        config: dict | None,
+    ) -> BrandAutomation:
         row = BrandAutomation(
-            business_id=business_id, automation_type=automation_type,
-            schedule=schedule, config=config or {},
+            business_id=business_id,
+            automation_type=automation_type,
+            schedule=schedule,
+            config=config or {},
         )
         self.db.add(row)
         await self.db.commit()
@@ -463,7 +659,8 @@ Return JSON:
 
     async def list_automations(self, business_id: uuid.UUID) -> list[BrandAutomation]:
         r = await self.db.execute(
-            select(BrandAutomation).where(BrandAutomation.business_id == business_id)
+            select(BrandAutomation)
+            .where(BrandAutomation.business_id == business_id)
             .order_by(desc(BrandAutomation.created_at))
         )
         return list(r.scalars().all())
@@ -474,26 +671,39 @@ Return JSON:
         out = []
         for a in rows:
             if a.last_alert:
-                out.append({
-                    "automation_id": str(a.id),
-                    "type": a.automation_type,
-                    "severity": a.last_severity,
-                    "at": a.last_run_at.isoformat() if a.last_run_at else None,
-                    "headline": (a.last_result or {}).get("headline") or (a.last_result or {}).get("summary"),
-                    "recommended_action": (a.last_result or {}).get("recommended_action"),
-                })
+                out.append(
+                    {
+                        "automation_id": str(a.id),
+                        "type": a.automation_type,
+                        "severity": a.last_severity,
+                        "at": a.last_run_at.isoformat() if a.last_run_at else None,
+                        "headline": (a.last_result or {}).get("headline")
+                        or (a.last_result or {}).get("summary"),
+                        "recommended_action": (a.last_result or {}).get(
+                            "recommended_action"
+                        ),
+                    }
+                )
         return out
 
     async def _hydrate_brand_reference(self, bid: uuid.UUID) -> dict:
         """Latest positioning + identity, for monitors that weren't given a reference."""
-        pos = (await self.db.execute(
-            select(PositioningStatement).where(PositioningStatement.business_id == bid)
-            .order_by(desc(PositioningStatement.created_at)).limit(1)
-        )).scalar_one_or_none()
-        ident = (await self.db.execute(
-            select(BrandIdentity).where(BrandIdentity.business_id == bid)
-            .order_by(desc(BrandIdentity.created_at)).limit(1)
-        )).scalar_one_or_none()
+        pos = (
+            await self.db.execute(
+                select(PositioningStatement)
+                .where(PositioningStatement.business_id == bid)
+                .order_by(desc(PositioningStatement.created_at))
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+        ident = (
+            await self.db.execute(
+                select(BrandIdentity)
+                .where(BrandIdentity.business_id == bid)
+                .order_by(desc(BrandIdentity.created_at))
+                .limit(1)
+            )
+        ).scalar_one_or_none()
         ref: dict = {}
         if pos:
             ref["positioning_statement"] = pos.positioning_statement
@@ -538,12 +748,20 @@ Return JSON:
                     "State explicitly what improved, what regressed, and what is still unaddressed."
                 )
             row = await DiagnosisAgent(self.db).run(bid, profile, extra)
-            delta = (row.referent_potential_score - prior_score) if prior_score is not None else None
+            delta = (
+                (row.referent_potential_score - prior_score)
+                if prior_score is not None
+                else None
+            )
             if prior is not None:
                 row.compared_to_diagnosis_id = prior.id
                 row.score_delta = delta
                 await self.db.commit()
-            trend = "improving" if (delta or 0) > 2 else "declining" if (delta or 0) < -2 else "flat"
+            trend = (
+                "improving"
+                if (delta or 0) > 2
+                else "declining" if (delta or 0) < -2 else "flat"
+            )
             alert_below = cfg.get("alert_below")
             severity, alert = "ok", False
             if trend == "declining":
@@ -560,7 +778,8 @@ Return JSON:
                 "alert": alert,
                 "headline": f"Referent Potential {row.referent_potential_score} ({trend}, Δ{delta if delta is not None else 'n/a'})",
                 "recommended_action": (
-                    "Re-run the transformation program's weakest stage" if alert
+                    "Re-run the transformation program's weakest stage"
+                    if alert
                     else "On track — no action"
                 ),
                 "summary": row.summary,
@@ -572,7 +791,9 @@ Return JSON:
             # Check if FOMO engine is enabled before running
             seo_wrapper = SEOAwareAgentWrapper(self.db)
             if not await seo_wrapper.should_run_fomo_engine_agent(bid):
-                logger.info(f"Skipping fomo_cadence automation for business {bid}: SEO disabled")
+                logger.info(
+                    f"Skipping fomo_cadence automation for business {bid}: SEO disabled"
+                )
                 result = {
                     "type": "fomo_cadence",
                     "note": "FOMO cadence automation skipped — SEO positioning disabled in seo_config",
@@ -581,12 +802,22 @@ Return JSON:
                 }
             else:
                 row = await FOMOEngineAgent(self.db).run(
-                    bid, profile, cfg.get("context"),
+                    bid,
+                    profile,
+                    cfg.get("context"),
                     "Generate ONLY the next cycle's activation: one lead mechanism + the "
                     "ritual beat for this period + the exact copy hook. Keep it shippable this week.",
                 )
-                result = {"type": "fomo_cadence", "cadence": row.cadence, "next_activation": row.mechanisms, "ritual": row.launch_ritual, "playbook_id": str(row.id)}
-                await seo_wrapper.log_fomo_execution(bid, None, "Generated FOMO cadence activation")
+                result = {
+                    "type": "fomo_cadence",
+                    "cadence": row.cadence,
+                    "next_activation": row.mechanisms,
+                    "ritual": row.launch_ritual,
+                    "playbook_id": str(row.id),
+                }
+                await seo_wrapper.log_fomo_execution(
+                    bid, None, "Generated FOMO cadence activation"
+                )
 
             # optionally push the cycle's mechanisms straight into real fomo campaigns
             if cfg.get("auto_deploy") and cfg.get("owner_user_id"):
@@ -594,7 +825,8 @@ Return JSON:
                     from app.domains.brand_transformation.fomo_bridge import FOMOBridge
 
                     dep = await FOMOBridge(self.db).deploy(
-                        row, owner_user_id=cfg["owner_user_id"],
+                        row,
+                        owner_user_id=cfg["owner_user_id"],
                         activate=bool(cfg.get("activate", False)),
                     )
                     result["deployed_campaigns"] = dep.get("deployed")
@@ -602,7 +834,11 @@ Return JSON:
                 except Exception as e:  # noqa: BLE001
                     result["deploy_error"] = str(e)[:200]
 
-        elif automation.automation_type in ("brand_consistency_monitor", "positioning_drift_watch", "competitor_narrative_watch"):
+        elif automation.automation_type in (
+            "brand_consistency_monitor",
+            "positioning_drift_watch",
+            "competitor_narrative_watch",
+        ):
             samples = cfg.get("samples", [])
             _focus = {
                 "brand_consistency_monitor": "voice, tone, and vocabulary vs the brand voice system (do/don't list, cliché blocklist)",
@@ -614,8 +850,14 @@ Return JSON:
                 "positioning_drift_watch": "positioning",
                 "competitor_narrative_watch": "positioning",
             }[automation.automation_type]
-            brand_ref = cfg.get("brand_reference") or await self._hydrate_brand_reference(bid)
-            prev_scores = [h.get("score") for h in (automation.run_history or []) if h.get("score") is not None][-5:]
+            brand_ref = cfg.get(
+                "brand_reference"
+            ) or await self._hydrate_brand_reference(bid)
+            prev_scores = [
+                h.get("score")
+                for h in (automation.run_history or [])
+                if h.get("score") is not None
+            ][-5:]
             prompt = f"""{_profile_block(profile)}
 
 {K.QUALITY_BAR}
@@ -640,18 +882,29 @@ Return JSON:
   "fix_type": "copy_edit | rerun_stage",
   "trend_note": "vs the prior scores: improving / flat / worsening"
 }}"""
-            result = await _ask_json_async(prompt, {
-                "consistency_score": 70, "verdict": "minor-drift", "violations": [],
-                "single_priority_fix": "Provide samples in config for a real check.",
-                "fix_type": "copy_edit", "trend_note": "n/a",
-            })
+            result = await _ask_json_async(
+                prompt,
+                {
+                    "consistency_score": 70,
+                    "verdict": "minor-drift",
+                    "violations": [],
+                    "single_priority_fix": "Provide samples in config for a real check.",
+                    "fix_type": "copy_edit",
+                    "trend_note": "n/a",
+                },
+            )
             result["type"] = automation.automation_type
             result["score"] = result.get("consistency_score")
-            sev, alert = self._grade_severity(result.get("consistency_score"), result.get("verdict"))
+            sev, alert = self._grade_severity(
+                result.get("consistency_score"), result.get("verdict")
+            )
             result["severity"], result["alert"] = sev, alert
-            result["headline"] = f"{automation.automation_type}: {result.get('verdict')} ({result.get('consistency_score')}/100)"
+            result["headline"] = (
+                f"{automation.automation_type}: {result.get('verdict')} ({result.get('consistency_score')}/100)"
+            )
             result["recommended_action"] = (
-                f"Re-run the '{_fix_stage}' stage" if result.get("fix_type") == "rerun_stage"
+                f"Re-run the '{_fix_stage}' stage"
+                if result.get("fix_type") == "rerun_stage"
                 else result.get("single_priority_fix")
             )
 
@@ -659,12 +912,16 @@ Return JSON:
             prog = None
             pid = cfg.get("program_id")
             if pid:
-                prog = await self.get_program(uuid.UUID(pid) if isinstance(pid, str) else pid)
+                prog = await self.get_program(
+                    uuid.UUID(pid) if isinstance(pid, str) else pid
+                )
             if not prog:
                 progs = await self.list_programs(bid)
                 prog = progs[0] if progs else None
             plan = (prog.execution_plan if prog else None) or {}
-            readings = cfg.get("indicator_readings", {})  # {metric: current value/status}
+            readings = cfg.get(
+                "indicator_readings", {}
+            )  # {metric: current value/status}
             prompt = f"""{_profile_block(profile)}
 
 EXECUTION PLAN (decision gates + leading indicators):
@@ -686,11 +943,17 @@ Return JSON:
   "why": "...",
   "next_actions": ["..."]
 }}"""
-            result = await _ask_json_async(prompt, {
-                "gate": "unknown", "indicator_status": [], "kill_switch_triggered": False,
-                "call": "adjust", "why": "Provide indicator_readings + program_id in config.",
-                "next_actions": [],
-            })
+            result = await _ask_json_async(
+                prompt,
+                {
+                    "gate": "unknown",
+                    "indicator_status": [],
+                    "kill_switch_triggered": False,
+                    "call": "adjust",
+                    "why": "Provide indicator_readings + program_id in config.",
+                    "next_actions": [],
+                },
+            )
             result["type"] = "roadmap_gate_check"
             call = str(result.get("call", "")).lower()
             if result.get("kill_switch_triggered") or call in ("pause", "pivot"):
@@ -700,7 +963,9 @@ Return JSON:
             else:
                 result["severity"], result["alert"] = "ok", False
             result["headline"] = f"Gate '{result.get('gate')}': {result.get('call')}"
-            result["recommended_action"] = "; ".join(result.get("next_actions") or []) or result.get("why")
+            result["recommended_action"] = "; ".join(
+                result.get("next_actions") or []
+            ) or result.get("why")
 
         elif automation.automation_type == "transformation_pulse":
             diag = await DiagnosisAgent(self.db).latest(bid)
@@ -708,14 +973,20 @@ Return JSON:
             prog = progs[0] if progs else None
             all_auto = await self.list_automations(bid)
             open_alerts = [
-                {"type": a.automation_type, "severity": a.last_severity,
-                 "headline": (a.last_result or {}).get("headline")}
-                for a in all_auto if a.last_alert and a.id != automation.id
+                {
+                    "type": a.automation_type,
+                    "severity": a.last_severity,
+                    "headline": (a.last_result or {}).get("headline"),
+                }
+                for a in all_auto
+                if a.last_alert and a.id != automation.id
             ]
             coh = (prog.coherence_audit if prog else None) or {}
             result = {
                 "type": "transformation_pulse",
-                "referent_potential_score": diag.referent_potential_score if diag else None,
+                "referent_potential_score": (
+                    diag.referent_potential_score if diag else None
+                ),
                 "score_trend": (diag.score_delta if diag else None),
                 "program_status": prog.status if prog else "none",
                 "stages_completed": len(prog.completed_stages or []) if prog else 0,
@@ -728,15 +999,30 @@ Return JSON:
                     f"coherencia {coh.get('score', '?')} · {len(open_alerts)} alertas"
                 ),
             }
-            crit = any(a["severity"] == "critical" for a in open_alerts) or (coh.get("score") or 100) < 50
-            result["severity"] = "critical" if crit else ("warn" if open_alerts else "ok")
+            crit = (
+                any(a["severity"] == "critical" for a in open_alerts)
+                or (coh.get("score") or 100) < 50
+            )
+            result["severity"] = (
+                "critical" if crit else ("warn" if open_alerts else "ok")
+            )
             result["alert"] = bool(crit or open_alerts)
             result["recommended_action"] = (
-                "Address the open critical alerts first" if crit
-                else "Review open alerts" if open_alerts else "Healthy — keep the cadence"
+                "Address the open critical alerts first"
+                if crit
+                else (
+                    "Review open alerts"
+                    if open_alerts
+                    else "Healthy — keep the cadence"
+                )
             )
         else:
-            result = {"type": automation.automation_type, "note": "no runner implemented", "severity": "ok", "alert": False}
+            result = {
+                "type": automation.automation_type,
+                "note": "no runner implemented",
+                "severity": "ok",
+                "alert": False,
+            }
 
         from app.domains.brand_transformation.service import llm_available
 
@@ -751,13 +1037,17 @@ Return JSON:
         automation.last_severity = result["severity"]
         automation.last_alert = bool(result["alert"])
         hist = list(automation.run_history or [])
-        hist.append({
-            "at": now.isoformat(),
-            "severity": result["severity"],
-            "alert": bool(result["alert"]),
-            "score": result.get("score") or result.get("referent_potential_score") or result.get("coherence_score"),
-            "headline": result.get("headline") or result.get("summary"),
-        })
+        hist.append(
+            {
+                "at": now.isoformat(),
+                "severity": result["severity"],
+                "alert": bool(result["alert"]),
+                "score": result.get("score")
+                or result.get("referent_potential_score")
+                or result.get("coherence_score"),
+                "headline": result.get("headline") or result.get("summary"),
+            }
+        )
         automation.run_history = hist[-20:]
         await self.db.commit()
         return result

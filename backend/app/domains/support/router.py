@@ -40,7 +40,12 @@ def _svc(
 
 # ===== Tickets (User) =====
 
-@router.post("/tickets", response_model=SupportTicketResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/tickets",
+    response_model=SupportTicketResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_ticket(
     data: SupportTicketCreate,
     current_user: Annotated[User, Depends(get_current_active_user)],
@@ -80,7 +85,11 @@ async def get_ticket(
     return {**ticket.__dict__, "messages": messages}
 
 
-@router.post("/tickets/{ticket_id}/messages", response_model=TicketMessageResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/tickets/{ticket_id}/messages",
+    response_model=TicketMessageResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def add_message(
     ticket_id: uuid.UUID,
     data: TicketMessageCreate,
@@ -126,12 +135,15 @@ async def submit_csat(
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket no encontrado")
     if ticket.status != TicketStatus.RESOLVED:
-        raise HTTPException(status_code=400, detail="Solo se puede calificar tickets resueltos")
+        raise HTTPException(
+            status_code=400, detail="Solo se puede calificar tickets resueltos"
+        )
     ticket = await svc.submit_csat(ticket_id, data)
     return ticket
 
 
 # ===== FAQ (Public) =====
+
 
 @router.get("/faq", response_model=list[FAQResponse])
 async def list_faqs(
@@ -145,6 +157,7 @@ async def list_faqs(
 
 # ===== Knowledge Base (Public) =====
 
+
 @router.get("/kb", response_model=list[KnowledgeBaseArticleResponse])
 async def list_kb_articles(
     svc: Annotated[SupportService, Depends(_svc)],
@@ -156,6 +169,7 @@ async def list_kb_articles(
 
 
 # ===== Admin Endpoints =====
+
 
 @router.get("/admin/tickets", response_model=SupportTicketListResponse)
 async def admin_list_tickets(
@@ -208,7 +222,9 @@ async def admin_update_ticket(
     return ticket
 
 
-@router.post("/admin/tickets/{ticket_id}/messages", response_model=TicketMessageResponse)
+@router.post(
+    "/admin/tickets/{ticket_id}/messages", response_model=TicketMessageResponse
+)
 async def admin_add_message(
     ticket_id: uuid.UUID,
     data: TicketMessageCreate,
@@ -246,7 +262,10 @@ async def admin_get_stats(
 
 # ===== Admin FAQ Management =====
 
-@router.post("/admin/faqs", response_model=FAQResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/admin/faqs", response_model=FAQResponse, status_code=status.HTTP_201_CREATED
+)
 async def admin_create_faq(
     data: FAQCreate,
     current_user: Annotated[User, Depends(get_current_active_user)],
@@ -288,7 +307,12 @@ async def admin_delete_faq(
 
 # ===== Admin KB Management =====
 
-@router.post("/admin/kb", response_model=KnowledgeBaseArticleResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/admin/kb",
+    response_model=KnowledgeBaseArticleResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def admin_create_kb_article(
     data: KnowledgeBaseArticleCreate,
     current_user: Annotated[User, Depends(get_current_active_user)],

@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 class CTAType(str, Enum):
     """Call-to-action types"""
+
     SOFT = "soft"  # "Let me know" / "Open to ideas"
     DIRECT = "direct"  # "Click here" / "Buy now"
     SCARCITY = "scarcity"  # "Only X left" / "Limited time"
@@ -33,6 +34,7 @@ class CTAType(str, Enum):
 @dataclass
 class ResponseTemplate:
     """Template for building responses"""
+
     intro: str  # Opening line
     body: str  # Main message
     social_proof: str | None  # "100+ customers love this"
@@ -365,7 +367,9 @@ class ResponseBuilder:
             closing_style = "friendly"
 
         closings = self.CLOSINGS.get(closing_style, {})
-        language_closings = closings.get(language, closings.get("en", ["Best regards,"]))
+        language_closings = closings.get(
+            language, closings.get("en", ["Best regards,"])
+        )
         return choice(language_closings)
 
     def _calculate_cta_strength(
@@ -415,11 +419,17 @@ class ResponseBuilder:
             score += 0.15
 
         # Natural transitions
-        if any(word in text.lower() for word in ["i think", "you know", "honestly", "totally"]):
+        if any(
+            word in text.lower()
+            for word in ["i think", "you know", "honestly", "totally"]
+        ):
             score += 0.1
 
         # Contractions (makes it feel natural)
-        if any(contraction in text for contraction in ["'s", "'t", "'re", "'ve", "'ll", "'d"]):
+        if any(
+            contraction in text
+            for contraction in ["'s", "'t", "'re", "'ve", "'ll", "'d"]
+        ):
             score += 0.1
 
         # Emoji usage (adds personality if used appropriately)
@@ -554,5 +564,9 @@ class ResponseBuilder:
             "is_valid": len(issues) == 0,
             "issues": issues,
             "warnings": warnings,
-            "recommendation": "Send" if len(issues) == 0 else f"Fix issues before sending: {', '.join(issues)}",
+            "recommendation": (
+                "Send"
+                if len(issues) == 0
+                else f"Fix issues before sending: {', '.join(issues)}"
+            ),
         }

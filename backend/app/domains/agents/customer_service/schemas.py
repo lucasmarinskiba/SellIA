@@ -9,8 +9,12 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class ServiceBotConfigBase(BaseModel):
     name: str = "SellIA Support"
-    greeting_message: str = "¡Hola! Soy tu asistente virtual. ¿En qué puedo ayudarte hoy?"
-    fallback_message: str = "No estoy seguro de entender. ¿Te gustaría que te conecte con un agente humano?"
+    greeting_message: str = (
+        "¡Hola! Soy tu asistente virtual. ¿En qué puedo ayudarte hoy?"
+    )
+    fallback_message: str = (
+        "No estoy seguro de entender. ¿Te gustaría que te conecte con un agente humano?"
+    )
     escalation_threshold: float = Field(default=0.75, ge=0.0, le=1.0)
     hours_active: dict[str, Any] = Field(default_factory=dict)
     channels: list[str] = Field(default_factory=list)

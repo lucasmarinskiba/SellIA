@@ -38,7 +38,11 @@ def reconcile(
 ) -> tuple[np.ndarray, list[np.ndarray]]:
     """Return a coherent (total == sum(children)) set of paths."""
     if not child_paths:
-        return (np.asarray(total_path, dtype=float) if total_path is not None else np.array([])), []
+        return (
+            np.asarray(total_path, dtype=float)
+            if total_path is not None
+            else np.array([])
+        ), []
 
     bu = bottom_up(child_paths)
     if total_path is None:
@@ -48,7 +52,9 @@ def reconcile(
 
     # weight on the top-level forecast: better (lower) WAPE -> more weight
     if total_wape is not None and child_wapes:
-        mean_child = float(np.nanmean([w for w in child_wapes if np.isfinite(w)]) or total_wape)
+        mean_child = float(
+            np.nanmean([w for w in child_wapes if np.isfinite(w)]) or total_wape
+        )
         w_top = float(np.clip(mean_child / (mean_child + total_wape + 1e-9), 0.1, 0.9))
     else:
         w_top = 0.5

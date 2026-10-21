@@ -33,7 +33,9 @@ class OutreachOpportunity(Base):
     )  # 'low', 'medium', 'high', 'urgent'
     trigger_data = Column(JSONB, default=dict, nullable=False)
     suggested_message = Column(Text, nullable=True)
-    suggested_channel = Column(String(20), nullable=False, default="whatsapp")  # 'whatsapp', 'email', 'sms', 'dm'
+    suggested_channel = Column(
+        String(20), nullable=False, default="whatsapp"
+    )  # 'whatsapp', 'email', 'sms', 'dm'
     status = Column(
         String(20),
         nullable=False,
@@ -57,7 +59,9 @@ class OutreachOpportunity(Base):
 
     __table_args__ = (
         Index("ix_outreach_opportunities_business_status", "business_id", "status"),
-        Index("ix_outreach_opportunities_business_type", "business_id", "opportunity_type"),
+        Index(
+            "ix_outreach_opportunities_business_type", "business_id", "opportunity_type"
+        ),
     )
 
 
@@ -75,9 +79,13 @@ class OutreachRule(Base):
         nullable=False,
         index=True,
     )  # same types as opportunity
-    conditions = Column(JSONB, default=dict, nullable=False)  # e.g., {"cart_abandoned_hours": 24, "min_cart_value": 50}
+    conditions = Column(
+        JSONB, default=dict, nullable=False
+    )  # e.g., {"cart_abandoned_hours": 24, "min_cart_value": 50}
     message_template = Column(Text, nullable=False)
-    channel = Column(String(20), nullable=False, default="whatsapp")  # 'whatsapp', 'email', 'sms', 'dm'
+    channel = Column(
+        String(20), nullable=False, default="whatsapp"
+    )  # 'whatsapp', 'email', 'sms', 'dm'
     is_active = Column(Boolean, default=True, nullable=False)
 
     created_at = Column(

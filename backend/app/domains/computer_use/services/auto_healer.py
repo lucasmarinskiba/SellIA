@@ -44,7 +44,10 @@ class AutoHealer:
                         return HealResult(
                             success=True,
                             new_selector=f"text={expected_text}",
-                            new_coords={"x": int(box["x"] + box["width"] / 2), "y": int(box["y"] + box["height"] / 2)},
+                            new_coords={
+                                "x": int(box["x"] + box["width"] / 2),
+                                "y": int(box["y"] + box["height"] / 2),
+                            },
                             strategy="text_match",
                             confidence=0.9,
                         )
@@ -53,7 +56,9 @@ class AutoHealer:
 
         # Strategy 2: Look for interactive elements near original coords
         try:
-            elements = await page.query_selector_all("button, a, input, [role='button'], [onclick]")
+            elements = await page.query_selector_all(
+                "button, a, input, [role='button'], [onclick]"
+            )
             closest = None
             closest_dist = float("inf")
             for el in elements:
@@ -71,7 +76,10 @@ class AutoHealer:
                 return HealResult(
                     success=True,
                     new_selector=None,
-                    new_coords={"x": int(box["x"] + box["width"] / 2), "y": int(box["y"] + box["height"] / 2)},
+                    new_coords={
+                        "x": int(box["x"] + box["width"] / 2),
+                        "y": int(box["y"] + box["height"] / 2),
+                    },
                     strategy="nearby_element",
                     confidence=max(0, 1 - closest_dist / 200),
                 )
@@ -113,21 +121,36 @@ class AutoHealer:
         """Intenta recuperar un typing fallido encontrando un input enfocable."""
         try:
             # Find first visible input
-            inputs = await page.query_selector_all("input, textarea, [contenteditable='true']")
+            inputs = await page.query_selector_all(
+                "input, textarea, [contenteditable='true']"
+            )
             for inp in inputs:
                 if await inp.is_visible() and await inp.is_enabled():
                     box = await inp.bounding_box()
                     return HealResult(
                         success=True,
                         new_selector=None,
-                        new_coords={"x": int(box["x"] + box["width"] / 2), "y": int(box["y"] + box["height"] / 2)} if box else None,
+                        new_coords=(
+                            {
+                                "x": int(box["x"] + box["width"] / 2),
+                                "y": int(box["y"] + box["height"] / 2),
+                            }
+                            if box
+                            else None
+                        ),
                         strategy="first_input",
                         confidence=0.6,
                     )
         except Exception:
             logger.exception("heal_type: error inesperado")
 
-        return HealResult(success=False, new_selector=None, new_coords=None, strategy="exhausted", confidence=0.0)
+        return HealResult(
+            success=False,
+            new_selector=None,
+            new_coords=None,
+            strategy="exhausted",
+            confidence=0.0,
+        )
 
     async def heal_navigate(
         self,
@@ -158,7 +181,13 @@ class AutoHealer:
                 confidence=0.3,
             )
 
-        return HealResult(success=False, new_selector=None, new_coords=None, strategy="exhausted", confidence=0.0)
+        return HealResult(
+            success=False,
+            new_selector=None,
+            new_coords=None,
+            strategy="exhausted",
+            confidence=0.0,
+        )
 
     def get_heal_summary(self, heals: list[HealResult]) -> dict[str, Any]:
         """Resumen de recuperaciones."""
@@ -167,5 +196,9 @@ class AutoHealer:
             "total_attempts": len(heals),
             "successful": len(successful),
             "strategies_used": list({h.strategy for h in successful}),
-            "avg_confidence": sum(h.confidence for h in successful) / len(successful) if successful else 0,
+            "avg_confidence": (
+                sum(h.confidence for h in successful) / len(successful)
+                if successful
+                else 0
+            ),
         }

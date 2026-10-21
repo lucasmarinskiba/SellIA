@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 class MessengerConnector(BaseChannelConnector):
     """Conector para Facebook Messenger usando Meta Graph API."""
+
     platform = "messenger"
     BASE_URL = "https://graph.facebook.com/v18.0"
 
@@ -22,7 +23,9 @@ class MessengerConnector(BaseChannelConnector):
         self.api_token = credentials.get("api_token")
         self.page_id = credentials.get("page_id")
 
-    async def send_message(self, recipient_id: str, content: str, content_type: str = "text") -> dict[str, Any]:
+    async def send_message(
+        self, recipient_id: str, content: str, content_type: str = "text"
+    ) -> dict[str, Any]:
         if not self.api_token:
             raise ValueError("Faltan credenciales de Messenger")
 

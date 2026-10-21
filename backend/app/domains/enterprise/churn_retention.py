@@ -21,6 +21,7 @@ client_anthropic = Anthropic()
 
 class ChurnRiskLevel(Enum):
     """Churn risk severity."""
+
     LOW = "LOW"
     MEDIUM = "MEDIUM"
     HIGH = "HIGH"
@@ -28,6 +29,7 @@ class ChurnRiskLevel(Enum):
 
 class OpportunityType(Enum):
     """Expansion opportunity types."""
+
     UPSELL = "upsell"
     CROSS_SELL = "cross_sell"
     SEAT_EXPANSION = "seat_expansion"
@@ -37,6 +39,7 @@ class OpportunityType(Enum):
 @dataclass
 class ChurnPrediction:
     """Churn prediction result."""
+
     customer_id: str
     churn_probability: float
     risk_level: ChurnRiskLevel
@@ -48,6 +51,7 @@ class ChurnPrediction:
 @dataclass
 class ExpansionOpportunity:
     """Expansion opportunity."""
+
     customer_id: str
     opportunity_type: OpportunityType
     base_feature: str
@@ -63,16 +67,18 @@ class ChurnPredictionModel:
     def __init__(self, db):
         self.db = db
 
-    def predict_churn(self, customer_id: str, features: dict[str, Any]) -> ChurnPrediction:
+    def predict_churn(
+        self, customer_id: str, features: dict[str, Any]
+    ) -> ChurnPrediction:
         """Predict churn probability for customer."""
         # In production: load trained XGBoost model
         # For now: simple heuristic model
         score = self._calculate_churn_score(features)
 
         risk_level = (
-            ChurnRiskLevel.HIGH if score > 0.7 else
-            ChurnRiskLevel.MEDIUM if score > 0.5 else
-            ChurnRiskLevel.LOW
+            ChurnRiskLevel.HIGH
+            if score > 0.7
+            else ChurnRiskLevel.MEDIUM if score > 0.5 else ChurnRiskLevel.LOW
         )
 
         reasons = self._identify_churn_reasons(features)
@@ -125,32 +131,42 @@ class ChurnPredictionModel:
         reasons = []
 
         if features.get("days_since_login", 0) > 30:
-            reasons.append({
-                "reason": f"No login for {features.get('days_since_login', 0)} days",
-                "impact": 0.35,
-            })
+            reasons.append(
+                {
+                    "reason": f"No login for {features.get('days_since_login', 0)} days",
+                    "impact": 0.35,
+                }
+            )
 
         if features.get("features_used_pct", 1.0) < 0.3:
-            reasons.append({
-                "reason": "Low feature adoption (<30%)",
-                "impact": 0.25,
-            })
+            reasons.append(
+                {
+                    "reason": "Low feature adoption (<30%)",
+                    "impact": 0.25,
+                }
+            )
 
         if features.get("support_ticket_trend", 0) < -0.2:
-            reasons.append({
-                "reason": "Declining support engagement",
-                "impact": 0.2,
-            })
+            reasons.append(
+                {
+                    "reason": "Declining support engagement",
+                    "impact": 0.2,
+                }
+            )
 
         if features.get("competitor_mentions", 0) > 3:
-            reasons.append({
-                "reason": "Competitor threat detected",
-                "impact": 0.15,
-            })
+            reasons.append(
+                {
+                    "reason": "Competitor threat detected",
+                    "impact": 0.15,
+                }
+            )
 
         return sorted(reasons, key=lambda r: r["impact"], reverse=True)[:3]
 
-    def _suggest_retention_offer(self, risk_level: ChurnRiskLevel, reasons: list[dict]) -> str:
+    def _suggest_retention_offer(
+        self, risk_level: ChurnRiskLevel, reasons: list[dict]
+    ) -> str:
         """Suggest retention offer based on risk and reasons."""
         if risk_level == ChurnRiskLevel.HIGH:
             return "6-month extension at 40% discount + dedicated support"
@@ -166,7 +182,9 @@ class ExpansionOpportunityDetector:
     def __init__(self, db):
         self.db = db
 
-    def detect_opportunities(self, customer_id: str, usage_data: dict[str, Any]) -> list[ExpansionOpportunity]:
+    def detect_opportunities(
+        self, customer_id: str, usage_data: dict[str, Any]
+    ) -> list[ExpansionOpportunity]:
         """Detect expansion opportunities for customer."""
         opportunities = []
 
@@ -185,13 +203,14 @@ class ExpansionOpportunityDetector:
 
         # Sort by expected value (likelihood × revenue)
         opportunities.sort(
-            key=lambda o: o.likelihood_score * o.revenue_potential,
-            reverse=True
+            key=lambda o: o.likelihood_score * o.revenue_potential, reverse=True
         )
 
         return opportunities
 
-    def _find_feature_adoption_gaps(self, usage_data: dict[str, Any]) -> list[ExpansionOpportunity]:
+    def _find_feature_adoption_gaps(
+        self, usage_data: dict[str, Any]
+    ) -> list[ExpansionOpportunity]:
         """Find features they should adopt."""
         opportunities = []
 
@@ -215,7 +234,9 @@ class ExpansionOpportunityDetector:
 
         return opportunities
 
-    def _find_seat_expansion_opportunity(self, usage_data: dict[str, Any]) -> ExpansionOpportunity | None:
+    def _find_seat_expansion_opportunity(
+        self, usage_data: dict[str, Any]
+    ) -> ExpansionOpportunity | None:
         """Detect team growth -> seat expansion."""
         team_size_current = usage_data.get("team_size_current", 0)
         team_size_historical = usage_data.get("team_size_historical", 0)
@@ -236,7 +257,9 @@ class ExpansionOpportunityDetector:
             )
         return None
 
-    def _find_cross_sell_opportunities(self, usage_data: dict[str, Any]) -> list[ExpansionOpportunity]:
+    def _find_cross_sell_opportunities(
+        self, usage_data: dict[str, Any]
+    ) -> list[ExpansionOpportunity]:
         """Find cross-sell (different product) opportunities."""
         opportunities = []
 
@@ -269,7 +292,9 @@ class ABMIntentScorer:
     def __init__(self, db):
         self.db = db
 
-    def score_intent(self, account_id: str, engagement_data: dict[str, Any]) -> dict[str, Any]:
+    def score_intent(
+        self, account_id: str, engagement_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Calculate ABM intent score from engagement signals."""
         score = 0
         top_signals = []
@@ -278,31 +303,49 @@ class ABMIntentScorer:
         page_views = engagement_data.get("page_views_30d", 0)
         if page_views > 10:
             score += 20
-            top_signals.append({"signal": "page_views", "weight": 0.2, "value": page_views})
+            top_signals.append(
+                {"signal": "page_views", "weight": 0.2, "value": page_views}
+            )
 
         # Email engagement
         email_opens = engagement_data.get("email_open_rate", 0)
         if email_opens > 0.4:
             score += 15
-            top_signals.append({"signal": "email_opens", "weight": 0.15, "value": f"{email_opens*100:.0f}%"})
+            top_signals.append(
+                {
+                    "signal": "email_opens",
+                    "weight": 0.15,
+                    "value": f"{email_opens*100:.0f}%",
+                }
+            )
 
         # Demo/call requests (strongest signal)
         demo_requests = engagement_data.get("demo_requests_30d", 0)
         if demo_requests > 0:
             score += 30
-            top_signals.append({"signal": "demo_request", "weight": 0.3, "value": demo_requests})
+            top_signals.append(
+                {"signal": "demo_request", "weight": 0.3, "value": demo_requests}
+            )
 
         # Content consumption
         content_views = engagement_data.get("content_views_30d", 0)
         if content_views > 5:
             score += 15
-            top_signals.append({"signal": "content_views", "weight": 0.15, "value": content_views})
+            top_signals.append(
+                {"signal": "content_views", "weight": 0.15, "value": content_views}
+            )
 
         # Competitive activity (alert = high intent)
         competitor_research = engagement_data.get("competitor_research_30d", 0)
         if competitor_research > 0:
             score += 20
-            top_signals.append({"signal": "competitor_research", "weight": 0.2, "value": competitor_research})
+            top_signals.append(
+                {
+                    "signal": "competitor_research",
+                    "weight": 0.2,
+                    "value": competitor_research,
+                }
+            )
 
         score = min(100, score)
 
@@ -345,7 +388,9 @@ class RetentionPlaybookGenerator:
     def __init__(self, db):
         self.db = db
 
-    def generate_playbook(self, customer: dict[str, Any], churn_reason: str) -> dict[str, str]:
+    def generate_playbook(
+        self, customer: dict[str, Any], churn_reason: str
+    ) -> dict[str, str]:
         """Generate retention playbook for customer."""
         prompt = f"""Generate a personalized retention playbook for:
 
@@ -429,7 +474,9 @@ class CustomerHealthScore:
         self.expansion_detector = expansion_detector
         self.abm_scorer = abm_scorer
 
-    def calculate_health(self, customer_id: str, features: dict[str, Any]) -> dict[str, Any]:
+    def calculate_health(
+        self, customer_id: str, features: dict[str, Any]
+    ) -> dict[str, Any]:
         """Calculate comprehensive customer health score."""
         churn_pred = self.churn_model.predict_churn(customer_id, features)
         expansions = self.expansion_detector.detect_opportunities(customer_id, features)
@@ -447,7 +494,11 @@ class CustomerHealthScore:
         return {
             "customer_id": customer_id,
             "health_score": health_score,
-            "health_level": "HEALTHY" if health_score > 70 else "AT_RISK" if health_score > 40 else "CRITICAL",
+            "health_level": (
+                "HEALTHY"
+                if health_score > 70
+                else "AT_RISK" if health_score > 40 else "CRITICAL"
+            ),
             "churn_risk": churn_pred.risk_level.value,
             "churn_probability": churn_pred.churn_probability,
             "expansion_potential": expansion_potential,
@@ -455,7 +506,9 @@ class CustomerHealthScore:
             "abm_intent_score": intent["intent_score"],
             "abm_intent_level": intent["intent_level"],
             "trending": intent["trending"],
-            "recommended_action": self._recommend_action(health_score, churn_pred.risk_level),
+            "recommended_action": self._recommend_action(
+                health_score, churn_pred.risk_level
+            ),
         }
 
     def _recommend_action(self, health_score: int, churn_risk: ChurnRiskLevel) -> str:

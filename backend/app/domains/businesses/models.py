@@ -10,6 +10,7 @@ from app.core.database import Base
 
 class LocalizationModel(str, enum.Enum):
     """Business model classification for online/offline mix."""
+
     ONLINE_ONLY = "online_only"
     HYBRID_LIGHT = "hybrid_light"
     HYBRID_HEAVY = "hybrid_heavy"
@@ -27,7 +28,12 @@ class Business(Base):
     __tablename__ = "businesses"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
@@ -35,20 +41,37 @@ class Business(Base):
     # BusinessType enum, and SQLAlchemy names Postgres enum types after the
     # Python class name by default — colliding with that unrelated type
     # (which already exists in prod with a completely different value set).
-    type = Column(Enum(BusinessType, name="business_kind"), default=BusinessType.SERVICES, nullable=False)
+    type = Column(
+        Enum(BusinessType, name="business_kind"),
+        default=BusinessType.SERVICES,
+        nullable=False,
+    )
     config = Column(JSONB, default=dict, nullable=False)
 
-    locations = relationship("Location", back_populates="business", cascade="all, delete-orphan")
+    locations = relationship(
+        "Location", back_populates="business", cascade="all, delete-orphan"
+    )
 
     # user/catalog_items/website/channels/conversations habilitados: las 5
     # clases target (User, CatalogItem, Website, ChannelConnection,
     # Conversation) ya están confirmadas en el registry de SQLAlchemy
     # (verificado con Base.registry._class_registry tras importar app.main).
     user = relationship("User", back_populates="businesses")
-    catalog_items = relationship("CatalogItem", back_populates="business", cascade="all, delete-orphan")
-    website = relationship("Website", back_populates="business", uselist=False, cascade="all, delete-orphan")
-    channels = relationship("ChannelConnection", back_populates="business", cascade="all, delete-orphan")
-    conversations = relationship("Conversation", back_populates="business", cascade="all, delete-orphan")
+    catalog_items = relationship(
+        "CatalogItem", back_populates="business", cascade="all, delete-orphan"
+    )
+    website = relationship(
+        "Website",
+        back_populates="business",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+    channels = relationship(
+        "ChannelConnection", back_populates="business", cascade="all, delete-orphan"
+    )
+    conversations = relationship(
+        "Conversation", back_populates="business", cascade="all, delete-orphan"
+    )
 
 
 # Config por defecto según tipo de negocio
@@ -71,7 +94,13 @@ DEFAULT_SERVICE_CONFIG = {
 DEFAULT_GOODS_CONFIG = {
     "delivery_methods": ["shipping", "pickup", "meetup"],
     "pickup_locations": [],
-    "shipping_providers": ["andreani", "dhl", "mercado_envios", "oca", "correo_argentino"],
+    "shipping_providers": [
+        "andreani",
+        "dhl",
+        "mercado_envios",
+        "oca",
+        "correo_argentino",
+    ],
     "shipping_zones": [],
     "free_shipping_threshold": None,
 }

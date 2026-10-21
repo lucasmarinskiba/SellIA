@@ -35,7 +35,7 @@ class StaffTaskService:
         related_checkin_id: UUID | None = None,
         related_product_id: str | None = None,
         assigned_by_staff_id: UUID | None = None,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Create and assign task to staff."""
         if not db:
@@ -67,7 +67,7 @@ class StaffTaskService:
             "status": task.status.value,
             "title": task.title,
             "assigned_at": task.assigned_at.isoformat(),
-            "due_date": task.due_date.isoformat()
+            "due_date": task.due_date.isoformat(),
         }
 
     @staticmethod
@@ -75,7 +75,7 @@ class StaffTaskService:
         staff_id: UUID,
         location_id: UUID | None = None,
         status_filter: str | None = None,
-        db: Session = None
+        db: Session = None,
     ) -> list:
         """Get tasks assigned to staff."""
         if not db:
@@ -94,17 +94,17 @@ class StaffTaskService:
         tasks = query.order_by(StaffTask.due_date.asc()).all()
 
         for task in tasks:
-            if task.status not in [TaskStatus.COMPLETED, TaskStatus.CANCELLED] and task.due_date < now:
+            if (
+                task.status not in [TaskStatus.COMPLETED, TaskStatus.CANCELLED]
+                and task.due_date < now
+            ):
                 task.status = TaskStatus.OVERDUE
                 db.commit()
 
         return tasks
 
     @staticmethod
-    def acknowledge_task(
-        task_id: UUID,
-        db: Session
-    ) -> dict:
+    def acknowledge_task(task_id: UUID, db: Session) -> dict:
         """Staff acknowledges task assignment."""
         task = db.query(StaffTask).filter(StaffTask.id == task_id).first()
 
@@ -122,7 +122,7 @@ class StaffTaskService:
         return {
             "task_id": str(task.id),
             "status": task.status.value,
-            "acknowledged_at": task.acknowledged_at.isoformat()
+            "acknowledged_at": task.acknowledged_at.isoformat(),
         }
 
     @staticmethod
@@ -144,7 +144,7 @@ class StaffTaskService:
         return {
             "task_id": str(task.id),
             "status": task.status.value,
-            "started_at": task.started_at.isoformat()
+            "started_at": task.started_at.isoformat(),
         }
 
     @staticmethod
@@ -152,7 +152,7 @@ class StaffTaskService:
         task_id: UUID,
         completion_notes: str | None = None,
         completion_evidence: dict | None = None,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Mark task as completed."""
         if not db:
@@ -178,11 +178,15 @@ class StaffTaskService:
             "task_id": str(task.id),
             "status": task.status.value,
             "completed_at": task.completed_at.isoformat(),
-            "completion_time_minutes": _calculate_duration(task.started_at, task.completed_at)
+            "completion_time_minutes": _calculate_duration(
+                task.started_at, task.completed_at
+            ),
         }
 
     @staticmethod
-    def cancel_task(task_id: UUID, reason: str | None = None, db: Session = None) -> dict:
+    def cancel_task(
+        task_id: UUID, reason: str | None = None, db: Session = None
+    ) -> dict:
         """Cancel task."""
         if not db:
             raise ValueError("Database session required")
@@ -205,24 +209,29 @@ class StaffTaskService:
 
     @staticmethod
     def get_task_queue(
-        location_id: UUID,
-        max_results: int = 10,
-        db: Session = None
+        location_id: UUID, max_results: int = 10, db: Session = None
     ) -> dict:
         """Get pending tasks for location, ranked by priority + due date."""
         if not db:
             raise ValueError("Database session required")
 
-        pending_statuses = [TaskStatus.ASSIGNED, TaskStatus.ACKNOWLEDGED, TaskStatus.IN_PROGRESS]
+        pending_statuses = [
+            TaskStatus.ASSIGNED,
+            TaskStatus.ACKNOWLEDGED,
+            TaskStatus.IN_PROGRESS,
+        ]
         now = datetime.now(UTC)
 
-        tasks = db.query(StaffTask).filter(
-            StaffTask.location_id == location_id,
-            StaffTask.status.in_(pending_statuses)
-        ).order_by(
-            StaffTask.priority.desc(),
-            StaffTask.due_date.asc()
-        ).limit(max_results).all()
+        tasks = (
+            db.query(StaffTask)
+            .filter(
+                StaffTask.location_id == location_id,
+                StaffTask.status.in_(pending_statuses),
+            )
+            .order_by(StaffTask.priority.desc(), StaffTask.due_date.asc())
+            .limit(max_results)
+            .all()
+        )
 
         # Check for overdue
         for task in tasks:
@@ -240,7 +249,7 @@ class StaffTaskService:
                 "status": t.status.value,
                 "due_date": t.due_date.isoformat(),
                 "estimated_duration_minutes": t.estimated_duration_minutes,
-                "time_until_due": (t.due_date - now).total_seconds() / 60  # minutes
+                "time_until_due": (t.due_date - now).total_seconds() / 60,  # minutes
             }
             for t in tasks
         ]
@@ -248,29 +257,29 @@ class StaffTaskService:
         return {
             "location_id": str(location_id),
             "pending_count": len(task_list),
-            "tasks": task_list
+            "tasks": task_list,
         }
 
     @staticmethod
     def auto_assign_tasks_to_shift(
-        location_id: UUID,
-        staff_id: UUID,
-        shift_start: datetime,
-        db: Session = None
+        location_id: UUID, staff_id: UUID, shift_start: datetime, db: Session = None
     ) -> dict:
         """Auto-assign queued tasks to staff starting shift."""
         if not db:
             raise ValueError("Database session required")
 
         # Get unassigned tasks for location
-        unassigned = db.query(StaffTask).filter(
-            StaffTask.location_id == location_id,
-            StaffTask.status == TaskStatus.ASSIGNED,
-            StaffTask.assigned_to_staff_id.is_(None)
-        ).order_by(
-            StaffTask.priority.desc(),
-            StaffTask.due_date.asc()
-        ).limit(5).all()
+        unassigned = (
+            db.query(StaffTask)
+            .filter(
+                StaffTask.location_id == location_id,
+                StaffTask.status == TaskStatus.ASSIGNED,
+                StaffTask.assigned_to_staff_id.is_(None),
+            )
+            .order_by(StaffTask.priority.desc(), StaffTask.due_date.asc())
+            .limit(5)
+            .all()
+        )
 
         assigned_count = 0
         for task in unassigned:
@@ -284,7 +293,7 @@ class StaffTaskService:
         return {
             "auto_assigned": assigned_count,
             "staff_id": str(staff_id),
-            "shift_start": shift_start.isoformat()
+            "shift_start": shift_start.isoformat(),
         }
 
 
@@ -296,7 +305,7 @@ class TaskNotificationService:
         task_id: UUID,
         staff_id: UUID,
         notification_channels: list | None = None,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Send notification when task assigned to staff."""
         if not db:
@@ -311,7 +320,7 @@ class TaskNotificationService:
                 task_id=task_id,
                 staff_id=staff_id,
                 notification_type=channel,
-                delivery_status="sent"
+                delivery_status="sent",
             )
             db.add(notification)
             sent_count += 1
@@ -323,18 +332,17 @@ class TaskNotificationService:
         return {
             "task_id": str(task_id),
             "notifications_sent": sent_count,
-            "channels": notification_channels
+            "channels": notification_channels,
         }
 
     @staticmethod
-    def mark_notification_read(
-        notification_id: UUID,
-        db: Session
-    ) -> dict:
+    def mark_notification_read(notification_id: UUID, db: Session) -> dict:
         """Mark notification as read by staff."""
-        notification = db.query(TaskNotification).filter(
-            TaskNotification.id == notification_id
-        ).first()
+        notification = (
+            db.query(TaskNotification)
+            .filter(TaskNotification.id == notification_id)
+            .first()
+        )
 
         if not notification:
             raise ValueError(f"Notification {notification_id} not found")
@@ -342,7 +350,10 @@ class TaskNotificationService:
         notification.read_at = datetime.now(UTC)
         db.commit()
 
-        return {"notification_id": str(notification.id), "read_at": notification.read_at.isoformat()}
+        return {
+            "notification_id": str(notification.id),
+            "read_at": notification.read_at.isoformat(),
+        }
 
 
 class ShiftReadinessService:
@@ -355,7 +366,7 @@ class ShiftReadinessService:
         staff_id: UUID,
         shift_start: datetime,
         shift_end: datetime | None = None,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Generate task performance report for shift."""
         if not db:
@@ -365,12 +376,16 @@ class ShiftReadinessService:
             shift_end = datetime.now(UTC)
 
         # Get all tasks for this shift
-        tasks = db.query(StaffTask).filter(
-            StaffTask.location_id == location_id,
-            StaffTask.assigned_to_staff_id == staff_id,
-            StaffTask.assigned_at >= shift_start,
-            StaffTask.assigned_at <= shift_end
-        ).all()
+        tasks = (
+            db.query(StaffTask)
+            .filter(
+                StaffTask.location_id == location_id,
+                StaffTask.assigned_to_staff_id == staff_id,
+                StaffTask.assigned_at >= shift_start,
+                StaffTask.assigned_at <= shift_end,
+            )
+            .all()
+        )
 
         # Count by status
         completed = [t for t in tasks if t.status == TaskStatus.COMPLETED]
@@ -384,7 +399,11 @@ class ShiftReadinessService:
 
         avg_duration = None
         if completed:
-            durations = [_calculate_duration(t.started_at, t.completed_at) for t in completed if t.started_at and t.completed_at]
+            durations = [
+                _calculate_duration(t.started_at, t.completed_at)
+                for t in completed
+                if t.started_at and t.completed_at
+            ]
             if durations:
                 avg_duration = int(sum(durations) / len(durations))
 
@@ -402,14 +421,16 @@ class ShiftReadinessService:
             tasks_cancelled=len(cancelled),
             completion_rate=int(completion_rate),
             avg_completion_time_minutes=avg_duration,
-            tasks_completed_on_time=on_time
+            tasks_completed_on_time=on_time,
         )
 
         db.add(report)
         db.commit()
         db.refresh(report)
 
-        logger.info(f"Shift report generated: {staff_id} completion_rate={int(completion_rate)}%")
+        logger.info(
+            f"Shift report generated: {staff_id} completion_rate={int(completion_rate)}%"
+        )
 
         return {
             "report_id": str(report.id),
@@ -420,14 +441,12 @@ class ShiftReadinessService:
             "completed": len(completed),
             "completion_rate": int(completion_rate),
             "on_time": on_time,
-            "overdue": len(overdue)
+            "overdue": len(overdue),
         }
 
     @staticmethod
     def get_staff_performance(
-        staff_id: UUID,
-        days: int = 30,
-        db: Session = None
+        staff_id: UUID, days: int = 30, db: Session = None
     ) -> dict:
         """Get staff task performance over time period."""
         if not db:
@@ -435,10 +454,14 @@ class ShiftReadinessService:
 
         cutoff = datetime.now(UTC) - timedelta(days=days)
 
-        tasks = db.query(StaffTask).filter(
-            StaffTask.assigned_to_staff_id == staff_id,
-            StaffTask.assigned_at >= cutoff
-        ).all()
+        tasks = (
+            db.query(StaffTask)
+            .filter(
+                StaffTask.assigned_to_staff_id == staff_id,
+                StaffTask.assigned_at >= cutoff,
+            )
+            .all()
+        )
 
         completed = [t for t in tasks if t.status == TaskStatus.COMPLETED]
         total = len(tasks)
@@ -458,7 +481,7 @@ class ShiftReadinessService:
             "completed": len(completed),
             "completion_rate": int(completion_rate),
             "tasks_by_type": type_counts,
-            "avg_priority": "medium"  # TODO: calculate
+            "avg_priority": "medium",  # TODO: calculate
         }
 
 

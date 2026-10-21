@@ -15,9 +15,9 @@ class Grain(str, enum.Enum):
 
 
 class SeriesLevel(str, enum.Enum):
-    TOTAL = "total"          # whole-business demand (revenue or units)
-    PRODUCT = "product"      # per SKU / product
-    CHANNEL = "channel"      # per acquisition channel
+    TOTAL = "total"  # whole-business demand (revenue or units)
+    PRODUCT = "product"  # per SKU / product
+    CHANNEL = "channel"  # per acquisition channel
     CATEGORY = "category"
 
 
@@ -33,9 +33,9 @@ class SeriesSpec:
     level: SeriesLevel
     target: TargetKind = TargetKind.REVENUE
     grain: Grain = Grain.DAILY
-    key: str | None = None          # sku / channel / category value; None for TOTAL
+    key: str | None = None  # sku / channel / category value; None for TOTAL
     label: str | None = None
-    country: str = "AR"                # for holiday features
+    country: str = "AR"  # for holiday features
 
     @property
     def series_key(self) -> str:
@@ -45,10 +45,13 @@ class SeriesSpec:
 @dataclass
 class TimeSeries:
     """A single, gap-filled, regularly-spaced series."""
+
     spec: SeriesSpec
     index: pd.DatetimeIndex
-    values: np.ndarray                 # float, non-negative, gaps filled with 0
-    exog: pd.DataFrame | None = None  # aligned known regressors (price, ad_spend, promo)
+    values: np.ndarray  # float, non-negative, gaps filled with 0
+    exog: pd.DataFrame | None = (
+        None  # aligned known regressors (price, ad_spend, promo)
+    )
     stockout_mask: np.ndarray | None = None  # True where demand was likely censored
 
     def __post_init__(self) -> None:
@@ -77,7 +80,9 @@ class ForecastResult:
     horizon: int
     index: pd.DatetimeIndex
     mean: np.ndarray
-    quantiles: dict[float, np.ndarray] = field(default_factory=dict)   # {0.1: arr, 0.9: arr}
+    quantiles: dict[float, np.ndarray] = field(
+        default_factory=dict
+    )  # {0.1: arr, 0.9: arr}
     diagnostics: dict = field(default_factory=dict)
 
     def clip_nonnegative(self) -> ForecastResult:
@@ -99,7 +104,7 @@ class FoldMetrics:
     mase: float
     bias: float
     pinball: float
-    coverage: float          # empirical coverage of the nominal interval
+    coverage: float  # empirical coverage of the nominal interval
 
 
 @dataclass

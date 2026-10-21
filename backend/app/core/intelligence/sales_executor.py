@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 class SalesPhase(str, Enum):
     """Fase del ciclo venta."""
+
     CAPTURE = "capture"  # Atrae leads
     NURTURE = "nurture"  # Convence
     CLOSE = "close"  # Cierra
@@ -89,7 +90,9 @@ class SalesExecutor:
         }
 
     @staticmethod
-    def _phase_nurture(strategy: dict[str, Any], problems: list[dict[str, Any]]) -> dict[str, Any]:
+    def _phase_nurture(
+        strategy: dict[str, Any], problems: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Fase 2: Nutrición de leads (Semanas 3-5)."""
 
         return {

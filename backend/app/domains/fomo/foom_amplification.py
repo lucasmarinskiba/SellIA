@@ -9,7 +9,6 @@ FOOM Amplification: Aggressive FOOM mechanics for SellIA acquisition
 """
 
 
-
 class SocialProofAmplification:
     """Amplify social proof signals across all channels"""
 
@@ -147,7 +146,10 @@ class ScarcityAutomation:
                 "mechanism": "Limited-time discounts",
                 "offers": [
                     {"discount": "30% OFF", "duration": "48 hours"},
-                    {"discount": "40% OFF first 3 months", "limit": "first 100 signups"},
+                    {
+                        "discount": "40% OFF first 3 months",
+                        "limit": "first 100 signups",
+                    },
                     {"discount": "50% OFF annually", "limit": "early bird"},
                 ],
             },
@@ -321,14 +323,22 @@ class ExclusivityTiering:
                 {
                     "tier": "Pro+",
                     "price": "$199/month",
-                    "benefits": ["Everything Pro", "Custom branding", "Priority support"],
+                    "benefits": [
+                        "Everything Pro",
+                        "Custom branding",
+                        "Priority support",
+                    ],
                     "exclusivity": "For power users",
                     "limit": "500 users max",
                 },
                 {
                     "tier": "Founder",
                     "price": "$499/month",
-                    "benefits": ["Everything Pro+", "Dedicated account manager", "Custom integrations"],
+                    "benefits": [
+                        "Everything Pro+",
+                        "Dedicated account manager",
+                        "Custom integrations",
+                    ],
                     "exclusivity": "For top 100 users",
                     "limit": "100 users max",
                     "perks": "Revenue share, early features, board input",
@@ -336,7 +346,11 @@ class ExclusivityTiering:
                 {
                     "tier": "Enterprise",
                     "price": "Custom",
-                    "benefits": ["Everything + custom everything", "SLA 99.9%", "Custom training"],
+                    "benefits": [
+                        "Everything + custom everything",
+                        "SLA 99.9%",
+                        "Custom training",
+                    ],
                     "exclusivity": "By invitation only",
                     "limit": "Handpicked",
                 },

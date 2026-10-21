@@ -41,7 +41,11 @@ class PricingOptimization:
             "price_range": (float(self.price_range[0]), float(self.price_range[1])),
             "revenue_at_recommended": float(self.revenue_at_recommended),
             "risk_level": self.risk_level,
-            "competitors_avg_price": float(self.competitors_avg_price) if self.competitors_avg_price else None,
+            "competitors_avg_price": (
+                float(self.competitors_avg_price)
+                if self.competitors_avg_price
+                else None
+            ),
             "timestamp": self.timestamp.isoformat(),
         }
 
@@ -119,13 +123,19 @@ class BudgetAllocation:
     def to_dict(self) -> dict[str, Any]:
         return {
             "total_budget": float(self.total_budget),
-            "allocation_by_channel": {k: float(v) for k, v in self.allocation_by_channel.items()},
-            "allocation_by_campaign": {k: float(v) for k, v in self.allocation_by_campaign.items()},
+            "allocation_by_channel": {
+                k: float(v) for k, v in self.allocation_by_channel.items()
+            },
+            "allocation_by_campaign": {
+                k: float(v) for k, v in self.allocation_by_campaign.items()
+            },
             "expected_roi": float(self.expected_roi),
             "expected_revenue": float(self.expected_revenue),
             "confidence": float(self.confidence),
             "reallocation_reason": self.reallocation_reason,
-            "performance_by_allocation": {k: float(v) for k, v in self.performance_by_allocation.items()},
+            "performance_by_allocation": {
+                k: float(v) for k, v in self.performance_by_allocation.items()
+            },
             "timestamp": self.timestamp.isoformat(),
         }
 
@@ -155,12 +165,17 @@ class PricingOptimizationNetwork:
 
     def __init__(self):
         self.regressor = RandomForestRegressor(n_estimators=100, random_state=42)
-        self.elasticity_regressor = RandomForestRegressor(n_estimators=100, random_state=42)
+        self.elasticity_regressor = RandomForestRegressor(
+            n_estimators=100, random_state=42
+        )
         self.is_trained = False
         self.scaler = StandardScaler()
 
     def fit(
-        self, X: np.ndarray, y_revenue: np.ndarray, y_elasticity: np.ndarray | None = None
+        self,
+        X: np.ndarray,
+        y_revenue: np.ndarray,
+        y_elasticity: np.ndarray | None = None,
     ) -> "PricingOptimizationNetwork":
         """Train the network."""
         X_scaled = self.scaler.fit_transform(X)
@@ -171,7 +186,12 @@ class PricingOptimizationNetwork:
         logger.info("Pricing optimization network trained")
         return self
 
-    def predict(self, X: np.ndarray, current_price: float, competitors_price: float | None = None) -> list[PricingOptimization]:
+    def predict(
+        self,
+        X: np.ndarray,
+        current_price: float,
+        competitors_price: float | None = None,
+    ) -> list[PricingOptimization]:
         """Optimize pricing."""
         if not self.is_trained:
             raise ValueError("Network must be trained first")
@@ -191,7 +211,7 @@ class PricingOptimizationNetwork:
 
             for price_mult in np.linspace(0.8, 1.3, 20):
                 test_price = current_price * price_mult
-                test_volume = base_revenue / current_price * (price_mult ** elasticity)
+                test_volume = base_revenue / current_price * (price_mult**elasticity)
                 test_revenue = test_price * test_volume
 
                 if test_revenue > best_revenue:
@@ -199,10 +219,16 @@ class PricingOptimizationNetwork:
                     best_price = test_price
 
             price_change = (best_price - current_price) / current_price
-            revenue_change = (best_revenue - base_revenue) / base_revenue if base_revenue > 0 else 0
-            volume_change = ((best_price / current_price) ** elasticity - 1)
+            revenue_change = (
+                (best_revenue - base_revenue) / base_revenue if base_revenue > 0 else 0
+            )
+            volume_change = (best_price / current_price) ** elasticity - 1
 
-            risk = "low" if abs(price_change) < 0.05 else ("medium" if abs(price_change) < 0.15 else "high")
+            risk = (
+                "low"
+                if abs(price_change) < 0.05
+                else ("medium" if abs(price_change) < 0.15 else "high")
+            )
 
             pred = PricingOptimization(
                 recommended_price=float(best_price),
@@ -326,7 +352,11 @@ class MessageTimingNetwork:
                 expected_engagement_rate=float(engagement),
                 expected_click_rate=float(engagement * 0.35),
                 expected_conversion_rate=float(engagement * 0.12),
-                reason_for_timing="High engagement window detected" if send_now else "Optimal engagement window identified",
+                reason_for_timing=(
+                    "High engagement window detected"
+                    if send_now
+                    else "Optimal engagement window identified"
+                ),
                 alternative_times=[
                     "2025-01-05T15:00:00",
                     "2025-01-06T10:00:00",
@@ -417,7 +447,9 @@ class FeatureImportanceNetwork:
         self.scaler = StandardScaler()
         self.feature_names: list[str] = []
 
-    def fit(self, X: np.ndarray, y: np.ndarray, feature_names: list[str] | None = None) -> "FeatureImportanceNetwork":
+    def fit(
+        self, X: np.ndarray, y: np.ndarray, feature_names: list[str] | None = None
+    ) -> "FeatureImportanceNetwork":
         """Train the network."""
         if feature_names:
             self.feature_names = feature_names
@@ -438,8 +470,13 @@ class FeatureImportanceNetwork:
         importances = self.regressor.feature_importances_
         top_indices = np.argsort(importances)[::-1][:5]
 
-        top_features = [(self.feature_names[i], float(importances[i])) for i in top_indices]
-        feature_scores = {self.feature_names[i]: float(importances[i]) for i in range(len(self.feature_names))}
+        top_features = [
+            (self.feature_names[i], float(importances[i])) for i in top_indices
+        ]
+        feature_scores = {
+            self.feature_names[i]: float(importances[i])
+            for i in range(len(self.feature_names))
+        }
 
         key_drivers = [name for name, _ in top_features[:3]]
         surprising = []

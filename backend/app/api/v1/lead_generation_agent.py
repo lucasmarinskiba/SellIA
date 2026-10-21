@@ -26,7 +26,9 @@ async def create_lead_campaign(
     target_audience: str = Query(...),
     price_range: str = Query(...),
     unique_selling_point: str = Query(...),
-    delivery_model: str = Query(..., description="online, offline, hybrid, hybrid_on_demand"),
+    delivery_model: str = Query(
+        ..., description="online, offline, hybrid, hybrid_on_demand"
+    ),
     geographic_scope: str = Query(...),
     leads_target: int = Query(50, ge=10, le=500),
 ) -> dict[str, Any]:
@@ -41,7 +43,7 @@ async def create_lead_campaign(
             price_range=price_range,
             unique_selling_point=unique_selling_point,
             delivery_model=delivery_model,
-            geographic_scope=geographic_scope
+            geographic_scope=geographic_scope,
         )
 
         campaign = agent.create_campaign(user_id, product, leads_target)
@@ -53,11 +55,11 @@ async def create_lead_campaign(
             "product": {
                 "name": product.name,
                 "category": product.category,
-                "delivery_model": product.delivery_model
+                "delivery_model": product.delivery_model,
             },
             "sources": [s.value for s in campaign.sources],
             "leads_target": leads_target,
-            "message": f"Campaign created. Will generate leads from {len(campaign.sources)} sources."
+            "message": f"Campaign created. Will generate leads from {len(campaign.sources)} sources.",
         }
 
     except Exception as e:
@@ -82,7 +84,9 @@ async def generate_leads(
             "campaign_id": campaign_id,
             "total_generated": len(leads),
             "qualified_leads": qualified,
-            "qualification_rate": f"{(qualified / len(leads) * 100):.1f}%" if leads else "0%",
+            "qualification_rate": (
+                f"{(qualified / len(leads) * 100):.1f}%" if leads else "0%"
+            ),
             "leads_sample": [
                 {
                     "lead_id": l.lead_id,
@@ -92,10 +96,10 @@ async def generate_leads(
                     "location": l.prospect_location,
                     "fit_score": f"{l.fit_score:.2f}",
                     "source": l.source.value,
-                    "contact_method": l.contact_method
+                    "contact_method": l.contact_method,
                 }
                 for l in leads[:10]
-            ]
+            ],
         }
 
     except Exception as e:
@@ -113,10 +117,7 @@ async def get_campaign_stats(campaign_id: str) -> dict[str, Any]:
         if not stats:
             raise HTTPException(status_code=404, detail="Campaign not found")
 
-        return {
-            "status": "success",
-            "campaign": stats
-        }
+        return {"status": "success", "campaign": stats}
 
     except Exception as e:
         logger.exception("Stats retrieval failed")
@@ -150,10 +151,10 @@ async def get_qualified_leads(
                     "reason_fit": l.reason_fit,
                     "source": l.source.value,
                     "contact_method": l.contact_method,
-                    "keywords_matched": l.keywords_matched
+                    "keywords_matched": l.keywords_matched,
                 }
                 for l in leads
-            ]
+            ],
         }
 
     except Exception as e:
@@ -176,7 +177,7 @@ async def schedule_continuous_generation(
             "campaign_id": campaign_id,
             "frequency_hours": frequency_hours,
             "message": f"Lead generation scheduled every {frequency_hours} hours",
-            "next_run": result.get("next_run")
+            "next_run": result.get("next_run"),
         }
 
     except Exception as e:
@@ -198,7 +199,7 @@ async def export_leads(
             "status": "success",
             "campaign_id": campaign_id,
             "format": format,
-            "data": result.get("data") or result.get("leads")
+            "data": result.get("data") or result.get("leads"),
         }
 
     except Exception as e:
@@ -224,7 +225,7 @@ async def quick_start_campaign(
             price_range="Varies",
             unique_selling_point="Quality and reliability",
             delivery_model="hybrid",
-            geographic_scope="Local"
+            geographic_scope="Local",
         )
 
         campaign = agent.create_campaign(user_id, product, leads_target=100)
@@ -238,17 +239,17 @@ async def quick_start_campaign(
                 "Review qualified leads above",
                 "Contact leads using suggested method",
                 "Track responses in dashboard",
-                "Leads will refresh every 24 hours"
+                "Leads will refresh every 24 hours",
             ],
             "leads_preview": [
                 {
                     "name": l.prospect_name,
                     "email": l.prospect_email,
                     "fit_score": f"{l.fit_score:.2f}",
-                    "contact_method": l.contact_method
+                    "contact_method": l.contact_method,
                 }
                 for l in leads[:5]
-            ]
+            ],
         }
 
     except Exception as e:

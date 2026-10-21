@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 class KeywordCreate(BaseModel):
     """Create keyword for tracking."""
+
     keyword: str = Field(..., min_length=1, max_length=255)
     search_volume: int = Field(default=0, ge=0)
     difficulty: int = Field(default=0, ge=0, le=100)
@@ -21,6 +22,7 @@ class KeywordCreate(BaseModel):
 
 class KeywordOut(BaseModel):
     """Keyword response."""
+
     id: UUID
     business_id: UUID
     keyword: str
@@ -40,6 +42,7 @@ class KeywordOut(BaseModel):
 
 class RankingOut(BaseModel):
     """Ranking tracking response."""
+
     id: UUID
     business_id: UUID
     keyword_id: UUID
@@ -55,6 +58,7 @@ class RankingOut(BaseModel):
 
 class PageOptimizationCreate(BaseModel):
     """Create page optimization record."""
+
     page_url: str = Field(..., min_length=1, max_length=500)
     page_title: str = Field(..., min_length=1, max_length=255)
     page_type: str = Field(..., pattern="^(product|category|blog|homepage)$")
@@ -64,6 +68,7 @@ class PageOptimizationCreate(BaseModel):
 
 class PageOptimizationUpdate(BaseModel):
     """Update page optimization."""
+
     page_speed_ms: int | None = None
     mobile_score: int | None = Field(None, ge=0, le=100)
     optimization_score: int | None = Field(None, ge=0, le=100)
@@ -73,6 +78,7 @@ class PageOptimizationUpdate(BaseModel):
 
 class PageOptimizationOut(BaseModel):
     """Page optimization response."""
+
     id: UUID
     business_id: UUID
     page_url: str
@@ -95,12 +101,14 @@ class PageOptimizationOut(BaseModel):
 
 class CompetitorAnalysisCreate(BaseModel):
     """Create competitor analysis."""
+
     competitor_name: str = Field(..., min_length=1, max_length=255)
     competitor_url: str = Field(..., min_length=1, max_length=500)
 
 
 class CompetitorAnalysisOut(BaseModel):
     """Competitor analysis response."""
+
     id: UUID
     business_id: UUID
     competitor_name: str
@@ -120,6 +128,7 @@ class CompetitorAnalysisOut(BaseModel):
 
 class SEORecommendationOut(BaseModel):
     """SEO recommendation response."""
+
     id: UUID
     business_id: UUID
     page_optimization_id: UUID
@@ -138,6 +147,7 @@ class SEORecommendationOut(BaseModel):
 
 class SEOHealthResponse(BaseModel):
     """SEO health score."""
+
     overall_score: int
     indexed_pages: int
     ranking_keywords: int

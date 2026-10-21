@@ -17,9 +17,26 @@ logger = get_logger(__name__)
 
 # Simple gratitude / closure keywords in Spanish and English
 _CLOSURE_KEYWORDS = [
-    "gracias", "thank", "thanks", "perfecto", "perfect", "excelente", "great",
-    "resuelto", "solved", "solucionado", "fixed", "ok", "oki", "listo", "done",
-    "cerrar", "close", "cierren", "no necesito más", "that's all",
+    "gracias",
+    "thank",
+    "thanks",
+    "perfecto",
+    "perfect",
+    "excelente",
+    "great",
+    "resuelto",
+    "solved",
+    "solucionado",
+    "fixed",
+    "ok",
+    "oki",
+    "listo",
+    "done",
+    "cerrar",
+    "close",
+    "cierren",
+    "no necesito más",
+    "that's all",
 ]
 
 
@@ -43,7 +60,9 @@ async def auto_resolve_tickets(db: AsyncSession):
     for ticket in old_ai_resolved:
         ticket.status = TicketStatus.CLOSED
         ticket.resolved_at = now
-        ticket.resolution_notes = "Auto-cerrado: respuesta AI aceptada sin réplica del usuario en 24h"
+        ticket.resolution_notes = (
+            "Auto-cerrado: respuesta AI aceptada sin réplica del usuario en 24h"
+        )
         logger.info(f"Auto-closed ticket {ticket.id} (AI resolved, no user reply)")
 
     # 2. Close tickets where last customer message contains closure keywords
@@ -91,6 +110,8 @@ async def get_auto_resolution_stats(db: AsyncSession, days: int = 30) -> dict:
     return {
         "total_tickets": total_val,
         "auto_resolved": auto_val,
-        "auto_resolution_rate": round(auto_val / total_val * 100, 1) if total_val else 0,
+        "auto_resolution_rate": (
+            round(auto_val / total_val * 100, 1) if total_val else 0
+        ),
         "period_days": days,
     }

@@ -21,6 +21,7 @@ def _emit_activity(category: str | None, mode: str) -> None:
         return
     try:
         from app.core.brain.activity import record_activity
+
         record_activity(
             "knowledge",
             source=f"skill.knowledge.{category}",
@@ -33,6 +34,7 @@ def _emit_activity(category: str | None, mode: str) -> None:
 @dataclass
 class KnowledgeItem:
     """Un item de conocimiento de la biblioteca."""
+
     id: str
     category: str
     subcategory: str
@@ -54,8 +56,15 @@ class KnowledgeEngine:
     # Orden curado de las categorías base; cualquier otro `*.json` que aparezca
     # en library/ se descubre y carga automáticamente (ver _discover_categories).
     CURATED_ORDER: ClassVar[list] = [
-        "sales", "persuasion", "habits", "negotiation",
-        "entrepreneurship", "wealth", "communication", "psychology", "strategy"
+        "sales",
+        "persuasion",
+        "habits",
+        "negotiation",
+        "entrepreneurship",
+        "wealth",
+        "communication",
+        "psychology",
+        "strategy",
     ]
 
     def __init__(self):
@@ -75,7 +84,8 @@ class KnowledgeEngine:
         """
         try:
             found = {
-                f[:-5] for f in os.listdir(base_path)
+                f[:-5]
+                for f in os.listdir(base_path)
                 if f.endswith(".json") and not f.startswith("_")
             }
         except OSError as e:
@@ -109,8 +119,10 @@ class KnowledgeEngine:
         ):
             return "_confidence_weight no numérico"
         for field in ("subcategory", "framework", "script_template", "_source_hint"):
-            if field in item_data and item_data[field] is not None and not isinstance(
-                item_data[field], str
+            if (
+                field in item_data
+                and item_data[field] is not None
+                and not isinstance(item_data[field], str)
             ):
                 return f"{field} no es string"
         return None
@@ -125,8 +137,15 @@ class KnowledgeEngine:
     # exigiendo contenido real, no una versión aflojada del check.
     _PRINCIPLE_FALLBACK_FIELDS = ("principle", "name", "scenario")
     _TACTIC_FALLBACK_FIELDS = (
-        "tactic", "action", "process", "logic", "formula",
-        "sell_to", "signals", "impact", "detection",
+        "tactic",
+        "action",
+        "process",
+        "logic",
+        "formula",
+        "sell_to",
+        "signals",
+        "impact",
+        "detection",
     )
 
     @classmethod
@@ -134,13 +153,18 @@ class KnowledgeEngine:
         """Rellena principle/tactic desde sus sinónimos si faltan. No
         pisa un principle/tactic ya presente y no-vacío."""
         normalized = dict(item_data)
-        if not (isinstance(normalized.get("principle"), str) and normalized["principle"].strip()):
+        if not (
+            isinstance(normalized.get("principle"), str)
+            and normalized["principle"].strip()
+        ):
             for field in cls._PRINCIPLE_FALLBACK_FIELDS:
                 val = item_data.get(field)
                 if isinstance(val, str) and val.strip():
                     normalized["principle"] = val
                     break
-        if not (isinstance(normalized.get("tactic"), str) and normalized["tactic"].strip()):
+        if not (
+            isinstance(normalized.get("tactic"), str) and normalized["tactic"].strip()
+        ):
             for field in cls._TACTIC_FALLBACK_FIELDS:
                 val = item_data.get(field)
                 if isinstance(val, str) and val.strip():
@@ -196,12 +220,18 @@ class KnowledgeEngine:
                         for tag in item.tags:
                             self._index.setdefault(tag.lower(), []).append(item)
                         # Index by subcategory
-                        self._index.setdefault(item.subcategory.lower(), []).append(item)
+                        self._index.setdefault(item.subcategory.lower(), []).append(
+                            item
+                        )
                 except Exception as e:
-                    logger.warning(f"Failed to load knowledge {category}: {e}", exc_info=True)
+                    logger.warning(
+                        f"Failed to load knowledge {category}: {e}", exc_info=True
+                    )
 
         self._loaded = True
-        logger.info(f"KnowledgeEngine loaded: {len(self._items)} items across {len(self.categories)} categories")
+        logger.info(
+            f"KnowledgeEngine loaded: {len(self._items)} items across {len(self.categories)} categories"
+        )
 
     def query(
         self,
@@ -231,12 +261,16 @@ class KnowledgeEngine:
 
         # Filter by subcategory
         if subcategory:
-            candidates = [c for c in candidates if c.subcategory.lower() == subcategory.lower()]
+            candidates = [
+                c for c in candidates if c.subcategory.lower() == subcategory.lower()
+            ]
 
         # Filter by tags
         if tags:
             tag_set = {t.lower() for t in tags}
-            candidates = [c for c in candidates if tag_set & {t.lower() for t in c.tags}]
+            candidates = [
+                c for c in candidates if tag_set & {t.lower() for t in c.tags}
+            ]
 
         # Score by context relevance (simple keyword matching)
         if context:
@@ -260,7 +294,9 @@ class KnowledgeEngine:
     @staticmethod
     def _item_text(item: KnowledgeItem) -> str:
         """Texto representativo de un item para embeber."""
-        return " ".join(filter(None, [item.principle, item.tactic, " ".join(item.tags)]))
+        return " ".join(
+            filter(None, [item.principle, item.tactic, " ".join(item.tags)])
+        )
 
     async def semantic_query(
         self,
@@ -291,7 +327,9 @@ class KnowledgeEngine:
             # Embeber los items que aún no tengan vector (batch).
             missing = [c for c in candidates if c.id not in self._vectors]
             if missing:
-                vecs = await embedding_service.embed_batch([self._item_text(c) for c in missing])
+                vecs = await embedding_service.embed_batch(
+                    [self._item_text(c) for c in missing]
+                )
                 for c, v in zip(missing, vecs):
                     self._vectors[c.id] = v
 
@@ -314,7 +352,9 @@ class KnowledgeEngine:
             scored.sort(key=lambda x: x[0], reverse=True)
             return [c for _, c in scored[:top_k]]
         except Exception as e:
-            logger.warning(f"semantic_query fell back to keyword search: {e}", exc_info=True)
+            logger.warning(
+                f"semantic_query fell back to keyword search: {e}", exc_info=True
+            )
             return self.query(category=category, context=context, top_k=top_k)
 
     def get_by_id(self, item_id: str) -> KnowledgeItem | None:
@@ -328,6 +368,7 @@ class KnowledgeEngine:
     def get_random_insight(self, category: str | None = None) -> KnowledgeItem | None:
         """Obtiene un insight aleatorio (para variar respuestas)."""
         import random
+
         self._load_all()
         pool = self._items
         if category:

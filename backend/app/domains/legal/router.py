@@ -39,7 +39,9 @@ async def add_compliance_requirement(
 ):
     """Add compliance requirement."""
     svc = ComplianceService(db)
-    return await svc.add_requirement(business_id, body.category, body.requirement, body.jurisdiction)
+    return await svc.add_requirement(
+        business_id, body.category, body.requirement, body.jurisdiction
+    )
 
 
 @router.get("/compliance/{item_id}", response_model=ComplianceChecklistItemOut)
@@ -89,7 +91,9 @@ async def create_contract_template(
 ):
     """Create contract template."""
     svc = ContractService(db)
-    return await svc.create_template(business_id, body.name, body.contract_type, body.template_html)
+    return await svc.create_template(
+        business_id, body.name, body.contract_type, body.template_html
+    )
 
 
 @router.get("/contracts", response_model=list[ContractTemplateOut])

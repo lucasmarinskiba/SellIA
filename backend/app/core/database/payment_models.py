@@ -2,7 +2,6 @@
 Payment Models — SQLAlchemy ORM para órdenes, pagos y catálogo.
 """
 
-
 from sqlalchemy import (
     JSON,
     Boolean,
@@ -57,7 +56,9 @@ class Order(Base):
     amount = Column(Float)  # Total paid
     currency = Column(String(3), default="USD")
 
-    status = Column(String(50), default="pending")  # pending, payment_received, shipped, delivered, refunded
+    status = Column(
+        String(50), default="pending"
+    )  # pending, payment_received, shipped, delivered, refunded
     payment_status = Column(String(50), default="pending")  # pending, succeeded, failed
 
     stripe_session_id = Column(String(255), unique=True, index=True)

@@ -74,7 +74,10 @@ async def test_create_tenant(test_db: AsyncSession, test_user: User):
 
     # Check billing was created
     assert len(tenant.billing) == 1
-    assert tenant.billing[0].base_tier_cost == TIER_LIMITS[TenantTier.STARTER]["monthly_cost"]
+    assert (
+        tenant.billing[0].base_tier_cost
+        == TIER_LIMITS[TenantTier.STARTER]["monthly_cost"]
+    )
 
 
 @pytest.mark.asyncio
@@ -127,7 +130,10 @@ async def test_upgrade_tier(test_db: AsyncSession, test_user: User):
 
     assert upgraded.tier == TenantTier.PRO
     assert upgraded.max_users == TIER_LIMITS[TenantTier.PRO]["max_users"]
-    assert upgraded.max_monthly_api_calls == TIER_LIMITS[TenantTier.PRO]["max_monthly_api_calls"]
+    assert (
+        upgraded.max_monthly_api_calls
+        == TIER_LIMITS[TenantTier.PRO]["max_monthly_api_calls"]
+    )
 
 
 @pytest.mark.asyncio

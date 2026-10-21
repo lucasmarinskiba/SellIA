@@ -40,9 +40,7 @@ async def _ai_classify_intent(
         from app.domains.agents.llm_provider import generate_with_fallback
         from app.domains.businesses.models import Business
 
-        result = await db.execute(
-            select(Business).where(Business.id == business_id)
-        )
+        result = await db.execute(select(Business).where(Business.id == business_id))
         business = result.scalar_one_or_none()
         if not business:
             return None
@@ -69,9 +67,17 @@ Customer message: "{content[:500]}"
 
 Intent:"""
 
-        messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
+        messages = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=user_prompt),
+        ]
         response = await generate_with_fallback(
-            db, business_id, messages, model="llama3.1", temperature=0.1, max_tokens=50,
+            db,
+            business_id,
+            messages,
+            model="llama3.1",
+            temperature=0.1,
+            max_tokens=50,
         )
         if not response:
             return None
@@ -86,6 +92,7 @@ Intent:"""
     except Exception as e:
         logger.exception("_ai_classify_intent: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).error(f"AI intent classification error: {e}")
         return None
 
@@ -135,13 +142,16 @@ Competitors (JSON array only):"""
             return
 
         import json
+
         try:
             competitors = json.loads(ai_response.strip())
         except json.JSONDecodeError:
             # Fallback: try to extract from plain text
             competitors = []
             for line in ai_response.split("\n"):
-                line = line.strip().strip("[]\"'",)
+                line = line.strip().strip(
+                    "[]\"'",
+                )
                 if line and line not in ("[", "]", "", "null", "None"):
                     competitors.append(line)
 
@@ -161,6 +171,7 @@ Competitors (JSON array only):"""
         # Emit event
         try:
             from app.core.events import event_bus
+
             await event_bus.emit(
                 "competitor.mentioned",
                 {
@@ -184,6 +195,7 @@ Competitors (JSON array only):"""
                 RecommendationStatus,
                 RecommendationType,
             )
+
             alert = Alert(
                 business_id=business_id,
                 conversation_id=conversation.id,
@@ -194,7 +206,10 @@ Competitors (JSON array only):"""
                 entity_type="conversation",
                 entity_id=conversation.id,
                 recommended_action="Responder con diferenciador competitivo",
-                alert_metadata={"competitors": competitors, "message_snippet": content[:200]},
+                alert_metadata={
+                    "competitors": competitors,
+                    "message_snippet": content[:200],
+                },
             )
             db.add(alert)
             await db.flush()
@@ -206,9 +221,15 @@ Competitors (JSON array only):"""
                 title=f"Responde al lead sobre {competitors[0]}",
                 description=f"El lead mencionó a {', '.join(competitors)}. Es una oportunidad para destacar tu diferenciación.",
                 priority=3,
-                context_data={"competitors": competitors, "message_snippet": content[:200]},
+                context_data={
+                    "competitors": competitors,
+                    "message_snippet": content[:200],
+                },
                 action_type=RecommendationActionType.SEND_MESSAGE,
-                action_payload={"conversation_id": str(conversation.id), "suggested_content": "Enviar diferenciador competitivo"},
+                action_payload={
+                    "conversation_id": str(conversation.id),
+                    "suggested_content": "Enviar diferenciador competitivo",
+                },
                 status=RecommendationStatus.PENDING,
             )
             db.add(recommendation)
@@ -216,11 +237,13 @@ Competitors (JSON array only):"""
         except Exception as e:
             logger.exception("_detect_competitor_mentions: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Competitor alert creation error: {e}")
 
     except Exception as e:
         logger.exception("_detect_competitor_mentions: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).error(f"Competitor detection inner error: {e}")
 
 
@@ -235,10 +258,12 @@ async def _evaluate_chatbot_rules(
     First tries keyword matching. If no match, falls back to AI intent classification.
     """
     result = await db.execute(
-        select(ChatbotRule).where(
+        select(ChatbotRule)
+        .where(
             ChatbotRule.business_id == business_id,
             ChatbotRule.is_active == True,
-        ).order_by(desc(ChatbotRule.priority))
+        )
+        .order_by(desc(ChatbotRule.priority))
     )
     rules = result.scalars().all()
 
@@ -254,7 +279,9 @@ async def _evaluate_chatbot_rules(
     # Phase 2: AI intent classification (when no keyword match)
     available_intents = [r.intent for r in rules if r.intent]
     if available_intents:
-        detected_intent = await _ai_classify_intent(db, business_id, content, available_intents)
+        detected_intent = await _ai_classify_intent(
+            db, business_id, content, available_intents
+        )
         if detected_intent:
             for rule in rules:
                 if rule.channel_filter and platform.value not in rule.channel_filter:
@@ -282,11 +309,14 @@ async def _apply_chatbot_rule(
         if not conversation.extra_data:
             conversation.extra_data = {}
         conversation.extra_data["awaiting_human"] = True
-        conversation.extra_data["handoff_reason"] = f"Regla chatbot: {rule.name} ({rule.intent})"
+        conversation.extra_data["handoff_reason"] = (
+            f"Regla chatbot: {rule.name} ({rule.intent})"
+        )
         await db.commit()
 
         try:
             from app.core.events import emit_human_handoff_required
+
             await emit_human_handoff_required(
                 business_id=str(conversation.business_id),
                 conversation_id=str(conversation.id),
@@ -297,6 +327,7 @@ async def _apply_chatbot_rule(
         except Exception as e:
             logger.exception("_apply_chatbot_rule: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Handoff emit error: {e}")
         return True
 
@@ -309,7 +340,12 @@ async def _apply_chatbot_rule(
     elif rule.response_type == "ai_generated":
         # Generate AI response using personality + optional expert voice
         from app.domains.agents.ai_reply import generate_ai_response
-        personality_slug = rule.extra_data.get("personality_slug", "captador") if rule.extra_data else "captador"
+
+        personality_slug = (
+            rule.extra_data.get("personality_slug", "captador")
+            if rule.extra_data
+            else "captador"
+        )
         ai_response = await generate_ai_response(
             db=db,
             conversation=conversation,
@@ -327,6 +363,7 @@ async def _apply_chatbot_rule(
         except Exception as e:
             logger.exception("_apply_chatbot_rule: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Chatbot rule send error: {e}")
 
     return True
@@ -344,7 +381,13 @@ async def _maybe_ai_auto_reply(
         return
 
     # Skip non-chat platforms (ads, e-commerce notifications)
-    if payload.content_type in ("order", "abandoned_cart", "customer", "system", "lead"):
+    if payload.content_type in (
+        "order",
+        "abandoned_cart",
+        "customer",
+        "system",
+        "lead",
+    ):
         return
 
     # Check if any outbound message was sent in the last 30 seconds.
@@ -368,14 +411,17 @@ async def _maybe_ai_auto_reply(
     # platform it decides; when none does, the old business-wide AgentConfig
     # behaviour applies unchanged.
     platform_name = (
-        channel.platform.value if hasattr(channel.platform, "value") else str(channel.platform)
+        channel.platform.value
+        if hasattr(channel.platform, "value")
+        else str(channel.platform)
     )
     platform_bot = None
     try:
         from app.domains.chatbots.service import get_bot
 
         platform_bot = await get_bot(db, channel.business_id, platform_name)
-    except Exception as e:  # noqa: BLE001 -- never block the reply on config lookup
+    # never block the reply on config lookup
+    except Exception as e:  # noqa: BLE001
         from app.core.logger import get_logger
 
         get_logger(__name__).warning(
@@ -394,7 +440,7 @@ async def _maybe_ai_auto_reply(
         # actually stops the AI: the guard at the top of this function already
         # refuses to answer an awaiting_human conversation, now and later.
         incoming = (payload.content or "").lower()
-        for keyword in (platform_bot.handoff_keywords or []):
+        for keyword in platform_bot.handoff_keywords or []:
             if keyword and keyword in incoming:
                 extra = dict(conversation.extra_data or {})
                 extra["awaiting_human"] = True
@@ -453,17 +499,23 @@ async def _maybe_ai_auto_reply(
                     conversation_id=conversation.id,
                 )
                 label = str(getattr(emotion, "emotion", emotion) or "").lower()
-                if any(word in label for word in ("anger", "frustrat", "enoj", "angry", "upset")):
+                if any(
+                    word in label
+                    for word in ("anger", "frustrat", "enoj", "angry", "upset")
+                ):
                     extra = dict(conversation.extra_data or {})
                     extra["awaiting_human"] = True
                     extra["handoff_reason"] = "el comprador suena molesto"
                     conversation.extra_data = extra
                     await db.commit()
                     return
-            except Exception as e:  # noqa: BLE001 -- detection is a bonus, not a gate
+            # detection is a bonus, not a gate
+            except Exception as e:  # noqa: BLE001
                 from app.core.logger import get_logger
 
-                get_logger(__name__).warning("frustration check failed: %s", str(e)[:160])
+                get_logger(__name__).warning(
+                    "frustration check failed: %s", str(e)[:160]
+                )
                 try:
                     await db.rollback()
                 except Exception:
@@ -471,6 +523,7 @@ async def _maybe_ai_auto_reply(
 
     # Check business AI auto-reply config
     from app.domains.agents.models import AgentConfig
+
     result = await db.execute(
         select(AgentConfig).where(
             AgentConfig.business_id == channel.business_id,
@@ -487,15 +540,20 @@ async def _maybe_ai_auto_reply(
     voice_slug = None
     if agent_config.ai_auto_reply_personality_id:
         from app.domains.agents.models import AgentPersonality
+
         personality_result = await db.execute(
-            select(AgentPersonality).where(AgentPersonality.id == agent_config.ai_auto_reply_personality_id)
+            select(AgentPersonality).where(
+                AgentPersonality.id == agent_config.ai_auto_reply_personality_id
+            )
         )
         personality = personality_result.scalar_one_or_none()
         if personality:
             personality_slug = personality.slug
     elif agent_config.personality_id:
         personality_result = await db.execute(
-            select(AgentPersonality).where(AgentPersonality.id == agent_config.personality_id)
+            select(AgentPersonality).where(
+                AgentPersonality.id == agent_config.personality_id
+            )
         )
         personality = personality_result.scalar_one_or_none()
         if personality:
@@ -503,6 +561,7 @@ async def _maybe_ai_auto_reply(
 
     # Generate AI response
     from app.domains.agents.ai_reply import generate_ai_response
+
     if platform_bot is not None and platform_bot.personality_slug:
         personality_slug = platform_bot.personality_slug
 
@@ -512,7 +571,8 @@ async def _maybe_ai_auto_reply(
     if platform_bot is not None:
         focus_value = (
             platform_bot.focus.value
-            if hasattr(platform_bot.focus, "value") else str(platform_bot.focus)
+            if hasattr(platform_bot.focus, "value")
+            else str(platform_bot.focus)
         )
         if focus_value != BotFocus.AUTO.value:
             force_stage = focus_value
@@ -569,7 +629,7 @@ async def process_incoming_message(
     payload: WebhookPayload,
 ):
     """Procesa un mensaje entrante para un canal específico.
-    
+
     El canal ya debe estar identificado y autenticado por el caller.
     """
     if not channel or not channel.is_active:
@@ -626,11 +686,13 @@ async def process_incoming_message(
         logger.exception("process_incoming_message: error inesperado")
         await db.rollback()
         from app.core.logger import get_logger
+
         get_logger(__name__).error(f"Appointment confirmation error: {e}")
 
     # === Emitir evento de mensaje recibido ===
     try:
         from app.core.events import emit_message_received
+
         await emit_message_received(
             business_id=str(channel.business_id),
             conversation_id=str(conversation.id),
@@ -643,6 +705,7 @@ async def process_incoming_message(
         logger.exception("process_incoming_message: error inesperado")
         await db.rollback()
         from app.core.logger import get_logger
+
         get_logger(__name__).error(f"Event emit error: {e}")
 
     # === Evaluar Chatbot Rules primero ===
@@ -657,11 +720,13 @@ async def process_incoming_message(
         logger.exception("process_incoming_message: error inesperado")
         await db.rollback()
         from app.core.logger import get_logger
+
         get_logger(__name__).error(f"Chatbot rule evaluation error: {e}")
 
     # === Recalcular Lead Score ===
     try:
         from app.domains.crm.scoring import LeadScoringEngine
+
         scoring_engine = LeadScoringEngine(db)
         await scoring_engine.record_activity(
             business_id=channel.business_id,
@@ -674,6 +739,7 @@ async def process_incoming_message(
         logger.exception("process_incoming_message: error inesperado")
         await db.rollback()
         from app.core.logger import get_logger
+
         get_logger(__name__).error(f"Lead scoring error: {e}")
 
     # === Auto-BANT Qualification + ManyChat-style lead filtering ===
@@ -696,7 +762,9 @@ async def process_incoming_message(
         inbound_count = inbound_count_result.scalar() or 0
 
         if inbound_count >= 2:
-            existing_qual = await lq_service.get_latest_qualification_for_conversation(db, conversation.id)
+            existing_qual = await lq_service.get_latest_qualification_for_conversation(
+                db, conversation.id
+            )
             if existing_qual is None:
                 qual_result = await lq_service.qualify_lead(
                     db=db,
@@ -705,17 +773,27 @@ async def process_incoming_message(
                 )
                 lead_status = qual_result.get("status")
 
-                connector = get_connector(channel.platform, channel.credentials, channel.settings)
+                connector = get_connector(
+                    channel.platform, channel.credentials, channel.settings
+                )
 
                 if lead_status == "qualified":
                     if hasattr(connector, "tag_subscriber"):
-                        await connector.tag_subscriber(payload.external_id, "sellia_qualified")
+                        await connector.tag_subscriber(
+                            payload.external_id, "sellia_qualified"
+                        )
 
-                    pitch = qual_result.get("summary") or "¡Gracias por tu interés! Un asesor te va a contactar enseguida."
+                    pitch = (
+                        qual_result.get("summary")
+                        or "¡Gracias por tu interés! Un asesor te va a contactar enseguida."
+                    )
                     try:
                         from app.domains.business_context.models import BusinessContext
+
                         ctx_result = await db.execute(
-                            select(BusinessContext).where(BusinessContext.business_id == channel.business_id)
+                            select(BusinessContext).where(
+                                BusinessContext.business_id == channel.business_id
+                            )
                         )
                         ctx = ctx_result.scalar_one_or_none()
                         if ctx and ctx.communication_angles:
@@ -726,16 +804,24 @@ async def process_incoming_message(
                     except Exception as e:
                         logger.exception("process_incoming_message: error inesperado")
                         from app.core.logger import get_logger
-                        get_logger(__name__).error(f"Angle/scheduling lookup error: {e}")
+
+                        get_logger(__name__).error(
+                            f"Angle/scheduling lookup error: {e}"
+                        )
 
                     await send_outbound_message(db, conversation.id, pitch)
 
-                elif lead_status == "disqualified" and hasattr(connector, "tag_subscriber"):
-                    await connector.tag_subscriber(payload.external_id, "sellia_disqualified")
+                elif lead_status == "disqualified" and hasattr(
+                    connector, "tag_subscriber"
+                ):
+                    await connector.tag_subscriber(
+                        payload.external_id, "sellia_disqualified"
+                    )
     except Exception as e:
         logger.exception("process_incoming_message: error inesperado")
         await db.rollback()
         from app.core.logger import get_logger
+
         get_logger(__name__).error(f"Auto-qualification error: {e}")
 
     # === Purchase Intent → Checkout Link ===
@@ -763,21 +849,26 @@ async def process_incoming_message(
         logger.exception("process_incoming_message: error inesperado")
         await db.rollback()
         from app.core.logger import get_logger
+
         get_logger(__name__).error(f"Checkout trigger error: {e}")
 
     # === Competitor Mention Detection ===
     try:
-        await _detect_competitor_mentions(db, conversation, payload.content, channel.business_id)
+        await _detect_competitor_mentions(
+            db, conversation, payload.content, channel.business_id
+        )
     except Exception as e:
         logger.exception("process_incoming_message: error inesperado")
         await db.rollback()
         from app.core.logger import get_logger
+
         get_logger(__name__).error(f"Competitor detection error: {e}")
 
     # === Trigger: NEW_LEAD ===
     if is_new_conversation:
         try:
             from app.domains.automations.engine import WorkflowEngine
+
             engine = WorkflowEngine(db)
             await engine.process_trigger(
                 trigger_type=WorkflowTriggerType.NEW_LEAD,
@@ -795,24 +886,28 @@ async def process_incoming_message(
             logger.exception("process_incoming_message: error inesperado")
             await db.rollback()
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"NEW_LEAD trigger error: {e}")
 
     # === E-Commerce Order Bridge ===
     if payload.content_type in ("order", "abandoned_cart"):
         try:
             from app.domains.orders.services import EcommerceWebhookProcessor
+
             processor = EcommerceWebhookProcessor(db)
             await processor.process_order_webhook(channel, conversation, payload)
         except Exception as e:
             logger.exception("process_incoming_message: error inesperado")
             await db.rollback()
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Ecommerce webhook processing error: {e}")
 
     # === Trigger: ORDER_CREATED / CART_ABANDONED ===
     if payload.content_type == "order":
         try:
             from app.domains.automations.engine import WorkflowEngine
+
             engine = WorkflowEngine(db)
             await engine.process_trigger(
                 trigger_type=WorkflowTriggerType.ORDER_CREATED,
@@ -825,10 +920,15 @@ async def process_incoming_message(
                 },
             )
             from app.core.events import emit_order_created
+
             await emit_order_created(
                 business_id=str(channel.business_id),
                 order_id=str(conversation.external_id),
-                total_amount=float(payload.extra_data.get("total_price", 0)) if payload.extra_data else 0,
+                total_amount=(
+                    float(payload.extra_data.get("total_price", 0))
+                    if payload.extra_data
+                    else 0
+                ),
                 status="pending",
                 conversation_id=str(conversation.id),
             )
@@ -836,11 +936,13 @@ async def process_incoming_message(
             logger.exception("process_incoming_message: error inesperado")
             await db.rollback()
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"ORDER_CREATED trigger error: {e}")
 
     elif payload.content_type == "abandoned_cart":
         try:
             from app.domains.automations.engine import WorkflowEngine
+
             engine = WorkflowEngine(db)
             await engine.process_trigger(
                 trigger_type=WorkflowTriggerType.CART_ABANDONED,
@@ -856,11 +958,13 @@ async def process_incoming_message(
             logger.exception("process_incoming_message: error inesperado")
             await db.rollback()
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"CART_ABANDONED trigger error: {e}")
 
     # === Trigger: NEW_MESSAGE ===
     try:
         from app.domains.automations.engine import WorkflowEngine
+
         engine = WorkflowEngine(db)
         await engine.process_trigger(
             trigger_type=WorkflowTriggerType.NEW_MESSAGE,
@@ -872,13 +976,16 @@ async def process_incoming_message(
                 "sender_name": payload.sender_name,
                 "is_new_conversation": is_new_conversation,
                 "chatbot_rule_matched": matched_rule.name if matched_rule else None,
-                "requires_human": matched_rule.requires_human if matched_rule else False,
+                "requires_human": (
+                    matched_rule.requires_human if matched_rule else False
+                ),
             },
         )
     except Exception as e:
         logger.exception("process_incoming_message: error inesperado")
         await db.rollback()
         from app.core.logger import get_logger
+
         get_logger(__name__).error(f"Workflow trigger error: {e}")
 
     # === AI Default Auto-Reply (safety net) ===
@@ -888,6 +995,7 @@ async def process_incoming_message(
         logger.exception("process_incoming_message: error inesperado")
         await db.rollback()
         from app.core.logger import get_logger
+
         get_logger(__name__).error(f"AI auto-reply error: {e}")
 
 
@@ -956,6 +1064,7 @@ async def send_outbound_message(
     # === Emitir evento de mensaje enviado ===
     try:
         from app.core.events import emit_message_sent
+
         await emit_message_sent(
             business_id=str(channel.business_id),
             conversation_id=str(conversation.id),
@@ -965,10 +1074,10 @@ async def send_outbound_message(
     except Exception as e:
         logger.exception("send_outbound_message: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).error(f"Send event error: {e}")
 
     return response
-
 
 
 async def _process_appointment_confirmation(db, conversation, content: str):
@@ -980,19 +1089,42 @@ async def _process_appointment_confirmation(db, conversation, content: str):
 
     # Find pending appointments for this conversation
     result = await db.execute(
-        select(Appointment).where(
+        select(Appointment)
+        .where(
             Appointment.conversation_id == conversation.id,
-            Appointment.status.in_([AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED]),
+            Appointment.status.in_(
+                [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED]
+            ),
             Appointment.is_active == True,
-        ).order_by(Appointment.start_time)
+        )
+        .order_by(Appointment.start_time)
     )
     appointments = result.scalars().all()
     if not appointments:
         return
 
     content_lower = content.lower().strip()
-    confirmation_keywords = ['si', 'sí', 'confirmar', 'confirmo', 'ok', 'yes', 'dale', 'perfecto', 'genial', 'bien']
-    cancellation_keywords = ['no', 'cancelar', 'cancelo', 'no puedo', 'no voy', 'anular', 'no asistiré']
+    confirmation_keywords = [
+        "si",
+        "sí",
+        "confirmar",
+        "confirmo",
+        "ok",
+        "yes",
+        "dale",
+        "perfecto",
+        "genial",
+        "bien",
+    ]
+    cancellation_keywords = [
+        "no",
+        "cancelar",
+        "cancelo",
+        "no puedo",
+        "no voy",
+        "anular",
+        "no asistiré",
+    ]
 
     for appt in appointments:
         if any(kw in content_lower for kw in confirmation_keywords):

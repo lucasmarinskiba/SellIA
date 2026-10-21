@@ -76,7 +76,9 @@ class SalesCloserService:
             logger.info(f"Close readiness: {readiness:.0%} | signals: {len(signals)}")
 
             # 3. Detectar buyer personality (heurística)
-            buyer_personality = self._infer_personality(message.content, conversation_history)
+            buyer_personality = self._infer_personality(
+                message.content, conversation_history
+            )
 
             # 4. Seleccionar técnica de cierre
             technique = await self.strategist.select_closing_technique(
@@ -113,7 +115,11 @@ class SalesCloserService:
                 customer_name=customer_profile.get("name", ""),
                 product_info=product_info,
                 offer_deadline=product_info.get("offer_deadline"),
-                objections=conversation_history[-1].get("objections") if conversation_history else None,
+                objections=(
+                    conversation_history[-1].get("objections")
+                    if conversation_history
+                    else None
+                ),
             )
 
             # 7. Decisión basada en readiness + mode
@@ -176,7 +182,9 @@ class SalesCloserService:
 
         Retorna: (confirmation_message, order_reference)
         """
-        order_reference = f"ORD-{utc_now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
+        order_reference = (
+            f"ORD-{utc_now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
+        )
 
         confirmation = f"""
 🎉 ¡VENTA CERRADA! 🎉
@@ -209,22 +217,50 @@ Team
     ) -> BuyerPersonality:
         """Infiere personalidad del comprador basada en conversación."""
         message.lower()
-        full_conv = " ".join([m.get("content", "").lower() for m in conversation_history])
+        full_conv = " ".join(
+            [m.get("content", "").lower() for m in conversation_history]
+        )
 
         # ANALYTICAL: preguntas técnicas, datos, ROI
-        if any(word in full_conv for word in ["como", "cuál es", "detalles", "proceso", "specifics", "how does"]):
+        if any(
+            word in full_conv
+            for word in [
+                "como",
+                "cuál es",
+                "detalles",
+                "proceso",
+                "specifics",
+                "how does",
+            ]
+        ):
             return BuyerPersonality.ANALYTICAL
 
         # DRIVER: urgencia, resultados, dinero
-        if any(word in full_conv for word in ["rápido", "ahora", "cuando", "resultados", "profit", "immediately"]):
+        if any(
+            word in full_conv
+            for word in [
+                "rápido",
+                "ahora",
+                "cuando",
+                "resultados",
+                "profit",
+                "immediately",
+            ]
+        ):
             return BuyerPersonality.DRIVER
 
         # EXPRESSIVE: emocional, historias, relaciones
-        if any(word in full_conv for word in ["siento", "creo", "pienso", "feel", "think", "love"]):
+        if any(
+            word in full_conv
+            for word in ["siento", "creo", "pienso", "feel", "think", "love"]
+        ):
             return BuyerPersonality.EXPRESSIVE
 
         # AMIABLE: consenso, armonía, preocupación
-        if any(word in full_conv for word in ["acuerdo", "juntos", "equipo", "todos", "team", "together"]):
+        if any(
+            word in full_conv
+            for word in ["acuerdo", "juntos", "equipo", "todos", "team", "together"]
+        ):
             return BuyerPersonality.AMIABLE
 
         # Default
@@ -233,9 +269,20 @@ Team
     def _is_objection(self, message: str) -> bool:
         """Detecta si mensaje contiene objeción."""
         objection_keywords = [
-            "pero", "sin embargo", "aunque", "no estoy", "preocupación",
-            "caro", "expensive", "tiempo", "seguro", "sure",
-            "however", "concerned", "hesitant", "worried",
+            "pero",
+            "sin embargo",
+            "aunque",
+            "no estoy",
+            "preocupación",
+            "caro",
+            "expensive",
+            "tiempo",
+            "seguro",
+            "sure",
+            "however",
+            "concerned",
+            "hesitant",
+            "worried",
         ]
 
         return any(keyword in message.lower() for keyword in objection_keywords)
@@ -269,20 +316,26 @@ Team
             log_entry.with_confidence(confidence)
 
             if status in ("closing_attempt", "needs_approval"):
-                log_entry.success() if status == "closing_attempt" else log_entry.pending_approval()
+                (
+                    log_entry.success()
+                    if status == "closing_attempt"
+                    else log_entry.pending_approval()
+                )
             elif status == "objection_handled":
                 log_entry.success()
             else:
                 log_entry.failed("Not ready to close")
 
-            log_entry.with_metadata({
-                "customer_id": message.customer_id,
-                "customer_name": message.customer_name,
-                "technique": technique.value,
-                "readiness_score": readiness,
-                "buyer_personality": buyer_personality,
-                "status": status,
-            })
+            log_entry.with_metadata(
+                {
+                    "customer_id": message.customer_id,
+                    "customer_name": message.customer_name,
+                    "technique": technique.value,
+                    "readiness_score": readiness,
+                    "buyer_personality": buyer_personality,
+                    "status": status,
+                }
+            )
 
             await self.audit_service.log(log_entry)
 

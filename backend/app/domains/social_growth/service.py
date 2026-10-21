@@ -15,7 +15,15 @@ from app.domains.social_growth.models import (
 )
 
 
-async def create_audit(db: AsyncSession, user_id: uuid.UUID, platform: str, handle: str, findings: list, recommendations: list, scores: dict) -> SocialProfileAudit:
+async def create_audit(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    platform: str,
+    handle: str,
+    findings: list,
+    recommendations: list,
+    scores: dict,
+) -> SocialProfileAudit:
     audit = SocialProfileAudit(
         user_id=user_id,
         platform=platform,
@@ -34,17 +42,24 @@ async def create_audit(db: AsyncSession, user_id: uuid.UUID, platform: str, hand
     return audit
 
 
-async def get_latest_audit(db: AsyncSession, user_id: uuid.UUID, platform: str) -> SocialProfileAudit | None:
+async def get_latest_audit(
+    db: AsyncSession, user_id: uuid.UUID, platform: str
+) -> SocialProfileAudit | None:
     result = await db.execute(
         select(SocialProfileAudit)
-        .where(SocialProfileAudit.user_id == user_id, SocialProfileAudit.platform == platform)
+        .where(
+            SocialProfileAudit.user_id == user_id,
+            SocialProfileAudit.platform == platform,
+        )
         .order_by(desc(SocialProfileAudit.created_at))
         .limit(1)
     )
     return result.scalar_one_or_none()
 
 
-async def get_calendar_slots(db: AsyncSession, user_id: uuid.UUID, days: int = 14) -> list[ContentCalendarSlot]:
+async def get_calendar_slots(
+    db: AsyncSession, user_id: uuid.UUID, days: int = 14
+) -> list[ContentCalendarSlot]:
     since = datetime.now(UTC) - timedelta(days=1)
     until = datetime.now(UTC) + timedelta(days=days)
     result = await db.execute(
@@ -59,7 +74,9 @@ async def get_calendar_slots(db: AsyncSession, user_id: uuid.UUID, days: int = 1
     return result.scalars().all()
 
 
-async def get_competitors(db: AsyncSession, user_id: uuid.UUID) -> list[CompetitorTracking]:
+async def get_competitors(
+    db: AsyncSession, user_id: uuid.UUID
+) -> list[CompetitorTracking]:
     result = await db.execute(
         select(CompetitorTracking)
         .where(CompetitorTracking.user_id == user_id)

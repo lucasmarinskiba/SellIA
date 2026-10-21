@@ -20,9 +20,11 @@ logger = get_logger(__name__)
 @shared_task
 def auto_resolve_tickets_task():
     """Run auto-resolution every 6 hours."""
+
     async def _run():
         async with AsyncSessionLocal() as db:
             await auto_resolve_tickets(db)
+
     run_async(_run())
     logger.info("Auto-resolve tickets task completed")
 
@@ -30,8 +32,10 @@ def auto_resolve_tickets_task():
 @shared_task
 def generate_support_stats_task():
     """Generate and cache support stats daily."""
+
     async def _run():
         async with AsyncSessionLocal() as db:
             stats = await get_auto_resolution_stats(db, days=30)
             logger.info(f"Support stats: {stats}")
+
     run_async(_run())

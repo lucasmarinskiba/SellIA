@@ -31,7 +31,9 @@ async def generate_post(
     """Generate an Instagram post using AI."""
     topic = data.get("topic", "ventas")
     tone = data.get("tone", "profesional")
-    content_type = data.get("content_type", "carousel")  # carousel | reel | story | single
+    content_type = data.get(
+        "content_type", "carousel"
+    )  # carousel | reel | story | single
 
     # In production, this would call the LLM provider
     # For now, return structured templates
@@ -47,7 +49,16 @@ async def generate_post(
                 "Slide 6: CTA — 'Link en bio para probar gratis'",
             ],
             "caption": f"¿Sabías que el 80% de las ventas se pierden por seguimiento? 📉\n\nAcá te dejo los 3 errores más comunes en {topic} y cómo evitarlos con IA 🤖\n\n¿Cuál cometés vos? 👇\n\n#ventas #automation #ia #{topic.replace(' ', '')}",
-            "hashtags": ["#ventas", "#automation", "#ia", f"#{topic}", "#emprendedores", "#marketingdigital", "#negocios", "#crecimientodigital"],
+            "hashtags": [
+                "#ventas",
+                "#automation",
+                "#ia",
+                f"#{topic}",
+                "#emprendedores",
+                "#marketingdigital",
+                "#negocios",
+                "#crecimientodigital",
+            ],
             "best_time": "Miércoles 11:00 AM o Jueves 7:00 PM",
         },
         "reel": {
@@ -84,6 +95,7 @@ async def generate_post(
         from datetime import datetime, timedelta
 
         from app.domains.social_growth.models import ContentCalendarSlot
+
         slot = ContentCalendarSlot(
             user_id=current_user.id,
             platform="instagram",
@@ -111,9 +123,22 @@ async def generate_hashtags(data: dict):
     """Generate hashtag sets for a topic."""
     topic = data.get("topic", "ventas")
     return {
-        "high_volume": [f"#{topic}", "#emprendedores", "#negocios", "#marketingdigital", "#ventasonline"],
+        "high_volume": [
+            f"#{topic}",
+            "#emprendedores",
+            "#negocios",
+            "#marketingdigital",
+            "#ventasonline",
+        ],
         "niche": [f"#{topic}conia", "#automation", "#agenteia", "#chatbot", "#crm"],
         "branded": ["#sellia", "#vendemientrasduermes", "#iasales"],
         "location_based": ["#argentina", "#latam", "#miami", "#españa"],
-        "recommended_mix": [f"#{topic}", "#ia", "#automation", "#emprendedores", "#sellia", "#negociosonline"],
+        "recommended_mix": [
+            f"#{topic}",
+            "#ia",
+            "#automation",
+            "#emprendedores",
+            "#sellia",
+            "#negociosonline",
+        ],
     }

@@ -120,7 +120,9 @@ class AttributionEngine:
 
         for attr in attributions:
             for channel in ["email", "sms", "web"]:
-                total[channel] = total.get(channel, Decimal(0)) + attr.get(channel, Decimal(0))
+                total[channel] = total.get(channel, Decimal(0)) + attr.get(
+                    channel, Decimal(0)
+                )
                 count[channel] = count.get(channel, 0) + 1
 
         grand_total = sum(total.values())
@@ -133,7 +135,11 @@ class AttributionEngine:
                 "total_revenue": float(channel_total),
                 "contribution_percent": float(pct),
                 "attribution_count": count.get(channel, 0),
-                "avg_per_attribution": float(channel_total / count.get(channel, 1)) if count.get(channel, 0) > 0 else 0,
+                "avg_per_attribution": (
+                    float(channel_total / count.get(channel, 1))
+                    if count.get(channel, 0) > 0
+                    else 0
+                ),
             }
 
         return contribution

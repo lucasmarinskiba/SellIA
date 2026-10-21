@@ -199,7 +199,9 @@ async def list_keyword_gaps(
     ]
 
 
-@router.post("/keywords/identify-opportunities", response_model=list[KeywordOpportunityOut])
+@router.post(
+    "/keywords/identify-opportunities", response_model=list[KeywordOpportunityOut]
+)
 async def identify_keyword_opportunities(
     business_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -234,24 +236,32 @@ async def seo_agents_dashboard(
     # Content stats
     content_count = (
         await db.execute(
-            select(func.count(GeneratedContent.id)).where(GeneratedContent.business_id == business_id)
+            select(func.count(GeneratedContent.id)).where(
+                GeneratedContent.business_id == business_id
+            )
         )
     ).scalar()
     avg_seo_score = (
         await db.execute(
-            select(func.avg(GeneratedContent.seo_score)).where(GeneratedContent.business_id == business_id)
+            select(func.avg(GeneratedContent.seo_score)).where(
+                GeneratedContent.business_id == business_id
+            )
         )
     ).scalar() or 0
 
     # Opportunity stats
     total_opportunities = (
         await db.execute(
-            select(func.count(KeywordOpportunity.id)).where(KeywordOpportunity.business_id == business_id)
+            select(func.count(KeywordOpportunity.id)).where(
+                KeywordOpportunity.business_id == business_id
+            )
         )
     ).scalar()
     total_traffic_potential = (
         await db.execute(
-            select(func.sum(KeywordOpportunity.estimated_traffic)).where(KeywordOpportunity.business_id == business_id)
+            select(func.sum(KeywordOpportunity.estimated_traffic)).where(
+                KeywordOpportunity.business_id == business_id
+            )
         )
     ).scalar() or 0
 
@@ -323,11 +333,15 @@ async def list_backlink_opportunities(
     ]
 
 
-@router.patch("/backlinks/opportunities/{opportunity_id}", response_model=BacklinkOpportunityOut)
+@router.patch(
+    "/backlinks/opportunities/{opportunity_id}", response_model=BacklinkOpportunityOut
+)
 async def update_backlink_status(
     business_id: UUID,
     opportunity_id: UUID,
-    status: Annotated[str, Query(pattern="^(identified|contacted|negotiating|acquired|rejected)$")],
+    status: Annotated[
+        str, Query(pattern="^(identified|contacted|negotiating|acquired|rejected)$")
+    ],
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
     acquired_url: Annotated[str | None, Query()] = None,
@@ -375,7 +389,9 @@ async def create_review_campaign(
     )
 
 
-@router.patch("/reviews/campaigns/{campaign_id}/record", response_model=ReviewCampaignOut)
+@router.patch(
+    "/reviews/campaigns/{campaign_id}/record", response_model=ReviewCampaignOut
+)
 async def record_review_result(
     business_id: UUID,
     campaign_id: UUID,
@@ -624,7 +640,9 @@ async def update_entity_signal(
 ):
     """Update entity links/targets/status; regenerates schema if links change."""
     svc = EntityOptimizationService(db)
-    entity = await svc.update_entity(entity_id, external_links, co_mention_targets, status, published_url)
+    entity = await svc.update_entity(
+        entity_id, external_links, co_mention_targets, status, published_url
+    )
     return EntitySignalOut(
         id=entity.id,
         entity_type=entity.entity_type,
@@ -696,7 +714,9 @@ async def list_location_profiles(
 async def update_location_citation(
     business_id: UUID,
     profile_id: UUID,
-    platform: Annotated[str, Query(pattern="^(google_business|yelp|facebook|bing_places|apple_maps)$")],
+    platform: Annotated[
+        str, Query(pattern="^(google_business|yelp|facebook|bing_places|apple_maps)$")
+    ],
     confirmed: Annotated[bool, Query()],
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],

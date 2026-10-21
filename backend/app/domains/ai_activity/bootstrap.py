@@ -20,5 +20,9 @@ async def ensure_ai_activity_tables() -> None:
                 )
             created += 1
         except Exception as e:  # noqa: BLE001
-            logger.warning("ai_activity bootstrap: table %s skipped: %s", table.name, str(e)[:160])
-    logger.info("✅ ai_activity tables ensured (%s/%s)", created, len(AI_ACTIVITY_TABLES))
+            logger.warning(
+                "ai_activity bootstrap: table %s skipped: %s", table.name, str(e)[:160]
+            )
+    logger.info(
+        "✅ ai_activity tables ensured (%s/%s)", created, len(AI_ACTIVITY_TABLES)
+    )

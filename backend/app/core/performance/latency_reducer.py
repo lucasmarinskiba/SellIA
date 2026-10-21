@@ -23,10 +23,16 @@ class LatencyReducer:
             "total_ms": request_latency_ms,
             "db_percentage": round(db_time_ms / total * 100, 1) if total > 0 else 0,
             "api_percentage": round(api_time_ms / total * 100, 1) if total > 0 else 0,
-            "processing_percentage": round(processing_time_ms / total * 100, 1) if total > 0 else 0,
+            "processing_percentage": (
+                round(processing_time_ms / total * 100, 1) if total > 0 else 0
+            ),
             "bottleneck": max(
-                [("database", db_time_ms), ("external_api", api_time_ms), ("processing", processing_time_ms)],
-                key=lambda x: x[1]
+                [
+                    ("database", db_time_ms),
+                    ("external_api", api_time_ms),
+                    ("processing", processing_time_ms),
+                ],
+                key=lambda x: x[1],
             )[0],
         }
 
@@ -42,15 +48,19 @@ class LatencyReducer:
 
         for op in operations:
             if op.get("blocking", False):
-                recommendations.append({
-                    "operation": op.get("name"),
-                    "expected_speedup": "Remove from critical path",
-                    "async_method": "Background job/queue",
-                })
+                recommendations.append(
+                    {
+                        "operation": op.get("name"),
+                        "expected_speedup": "Remove from critical path",
+                        "async_method": "Background job/queue",
+                    }
+                )
 
         return {
             "async_candidates": recommendations,
-            "total_latency_savings_ms": sum(op.get("duration_ms", 0) for op in recommendations),
+            "total_latency_savings_ms": sum(
+                op.get("duration_ms", 0) for op in recommendations
+            ),
         }
 
     @staticmethod

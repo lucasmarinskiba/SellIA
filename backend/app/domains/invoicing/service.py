@@ -36,7 +36,9 @@ class InvoicingService:
         # created within the same wall-clock second (e.g. concurrent requests,
         # a batch loop) — invoice_number is globally unique, so append a short
         # random suffix to guarantee uniqueness regardless of timing.
-        invoice_number = f"INV-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
+        invoice_number = (
+            f"INV-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
+        )
         total_aed = amount_aed + tax_aed
 
         invoice = Invoice(
@@ -115,14 +117,22 @@ class InvoicingService:
     async def invoice_stats(self, business_id: uuid.UUID) -> dict:
         """Get invoice statistics."""
         invoices = (
-            await self.db.execute(
-                select(Invoice).where(Invoice.business_id == business_id)
+            (
+                await self.db.execute(
+                    select(Invoice).where(Invoice.business_id == business_id)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         total_revenue = sum(inv.total_aed for inv in invoices)
         paid_revenue = sum(inv.total_aed for inv in invoices if inv.status == "paid")
-        pending_revenue = sum(inv.total_aed for inv in invoices if inv.status in ("draft", "sent", "viewed"))
+        pending_revenue = sum(
+            inv.total_aed
+            for inv in invoices
+            if inv.status in ("draft", "sent", "viewed")
+        )
         overdue = sum(1 for inv in invoices if inv.status == "overdue")
 
         # Avg payment days
@@ -201,11 +211,17 @@ class PaymentService:
     ) -> list[Payment]:
         """List payments."""
         payments = (
-            await self.db.execute(
-                select(Payment).where(Payment.business_id == business_id)
-                .order_by(desc(Payment.paid_at)).limit(limit)
+            (
+                await self.db.execute(
+                    select(Payment)
+                    .where(Payment.business_id == business_id)
+                    .order_by(desc(Payment.paid_at))
+                    .limit(limit)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return payments
 
 
@@ -236,15 +252,19 @@ class InvoiceTemplateService:
     async def list_templates(self, business_id: uuid.UUID) -> list[InvoiceTemplate]:
         """List templates."""
         templates = (
-            await self.db.execute(
-                select(InvoiceTemplate).where(
-                    and_(
-                        InvoiceTemplate.business_id == business_id,
-                        InvoiceTemplate.is_active,
+            (
+                await self.db.execute(
+                    select(InvoiceTemplate).where(
+                        and_(
+                            InvoiceTemplate.business_id == business_id,
+                            InvoiceTemplate.is_active,
+                        )
                     )
                 )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return templates
 
     async def get_template(self, template_id: uuid.UUID) -> InvoiceTemplate:

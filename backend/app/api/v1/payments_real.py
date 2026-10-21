@@ -51,7 +51,9 @@ async def create_checkout(
     """
 
     try:
-        logger.info(f"Creando checkout para {request.customer_email}, ${request.amount_usd}")
+        logger.info(
+            f"Creando checkout para {request.customer_email}, ${request.amount_usd}"
+        )
 
         # Crear checkout Stripe
         checkout = StripePaymentProcessor.create_checkout_session(
@@ -64,7 +66,9 @@ async def create_checkout(
         )
 
         if checkout["status"] != "session_created":
-            raise HTTPException(status_code=400, detail=checkout.get("message", "Checkout failed"))
+            raise HTTPException(
+                status_code=400, detail=checkout.get("message", "Checkout failed")
+            )
 
         # Guardar orden en DB
         order = Order(
@@ -131,7 +135,10 @@ async def stripe_webhook(
         result = StripeWebhookHandler.handle_webhook(event)
 
         # Si pago exitoso → Actualizar orden en DB
-        if result["status"] == "processed" and result.get("event") == "payment_succeeded":
+        if (
+            result["status"] == "processed"
+            and result.get("event") == "payment_succeeded"
+        ):
             order_id = result.get("order_id")
 
             # Actualizar orden

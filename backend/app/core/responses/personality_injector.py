@@ -13,13 +13,29 @@ class PersonalityInjector:
 
     BRAND_VOICE_PROFILES: ClassVar[dict] = {
         "founder": {
-            "opening": ["We built this because", "I struggled with", "Our team discovered"],
-            "signature": ["Feel free to reach out", "Happy to help", "Love your thinking"],
+            "opening": [
+                "We built this because",
+                "I struggled with",
+                "Our team discovered",
+            ],
+            "signature": [
+                "Feel free to reach out",
+                "Happy to help",
+                "Love your thinking",
+            ],
             "voice_traits": ["personal", "authentic", "story-driven"],
         },
         "expert": {
-            "opening": ["Based on what we've learned", "The data shows", "Research indicates"],
-            "signature": ["Best practice is", "Here's the framework", "Technical deep-dive"],
+            "opening": [
+                "Based on what we've learned",
+                "The data shows",
+                "Research indicates",
+            ],
+            "signature": [
+                "Best practice is",
+                "Here's the framework",
+                "Technical deep-dive",
+            ],
             "voice_traits": ["analytical", "evidence-based", "precise"],
         },
         "friend": {
@@ -38,8 +54,12 @@ class PersonalityInjector:
         """Inject personality into generic response."""
 
         profile = PersonalityInjector.BRAND_VOICE_PROFILES.get(personality_type, {})
-        opening = profile.get("opening", [""])[variation_index % len(profile.get("opening", []))]
-        signature = profile.get("signature", [""])[variation_index % len(profile.get("signature", []))]
+        opening = profile.get("opening", [""])[
+            variation_index % len(profile.get("opening", []))
+        ]
+        signature = profile.get("signature", [""])[
+            variation_index % len(profile.get("signature", []))
+        ]
 
         # Transform response with personality
         personalized = f"{opening} {response_text}. {signature}"
@@ -82,7 +102,9 @@ class PersonalityInjector:
             "authenticity_score": int(score),
             "personality_match": score >= 70,
             "dominant_traits": traits[:2],
-            "recommendation": "Feels authentic" if score >= 70 else "Add more personality",
+            "recommendation": (
+                "Feels authentic" if score >= 70 else "Add more personality"
+            ),
         }
 
     @staticmethod

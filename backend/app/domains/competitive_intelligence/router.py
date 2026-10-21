@@ -1,4 +1,5 @@
 """Phase 4: Competitive Intelligence Endpoints."""
+
 from typing import Annotated
 from uuid import UUID
 
@@ -8,7 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.domains.competitive_intelligence.service import CompetitiveIntelligenceService
 
-router = APIRouter(prefix="/api/v1/competitive-intelligence", tags=["competitive-intelligence"])
+router = APIRouter(
+    prefix="/api/v1/competitive-intelligence", tags=["competitive-intelligence"]
+)
 
 
 @router.post("/track-competitor")
@@ -25,7 +28,15 @@ async def track_competitor(
 ) -> dict:
     """Register or update competitor profile."""
     result = await CompetitiveIntelligenceService.track_competitor(
-        db, business_id, competitor_name, industry, market_segment, price_point, strength_areas, weakness_areas, feature_set
+        db,
+        business_id,
+        competitor_name,
+        industry,
+        market_segment,
+        price_point,
+        strength_areas,
+        weakness_areas,
+        feature_set,
     )
     return result
 
@@ -42,7 +53,13 @@ async def analyze_price(
 ) -> dict:
     """Recommend optimal price based on competitive analysis."""
     result = await CompetitiveIntelligenceService.analyze_price_positioning(
-        db, business_id, product_id, current_price, competitor_prices, target_margin, market_position
+        db,
+        business_id,
+        product_id,
+        current_price,
+        competitor_prices,
+        target_margin,
+        market_position,
     )
     return result
 
@@ -66,7 +83,9 @@ async def find_opportunities(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Identify market opportunities and threats."""
-    result = await CompetitiveIntelligenceService.identify_market_opportunities(db, business_id)
+    result = await CompetitiveIntelligenceService.identify_market_opportunities(
+        db, business_id
+    )
     return result
 
 
@@ -83,7 +102,14 @@ async def add_feed(
 ) -> dict:
     """Log competitive intelligence event."""
     result = await CompetitiveIntelligenceService.add_intelligence_feed(
-        db, business_id, feed_type, competitor_name, event_title, event_description, threat_level, source_url
+        db,
+        business_id,
+        feed_type,
+        competitor_name,
+        event_title,
+        event_description,
+        threat_level,
+        source_url,
     )
     return result
 
@@ -94,5 +120,7 @@ async def get_dashboard(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Get competitive intelligence dashboard."""
-    result = await CompetitiveIntelligenceService.get_intelligence_dashboard(db, business_id)
+    result = await CompetitiveIntelligenceService.get_intelligence_dashboard(
+        db, business_id
+    )
     return result

@@ -1,4 +1,5 @@
 """Phase 3: Channel Routing Endpoints."""
+
 from typing import Annotated
 from uuid import UUID
 
@@ -39,7 +40,14 @@ async def update_affinity(
 ) -> dict:
     """Update channel affinity based on message performance."""
     affinity = await ChannelRoutingService.update_channel_affinity(
-        db, business_id, customer_id, channel, was_delivered, was_opened, was_clicked, response_time_seconds
+        db,
+        business_id,
+        customer_id,
+        channel,
+        was_delivered,
+        was_opened,
+        was_clicked,
+        response_time_seconds,
     )
     return {
         "customer_id": customer_id,

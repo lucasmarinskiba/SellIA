@@ -69,7 +69,9 @@ class IntegrationService:
         )
         return result.scalar_one_or_none()
 
-    async def list_business_connections(self, business_id: UUID) -> list[IntegrationConnection]:
+    async def list_business_connections(
+        self, business_id: UUID
+    ) -> list[IntegrationConnection]:
         """List all connections for a business."""
         result = await self.db.execute(
             select(IntegrationConnection).where(

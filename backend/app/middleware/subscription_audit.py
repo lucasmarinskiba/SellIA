@@ -48,6 +48,7 @@ class SubscriptionAuditMiddleware(BaseHTTPMiddleware):
 
                     # Log async (fire and forget)
                     from app.core.database import AsyncSessionLocal
+
                     async with AsyncSessionLocal() as db:
                         await log_feature_access(
                             db=db,
@@ -55,7 +56,9 @@ class SubscriptionAuditMiddleware(BaseHTTPMiddleware):
                             feature_name=feature_name,
                             endpoint=path,
                             response_status=response.status_code,
-                            response_size=int(response.headers.get("content-length", 0)),
+                            response_size=int(
+                                response.headers.get("content-length", 0)
+                            ),
                             duration_ms=duration_ms,
                             success=response.status_code < 400,
                         )

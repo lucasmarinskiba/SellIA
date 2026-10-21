@@ -1,4 +1,5 @@
 """Phase X10: FOMO Generation Agent - Personalized Scarcity & Urgency."""
+
 from datetime import UTC, datetime
 
 from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, Text
@@ -8,14 +9,20 @@ from app.db.models import Base
 
 class FOMOCampaign(Base):
     __tablename__ = "fomo_campaigns"
-    id = Column(String(36), primary_key=True, default=lambda: str(__import__('uuid').uuid4()))
+    id = Column(
+        String(36), primary_key=True, default=lambda: str(__import__("uuid").uuid4())
+    )
 
     user_id = Column(String(36), nullable=False, index=True)
     email = Column(String(255), nullable=False)
 
     # Campaign type
-    fomo_type = Column(String(50), nullable=False)  # scarcity, urgency, social_proof, exclusivity, loss_aversion
-    fomo_strategy = Column(String(255))  # "only_3_seats_left", "deadline_friday", "150_companies_using"
+    fomo_type = Column(
+        String(50), nullable=False
+    )  # scarcity, urgency, social_proof, exclusivity, loss_aversion
+    fomo_strategy = Column(
+        String(255)
+    )  # "only_3_seats_left", "deadline_friday", "150_companies_using"
 
     # Messaging
     subject_line = Column(String(200), nullable=False)
@@ -42,18 +49,24 @@ class FOMOCampaign(Base):
 
     # Attribution
     revenue_attributed = Column(Float, default=0)
-    fomo_contribution_score = Column(Float, default=0)  # 0-1.0, how much FOMO drove conversion
+    fomo_contribution_score = Column(
+        Float, default=0
+    )  # 0-1.0, how much FOMO drove conversion
 
     created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 
 class CountdownTrigger(Base):
     __tablename__ = "countdown_triggers"
-    id = Column(String(36), primary_key=True, default=lambda: str(__import__('uuid').uuid4()))
+    id = Column(
+        String(36), primary_key=True, default=lambda: str(__import__("uuid").uuid4())
+    )
 
     user_id = Column(String(36), nullable=False, index=True)
     trigger_type = Column(String(50))  # pricing_expires, cohort_closes, limited_offer
-    trigger_event = Column(String(255))  # "Founding price: $99/mo → $299/mo in 48 hours"
+    trigger_event = Column(
+        String(255)
+    )  # "Founding price: $99/mo → $299/mo in 48 hours"
 
     countdown_start = Column(DateTime(UTC), nullable=False)
     countdown_end = Column(DateTime(UTC), nullable=False)

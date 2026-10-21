@@ -21,7 +21,11 @@ class APIDesign:
             "page_size": page_size,
             "cursor_field": "id",
             "total_pages": (total_items + page_size - 1) // page_size,
-            "advantages": ["Fast", "Handles concurrent changes", "No offset computation"],
+            "advantages": [
+                "Fast",
+                "Handles concurrent changes",
+                "No offset computation",
+            ],
         }
 
     @staticmethod

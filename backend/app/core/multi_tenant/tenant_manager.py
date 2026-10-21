@@ -23,6 +23,7 @@ logger = get_logger(__name__)
 
 class TenantTier(str, Enum):
     """Supported tenant tiers with limits."""
+
     STARTER = "starter"  # 5 users, 10k API calls/month
     PRO = "pro"  # 25 users, 100k API calls/month
     ENTERPRISE = "enterprise"  # Unlimited
@@ -91,9 +92,7 @@ class TenantService:
             slug = f"{name.lower().replace(' ', '-')}-{str(uuid.uuid4())[:8]}"
         else:
             # Validate slug is unique
-            existing = await self.db.execute(
-                select(Tenant).where(Tenant.slug == slug)
-            )
+            existing = await self.db.execute(select(Tenant).where(Tenant.slug == slug))
             if existing.scalar_one_or_none():
                 raise AppException(f"Slug '{slug}' already exists", status_code=409)
 
@@ -162,16 +161,12 @@ class TenantService:
 
     async def get_tenant(self, tenant_id: str) -> Tenant | None:
         """Get tenant by ID."""
-        result = await self.db.execute(
-            select(Tenant).where(Tenant.id == tenant_id)
-        )
+        result = await self.db.execute(select(Tenant).where(Tenant.id == tenant_id))
         return result.scalar_one_or_none()
 
     async def get_tenant_by_slug(self, slug: str) -> Tenant | None:
         """Get tenant by slug."""
-        result = await self.db.execute(
-            select(Tenant).where(Tenant.slug == slug)
-        )
+        result = await self.db.execute(select(Tenant).where(Tenant.slug == slug))
         return result.scalar_one_or_none()
 
     async def list_tenants(
@@ -249,7 +244,9 @@ class TenantService:
         tenant.updated_at = datetime.now(UTC)
         await self.db.commit()
 
-        logger.info(f"Tenant updated: {tenant_id}", extra={"fields": list(kwargs.keys())})
+        logger.info(
+            f"Tenant updated: {tenant_id}", extra={"fields": list(kwargs.keys())}
+        )
 
         return tenant
 

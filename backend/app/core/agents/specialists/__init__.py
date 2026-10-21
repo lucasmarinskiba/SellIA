@@ -89,9 +89,11 @@ SPECIALIST_AGENTS = {
     "storytelling": StorytellingAgent,
 }
 
+
 def get_agent(agent_name: str):
     """Get specialist agent by name."""
     return SPECIALIST_AGENTS.get(agent_name.lower())
+
 
 def list_specialists() -> list:
     """List all available specialist agents."""

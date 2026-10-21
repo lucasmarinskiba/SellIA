@@ -22,7 +22,10 @@ logger = get_logger(__name__)
 
 # ===== Scenario CRUD =====
 
-async def create_scenario(db: AsyncSession, data: SimulationScenarioCreate) -> TrainingScenario:
+
+async def create_scenario(
+    db: AsyncSession, data: SimulationScenarioCreate
+) -> TrainingScenario:
     scenario = TrainingScenario(**data.model_dump())
     db.add(scenario)
     await db.commit()
@@ -47,7 +50,9 @@ async def list_scenarios(
     return result.scalars().all()
 
 
-async def get_scenario(db: AsyncSession, scenario_id: uuid.UUID) -> TrainingScenario | None:
+async def get_scenario(
+    db: AsyncSession, scenario_id: uuid.UUID
+) -> TrainingScenario | None:
     result = await db.execute(
         select(TrainingScenario).where(TrainingScenario.id == scenario_id)
     )
@@ -78,6 +83,7 @@ async def delete_scenario(db: AsyncSession, scenario_id: uuid.UUID) -> bool:
 
 # ===== Simulation Runs =====
 
+
 async def start_simulation(
     db: AsyncSession,
     scenario_id: uuid.UUID,
@@ -105,6 +111,7 @@ async def start_simulation(
     # Queue Celery task
     try:
         from app.tasks.celery_app import celery_app
+
         celery_app.send_task(
             "app.domains.training.tasks.run_simulation_task",
             args=[str(scenario_id), effective_agent_type, str(run.id)],
@@ -114,16 +121,18 @@ async def start_simulation(
         logger.exception("Failed to queue simulation task")
         run.status = "failed"
         run.feedback = f"Failed to queue task: {str(exc)[:200]}"
-        run.completed_at = __import__("datetime").datetime.now(__import__("datetime").timezone.utc)
+        run.completed_at = __import__("datetime").datetime.now(
+            __import__("datetime").timezone.utc
+        )
         await db.commit()
 
     return run
 
 
-async def get_simulation_results(db: AsyncSession, run_id: uuid.UUID) -> TrainingRun | None:
-    result = await db.execute(
-        select(TrainingRun).where(TrainingRun.id == run_id)
-    )
+async def get_simulation_results(
+    db: AsyncSession, run_id: uuid.UUID
+) -> TrainingRun | None:
+    result = await db.execute(select(TrainingRun).where(TrainingRun.id == run_id))
     return result.scalar_one_or_none()
 
 
@@ -147,20 +156,23 @@ async def get_leaderboard(
 
     entries = []
     for run, scenario in result.all():
-        entries.append({
-            "run_id": run.id,
-            "scenario_id": scenario.id,
-            "scenario_name": scenario.name,
-            "agent_type": scenario.agent_type,
-            "score": run.score,
-            "objective_achieved": run.objective_achieved,
-            "customer_satisfaction": run.customer_satisfaction,
-            "created_at": run.created_at,
-        })
+        entries.append(
+            {
+                "run_id": run.id,
+                "scenario_id": scenario.id,
+                "scenario_name": scenario.name,
+                "agent_type": scenario.agent_type,
+                "score": run.score,
+                "objective_achieved": run.objective_achieved,
+                "customer_satisfaction": run.customer_satisfaction,
+                "created_at": run.created_at,
+            }
+        )
     return entries
 
 
 # ===== Direct simulation execution (used by Celery task) =====
+
 
 async def execute_simulation(
     db: AsyncSession,

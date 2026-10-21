@@ -28,6 +28,7 @@ from app.core.database import Base
 
 class LocationType(str, Enum):
     """Type of physical location."""
+
     SHOWROOM = "showroom"
     RETAIL_STORE = "retail_store"
     SERVICE_CENTER = "service_center"
@@ -40,22 +41,31 @@ class LocationType(str, Enum):
 
 class LocalizationModel(str, Enum):
     """Business localization strategy."""
+
     ONLINE_ONLY = "online_only"
-    HYBRID_LIGHT = "hybrid_light"        # ~20% foot traffic impact
-    HYBRID_HEAVY = "hybrid_heavy"        # ~50% foot traffic impact
-    OFFLINE_FIRST = "offline_first"      # >80% foot traffic impact
+    HYBRID_LIGHT = "hybrid_light"  # ~20% foot traffic impact
+    HYBRID_HEAVY = "hybrid_heavy"  # ~50% foot traffic impact
+    OFFLINE_FIRST = "offline_first"  # >80% foot traffic impact
 
 
 class Location(Base):
     """Physical location of a business."""
+
     __tablename__ = "locations"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Identification
     name = Column(String(255), nullable=False)
-    type = Column(SQLEnum(LocationType), nullable=False, default=LocationType.RETAIL_STORE)
+    type = Column(
+        SQLEnum(LocationType), nullable=False, default=LocationType.RETAIL_STORE
+    )
 
     # Address
     address = Column(String(500), nullable=False)
@@ -73,7 +83,9 @@ class Location(Base):
     email = Column(String(255), nullable=True)
     website_url = Column(String(500), nullable=True)
     google_maps_url = Column(String(1000), nullable=True)
-    gmb_id = Column(String(255), nullable=True, index=True)  # Google Business Profile ID
+    gmb_id = Column(
+        String(255), nullable=True, index=True
+    )  # Google Business Profile ID
 
     # Hours of operation (JSON: {"monday": {"open": "09:00", "close": "18:00"}, ...})
     hours_json = Column(JSON, default=dict, nullable=False)
@@ -98,15 +110,19 @@ class Location(Base):
     location_metadata = Column(JSON, default=dict, nullable=False)
 
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
     # Relationships
     business = relationship("Business", back_populates="locations")
 
     __table_args__ = (
-        Index('idx_locations_business_active', 'business_id', 'is_active'),
-        Index('idx_locations_city', 'city'),
-        Index('idx_locations_gmb', 'gmb_id'),
+        Index("idx_locations_business_active", "business_id", "is_active"),
+        Index("idx_locations_city", "city"),
+        Index("idx_locations_gmb", "gmb_id"),
     )
 
 
@@ -114,22 +130,22 @@ class Location(Base):
 # Pydantic schemas for API
 # ============================================================
 
+
 class LocationHours(BaseModel):
     """Operating hours for a single day."""
+
     open: str = Field(..., pattern=r"^\d{2}:\d{2}$")
     close: str = Field(..., pattern=r"^\d{2}:\d{2}$")
 
     class Config:
         json_schema_extra: ClassVar[dict] = {
-            "example": {
-                "open": "09:00",
-                "close": "18:00"
-            }
+            "example": {"open": "09:00", "close": "18:00"}
         }
 
 
 class LocationHoursWeekly(BaseModel):
     """Operating hours for a full week."""
+
     monday: LocationHours | None = None
     tuesday: LocationHours | None = None
     wednesday: LocationHours | None = None
@@ -147,7 +163,7 @@ class LocationHoursWeekly(BaseModel):
                 "thursday": {"open": "09:00", "close": "18:00"},
                 "friday": {"open": "09:00", "close": "18:00"},
                 "saturday": {"open": "10:00", "close": "14:00"},
-                "sunday": None
+                "sunday": None,
             }
         }
 
@@ -223,6 +239,7 @@ class LocationResponse(LocationBase):
 
 class LocationProfileResponse(BaseModel):
     """Profile combining location info with foot-traffic metrics."""
+
     location: LocationResponse
     visitor_count_monthly: int = 0
     conversion_rate_offline: float = 0.0

@@ -21,7 +21,9 @@ router = APIRouter(prefix="/deals", tags=["deals"])
 async def list_deal_scores(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-    category: Annotated[str | None, Query(description="Filter by category: cold, warm, hot, ready")] = None,
+    category: Annotated[
+        str | None, Query(description="Filter by category: cold, warm, hot, ready")
+    ] = None,
     min_score: Annotated[int | None, Query(ge=0, le=100)] = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,

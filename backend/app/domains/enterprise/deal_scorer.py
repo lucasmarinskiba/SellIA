@@ -156,7 +156,9 @@ class DealScorer:
 
         return (data_confidence * 0.6 + stage_confidence * 0.4) * 0.9
 
-    def _assess_risk(self, factors: DealScoreFactors, win_probability: float) -> RiskLevel:
+    def _assess_risk(
+        self, factors: DealScoreFactors, win_probability: float
+    ) -> RiskLevel:
         """Assess risk level based on multiple factors."""
         if factors.last_activity_days > self.CRITICAL_THRESHOLD_DAYS:
             return RiskLevel.CRITICAL
@@ -185,9 +187,7 @@ class RevenueForecast:
     def __init__(self):
         self.scorer = DealScorer()
 
-    def forecast_revenue(
-        self, deals: list[dict], days_ahead: int = 30
-    ) -> dict:
+    def forecast_revenue(self, deals: list[dict], days_ahead: int = 30) -> dict:
         """Forecast revenue based on deal scores."""
         if not deals:
             return {

@@ -94,45 +94,95 @@ class ContextRouter:
     # event_type -> ordered list of (agent_id, reason)
     EVENT_AGENT_MAP: ClassVar[dict[str, list[dict[str, str]]]] = {
         "new_visitor": [
-            {"agent": "segmentation", "reason": "Classify the visitor into a segment for personalization"},
-            {"agent": "copywriter", "reason": "Generate soft, non-pushy live-visitor widget copy"},
+            {
+                "agent": "segmentation",
+                "reason": "Classify the visitor into a segment for personalization",
+            },
+            {
+                "agent": "copywriter",
+                "reason": "Generate soft, non-pushy live-visitor widget copy",
+            },
         ],
         "purchase_completed": [
-            {"agent": "segmentation", "reason": "Update RFM standing with the new purchase"},
-            {"agent": "timing", "reason": "Log the engagement point for future send-time prediction"},
+            {
+                "agent": "segmentation",
+                "reason": "Update RFM standing with the new purchase",
+            },
+            {
+                "agent": "timing",
+                "reason": "Log the engagement point for future send-time prediction",
+            },
         ],
         "cart_abandoned": [
-            {"agent": "timing", "reason": "Predict this customer's best send time / adjust delays"},
-            {"agent": "scarcity", "reason": "Calibrate truthful stock/discount messaging if applicable"},
+            {
+                "agent": "timing",
+                "reason": "Predict this customer's best send time / adjust delays",
+            },
+            {
+                "agent": "scarcity",
+                "reason": "Calibrate truthful stock/discount messaging if applicable",
+            },
             {"agent": "copywriter", "reason": "Generate the recovery sequence copy"},
         ],
         "stock_low": [
-            {"agent": "scarcity", "reason": "Determine the truthful scarcity tier to display"},
-            {"agent": "autonomous_campaign", "reason": "Decide whether to launch a scarcity campaign"},
+            {
+                "agent": "scarcity",
+                "reason": "Determine the truthful scarcity tier to display",
+            },
+            {
+                "agent": "autonomous_campaign",
+                "reason": "Decide whether to launch a scarcity campaign",
+            },
         ],
         "seasonal_approaching": [
-            {"agent": "autonomous_campaign", "reason": "Detects the seasonal opportunity and plans it"},
+            {
+                "agent": "autonomous_campaign",
+                "reason": "Detects the seasonal opportunity and plans it",
+            },
             {"agent": "copywriter", "reason": "Generate seasonal campaign copy"},
         ],
         "competitor_price_change": [
-            {"agent": "competitor_monitor", "reason": "Confirm the change is significant and build the signal"},
-            {"agent": "autonomous_campaign", "reason": "React to the competitor signal with a counter-campaign"},
+            {
+                "agent": "competitor_monitor",
+                "reason": "Confirm the change is significant and build the signal",
+            },
+            {
+                "agent": "autonomous_campaign",
+                "reason": "React to the competitor signal with a counter-campaign",
+            },
             {"agent": "copywriter", "reason": "Generate the counter-offer messaging"},
         ],
         "customer_at_risk": [
-            {"agent": "churn_prevention", "reason": "Already scored — this is the trigger for the win-back sequence"},
-            {"agent": "timing", "reason": "Optimize the win-back send time for this specific customer"},
+            {
+                "agent": "churn_prevention",
+                "reason": "Already scored — this is the trigger for the win-back sequence",
+            },
+            {
+                "agent": "timing",
+                "reason": "Optimize the win-back send time for this specific customer",
+            },
             {"agent": "copywriter", "reason": "Personalize the win-back offer copy"},
         ],
         "daily_tick": [
-            {"agent": "autonomous_campaign", "reason": "Monitor running campaigns, pause/scale as needed"},
-            {"agent": "churn_prevention", "reason": "Batch-scan customers for new churn risk"},
-            {"agent": "scarcity", "reason": "Check urgency-intensity fatigue across active campaigns"},
+            {
+                "agent": "autonomous_campaign",
+                "reason": "Monitor running campaigns, pause/scale as needed",
+            },
+            {
+                "agent": "churn_prevention",
+                "reason": "Batch-scan customers for new churn risk",
+            },
+            {
+                "agent": "scarcity",
+                "reason": "Check urgency-intensity fatigue across active campaigns",
+            },
         ],
     }
 
     @staticmethod
-    def route_event(event_type: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
+    def route_event(
+        event_type: str, context: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Decide which agents should handle this event, in order"""
         plan = ContextRouter.EVENT_AGENT_MAP.get(event_type)
 
@@ -262,7 +312,9 @@ class UnifiedDashboard:
 
         if conflict_results is not None:
             summary["conflicts"] = {
-                "total_deferred": conflict_results.get("total_deferred", len(conflict_results.get("deferred", []))),
+                "total_deferred": conflict_results.get(
+                    "total_deferred", len(conflict_results.get("deferred", []))
+                ),
             }
 
         return summary
@@ -277,7 +329,9 @@ class AIOrchestratorAgent:
         return AgentCatalog.list_agents()
 
     @staticmethod
-    def route_event(event_type: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
+    def route_event(
+        event_type: str, context: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         return ContextRouter.route_event(event_type, context)
 
     @staticmethod

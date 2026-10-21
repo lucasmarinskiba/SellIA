@@ -1,4 +1,5 @@
 """Phase X6: FOMO Dynamics Service - Ultra-Potent Psychology-Driven FOMO."""
+
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -36,7 +37,9 @@ class FOMODynamicsService:
             total_stock=total_stock,
             ends_at=ends_at,
             headline=headline or FOMODynamicsService._generate_headline(strategy),
-            stock_threshold_alert=max(1, (total_stock or 10) // 3),  # Alert at 1/3 remaining
+            stock_threshold_alert=max(
+                1, (total_stock or 10) // 3
+            ),  # Alert at 1/3 remaining
         )
         db.add(offer)
         await db.commit()
@@ -58,7 +61,9 @@ class FOMODynamicsService:
         price_multiplier = 1.0 + (purchases_count / 10) * 0.02
         offer.current_price = round(offer.base_price * price_multiplier, 2)
         offer.price_multiplier = price_multiplier
-        offer.discount_percent = ((offer.base_price - offer.current_price) / offer.base_price) * 100
+        offer.discount_percent = (
+            (offer.base_price - offer.current_price) / offer.base_price
+        ) * 100
 
         await db.commit()
         return offer.current_price
@@ -145,11 +150,15 @@ class FOMODynamicsService:
 
         # Get or create social proof
         result = await db.execute(
-            select(SocialProofReal).where(SocialProofReal.product_id == offer.product_id)
+            select(SocialProofReal).where(
+                SocialProofReal.product_id == offer.product_id
+            )
         )
         proof = result.scalar()
         if not proof:
-            proof = SocialProofReal(business_id=offer.business_id, product_id=offer.product_id)
+            proof = SocialProofReal(
+                business_id=offer.business_id, product_id=offer.product_id
+            )
             db.add(proof)
 
         if new_purchase:
@@ -209,25 +218,33 @@ class FOMODynamicsService:
         if fomo.browse_count >= 3 and not fomo.cart_abandoned:
             fomo.trigger_type = "back_in_stock"
             fomo.persuasion_angle = "scarcity"
-            fomo.trigger_message = "⚠️ This item is flying off shelves. Secure yours before it's gone."
+            fomo.trigger_message = (
+                "⚠️ This item is flying off shelves. Secure yours before it's gone."
+            )
             fomo.conversion_probability = 0.65
 
         elif fomo.cart_abandoned:
             fomo.trigger_type = "abandoned_cart"
             fomo.persuasion_angle = "urgency"
-            fomo.trigger_message = "🔥 You left this in your cart. Price increased 5% in the last hour."
+            fomo.trigger_message = (
+                "🔥 You left this in your cart. Price increased 5% in the last hour."
+            )
             fomo.conversion_probability = 0.75
 
         elif fomo.previously_purchased:
             fomo.trigger_type = "repeat_buyer"
             fomo.persuasion_angle = "quality"
-            fomo.trigger_message = "⭐ Your favorite brand has a new item. Limited quantity available."
+            fomo.trigger_message = (
+                "⭐ Your favorite brand has a new item. Limited quantity available."
+            )
             fomo.conversion_probability = 0.55
 
         elif fomo.browse_count == 1:
             fomo.trigger_type = "trending"
             fomo.persuasion_angle = "social_proof"
-            fomo.trigger_message = "🔥 Trending now: {product_name} is #{rank} on our platform"
+            fomo.trigger_message = (
+                "🔥 Trending now: {product_name} is #{rank} on our platform"
+            )
             fomo.conversion_probability = 0.35
 
         await db.commit()

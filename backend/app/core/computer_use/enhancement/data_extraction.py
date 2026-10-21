@@ -36,8 +36,10 @@ logger = logging.getLogger(__name__)
 # DATA EXTRACTION TYPES
 # ============================================================================
 
+
 class DataType(str, Enum):
     """Tipo de dato."""
+
     STRING = "string"
     NUMBER = "number"
     DATE = "date"
@@ -52,6 +54,7 @@ class DataType(str, Enum):
 
 class ExtractionStrategy(str, Enum):
     """Estrategia de extracción."""
+
     CSS_SELECTOR = "css_selector"
     XPATH = "xpath"
     REGEX = "regex"
@@ -65,9 +68,11 @@ class ExtractionStrategy(str, Enum):
 # DATA STRUCTURES
 # ============================================================================
 
+
 @dataclass
 class ExtractionRule:
     """Regla de extracción."""
+
     field_name: str
     strategy: ExtractionStrategy
     selector_or_pattern: str
@@ -81,6 +86,7 @@ class ExtractionRule:
 @dataclass
 class ExtractionResult:
     """Resultado de extracción."""
+
     success: bool
     timestamp: datetime
     extraction_time_ms: int
@@ -96,6 +102,7 @@ class ExtractionResult:
 # STRUCTURED DATA EXTRACTOR
 # ============================================================================
 
+
 class StructuredDataExtractor:
     """Extractor de datos estructurados (tablas, listas, grillas)."""
 
@@ -106,7 +113,7 @@ class StructuredDataExtractor:
         self,
         table_selector: str,
         headers: list[str] | None = None,
-        skip_first_row: bool = True
+        skip_first_row: bool = True,
     ) -> list[dict[str, Any]]:
         """
         Extraer datos de tabla.
@@ -124,19 +131,21 @@ class StructuredDataExtractor:
             header_row = None
 
             # Buscar filas
-            row_pattern = r'<tr[^>]*>(.*?)</tr>'
+            row_pattern = r"<tr[^>]*>(.*?)</tr>"
 
-            for row_idx, row_match in enumerate(re.finditer(row_pattern, table_html, re.DOTALL)):
+            for row_idx, row_match in enumerate(
+                re.finditer(row_pattern, table_html, re.DOTALL)
+            ):
                 row_html = row_match.group(1)
 
                 # Extraer celdas
-                cell_pattern = r'<t[dh][^>]*>(.*?)</t[dh]>'
+                cell_pattern = r"<t[dh][^>]*>(.*?)</t[dh]>"
                 cells = []
 
                 for cell_match in re.finditer(cell_pattern, row_html, re.DOTALL):
                     cell_html = cell_match.group(1)
                     # Limpiar HTML
-                    cell_text = re.sub(r'<[^>]+>', '', cell_html).strip()
+                    cell_text = re.sub(r"<[^>]+>", "", cell_html).strip()
                     cells.append(cell_text)
 
                 # Primera fila como headers
@@ -163,7 +172,7 @@ class StructuredDataExtractor:
         self,
         list_selector: str,
         item_selector: str,
-        fields: dict[str, str] | None = None
+        fields: dict[str, str] | None = None,
     ) -> list[dict[str, Any]]:
         """
         Extraer datos de lista.
@@ -194,7 +203,7 @@ class StructuredDataExtractor:
         self,
         grid_selector: str,
         cell_selector: str,
-        fields: dict[str, str] | None = None
+        fields: dict[str, str] | None = None,
     ) -> list[dict[str, Any]]:
         """Extraer datos de grilla."""
         try:
@@ -222,6 +231,7 @@ class StructuredDataExtractor:
 # SEMI-STRUCTURED DATA EXTRACTOR
 # ============================================================================
 
+
 class SemiStructuredDataExtractor:
     """Extractor de datos semi-estructurados."""
 
@@ -229,9 +239,7 @@ class SemiStructuredDataExtractor:
         self.computer_use = computer_use_engine
 
     async def extract_property_list(
-        self,
-        container_selector: str,
-        property_pattern: str | None = None
+        self, container_selector: str, property_pattern: str | None = None
     ) -> dict[str, Any]:
         """
         Extraer lista de propiedades (pares clave-valor).
@@ -258,8 +266,8 @@ class SemiStructuredDataExtractor:
             else:
                 # Patrón por defecto: "Clave: Valor" o "Clave → Valor"
                 patterns = [
-                    r'([^:\n]+):\s*([^\n]+)',  # "Clave: Valor"
-                    r'([^\n→]+)→\s*([^\n]+)',  # "Clave → Valor"
+                    r"([^:\n]+):\s*([^\n]+)",  # "Clave: Valor"
+                    r"([^\n→]+)→\s*([^\n]+)",  # "Clave → Valor"
                 ]
 
                 for pattern in patterns:
@@ -276,10 +284,7 @@ class SemiStructuredDataExtractor:
             return {}
 
     async def extract_key_value_pairs(
-        self,
-        container_selector: str,
-        key_selector: str,
-        value_selector: str
+        self, container_selector: str, key_selector: str, value_selector: str
     ) -> dict[str, Any]:
         """Extraer pares clave-valor."""
         try:
@@ -301,6 +306,7 @@ class SemiStructuredDataExtractor:
 # UNSTRUCTURED DATA EXTRACTOR
 # ============================================================================
 
+
 class UnstructuredDataExtractor:
     """Extractor de datos no estructurados."""
 
@@ -309,10 +315,7 @@ class UnstructuredDataExtractor:
         self.ocr = ocr_engine
 
     async def extract_text_content(
-        self,
-        selector: str,
-        clean: bool = True,
-        max_length: int | None = None
+        self, selector: str, clean: bool = True, max_length: int | None = None
     ) -> str:
         """Extraer texto no estructurado."""
         try:
@@ -320,7 +323,7 @@ class UnstructuredDataExtractor:
 
             if clean:
                 # Limpiar espacios en blanco excesivos
-                text = re.sub(r'\s+', ' ', text).strip()
+                text = re.sub(r"\s+", " ", text).strip()
 
             if max_length:
                 text = text[:max_length]
@@ -332,9 +335,7 @@ class UnstructuredDataExtractor:
             return ""
 
     async def extract_from_image(
-        self,
-        image_selector: str,
-        use_ocr: bool = False
+        self, image_selector: str, use_ocr: bool = False
     ) -> dict[str, Any]:
         """
         Extraer datos de imagen.
@@ -345,12 +346,7 @@ class UnstructuredDataExtractor:
         try:
             logger.info(f"Extracting from image: {image_selector}")
 
-            result = {
-                "src": None,
-                "alt": None,
-                "title": None,
-                "text": None
-            }
+            result = {"src": None, "alt": None, "title": None, "text": None}
 
             # Obtener elemento
             img = await self.computer_use.find_element(image_selector)
@@ -360,14 +356,18 @@ class UnstructuredDataExtractor:
             # Extraer atributos
             result["src"] = await self.computer_use.get_element_attribute(img, "src")
             result["alt"] = await self.computer_use.get_element_attribute(img, "alt")
-            result["title"] = await self.computer_use.get_element_attribute(img, "title")
+            result["title"] = await self.computer_use.get_element_attribute(
+                img, "title"
+            )
 
             # OCR si está disponible
             if use_ocr and self.ocr:
                 try:
                     # Descargar imagen
                     if result["src"]:
-                        image_data = await self.computer_use.download_file(result["src"])
+                        image_data = await self.computer_use.download_file(
+                            result["src"]
+                        )
                         # Ejecutar OCR
                         result["text"] = await self.ocr.extract_text(image_data)
                 except Exception as e:
@@ -383,6 +383,7 @@ class UnstructuredDataExtractor:
 # ============================================================================
 # METADATA EXTRACTOR
 # ============================================================================
+
 
 class MetadataExtractor:
     """Extractor de metadatos."""
@@ -442,7 +443,9 @@ class MetadataExtractor:
 
             return {
                 "id": await self.computer_use.get_element_attribute(element, "id"),
-                "class": await self.computer_use.get_element_attribute(element, "class"),
+                "class": await self.computer_use.get_element_attribute(
+                    element, "class"
+                ),
                 "data_attributes": await self._extract_data_attributes(element),
                 "position": await self.computer_use.get_element_position(element),
                 "size": await self.computer_use.get_element_size(element),
@@ -465,6 +468,7 @@ class MetadataExtractor:
 # DATA VALIDATOR
 # ============================================================================
 
+
 class DataValidator:
     """Validador de datos extraídos."""
 
@@ -479,9 +483,7 @@ class DataValidator:
         }
 
     async def validate(
-        self,
-        data: dict[str, Any],
-        rules: list[ExtractionRule]
+        self, data: dict[str, Any], rules: list[ExtractionRule]
     ) -> dict[str, list[str]]:
         """
         Validar datos contra reglas.
@@ -532,26 +534,26 @@ class DataValidator:
 
     async def _validate_email(self, value: str) -> bool:
         """Validar email."""
-        pattern = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
+        pattern = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
         return bool(re.match(pattern, value))
 
     async def _validate_url(self, value: str) -> bool:
         """Validar URL."""
-        pattern = r'^https?://'
+        pattern = r"^https?://"
         return bool(re.match(pattern, value))
 
     async def _validate_phone(self, value: str) -> bool:
         """Validar teléfono."""
         # Validación simple
-        digits = re.sub(r'\D', '', value)
+        digits = re.sub(r"\D", "", value)
         return len(digits) >= 10
 
     async def _validate_date(self, value: str) -> bool:
         """Validar fecha."""
         patterns = [
-            r'^\d{4}-\d{2}-\d{2}$',  # YYYY-MM-DD
-            r'^\d{2}/\d{2}/\d{4}$',  # MM/DD/YYYY
-            r'^\d{1,2}\s+\w+\s+\d{4}$',  # D MMMM YYYY
+            r"^\d{4}-\d{2}-\d{2}$",  # YYYY-MM-DD
+            r"^\d{2}/\d{2}/\d{4}$",  # MM/DD/YYYY
+            r"^\d{1,2}\s+\w+\s+\d{4}$",  # D MMMM YYYY
         ]
         return any(re.match(p, value) for p in patterns)
 
@@ -559,6 +561,7 @@ class DataValidator:
 # ============================================================================
 # UNIVERSAL DATA EXTRACTOR
 # ============================================================================
+
 
 class UniversalDataExtractor:
     """Extractor universal de datos."""
@@ -573,9 +576,7 @@ class UniversalDataExtractor:
         self.extraction_cache = {}
 
     async def extract(
-        self,
-        rules: list[ExtractionRule],
-        cache: bool = True
+        self, rules: list[ExtractionRule], cache: bool = True
     ) -> ExtractionResult:
         """
         Extraer datos usando reglas.
@@ -621,7 +622,11 @@ class UniversalDataExtractor:
 
                     # Transformar si es necesario
                     if value and rule.transform:
-                        value = await rule.transform(value) if asyncio.iscoroutinefunction(rule.transform) else rule.transform(value)
+                        value = (
+                            await rule.transform(value)
+                            if asyncio.iscoroutinefunction(rule.transform)
+                            else rule.transform(value)
+                        )
 
                     if value is not None:
                         extracted_data[rule.field_name] = value
@@ -631,7 +636,9 @@ class UniversalDataExtractor:
 
                 except Exception as e:
                     errors.append(f"{rule.field_name}: {e!s}")
-                    logger.warning(f"Extraction error for {rule.field_name}: {e!s}", exc_info=True)
+                    logger.warning(
+                        f"Extraction error for {rule.field_name}: {e!s}", exc_info=True
+                    )
 
             # Validar
             validation_errors = await self.validator.validate(extracted_data, rules)
@@ -647,10 +654,12 @@ class UniversalDataExtractor:
                 total_fields=len(rules),
                 errors=errors,
                 warnings=warnings,
-                validation_errors=validation_errors
+                validation_errors=validation_errors,
             )
 
-            logger.info(f"Extraction completed: {result.extracted_fields}/{result.total_fields} fields")
+            logger.info(
+                f"Extraction completed: {result.extracted_fields}/{result.total_fields} fields"
+            )
 
             return result
 
@@ -662,7 +671,7 @@ class UniversalDataExtractor:
                 success=False,
                 timestamp=datetime.now(),
                 extraction_time_ms=duration_ms,
-                errors=[str(e)]
+                errors=[str(e)],
             )
 
     async def _extract_by_vision(self, text_to_find: str) -> str | None:
