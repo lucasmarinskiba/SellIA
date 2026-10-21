@@ -91,11 +91,9 @@ jobs:
         run: |
           grep -E "^(FAILED|ERROR) |Required test coverage|^E   " pytest.log | head -25             | while IFS= read -r line; do echo "::error::${line:0:400}"; done
 
-      - name: Upload coverage
-        uses: codecov/codecov-action@v5
-        with:
-          files: backend/coverage.xml
-          fail_ci_if_error: false
+      # No Codecov upload: there is no CODECOV_TOKEN, so every upload failed with "Token
+      # required - not valid tokenless upload" and `fail_ci_if_error: false` hid it. Coverage
+      # is gated by --cov-fail-under in backend/pytest.ini. Re-add the step if a token is set.
 
       # ── Regenerar snapshot del cerebro (gen:brain) y verificar que esté al día ──
       - name: Set up Node.js
@@ -116,15 +114,14 @@ jobs:
   backend-lint:
     name: Backend Lint
     runs-on: ubuntu-24.04
-    # Advisory, not blocking: app/ has ~23k pre-existing ruff findings and
-    # ~1330 files that don't match black's formatting, accumulated before
-    # any lint/format check was ever enforced in CI. Auto-reformatting the
-    # whole tree is out of scope for a CI fix (too high-risk to do blind,
-    # needs its own dedicated, reviewed pass) — so this job reports findings
-    # without gating deploy-backend on a decade of unformatted code.
-    # TODO: adopt a ratchet (e.g. lint only files changed in the diff) once
-    # a real formatting pass has landed, then flip this back to blocking.
-    continue-on-error: true
+    # Two tiers (see backend/scripts/ruff_fatal_ratchet.py):
+    #  - BLOCKING ratchet on the ruff rules that flag code that crashes at runtime
+    #    (undefined names, syntax errors...). The 133 findings that existed on 2026-10-21 are
+    #    baselined in backend/.ruff-fatal-baseline.json; only a NEW one fails the job.
+    #  - ADVISORY full ruff run (~24k style findings) and black (~1330 files that do not
+    #    match its formatting). They print their numbers but cannot fail the job, so a PR no
+    #    longer shows a permanent red X that teaches everyone to ignore Backend Lint.
+    # TODO: a dedicated, reviewed formatting pass, then gate on more rules.
     defaults:
       run:
         working-directory: backend
@@ -137,14 +134,19 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements.txt
 
+      # ruff is pinned to the version the baseline was generated with: a different ruff
+      # can change what these rules report and trip the ratchet with no code change.
       - name: Install ruff and black
-        run: pip install ruff black
+        run: pip install ruff==0.16.5 black
 
-      - name: Ruff check
-        run: ruff check app/
+      - name: Ruff - runtime-error rules (blocking ratchet)
+        run: python scripts/ruff_fatal_ratchet.py
 
-      - name: Black check
-        run: black --check app/
+      - name: Ruff - full report (advisory)
+        run: ruff check app/ --exit-zero --statistics | tail -n 8
+
+      - name: Black - formatting report (advisory)
+        run: black --check app/ 2>&1 | tail -n 2 || true
 
   frontend-build:
     name: Frontend Build & Type Check
