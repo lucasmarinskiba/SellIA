@@ -194,7 +194,7 @@ def example_structured_logging():
 
     # With error + exception
     try:
-        1 / 0
+        raise ZeroDivisionError("división de prueba")
     except ZeroDivisionError:
         logger.error(
             "Database calculation failed",

@@ -623,13 +623,13 @@ class AgentService:
         # this runs on every boot and 506 x (SELECT + INSERT) is minutes of pure
         # latency against a remote database.
         wanted: dict[str, dict[str, Any]] = {}
-        for i, (slug, name, emoji, tagline, desc, expertise, color) in enumerate(defaults):
+        for i, (slug, name, emoji, tagline, description, expertise, color) in enumerate(defaults):
             wanted.setdefault(slug, {
                 "slug": slug,
                 "name": name,
                 "emoji": emoji,
                 "tagline": tagline,
-                "description": desc,
+                "description": description,
                 "expertise": expertise,
                 "color": color,
                 "display_order": i,

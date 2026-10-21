@@ -122,7 +122,7 @@ class LoginPattern:
                 logger.info("Step 5: Handling 2FA")
                 result = await two_fa_handler()
                 if not result:
-                    raise Exception("2FA handler failed")
+                    raise RuntimeError("2FA handler failed")
             else:
                 # 5. Verificar éxito
                 logger.info("Step 5: Verifying login success")
@@ -132,12 +132,12 @@ class LoginPattern:
                         timeout_ms=5000
                     )
                     if not element:
-                        raise Exception(f"Success indicator not found: {success_indicator}")
+                        raise RuntimeError(f"Success indicator not found: {success_indicator}")
                 else:
                     # Por defecto, verificar que no estamos en login
                     current_url = await self.computer_use.get_current_url()
                     if "login" in current_url.lower():
-                        raise Exception("Still on login page after submission")
+                        raise RuntimeError("Still on login page after submission")
 
             steps += 1
 
@@ -327,7 +327,7 @@ class FormFillPattern:
             logger.info("Step 2: Validating form fields")
             validation_errors = await self._validate_fields(form_fields)
             if validation_errors:
-                raise Exception(f"Field validation errors: {validation_errors}")
+                raise RuntimeError(f"Field validation errors: {validation_errors}")
             steps += 1
 
             # 3. Rellenar campos de texto
@@ -367,7 +367,7 @@ class FormFillPattern:
                     timeout_ms=5000
                 )
                 if not element:
-                    raise Exception("Form submission not confirmed")
+                    raise RuntimeError("Form submission not confirmed")
 
             steps += 1
 
@@ -670,7 +670,7 @@ class UploadPattern:
                     timeout_ms=10000
                 )
                 if not element:
-                    raise Exception("Upload verification failed")
+                    raise RuntimeError("Upload verification failed")
 
             steps += 1
 

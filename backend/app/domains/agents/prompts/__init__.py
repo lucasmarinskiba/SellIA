@@ -51,6 +51,14 @@ AGENT_PROMPTS: dict[str, str] = _load_category_prompts()
 # Re-export composer for convenience
 from app.domains.agents.prompts.composer import compose_system_prompt
 
+__all__ = [
+    "Dict",
+    "Path",
+    "compose_system_prompt",
+    "importlib",
+    "os",
+]
+
 
 def get_system_prompt(
     slug: str, business_context: dict | None = None, custom_instructions: str | None = None

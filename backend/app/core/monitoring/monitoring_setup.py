@@ -24,8 +24,8 @@ def setup_datadog():
     """Configura Datadog para APM + metrics."""
 
     try:
-        from datadog import api, initialize
-        from datadog.api import metrics
+        from datadog import api, initialize  # noqa: F401 - sonda de disponibilidad
+        from datadog.api import metrics  # noqa: F401 - sonda de disponibilidad
 
         options = {
             "api_key": "DATADOG_API_KEY",

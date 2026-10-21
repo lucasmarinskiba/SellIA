@@ -57,23 +57,6 @@ class SellerCustomerCreate(BaseModel):
     customer_id: uuid.UUID
 
 
-class SellerCustomerResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: uuid.UUID
-    seller_id: uuid.UUID
-    customer_id: uuid.UUID
-    first_contact_at: datetime | None
-    last_contact_at: datetime | None
-    total_interactions: int
-    deals_closed: int
-    total_revenue: Decimal
-    relationship_stage: str
-    loyalty_score: int
-    next_best_action: str | None
-    created_at: datetime
-    updated_at: datetime
-
 
 class CustomerInsightResponse(BaseModel):
     customer_id: uuid.UUID

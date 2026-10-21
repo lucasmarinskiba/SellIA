@@ -2,7 +2,6 @@
 
 import uuid
 from datetime import UTC, datetime
-from decimal import Decimal
 from enum import Enum
 
 from sqlalchemy import (

@@ -179,6 +179,7 @@ class ExpertVoiceManager:
 
 # Public API exports
 __all__ = [
+    "ALL_TRACY_HILL_PROMPTS",
     # Consolidated data
     "ALL_EXPERT_PROMPTS",
     "BELFORT_PROMPTS",

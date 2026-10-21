@@ -1,7 +1,7 @@
 """Phase 29 Voice Sales API endpoints."""
 
 import logging
-from typing import Annotated, Optional
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -148,7 +148,7 @@ def end_call(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/playbooks/recommend/{deal_id}", response_model=Optional[PlaybookResponse])
+@router.get("/playbooks/recommend/{deal_id}", response_model=PlaybookResponse | None)
 def recommend_playbook(
     deal_id: str,
     db: Annotated[Session, Depends(get_db)],

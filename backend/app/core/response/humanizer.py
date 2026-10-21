@@ -313,7 +313,7 @@ class Humanizer:
             text,
             personality=user_profile,
             use_emojis=user_profile.uses_emojis,
-            add_typos=not user_profile.language_style == "technical",
+            add_typos=user_profile.language_style != "technical",
             filler_intensity=filler_intensity
         )
 

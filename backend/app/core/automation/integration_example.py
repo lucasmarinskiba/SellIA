@@ -189,7 +189,6 @@ async def setup_automation():
 
 async def shutdown_automation():
     """Graceful shutdown on app termination."""
-    global automation_engine
 
     if automation_engine:
         logger.info("Shutting down Automation Engine...")

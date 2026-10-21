@@ -1,6 +1,6 @@
 """User Memory API — Endpoints para gestionar memoria persistente del usuario"""
 
-from typing import Annotated, Optional
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -218,7 +218,7 @@ async def set_preference(
     )
 
 
-@router.get("/preferences/{preference_key}", response_model=Optional[UserPreferenceResponse])
+@router.get("/preferences/{preference_key}", response_model=UserPreferenceResponse | None)
 async def get_preference(
     preference_key: str,
     db: Annotated[AsyncSession, Depends(get_db)],
