@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import verify_admin_token
 from app.domains.auth.email_auth import EmailAuthManager
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/api/v1/auth", tags=["email-auth"])
 
@@ -138,8 +139,8 @@ def get_approval_status(
 @router.post("/admin/approve-account")
 def admin_approve_account(
     request: AdminApprovalAction,
-    current_user=Depends(verify_admin_token),
-    db: Session = Depends(get_db),
+    current_user: Annotated[User, Depends(verify_admin_token)],
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Admin action: approve or reject account."""
     email_auth = EmailAuthManager(db)
@@ -169,8 +170,8 @@ def admin_approve_account(
 
 @router.get("/admin/pending-approvals", response_model=list[PendingApprovalItem])
 def get_pending_approvals(
-    current_user=Depends(verify_admin_token),
-    db: Session = Depends(get_db),
+    current_user: Annotated[User, Depends(verify_admin_token)],
+    db: Annotated[Session, Depends(get_db)],
 ):
     """List pending account approvals."""
     email_auth = EmailAuthManager(db)

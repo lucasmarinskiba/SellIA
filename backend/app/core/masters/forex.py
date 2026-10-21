@@ -1207,12 +1207,10 @@ class FXForecasting:
             if forecast_level > 0
             else 0
         )
-        directional_accuracy = (
-            "correct"
-            if (actual_level > forecast_level > forecast_level)
-            or (actual_level < forecast_level < forecast_level)
-            else "incorrect"
-        )
+        # Sin nivel de referencia previo no hay dirección que comparar. La expresión
+        # original (a > f > f) era siempre falsa, así que el resultado siempre fue
+        # "incorrect". Se deja explícito; definir la métrica es una decisión de producto.
+        directional_accuracy = "incorrect"
 
         return {
             "forecast_error_pips": round(forecast_error_pips, 1),
