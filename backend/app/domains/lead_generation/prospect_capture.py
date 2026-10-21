@@ -11,7 +11,7 @@ import logging
 import re
 import uuid
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -41,7 +41,7 @@ class CsvParseResult:
     rejected_count: int = 0
 
 
-def normalize_phone(raw: Optional[str]) -> str:
+def normalize_phone(raw: str | None) -> str:
     """Keep digits only, so '+54 11 4444-5555' and '1144445555' compare equal."""
     return re.sub(r"\D", "", raw or "")
 
@@ -50,7 +50,7 @@ async def _stored_contact_info(db: AsyncSession, business_id: uuid.UUID) -> list
     result = await db.execute(
         select(InboundLead.contact_info).where(
             InboundLead.business_id == business_id,
-            InboundLead.is_active == True,  # noqa: E712 - SQLAlchemy column comparison
+            InboundLead.is_active == True,
         )
     )
     return [info for info in result.scalars().all() if info]

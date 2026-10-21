@@ -12,7 +12,7 @@ a limited time, so refresh or purge stored contact_info older than 30 days.
 import logging
 import os
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 
@@ -21,17 +21,11 @@ logger = logging.getLogger(__name__)
 PLACES_TEXT_SEARCH_URL = "https://places.googleapis.com/v1/places:searchText"
 # Only the fields we store. Each field in the mask is billed at its SKU tier,
 # so keep this list short.
-PLACES_FIELD_MASK = ",".join([
-    "places.id",
-    "places.displayName",
-    "places.formattedAddress",
-    "places.nationalPhoneNumber",
-    "places.websiteUri",
-    "places.googleMapsUri",
-    "places.rating",
-    "places.userRatingCount",
-    "places.businessStatus",
-])
+PLACES_FIELD_MASK = (
+    "places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,"
+    "places.websiteUri,places.googleMapsUri,places.rating,places.userRatingCount,"
+    "places.businessStatus"
+)
 MAX_RESULTS_PER_QUERY = 20  # Text Search (New) caps a single page at 20
 REQUEST_TIMEOUT_SECONDS = 10.0
 
@@ -52,12 +46,12 @@ class PlacesAPIError(RuntimeError):
 class PlaceProspect:
     place_id: str
     name: str
-    address: Optional[str]
-    phone: Optional[str]
-    website: Optional[str]
-    maps_url: Optional[str]
-    rating: Optional[float]
-    review_count: Optional[int]
+    address: str | None
+    phone: str | None
+    website: str | None
+    maps_url: str | None
+    rating: float | None
+    review_count: int | None
 
     def to_contact_info(self) -> dict[str, Any]:
         return {
@@ -111,10 +105,10 @@ def _error_message(response: httpx.Response) -> str:
 
 async def search_places(
     query: str,
-    location: Optional[str] = None,
+    location: str | None = None,
     limit: int = MAX_RESULTS_PER_QUERY,
     *,
-    transport: Optional[httpx.AsyncBaseTransport] = None,
+    transport: httpx.AsyncBaseTransport | None = None,
 ) -> list[PlaceProspect]:
     """Search Google Places for `query` (optionally inside `location`).
 
