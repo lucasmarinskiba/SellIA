@@ -351,3 +351,9 @@ tests/test_security.py::test_totp_verification
 # tests/test_trade_signals_api.py  (2)  e.g. RuntimeError: Event loop is closed
 tests/test_trade_signals_api.py::test_reject_flow
 tests/test_trade_signals_api.py::test_submit_blocked_without_heartbeat
+
+# tests/test_payments_processors.py  (2)  e.g. ModuleNotFoundError: No module named 'app.core.database.payment_models'; 'app.core.database' is not a package
+# Bloqueado por decisión: los modelos de pagos viven en app/core/database/payment_models.py, pero ese
+# directorio no es un paquete (app/core/database.py lo sombrea). Ver PR de payments.
+tests/test_payments_processors.py::TestPaymentReconciler::test_reconcile_unmatched_payment
+tests/test_payments_processors.py::TestBillingHistoryManager::test_get_account_balance

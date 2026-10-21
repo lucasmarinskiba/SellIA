@@ -7,34 +7,28 @@ Run:
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from datetime import datetime, timedelta
-from decimal import Decimal
-import json
 
 # Import all payment modules
-from stripe_processor import (
+from app.core.payments.stripe_processor import (
     StripeProcessor,
     StripeWebhookHandler,
     WebhookEventType,
 )
-from mercadopago_processor import (
+from app.core.payments.mercadopago_processor import (
     MercadoPagoProcessor,
-    MercadoPagoWebhookHandler,
-    CurrencyCode,
 )
-from crypto_processor import (
+from app.core.payments.crypto_processor import (
     CryptoProcessor,
-    Blockchain,
 )
-from payment_reconciliation import (
+from app.core.payments.payment_reconciliation import (
     PaymentReconciler,
-    FulfillmentOrchestrator,
 )
-from billing_history import BillingHistoryManager
-from invoice_generator import InvoiceGenerator
-from payout_manager import PayoutManager
-from compliance import ComplianceChecker, PciDssCompliance
+from app.core.payments.billing_history import BillingHistoryManager
+from app.core.payments.invoice_generator import InvoiceGenerator
+from app.core.payments.payout_manager import PayoutManager
+from app.core.payments.compliance import ComplianceChecker
 
 
 # ============= STRIPE TESTS =============
@@ -45,11 +39,11 @@ class TestStripeProcessor:
     def test_create_checkout_session_valid(self):
         """Test creating a valid checkout session."""
         with patch("stripe.checkout.Session.create") as mock_create:
-            mock_create.return_value = {
-                "id": "cs_test_123",
-                "url": "https://checkout.stripe.com/pay/cs_test_123",
-                "expires_at": int((datetime.utcnow() + timedelta(hours=24)).timestamp()),
-            }
+            mock_create.return_value = Mock(
+                id="cs_test_123",
+                url="https://checkout.stripe.com/pay/cs_test_123",
+                expires_at=int((datetime.utcnow() + timedelta(hours=24)).timestamp()),
+            )
 
             result = StripeProcessor.create_checkout_session(
                 customer_email="test@example.com",
@@ -82,12 +76,12 @@ class TestStripeProcessor:
     def test_refund_payment(self):
         """Test payment refund."""
         with patch("stripe.Refund.create") as mock_refund:
-            mock_refund.return_value = {
-                "id": "re_test_123",
-                "amount": 9999,
-                "status": "succeeded",
-                "charge": "ch_test_123",
-            }
+            mock_refund.return_value = Mock(
+                id="re_test_123",
+                amount=9999,
+                status="succeeded",
+                charge="ch_test_123",
+            )
 
             result = StripeProcessor.refund_payment(
                 payment_intent_id="pi_test_123",
@@ -208,7 +202,8 @@ class TestCryptoProcessor:
 
     def test_generate_payment_address(self):
         """Test generating crypto payment address."""
-        with patch.dict("os.environ", {"DEPOSIT_WALLET_ADDRESS": "TAbCd123"}):
+        # La dirección se lee al importar el módulo: el parche tiene que ir sobre la variable.
+        with patch("app.core.payments.crypto_processor.DEPOSIT_WALLET_ADDRESS", "TAbCd123"):
             result = CryptoProcessor.generate_payment_address(
                 customer_id="cust_123",
                 blockchain="tron",
@@ -298,7 +293,7 @@ class TestInvoiceGenerator:
         assert "invoice_id" in result
         assert "invoice_number" in result
         assert result["amount_tax"] == 10.0
-        assert result["amount_total"] == 110.0  # 99.99 + tax
+        assert result["amount_total"] == pytest.approx(109.99)  # 99.99 + 10.00 de impuesto
 
 
 # ============= PAYOUT TESTS =============
@@ -357,7 +352,7 @@ class TestComplianceChecker:
             amount_usd=10000.0,  # High value
         )
 
-        assert "High-value transaction" in result["flags"]
+        assert any(flag.startswith("High-value transaction") for flag in result["flags"])
         assert result["risk_score"] > 0
 
     def test_mask_payment_data(self):
