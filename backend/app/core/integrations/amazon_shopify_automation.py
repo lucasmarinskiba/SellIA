@@ -79,7 +79,7 @@ class AmazonAutomation:
             }
 
         except Exception as e:
-            logger.error(f"Amazon sync failed: {e!s}")
+            logger.exception("Amazon sync failed")
             return {"status": "error", "error": str(e)}
 
     async def _fetch_orders(self) -> list[dict[str, Any]]:
@@ -114,8 +114,8 @@ class AmazonAutomation:
                 }
             ]
 
-        except Exception as e:
-            logger.error(f"Fetch orders failed: {e!s}")
+        except Exception:
+            logger.exception("Fetch orders failed")
             return []
 
     async def _confirm_order(self, order_id: str) -> dict[str, Any]:
@@ -208,7 +208,7 @@ class ShopifyAutomation:
             }
 
         except Exception as e:
-            logger.error(f"Shopify sync failed: {e!s}")
+            logger.exception("Shopify sync failed")
             return {"status": "error", "error": str(e)}
 
     async def _fetch_orders(self) -> list[dict[str, Any]]:
@@ -227,8 +227,8 @@ class ShopifyAutomation:
                 logger.error(f"Shopify API error: {response.status_code}")
                 return []
 
-        except Exception as e:
-            logger.error(f"Fetch orders failed: {e!s}")
+        except Exception:
+            logger.exception("Fetch orders failed")
             return []
 
     async def _confirm_order(self, order_id: str) -> dict[str, Any]:

@@ -70,8 +70,8 @@ class AutoCloseEvaluator:
                 action = await self.evaluate_deal(deal)
                 if action:
                     actions.append(action)
-            except Exception as e:
-                logger.exception(f"Auto-close evaluation failed for deal {deal.id}: {e}")
+            except Exception:
+                logger.exception(f"Auto-close evaluation failed for deal {deal.id}")
 
         return actions
 
@@ -194,7 +194,7 @@ class AutoCloseEvaluator:
                     personality_slug="post-venta",
                 )
             except Exception as e:
-                logger.warning(f"Failed to send thank you message for deal {deal.id}: {e}")
+                logger.warning(f"Failed to send thank you message for deal {deal.id}: {e}", exc_info=True)
 
         logger.info(f"Auto-closed deal {deal.id} for business {deal.business_id}")
 

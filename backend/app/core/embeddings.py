@@ -82,7 +82,7 @@ class EmbeddingService:
             )
             return None
         except Exception as e:
-            logger.warning(f"Ollama embedding failed: {e}")
+            logger.warning(f"Ollama embedding failed: {e}", exc_info=True)
             return None
 
     async def _embed_openai(self, text: str) -> list[float] | None:
@@ -114,7 +114,7 @@ class EmbeddingService:
                 return projected
             return embedding
         except Exception as e:
-            logger.warning(f"OpenAI embedding failed: {e}")
+            logger.warning(f"OpenAI embedding failed: {e}", exc_info=True)
             return None
 
     async def embed_text(self, text: str) -> list[float]:

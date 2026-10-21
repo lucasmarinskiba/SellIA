@@ -227,8 +227,8 @@ class CustomerLoyaltyEngine:
 
             return success, welcome_seq.sequence_id
 
-        except Exception as e:
-            self.logger.error(f"Error triggering welcome: {e}")
+        except Exception:
+            self.logger.exception("Error triggering welcome")
             return False, ""
 
     async def create_upsell_offer(
@@ -285,8 +285,8 @@ class CustomerLoyaltyEngine:
 
             return success
 
-        except Exception as e:
-            self.logger.error(f"Error sending upsell: {e}")
+        except Exception:
+            self.logger.exception("Error sending upsell")
             return False
 
     async def detect_at_risk_customers(
@@ -330,8 +330,8 @@ class CustomerLoyaltyEngine:
 
             return stats
 
-        except Exception as e:
-            self.logger.error(f"Error in win-back: {e}")
+        except Exception:
+            self.logger.exception("Error in win-back")
             return {"sent": 0, "failed": len(customers)}
 
     async def calculate_lifetime_value(
@@ -358,8 +358,8 @@ class CustomerLoyaltyEngine:
                 "retention_score": 1 - churn_probability,
             }
 
-        except Exception as e:
-            self.logger.error(f"Error calculating LTV: {e}")
+        except Exception:
+            self.logger.exception("Error calculating LTV")
             return {}
 
     async def _send_email(

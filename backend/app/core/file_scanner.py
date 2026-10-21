@@ -16,7 +16,11 @@ except ImportError:
     clamd = None  # type: ignore
     CLAMD_AVAILABLE = False
 
+import logging
+
 from fastapi import UploadFile
+
+logger = logging.getLogger(__name__)
 
 # Configuración
 CLAMAV_HOST = os.getenv("CLAMAV_HOST", "clamav")
@@ -90,6 +94,7 @@ class FileScanner:
                     self._clamd.ping()
                 except Exception as e:
                     # Si ClamAV no está disponible, loguear warning pero no fallar
+                    logger.exception("_get_clamd: error inesperado")
                     import logging
                     logging.getLogger("security").warning(f"ClamAV no disponible: {e}")
                     self._clamd = None
@@ -188,6 +193,7 @@ class FileScanner:
                 details={"scanner": "ClamAV", "status": "OK"},
             )
         except Exception as e:
+            logger.exception("_scan_with_clamav: error inesperado")
             return ScanResult(
                 clean=False,
                 message=f"Error al escanear con ClamAV: {e!s}",

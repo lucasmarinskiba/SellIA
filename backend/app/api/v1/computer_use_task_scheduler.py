@@ -152,7 +152,7 @@ async def enqueue_task(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error enqueuing task: {e}")
+        logger.exception("Error enqueuing task")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -169,7 +169,7 @@ async def get_queue_status(
         return QueueStatusResponse(**status)
 
     except Exception as e:
-        logger.error(f"Error getting queue status: {e}")
+        logger.exception("Error getting queue status")
         raise HTTPException(status_code=500, detail=str(e))
 
 

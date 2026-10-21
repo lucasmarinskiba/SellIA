@@ -1,5 +1,6 @@
 """Staff task management API endpoints."""
 
+import logging
 from datetime import datetime
 from typing import Annotated
 from uuid import UUID
@@ -16,6 +17,8 @@ from app.domains.staff.task_service import (
     TaskNotificationService,
 )
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1", tags=["staff-tasks"])
 
@@ -74,6 +77,7 @@ async def assign_task(
 
         return result
     except Exception as e:
+        logger.exception("assign_task: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -116,6 +120,7 @@ async def get_staff_tasks(
             "tasks": task_list
         }
     except Exception as e:
+        logger.exception("get_staff_tasks: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -129,6 +134,7 @@ async def acknowledge_task(
         result = StaffTaskService.acknowledge_task(task_id=task_id, db=db)
         return result
     except Exception as e:
+        logger.exception("acknowledge_task: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -142,6 +148,7 @@ async def start_task(
         result = StaffTaskService.start_task(task_id=task_id, db=db)
         return result
     except Exception as e:
+        logger.exception("start_task: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -161,6 +168,7 @@ async def complete_task(
         )
         return result
     except Exception as e:
+        logger.exception("complete_task: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -175,6 +183,7 @@ async def cancel_task(
         result = StaffTaskService.cancel_task(task_id=task_id, reason=reason, db=db)
         return result
     except Exception as e:
+        logger.exception("cancel_task: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -193,6 +202,7 @@ async def get_location_task_queue(
         )
         return result
     except Exception as e:
+        logger.exception("get_location_task_queue: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -216,6 +226,7 @@ async def auto_assign_shift_tasks(
         )
         return result
     except Exception as e:
+        logger.exception("auto_assign_shift_tasks: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -248,6 +259,7 @@ async def get_task_notifications(
             "notifications": notif_list
         }
     except Exception as e:
+        logger.exception("get_task_notifications: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -264,6 +276,7 @@ async def mark_notification_read(
         )
         return result
     except Exception as e:
+        logger.exception("mark_notification_read: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -292,6 +305,7 @@ async def get_shift_readiness_report(
         )
         return result
     except Exception as e:
+        logger.exception("get_shift_readiness_report: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -310,4 +324,5 @@ async def get_staff_performance(
         )
         return result
     except Exception as e:
+        logger.exception("get_staff_performance: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

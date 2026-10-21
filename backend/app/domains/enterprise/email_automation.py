@@ -87,7 +87,7 @@ class SendTimeOptimizer:
                 top_times = [candidates[i] for i in top_indices]
                 top_probs = [scores[i] * 100 for i in top_indices]
             except Exception as e:
-                logger.warning(f"Model inference failed: {e}. Using default times.")
+                logger.warning(f"Model inference failed: {e}. Using default times.", exc_info=True)
                 top_times, top_probs = self._get_default_send_times(candidates)
         else:
             top_times, top_probs = self._get_default_send_times(candidates)
@@ -239,8 +239,8 @@ class ProposalGenerator:
                 generation_time_seconds=generation_time,
             )
 
-        except Exception as e:
-            logger.error(f"Error generating proposal: {e}")
+        except Exception:
+            logger.exception("Error generating proposal")
             return self._generate_template_proposal(deal_id)
 
     def _build_proposal_prompt(self, deal: Any, options: dict[str, Any]) -> str:
@@ -395,8 +395,8 @@ class CompetitorDetector:
 
             return message.content[0].text
 
-        except Exception as e:
-            logger.error(f"Error generating response: {e}")
+        except Exception:
+            logger.exception("Error generating response")
             return self._get_template_response(competitor)
 
     def _get_template_response(self, competitor: str) -> str:
@@ -434,7 +434,7 @@ def send_email_with_optimal_timing(self, email_id: str, person_id: str, email_co
         return {"status": "scheduled", "email_id": email_id, "send_at": send_at.isoformat()}
 
     except Exception as exc:
-        logger.error(f"Error scheduling email: {exc}")
+        logger.exception("Error scheduling email")
         raise self.retry(exc=exc, countdown=60)
 
 
@@ -455,5 +455,5 @@ def generate_proposal_async(self, deal_id: str):
         return {"status": "complete", "deal_id": deal_id, "draft_id": result.draft_id}
 
     except Exception as exc:
-        logger.error(f"Error generating proposal: {exc}")
+        logger.exception("Error generating proposal")
         raise self.retry(exc=exc, countdown=60)

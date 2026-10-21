@@ -277,7 +277,7 @@ class ClusteringEngine:
             return results, True
 
         except Exception as e:
-            logger.warning(f"KMeans clustering failed ({e}), falling back to RFM rules")
+            logger.warning(f"KMeans clustering failed ({e}), falling back to RFM rules", exc_info=True)
             return RFMSegmentClassifier.classify_batch(rfm_scores), False
 
 

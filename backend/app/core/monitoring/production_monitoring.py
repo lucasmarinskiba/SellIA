@@ -123,8 +123,8 @@ class ProductionMonitoring:
             try:
                 from datadog import statsd
                 statsd.gauge(metric_name, value, tags=tags or {})
-            except Exception as e:
-                logger.error(f"Failed to track metric: {e}")
+            except Exception:
+                logger.exception("Failed to track metric")
 
     async def report_error(self, error: Exception, context: dict[str, Any] = None):
         """Report error to Sentry."""
@@ -132,8 +132,8 @@ class ProductionMonitoring:
             try:
                 import sentry_sdk
                 sentry_sdk.capture_exception(error, extra=context or {})
-            except Exception as e:
-                logger.error(f"Failed to report error: {e}")
+            except Exception:
+                logger.exception("Failed to report error")
 
     async def trigger_alert(self, severity: str, message: str):
         """Trigger PagerDuty alert."""
@@ -141,8 +141,8 @@ class ProductionMonitoring:
             try:
                 # Implementar con PagerDuty API
                 logger.info(f"Alert triggered ({severity}): {message}")
-            except Exception as e:
-                logger.error(f"Failed to trigger alert: {e}")
+            except Exception:
+                logger.exception("Failed to trigger alert")
 
 
 # Singleton

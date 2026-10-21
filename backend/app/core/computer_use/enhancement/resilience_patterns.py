@@ -118,6 +118,7 @@ class CircuitBreaker:
 
         except Exception as e:
             # Fallo
+            logger.exception("call: error inesperado")
             self.failure_count += 1
             self.metrics["failures"] += 1
             self.last_failure_time = datetime.now()
@@ -244,14 +245,14 @@ class BulkheadPartition:
                 try:
                     await func(*args, **kwargs)
                     self.metrics["completed"] += 1
-                except Exception as e:
-                    logger.error(f"Bulkhead {self.name} task failed: {e!s}")
+                except Exception:
+                    logger.exception(f"Bulkhead {self.name} task failed")
                     self.metrics["failed"] += 1
 
             except TimeoutError:
                 break
-            except Exception as e:
-                logger.error(f"Bulkhead {self.name} worker error: {e!s}")
+            except Exception:
+                logger.exception(f"Bulkhead {self.name} worker error")
                 break
 
     def get_metrics(self) -> dict[str, Any]:
@@ -325,7 +326,7 @@ class FallbackStrategy:
                 return (True, result)
 
             except Exception as e:
-                logger.warning(f"Strategy {idx+1} failed: {e!s}")
+                logger.warning(f"Strategy {idx+1} failed: {e!s}", exc_info=True)
                 if idx == len(self.strategies) - 1:
                     logger.error(f"All {len(self.strategies)} strategies failed")
                     return (False, e)
@@ -372,12 +373,13 @@ class TimeoutPolicy:
             if self.on_timeout:
                 try:
                     await self.on_timeout()
-                except Exception as e:
-                    logger.error(f"Timeout handler failed: {e!s}")
+                except Exception:
+                    logger.exception("Timeout handler failed")
 
             return (False, TimeoutError(f"Timeout after {self.timeout_ms}ms"))
 
         except Exception as e:
+            logger.exception("execute: error inesperado")
             return (False, e)
 
 
@@ -594,7 +596,7 @@ class ResilienceCoordinator:
                     return (True, result)
 
             self.metrics["failures"] += 1
-            logger.error(f"Resilient execution failed: {e!s}")
+            logger.exception("Resilient execution failed")
             return (False, e)
 
 

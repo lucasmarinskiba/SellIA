@@ -6,11 +6,14 @@ Cifra datos sensibles en la base de datos usando Fernet (AES-128-CBC).
 
 import base64
 import hashlib
+import logging
 import os
 
 from cryptography.fernet import Fernet
 
 from app.core.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -40,6 +43,7 @@ def decrypt_field(encrypted: str) -> str:
         return _fernet.decrypt(encrypted.encode()).decode()
     except Exception:
         # Si falla, puede ser que ya estaba en texto plano (backward compat)
+        logger.exception("decrypt_field: error inesperado")
         return encrypted
 
 

@@ -85,14 +85,14 @@ async def init_db():
             from app.domains.business_context import models as _  # noqa
             from app.domains.agents.lead_qualifier import models as _  # noqa
         except Exception as e:
-            logger.warning(f"Some domain models failed to import (non-critical): {e}")
+            logger.warning(f"Some domain models failed to import (non-critical): {e}", exc_info=True)
 
         async with engine.begin() as conn:
             # Create tables for app.db.models Base (safe subset)
             try:
                 await conn.run_sync(Base.metadata.create_all)
             except Exception as e:
-                logger.warning(f"Failed to create app.db tables: {e}")
+                logger.warning(f"Failed to create app.db tables: {e}", exc_info=True)
 
             # Create tables for app.core.database Base (domains models).
             # NOT a single create_all() call: with ~100 domain models and
@@ -112,8 +112,8 @@ async def init_db():
             logger.debug("Skipped CoreBase domain tables (FK conflicts; use Alembic migrations)")
 
             logger.info("✅ Database initialization checked (migrations recommended)")
-    except Exception as e:
-        logger.error(f"⚠️  Database init warning: {e}")
+    except Exception:
+        logger.exception("⚠️  Database init warning")
         # Don't raise - allow app to start even if table creation fails
         # Tables should be created via migrations
 

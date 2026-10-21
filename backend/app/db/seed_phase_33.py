@@ -4,6 +4,7 @@ Auto-runs on backend startup if tables are empty.
 Professional approach: SQLAlchemy + declarative models.
 """
 
+import logging
 from datetime import timedelta
 from uuid import uuid4
 
@@ -19,6 +20,8 @@ from app.models.platform_integration import (
     Product,
     SellerMetrics,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def seed_phase_33(db: Session) -> dict:
@@ -226,5 +229,6 @@ def seed_phase_33(db: Session) -> dict:
         }
 
     except Exception as e:
+        logger.exception("seed_phase_33: error inesperado")
         db.rollback()
         return {"status": "error", "error": str(e)}

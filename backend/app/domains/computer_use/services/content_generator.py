@@ -124,8 +124,8 @@ class ContentTemplate:
 
             return caption
 
-        except Exception as e:
-            self.logger.error(f"Error generating caption: {e}")
+        except Exception:
+            self.logger.exception("Error generating caption")
             return f"🔥 {trending_topic}\n\n{product_info.get('name')} te espera.\n\n#growth #viralcontent"
 
     def _get_tip_number(self) -> str:

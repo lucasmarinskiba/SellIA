@@ -9,11 +9,14 @@ identifies the channel).
 Docs: https://developers.facebook.com/docs/commerce-platform
 """
 
+import logging
 from typing import Any
 
 from app.domains.channels.connectors.base import BaseChannelConnector
 from app.domains.channels.models import ChannelPlatform
 from app.domains.channels.schemas import WebhookPayload
+
+logger = logging.getLogger(__name__)
 
 
 class FacebookMarketplaceConnector(BaseChannelConnector):
@@ -47,6 +50,7 @@ class FacebookMarketplaceConnector(BaseChannelConnector):
                 )
                 return {"status": "sent" if response.status_code == 200 else "error", "response": response.json()}
         except Exception as e:
+            logger.exception("send_message: error inesperado")
             return {"status": "error", "detail": str(e)}
 
     async def parse_webhook(self, raw_payload: dict[str, Any]) -> WebhookPayload:
@@ -119,4 +123,5 @@ class FacebookMarketplaceConnector(BaseChannelConnector):
                 )
                 return response.status_code == 200
         except Exception:
+            logger.exception("validate_credentials: error inesperado")
             return False

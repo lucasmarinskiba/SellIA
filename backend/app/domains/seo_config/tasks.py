@@ -48,7 +48,7 @@ def fetch_nightly_analytics(self):
                         if metrics:
                             fetched_count += 1
                     except Exception as e:
-                        logger.error(
+                        logger.exception(
                             f"Failed to fetch analytics for link {link.id}: {str(e)[:100]}"
                         )
 
@@ -93,7 +93,7 @@ def generate_fomo_cadence(self):
                         if fomo:
                             generated_count += 1
                     except Exception as e:
-                        logger.error(
+                        logger.exception(
                             f"Failed to generate FOMO for link {link.id}: {str(e)[:100]}"
                         )
 
@@ -146,7 +146,7 @@ def compute_analytics_summaries(self):
                         if summary_30d:
                             computed_count += 1
                     except Exception as e:
-                        logger.error(
+                        logger.exception(
                             f"Failed to compute summary for link {link.id}: {str(e)[:100]}"
                         )
 
@@ -189,7 +189,7 @@ def check_ab_test_winners(self):
                         if updated_test and updated_test.status == "completed":
                             winners_announced += 1
                     except Exception as e:
-                        logger.error(f"Failed to check test {test.id}: {str(e)[:100]}")
+                        logger.exception(f"Failed to check test {test.id}: {str(e)[:100]}")
 
                 logger.info(f"A/B test check complete: {winners_announced} winners announced")
                 return {"winners_announced": winners_announced}
@@ -250,7 +250,7 @@ def monitor_fomo_decay(self):
                         total_rotated += rotation_result.get('rotated', 0)
 
                     except Exception as e:
-                        logger.error(f"Failed to monitor decay for business {business.id}: {str(e)[:100]}")
+                        logger.exception(f"Failed to monitor decay for business {business.id}: {str(e)[:100]}")
 
                 logger.info(f"FOMO decay monitor complete: {total_decay_detected} decays detected, {total_rotated} auto-rotated")
                 return {
@@ -303,7 +303,7 @@ def compute_positioning_scores(self):
                             computed += 1
                     except Exception as e:
                         await db.rollback()
-                        logger.error(f"Failed to compute positioning for link {link_id}: {str(e)[:100]}")
+                        logger.exception(f"Failed to compute positioning for link {link_id}: {str(e)[:100]}")
 
                 logger.info(f"Positioning score compute complete: {computed}/{len(link_ids)} links")
                 return {"computed": computed, "total": len(link_ids)}
@@ -359,7 +359,7 @@ def compute_store_positioning_scores(self):
                             computed += 1
                     except Exception as e:
                         await db.rollback()
-                        logger.error(f"Failed to compute store positioning for business {business_id}: {str(e)[:100]}")
+                        logger.exception(f"Failed to compute store positioning for business {business_id}: {str(e)[:100]}")
 
                 logger.info(f"Store positioning compute complete: {computed}/{len(targets)} connections")
                 return {"computed": computed, "total": len(targets)}

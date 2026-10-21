@@ -214,8 +214,8 @@ class AutomationEngine:
             await self.state_manager.create(job)
             logger.debug(f"Job enqueued: {job.id} ({task.job_type.value})")
 
-        except Exception as e:
-            logger.error(f"Failed to enqueue task {task.id}: {e!s}")
+        except Exception:
+            logger.exception(f"Failed to enqueue task {task.id}")
 
     async def _process_jobs(self) -> None:
         """Procesa jobs de la queue."""

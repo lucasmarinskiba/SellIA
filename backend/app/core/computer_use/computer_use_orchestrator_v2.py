@@ -288,8 +288,8 @@ class BrowserAutomationUtils:
             logger.info(f"Clicked element: {description} at {coords}")
             return True
 
-        except Exception as e:
-            logger.error(f"Error clicking element: {e!s}")
+        except Exception:
+            logger.exception("Error clicking element")
             return False
 
     async def type_in_field(self, field_name: str, text: str) -> bool:
@@ -307,8 +307,8 @@ class BrowserAutomationUtils:
             logger.info(f"Typing '{text[:20]}...' into field '{field_name}'")
             return True
 
-        except Exception as e:
-            logger.error(f"Error typing in field: {e!s}")
+        except Exception:
+            logger.exception("Error typing in field")
             return False
 
     async def wait_for_element(self, description: str, timeout: int = 10) -> bool:
@@ -358,8 +358,8 @@ class BrowserAutomationUtils:
             logger.info("Closed popup")
             return True
 
-        except Exception as e:
-            logger.error(f"Error handling popup: {e!s}")
+        except Exception:
+            logger.exception("Error handling popup")
             return False
 
     async def handle_rate_limit(self, backoff_seconds: int = 30) -> None:
@@ -495,8 +495,8 @@ class MercadoLibreHandler(PlatformHandler):
             # TODO: Integrar con Computer Use para login
 
             return True
-        except Exception as e:
-            logger.error(f"Authentication failed: {e!s}")
+        except Exception:
+            logger.exception("Authentication failed")
             return False
 
     async def post_product(self, product: dict[str, Any]) -> bool:
@@ -546,8 +546,8 @@ class MercadoLibreHandler(PlatformHandler):
             logger.info(f"Product posted successfully: {product.get('name')}")
             return True
 
-        except Exception as e:
-            logger.error(f"Failed to post product: {e!s}")
+        except Exception:
+            logger.exception("Failed to post product")
             return False
 
     async def respond_to_inquiries(self, dashboard_url: str) -> list[dict[str, Any]]:
@@ -567,8 +567,8 @@ class MercadoLibreHandler(PlatformHandler):
 
             return []
 
-        except Exception as e:
-            logger.error(f"Error responding to inquiries: {e!s}")
+        except Exception:
+            logger.exception("Error responding to inquiries")
             return []
 
     async def handle_purchase(self, order: dict[str, Any]) -> bool:
@@ -589,8 +589,8 @@ class MercadoLibreHandler(PlatformHandler):
 
             return True
 
-        except Exception as e:
-            logger.error(f"Error handling purchase: {e!s}")
+        except Exception:
+            logger.exception("Error handling purchase")
             return False
 
     async def capture_lead_data(self, contact: dict[str, Any]) -> LeadData:
@@ -617,8 +617,8 @@ class ShopifyHandler(PlatformHandler):
             # TODO: Implementar autenticación Shopify
 
             return True
-        except Exception as e:
-            logger.error(f"Shopify auth failed: {e!s}")
+        except Exception:
+            logger.exception("Shopify auth failed")
             return False
 
     async def post_product(self, product: dict[str, Any]) -> bool:
@@ -629,8 +629,8 @@ class ShopifyHandler(PlatformHandler):
             # TODO: Implementar creación de producto
 
             return True
-        except Exception as e:
-            logger.error(f"Failed to create product: {e!s}")
+        except Exception:
+            logger.exception("Failed to create product")
             return False
 
     async def respond_to_inquiries(self, dashboard_url: str) -> list[dict[str, Any]]:
@@ -768,8 +768,8 @@ class LeadCaptureEngine:
             logger.info("Form submitted successfully")
             return True
 
-        except Exception as e:
-            logger.error(f"Error filling form: {e!s}")
+        except Exception:
+            logger.exception("Error filling form")
             return False
 
     async def extract_contact_from_page(self, url: str) -> LeadData | None:
@@ -799,8 +799,8 @@ class LeadCaptureEngine:
             logger.info(f"Extracted contact: {lead.email or lead.phone}")
             return lead if (lead.email or lead.phone) else None
 
-        except Exception as e:
-            logger.error(f"Error extracting contact: {e!s}")
+        except Exception:
+            logger.exception("Error extracting contact")
             return None
 
     async def scrape_directory(self, url: str, query: str) -> list[LeadData]:
@@ -816,8 +816,8 @@ class LeadCaptureEngine:
             # TODO: Implementar scrape de directorio
 
             return leads
-        except Exception as e:
-            logger.error(f"Error scraping directory: {e!s}")
+        except Exception:
+            logger.exception("Error scraping directory")
             return leads
 
     async def contact_enrichment(self, partial_data: LeadData) -> LeadData:
@@ -832,8 +832,8 @@ class LeadCaptureEngine:
             # TODO: Integrar con APIs de enriquecimiento (Hunter, Clearbit, etc)
 
             return partial_data
-        except Exception as e:
-            logger.error(f"Error enriching contact: {e!s}")
+        except Exception:
+            logger.exception("Error enriching contact")
             return partial_data
 
 
@@ -943,7 +943,7 @@ class ComputerUseOrchestrator:
             execution.captured_data = result.get("data", {})
 
         except Exception as e:
-            logger.error(f"Strategy execution failed: {e!s}")
+            logger.exception("Strategy execution failed")
             execution.error_message = str(e)
             execution.failed_actions = execution.total_actions
 

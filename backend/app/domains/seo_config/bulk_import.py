@@ -69,7 +69,7 @@ class BulkListingImporter:
                         fomo_generated += 1
 
             except Exception as e:
-                logger.error(f"Failed to import listing {listing.get('url')}: {str(e)[:100]}")
+                logger.exception(f"Failed to import listing {listing.get('url')}: {str(e)[:100]}")
                 failed += 1
 
         await self.db.commit()

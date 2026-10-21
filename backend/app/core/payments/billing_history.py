@@ -112,7 +112,7 @@ class BillingHistoryManager:
             }
 
         except Exception as e:
-            logger.error(f"Error recording transaction: {e!s}")
+            logger.exception("Error recording transaction")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -178,7 +178,7 @@ class BillingHistoryManager:
             }
 
         except Exception as e:
-            logger.error(f"Error calculating balance: {e!s}")
+            logger.exception("Error calculating balance")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -283,7 +283,7 @@ class BillingHistoryManager:
             }
 
         except Exception as e:
-            logger.error(f"Error getting billing summary: {e!s}")
+            logger.exception("Error getting billing summary")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -352,7 +352,7 @@ class BillingHistoryManager:
             }
 
         except Exception as e:
-            logger.error(f"Error getting monthly summaries: {e!s}")
+            logger.exception("Error getting monthly summaries")
             return {"status": "error", "error": str(e)}
 
     @staticmethod

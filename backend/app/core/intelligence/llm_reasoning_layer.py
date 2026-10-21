@@ -87,7 +87,7 @@ Responde en JSON estructurado con análisis, recomendaciones, confianza.
             }
 
         except Exception as e:
-            logger.error(f"Claude reasoning failed: {e!s}")
+            logger.exception("Claude reasoning failed")
             return {"status": "error", "error": str(e)}
 
     async def generate_copy(
@@ -144,8 +144,8 @@ Responde en JSON con copy estructurado.
 
             return {"status": "success", "copy": copy}
 
-        except Exception as e:
-            logger.error(f"Copy generation failed: {e!s}")
+        except Exception:
+            logger.exception("Copy generation failed")
             return {"status": "error"}
 
     async def analyze_buyer_psychology(
@@ -196,8 +196,8 @@ Responde con estrategia de venta PERSONALIZADA.
 
             return {"status": "success", "strategy": strategy}
 
-        except Exception as e:
-            logger.error(f"Psychology analysis failed: {e!s}")
+        except Exception:
+            logger.exception("Psychology analysis failed")
             return {"status": "error"}
 
     async def negotiate_with_buyer(
@@ -241,8 +241,8 @@ Responde con recomendación estratégica.
             response_text = message.content[0].text
             return {"status": "success", "recommendation": response_text}
 
-        except Exception as e:
-            logger.error(f"Negotiation suggestion failed: {e!s}")
+        except Exception:
+            logger.exception("Negotiation suggestion failed")
             return {"status": "error"}
 
     async def evaluate_market_opportunity(
@@ -289,8 +289,8 @@ Responde con evaluación profesional.
 
             return {"status": "success", "evaluation": evaluation}
 
-        except Exception as e:
-            logger.error(f"Market evaluation failed: {e!s}")
+        except Exception:
+            logger.exception("Market evaluation failed")
             return {"status": "error"}
 
     # ========== FORMATTING HELPERS ==========

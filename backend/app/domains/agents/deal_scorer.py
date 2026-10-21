@@ -209,7 +209,7 @@ class DealScorer:
             btype = result.scalar_one_or_none()
             return btype.value if btype else None
         except Exception as exc:
-            logger.debug(f"Could not load business_type for deal scoring: {exc}")
+            logger.debug(f"Could not load business_type for deal scoring: {exc}", exc_info=True)
             return None
 
     # ═══════════════════════════════════════════════════════════════════

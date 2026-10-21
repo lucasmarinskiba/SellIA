@@ -42,8 +42,8 @@ def selia_director_daily(business_id: str | None = None):
         for bid in business_ids:
             try:
                 results.append(await _run_single(bid))
-            except Exception as exc:
-                logger.error(f"selia_director_daily failed for {bid}: {exc}")
+            except Exception:
+                logger.exception(f"selia_director_daily failed for {bid}")
         return {"status": "ok", "processed": len(results), "total": len(business_ids)}
 
     if business_id:
@@ -68,8 +68,8 @@ def rfm_segmentation(business_id: str | None = None):
         for bid in business_ids:
             try:
                 results.append(await _run_single(bid))
-            except Exception as exc:
-                logger.error(f"rfm_segmentation failed for {bid}: {exc}")
+            except Exception:
+                logger.exception(f"rfm_segmentation failed for {bid}")
         return {"status": "ok", "processed": len(results), "total": len(business_ids)}
 
     if business_id:
@@ -101,8 +101,8 @@ def payment_reminder_check(business_id: str | None = None):
             try:
                 result = await _run_single(bid)
                 total_sent += result.get("sent", 0)
-            except Exception as exc:
-                logger.error(f"payment_reminder_check failed for {bid}: {exc}")
+            except Exception:
+                logger.exception(f"payment_reminder_check failed for {bid}")
         return {"status": "ok", "total_sent": total_sent, "total_businesses": len(business_ids)}
 
     if business_id:
@@ -128,8 +128,8 @@ def bi_analytics_daily(business_id: str | None = None):
         for bid in business_ids:
             try:
                 results.append(await _run_single(bid))
-            except Exception as exc:
-                logger.error(f"bi_analytics_daily failed for {bid}: {exc}")
+            except Exception:
+                logger.exception(f"bi_analytics_daily failed for {bid}")
         return {"status": "ok", "processed": len(results), "total": len(business_ids)}
 
     if business_id:

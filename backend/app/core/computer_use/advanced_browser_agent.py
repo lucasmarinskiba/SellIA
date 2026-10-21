@@ -59,7 +59,7 @@ class AdvancedBrowserAgent:
             }
 
         except Exception as e:
-            logger.error(f"Navigation failed: {e!s}")
+            logger.exception("Navigation failed")
             return await self._handle_error("navigate", {"url": url}, e)
 
     async def fill_form_intelligent(self, fields: dict[str, str]) -> dict[str, Any]:
@@ -92,7 +92,7 @@ class AdvancedBrowserAgent:
                 logger.info(f"Filled {selector} with {value}")
 
             except Exception as e:
-                logger.error(f"Failed to fill {selector}: {e!s}")
+                logger.exception(f"Failed to fill {selector}")
                 results["failed"].append({"selector": selector, "error": str(e)})
 
         return {"status": "completed", "results": results}
@@ -124,7 +124,7 @@ class AdvancedBrowserAgent:
             return {"status": "success", "direction": direction, "amount": amount}
 
         except Exception as e:
-            logger.error(f"Scroll failed: {e!s}")
+            logger.exception("Scroll failed")
             return {"status": "error", "error": str(e)}
 
     async def hover(self, selector: str) -> dict[str, Any]:
@@ -135,6 +135,7 @@ class AdvancedBrowserAgent:
             logger.info(f"Hovered {selector}")
             return {"status": "success", "selector": selector}
         except Exception as e:
+            logger.exception("hover: error inesperado")
             return {"status": "error", "error": str(e)}
 
     async def keyboard_shortcut(self, shortcut: str) -> dict[str, Any]:
@@ -145,6 +146,7 @@ class AdvancedBrowserAgent:
             logger.info(f"Pressed {shortcut}")
             return {"status": "success", "shortcut": shortcut}
         except Exception as e:
+            logger.exception("keyboard_shortcut: error inesperado")
             return {"status": "error", "error": str(e)}
 
     async def upload_file(self, selector: str, file_path: str) -> dict[str, Any]:
@@ -155,6 +157,7 @@ class AdvancedBrowserAgent:
             logger.info(f"Uploaded {file_path} to {selector}")
             return {"status": "success", "file": file_path}
         except Exception as e:
+            logger.exception("upload_file: error inesperado")
             return {"status": "error", "error": str(e)}
 
     async def extract_table_data(self, selector: str) -> dict[str, Any]:
@@ -181,6 +184,7 @@ class AdvancedBrowserAgent:
             }
 
         except Exception as e:
+            logger.exception("extract_table_data: error inesperado")
             return {"status": "error", "error": str(e)}
 
     async def ocr_text_from_image(self, selector: str) -> dict[str, Any]:
@@ -201,7 +205,7 @@ class AdvancedBrowserAgent:
             }
 
         except Exception as e:
-            logger.error(f"OCR failed: {e!s}")
+            logger.exception("OCR failed")
             return {"status": "error", "error": str(e)}
 
     # ========== MULTI-TAB MANAGEMENT ==========
@@ -222,6 +226,7 @@ class AdvancedBrowserAgent:
             return {"status": "success", "tab_id": tab_id}
 
         except Exception as e:
+            logger.exception("open_new_tab: error inesperado")
             return {"status": "error", "error": str(e)}
 
     async def switch_tab(self, tab_id: str) -> dict[str, Any]:
@@ -274,7 +279,7 @@ class AdvancedBrowserAgent:
                 return await self.navigate(params["url"])
             # Más acciones según sea necesario
         except Exception as e2:
-            logger.error(f"Recovery failed: {e2!s}")
+            logger.exception("Recovery failed")
             return {"status": "failed", "error": str(e2)}
 
     # ========== CONTEXT MEMORY ==========
@@ -357,4 +362,5 @@ class AdvancedBrowserAgent:
             await asyncio.sleep(0.5)
             return {"status": "success", "selector": selector}
         except Exception as e:
+            logger.exception("_click: error inesperado")
             return await self._handle_error("click", {"selector": selector}, e)

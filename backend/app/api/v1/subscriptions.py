@@ -227,6 +227,7 @@ async def create_checkout(
                 sandbox_init_point=preference.get("sandbox_init_point"),
             )
         except Exception:
+            logger.exception("create_checkout: error inesperado")
             from app.core.logger import get_logger
             get_logger(__name__).exception("Error creating checkout")
             raise HTTPException(status_code=500, detail="Internal server error")
@@ -253,6 +254,7 @@ async def create_checkout(
                 init_point=f"/dashboard/transferencia/{order.id}",  # Frontend route
             )
         except Exception:
+            logger.exception("create_checkout: error inesperado")
             from app.core.logger import get_logger
             get_logger(__name__).exception("Error creating bank transfer order")
             raise HTTPException(status_code=500, detail="Internal server error")
@@ -301,6 +303,7 @@ async def create_preapproval_subscription(
             billing_cycle=data.billing_cycle,
         )
     except Exception:
+        logger.exception("create_preapproval_subscription: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).exception("Error creating preapproval")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -335,6 +338,7 @@ async def get_preapproval(
         get_logger(__name__).exception("Error querying MercadoPago")
         raise HTTPException(status_code=500, detail="Internal server error")
     except Exception:
+        logger.exception("get_preapproval: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).exception("Error querying MercadoPago")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -378,6 +382,7 @@ async def delete_preapproval(
     try:
         await cancel_preapproval(preapproval_id)
     except Exception:
+        logger.exception("delete_preapproval: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).exception("Error cancelling preapproval")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -420,6 +425,7 @@ async def create_crypto_payment(
             network=data.crypto_network,
         )
     except Exception:
+        logger.exception("create_crypto_payment: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).exception("Error generating crypto payment")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -485,7 +491,7 @@ async def get_crypto_payment_status(
                 amount_received=onchain.get("amount"),
             )
         except Exception:
-            pass
+            logger.exception("get_crypto_payment_status: error inesperado")
 
     return CryptoPaymentStatusResponse(
         transaction_id=tx.id,
@@ -502,9 +508,13 @@ async def get_crypto_payment_status(
 # Moved to app/core/integrations/mercadopago_webhook.py so api/v1/payments.py's
 # webhook handler can share the same real verification instead of trusting
 # its body unconditionally (that handler had none at all -- see that commit).
+import logging
+
 from app.core.integrations.mercadopago_webhook import (
     verify_mercadopago_signature as _verify_mercadopago_signature,
 )
+
+logger = logging.getLogger(__name__)
 
 
 @router.post("/webhook/mercadopago")
@@ -516,6 +526,7 @@ async def mercadopago_webhook(
     try:
         body = await request.json()
     except Exception:
+        logger.exception("mercadopago_webhook: error inesperado")
         body = {}
 
     topic = body.get("topic") or body.get("type")
@@ -663,6 +674,7 @@ async def mercadopago_webhook(
     except HTTPException:
         raise
     except Exception:
+        logger.exception("mercadopago_webhook: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).exception("MercadoPago webhook error")
         return {"status": "error", "detail": "Internal server error"}
@@ -736,6 +748,7 @@ async def stripe_webhook(
     except HTTPException:
         raise
     except Exception:
+        logger.exception("stripe_webhook: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).exception("Stripe webhook error")
         return {"status": "error", "detail": "Internal server error"}
@@ -1310,6 +1323,7 @@ async def detect_region(request: Request):
                     if data.get("status") == "success":
                         detected_country = data.get("countryCode")
         except Exception:
+            logger.exception("detect_region: error inesperado")
             detected_country = None
 
     region = get_region_from_country(detected_country)

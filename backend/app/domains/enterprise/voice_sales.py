@@ -85,7 +85,7 @@ class VoiceCallManager:
                     )
                     call_sid = call.sid
                 except Exception as e:
-                    logger.warning(f"Twilio call creation failed: {e}")
+                    logger.warning(f"Twilio call creation failed: {e}", exc_info=True)
 
             # 4. Store voice call record
             voice_call = VoiceCall(
@@ -176,8 +176,8 @@ class VoiceCallManager:
 
             return response_text
 
-        except Exception as e:
-            logger.error(f"Error handling call input: {e}")
+        except Exception:
+            logger.exception("Error handling call input")
             return "I didn't catch that. Could you repeat?"
 
     def end_call(self, call_id: str, outcome: str = "unqualified") -> dict[str, Any]:
@@ -239,7 +239,7 @@ class VoiceCallManager:
             }
 
         except Exception as e:
-            logger.error(f"Error ending call: {e}")
+            logger.exception("Error ending call")
             return {"error": str(e)}
 
     def _generate_voice_script(self, prospect_id: str, deal_id: str) -> str:
@@ -297,8 +297,8 @@ class VoiceCallManager:
             )
 
             return json.loads(message.content[0].text)
-        except Exception as e:
-            logger.error(f"Error analyzing call: {e}")
+        except Exception:
+            logger.exception("Error analyzing call")
             return {"decision": "unqualified"}
 
 
@@ -344,8 +344,8 @@ class PlaybookExtractor:
 
             return master_playbooks
 
-        except Exception as e:
-            logger.error(f"Error extracting playbooks: {e}")
+        except Exception:
+            logger.exception("Error extracting playbooks")
             return []
 
     def _extract_from_call(self, call: VoiceCall) -> dict[str, Any] | None:
@@ -378,8 +378,8 @@ class PlaybookExtractor:
             )
 
             return json.loads(message.content[0].text)
-        except Exception as e:
-            logger.error(f"Error extracting from call: {e}")
+        except Exception:
+            logger.exception("Error extracting from call")
             return None
 
     def _cluster_playbooks(self, playbooks: list[dict]) -> list[list[dict]]:
@@ -409,8 +409,8 @@ class PlaybookExtractor:
             )
 
             return playbook
-        except Exception as e:
-            logger.error(f"Error consolidating cluster: {e}")
+        except Exception:
+            logger.exception("Error consolidating cluster")
             return None
 
 
@@ -452,8 +452,8 @@ class PlaybookRecommender:
                 confidence=0.85,
             )
 
-        except Exception as e:
-            logger.error(f"Error recommending playbook: {e}")
+        except Exception:
+            logger.exception("Error recommending playbook")
             return None
 
 
@@ -479,5 +479,5 @@ def extract_playbooks_async(self, top_performer_ids: list[str]):
         return {"status": "complete", "playbooks_extracted": len(playbooks)}
 
     except Exception as exc:
-        logger.error(f"Error extracting playbooks: {exc}")
+        logger.exception("Error extracting playbooks")
         raise self.retry(exc=exc, countdown=300)

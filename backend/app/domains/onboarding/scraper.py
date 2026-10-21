@@ -66,7 +66,7 @@ class OnboardingScraper:
                         await btn.click(timeout=1000)
                         await page.wait_for_timeout(500)
                 except Exception:
-                    pass
+                    logger.exception("scrape: error inesperado")
 
             # Extraer texto visible
             text = await page.evaluate("""

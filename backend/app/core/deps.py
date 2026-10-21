@@ -71,7 +71,7 @@ async def get_current_user(
                     request.state.user = user
                     return user
             except Exception:
-                pass
+                logger.exception("get_current_user: error inesperado")
         # Si el header viene pero no encontramos el usuario, caemos al JWT
 
     token = await get_token_from_request(request)
@@ -94,6 +94,7 @@ async def get_current_user(
     except HTTPException:
         raise
     except Exception:
+        logger.exception("get_current_user: error inesperado")
         raise credentials_exception
 
     # Guardar usuario en request.state para logging
@@ -132,7 +133,11 @@ async def get_current_active_user(
 
 
 # Dependency de rate limiting (wrapper para fastapi-limiter)
+import logging
+
 from fastapi_limiter.depends import RateLimiter
+
+logger = logging.getLogger(__name__)
 
 # Re-exportar para uso en routers
 RateLimit = RateLimiter

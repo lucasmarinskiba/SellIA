@@ -118,6 +118,7 @@ class VisualAnalyzer:
             pytesseract.get_tesseract_version()
             return True
         except Exception:
+            logger.exception("_check_tesseract: error inesperado")
             return False
 
     async def analyze_screenshot(

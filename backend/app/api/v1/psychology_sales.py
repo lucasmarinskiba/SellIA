@@ -1,5 +1,6 @@
 """Phase 31 Psychology Sales API endpoints."""
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -14,6 +15,8 @@ from app.domains.enterprise.psychology_sales import (
     PsychologyObjectionHandler,
     UrgencyTriggerEngine,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/psychology", tags=["psychology-sales"])
 
@@ -129,6 +132,7 @@ def get_discovery_questions(
             next_stage=request.stage,
         )
     except Exception as e:
+        logger.exception("get_discovery_questions: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -149,6 +153,7 @@ def record_discovery_response(
             pain_points=db_response.pain_points or [],
         )
     except Exception as e:
+        logger.exception("record_discovery_response: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -169,6 +174,7 @@ def create_need_narrative(
             urgency_level=result.urgency_level,
         )
     except Exception as e:
+        logger.exception("create_need_narrative: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -187,6 +193,7 @@ def get_urgency_triggers(
 
         return UrgencyTriggersResponse(triggers=triggers)
     except Exception as e:
+        logger.exception("get_urgency_triggers: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -209,6 +216,7 @@ def handle_objection(
             next_step="Ask them to think about impact",
         )
     except Exception as e:
+        logger.exception("handle_objection: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -245,4 +253,5 @@ def get_close(
             is_positive_response=True,
         )
     except Exception as e:
+        logger.exception("get_close: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

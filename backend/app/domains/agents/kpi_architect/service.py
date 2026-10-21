@@ -102,7 +102,7 @@ class KPIArchitectService:
                 data = json.loads(json_str.strip())
                 return data.get("kpis", data if isinstance(data, list) else [])
             except Exception as e:
-                logger.warning(f"Failed to parse KPI JSON: {e}")
+                logger.warning(f"Failed to parse KPI JSON: {e}", exc_info=True)
 
         defaults = [
             {

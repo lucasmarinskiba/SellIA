@@ -7,6 +7,7 @@ Orquesta la ejecución secuencial de pasos de una misión, integrando:
 """
 
 import asyncio
+import logging
 import uuid
 from typing import Any
 
@@ -20,6 +21,8 @@ from app.domains.computer_use.session_manager_v2 import ComputerUseSessionManage
 from app.domains.missions.models import Mission, MissionStep
 from app.domains.missions.services import MissionService
 from app.domains.missions.websocket_manager import mission_ws_manager
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -62,6 +65,7 @@ class MissionOrchestrator:
                 await self._update_step_status(step.id, "completed", result=result, completed_at=utc_now())
                 await mission_ws_manager.broadcast_mission_progress(user_id_str, str(mission_id), str(step.id), "completed", {"result": result})
             except Exception as e:
+                logger.exception("execute_mission: error inesperado")
                 await self._update_step_status(step.id, "failed", error_message=str(e))
                 await mission_ws_manager.broadcast_mission_progress(user_id_str, str(mission_id), str(step.id), "failed", {"error": str(e)})
                 continue
@@ -118,7 +122,7 @@ class MissionOrchestrator:
                     provider = prov
                     break
                 except Exception:
-                    pass
+                    logger.exception("_execute_computer_use_step: error inesperado")
 
         if not api_key:
             if settings.OPENAI_API_KEY:

@@ -180,7 +180,7 @@ class RefundAutomation:
                 return result
 
         except Exception as e:
-            logger.error(f"Refund error: {e!s}")
+            logger.exception("Refund error")
             return {"status": "error", "error": str(e)}
 
     async def _notify_buyer_refund(self, order_id: str, amount: float, reason: str) -> None:

@@ -1,6 +1,7 @@
 """Phase 30 Churn Prevention API endpoints."""
 
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -15,6 +16,8 @@ from app.domains.enterprise.churn_retention import (
     ExpansionOpportunityDetector,
     RetentionPlaybookGenerator,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/churn", tags=["churn-retention"])
 
@@ -129,6 +132,7 @@ def predict_churn(
             retention_offer=prediction.retention_offer,
         )
     except Exception as e:
+        logger.exception("predict_churn: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -175,6 +179,7 @@ def get_expansion_opportunities(
             ],
         )
     except Exception as e:
+        logger.exception("get_expansion_opportunities: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -215,6 +220,7 @@ def get_abm_intent(
             trending=intent["trending"],
         )
     except Exception as e:
+        logger.exception("get_abm_intent: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -255,6 +261,7 @@ def launch_retention_campaign(
             executive_message=playbook.get("executive", None),
         )
     except Exception as e:
+        logger.exception("launch_retention_campaign: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -317,4 +324,5 @@ def get_customer_health(
             recommended_action=health["recommended_action"],
         )
     except Exception as e:
+        logger.exception("get_customer_health: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

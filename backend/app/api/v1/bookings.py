@@ -14,6 +14,7 @@ tool's webhook config.
 
 import hashlib
 import hmac
+import logging
 from datetime import datetime
 from typing import Annotated, Any
 from uuid import UUID
@@ -28,6 +29,8 @@ from app.core.deps import get_current_user
 from app.domains.agents.lead_qualifier.models import LeadQualification
 from app.domains.channels.models import BookingEvent, Conversation
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 
@@ -81,6 +84,7 @@ async def receive_booking_webhook(
         try:
             scheduled_at = datetime.fromisoformat(str(scheduled_at_raw).replace("Z", "+00:00"))
         except Exception:
+            logger.exception("receive_booking_webhook: error inesperado")
             scheduled_at = None
 
     conversation_id = None

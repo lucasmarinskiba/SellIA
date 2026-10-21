@@ -121,8 +121,8 @@ class WhatsAppWebhookHandler:
                 raw_data=payload,
             )
 
-        except Exception as e:
-            logger.error(f"WhatsApp parse error: {e}")
+        except Exception:
+            logger.exception("WhatsApp parse error")
             return None
 
 
@@ -173,8 +173,8 @@ class InstagramWebhookHandler:
 
             return None
 
-        except Exception as e:
-            logger.error(f"Instagram parse error: {e}")
+        except Exception:
+            logger.exception("Instagram parse error")
             return None
 
 
@@ -203,8 +203,8 @@ class TikTokWebhookHandler:
                 raw_data=payload,
             )
 
-        except Exception as e:
-            logger.error(f"TikTok parse error: {e}")
+        except Exception:
+            logger.exception("TikTok parse error")
             return None
 
 
@@ -248,8 +248,8 @@ class FacebookWebhookHandler:
 
             return None
 
-        except Exception as e:
-            logger.error(f"Facebook parse error: {e}")
+        except Exception:
+            logger.exception("Facebook parse error")
             return None
 
 

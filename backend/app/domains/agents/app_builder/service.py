@@ -110,7 +110,7 @@ class AppBuilderService:
             analysis = await self._analyze_with_llm(business_id, app_description, features_list)
             logger.info(f"AppBuilder LLM analysis for job {job.id}: {analysis[:200]}...")
         except Exception as e:
-            logger.warning(f"AppBuilder LLM analysis failed: {e}")
+            logger.warning(f"AppBuilder LLM analysis failed: {e}", exc_info=True)
             analysis = ""
 
         await self.update_job(job.id, status=AppBuildStatus.GENERATING)
@@ -128,7 +128,7 @@ class AppBuilderService:
                 deploy_instructions=preview,
             )
         except Exception as e:
-            logger.exception(f"AppBuilder generation failed for job {job.id}: {e}")
+            logger.exception(f"AppBuilder generation failed for job {job.id}")
             await self.update_job(job.id, status=AppBuildStatus.FAILED, deploy_instructions=str(e))
 
         return await self.get_job(job.id)

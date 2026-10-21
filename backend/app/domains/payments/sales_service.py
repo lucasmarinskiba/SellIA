@@ -150,6 +150,6 @@ async def maybe_trigger_checkout(
         checkout["currency"] = item.currency or "ARS"
         return checkout
 
-    except Exception as e:
-        logger.error(f"maybe_trigger_checkout error for conversation {conversation.id}: {e}")
+    except Exception:
+        logger.exception(f"maybe_trigger_checkout error for conversation {conversation.id}")
         return None

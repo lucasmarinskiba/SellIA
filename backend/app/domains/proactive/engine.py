@@ -109,7 +109,7 @@ class ProactiveEngine:
             btype = result.scalar_one_or_none()
             return btype.value if btype else None
         except Exception as exc:
-            logger.debug(f"Could not load business_type for proactive engine: {exc}")
+            logger.debug(f"Could not load business_type for proactive engine: {exc}", exc_info=True)
             return None
 
     # ------------------------------------------------------------------
@@ -168,8 +168,8 @@ class ProactiveEngine:
                 async with self.db.begin_nested():
                     detected = await detector(business_id, rules_by_type)
                 opportunities.extend(detected)
-            except Exception as e:
-                logger.exception(f"Detector {detector.__name__} failed for business {business_id}: {e}")
+            except Exception:
+                logger.exception(f"Detector {detector.__name__} failed for business {business_id}")
 
         if opportunities:
             await self.db.commit()
@@ -662,8 +662,8 @@ class ProactiveEngine:
                 temperature=0.7,
             )
             return message
-        except Exception as e:
-            logger.exception(f"Failed to generate outreach message for opportunity {opportunity.id}: {e}")
+        except Exception:
+            logger.exception(f"Failed to generate outreach message for opportunity {opportunity.id}")
             return None
 
     # ------------------------------------------------------------------

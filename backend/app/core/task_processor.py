@@ -48,8 +48,8 @@ class TaskProcessor:
                 # Sleep to avoid tight loop
                 await asyncio.sleep(5)
 
-            except Exception as e:
-                logger.error(f"Processor error: {e}")
+            except Exception:
+                logger.exception("Processor error")
                 await asyncio.sleep(10)
 
     async def stop(self) -> None:
@@ -80,7 +80,7 @@ class TaskProcessor:
             await self.scheduler.mark_completed(task)
 
         except Exception as e:
-            logger.error(f"Task processing error: {e}")
+            logger.exception("Task processing error")
             await self.scheduler.mark_failed(task, str(e), retry=True)
 
     async def _send_workflow_email(self, task: dict) -> None:
@@ -155,8 +155,8 @@ class TaskProcessor:
 
                 logger.info(f"✅ Batch email sent: {lead_email}")
 
-            except Exception as e:
-                logger.error(f"Batch send failed for {lead_data.get('email')}: {e}")
+            except Exception:
+                logger.exception(f"Batch send failed for {lead_data.get('email')}")
                 continue
 
     async def _update_lead_score(self, task: dict) -> None:

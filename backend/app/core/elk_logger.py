@@ -16,9 +16,12 @@ Configuration via environment variables:
 """
 
 import json
+import logging
 import os
 from datetime import UTC, datetime
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 try:
     import aiohttp
@@ -102,6 +105,7 @@ def write_to_file(document: dict) -> bool:
             f.write(json.dumps(document, ensure_ascii=False) + "\n")
         return True
     except Exception as e:
+        logger.exception("write_to_file: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Failed to write log file: {e}")
         return False
@@ -134,6 +138,7 @@ async def push_to_elasticsearch(document: dict) -> bool:
                     get_logger(__name__).error(f"Elasticsearch error {resp.status}: {body[:200]}")
                     return False
     except Exception as e:
+        logger.exception("push_to_elasticsearch: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Failed to push to Elasticsearch: {e}")
         return False

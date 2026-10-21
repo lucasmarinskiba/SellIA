@@ -86,6 +86,7 @@ class OnboardingAnalyzer:
                         category=p.get("category"),
                     ))
                 except Exception:
+                    logger.exception("analyze: error inesperado")
                     continue
 
             return BusinessDiscovery(
@@ -99,8 +100,8 @@ class OnboardingAnalyzer:
                 suggested_agents=data.get("suggested_agents", []),
                 suggested_workflows=data.get("suggested_workflows", []),
             )
-        except Exception as e:
-            logger.error(f"Error analizando con IA: {e}")
+        except Exception:
+            logger.exception("Error analizando con IA")
             # Fallback: devolver mínimo viable
             return BusinessDiscovery(
                 name="Mi Negocio",

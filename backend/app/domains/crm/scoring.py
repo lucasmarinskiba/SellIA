@@ -4,6 +4,7 @@ Automatically calculates lead scores based on conversation activity,
 behavior, intent signals, and recency.
 """
 
+import logging
 import uuid
 from datetime import UTC, datetime
 from typing import Any
@@ -13,6 +14,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.channels.models import Conversation, Message
 from app.domains.crm.models import LeadActivity, LeadScore
+
+logger = logging.getLogger(__name__)
 
 # Score rules
 SCORE_RULES = {
@@ -174,6 +177,7 @@ class LeadScoringEngine:
                     new_classification=lead_score.classification,
                 )
             except Exception as e:
+                logger.exception("calculate_score: error inesperado")
                 from app.core.logger import get_logger
                 get_logger(__name__).error(f"Event emit error: {e}")
 
@@ -365,6 +369,7 @@ Write a brief commentary (1-2 sentences) explaining this score change to the sal
                 return None
             return response.content.strip()
         except Exception as e:
+            logger.exception("_generate_commentary: error inesperado")
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Commentary generation error: {e}")
             return None

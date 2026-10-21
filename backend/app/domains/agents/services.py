@@ -4,6 +4,7 @@ Ejecuta conversaciones con agentes expertos usando LangChain + OpenAI.
 Soporta API keys propias de los usuarios.
 """
 
+import logging
 import uuid
 from typing import Any
 
@@ -20,6 +21,8 @@ from app.domains.agents.models import (
 )
 from app.domains.agents.prompts import compose_system_prompt, get_system_prompt
 from app.domains.subscriptions.models import UserAPIKey
+
+logger = logging.getLogger(__name__)
 
 
 class AgentService:
@@ -753,6 +756,7 @@ class AgentService:
                     personality_id=conv.personality_id,
                 )
             except Exception as e:
+                logger.exception("chat: error inesperado")
                 from app.core.logger import get_logger
                 get_logger(__name__).error(f"Context builder error: {e}")
                 business_context = {}

@@ -102,8 +102,8 @@ class GoogleAdsConnector:
         except GoogleAdsException as e:
             logger.error(f"Google Ads API error: {e}")
             return False, None
-        except Exception as e:
-            logger.error(f"Error creating campaign: {e}")
+        except Exception:
+            logger.exception("Error creating campaign")
             return False, None
 
     async def create_ad_group(
@@ -136,8 +136,8 @@ class GoogleAdsConnector:
 
             return True, ad_group_id
 
-        except Exception as e:
-            logger.error(f"Error creating ad group: {e}")
+        except Exception:
+            logger.exception("Error creating ad group")
             return False, None
 
     async def create_text_ad(
@@ -183,8 +183,8 @@ class GoogleAdsConnector:
 
             return True, ad_id
 
-        except Exception as e:
-            logger.error(f"Error creating ad: {e}")
+        except Exception:
+            logger.exception("Error creating ad")
             return False, None
 
     async def get_campaign_stats(self, campaign_id: str) -> dict[str, Any]:
@@ -226,8 +226,8 @@ class GoogleAdsConnector:
 
             return {}
 
-        except Exception as e:
-            logger.error(f"Error getting stats: {e}")
+        except Exception:
+            logger.exception("Error getting stats")
             return {}
 
 

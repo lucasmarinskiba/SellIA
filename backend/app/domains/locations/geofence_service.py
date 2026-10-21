@@ -75,7 +75,7 @@ class GeofenceTriggerService:
                         "message": f"Welcome to {loc.name}!"
                     }
                 except Exception as e:
-                    logger.error(f"Geofence auto check-in failed: {e}")
+                    logger.exception("Geofence auto check-in failed")
                     return {"triggered": False, "error": str(e)}
 
         return {"triggered": False, "reason": "No locations in range"}

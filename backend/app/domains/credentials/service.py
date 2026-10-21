@@ -1,5 +1,6 @@
 """Credential Service — Encrypt/decrypt and manage platform credentials."""
 
+import logging
 import os
 import uuid
 from datetime import UTC, datetime
@@ -9,6 +10,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .models import AuthType, SiteCredential
+
+logger = logging.getLogger(__name__)
 
 
 class CredentialService:
@@ -41,6 +44,7 @@ class CredentialService:
         try:
             return self._fernet.decrypt(value.encode()).decode()
         except Exception:
+            logger.exception("_decrypt: error inesperado")
             return None
 
     async def store(

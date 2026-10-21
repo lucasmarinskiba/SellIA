@@ -218,7 +218,7 @@ class LocationChannelOrchestrator:
                 result["status"] = "sent"
 
             except Exception as e:
-                logger.error(f"Failed to send {channel} message: {e}")
+                logger.exception(f"Failed to send {channel} message")
                 result["status"] = "failed"
                 result["error"] = str(e)
 

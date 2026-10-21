@@ -380,7 +380,7 @@ class RetrieveDocumentsTool:
         try:
             results = await document_processor.search_documents(db, business_id, query, k)
         except Exception as exc:
-            logger.warning(f"Document search failed: {exc}")
+            logger.warning(f"Document search failed: {exc}", exc_info=True)
             return {"error": "Document search failed", "details": str(exc)}
 
         return {
@@ -429,7 +429,7 @@ class SearchMemoryTool:
                 k=k,
             )
         except Exception as exc:
-            logger.warning(f"Memory search failed: {exc}")
+            logger.warning(f"Memory search failed: {exc}", exc_info=True)
             return {"error": "Memory search failed", "details": str(exc)}
 
         return {
@@ -545,5 +545,5 @@ class ToolRegistry:
         try:
             return await tool.execute(**call_kwargs)
         except Exception as exc:
-            logger.exception(f"Tool {name} execution failed: {exc}")
+            logger.exception(f"Tool {name} execution failed")
             return {"error": f"Tool execution failed: {exc!s}"}

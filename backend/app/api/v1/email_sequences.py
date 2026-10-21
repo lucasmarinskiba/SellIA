@@ -2,12 +2,15 @@
 Cold email sequence generation + sending.
 Uses Efti (cold email) + Kennedy (80/20 ROI) frameworks.
 """
+import logging
 import os
 from datetime import datetime
 
 import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/sequences", tags=["email_sequences"])
 
@@ -110,4 +113,5 @@ async def create_cold_email_sequence(req: SequenceRequest) -> dict:
             "created_at": datetime.now().isoformat(),
         }
     except Exception as e:
+        logger.exception("create_cold_email_sequence: error inesperado")
         raise HTTPException(status_code=500, detail=str(e))

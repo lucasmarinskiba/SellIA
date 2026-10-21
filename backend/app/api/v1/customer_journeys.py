@@ -1,5 +1,6 @@
 """Customer journey API endpoints."""
 
+import logging
 from datetime import UTC
 from typing import Annotated
 from uuid import UUID
@@ -10,6 +11,8 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.domains.journeys.journey_service import CustomerJourneyService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1", tags=["customer-journeys"])
 
@@ -51,6 +54,7 @@ async def start_journey(
         )
         return result
     except Exception as e:
+        logger.exception("start_journey: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -73,6 +77,7 @@ async def record_touchpoint(
         )
         return result
     except Exception as e:
+        logger.exception("record_touchpoint: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -86,6 +91,7 @@ async def get_journey(
         result = CustomerJourneyService.get_journey_details(journey_id, db)
         return result
     except Exception as e:
+        logger.exception("get_journey: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -104,6 +110,7 @@ async def calculate_journey_metrics(
         )
         return result
     except Exception as e:
+        logger.exception("calculate_journey_metrics: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -148,4 +155,5 @@ async def get_journey_funnel(
             }
         }
     except Exception as e:
+        logger.exception("get_journey_funnel: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

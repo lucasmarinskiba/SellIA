@@ -226,8 +226,8 @@ class ProactiveOutreachEngine:
                 "log_id": str(log.id),
             }
 
-        except Exception as e:
-            logger.exception(f"Failed to generate proactive outreach: {e}")
+        except Exception:
+            logger.exception("Failed to generate proactive outreach")
             return None
 
     def _build_outreach_prompt(
@@ -289,8 +289,8 @@ class ProactiveOutreachEngine:
                     result = await self.generate_outreach(business_id, outreach_type, conv_id)
                     if result:
                         results.append(result)
-            except Exception as e:
-                logger.error(f"Failed to schedule {outreach_type} for business {business_id}: {e}")
+            except Exception:
+                logger.exception(f"Failed to schedule {outreach_type} for business {business_id}")
 
         return results
 

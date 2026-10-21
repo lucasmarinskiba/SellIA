@@ -143,7 +143,7 @@ class CalendlyAutomation:
             return {"status": "success"}
 
         except Exception as e:
-            logger.error(f"Webhook processing error: {e}")
+            logger.exception("Webhook processing error")
             return {"status": "error", "message": str(e)}
 
     async def _handle_event_created(self, event_data: dict[str, Any]) -> None:
@@ -299,8 +299,8 @@ class CalendlyAutomation:
             logger.info("Event synced to Google Calendar")
             return True
 
-        except Exception as e:
-            logger.error(f"Error syncing to Google Calendar: {e}")
+        except Exception:
+            logger.exception("Error syncing to Google Calendar")
             return False
 
     # ========== REMINDER AUTOMATION ==========
@@ -348,8 +348,8 @@ class CalendlyAutomation:
 
             return True
 
-        except Exception as e:
-            logger.error(f"Error scheduling reminder: {e}")
+        except Exception:
+            logger.exception("Error scheduling reminder")
             return False
 
     # ========== ATTENDEE MANAGEMENT ==========
@@ -402,8 +402,8 @@ class CalendlyAutomation:
 
             return True
 
-        except Exception as e:
-            logger.error(f"Error sending confirmation: {e}")
+        except Exception:
+            logger.exception("Error sending confirmation")
             return False
 
     # ========== ANALYTICS & REPORTING ==========
@@ -442,8 +442,8 @@ class CalendlyAutomation:
                 "period_days": days,
             }
 
-        except Exception as e:
-            logger.error(f"Error getting statistics: {e}")
+        except Exception:
+            logger.exception("Error getting statistics")
             return {}
 
     # ========== WEBHOOK MANAGEMENT ==========

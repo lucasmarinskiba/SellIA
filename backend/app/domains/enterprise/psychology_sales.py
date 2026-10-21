@@ -141,8 +141,8 @@ class DiscoveryQuestionsEngine:
                 )
                 for q in questions_json
             ]
-        except Exception as e:
-            logger.error(f"Error generating questions: {e}")
+        except Exception:
+            logger.exception("Error generating questions")
             return [
                 DiscoveryQuestion(
                     question=q,
@@ -280,8 +280,8 @@ class NeedCreationEngine:
                     if amount < 10000:  # Per unit cost
                         amount *= 52  # Annualize
                     total_impact += amount
-                except:
-                    pass
+                except Exception:
+                    logger.exception("_calculate_financial_impact: error inesperado")
 
         return max(total_impact, 50000)  # Conservative minimum
 
@@ -311,8 +311,8 @@ class NeedCreationEngine:
                 messages=[{"role": "user", "content": prompt}]
             )
             return message.content[0].text
-        except Exception as e:
-            logger.error(f"Error generating narrative: {e}")
+        except Exception:
+            logger.exception("Error generating narrative")
             return self._get_template_narrative(pain_points, impact)
 
     def _get_template_narrative(self, pain_points: list[str], impact: float) -> str:
@@ -456,8 +456,8 @@ class PsychologyObjectionHandler:
                 messages=[{"role": "user", "content": prompt}]
             )
             return message.content[0].text
-        except Exception as e:
-            logger.error(f"Error handling objection: {e}")
+        except Exception:
+            logger.exception("Error handling objection")
             return f"{framework['validate']} {framework['question']}"
 
     def _classify_objection(self, objection: str) -> str:
@@ -565,5 +565,5 @@ def create_need_narrative_async(self, deal_id: str, responses: list[str]):
         return {"status": "complete", "deal_id": deal_id, "impact": result.financial_impact}
 
     except Exception as exc:
-        logger.error(f"Error creating narrative: {exc}")
+        logger.exception("Error creating narrative")
         raise self.retry(exc=exc, countdown=60)

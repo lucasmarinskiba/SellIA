@@ -327,7 +327,7 @@ class SimulationEngine:
             return run
 
         except Exception as exc:
-            logger.exception(f"Simulation run {run.id} failed: {exc}")
+            logger.exception(f"Simulation run {run.id} failed")
             run.status = "failed"
             run.feedback = f"Simulation failed: {str(exc)[:500]}"
             run.completed_at = datetime.now(UTC)
@@ -354,7 +354,7 @@ class SimulationEngine:
             if row:
                 return row
         except Exception:
-            pass
+            logger.exception("_resolve_agent_id: error inesperado")
 
         return None
 

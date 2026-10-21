@@ -109,7 +109,7 @@ class SelfConfigEngine:
             result = await self.db.execute(conv_query)
             metrics["active_conversations"] = result.scalar() or 0
         except Exception as e:
-            logger.warning(f"[SelfConfig] No se pudo obtener conversaciones activas: {e}")
+            logger.warning(f"[SelfConfig] No se pudo obtener conversaciones activas: {e}", exc_info=True)
 
         try:
             from app.domains.crm.models import Deal
@@ -121,7 +121,7 @@ class SelfConfigEngine:
             result = await self.db.execute(deals_query)
             metrics["pending_deals"] = result.scalar() or 0
         except Exception as e:
-            logger.warning(f"[SelfConfig] No se pudo obtener deals pendientes: {e}")
+            logger.warning(f"[SelfConfig] No se pudo obtener deals pendientes: {e}", exc_info=True)
 
         try:
             import redis.asyncio as aioredis
@@ -138,7 +138,7 @@ class SelfConfigEngine:
             total = sum(q for q in queue_lengths if isinstance(q, int))
             metrics["tasks_queued"] = total
         except Exception as e:
-            logger.warning(f"[SelfConfig] No se pudo obtener cola Redis: {e}")
+            logger.warning(f"[SelfConfig] No se pudo obtener cola Redis: {e}", exc_info=True)
 
         return metrics
 

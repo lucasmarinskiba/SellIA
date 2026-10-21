@@ -87,8 +87,8 @@ async def health_check():
             error_rate_last_hour=0.002  # 0.2%
         )
 
-    except Exception as e:
-        logger.error(f"Health check error: {e!s}")
+    except Exception:
+        logger.exception("Health check error")
         raise HTTPException(status_code=500, detail="Health check failed")
 
 

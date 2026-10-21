@@ -3,6 +3,7 @@
 Endpoints para el flujo de onboarding automático con IA.
 """
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -21,6 +22,8 @@ from app.domains.onboarding.schemas import (
 from app.domains.onboarding.scraper import OnboardingScraper
 from app.domains.users.models import User
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(tags=["Onboarding Mágico"])
 
 
@@ -35,6 +38,7 @@ async def analyze_source(
         scraper = OnboardingScraper()
         raw_text = await scraper.scrape(req.source)
     except Exception as e:
+        logger.exception("analyze_source: error inesperado")
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"No se pudo acceder a la fuente. Verificá que sea pública. Error: {e!s}",

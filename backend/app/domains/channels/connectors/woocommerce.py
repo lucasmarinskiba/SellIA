@@ -13,11 +13,14 @@ Docs: https://woocommerce.github.io/woocommerce-rest-api-docs/#webhooks
 import base64
 import hashlib
 import hmac
+import logging
 from typing import Any
 
 from app.domains.channels.connectors.base import BaseChannelConnector
 from app.domains.channels.models import ChannelPlatform
 from app.domains.channels.schemas import WebhookPayload
+
+logger = logging.getLogger(__name__)
 
 _ORDER_STATUS_LABELS = {
     "pending": "pendiente de pago",
@@ -134,4 +137,5 @@ class WooCommerceConnector(BaseChannelConnector):
                 )
                 return response.status_code == 200
         except Exception:
+            logger.exception("validate_credentials: error inesperado")
             return False

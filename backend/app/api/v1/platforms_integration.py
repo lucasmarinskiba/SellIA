@@ -131,7 +131,7 @@ async def facebook_shop_webhook_orders(
         )
 
     except Exception as e:
-        logger.error(f"[{correlation_id}] Error processing webhook: {e}")
+        logger.exception(f"[{correlation_id}] Error processing webhook")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Webhook processing failed: {e!s}",
@@ -171,7 +171,7 @@ async def facebook_shop_config(
         }
 
     except Exception as e:
-        logger.error(f"[{correlation_id}] Error configuring: {e}")
+        logger.exception(f"[{correlation_id}] Error configuring")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -211,7 +211,7 @@ async def facebook_shop_sync_products(
         )
 
     except Exception as e:
-        logger.error(f"[{correlation_id}] Error syncing products: {e}")
+        logger.exception(f"[{correlation_id}] Error syncing products")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -243,8 +243,8 @@ async def facebook_shop_get_order(
             "platform": "facebook_shop",
         }
 
-    except Exception as e:
-        logger.error(f"Error fetching order: {e}")
+    except Exception:
+        logger.exception("Error fetching order")
         raise HTTPException(status_code=404, detail="Order not found")
 
 
@@ -274,7 +274,7 @@ async def instagram_shop_webhook_orders(
         )
 
     except Exception as e:
-        logger.error(f"[{correlation_id}] Error: {e}")
+        logger.exception(f"[{correlation_id}] Error")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -303,6 +303,7 @@ async def instagram_shop_sync_products(
         )
 
     except Exception as e:
+        logger.exception("instagram_shop_sync_products: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -327,6 +328,7 @@ async def instagram_shop_analytics(
         }
 
     except Exception as e:
+        logger.exception("instagram_shop_analytics: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -355,7 +357,7 @@ async def tiktok_shop_webhook_orders(
         )
 
     except Exception as e:
-        logger.error(f"[{correlation_id}] Error: {e}")
+        logger.exception(f"[{correlation_id}] Error")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -379,6 +381,7 @@ async def tiktok_shop_config(
         }
 
     except Exception as e:
+        logger.exception("tiktok_shop_config: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -437,6 +440,7 @@ async def tiktok_shop_sync_orders(
         return SyncResponse(status="success", synced_count=len(orders), duration_seconds=duration)
 
     except Exception as e:
+        logger.exception("tiktok_shop_sync_orders: error inesperado")
         connection.status = ChannelStatus.ERROR
         connection.status_message = str(e)[:255]
         await db.commit()
@@ -467,7 +471,7 @@ async def calendly_webhook_events(
         )
 
     except Exception as e:
-        logger.error(f"[{correlation_id}] Error: {e}")
+        logger.exception(f"[{correlation_id}] Error")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -491,6 +495,7 @@ async def calendly_config(
         }
 
     except Exception as e:
+        logger.exception("calendly_config: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -513,6 +518,7 @@ async def calendly_list_events(
         }
 
     except Exception as e:
+        logger.exception("calendly_list_events: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -552,7 +558,7 @@ async def slack_command_handler(
         }
 
     except Exception as e:
-        logger.error(f"[{correlation_id}] Error: {e}")
+        logger.exception(f"[{correlation_id}] Error")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -574,7 +580,7 @@ async def slack_events_handler(
         return {"status": "ok"}
 
     except Exception as e:
-        logger.error(f"Error handling event: {e}")
+        logger.exception("Error handling event")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -597,6 +603,7 @@ async def slack_send_alert(
         }
 
     except Exception as e:
+        logger.exception("slack_send_alert: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -625,7 +632,7 @@ async def telegram_webhook_updates(
         }
 
     except Exception as e:
-        logger.error(f"[{correlation_id}] Error: {e}")
+        logger.exception(f"[{correlation_id}] Error")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -649,6 +656,7 @@ async def telegram_config(
         }
 
     except Exception as e:
+        logger.exception("telegram_config: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -671,6 +679,7 @@ async def telegram_send_notification(
         }
 
     except Exception as e:
+        logger.exception("telegram_send_notification: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -694,6 +703,7 @@ async def platforms_health() -> dict[str, Any]:
         }
 
     except Exception as e:
+        logger.exception("platforms_health: error inesperado")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -746,4 +756,5 @@ async def platforms_status(
         }
 
     except Exception as e:
+        logger.exception("platforms_status: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

@@ -211,7 +211,7 @@ class AutonomousOperationsCenter:
             logger.info(f"[AOC][Protection] Amenazas: {result.get('threats_detected', 0)}, Score: {result.get('threat_score', 0)}")
             return {"status": "ok", **result}
         except Exception as e:
-            logger.error(f"[AOC][Protection] Error: {e}")
+            logger.exception("[AOC][Protection] Error")
             return {"status": "error", "error": str(e)[:200]}
 
     async def _run_repair_pillar(
@@ -223,7 +223,7 @@ class AutonomousOperationsCenter:
             logger.info(f"[AOC][Repair] Detectadas: {result.get('detected', 0)}, Reparadas: {result.get('repaired', 0)}")
             return {"status": "ok", **result}
         except Exception as e:
-            logger.error(f"[AOC][Repair] Error: {e}")
+            logger.exception("[AOC][Repair] Error")
             return {"status": "error", "error": str(e)[:200]}
 
     async def _run_config_pillar(
@@ -235,7 +235,7 @@ class AutonomousOperationsCenter:
             logger.info(f"[AOC][Config] Estado de carga: {result.get('load_state', 'unknown')}")
             return {"status": "ok", **result}
         except Exception as e:
-            logger.error(f"[AOC][Config] Error: {e}")
+            logger.exception("[AOC][Config] Error")
             return {"status": "error", "error": str(e)[:200]}
 
     async def _run_optimization_pillar(
@@ -247,7 +247,7 @@ class AutonomousOperationsCenter:
             logger.info(f"[AOC][Optimization] Insights: {result.get('insights_generated', 0)}, Acciones: {result.get('actions_taken', 0)}")
             return {"status": "ok", **result}
         except Exception as e:
-            logger.error(f"[AOC][Optimization] Error: {e}")
+            logger.exception("[AOC][Optimization] Error")
             return {"status": "error", "error": str(e)[:200]}
 
     # ─────────────────────────────────────────────
@@ -315,7 +315,7 @@ class AutonomousOperationsCenter:
             deals_result = await self.db.execute(deals_query)
             snapshot.deals_active = deals_result.scalar() or 0
         except Exception as e:
-            logger.warning(f"[AOC] No se pudieron obtener métricas de negocio: {e}")
+            logger.warning(f"[AOC] No se pudieron obtener métricas de negocio: {e}", exc_info=True)
 
         # --- Score general de salud (0-100) ---
         snapshot.overall_health_score = self._calculate_health_score(snapshot)
@@ -499,8 +499,8 @@ class AutonomousOperationsCenter:
             self.db.add(alert)
             await self.db.commit()
             logger.info(f"[AOC] Reporte de salud enviado. Score: {snapshot.overall_health_score}/100")
-        except Exception as e:
-            logger.error(f"[AOC] Error enviando reporte de salud: {e}")
+        except Exception:
+            logger.exception("[AOC] Error enviando reporte de salud")
 
     # ─────────────────────────────────────────────
     # API PÚBLICA DEL CENTRO DE OPERACIONES

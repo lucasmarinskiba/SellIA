@@ -61,7 +61,7 @@ async def create_lead_campaign(
         }
 
     except Exception as e:
-        logger.error(f"Campaign creation failed: {e}")
+        logger.exception("Campaign creation failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -99,7 +99,7 @@ async def generate_leads(
         }
 
     except Exception as e:
-        logger.error(f"Lead generation failed: {e}")
+        logger.exception("Lead generation failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -119,7 +119,7 @@ async def get_campaign_stats(campaign_id: str) -> dict[str, Any]:
         }
 
     except Exception as e:
-        logger.error(f"Stats retrieval failed: {e}")
+        logger.exception("Stats retrieval failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -157,7 +157,7 @@ async def get_qualified_leads(
         }
 
     except Exception as e:
-        logger.error(f"Leads retrieval failed: {e}")
+        logger.exception("Leads retrieval failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -180,7 +180,7 @@ async def schedule_continuous_generation(
         }
 
     except Exception as e:
-        logger.error(f"Scheduling failed: {e}")
+        logger.exception("Scheduling failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -202,7 +202,7 @@ async def export_leads(
         }
 
     except Exception as e:
-        logger.error(f"Export failed: {e}")
+        logger.exception("Export failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -252,5 +252,5 @@ async def quick_start_campaign(
         }
 
     except Exception as e:
-        logger.error(f"Quick start failed: {e}")
+        logger.exception("Quick start failed")
         raise HTTPException(status_code=500, detail=str(e))

@@ -52,6 +52,7 @@ async def retry_with_exponential_backoff(func: Callable, args: tuple = (), kwarg
         try:
             return await func(*args, **kwargs)
         except Exception as e:
+            logger.exception("retry_with_exponential_backoff: error inesperado")
             last_exception = e
             if attempt < max_retries - 1:
                 await asyncio.sleep(delay)

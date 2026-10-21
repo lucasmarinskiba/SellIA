@@ -11,8 +11,11 @@ tokens limitado). Es aditivo: no rompe ningún provider existente.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from urllib.parse import urlparse
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -581,6 +584,7 @@ def _domain_of(url: str | None) -> str:
     try:
         return (urlparse(url).hostname or "").lower()
     except Exception:
+        logger.exception("_domain_of: error inesperado")
         return ""
 
 

@@ -55,8 +55,8 @@ class SimpleIntentClassifier:
 
             logger.info(f"Trained intent classifier v{self.version} with accuracy {self.accuracy:.3f}")
             return self.accuracy
-        except Exception as e:
-            logger.error(f"Failed to train intent classifier: {e}")
+        except Exception:
+            logger.exception("Failed to train intent classifier")
             return 0.0
 
     def predict(self, text: str) -> str | None:
@@ -79,6 +79,7 @@ class SimpleIntentClassifier:
             self.accuracy = data.get("accuracy", 0.0)
             return True
         except Exception:
+            logger.exception("load: error inesperado")
             return False
 
 
@@ -108,8 +109,8 @@ async def train_all_models(db: AsyncSession) -> dict[str, float]:
                 for s in samples:
                     s.model_version = model.version
                 await db.commit()
-    except Exception as e:
-        logger.error(f"Intent classifier training failed: {e}")
+    except Exception:
+        logger.exception("Intent classifier training failed")
 
     # 2. Response Quality Predictor (placeholder for future)
     # 3. Lead Scorer (placeholder for future)

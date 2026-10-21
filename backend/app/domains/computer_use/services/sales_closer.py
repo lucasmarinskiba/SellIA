@@ -159,8 +159,8 @@ class SalesCloserService:
 
             return closing_message, status, confidence
 
-        except Exception as e:
-            logger.error(f"Error in sales closer: {e}")
+        except Exception:
+            logger.exception("Error in sales closer")
             return None, "failed", 0.0
 
     async def handle_sale_confirmation(
@@ -286,8 +286,8 @@ Team
 
             await self.audit_service.log(log_entry)
 
-        except Exception as e:
-            logger.error(f"Error logging sales activity: {e}")
+        except Exception:
+            logger.exception("Error logging sales activity")
 
 
 def get_sales_closer_service(db: AsyncSession) -> SalesCloserService:

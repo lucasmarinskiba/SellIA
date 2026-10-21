@@ -144,7 +144,7 @@ class AmazonStoreRankingConnector(StorePositioningConnector):
                 )
                 return resp.status_code == 200
         except Exception as e:
-            logger.error(f"Amazon store ranking credentials validation failed: {str(e)[:100]}")
+            logger.exception(f"Amazon store ranking credentials validation failed: {str(e)[:100]}")
             return False
 
     async def get_store_signals(self, store_external_id: str | None = None) -> list[RankingSignal]:
@@ -168,7 +168,7 @@ class AmazonStoreRankingConnector(StorePositioningConnector):
                 )
             body = resp.json()
         except Exception as e:
-            logger.warning(f"Amazon store ranking: insights fetch failed: {str(e)[:100]}")
+            logger.warning(f"Amazon store ranking: insights fetch failed: {str(e)[:100]}", exc_info=True)
             return self._unavailable(str(e)[:100])
 
         unit_note = (

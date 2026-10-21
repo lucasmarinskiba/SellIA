@@ -135,7 +135,7 @@ class CausalAnalyzer:
             result = _parse_json_response(response, CausalAnalysis)
             return result
         except Exception as e:
-            logger.warning(f"Causal analysis generation failed: {e}")
+            logger.warning(f"Causal analysis generation failed: {e}", exc_info=True)
             return None
 
     async def save_causal_analysis(
@@ -262,7 +262,7 @@ class CausalAnalyzer:
                 return parsed.patterns
             return []
         except Exception as e:
-            logger.warning(f"Objection pattern detection failed: {e}")
+            logger.warning(f"Objection pattern detection failed: {e}", exc_info=True)
             return []
 
     async def sync_objection_patterns(
@@ -411,7 +411,7 @@ class CausalAnalyzer:
                 return parsed.recommendations
             return []
         except Exception as e:
-            logger.warning(f"Pitch recommendation generation failed: {e}")
+            logger.warning(f"Pitch recommendation generation failed: {e}", exc_info=True)
             return []
 
     # ------------------------------------------------------------------
@@ -477,7 +477,7 @@ def _parse_json_response(text: str, model_class) -> Any | None:
         data = json.loads(text)
         return model_class.model_validate(data)
     except Exception:
-        pass
+        logger.exception("_parse_json_response: error inesperado")
 
     # Try markdown code blocks
     if "```json" in text:
@@ -487,7 +487,7 @@ def _parse_json_response(text: str, model_class) -> Any | None:
             data = json.loads(text[start:end].strip())
             return model_class.model_validate(data)
         except Exception:
-            pass
+            logger.exception("_parse_json_response: error inesperado")
 
     if "```" in text:
         try:
@@ -496,7 +496,7 @@ def _parse_json_response(text: str, model_class) -> Any | None:
             data = json.loads(text[start:end].strip())
             return model_class.model_validate(data)
         except Exception:
-            pass
+            logger.exception("_parse_json_response: error inesperado")
 
     # Try JSON between braces
     try:
@@ -505,7 +505,7 @@ def _parse_json_response(text: str, model_class) -> Any | None:
         data = json.loads(text[start:end])
         return model_class.model_validate(data)
     except Exception:
-        pass
+        logger.exception("_parse_json_response: error inesperado")
 
     logger.warning(f"Could not parse JSON response into {model_class.__name__}")
     return None

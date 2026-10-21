@@ -1,5 +1,6 @@
 """Smart auto-rotation: regenerate FOMO when decay detected, auto-test winner."""
 
+import logging
 from datetime import timedelta
 from uuid import UUID
 
@@ -12,6 +13,8 @@ from app.domains.seo_config.fomo_decay_service import FOMADecayService
 from app.domains.seo_config.fomo_generator import PublicationFOMOGenerator
 from app.domains.seo_config.fomo_service import FOMAConversionService
 from app.domains.seo_config.models import PublicationLinkFOMO
+
+logger = logging.getLogger(__name__)
 
 
 class FOMAAutoRotator:
@@ -96,6 +99,7 @@ class FOMAAutoRotator:
             'rotated_at': utc_now().isoformat(),
           })
       except Exception as e:
+        logger.exception("auto_rotate_on_decay: error inesperado")
         print(f'Auto-rotation failed for link {link_obj.id}: {e}')
         continue
 

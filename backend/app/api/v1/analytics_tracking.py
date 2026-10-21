@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
 from uuid import UUID
@@ -12,6 +13,8 @@ from app.domains.analytics.models import AnalyticsEvent, Conversion, EventType
 from app.domains.businesses.models import Business
 from app.domains.users.models import User
 from app.domains.websites.models import Website
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -60,6 +63,7 @@ async def track_event(
         await db.commit()
         return {"status": "tracked"}
     except Exception as e:
+        logger.exception("track_event: error inesperado")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/track/conversion")
@@ -87,6 +91,7 @@ async def track_conversion(
         await db.commit()
         return {"status": "tracked"}
     except Exception as e:
+        logger.exception("track_conversion: error inesperado")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/businesses/{business_id}/analytics/summary")

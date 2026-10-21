@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI):
             await FastAPILimiter.init(r)
             logger.info("Rate limiter initialized")
         except Exception as e:
-            logger.warning(f"Rate limiter skipped: {e}")
+            logger.warning(f"Rate limiter skipped: {e}", exc_info=True)
     yield
     logger.info("SellIA backend shutting down...")
 
@@ -72,6 +72,7 @@ async def health():
                 await conn.execute(text("SELECT 1"))
             checks["database"] = "ok"
         except Exception as e:
+            logger.exception("health: error inesperado")
             checks["database"] = f"error: {str(e)[:80]}"
             checks["status"] = "degraded"
     else:
@@ -97,7 +98,7 @@ def try_include(router_path: str, prefix: str, tags: list):
         app.include_router(router, prefix=prefix, tags=tags)
         logger.info(f"Loaded: {prefix}")
     except Exception as e:
-        logger.warning(f"Skipped {prefix}: {e}")
+        logger.warning(f"Skipped {prefix}: {e}", exc_info=True)
 
 
 # Memory router - Phase 29

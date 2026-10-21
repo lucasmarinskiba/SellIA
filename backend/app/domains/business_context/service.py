@@ -1,5 +1,6 @@
 """Business Context Service"""
 
+import logging
 import uuid
 
 from sqlalchemy import select
@@ -20,6 +21,8 @@ from .schemas import (
     ChannelGapAnalysis,
     ReachAnalysis,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class BusinessContextService:
@@ -73,7 +76,7 @@ class BusinessContextService:
                 elif has_physical:
                     ctx.business_type = BusinessType.PHYSICAL_PRODUCTS
         except Exception:
-            pass
+            logger.exception("detect_context_from_business_data: error inesperado")
 
         # Detect from channels
         try:
@@ -87,7 +90,7 @@ class BusinessContextService:
                 configured[ch.platform] = ch.status == "active"
             ctx.channels_configured = {**ctx.channels_configured, **configured}
         except Exception:
-            pass
+            logger.exception("detect_context_from_business_data: error inesperado")
 
         # Detect from business model
         try:
@@ -98,7 +101,7 @@ class BusinessContextService:
                 ctx.country = getattr(biz, 'country', None) or ctx.country
                 ctx.industry = getattr(biz, 'industry', None) or ctx.industry
         except Exception:
-            pass
+            logger.exception("detect_context_from_business_data: error inesperado")
 
         # Detect from orders
         try:
@@ -115,7 +118,7 @@ class BusinessContextService:
                 if len(orders) > 10:
                     ctx.sales_model = SalesModel.B2C
         except Exception:
-            pass
+            logger.exception("detect_context_from_business_data: error inesperado")
 
         await self.db.commit()
         await self.db.refresh(ctx)

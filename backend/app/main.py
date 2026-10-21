@@ -22,7 +22,7 @@ def _try_include(router_path: str, prefix: str, tags: list[str]) -> None:
         app.include_router(router, prefix=prefix, tags=tags)
         logger.info(f"✅ Loaded extra router: {prefix} ({router_path})")
     except Exception as e:
-        logger.warning(f"⚠️  Skipped extra router {prefix} ({router_path}): {e}")
+        logger.warning(f"⚠️  Skipped extra router {prefix} ({router_path}): {e}", exc_info=True)
 
 
 # Extra routers carried over from the legacy main.py entry point.

@@ -104,7 +104,7 @@ class PromptOrchestrator:
 
         except Exception as e:
             error_message = str(e)
-            logger.error(f"Error executing prompt: {error_message}")
+            logger.exception(f"Error executing prompt: {error_message}")
             success = False
 
         # Record execution
@@ -268,6 +268,6 @@ class PromptOrchestrator:
             logger.info(f"Exported execution logs to: {filename}")
             return True
 
-        except Exception as e:
-            logger.error(f"Error exporting logs: {e}")
+        except Exception:
+            logger.exception("Error exporting logs")
             return False

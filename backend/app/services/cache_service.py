@@ -1,8 +1,11 @@
 import json
+import logging
 import os
 from typing import Any
 
 import redis
+
+logger = logging.getLogger(__name__)
 
 
 class CacheService:
@@ -19,6 +22,7 @@ class CacheService:
                 return json.loads(value)
             return None
         except Exception as e:
+            logger.exception("get: error inesperado")
             print(f"Cache get error: {e}")
             return None
 
@@ -29,6 +33,7 @@ class CacheService:
             self.redis.setex(key, ttl, json.dumps(value))
             return True
         except Exception as e:
+            logger.exception("set: error inesperado")
             print(f"Cache set error: {e}")
             return False
 
@@ -38,6 +43,7 @@ class CacheService:
             self.redis.delete(key)
             return True
         except Exception as e:
+            logger.exception("delete: error inesperado")
             print(f"Cache delete error: {e}")
             return False
 
@@ -49,6 +55,7 @@ class CacheService:
                 return self.redis.delete(*keys)
             return 0
         except Exception as e:
+            logger.exception("clear_pattern: error inesperado")
             print(f"Cache clear pattern error: {e}")
             return 0
 
@@ -72,6 +79,7 @@ class CacheService:
                     result[key] = json.loads(value)
             return result
         except Exception as e:
+            logger.exception("mget: error inesperado")
             print(f"Cache mget error: {e}")
             return {}
 
@@ -87,6 +95,7 @@ class CacheService:
             pipe.execute()
             return True
         except Exception as e:
+            logger.exception("mset: error inesperado")
             print(f"Cache mset error: {e}")
             return False
 
@@ -95,6 +104,7 @@ class CacheService:
         try:
             return self.redis.incr(key)
         except Exception as e:
+            logger.exception("incr: error inesperado")
             print(f"Cache incr error: {e}")
             return 0
 
@@ -103,6 +113,7 @@ class CacheService:
         try:
             return self.redis.decr(key)
         except Exception as e:
+            logger.exception("decr: error inesperado")
             print(f"Cache decr error: {e}")
             return 0
 
@@ -111,6 +122,7 @@ class CacheService:
         try:
             return bool(self.redis.expire(key, ttl))
         except Exception as e:
+            logger.exception("expire: error inesperado")
             print(f"Cache expire error: {e}")
             return False
 
@@ -119,6 +131,7 @@ class CacheService:
         try:
             return self.redis.ttl(key)
         except Exception as e:
+            logger.exception("ttl: error inesperado")
             print(f"Cache ttl error: {e}")
             return -1
 
@@ -127,6 +140,7 @@ class CacheService:
         try:
             return bool(self.redis.exists(key))
         except Exception as e:
+            logger.exception("exists: error inesperado")
             print(f"Cache exists error: {e}")
             return False
 
@@ -136,6 +150,7 @@ class CacheService:
             self.redis.flushdb()
             return True
         except Exception as e:
+            logger.exception("flush_all: error inesperado")
             print(f"Cache flush error: {e}")
             return False
 

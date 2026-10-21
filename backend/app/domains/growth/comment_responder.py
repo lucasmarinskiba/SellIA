@@ -195,8 +195,8 @@ Reglas:
                 max_tokens=150,
                 temperature=0.8,
             ) or "¡Gracias por tu comentario! Te mandé un DM con más info 💬"
-        except Exception as e:
-            logger.error(f"Public reply generation failed: {e}")
+        except Exception:
+            logger.exception("Public reply generation failed")
             return "¡Gracias por tu comentario! Te mandé un DM con más info 💬"
 
     async def _generate_dm_message(
@@ -229,8 +229,8 @@ Reglas:
                 max_tokens=300,
                 temperature=0.8,
             ) or f"Hola @{username}! Ví tu comentario y quería ayudarte con eso. ¿En qué andás ahora?"
-        except Exception as e:
-            logger.error(f"DM generation failed: {e}")
+        except Exception:
+            logger.exception("DM generation failed")
             return f"Hola @{username}! Ví tu comentario y quería ayudarte con eso. ¿En qué andás ahora?"
 
     async def _capture_comment_lead(

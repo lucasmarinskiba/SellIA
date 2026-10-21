@@ -171,7 +171,7 @@ async def _bootstrap_database() -> None:
             await db.commit()
         logger.info("✅ 2FA schema migrated")
     except Exception as e:
-        logger.warning(f"2FA schema migration: {str(e)[:80]}")
+        logger.warning(f"2FA schema migration: {str(e)[:80]}", exc_info=True)
 
     # Create computer_use_audit_logs table (real agent activity trail used by
     # the Brain dashboard's Agent Audit Log / Approvals Center / Handoff Log).
@@ -251,7 +251,7 @@ async def _bootstrap_database() -> None:
             await db.commit()
         logger.info("✅ computer_use_audit_logs table ensured")
     except Exception as e:
-        logger.warning(f"computer_use_audit_logs migration: {str(e)[:120]}")
+        logger.warning(f"computer_use_audit_logs migration: {str(e)[:120]}", exc_info=True)
 
     # Create the 5 team-collaboration tables (deal comments, approvals,
     # handoffs, deal shares, notifications) used by
@@ -361,7 +361,7 @@ async def _bootstrap_database() -> None:
             await db.commit()
         logger.info("✅ team collaboration tables ensured (5/5)")
     except Exception as e:
-        logger.warning(f"team collaboration tables migration: {str(e)[:120]}")
+        logger.warning(f"team collaboration tables migration: {str(e)[:120]}", exc_info=True)
 
     # deal_outcomes: win/loss history for forecast-accuracy tracking, used by
     # app/domains/enterprise/forecasting.py's DealOutcomeAnalyzer. Its ORM
@@ -397,7 +397,7 @@ async def _bootstrap_database() -> None:
             await db.commit()
         logger.info("✅ deal_outcomes table ensured")
     except Exception as e:
-        logger.warning(f"deal_outcomes migration: {str(e)[:120]}")
+        logger.warning(f"deal_outcomes migration: {str(e)[:120]}", exc_info=True)
 
     # pipelines + deals (app.domains.crm.models): the app's real sales-
     # pipeline/deal-tracking tables, confirmed MISSING entirely from
@@ -496,7 +496,7 @@ async def _bootstrap_database() -> None:
             await db.commit()
         logger.info("✅ pipelines/deals tables ensured (2/2)")
     except Exception as e:
-        logger.warning(f"pipelines/deals migration: {str(e)[:120]}")
+        logger.warning(f"pipelines/deals migration: {str(e)[:120]}", exc_info=True)
 
     # voice_calls + voice_configs (app.domains.voice.models): also
     # confirmed MISSING from production despite VoiceCall/VoiceConfig
@@ -558,7 +558,7 @@ async def _bootstrap_database() -> None:
             await db.commit()
         logger.info("✅ voice_calls/voice_configs tables ensured (2/2)")
     except Exception as e:
-        logger.warning(f"voice_calls/voice_configs migration: {str(e)[:120]}")
+        logger.warning(f"voice_calls/voice_configs migration: {str(e)[:120]}", exc_info=True)
 
     # business_members + deal_delegations (app.domains.businesses.team_models):
     # real multi-user-per-business membership, built while rebuilding
@@ -619,7 +619,7 @@ async def _bootstrap_database() -> None:
             await db.commit()
         logger.info("✅ team management tables ensured (business_members, deal_delegations, deals.assigned_to_user_id)")
     except Exception as e:
-        logger.warning(f"team management migration: {str(e)[:120]}")
+        logger.warning(f"team management migration: {str(e)[:120]}", exc_info=True)
 
     # webhook_subscriptions + webhook_deliveries (app.domains.webhooks.models):
     # the real webhook system's router/service/schemas were already complete
@@ -669,7 +669,7 @@ async def _bootstrap_database() -> None:
             await db.commit()
         logger.info("✅ webhook tables ensured (webhook_subscriptions, webhook_deliveries)")
     except Exception as e:
-        logger.warning(f"webhook tables migration: {str(e)[:120]}")
+        logger.warning(f"webhook tables migration: {str(e)[:120]}", exc_info=True)
 
     # prompt_experiments + prompt_experiment_results (app.domains.agents.ab_testing):
     # the real A/B-testing engine (app.domains.agents.ab_service.ABTestEngine)
@@ -726,7 +726,7 @@ async def _bootstrap_database() -> None:
             await db.commit()
         logger.info("✅ A/B testing tables ensured (prompt_experiments, prompt_experiment_results)")
     except Exception as e:
-        logger.warning(f"A/B testing tables migration: {str(e)[:120]}")
+        logger.warning(f"A/B testing tables migration: {str(e)[:120]}", exc_info=True)
 
     # agent_personalities + agent_configs (app.domains.agents.models): discovered
     # while wiring the new testing_framework -- ai_reply.py's generate_ai_response()
@@ -798,9 +798,9 @@ async def _bootstrap_database() -> None:
                 seeded = await AgentService(db).seed_personalities()
             logger.info(f"✅ agent_personalities seeded ({len(seeded)} personalities)")
         except Exception as e:
-            logger.warning(f"agent_personalities seed: {str(e)[:120]}")
+            logger.warning(f"agent_personalities seed: {str(e)[:120]}", exc_info=True)
     except Exception as e:
-        logger.warning(f"agent personality tables migration: {str(e)[:120]}")
+        logger.warning(f"agent personality tables migration: {str(e)[:120]}", exc_info=True)
     startup_state.mark("agent_personalities")
 
     # Computer Use domain tables (app.domains.computer_use.models +
@@ -870,10 +870,10 @@ async def _bootstrap_database() -> None:
                         await cu_conn.run_sync(Base.metadata.create_all, tables=[cu_table], checkfirst=True)
                     cu_created.append(cu_table.name)
                 except Exception as cu_e:
-                    logger.warning(f"computer_use table '{cu_table.name}' migration: {str(cu_e)[:120]}")
+                    logger.warning(f"computer_use table '{cu_table.name}' migration: {str(cu_e)[:120]}", exc_info=True)
         logger.info(f"✅ Computer Use tables ensured ({len(cu_created)}/14)")
     except Exception as e:
-        logger.warning(f"Computer Use tables migration: {str(e)[:120]}")
+        logger.warning(f"Computer Use tables migration: {str(e)[:120]}", exc_info=True)
     startup_state.mark("computer_use_tables")
 
     # Restore businesses.is_active (referenced by 15+ call sites across the
@@ -897,7 +897,7 @@ async def _bootstrap_database() -> None:
             await db.commit()
         logger.info("✅ businesses.is_active restored")
     except Exception as e:
-        logger.warning(f"businesses.is_active migration: {str(e)[:120]}")
+        logger.warning(f"businesses.is_active migration: {str(e)[:120]}", exc_info=True)
 
     # Restore businesses.type (Business.type is read by context_builder.py,
     # ai_reply.py, crm/scoring.py, and 5 other files for AI prompt context —
@@ -932,7 +932,7 @@ async def _bootstrap_database() -> None:
             await db.commit()
         logger.info("✅ businesses.type restored")
     except Exception as e:
-        logger.warning(f"businesses.type migration: {str(e)[:120]}")
+        logger.warning(f"businesses.type migration: {str(e)[:120]}", exc_info=True)
 
     # Restore businesses.config (read by context_builder.py, localization.py,
     # investor_pitch/service.py, agents.py — same drift-caused AttributeError).
@@ -953,7 +953,7 @@ async def _bootstrap_database() -> None:
             await db.commit()
         logger.info("✅ businesses.config restored")
     except Exception as e:
-        logger.warning(f"businesses.config migration: {str(e)[:120]}")
+        logger.warning(f"businesses.config migration: {str(e)[:120]}", exc_info=True)
 
     # Create business_contexts table if missing (was skipped when CoreBase FK
     # validation blocked auto table creation in init_db). Minimal schema with
@@ -1003,7 +1003,7 @@ async def _bootstrap_database() -> None:
             await db.commit()
         logger.info("✅ business_contexts table ensured")
     except Exception as e:
-        logger.warning(f"business_contexts table creation: {str(e)[:120]}")
+        logger.warning(f"business_contexts table creation: {str(e)[:120]}", exc_info=True)
 
     # Migrate schema for ManyChat + Nicho/Oferta/Ángulos + Booking-rate feature.
     # create_all() never alters existing tables, so business_contexts' new
@@ -1035,7 +1035,7 @@ async def _bootstrap_database() -> None:
             await db.commit()
         logger.info("✅ business_contexts angles/scheduling schema migrated")
     except Exception as e:
-        logger.warning(f"business_contexts schema migration: {str(e)[:120]}")
+        logger.warning(f"business_contexts schema migration: {str(e)[:120]}", exc_info=True)
 
     # ManyChat enum value — must commit alone, isolated from any statement
     # that might use the new value in the same transaction (Postgres rule).
@@ -1051,7 +1051,7 @@ async def _bootstrap_database() -> None:
                 await db.commit()
             logger.info("✅ channelplatform enum: manychat ensured")
     except Exception as e:
-        logger.warning(f"channelplatform enum migration: {str(e)[:120]}")
+        logger.warning(f"channelplatform enum migration: {str(e)[:120]}", exc_info=True)
 
     # Create transactions/refunds tables if missing. These live on
     # app.core.database.Base (CoreBase) which init_db() explicitly skips
@@ -1169,7 +1169,7 @@ async def _bootstrap_database() -> None:
             await db.commit()
         logger.info("✅ transactions/refunds tables ensured")
     except Exception as e:
-        logger.warning(f"transactions/refunds table creation: {str(e)[:120]}")
+        logger.warning(f"transactions/refunds table creation: {str(e)[:120]}", exc_info=True)
 
     # Same story as transactions/refunds above — payment_metrics is another
     # CoreBase table init_db() skips. PaymentService._update_payment_metrics
@@ -1224,7 +1224,7 @@ async def _bootstrap_database() -> None:
             await db.commit()
         logger.info("✅ payment_metrics table ensured")
     except Exception as e:
-        logger.warning(f"payment_metrics table creation: {str(e)[:120]}")
+        logger.warning(f"payment_metrics table creation: {str(e)[:120]}", exc_info=True)
 
     # Task 5: cold-lead follow-up tracking columns on conversations. The
     # table itself already exists in production (created earlier via the
@@ -1253,7 +1253,7 @@ async def _bootstrap_database() -> None:
             await db.commit()
         logger.info("✅ conversations follow-up columns ensured")
     except Exception as e:
-        logger.warning(f"conversations follow-up columns migration: {str(e)[:120]}")
+        logger.warning(f"conversations follow-up columns migration: {str(e)[:120]}", exc_info=True)
 
     # Task 6: LLM daily call cap — business_contexts.llm_daily_call_limit
     # (NULL = unlimited, existing behavior) + the llm_daily_usage counter
@@ -1295,7 +1295,7 @@ async def _bootstrap_database() -> None:
             await db.commit()
         logger.info("✅ LLM daily usage cap schema ensured")
     except Exception as e:
-        logger.warning(f"LLM daily usage cap schema migration: {str(e)[:120]}")
+        logger.warning(f"LLM daily usage cap schema migration: {str(e)[:120]}", exc_info=True)
 
     # Ensure the double-entry ledger tables exist (CoreBase domain that
     # init_db() skips; migrations are disabled — see entrypoint.sh).
@@ -1359,7 +1359,7 @@ async def _bootstrap_database() -> None:
                 for t in hr_missing:
                     await conn.run_sync(lambda c, t=t: t.create(bind=c, checkfirst=True))
     except Exception as e:
-        logger.warning(f"domain tables bootstrap: {str(e)[:160]}")
+        logger.warning(f"domain tables bootstrap: {str(e)[:160]}", exc_info=True)
     startup_state.mark("domain_tables")
 
     # Load Phase 33 seed data if needed. Sync psycopg2 session, so it runs in a
@@ -1380,7 +1380,7 @@ async def _bootstrap_database() -> None:
             else:
                 logger.warning(f"Phase 33 seed error: {result.get('error', 'unknown')}")
     except Exception as e:
-        logger.debug(f"Phase 33 seed unavailable: {e}")
+        logger.debug(f"Phase 33 seed unavailable: {e}", exc_info=True)
     startup_state.mark("phase_33_seed")
 
 
@@ -1412,14 +1412,14 @@ async def _run_background_bootstrap() -> None:
             asyncio.create_task(start_processor())
             logger.info("✅ Task processor started")
         except Exception as e:
-            logger.warning(f"Processor background start warning: {e}")
+            logger.warning(f"Processor background start warning: {e}", exc_info=True)
 
         # Start cold-lead follow-up loop in background (Task 5)
         try:
             asyncio.create_task(run_followup_loop())
             logger.info("✅ Follow-up scheduler started")
         except Exception as e:
-            logger.warning(f"Follow-up scheduler background start warning: {e}")
+            logger.warning(f"Follow-up scheduler background start warning: {e}", exc_info=True)
 
         startup_state.complete()
         logger.info(f"✅ Startup bootstrap complete in {startup_state.elapsed_seconds}s")
@@ -1450,7 +1450,7 @@ async def lifespan(app: FastAPI):
             await FastAPILimiter.init(scheduler.redis)
             logger.info("✅ FastAPILimiter initialized")
         except Exception as e:
-            logger.warning(f"FastAPILimiter init skipped: {e}")
+            logger.warning(f"FastAPILimiter init skipped: {e}", exc_info=True)
     else:
         logger.warning("⚠️ Redis unavailable — rate-limited endpoints (auth) will fail")
 
@@ -1839,8 +1839,8 @@ async def health_check(
     except TimeoutError:
         logger.error("Database health check timed out")
         db_status = "timeout"
-    except Exception as e:
-        logger.error(f"Database health check failed: {e}")
+    except Exception:
+        logger.exception("Database health check failed")
         db_status = "failed"
 
     # Check Redis
@@ -1850,16 +1850,16 @@ async def health_check(
             redis_status = "ok"
         else:
             redis_status = "fallback"  # In-memory mode
-    except Exception as e:
-        logger.error(f"Redis health check failed: {e}")
+    except Exception:
+        logger.exception("Redis health check failed")
         redis_status = "failed"
 
     # Check processor
     try:
         processor_running = processor and processor.running
         processor_status = "ok" if processor_running else "stopped"
-    except Exception as e:
-        logger.error(f"Processor health check failed: {e}")
+    except Exception:
+        logger.exception("Processor health check failed")
         processor_status = "failed"
 
     overall = "ok" if db_status == "ok" and processor_status == "ok" else "degraded"
@@ -1896,7 +1896,7 @@ async def get_dead_letter_queue():
             "timestamp": datetime.now().isoformat()
         }
     except Exception as e:
-        logger.error(f"DLQ query failed: {e}")
+        logger.exception("DLQ query failed")
         return {"status": "error", "detail": str(e)}
 
 @app.get("/api/v1/queue/stats")
@@ -1909,7 +1909,7 @@ async def queue_stats():
             "queue": stats
         }
     except Exception as e:
-        logger.error(f"Queue stats error: {e}")
+        logger.exception("Queue stats error")
         return {"status": "error", "detail": str(e)}
 
 @app.get("/api/v1/queue/peek")
@@ -1927,7 +1927,7 @@ async def queue_peek(count: int = 5):
             "count": len(tasks)
         }
     except Exception as e:
-        logger.error(f"Queue peek error: {e}")
+        logger.exception("Queue peek error")
         return {"status": "error", "detail": str(e)}
 
 @app.post("/api/v1/webhooks/whatsapp")
@@ -1970,7 +1970,7 @@ async def whatsapp_webhook(request: Request):
 
         return JSONResponse({"status": "ok", "response_sent": True})
     except Exception as e:
-        logger.error(f"WhatsApp webhook error: {e}")
+        logger.exception("WhatsApp webhook error")
         return JSONResponse({"status": "error", "detail": str(e)}, status_code=500)
 
 @app.post("/api/v1/sequences/cold-email")
@@ -2008,7 +2008,7 @@ SOLO JSON, sin markdown."""
     except json.JSONDecodeError:
         raise HTTPException(status_code=500, detail="Failed to parse email sequence JSON")
     except Exception as e:
-        logger.error(f"Email sequence error: {e}")
+        logger.exception("Email sequence error")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/v1/knowledge/ingest")
@@ -2024,5 +2024,5 @@ async def ingest_knowledge(req: KnowledgeIngestRequest):
             "message": "Knowledge received. System will be enhanced in v2.",
         }
     except Exception as e:
-        logger.error(f"Knowledge ingest error: {e}")
+        logger.exception("Knowledge ingest error")
         raise HTTPException(status_code=500, detail=str(e))

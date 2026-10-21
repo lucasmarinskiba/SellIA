@@ -250,4 +250,5 @@ async def verify_payoneer_signature(
         ).hexdigest()
         return hmac.compare_digest(expected, signature_header)
     except Exception:
+        logger.exception("verify_payoneer_signature: error inesperado")
         return False

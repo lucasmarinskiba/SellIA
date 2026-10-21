@@ -34,6 +34,7 @@ def check_time_restrictions(
         from zoneinfo import ZoneInfo
         local_time = timestamp.astimezone(ZoneInfo(user_tz))
     except Exception:
+        logger.exception("check_time_restrictions: error inesperado")
         local_time = timestamp
 
     hour = local_time.hour

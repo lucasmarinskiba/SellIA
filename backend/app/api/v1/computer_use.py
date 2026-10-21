@@ -252,7 +252,7 @@ async def start_session(
                 provider = prov
                 break
             except Exception:
-                pass
+                logger.exception("start_session: error inesperado")
 
     # Fallback to global settings
     if not api_key:
@@ -307,7 +307,7 @@ async def start_session(
                 try:
                     proxy["password"] = decrypt_value(proxy_row.password_encrypted)
                 except Exception:
-                    pass
+                    logger.exception("start_session: error inesperado")
 
     # Load webhooks
     webhooks = []
@@ -322,7 +322,7 @@ async def start_session(
         for wh in wh_result.scalars().all():
             webhooks.append({"url": wh.url, "secret": wh.secret, "events": wh.events})
     except Exception:
-        pass
+        logger.exception("start_session: error inesperado")
 
     manager = ComputerUseSessionManagerV2(
         session_id=session_id,
@@ -466,7 +466,7 @@ async def computer_use_websocket(
                     if manager:
                         break
             except Exception as e:
-                logger.error(f"Auto-start failed: {e}")
+                logger.exception("Auto-start failed")
                 await websocket.send_json({"type": "error", "data": {"message": f"No se pudo iniciar: {e!s}"}})
                 await ws_manager.disconnect(str(session_id))
                 await websocket.close()
@@ -530,8 +530,8 @@ async def computer_use_websocket(
 
     except WebSocketDisconnect:
         logger.info(f"WebSocket disconnected for session {session_id}")
-    except Exception as e:
-        logger.error(f"WebSocket error for session {session_id}: {e}")
+    except Exception:
+        logger.exception(f"WebSocket error for session {session_id}")
     finally:
         await ws_manager.disconnect(str(session_id))
         logger.info(f"WebSocket closed for session {session_id}")

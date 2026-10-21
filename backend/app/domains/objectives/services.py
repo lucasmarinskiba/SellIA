@@ -139,7 +139,7 @@ class ObjectiveService:
         for kpi in kpis:
             try:
                 kpi.current_value = await self.calculate_kpi_value(kpi)
-            except Exception as e:
-                logger.error(f"KPI refresh error {kpi.slug}: {e}")
+            except Exception:
+                logger.exception(f"KPI refresh error {kpi.slug}")
         await self.db.commit()
         logger.info(f"Refreshed {len(kpis)} KPIs for business {business_id}")

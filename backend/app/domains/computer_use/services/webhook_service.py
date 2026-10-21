@@ -82,7 +82,7 @@ class WebhookService:
                             logger.warning(f"Webhook failed: {event} → {url} ({last_error})")
             except Exception as e:
                 last_error = str(e)
-                logger.warning(f"Webhook delivery error (attempt {attempt + 1}): {e}")
+                logger.warning(f"Webhook delivery error (attempt {attempt + 1}): {e}", exc_info=True)
 
             if attempt < retry_count - 1:
                 await asyncio.sleep(2 ** attempt)  # Exponential backoff

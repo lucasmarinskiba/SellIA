@@ -85,7 +85,7 @@ class BrainActivityBus:
                     detail=str(detail)[:160],
                 ))
         except Exception as exc:  # pragma: no cover - defensivo
-            logger.debug("activity record failed: %s", exc)
+            logger.debug("activity record failed: %s", exc, exc_info=True)
 
     def recent(self, limit: int = 40, since_seq: int = 0) -> list[dict[str, Any]]:
         """Eventos más recientes (opcionalmente sólo posteriores a `since_seq`)."""

@@ -1,5 +1,6 @@
 """Automations API Router"""
 
+import logging
 from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
@@ -60,6 +61,8 @@ from app.domains.automations.schemas import (
 from app.domains.automations.seed import seed_automations
 from app.domains.subscriptions.models import Subscription
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -458,6 +461,7 @@ async def seed_business_automations(
         await seed_automations(db, business_id)
         return {"message": "Automatizaciones predefinidas creadas correctamente"}
     except Exception:
+        logger.exception("seed_business_automations: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).exception("Error seeding automations")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -1283,6 +1287,7 @@ async def seed_toggles_endpoint(
             "toggles_created": 12,
         }
     except Exception as e:
+        logger.exception("seed_toggles_endpoint: error inesperado")
         raise HTTPException(
             status_code=400,
             detail=f"Error al seed toggles: {e!s}",

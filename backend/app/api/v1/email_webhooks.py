@@ -99,7 +99,7 @@ async def handle_sendgrid_webhook(request: Request) -> dict:
         return {"status": "ok", "events_processed": len(events)}
 
     except Exception as e:
-        logger.error(f"SendGrid webhook error: {e}")
+        logger.exception("SendGrid webhook error")
         raise HTTPException(status_code=500, detail=str(e))
 
 # ============================================================

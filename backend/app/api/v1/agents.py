@@ -3,6 +3,7 @@
 Endpoints para gestionar agentes expertos, conversaciones y chat.
 """
 
+import logging
 from typing import Annotated
 from uuid import UUID
 
@@ -39,6 +40,8 @@ from app.domains.businesses.models import Business
 from app.domains.subscriptions.models import UserAPIKey
 from app.domains.subscriptions.services import check_subscription_limit, track_usage
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -248,6 +251,7 @@ async def chat_with_agent(
             custom_instructions=custom_instructions,
         )
     except Exception:
+        logger.exception("chat_with_agent: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).exception("Agent execution error")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")

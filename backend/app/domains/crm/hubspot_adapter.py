@@ -88,8 +88,8 @@ class HubSpotAdapter(CRMAdapter):
             result = await self._api_call("GET", endpoint)
             return self._extract_lead_from_hubspot(result)
 
-        except Exception as e:
-            logger.error(f"HubSpot fetch_lead failed: {lead_id} - {e}")
+        except Exception:
+            logger.exception(f"HubSpot fetch_lead failed: {lead_id}")
             return None
 
     async def fetch_leads(
@@ -158,8 +158,8 @@ class HubSpotAdapter(CRMAdapter):
             logger.info(f"Fetched {len(leads)} leads from HubSpot")
             return leads
 
-        except Exception as e:
-            logger.error(f"HubSpot fetch_leads failed: {e}")
+        except Exception:
+            logger.exception("HubSpot fetch_leads failed")
             return []
 
     async def update_lead(self, lead_id: str, data: dict[str, Any]) -> bool:
@@ -183,8 +183,8 @@ class HubSpotAdapter(CRMAdapter):
             logger.info(f"Updated contact {lead_id} in HubSpot")
             return True
 
-        except Exception as e:
-            logger.error(f"HubSpot update_lead failed: {lead_id} - {e}")
+        except Exception:
+            logger.exception(f"HubSpot update_lead failed: {lead_id}")
             return False
 
     async def create_activity(
@@ -205,6 +205,6 @@ class HubSpotAdapter(CRMAdapter):
             logger.info(f"Logged activity for contact {lead_id}: {activity_type}")
             return True
 
-        except Exception as e:
-            logger.error(f"HubSpot create_activity failed: {lead_id} - {e}")
+        except Exception:
+            logger.exception(f"HubSpot create_activity failed: {lead_id}")
             return False

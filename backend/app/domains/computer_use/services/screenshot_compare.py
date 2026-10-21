@@ -85,7 +85,7 @@ class ScreenshotComparator:
             )
 
         except Exception as e:
-            logger.warning(f"Screenshot comparison failed: {e}")
+            logger.warning(f"Screenshot comparison failed: {e}", exc_info=True)
             return ComparisonResult(
                 changed=True, similarity=0.0, diff_pixels=0, total_pixels=1, diff_percentage=100.0
             )
@@ -138,7 +138,7 @@ class ScreenshotComparator:
             result = self.compare(screenshot_a, screenshot_b)
             return result.similarity
         except Exception as e:
-            logger.warning(f"SSIM comparison failed: {e}")
+            logger.warning(f"SSIM comparison failed: {e}", exc_info=True)
             return 0.0
 
     def detect_stale_state(

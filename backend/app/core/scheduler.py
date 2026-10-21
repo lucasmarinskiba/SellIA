@@ -57,8 +57,8 @@ class EmailScheduler:
             self.redis = await redis.from_url(self.redis_url, decode_responses=True)
             await self.redis.ping()
             logger.info("✅ Redis connected")
-        except Exception as e:
-            logger.error(f"❌ Redis connection failed: {e}")
+        except Exception:
+            logger.exception("❌ Redis connection failed")
             logger.warning("Continuing without Redis (in-memory fallback)")
             self.redis = None
 
@@ -115,8 +115,8 @@ class EmailScheduler:
 
             return task_id
 
-        except Exception as e:
-            logger.error(f"Queue error: {e}")
+        except Exception:
+            logger.exception("Queue error")
             return task_id
 
     async def schedule_batch_emails(
@@ -154,8 +154,8 @@ class EmailScheduler:
             logger.info(f"📨 Batch scheduled: {task_id} ({len(lead_emails)} emails)")
             return task_id
 
-        except Exception as e:
-            logger.error(f"Batch queue error: {e}")
+        except Exception:
+            logger.exception("Batch queue error")
             return task_id
 
     async def get_queue_stats(self) -> dict:
@@ -184,7 +184,7 @@ class EmailScheduler:
             }
 
         except Exception as e:
-            logger.error(f"Stats error: {e}")
+            logger.exception("Stats error")
             return {"error": str(e)}
 
     async def move_delayed_to_queue(self) -> int:
@@ -215,8 +215,8 @@ class EmailScheduler:
             logger.info(f"📨 Moved {len(tasks)} delayed tasks to queue")
             return len(tasks)
 
-        except Exception as e:
-            logger.error(f"Delayed move error: {e}")
+        except Exception:
+            logger.exception("Delayed move error")
             return 0
 
     async def peek_queue(self, count: int = 5) -> list[dict]:
@@ -227,8 +227,8 @@ class EmailScheduler:
         try:
             tasks = await self.redis.lrange(self.queue_key, 0, count - 1)
             return [json.loads(t) for t in tasks if t]
-        except Exception as e:
-            logger.error(f"Peek error: {e}")
+        except Exception:
+            logger.exception("Peek error")
             return []
 
     async def pop_task(self) -> dict | None:
@@ -244,8 +244,8 @@ class EmailScheduler:
                 await self.redis.lpush(self.processing_key, task_json)
                 return task
             return None
-        except Exception as e:
-            logger.error(f"Pop error: {e}")
+        except Exception:
+            logger.exception("Pop error")
             return None
 
     async def mark_completed(self, task: dict) -> None:
@@ -257,8 +257,8 @@ class EmailScheduler:
             task_json = json.dumps(task)
             await self.redis.lrem(self.processing_key, 1, task_json)
             logger.info(f"✅ Task completed: {task.get('workflow_execution_id')}")
-        except Exception as e:
-            logger.error(f"Mark completed error: {e}")
+        except Exception:
+            logger.exception("Mark completed error")
 
     async def mark_failed(self, task: dict, error: str, retry: bool = True) -> None:
         """Mark task as failed with exponential backoff. Move to DLQ after max_retries."""
@@ -286,8 +286,8 @@ class EmailScheduler:
 
             await self.redis.lrem(self.processing_key, 1, task_json)
 
-        except Exception as e:
-            logger.error(f"Mark failed error: {e}")
+        except Exception:
+            logger.exception("Mark failed error")
 
 # ============================================================
 # FACTORY

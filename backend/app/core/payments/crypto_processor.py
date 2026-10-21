@@ -139,7 +139,7 @@ class CryptoProcessor:
             }
 
         except Exception as e:
-            logger.error(f"Error generating address: {e!s}")
+            logger.exception("Error generating address")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -185,7 +185,7 @@ class CryptoProcessor:
                 raise ValueError(f"Unsupported blockchain: {blockchain}")
 
         except Exception as e:
-            logger.error(f"Error verifying transaction: {e!s}")
+            logger.exception("Error verifying transaction")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -273,7 +273,7 @@ class CryptoProcessor:
             }
 
         except Exception as e:
-            logger.error(f"Tron verification error: {e!s}")
+            logger.exception("Tron verification error")
             return {"status": "error", "tx_hash": tx_hash, "error": str(e)}
 
     @staticmethod
@@ -349,7 +349,7 @@ class CryptoProcessor:
             }
 
         except Exception as e:
-            logger.error(f"BSC verification error: {e!s}")
+            logger.exception("BSC verification error")
             return {"status": "error", "tx_hash": tx_hash, "error": str(e)}
 
     @staticmethod
@@ -400,7 +400,7 @@ class CryptoProcessor:
             }
 
         except Exception as e:
-            logger.error(f"Error getting exchange rate: {e!s}")
+            logger.exception("Error getting exchange rate")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -414,8 +414,8 @@ class CryptoProcessor:
             if response.status_code == 200:
                 return response.json().get("block_header", {}).get("raw_data", {}).get("number", 0)
             return 0
-        except Exception as e:
-            logger.error(f"Error getting Tron block height: {e!s}")
+        except Exception:
+            logger.exception("Error getting Tron block height")
             return 0
 
     @staticmethod
@@ -432,8 +432,8 @@ class CryptoProcessor:
             if response.status_code == 200:
                 return int(response.json().get("result", "0"), 16)
             return 0
-        except Exception as e:
-            logger.error(f"Error getting BSC block number: {e!s}")
+        except Exception:
+            logger.exception("Error getting BSC block number")
             return 0
 
 

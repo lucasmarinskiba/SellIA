@@ -1,5 +1,6 @@
 """CRM API Router"""
 
+import logging
 from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
@@ -24,6 +25,8 @@ from app.domains.crm.schemas import (
     PipelineUpdate,
 )
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/crm", tags=["crm"])
 
@@ -184,6 +187,7 @@ DESCRIPTION: <deal description>"""
                     if desc_match and not data.description:
                         deal_data["description"] = desc_match
         except Exception as e:
+            logger.exception("create_deal: error inesperado")
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Deal AI generation error: {e}")
 
@@ -248,6 +252,7 @@ Genera UNA SOLA ORACIÓN que explique por qué se cerró este deal. Sé objetivo
             deal.close_reason = ai_response.strip()
             await db.commit()
     except Exception as e:
+        logger.exception("_generate_close_reason_if_missing: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Close reason generation error: {e}")
 
@@ -318,6 +323,7 @@ async def move_deal(
             await generate_deal_proposal(db, deal, deal.business_id)
             await db.refresh(deal)
         except Exception as e:
+            logger.exception("move_deal: error inesperado")
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Auto-proposal generation error: {e}")
 

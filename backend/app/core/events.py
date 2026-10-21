@@ -6,6 +6,7 @@ mediante eventos sin acoplamiento directo.
 
 import asyncio
 import json
+import logging
 from collections.abc import Callable, Coroutine
 from datetime import UTC, datetime
 from typing import Any, Optional
@@ -13,6 +14,8 @@ from typing import Any, Optional
 import redis.asyncio as redis
 
 from app.core.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -111,9 +114,11 @@ class EventBus:
                         try:
                             asyncio.create_task(handler(payload))
                         except Exception as e:
+                            logger.exception("_listen_loop: error inesperado")
                             from app.core.logger import get_logger
                             get_logger(__name__).error(f"Handler error for {event_type}: {e}")
                 except Exception as e:
+                    logger.exception("_listen_loop: error inesperado")
                     from app.core.logger import get_logger
                     get_logger(__name__).error(f"Message parse error: {e}")
 
@@ -126,6 +131,7 @@ class EventBus:
             try:
                 asyncio.create_task(handler(payload))
             except Exception as e:
+                logger.exception("emit: error inesperado")
                 from app.core.logger import get_logger
                 get_logger(__name__).error(f"Local handler error for {event_type}: {e}")
 

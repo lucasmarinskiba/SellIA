@@ -456,7 +456,7 @@ class SelliasNeuralBrain:
             }
 
         except Exception as e:
-            logger.error(f"Error in continuous learning: {e}")
+            logger.exception("Error in continuous learning")
             return {"update_success": False, "error": str(e)}
 
     def get_brain_status(self) -> dict[str, Any]:

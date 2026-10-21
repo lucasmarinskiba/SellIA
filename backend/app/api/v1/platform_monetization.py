@@ -1,6 +1,7 @@
 """Phase 32 Platform Monetization API (8 endpoints)."""
 
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -13,6 +14,8 @@ from app.domains.enterprise.platform_monetization import (
     UpgradeTriggerEngine,
     UserSegmentationEngine,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/monetization", tags=["monetization"])
 
@@ -71,6 +74,7 @@ def classify_user_segment(
             reasoning=classification.reasoning,
         )
     except Exception as e:
+        logger.exception("classify_user_segment: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -105,6 +109,7 @@ def get_upgrade_trigger(
             expected_conversion=trigger["expected_conversion"],
         )
     except Exception as e:
+        logger.exception("get_upgrade_trigger: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -119,6 +124,7 @@ def send_upgrade_trigger(
         result = trigger_engine.send_trigger(user_id, {"urgency_message": "Premium unlocked"})
         return result
     except Exception as e:
+        logger.exception("send_upgrade_trigger: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -137,6 +143,7 @@ def track_conversion(
             "timestamp": "2027-05-12T10:30:00Z",
         }
     except Exception as e:
+        logger.exception("track_conversion: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -154,6 +161,7 @@ def list_active_tests(
             ]
         }
     except Exception as e:
+        logger.exception("list_active_tests: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -172,6 +180,7 @@ def get_conversion_funnel(
 
         return {"segment": segment, "funnel": funnel}
     except Exception as e:
+        logger.exception("get_conversion_funnel: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -186,6 +195,7 @@ def forecast_revenue(
 
         return forecast
     except Exception as e:
+        logger.exception("forecast_revenue: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -205,4 +215,5 @@ def get_segment_profitability(
             ]
         }
     except Exception as e:
+        logger.exception("get_segment_profitability: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

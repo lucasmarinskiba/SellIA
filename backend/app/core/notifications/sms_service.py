@@ -293,7 +293,7 @@ class SMSService:
                 return await self._send_sns(message)
 
         except Exception as e:
-            logger.error(f"Failed to send SMS: {e!s}")
+            logger.exception("Failed to send SMS")
             return {"status": "error", "error": str(e)}
 
     async def _send_twilio(self, message: SMSMessage) -> dict[str, Any]:
@@ -315,7 +315,7 @@ class SMSService:
             }
 
         except Exception as e:
-            logger.error(f"Twilio error: {e!s}")
+            logger.exception("Twilio error")
             return {"status": "error", "error": str(e)}
 
     async def _send_sns(self, message: SMSMessage) -> dict[str, Any]:
@@ -346,7 +346,7 @@ class SMSService:
             }
 
         except Exception as e:
-            logger.error(f"AWS SNS error: {e!s}")
+            logger.exception("AWS SNS error")
             return {"status": "error", "error": str(e)}
 
     def _shorten_url(self, url: str) -> str:

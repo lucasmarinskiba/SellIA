@@ -108,7 +108,7 @@ class ConversionTracker:
             return True, checkout_url
 
         except Exception as e:
-            logger.error(f"Error creating payment: {e}")
+            logger.exception("Error creating payment")
             await self._log_error(
                 user_id=user_id,
                 action="payment_checkout_failed",
@@ -124,8 +124,8 @@ class ConversionTracker:
 
         try:
             return await self.stripe_connector.get_payment_status(session_id)
-        except Exception as e:
-            logger.error(f"Error checking payment status: {e}")
+        except Exception:
+            logger.exception("Error checking payment status")
             return {}
 
     async def handle_payment_webhook(
@@ -168,8 +168,8 @@ class ConversionTracker:
 
             await self.audit_service.log(log_entry)
 
-        except Exception as e:
-            logger.error(f"Error handling payment webhook: {e}")
+        except Exception:
+            logger.exception("Error handling payment webhook")
 
     async def _log_error(
         self,
@@ -191,8 +191,8 @@ class ConversionTracker:
 
             await self.audit_service.log(log_entry)
 
-        except Exception as e:
-            logger.error(f"Error logging error: {e}")
+        except Exception:
+            logger.exception("Error logging error")
 
 
 def get_conversion_tracker(db: AsyncSession) -> ConversionTracker:

@@ -51,8 +51,8 @@ class InstagramConnector:
 
             return True, message_id
 
-        except Exception as e:
-            logger.error(f"Error sending Instagram message: {e}")
+        except Exception:
+            logger.exception("Error sending Instagram message")
             return False, None
 
     async def send_media_message(
@@ -82,8 +82,8 @@ class InstagramConnector:
 
             return True, message_id
 
-        except Exception as e:
-            logger.error(f"Error sending Instagram media: {e}")
+        except Exception:
+            logger.exception("Error sending Instagram media")
             return False, None
 
     async def close(self):

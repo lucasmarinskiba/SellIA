@@ -60,7 +60,7 @@ class MusicService:
                 audio_bytes = await self._call_suno(prompt, genre, duration)
                 provider = "suno"
             except Exception as e:
-                logger.warning(f"Suno generation failed: {e}")
+                logger.warning(f"Suno generation failed: {e}", exc_info=True)
 
         # Fallback: Mureka API
         if not audio_bytes and settings.MUREKA_API_KEY:
@@ -68,7 +68,7 @@ class MusicService:
                 audio_bytes = await self._call_mureka(prompt, genre, duration)
                 provider = "mureka"
             except Exception as e:
-                logger.warning(f"Mureka generation failed: {e}")
+                logger.warning(f"Mureka generation failed: {e}", exc_info=True)
 
         # Development fallback: create a small dummy file
         if not audio_bytes:

@@ -151,8 +151,8 @@ class RedisCache:
             except (json.JSONDecodeError, TypeError):
                 return value
 
-        except Exception as e:
-            logger.error(f"Redis get error for key {key}: {e}")
+        except Exception:
+            logger.exception(f"Redis get error for key {key}")
             return None
 
     async def set(self, key: str, value: Any, ttl_seconds: int = 3600) -> None:
@@ -166,15 +166,15 @@ class RedisCache:
 
             await self.redis.setex(key, ttl_seconds, serialized)
 
-        except Exception as e:
-            logger.error(f"Redis set error for key {key}: {e}")
+        except Exception:
+            logger.exception(f"Redis set error for key {key}")
 
     async def delete(self, key: str) -> None:
         """Delete entry from Redis cache."""
         try:
             await self.redis.delete(key)
-        except Exception as e:
-            logger.error(f"Redis delete error for key {key}: {e}")
+        except Exception:
+            logger.exception(f"Redis delete error for key {key}")
 
     async def clear(self) -> int:
         """Clear Redis cache (all keys with app prefix)."""
@@ -184,8 +184,8 @@ class RedisCache:
             if keys:
                 await self.redis.delete(*keys)
             return len(keys)
-        except Exception as e:
-            logger.error(f"Redis clear error: {e}")
+        except Exception:
+            logger.exception("Redis clear error")
             return 0
 
     def get_stats(self) -> dict[str, Any]:

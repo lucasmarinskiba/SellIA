@@ -101,7 +101,7 @@ async def create_review(
         }
 
     except Exception as e:
-        logger.error(f"Error creando reseña: {e!s}")
+        logger.exception("Error creando reseña")
         raise HTTPException(status_code=500, detail=str(e))
 
 

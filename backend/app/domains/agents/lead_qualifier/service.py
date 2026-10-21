@@ -107,7 +107,7 @@ async def qualify_lead(
                 else:
                     bant[dim] = int(val)
         except Exception as e:
-            logger.warning(f"Failed to parse BANT JSON: {e}")
+            logger.warning(f"Failed to parse BANT JSON: {e}", exc_info=True)
 
     bant_score = BANTScore(**bant)
     qualification_score = sum(

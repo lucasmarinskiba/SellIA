@@ -63,8 +63,8 @@ class WhatsAppConnector:
         except httpx.HTTPError as e:
             logger.error(f"WhatsApp API error: {e}")
             return False, None
-        except Exception as e:
-            logger.error(f"Error sending WhatsApp message: {e}")
+        except Exception:
+            logger.exception("Error sending WhatsApp message")
             return False, None
 
     async def send_template_message(
@@ -112,8 +112,8 @@ class WhatsAppConnector:
         except httpx.HTTPError as e:
             logger.error(f"WhatsApp API error: {e}")
             return False, None
-        except Exception as e:
-            logger.error(f"Error sending template: {e}")
+        except Exception:
+            logger.exception("Error sending template")
             return False, None
 
     async def send_media_message(
@@ -160,8 +160,8 @@ class WhatsAppConnector:
         except httpx.HTTPError as e:
             logger.error(f"WhatsApp API error: {e}")
             return False, None
-        except Exception as e:
-            logger.error(f"Error sending media: {e}")
+        except Exception:
+            logger.exception("Error sending media")
             return False, None
 
     async def mark_message_read(self, message_id: str) -> bool:
@@ -178,8 +178,8 @@ class WhatsAppConnector:
 
             return True
 
-        except Exception as e:
-            logger.error(f"Error marking message as read: {e}")
+        except Exception:
+            logger.exception("Error marking message as read")
             return False
 
     async def close(self):

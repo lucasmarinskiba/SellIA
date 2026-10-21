@@ -143,8 +143,8 @@ class PerformanceBudget:
         if self._on_alert:
             try:
                 self._on_alert(alert)
-            except Exception as e:
-                logger.error(f"Alert handler error: {e}")
+            except Exception:
+                logger.exception("Alert handler error")
 
     def get_summary(self) -> dict[str, Any]:
         """Retorna resumen del performance budget."""

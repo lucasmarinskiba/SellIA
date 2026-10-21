@@ -5,11 +5,14 @@ realmente en el sistema, no solo sugerir. Cada acción es una función async
 que recibe parámetros del orchestrator y ejecuta operaciones reales.
 """
 
+import logging
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.agents.services import AgentService
+
+logger = logging.getLogger(__name__)
 
 
 class SellIAActionExecutor:
@@ -46,6 +49,7 @@ class SellIAActionExecutor:
             result = await executor(parameters)
             return {"success": True, **result}
         except Exception as e:
+            logger.exception("execute: error inesperado")
             return {"success": False, "error": str(e)[:200]}
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -349,6 +353,7 @@ class SellIAActionExecutor:
                 ],
             }
         except Exception:
+            logger.exception("_system_health: error inesperado")
             return {
                 "message": "🟡 Sistema autónomo iniciando — datos completos disponibles en breve.",
                 "health_score": 75,
@@ -423,8 +428,8 @@ class SellIAActionExecutor:
             if "d" in delay:
                 try:
                     total_days += int(delay.replace("d", "").replace("immediately", "0"))
-                except:
-                    pass
+                except Exception:
+                    logger.exception("_calculate_sequence_duration: error inesperado")
         return f"{total_days} días"
 
     async def _setup_automation(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -662,4 +667,5 @@ class SellIAActionExecutor:
                 ],
             }
         except Exception as e:
+            logger.exception("_computer_use: error inesperado")
             return {"success": False, "error": str(e)[:200]}

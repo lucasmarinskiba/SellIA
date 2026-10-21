@@ -186,7 +186,7 @@ class MercadoPagoProcessor:
             logger.error(f"MercadoPago API error: {e!s}")
             return {"status": "error", "error": str(e)}
         except Exception as e:
-            logger.error(f"Error creating preference: {e!s}")
+            logger.exception("Error creating preference")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -241,7 +241,7 @@ class MercadoPagoProcessor:
             }
 
         except Exception as e:
-            logger.error(f"Error retrieving payment: {e!s}")
+            logger.exception("Error retrieving payment")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -301,7 +301,7 @@ class MercadoPagoProcessor:
             }
 
         except Exception as e:
-            logger.error(f"Error refunding payment: {e!s}")
+            logger.exception("Error refunding payment")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -370,7 +370,7 @@ class MercadoPagoProcessor:
             }
 
         except Exception as e:
-            logger.error(f"Error creating payment link: {e!s}")
+            logger.exception("Error creating payment link")
             return {"status": "error", "error": str(e)}
 
 
@@ -403,8 +403,8 @@ class MercadoPagoWebhookHandler:
 
             return signature == calculated_signature
 
-        except Exception as e:
-            logger.error(f"Signature verification error: {e!s}")
+        except Exception:
+            logger.exception("Signature verification error")
             return False
 
     @staticmethod
@@ -440,7 +440,7 @@ class MercadoPagoWebhookHandler:
                 return {"status": "acknowledged", "type": event_type}
 
         except Exception as e:
-            logger.error(f"Error handling webhook: {e!s}")
+            logger.exception("Error handling webhook")
             return {"status": "error", "error": str(e)}
 
     @staticmethod

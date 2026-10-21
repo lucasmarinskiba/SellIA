@@ -1,5 +1,6 @@
 """Feedback Hub API router."""
 
+import logging
 import uuid
 from typing import Annotated
 
@@ -22,6 +23,8 @@ from app.domains.feedback.schemas import (
 )
 from app.domains.feedback.service import FeedbackService
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/feedback", tags=["feedback"])
 
@@ -65,7 +68,7 @@ async def create_feedback(
         await svc.db.commit()
         await svc.db.refresh(feedback)
     except Exception:
-        pass
+        logger.exception("create_feedback: error inesperado")
 
     return feedback
 

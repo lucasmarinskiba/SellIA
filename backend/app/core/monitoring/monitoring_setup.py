@@ -59,8 +59,8 @@ def track_metric(metric_name: str, value: float, tags: list = None):
             tags=tags or [],
         )
 
-    except Exception as e:
-        logger.error(f"Datadog metric failed: {e!s}")
+    except Exception:
+        logger.exception("Datadog metric failed")
 
 
 # ========== SENTRY SETUP ==========
@@ -105,8 +105,8 @@ def track_exception(exc: Exception, extra: dict = None):
                 for key, value in extra.items():
                     scope.set_extra(key, value)
 
-    except Exception as e:
-        logger.error(f"Sentry tracking failed: {e!s}")
+    except Exception:
+        logger.exception("Sentry tracking failed")
 
 
 # ========== PERFORMANCE MONITORING ==========
@@ -251,8 +251,8 @@ class AlertManager:
             import httpx
             try:
                 await httpx.AsyncClient().post(self.slack_webhook, json=payload)
-            except Exception as e:
-                logger.error(f"Slack alert failed: {e!s}")
+            except Exception:
+                logger.exception("Slack alert failed")
 
         # PagerDuty (si critical)
         if level == "critical" and self.pagerduty_token:
@@ -280,8 +280,8 @@ class AlertManager:
                 "https://events.pagerduty.com/v2/enqueue",
                 json=payload,
             )
-        except Exception as e:
-            logger.error(f"PagerDuty trigger failed: {e!s}")
+        except Exception:
+            logger.exception("PagerDuty trigger failed")
 
 
 # ========== HEALTH CHECK ==========
@@ -298,8 +298,8 @@ async def health_check_database() -> bool:
             await db.execute(text("SELECT 1"))
         return True
 
-    except Exception as e:
-        logger.error(f"Database health check failed: {e!s}")
+    except Exception:
+        logger.exception("Database health check failed")
         return False
 
 
@@ -311,8 +311,8 @@ async def health_check_stripe() -> bool:
         stripe.Account.retrieve()
         return True
 
-    except Exception as e:
-        logger.error(f"Stripe health check failed: {e!s}")
+    except Exception:
+        logger.exception("Stripe health check failed")
         return False
 
 
@@ -325,8 +325,8 @@ async def health_check_mercadolibre() -> bool:
             resp = await client.get("https://api.mercadolibre.com/sites/MLA")
             return resp.status_code == 200
 
-    except Exception as e:
-        logger.error(f"ML health check failed: {e!s}")
+    except Exception:
+        logger.exception("ML health check failed")
         return False
 
 

@@ -135,7 +135,7 @@ class PayoutManager:
             }
 
         except Exception as e:
-            logger.error(f"Error calculating payout: {e!s}")
+            logger.exception("Error calculating payout")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -221,7 +221,7 @@ class PayoutManager:
             }
 
         except Exception as e:
-            logger.error(f"Error creating payout: {e!s}")
+            logger.exception("Error creating payout")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -266,7 +266,7 @@ class PayoutManager:
             }
 
         except Exception as e:
-            logger.error(f"Error processing payout: {e!s}")
+            logger.exception("Error processing payout")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -314,7 +314,7 @@ class PayoutManager:
             }
 
         except Exception as e:
-            logger.error(f"Error getting payout history: {e!s}")
+            logger.exception("Error getting payout history")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -361,7 +361,7 @@ class PayoutManager:
             }
 
         except Exception as e:
-            logger.error(f"Error batch processing payouts: {e!s}")
+            logger.exception("Error batch processing payouts")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -404,5 +404,5 @@ class PayoutManager:
             }
 
         except Exception as e:
-            logger.error(f"Error estimating payout: {e!s}")
+            logger.exception("Error estimating payout")
             return {"status": "error", "error": str(e)}

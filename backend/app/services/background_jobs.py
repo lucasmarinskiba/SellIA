@@ -152,7 +152,7 @@ class BackgroundJobQueue:
             return True
 
         except Exception as e:
-            logger.error(f"Job {job.id} failed: {e!s}")
+            logger.exception(f"Job {job.id} failed")
             self._handle_retry(job, str(e))
             return False
 

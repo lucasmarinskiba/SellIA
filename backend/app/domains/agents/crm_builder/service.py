@@ -102,8 +102,8 @@ class CRMBuilderService:
                 status=CRMBuildStatus.COMPLETED,
                 code_url=relative_url,
             )
-        except Exception as e:
-            logger.exception(f"CRMBuilder generation failed for job {job.id}: {e}")
+        except Exception:
+            logger.exception(f"CRMBuilder generation failed for job {job.id}")
             await self.update_job(job.id, status=CRMBuildStatus.FAILED)
 
         return await self.get_job(job.id)

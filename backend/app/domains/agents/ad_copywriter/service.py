@@ -94,7 +94,7 @@ class AdCopywriterService:
                     json_str = json_str.split("```")[1].split("```")[0]
                 return json.loads(json_str.strip())
             except Exception as e:
-                logger.warning(f"Failed to parse audience JSON: {e}")
+                logger.warning(f"Failed to parse audience JSON: {e}", exc_info=True)
         return {
             "age_range": "25-45",
             "gender": "all",
@@ -169,7 +169,7 @@ class AdCopywriterService:
                         )
                     )
             except Exception as e:
-                logger.warning(f"Failed to parse variants JSON: {e}")
+                logger.warning(f"Failed to parse variants JSON: {e}", exc_info=True)
 
         if not variants:
             for i in range(1, 6):

@@ -316,6 +316,7 @@ class LeadScoringService:
                 return 0.0
 
         except Exception:
+            logger.exception("_calculate_recency_score: error inesperado")
             return 5.0
 
     def _estimate_days_span(self, timestamps: list[str]) -> int:
@@ -328,6 +329,7 @@ class LeadScoringService:
             last_date = datetime.fromisoformat(timestamps[-1])
             return (last_date - first_date).days
         except Exception:
+            logger.exception("_estimate_days_span: error inesperado")
             return 0
 
     async def get_leads_by_temperature(

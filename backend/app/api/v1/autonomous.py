@@ -119,8 +119,8 @@ class StrategySelector:
 
             return strategy
 
-        except Exception as e:
-            logger.error(f"Error generando estrategia: {e!s}")
+        except Exception:
+            logger.exception("Error generando estrategia")
             # Fallback a estrategia genérica
             return {"segment": "growth", "recommended_channels": {"primary": "email"}}
 
@@ -296,8 +296,8 @@ async def webhook_whatsapp(
                 background_tasks.add_task(process_autonomous_event, event)
                 messages_processed += 1
 
-            except Exception as msg_error:
-                logger.error(f"Error procesando mensaje individual: {msg_error!s}")
+            except Exception:
+                logger.exception("Error procesando mensaje individual")
                 messages_rejected += 1
                 # Continuar con siguiente mensaje, no fallar
 
@@ -350,7 +350,7 @@ async def webhook_instagram(
         return {"status": "received", "dms_count": len(dms)}
 
     except Exception as e:
-        logger.error(f"Error en webhook Instagram: {e!s}")
+        logger.exception("Error en webhook Instagram")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -419,9 +419,9 @@ async def process_autonomous_event(event: AutonomousEvent):
             )
             health_tracker.record_success(agent_id)
 
-        except Exception as agent_error:
+        except Exception:
             # Falla la ejecución: degrade a fallback ultra básico
-            logger.error(f"[{account_id}] Agente falló: {agent_error!s}")
+            logger.exception(f"[{account_id}] Agente falló")
             health_tracker.record_failure(agent_id)
             response = SalesResponse(
                 contact_id=event.contact_id,
@@ -438,8 +438,8 @@ async def process_autonomous_event(event: AutonomousEvent):
         try:
             # TODO: send_by_channel(channel, event.contact_phone, response.message)
             logger.info(f"[{account_id}] Respuesta enviada por {channel}: {response.message[:100]}...")
-        except Exception as send_error:
-            logger.error(f"[{account_id}] Error enviando respuesta por {channel}: {send_error!s}")
+        except Exception:
+            logger.exception(f"[{account_id}] Error enviando respuesta por {channel}")
             # No hacer falla aquí: respuesta ya se preparó, si falla envío es problema de canal, no de agente
             EventLogger.log_event(event, response, result="prepared_not_sent")
             return
@@ -653,7 +653,7 @@ async def smart_follow_up_schedule(
         }
 
     except Exception as e:
-        logger.error(f"Error en smart scheduling: {e!s}")
+        logger.exception("Error en smart scheduling")
         return {"status": "error", "detail": str(e)}
 
 
@@ -697,5 +697,5 @@ async def ab_test_variants(
         }
 
     except Exception as e:
-        logger.error(f"Error en A/B test: {e!s}")
+        logger.exception("Error en A/B test")
         return {"status": "error", "detail": str(e)}

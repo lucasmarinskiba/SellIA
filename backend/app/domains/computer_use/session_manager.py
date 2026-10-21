@@ -99,7 +99,7 @@ class ComputerUseSessionManager:
         try:
             await ws_manager.send_message(self.session_id, message)
         except Exception as e:
-            logger.warning(f"WS send failed for session {self.session_id}: {e}")
+            logger.warning(f"WS send failed for session {self.session_id}: {e}", exc_info=True)
 
     async def start(self) -> None:
         """Inicia la sesión de computer use."""
@@ -114,7 +114,7 @@ class ComputerUseSessionManager:
                 provider = await self.vision._get_provider()
                 self._provider_name = getattr(provider, "provider_name", "unknown")
             except Exception:
-                pass
+                logger.exception("start: error inesperado")
 
             # Metrics
             COMPUTER_USE_SESSIONS_CREATED.labels(provider=self._provider_name).inc()
@@ -175,6 +175,7 @@ class ComputerUseSessionManager:
                 try:
                     screenshot_bytes = await self.browser.screenshot()
                 except Exception as e:
+                    logger.exception("_run_loop: error inesperado")
                     await self._fail(f"Screenshot error: {e}")
                     return
 
@@ -308,6 +309,7 @@ class ComputerUseSessionManager:
             else:
                 result = {"success": False, "error": f"Acción no soportada: {action.action_type}"}
         except Exception as e:
+            logger.exception("_execute_action: error inesperado")
             result = {"success": False, "error": str(e)}
 
         return "success" if result.get("success") else result.get("error", "Error desconocido")
@@ -391,7 +393,7 @@ class ComputerUseSessionManager:
         try:
             await self.browser.stop()
         except Exception as e:
-            logger.warning(f"Browser cleanup error: {e}")
+            logger.warning(f"Browser cleanup error: {e}", exc_info=True)
 
     async def send_chat_message(self, message: str) -> None:
         """Recibe un mensaje de chat del usuario."""
@@ -423,8 +425,8 @@ class ComputerUseSessionManager:
                 if status == "running" and not session.started_at:
                     session.started_at = datetime.now(UTC)
                 await self.db.commit()
-        except Exception as e:
-            logger.error(f"DB update error: {e}")
+        except Exception:
+            logger.exception("DB update error")
 
     async def _update_session_progress(self, current_url: str | None) -> None:
         try:
@@ -438,8 +440,8 @@ class ComputerUseSessionManager:
                 if current_url:
                     session.current_url = current_url
                 await self.db.commit()
-        except Exception as e:
-            logger.error(f"DB progress update error: {e}")
+        except Exception:
+            logger.exception("DB progress update error")
 
     async def _save_step(
         self,
@@ -461,8 +463,8 @@ class ComputerUseSessionManager:
             )
             self.db.add(step)
             await self.db.commit()
-        except Exception as e:
-            logger.error(f"DB save step error: {e}")
+        except Exception:
+            logger.exception("DB save step error")
             await self.db.rollback()
 
     async def _update_step_result(self, step_number: int, execution_result: str) -> None:
@@ -478,8 +480,8 @@ class ComputerUseSessionManager:
             if step:
                 step.execution_result = execution_result
                 await self.db.commit()
-        except Exception as e:
-            logger.error(f"DB update step error: {e}")
+        except Exception:
+            logger.exception("DB update step error")
 
     async def _save_message(self, role: str, content: str) -> None:
         try:
@@ -490,6 +492,6 @@ class ComputerUseSessionManager:
             )
             self.db.add(msg)
             await self.db.commit()
-        except Exception as e:
-            logger.error(f"DB save message error: {e}")
+        except Exception:
+            logger.exception("DB save message error")
             await self.db.rollback()

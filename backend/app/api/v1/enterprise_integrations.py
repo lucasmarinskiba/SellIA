@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from typing import Annotated
 
@@ -9,6 +10,8 @@ from app.domains.enterprise.integrations import (
     Platform,
     PlatformCredentials,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["integrations"])
 integration_manager = IntegrationManager()
@@ -48,6 +51,7 @@ async def connect_platform(
     except ValueError:
         return {"status": "error", "message": f"Invalid platform: {platform}"}
     except Exception as e:
+        logger.exception("connect_platform: error inesperado")
         return {"status": "error", "message": str(e)}
 
 
@@ -203,6 +207,7 @@ async def send_message(
     except ValueError:
         return {"status": "error", "message": f"Invalid platform: {platform}"}
     except Exception as e:
+        logger.exception("send_message: error inesperado")
         return {"status": "error", "message": str(e)}
 
 
@@ -236,4 +241,5 @@ async def receive_webhook(
     except ValueError:
         return {"status": "error", "message": f"Invalid platform: {platform}"}
     except Exception as e:
+        logger.exception("receive_webhook: error inesperado")
         return {"status": "error", "message": str(e)}

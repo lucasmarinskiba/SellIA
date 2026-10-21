@@ -5,6 +5,7 @@ Genera respuestas automáticas para tickets de soporte basándose en FAQ y Knowl
 Si la confianza es baja, sugiere escalar a humano.
 """
 
+import logging
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +13,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domains.agents.ai_reply import generate_raw_ai_response
 from app.domains.support.kb_search import search_kb_and_faq
 from app.domains.support.service import SupportService
+
+logger = logging.getLogger(__name__)
 
 CONFIDENCE_THRESHOLD = 0.75
 MAX_AI_MESSAGES_BEFORE_ESCALATE = 2
@@ -104,10 +107,12 @@ Provide a helpful response. If you cannot help, respond with exactly "ESCALATE".
                     # Store as draft suggestion but don't send to user
                     return None, confidence
             except Exception:
-                pass  # If quality gate fails, proceed normally
+                logger.exception("generate_ai_response: error inesperado")
+                # If quality gate fails, proceed normally
 
         return response.strip(), confidence
     except Exception:
+        logger.exception("generate_ai_response: error inesperado")
         return None, 0.0
 
 

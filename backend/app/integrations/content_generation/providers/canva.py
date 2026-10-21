@@ -5,9 +5,13 @@ Strengths: Templates, brand kits, social graphics, quick designs
 """
 
 
+import logging
+
 from app.core.config import get_settings
 
 from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -67,4 +71,5 @@ class CanvaProvider(BaseProvider):
             )
 
         except Exception as e:
+            logger.exception("generate: error inesperado")
             return GenerationResult(success=False, error_message=str(e))

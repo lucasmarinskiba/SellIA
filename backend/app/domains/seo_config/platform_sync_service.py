@@ -87,7 +87,7 @@ class PlatformListingSyncService:
             return connector
 
         except Exception as e:
-            logger.error(f"Error getting connector for {platform_name}: {str(e)[:200]}")
+            logger.exception(f"Error getting connector for {platform_name}: {str(e)[:200]}")
             return None
 
     async def sync_fomo_to_listing(
@@ -157,7 +157,7 @@ class PlatformListingSyncService:
         except Exception as e:
             sync_log.status = "failed"
             sync_log.error_message = str(e)[:200]
-            logger.error(f"Sync failed for link {link.id}: {str(e)[:200]}")
+            logger.exception(f"Sync failed for link {link.id}: {str(e)[:200]}")
 
         self.db.add(sync_log)
         await self.db.commit()

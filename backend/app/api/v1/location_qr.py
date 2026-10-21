@@ -1,10 +1,13 @@
 """QR code generation endpoints."""
 
+import logging
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
 
 from app.domains.locations.qr_generator import LocationQRGenerator
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="", tags=["location-qr"])
 
@@ -28,6 +31,7 @@ async def get_location_qr_codes(location_id: UUID) -> dict:
             }
         }
     except Exception as e:
+        logger.exception("get_location_qr_codes: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -45,6 +49,7 @@ async def get_single_qr(
         result = LocationQRGenerator.generate_checkin_qr(location_id, None, qr_type)
         return result
     except Exception as e:
+        logger.exception("get_single_qr: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -57,4 +62,5 @@ async def parse_qr(payload: str) -> dict:
             raise HTTPException(status_code=400, detail=result.get("error", "Invalid QR"))
         return result
     except Exception as e:
+        logger.exception("parse_qr: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

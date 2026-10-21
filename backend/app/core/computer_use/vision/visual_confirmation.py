@@ -225,8 +225,8 @@ Responde SOLO con JSON:
 
             return data.get("errors", [])
 
-        except Exception as e:
-            logger.error(f"Error detection failed: {e}")
+        except Exception:
+            logger.exception("Error detection failed")
             return []
 
     async def detect_success_state(
@@ -281,8 +281,8 @@ Responde SOLO: {"has_success": true|false, "message": "...", "confidence": 0.95}
 
             return data.get("has_success", False)
 
-        except Exception as e:
-            logger.error(f"Success detection failed: {e}")
+        except Exception:
+            logger.exception("Success detection failed")
             return False
 
     async def detect_loading_state(
@@ -336,8 +336,8 @@ Responde SOLO: {"is_loading": true|false, "type": "spinner|progress|text|overlay
 
             return data.get("is_loading", False)
 
-        except Exception as e:
-            logger.error(f"Loading state detection failed: {e}")
+        except Exception:
+            logger.exception("Loading state detection failed")
             return False
 
     async def detect_modal_popup(
@@ -396,8 +396,8 @@ Responde SOLO: {
             response_text = response.content[0].text
             return json.loads(response_text)
 
-        except Exception as e:
-            logger.error(f"Modal detection failed: {e}")
+        except Exception:
+            logger.exception("Modal detection failed")
             return {"has_modal": False}
 
     async def detect_form_validation_errors(
@@ -457,8 +457,8 @@ Responde SOLO: {
             response_text = response.content[0].text
             return json.loads(response_text)
 
-        except Exception as e:
-            logger.error(f"Form validation detection failed: {e}")
+        except Exception:
+            logger.exception("Form validation detection failed")
             return {"has_validation_errors": False}
 
     def _parse_confirmation_response(self, data: dict[str, Any]) -> Confirmation:

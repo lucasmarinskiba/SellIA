@@ -212,8 +212,8 @@ class TenantContextMiddleware:
                 status_code=e.status_code,
                 content={"detail": e.message},
             )
-        except Exception as e:
-            logger.error(f"Tenant context middleware error: {e}")
+        except Exception:
+            logger.exception("Tenant context middleware error")
             from fastapi.responses import JSONResponse
             return JSONResponse(
                 status_code=500,

@@ -1,5 +1,6 @@
 """Location inventory API endpoints."""
 
+import logging
 from typing import Annotated
 from uuid import UUID
 
@@ -17,6 +18,8 @@ from app.domains.inventory.inventory_service import (
     LocationInventoryService,
 )
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="", tags=["inventory"])
 
@@ -97,6 +100,7 @@ async def get_location_inventory(
             "inventory": items
         }
     except Exception as e:
+        logger.exception("get_location_inventory: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -133,6 +137,7 @@ async def get_product_stock(
     except HTTPException:
         raise
     except Exception as e:
+        logger.exception("get_product_stock: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -158,6 +163,7 @@ async def update_stock(
         )
         return result
     except Exception as e:
+        logger.exception("update_stock: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -183,6 +189,7 @@ async def check_demo_stock(
         )
         return result
     except Exception as e:
+        logger.exception("check_demo_stock: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -228,6 +235,7 @@ async def get_stock_history(
             "movements": history
         }
     except Exception as e:
+        logger.exception("get_stock_history: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -272,6 +280,7 @@ async def get_low_stock_alerts(
             "alerts": alert_list
         }
     except Exception as e:
+        logger.exception("get_low_stock_alerts: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -296,6 +305,7 @@ async def acknowledge_alert(
         )
         return result
     except Exception as e:
+        logger.exception("acknowledge_alert: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -326,6 +336,7 @@ async def find_fulfillment_location(
 
         return result
     except Exception as e:
+        logger.exception("find_fulfillment_location: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -349,6 +360,7 @@ async def reserve_inventory(
         )
         return result
     except Exception as e:
+        logger.exception("reserve_inventory: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -373,4 +385,5 @@ async def mark_order_shipped(
         )
         return result
     except Exception as e:
+        logger.exception("mark_order_shipped: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

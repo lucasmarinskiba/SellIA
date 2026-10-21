@@ -40,8 +40,8 @@ def competitive_intelligence_scanner():
                     scrape_res = await engine.scrape_competitor(monitor.id)
                     if scrape_res.get("status") == "ok":
                         scraped += 1
-                except Exception as e:
-                    logger.error(f"Error scrapeando {monitor.competitor_name}: {e}")
+                except Exception:
+                    logger.exception(f"Error scrapeando {monitor.competitor_name}")
                     continue
 
             # Detectar cambios por negocio
@@ -54,10 +54,10 @@ def competitive_intelligence_scanner():
                         try:
                             await engine.create_alert(business_id, change)
                             alerts_created += 1
-                        except Exception as e:
-                            logger.error(f"Error creando alerta para {business_id}: {e}")
-                except Exception as e:
-                    logger.error(f"Error detectando cambios para {business_id}: {e}")
+                        except Exception:
+                            logger.exception(f"Error creando alerta para {business_id}")
+                except Exception:
+                    logger.exception(f"Error detectando cambios para {business_id}")
 
             logger.info(
                 f"[Inteligencia Competitiva] monitores={len(monitors)}, "

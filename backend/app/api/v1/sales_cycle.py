@@ -99,7 +99,7 @@ async def start_sales_cycle(
         }
 
     except Exception as e:
-        logger.error(f"Error starting sales cycle {cycle_id}: {e!s}")
+        logger.exception(f"Error starting sales cycle {cycle_id}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

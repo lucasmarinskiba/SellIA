@@ -157,8 +157,8 @@ class TikTokShopAutomation:
             ).hexdigest()
 
             return hmac.compare_digest(signature, expected_signature)
-        except Exception as e:
-            logger.error(f"Webhook signature verification error: {e}")
+        except Exception:
+            logger.exception("Webhook signature verification error")
             return False
 
     async def handle_webhook(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -199,7 +199,7 @@ class TikTokShopAutomation:
             return {"code": "0", "message": "success"}
 
         except Exception as e:
-            logger.error(f"Webhook processing error: {e}")
+            logger.exception("Webhook processing error")
             return {"code": "1", "message": str(e)}
 
     async def _handle_order_event(self, order_data: dict[str, Any]) -> None:
@@ -390,7 +390,7 @@ class TikTokShopAutomation:
             }
 
         except Exception as e:
-            logger.error(f"Error syncing products to TikTok: {e}")
+            logger.exception("Error syncing products to TikTok")
             return {"status": "error", "message": str(e)}
 
     async def _find_product_by_sku(self, sku: str) -> dict[str, Any] | None:
@@ -615,8 +615,8 @@ class TikTokShopAutomation:
                 },
             )
 
-        except Exception as e:
-            logger.error(f"Error updating tracking: {e}")
+        except Exception:
+            logger.exception("Error updating tracking")
             return False
 
     # ========== RATE LIMITING & QUOTA ==========
@@ -632,6 +632,6 @@ class TikTokShopAutomation:
                 "reset_at": utc_now() + timedelta(days=1),
             }
 
-        except Exception as e:
-            logger.error(f"Error checking rate limit: {e}")
+        except Exception:
+            logger.exception("Error checking rate limit")
             return {}

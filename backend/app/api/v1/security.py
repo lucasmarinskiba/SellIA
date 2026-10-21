@@ -9,6 +9,7 @@ Endpoints de gestión de seguridad:
 """
 
 import hashlib
+import logging
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
 from uuid import UUID
@@ -46,6 +47,8 @@ from app.domains.security.schemas import (
     UserSessionResponse,
 )
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -251,6 +254,7 @@ async def test_push(
         )
         return {"detail": "Notificación de prueba enviada"}
     except Exception:
+        logger.exception("test_push: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).exception("Error sending push notification")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -335,7 +339,7 @@ async def revoke_session(
             body=f"Se cerró una sesión en {session.device_name or 'un dispositivo'}. Si no fuiste vos, cambiá tu contraseña.",
         )
     except Exception:
-        pass
+        logger.exception("revoke_session: error inesperado")
 
     return {"detail": "Sesión revocada correctamente"}
 

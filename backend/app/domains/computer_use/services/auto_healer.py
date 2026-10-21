@@ -50,7 +50,7 @@ class AutoHealer:
                             confidence=0.9,
                         )
             except Exception:
-                pass
+                logger.exception("heal_click: error inesperado")
 
         # Strategy 2: Look for interactive elements near original coords
         try:
@@ -77,7 +77,7 @@ class AutoHealer:
                     confidence=max(0, 1 - closest_dist / 200),
                 )
         except Exception:
-            pass
+            logger.exception("heal_click: error inesperado")
 
         # Strategy 3: Try slight offset
         offsets = [(10, 0), (-10, 0), (0, 10), (0, -10), (20, 20), (-20, -20)]
@@ -95,6 +95,7 @@ class AutoHealer:
                     confidence=0.3,
                 )
             except Exception:
+                logger.exception("heal_click: error inesperado")
                 continue
 
         return HealResult(
@@ -125,7 +126,7 @@ class AutoHealer:
                         confidence=0.6,
                     )
         except Exception:
-            pass
+            logger.exception("heal_type: error inesperado")
 
         return HealResult(success=False, new_selector=None, new_coords=None, strategy="exhausted", confidence=0.0)
 

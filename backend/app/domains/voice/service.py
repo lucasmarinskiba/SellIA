@@ -46,7 +46,7 @@ class VoiceService:
                     data = response.json()
                     return data.get("text", "")
             except Exception as e:
-                logger.warning(f"Whisper transcription failed: {e}")
+                logger.warning(f"Whisper transcription failed: {e}", exc_info=True)
 
         # Fallback: return mock transcript for development
         logger.info("STT fallback: returning mock transcript")
@@ -75,7 +75,7 @@ class VoiceService:
                     response.raise_for_status()
                     return response.content
             except Exception as e:
-                logger.warning(f"OpenAI TTS failed: {e}")
+                logger.warning(f"OpenAI TTS failed: {e}", exc_info=True)
 
         elif voice_config.tts_provider == "elevenlabs" and settings.ELEVENLABS_API_KEY:
             try:
@@ -96,7 +96,7 @@ class VoiceService:
                     response.raise_for_status()
                     return response.content
             except Exception as e:
-                logger.warning(f"ElevenLabs TTS failed: {e}")
+                logger.warning(f"ElevenLabs TTS failed: {e}", exc_info=True)
 
         # Fallback: return empty bytes (frontend should handle gracefully)
         logger.info("TTS fallback: returning empty audio")

@@ -334,7 +334,7 @@ def send_verification_email(self, user_id: str, email: str, token: str, verifica
         return {"status": "sent", "email": email}
 
     except Exception as exc:
-        logger.error(f"Failed to send verification email: {exc}")
+        logger.exception("Failed to send verification email")
         raise self.retry(exc=exc, countdown=60)
 
 
@@ -367,7 +367,7 @@ def notify_admins_approval_pending(self, approval_id: str, user_email: str, user
         db.close()
 
     except Exception as exc:
-        logger.error(f"Failed to notify admins: {exc}")
+        logger.exception("Failed to notify admins")
         raise self.retry(exc=exc, countdown=60)
 
 
@@ -394,7 +394,7 @@ def send_approval_email(self, user_id: str, email: str, full_name: str, approved
         db.close()
 
     except Exception as exc:
-        logger.error(f"Failed to send approval email: {exc}")
+        logger.exception("Failed to send approval email")
         raise self.retry(exc=exc, countdown=60)
 
 
@@ -423,5 +423,5 @@ def send_rejection_email(
         db.close()
 
     except Exception as exc:
-        logger.error(f"Failed to send rejection email: {exc}")
+        logger.exception("Failed to send rejection email")
         raise self.retry(exc=exc, countdown=60)

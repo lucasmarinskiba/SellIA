@@ -27,7 +27,7 @@ def _emit_activity(category: str | None, mode: str) -> None:
             detail=f"Consulta de conocimiento ({mode}) · categoría {category}",
         )
     except Exception:  # pragma: no cover - nunca romper el camino caliente
-        pass
+        logger.exception("_emit_activity: error inesperado")
 
 
 @dataclass
@@ -198,7 +198,7 @@ class KnowledgeEngine:
                         # Index by subcategory
                         self._index.setdefault(item.subcategory.lower(), []).append(item)
                 except Exception as e:
-                    logger.warning(f"Failed to load knowledge {category}: {e}")
+                    logger.warning(f"Failed to load knowledge {category}: {e}", exc_info=True)
 
         self._loaded = True
         logger.info(f"KnowledgeEngine loaded: {len(self._items)} items across {len(self.categories)} categories")
@@ -314,7 +314,7 @@ class KnowledgeEngine:
             scored.sort(key=lambda x: x[0], reverse=True)
             return [c for _, c in scored[:top_k]]
         except Exception as e:
-            logger.warning(f"semantic_query fell back to keyword search: {e}")
+            logger.warning(f"semantic_query fell back to keyword search: {e}", exc_info=True)
             return self.query(category=category, context=context, top_k=top_k)
 
     def get_by_id(self, item_id: str) -> KnowledgeItem | None:

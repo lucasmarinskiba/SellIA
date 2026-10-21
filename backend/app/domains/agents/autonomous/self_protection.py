@@ -187,7 +187,7 @@ class SelfProtectionEngine:
                     evidence={"ip": ip, "attempts": attempts, "window_minutes": 5},
                 ))
         except Exception as e:
-            logger.warning(f"[SelfProtection] Error en login scan: {e}")
+            logger.warning(f"[SelfProtection] Error en login scan: {e}", exc_info=True)
         return threats
 
     async def _scan_api_abuse(
@@ -221,7 +221,7 @@ class SelfProtectionEngine:
                     evidence={"user_id": str(user_id), "calls_per_minute": calls},
                 ))
         except Exception as e:
-            logger.warning(f"[SelfProtection] Error en API abuse scan: {e}")
+            logger.warning(f"[SelfProtection] Error en API abuse scan: {e}", exc_info=True)
         return threats
 
     async def _scan_message_spam(
@@ -262,7 +262,7 @@ class SelfProtectionEngine:
                     business_id=str(business_id) if business_id else None,
                 ))
         except Exception as e:
-            logger.warning(f"[SelfProtection] Error en spam scan: {e}")
+            logger.warning(f"[SelfProtection] Error en spam scan: {e}", exc_info=True)
         return threats
 
     async def _scan_content_for_injection(self) -> list[ThreatEvent]:
@@ -315,7 +315,7 @@ class SelfProtectionEngine:
                         ))
                         break
         except Exception as e:
-            logger.warning(f"[SelfProtection] Error en content scan: {e}")
+            logger.warning(f"[SelfProtection] Error en content scan: {e}", exc_info=True)
         return threats
 
     async def _scan_geo_anomalies(
@@ -352,7 +352,7 @@ class SelfProtectionEngine:
                     },
                 ))
         except Exception as e:
-            logger.warning(f"[SelfProtection] Error en geo scan: {e}")
+            logger.warning(f"[SelfProtection] Error en geo scan: {e}", exc_info=True)
         return threats
 
     # ─────────────────────────────────────────────
@@ -397,6 +397,7 @@ class SelfProtectionEngine:
             logger.warning(f"[SelfProtection] IP bloqueada temporalmente: {ip}")
             return f"IP {ip} bloqueada temporalmente (1 hora)"
         except Exception as e:
+            logger.exception("_block_ip_temporarily: error inesperado")
             return f"Error bloqueando IP: {str(e)[:100]}"
 
     async def _quarantine_message(self, threat: ThreatEvent) -> str:
@@ -415,6 +416,7 @@ class SelfProtectionEngine:
             await self.db.commit()
             return f"Mensaje {msg_id[:8]}... cuarentenado"
         except Exception as e:
+            logger.exception("_quarantine_message: error inesperado")
             return f"Mensaje marcado para revisión (DB update fallido: {str(e)[:50]})"
 
     async def _throttle_contact(self, threat: ThreatEvent, business_id: uuid.UUID | None) -> str:
@@ -453,6 +455,7 @@ class SelfProtectionEngine:
             await self.db.commit()
             return "Alerta crítica enviada al equipo de seguridad"
         except Exception as e:
+            logger.exception("_alert_security_team: error inesperado")
             return f"Error enviando alerta: {str(e)[:50]}"
 
     async def _escalate_critical_threats(
@@ -478,8 +481,8 @@ class SelfProtectionEngine:
             )
             self.db.add(alert)
             await self.db.commit()
-        except Exception as e:
-            logger.error(f"[SelfProtection] Error escalando amenazas críticas: {e}")
+        except Exception:
+            logger.exception("[SelfProtection] Error escalando amenazas críticas")
 
     # ─────────────────────────────────────────────
     # MÉTRICAS Y REPORTING

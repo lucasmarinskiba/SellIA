@@ -5,6 +5,8 @@ Strengths: Typography, text rendering, logos, posters
 """
 
 
+import logging
+
 from app.core.config import get_settings
 
 from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
@@ -14,6 +16,8 @@ from ..utils import (
     get_image_size_kb,
     smart_quality_for_size,
 )
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -81,4 +85,5 @@ class IdeogramProvider(BaseProvider):
             )
 
         except Exception as e:
+            logger.exception("generate: error inesperado")
             return GenerationResult(success=False, error_message=str(e))

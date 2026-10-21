@@ -144,8 +144,8 @@ class SellIADirector:
                     await self.db.commit()
                     logger.info(f"[Director] Activated upsell workflow for business {business_id}")
 
-        except Exception as e:
-            logger.error(f"[Director] Action execution error: {e}")
+        except Exception:
+            logger.exception("[Director] Action execution error")
 
     async def _generate_daily_briefing(self, business_id: uuid.UUID, objectives: list[BusinessObjective], at_risk: list[BusinessObjective], action_plan: list[dict]) -> str:
         """Generate an AI-powered daily briefing for the business owner."""
@@ -206,8 +206,8 @@ Usa emojis y formato claro.""",
                 temperature=0.7,
             )
             return briefing or context
-        except Exception as e:
-            logger.error(f"[Director] Briefing generation error: {e}")
+        except Exception:
+            logger.exception("[Director] Briefing generation error")
             return context
 
     async def _send_briefing_to_owner(self, business_id: uuid.UUID, briefing: str):
@@ -232,8 +232,8 @@ Usa emojis y formato claro.""",
                 # For now, just log it. In production, this would send via WhatsApp/Email
                 logger.info(f"[Director] Briefing ready for business {business_id}: {briefing[:200]}...")
 
-        except Exception as e:
-            logger.error(f"[Director] Briefing send error: {e}")
+        except Exception:
+            logger.exception("[Director] Briefing send error")
 
 
 class DirectorTaskRunner:
@@ -253,7 +253,7 @@ class DirectorTaskRunner:
             for business in businesses:
                 try:
                     await director.run_director_cycle(business.id)
-                except Exception as e:
-                    logger.error(f"[DirectorTask] Error for business {business.id}: {e}")
+                except Exception:
+                    logger.exception(f"[DirectorTask] Error for business {business.id}")
 
             logger.info(f"[DirectorTask] Completed cycles for {len(businesses)} businesses")

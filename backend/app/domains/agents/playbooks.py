@@ -4,6 +4,7 @@ Generates customized sales playbooks based on business context, catalog,
 pipeline history, and expert sales methodologies.
 """
 
+import logging
 import uuid
 from typing import Any
 
@@ -16,6 +17,8 @@ from app.domains.agents.prompts import compose_system_prompt
 from app.domains.businesses.models import Business
 from app.domains.catalogs.models import CatalogItem
 from app.domains.crm.models import Deal, LeadStage
+
+logger = logging.getLogger(__name__)
 
 
 async def generate_sales_playbook(
@@ -118,6 +121,7 @@ UPSELL_STRATEGY: <cómo aumentar ticket promedio>"""
             return None
         ai_response = response.content
     except Exception as e:
+        logger.exception("generate_sales_playbook: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).error(f"LLM error: {e}")
         return None

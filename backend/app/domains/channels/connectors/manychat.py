@@ -11,6 +11,7 @@ business's own ManyChat flow can branch on SellIA's qualification result
 (e.g. a "sellia_qualified" tag routes to a human, "sellia_disqualified" ends the flow).
 """
 
+import logging
 from typing import Any
 
 import httpx
@@ -18,6 +19,8 @@ import httpx
 from app.domains.channels.connectors.base import BaseChannelConnector
 from app.domains.channels.models import ChannelPlatform
 from app.domains.channels.schemas import WebhookPayload
+
+logger = logging.getLogger(__name__)
 
 
 class ManyChatConnector(BaseChannelConnector):
@@ -97,6 +100,7 @@ class ManyChatConnector(BaseChannelConnector):
                 data = response.json()
                 return data.get("status") == "success"
         except Exception:
+            logger.exception("validate_credentials: error inesperado")
             return False
 
     # -- ManyChat-specific (not part of BaseChannelConnector): lead-filtering hooks --
@@ -112,6 +116,7 @@ class ManyChatConnector(BaseChannelConnector):
                 response = await client.post(url, json=payload, headers=self._headers())
                 return response.status_code == 200
         except Exception:
+            logger.exception("tag_subscriber: error inesperado")
             return False
 
     async def set_custom_field(self, subscriber_id: str, field_name: str, value: Any) -> bool:
@@ -125,4 +130,5 @@ class ManyChatConnector(BaseChannelConnector):
                 response = await client.post(url, json=payload, headers=self._headers())
                 return response.status_code == 200
         except Exception:
+            logger.exception("set_custom_field: error inesperado")
             return False

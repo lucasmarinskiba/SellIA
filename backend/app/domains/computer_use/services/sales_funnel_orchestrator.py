@@ -122,7 +122,7 @@ class SalesFunnelOrchestrator:
             return result
 
         except Exception as e:
-            self.logger.error(f"Pipeline error: {e}")
+            self.logger.exception("Pipeline error")
             return {"status": "error", "message": str(e)}
 
     async def _find_phase(self, leads_data: list[dict[str, Any]]) -> list[Any]:
@@ -140,8 +140,8 @@ class SalesFunnelOrchestrator:
 
             return leads
 
-        except Exception as e:
-            self.logger.error(f"Find phase error: {e}")
+        except Exception:
+            self.logger.exception("Find phase error")
             return []
 
     async def _contact_phase(
@@ -177,8 +177,8 @@ class SalesFunnelOrchestrator:
 
             return contacted
 
-        except Exception as e:
-            self.logger.error(f"Contact phase error: {e}")
+        except Exception:
+            self.logger.exception("Contact phase error")
             return []
 
     async def _respond_phase(self, leads: list[Any]) -> list[Any]:
@@ -278,7 +278,7 @@ class SalesFunnelOrchestrator:
             }
 
         except Exception as e:
-            self.logger.error(f"Loyalty phase error: {e}")
+            self.logger.exception("Loyalty phase error")
             return {"error": str(e)}
 
     async def _grow_phase(self, product_info: dict[str, Any]) -> dict[str, Any]:
@@ -293,7 +293,7 @@ class SalesFunnelOrchestrator:
             return result
 
         except Exception as e:
-            self.logger.error(f"Grow phase error: {e}")
+            self.logger.exception("Grow phase error")
             return {"error": str(e)}
 
     async def get_pipeline_status(self) -> dict[str, Any]:

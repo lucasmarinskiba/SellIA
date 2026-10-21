@@ -83,8 +83,8 @@ async def _build_followup_text(db: AsyncSession, business_id: Any) -> str:
                 return f"¡Hola! {hook} ¿Seguís interesado/a? Cualquier duda, acá estoy 🙂"
         if ctx and ctx.scheduling_link:
             return f"¡Hola! ¿Seguís por ahí? Si querés avanzamos: {ctx.scheduling_link}"
-    except Exception as e:
-        logger.error(f"Follow-up angle lookup error for business {business_id}: {e}")
+    except Exception:
+        logger.exception(f"Follow-up angle lookup error for business {business_id}")
 
     return "¡Hola! Vi que quedamos a mitad de charla — ¿seguís interesado/a en avanzar? Estoy para lo que necesites 🙂"
 
@@ -95,8 +95,8 @@ async def scan_and_send_followups(db: AsyncSession) -> dict[str, int]:
 
     try:
         cold_conversations = await _find_cold_conversations(db)
-    except Exception as e:
-        logger.error(f"Follow-up scan query failed: {e}")
+    except Exception:
+        logger.exception("Follow-up scan query failed")
         return stats
 
     stats["scanned"] = len(cold_conversations)
@@ -120,10 +120,10 @@ async def scan_and_send_followups(db: AsyncSession) -> dict[str, int]:
             stats["sent"] += 1
             logger.info(f"Follow-up sent to conversation {conversation.id} (#{conversation.followup_count})")
 
-        except Exception as e:
+        except Exception:
             await db.rollback()
             stats["errors"] += 1
-            logger.error(f"Follow-up send failed for conversation {conversation.id}: {e}")
+            logger.exception(f"Follow-up send failed for conversation {conversation.id}")
 
     if stats["sent"] or stats["errors"]:
         logger.info(f"Follow-up scan complete: {stats}")

@@ -156,7 +156,7 @@ async def _refresh_channel_token(db: AsyncSession, channel: ChannelConnection) -
     try:
         data = await MercadoLibreOAuth.refresh_token(refresh_token)
     except Exception as e:
-        logger.warning(f"ML token refresh failed for channel {channel.id}: {str(e)[:100]}")
+        logger.warning(f"ML token refresh failed for channel {channel.id}: {str(e)[:100]}", exc_info=True)
         return False
     if not data.get("access_token"):
         return False

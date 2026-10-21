@@ -11,6 +11,7 @@ Este es nuestro proveedor de bajo costo para drafts y alta volumetría.
 
 import asyncio
 import io
+import logging
 
 from app.core.config import get_settings
 
@@ -27,6 +28,8 @@ from ..utils import (
     get_image_size_kb,
     smart_quality_for_size,
 )
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -109,6 +112,7 @@ class ReplicateProvider(BaseProvider):
                 )
 
         except Exception as e:
+            logger.exception("generate: error inesperado")
             return GenerationResult(
                 success=False,
                 error_message=str(e),

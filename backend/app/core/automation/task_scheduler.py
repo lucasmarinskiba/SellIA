@@ -122,8 +122,8 @@ class TaskScheduler:
             cron = croniter(schedule, utc_now())
             next_run = cron.get_next(datetime)
             return next_run
-        except Exception as e:
-            logger.error(f"Invalid cron expression '{schedule}': {e!s}")
+        except Exception:
+            logger.exception(f"Invalid cron expression '{schedule}'")
             return None
 
     async def record_execution(self, task_id: str) -> None:

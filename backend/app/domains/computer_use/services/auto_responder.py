@@ -262,7 +262,7 @@ class AutoResponderService:
             return response_text, status, confidence
 
         except Exception as e:
-            logger.error(f"Error processing message: {e}")
+            logger.exception("Error processing message")
             await self._log_activity(
                 user_id=user_id,
                 message=message,
@@ -378,8 +378,8 @@ class AutoResponderService:
                 logger.warning(f"No handler for platform {platform.value}")
                 return False, None
 
-        except Exception as e:
-            logger.error(f"Error sending response: {e}")
+        except Exception:
+            logger.exception("Error sending response")
             return False, None
 
     def _calculate_confidence(
@@ -451,8 +451,8 @@ class AutoResponderService:
 
             await self.audit_service.log(log_entry)
 
-        except Exception as e:
-            logger.error(f"Error logging activity: {e}")
+        except Exception:
+            logger.exception("Error logging activity")
 
     async def _log_scheduling_activity(
         self,
@@ -494,8 +494,8 @@ class AutoResponderService:
 
             await self.audit_service.log(log_entry)
 
-        except Exception as e:
-            logger.error(f"Error logging scheduling activity: {e}")
+        except Exception:
+            logger.exception("Error logging scheduling activity")
 
 
 def get_auto_responder_service(db: AsyncSession) -> AutoResponderService:

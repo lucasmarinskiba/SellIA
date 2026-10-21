@@ -5,6 +5,7 @@ agentes y ejecuta acciones basadas en lenguaje natural.
 """
 
 import json
+import logging
 from datetime import UTC, datetime
 from typing import Annotated, Any
 from uuid import UUID
@@ -22,6 +23,8 @@ from app.domains.agents.services import AgentService
 from app.domains.businesses.models import Business
 from app.domains.channels import token_rotation_chat
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -248,6 +251,7 @@ async def assistant_chat(
                     result["conversation_id"] = str(conv.id)
                     result["personality"] = AgentPersonalityResponse.model_validate(personality).model_dump()
                 except Exception as e:
+                    logger.exception("assistant_chat: error inesperado")
                     result["action"] = "ASK_CLARIFICATION"
                     result["response"] = f"No pude crear la conversación. ¿Probás de nuevo? ({str(e)[:100]})"
                     result.pop("conversation_id", None)

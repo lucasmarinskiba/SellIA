@@ -123,8 +123,8 @@ NO uses frases genéricas como "espero que estés bien". Sé directo y valioso."
             import json
             parsed = json.loads(response or "{}")
             return parsed.get("messages", [])
-        except Exception as e:
-            logger.error(f"Failed to generate sequence messages: {e}")
+        except Exception:
+            logger.exception("Failed to generate sequence messages")
             return self._fallback_messages(topic, message_count, avg_delay)
 
     def _fallback_messages(self, topic: str, count: int, delay_hours: int) -> list[dict]:
@@ -234,7 +234,7 @@ NO uses frases genéricas como "espero que estés bien". Sé directo y valioso."
                 content_type="text",
             )
         except Exception as e:
-            logger.error(f"Failed to send value message: {e}")
+            logger.exception("Failed to send value message")
             return {"status": "error", "reason": str(e)}
 
         # Update enrollment
@@ -290,8 +290,8 @@ NO uses frases genéricas como "espero que estés bien". Sé directo y valioso."
                 if result.get("status") == "sent":
                     messages_sent += 1
 
-            except Exception as e:
-                logger.error(f"Failed to nurture lead {lead.id}: {e}")
+            except Exception:
+                logger.exception(f"Failed to nurture lead {lead.id}")
 
         return {"enrolled": enrolled, "messages_sent": messages_sent}
 

@@ -3,6 +3,7 @@
 Lógica de negocio para entregas de servicios y agenda.
 """
 
+import logging
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -19,6 +20,8 @@ from app.domains.services.models import (
     ServiceDelivery,
     ServiceDeliveryStatus,
 )
+
+logger = logging.getLogger(__name__)
 
 # ============================================================
 # SERVICE DELIVERIES
@@ -308,6 +311,7 @@ async def send_appointment_reminder(db: AsyncSession, appt: Appointment, channel
 
         return {"success": True, "channel": channel, "message": "Recordatorio enviado"}
     except Exception as e:
+        logger.exception("send_appointment_reminder: error inesperado")
         return {"success": False, "channel": channel, "message": f"Error: {e!s}"}
 
 
@@ -342,6 +346,7 @@ async def request_confirmation(db: AsyncSession, appt: Appointment, channel: str
         await db.commit()
         return {"success": True, "channel": channel, "message": "Solicitud de confirmación enviada"}
     except Exception as e:
+        logger.exception("request_confirmation: error inesperado")
         return {"success": False, "channel": channel, "message": f"Error: {e!s}"}
 
 
@@ -376,6 +381,7 @@ async def request_feedback(db: AsyncSession, appt: Appointment, channel: str = "
         await db.commit()
         return {"success": True, "channel": channel, "message": "Solicitud de feedback enviada"}
     except Exception as e:
+        logger.exception("request_feedback: error inesperado")
         return {"success": False, "channel": channel, "message": f"Error: {e!s}"}
 
 

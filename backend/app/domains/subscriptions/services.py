@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -14,6 +15,8 @@ from app.domains.subscriptions.models import (
     SubscriptionStatus,
     UsageTracking,
 )
+
+logger = logging.getLogger(__name__)
 
 
 async def get_or_create_subscription(db: AsyncSession, user_id: Any, plan_slug: str = "free") -> Subscription:
@@ -143,6 +146,7 @@ async def check_subscription_limit(
         # Must rollback: a failed statement leaves the session's Postgres
         # transaction aborted, which would otherwise poison every later
         # query on this same `db` for the rest of the request.
+        logger.exception("check_subscription_limit: error inesperado")
         await db.rollback()
         from app.core.logger import get_logger
         get_logger(__name__).error(f"check_subscription_limit failed, allowing by default: {e}")

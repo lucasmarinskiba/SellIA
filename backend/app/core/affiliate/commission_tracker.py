@@ -329,6 +329,6 @@ class CommissionTracker:
 
             logger.info(f"Exported commission report: {filename}")
             return True
-        except Exception as e:
-            logger.error(f"Error exporting report: {e}")
+        except Exception:
+            logger.exception("Error exporting report")
             return False

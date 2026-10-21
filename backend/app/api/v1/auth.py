@@ -451,7 +451,7 @@ async def login(
                 extra={"device_fingerprint": current_fingerprint, "city": city},
             )
         except Exception:
-            pass
+            logger.exception("login: error inesperado")
 
     # Alerta de geofencing
     if geofence_violation and SELLIA_GEOFENCE_VIOLATIONS:
@@ -508,7 +508,7 @@ Si no fuiste vos, cambiá tu contraseña inmediatamente.
                 user_id=str(user.id),
             )
         except Exception:
-            pass
+            logger.exception("login: error inesperado")
 
     # Notificar nuevo dispositivo
     if is_new_device and notify_security_event:
@@ -548,7 +548,7 @@ Si no fuiste vos, cambiá tu contraseña inmediatamente.
                 device_info=request.headers.get("user-agent"),
             )
         except Exception:
-            pass
+            logger.exception("login: error inesperado")
 
     # Push notification
     if is_new_device and send_security_push:
@@ -561,6 +561,7 @@ Si no fuiste vos, cambiá tu contraseña inmediatamente.
                 body=f"Alguien inició sesión desde {request.state.client_ip} ({country or 'Desconocido'}). Si no fuiste vos, cambiá tu contraseña.",
             )
         except Exception as e:
+            logger.exception("login: error inesperado")
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Push notification error: {e}")
 
@@ -580,7 +581,7 @@ Si no fuiste vos, cambiá tu contraseña inmediatamente.
             )
             SELLIA_ACTIVE_SESSIONS.set(result.scalar() or 0)
         except Exception:
-            pass
+            logger.exception("login: error inesperado")
 
     # Crear token y sesión
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -830,7 +831,7 @@ Si no creaste esta cuenta, ignorá este email.
 '''
         await send_email(to_email, subject, html, text)
     except Exception:
-        pass
+        logger.exception("_send_verification_email: error inesperado")
 
 
 async def _send_password_reset_email(to_email: str, full_name: str, reset_url: str):
@@ -853,7 +854,7 @@ Si no pediste esto, ignorá este email.
 '''
         await send_email(to_email, subject, html, text)
     except Exception:
-        pass
+        logger.exception("_send_password_reset_email: error inesperado")
 
 
 @router.post("/forgot-password", dependencies=[Depends(RateLimiter(times=3, seconds=300))])
@@ -1448,11 +1449,14 @@ async def delete_my_account(
 
 
 # 2FA endpoints
+import logging
 from io import BytesIO
 
 import pyotp
 import qrcode as qr_lib
 from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
 
 
 class Enable2FARequest(BaseModel):
@@ -1525,6 +1529,7 @@ async def verify_2fa(
     except HTTPException:
         raise
     except Exception as e:
+        logger.exception("verify_2fa: error inesperado")
         raise HTTPException(status_code=500, detail=f"2FA verify failed: {e!s}")
 
 # NOTE: a second `POST /2fa/disable` used to live here, taking a raw

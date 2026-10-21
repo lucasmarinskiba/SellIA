@@ -20,6 +20,8 @@ Pricing varies by model:
 """
 
 
+import logging
+
 from app.core.config import get_settings
 
 from ..base import (
@@ -35,6 +37,8 @@ from ..utils import (
     get_image_size_kb,
     smart_quality_for_size,
 )
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -172,4 +176,5 @@ class FalAggregatorProvider(BaseProvider):
             )
 
         except Exception as e:
+            logger.exception("generate: error inesperado")
             return GenerationResult(success=False, error_message=str(e))

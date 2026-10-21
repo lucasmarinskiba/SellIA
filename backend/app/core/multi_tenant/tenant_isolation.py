@@ -248,8 +248,8 @@ class TenantIsolation:
                 extra={"tenant_id": str(tenant_id), "schema": schema},
             )
 
-        except Exception as e:
-            logger.error(f"Failed to create tenant schema: {e}")
+        except Exception:
+            logger.exception("Failed to create tenant schema")
             raise AppException(
                 "Failed to create tenant schema",
                 status_code=500,
@@ -281,8 +281,8 @@ class TenantIsolation:
                 extra={"tenant_id": str(tenant_id), "schema": schema},
             )
 
-        except Exception as e:
-            logger.error(f"Failed to drop tenant schema: {e}")
+        except Exception:
+            logger.exception("Failed to drop tenant schema")
             raise AppException(
                 "Failed to drop tenant schema",
                 status_code=500,

@@ -58,7 +58,7 @@ class EcommerceWebhookProcessor:
                 from app.domains.agents.funnel_ab_bridge import record_stage_conversion
                 await record_stage_conversion(self.db, conversation)
             except Exception as e:
-                logger.warning(f"Failed to record funnel A/B conversion: {e}")
+                logger.warning(f"Failed to record funnel A/B conversion: {e}", exc_info=True)
 
         return order
 
@@ -294,6 +294,7 @@ class EcommerceWebhookProcessor:
             change = entry.get("changes", [{}])[0]
             value = change.get("value", {})
         except Exception:
+            logger.exception("_process_facebook_marketplace: error inesperado")
             return None
 
         order_id = str(value.get("order_id", ""))

@@ -43,7 +43,7 @@ async def collect_conversation_outcomes(db: AsyncSession) -> int:
         logger.info(f"Collected {count} conversation outcomes for ML training")
         return count
     except Exception as e:
-        logger.warning(f"Could not collect conversation outcomes: {e}")
+        logger.warning(f"Could not collect conversation outcomes: {e}", exc_info=True)
         return 0
 
 
@@ -73,7 +73,7 @@ async def collect_ai_response_ratings(db: AsyncSession) -> int:
         logger.info(f"Collected {count} AI response ratings for ML training")
         return count
     except Exception as e:
-        logger.warning(f"Could not collect AI response ratings: {e}")
+        logger.warning(f"Could not collect AI response ratings: {e}", exc_info=True)
         return 0
 
 
@@ -106,5 +106,5 @@ async def collect_intent_accuracy(db: AsyncSession) -> int:
         logger.info(f"Collected {count} intent accuracy samples for ML training")
         return count
     except Exception as e:
-        logger.warning(f"Could not collect intent accuracy: {e}")
+        logger.warning(f"Could not collect intent accuracy: {e}", exc_info=True)
         return 0

@@ -57,7 +57,7 @@ def import_and_enrich_leads(self, leads_data: list[dict[str, Any]]) -> dict[str,
     try:
         return run_async(_run())
     except Exception as exc:
-        logger.error(f"Error importing leads: {exc}")
+        logger.exception("Error importing leads")
         raise self.retry(exc=exc, countdown=2 ** self.request.retries)
 
 
@@ -117,7 +117,7 @@ def send_outreach_batch(
     try:
         return run_async(_run())
     except Exception as exc:
-        logger.error(f"Error in outreach: {exc}")
+        logger.exception("Error in outreach")
         raise self.retry(exc=exc, countdown=2 ** self.request.retries)
 
 
@@ -237,7 +237,7 @@ def send_follow_ups(self) -> dict[str, Any]:
                     else:
                         skipped += 1
                 except Exception as e:
-                    logger.warning(f"Follow-up failed for conversation {conversation.id}: {e}")
+                    logger.warning(f"Follow-up failed for conversation {conversation.id}: {e}", exc_info=True)
                     skipped += 1
 
         logger.info(f"Follow-ups: sent={sent} skipped={skipped}")
@@ -246,7 +246,7 @@ def send_follow_ups(self) -> dict[str, Any]:
     try:
         return run_async(_run())
     except Exception as exc:
-        logger.error(f"Error in follow-ups: {exc}")
+        logger.exception("Error in follow-ups")
         raise self.retry(exc=exc, countdown=2 ** self.request.retries)
 
 
@@ -284,7 +284,7 @@ def send_welcome_sequences(
     try:
         return run_async(_run())
     except Exception as exc:
-        logger.error(f"Error in welcome sequences: {exc}")
+        logger.exception("Error in welcome sequences")
         raise self.retry(exc=exc, countdown=2 ** self.request.retries)
 
 
@@ -328,7 +328,7 @@ def send_upsell_campaigns(self) -> dict[str, Any]:
     try:
         return run_async(_run())
     except Exception as exc:
-        logger.error(f"Error in upsells: {exc}")
+        logger.exception("Error in upsells")
         raise self.retry(exc=exc, countdown=2 ** self.request.retries)
 
 
@@ -357,7 +357,7 @@ def send_winback_campaigns(self) -> dict[str, Any]:
     try:
         return run_async(_run())
     except Exception as exc:
-        logger.error(f"Error in win-back: {exc}")
+        logger.exception("Error in win-back")
         raise self.retry(exc=exc, countdown=2 ** self.request.retries)
 
 
@@ -387,7 +387,7 @@ def daily_growth_cycle(self, product_info: dict[str, Any]) -> dict[str, Any]:
     try:
         return run_async(_run())
     except Exception as exc:
-        logger.error(f"Error in growth cycle: {exc}")
+        logger.exception("Error in growth cycle")
         raise self.retry(exc=exc, countdown=3600)  # Retry en 1 hora
 
 

@@ -135,7 +135,7 @@ class ProxyManager:
                 ) as resp:
                     return resp.status == 200
         except Exception as e:
-            logger.warning(f"Proxy health check failed for {proxy.to_url()}: {e}")
+            logger.warning(f"Proxy health check failed for {proxy.to_url()}: {e}", exc_info=True)
             return False
 
     async def rotate_all(self) -> None:

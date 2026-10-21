@@ -99,7 +99,7 @@ async def whatsapp_webhook(
         return {"status": "received", "message_id": message.message_id}
 
     except Exception as e:
-        logger.error(f"WhatsApp webhook error: {e}")
+        logger.exception("WhatsApp webhook error")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -129,7 +129,7 @@ async def instagram_webhook(
         return {"status": "received", "message_id": message.message_id}
 
     except Exception as e:
-        logger.error(f"Instagram webhook error: {e}")
+        logger.exception("Instagram webhook error")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -159,7 +159,7 @@ async def tiktok_webhook(
         return {"status": "received", "message_id": message.message_id}
 
     except Exception as e:
-        logger.error(f"TikTok webhook error: {e}")
+        logger.exception("TikTok webhook error")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -189,7 +189,7 @@ async def facebook_webhook(
         return {"status": "received", "message_id": message.message_id}
 
     except Exception as e:
-        logger.error(f"Facebook webhook error: {e}")
+        logger.exception("Facebook webhook error")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -219,7 +219,7 @@ async def mercadolibre_webhook(
         return {"status": "received", "message_id": message.message_id}
 
     except Exception as e:
-        logger.error(f"Mercado Libre webhook error: {e}")
+        logger.exception("Mercado Libre webhook error")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -249,7 +249,7 @@ async def amazon_webhook(
         return {"status": "received", "message_id": message.message_id}
 
     except Exception as e:
-        logger.error(f"Amazon webhook error: {e}")
+        logger.exception("Amazon webhook error")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -279,7 +279,7 @@ async def hotmart_webhook(
         return {"status": "received", "message_id": message.message_id}
 
     except Exception as e:
-        logger.error(f"Hotmart webhook error: {e}")
+        logger.exception("Hotmart webhook error")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -312,5 +312,5 @@ async def _process_auto_response(db: AsyncSession, message: IncomingMessage) -> 
             f"status={status} | confidence={confidence:.0%}"
         )
 
-    except Exception as e:
-        logger.error(f"Error processing auto-response: {e}")
+    except Exception:
+        logger.exception("Error processing auto-response")

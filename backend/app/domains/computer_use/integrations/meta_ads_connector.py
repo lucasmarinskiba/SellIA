@@ -78,8 +78,8 @@ class MetaAdsConnector:
         except httpx.HTTPError as e:
             logger.error(f"Meta Ads API error: {e}")
             return False, None
-        except Exception as e:
-            logger.error(f"Error creating campaign: {e}")
+        except Exception:
+            logger.exception("Error creating campaign")
             return False, None
 
     async def create_adset(
@@ -134,8 +134,8 @@ class MetaAdsConnector:
         except httpx.HTTPError as e:
             logger.error(f"Meta Ads API error: {e}")
             return False, None
-        except Exception as e:
-            logger.error(f"Error creating adset: {e}")
+        except Exception:
+            logger.exception("Error creating adset")
             return False, None
 
     async def create_ad(
@@ -179,8 +179,8 @@ class MetaAdsConnector:
         except httpx.HTTPError as e:
             logger.error(f"Meta Ads API error: {e}")
             return False, None
-        except Exception as e:
-            logger.error(f"Error creating ad: {e}")
+        except Exception:
+            logger.exception("Error creating ad")
             return False, None
 
     async def upload_creative(
@@ -224,8 +224,8 @@ class MetaAdsConnector:
         except httpx.HTTPError as e:
             logger.error(f"Meta Ads API error: {e}")
             return False, None
-        except Exception as e:
-            logger.error(f"Error uploading creative: {e}")
+        except Exception:
+            logger.exception("Error uploading creative")
             return False, None
 
     async def get_insights(
@@ -271,8 +271,8 @@ class MetaAdsConnector:
 
             return result.get("data", [{}])[0] if result.get("data") else {}
 
-        except Exception as e:
-            logger.error(f"Error getting insights: {e}")
+        except Exception:
+            logger.exception("Error getting insights")
             return {}
 
     async def update_campaign_status(
@@ -297,8 +297,8 @@ class MetaAdsConnector:
 
             return True
 
-        except Exception as e:
-            logger.error(f"Error updating campaign status: {e}")
+        except Exception:
+            logger.exception("Error updating campaign status")
             return False
 
     async def update_adset_budget(
@@ -323,8 +323,8 @@ class MetaAdsConnector:
 
             return True
 
-        except Exception as e:
-            logger.error(f"Error updating budget: {e}")
+        except Exception:
+            logger.exception("Error updating budget")
             return False
 
     async def close(self):

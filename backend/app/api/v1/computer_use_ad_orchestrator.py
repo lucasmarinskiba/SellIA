@@ -136,7 +136,7 @@ async def create_ad_campaign(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creating campaign: {e}")
+        logger.exception("Error creating campaign")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -159,7 +159,7 @@ async def get_campaign_performance(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting performance: {e}")
+        logger.exception("Error getting performance")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -190,7 +190,7 @@ async def optimize_campaigns(
         }
 
     except Exception as e:
-        logger.error(f"Error optimizing campaigns: {e}")
+        logger.exception("Error optimizing campaigns")
         raise HTTPException(status_code=500, detail=str(e))
 
 

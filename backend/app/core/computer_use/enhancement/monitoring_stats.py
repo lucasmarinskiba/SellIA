@@ -230,7 +230,7 @@ class ErrorTracker:
                 if error_time > cutoff_time:
                     recent_errors[entry["error_type"]] += 1
             except Exception:
-                pass
+                logger.exception("get_error_distribution: error inesperado")
 
         return dict(recent_errors)
 
@@ -314,8 +314,8 @@ class AlertManager:
                 if self.on_alert:
                     try:
                         self.on_alert(alert)
-                    except Exception as e:
-                        logger.error(f"Alert callback failed: {e!s}")
+                    except Exception:
+                        logger.exception("Alert callback failed")
 
                 logger.warning(f"Alert fired: {alert.title}")
                 return alert

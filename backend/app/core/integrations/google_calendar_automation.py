@@ -119,7 +119,7 @@ class GoogleCalendarAutomation:
                 return {"status": "error"}
 
         except Exception as e:
-            logger.error(f"Create event failed: {e!s}")
+            logger.exception("Create event failed")
             return {"status": "error", "error": str(e)}
 
     # ========== CONFLICT DETECTION ==========
@@ -170,7 +170,7 @@ class GoogleCalendarAutomation:
                 return {"has_conflict": False, "warning": "Could not verify conflicts"}
 
         except Exception as e:
-            logger.error(f"Conflict check failed: {e!s}")
+            logger.exception("Conflict check failed")
             return {"has_conflict": False, "warning": str(e)}
 
     async def _find_available_slot(

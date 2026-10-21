@@ -4,6 +4,7 @@ Used by workflow engine, chatbot rules, and any other system component
 that needs to generate AI responses with expert voice composition.
 """
 
+import logging
 import uuid
 from typing import Any
 
@@ -16,6 +17,8 @@ from app.domains.agents.models import AgentPersonality
 from app.domains.agents.prompts import compose_system_prompt, get_system_prompt
 from app.domains.businesses.models import Business
 from app.domains.channels.models import Conversation, Message
+
+logger = logging.getLogger(__name__)
 
 
 def _is_persistent(instance: Any) -> bool:
@@ -106,6 +109,7 @@ async def generate_ai_response(
         else:
             business_context.pop("voice_personality_slug", None)
     except Exception as e:
+        logger.exception("generate_ai_response: error inesperado")
         get_logger(__name__).error(f"Context builder error: {e}")
         await _rollback(db)
 
@@ -146,6 +150,7 @@ async def generate_ai_response(
                 ab_voice_slug, _, _ = await get_stage_voice_slug(db, detected_stage, conversation)
                 voice_slug = ab_voice_slug or None
     except Exception as e:
+        logger.exception("generate_ai_response: error inesperado")
         get_logger(__name__).warning(f"Funnel stage detection failed: {e}")
         await _rollback(db)
 
@@ -207,6 +212,7 @@ async def generate_ai_response(
                     db.add(conversation)
                     await db.commit()
     except Exception as e:
+        logger.exception("generate_ai_response: error inesperado")
         get_logger(__name__).warning(f"A/B test lookup failed: {e}")
         await _rollback(db)
 
@@ -226,6 +232,7 @@ async def generate_ai_response(
         if customer_id:
             customer_profile = await engine.get_customer_profile_summary(customer_id)
     except Exception as e:
+        logger.exception("generate_ai_response: error inesperado")
         get_logger(__name__).warning(f"Failed to load customer profile: {e}")
         await _rollback(db)
 
@@ -241,6 +248,7 @@ async def generate_ai_response(
             funnel_prompt = get_adapted_prompt(detected_stage, business_type)
             system_prompt += f"\n\n{funnel_prompt}"
         except Exception as e:
+            logger.exception("generate_ai_response: error inesperado")
             get_logger(__name__).warning(f"Funnel stage layering failed: {e}")
 
     if custom_prompt:
@@ -283,6 +291,7 @@ async def generate_ai_response(
             )
             system_prompt = ToneAdapter.adapt_tone(system_prompt, emotion)
         except Exception as e:
+            logger.exception("generate_ai_response: error inesperado")
             get_logger(__name__).warning(f"Emotion detection failed: {e}")
             await _rollback(db)
 
@@ -340,6 +349,7 @@ async def generate_ai_response(
                 )
                 return reply
         except Exception as e:
+            logger.exception("generate_ai_response: error inesperado")
             get_logger(__name__).warning(f"Negotiation engine failed: {e}")
             await _rollback(db)
 
@@ -364,6 +374,7 @@ async def generate_ai_response(
         )
         result = response.content if response else None
     except Exception as e:
+        logger.exception("generate_ai_response: error inesperado")
         get_logger(__name__).error(f"LLM invocation failed: {e}")
         result = None
 
@@ -382,6 +393,7 @@ async def generate_ai_response(
                 mem_engine = MemoryEngine(db)
                 await mem_engine.extract_facts_from_conversation(conversation_id)
         except Exception as e:
+            logger.exception("generate_ai_response: error inesperado")
             get_logger(__name__).warning(f"Failed to trigger fact extraction: {e}")
             await _rollback(db)
 
@@ -422,6 +434,7 @@ async def generate_ai_response(
                     thought_steps=thought_steps,
                 )
         except Exception as e:
+            logger.exception("generate_ai_response: error inesperado")
             get_logger(__name__).warning(f"Chain-of-thought logging failed: {e}")
             await _rollback(db)
 
@@ -456,5 +469,6 @@ async def generate_raw_ai_response(
         )
         return response.content if response else None
     except Exception as e:
+        logger.exception("generate_raw_ai_response: error inesperado")
         get_logger(__name__).error(f"Raw LLM invocation failed: {e}")
         return None

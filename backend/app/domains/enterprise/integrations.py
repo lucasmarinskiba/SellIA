@@ -1,8 +1,11 @@
 import hashlib
 import hmac
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+
+logger = logging.getLogger(__name__)
 
 
 class Platform(str, Enum):
@@ -132,6 +135,7 @@ class WhatsAppAgent:
                 timestamp=timestamp,
             )
         except Exception as e:
+            logger.exception("parse_inbound_webhook: error inesperado")
             print(f"WhatsApp webhook parse error: {e}")
             return None
 
@@ -182,6 +186,7 @@ class TelegramAgent:
                 timestamp=timestamp,
             )
         except Exception as e:
+            logger.exception("parse_inbound_webhook: error inesperado")
             print(f"Telegram webhook parse error: {e}")
             return None
 

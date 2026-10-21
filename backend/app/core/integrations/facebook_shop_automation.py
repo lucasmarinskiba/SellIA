@@ -98,8 +98,8 @@ class FacebookShopAutomation:
             ).hexdigest()
 
             return hmac.compare_digest(signature, expected_signature)
-        except Exception as e:
-            logger.error(f"Webhook signature verification error: {e}")
+        except Exception:
+            logger.exception("Webhook signature verification error")
             return False
 
     async def handle_webhook(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -150,7 +150,7 @@ class FacebookShopAutomation:
             return {"status": "success"}
 
         except Exception as e:
-            logger.error(f"Webhook processing error: {e}")
+            logger.exception("Webhook processing error")
             return {"status": "error", "message": str(e)}
 
     async def _handle_order_event(self, order_data: dict[str, Any]) -> None:
@@ -380,7 +380,7 @@ class FacebookShopAutomation:
             }
 
         except Exception as e:
-            logger.error(f"Error syncing products to Facebook: {e}")
+            logger.exception("Error syncing products to Facebook")
             return {"status": "error", "message": str(e)}
 
     async def _find_product_by_sku(self, sku: str) -> dict[str, Any] | None:
@@ -538,8 +538,8 @@ class FacebookShopAutomation:
                 "shipping_address": order_details.get("shipping_address"),
             }
 
-        except Exception as e:
-            logger.error(f"Error getting shipping estimate: {e}")
+        except Exception:
+            logger.exception("Error getting shipping estimate")
             return None
 
     async def update_tracking(
@@ -571,8 +571,8 @@ class FacebookShopAutomation:
                 },
             )
 
-        except Exception as e:
-            logger.error(f"Error updating tracking: {e}")
+        except Exception:
+            logger.exception("Error updating tracking")
             return False
 
     # ========== ERROR HANDLING & RETRY LOGIC ==========

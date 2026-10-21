@@ -451,7 +451,7 @@ class SocialSellerEngine:
             await self.db.commit()
             celebration = str(celebration_event.id)
         except Exception:
-            pass
+            logger.exception("record_sale: error inesperado")
 
         return {
             "status": "recorded",

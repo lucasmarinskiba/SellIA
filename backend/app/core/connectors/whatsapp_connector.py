@@ -28,8 +28,8 @@ class WhatsAppConnector(BaseConnector):
                         self.authenticated = True
                         return True
                     return False
-        except Exception as e:
-            logger.error(f"WhatsApp auth failed: {e!s}")
+        except Exception:
+            logger.exception("WhatsApp auth failed")
             return False
 
     async def send_message(self, recipient: str, message: str) -> dict[str, Any]:
@@ -51,7 +51,7 @@ class WhatsAppConnector(BaseConnector):
                         return {"status": "sent", "message_id": data.get("messages", [{}])[0].get("id")}
                     return {"status": "error"}
         except Exception as e:
-            logger.error(f"Error sending WhatsApp message: {e!s}")
+            logger.exception("Error sending WhatsApp message")
             return {"status": "error", "error": str(e)}
 
     async def list_products(self) -> list[dict[str, Any]]:

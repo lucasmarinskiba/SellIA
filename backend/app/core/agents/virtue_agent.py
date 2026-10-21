@@ -181,8 +181,8 @@ class VirtueAgent:
                         }
                         details["gaps"].append(f"Delivery {delta_days} days late")
                         details["integrity_maintained"] = False
-                except:
-                    pass
+                except Exception:
+                    logger.exception("check_integrity: error inesperado")
 
         # Check 3: Feature parity
         promised_features = set(delivery.get("promised_features", []))

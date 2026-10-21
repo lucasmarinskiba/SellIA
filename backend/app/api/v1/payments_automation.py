@@ -51,7 +51,7 @@ async def create_payment_checkout(
             raise HTTPException(status_code=400, detail=result.get("error"))
 
     except Exception as e:
-        logger.error(f"Checkout creation failed: {e!s}")
+        logger.exception("Checkout creation failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -86,7 +86,7 @@ async def create_subscription_checkout(
             raise HTTPException(status_code=400, detail=result.get("error"))
 
     except Exception as e:
-        logger.error(f"Subscription checkout failed: {e!s}")
+        logger.exception("Subscription checkout failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -114,7 +114,7 @@ async def stripe_webhook(
         return result
 
     except Exception as e:
-        logger.error(f"Webhook processing failed: {e!s}")
+        logger.exception("Webhook processing failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -149,7 +149,7 @@ async def process_refund(
             raise HTTPException(status_code=400, detail=result.get("error"))
 
     except Exception as e:
-        logger.error(f"Refund processing failed: {e!s}")
+        logger.exception("Refund processing failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -185,7 +185,7 @@ async def create_invoice(
             raise HTTPException(status_code=400, detail=result.get("error"))
 
     except Exception as e:
-        logger.error(f"Invoice creation failed: {e!s}")
+        logger.exception("Invoice creation failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -209,5 +209,5 @@ async def get_customer_balance(
             raise HTTPException(status_code=400)
 
     except Exception as e:
-        logger.error(f"Get balance failed: {e!s}")
+        logger.exception("Get balance failed")
         raise HTTPException(status_code=500, detail=str(e))

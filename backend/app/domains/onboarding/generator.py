@@ -89,7 +89,7 @@ class OnboardingGenerator:
         try:
             specific_type = type_mapping.get(btype_str, BizCtxModel.BusinessType.OTHER)
         except Exception:
-            pass
+            logger.exception("_create_business_context: error inesperado")
 
         ctx = BizCtxModel(
             id=uuid.uuid4(),

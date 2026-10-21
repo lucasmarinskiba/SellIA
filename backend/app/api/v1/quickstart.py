@@ -110,7 +110,7 @@ async def quickstart_onboarding(input_data: QuickstartInput):
         )
 
     except Exception as e:
-        logger.error(f"Error en quickstart: {e!s}")
+        logger.exception("Error en quickstart")
         raise HTTPException(status_code=500, detail=str(e))
 
 

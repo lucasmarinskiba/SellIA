@@ -1,5 +1,6 @@
 """Payment API endpoints."""
 
+import logging
 from decimal import Decimal
 from typing import Annotated
 from uuid import UUID
@@ -15,6 +16,8 @@ from app.core.integrations.mercadopago_webhook import verify_mercadopago_signatu
 from app.domains.businesses.models import Business
 from app.domains.payments.payment_service import PaymentService
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1", tags=["payments"])
 
@@ -139,6 +142,7 @@ async def handle_mercadopago_webhook(
     try:
         body = await request.json()
     except Exception:
+        logger.exception("handle_mercadopago_webhook: error inesperado")
         body = {}
     if not verify_mercadopago_signature(request, body):
         raise HTTPException(status_code=401, detail="Invalid webhook signature")

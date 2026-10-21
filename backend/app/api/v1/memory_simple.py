@@ -1,5 +1,6 @@
 """User Memory API - Minimal implementation"""
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException
@@ -9,6 +10,8 @@ from app.core.database import get_db
 from app.core.security import decode_access_token
 from app.domains.user_memory.schemas import UserMemoryResponse
 from app.domains.user_memory.service import UserMemoryService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -67,6 +70,7 @@ async def get_my_memory(
             last_activity_at=memory.last_activity_at,
         )
     except Exception as e:
+        logger.exception("get_my_memory: error inesperado")
         raise HTTPException(status_code=500, detail=f"Error: {e!s}")
 
 
@@ -112,4 +116,5 @@ async def update_my_memory(
             last_activity_at=memory.last_activity_at,
         )
     except Exception as e:
+        logger.exception("update_my_memory: error inesperado")
         raise HTTPException(status_code=500, detail=f"Error: {e!s}")

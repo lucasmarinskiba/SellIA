@@ -167,7 +167,7 @@ class SelfRepairEngine:
                     business_id=str(exe.business_id) if exe.business_id else None,
                 ))
         except Exception as e:
-            logger.warning(f"[SelfRepair] Error detectando workflows atascados: {e}")
+            logger.warning(f"[SelfRepair] Error detectando workflows atascados: {e}", exc_info=True)
         return faults
 
     async def _detect_orphaned_deals(
@@ -202,7 +202,7 @@ class SelfRepairEngine:
                     business_id=str(deal.business_id) if deal.business_id else None,
                 ))
         except Exception as e:
-            logger.warning(f"[SelfRepair] Error detectando deals huérfanos: {e}")
+            logger.warning(f"[SelfRepair] Error detectando deals huérfanos: {e}", exc_info=True)
         return faults
 
     async def _detect_stuck_conversations(
@@ -238,7 +238,7 @@ class SelfRepairEngine:
                     business_id=str(conv.business_id) if conv.business_id else None,
                 ))
         except Exception as e:
-            logger.warning(f"[SelfRepair] Error detectando conversaciones atascadas: {e}")
+            logger.warning(f"[SelfRepair] Error detectando conversaciones atascadas: {e}", exc_info=True)
         return faults
 
     async def _detect_failed_sequences(
@@ -267,7 +267,7 @@ class SelfRepairEngine:
                     business_id=str(business_id) if business_id else None,
                 ))
         except Exception as e:
-            logger.warning(f"[SelfRepair] Error detectando secuencias fallidas: {e}")
+            logger.warning(f"[SelfRepair] Error detectando secuencias fallidas: {e}", exc_info=True)
         return faults
 
     async def _detect_channel_issues(
@@ -296,7 +296,7 @@ class SelfRepairEngine:
                     business_id=str(ch.business_id) if ch.business_id else None,
                 ))
         except Exception as e:
-            logger.warning(f"[SelfRepair] Error detectando problemas de canal: {e}")
+            logger.warning(f"[SelfRepair] Error detectando problemas de canal: {e}", exc_info=True)
         return faults
 
     # ─────────────────────────────────────────────
@@ -339,7 +339,7 @@ class SelfRepairEngine:
         except Exception as e:
             fault.repair_log.append(f"Error en reparación: {str(e)[:200]}")
             fault.status = RepairStatus.FAILED
-            logger.error(f"[SelfRepair] Error reparando {fault.fault_type}: {e}")
+            logger.exception(f"[SelfRepair] Error reparando {fault.fault_type}")
             return RepairStatus.FAILED
 
     async def _repair_stuck_workflow(self, fault: FaultReport) -> bool:
@@ -362,6 +362,7 @@ class SelfRepairEngine:
             fault.repair_log.append("Workflow atascado terminado forzosamente")
             return True
         except Exception as e:
+            logger.exception("_repair_stuck_workflow: error inesperado")
             fault.repair_log.append(f"Error al terminar workflow: {e}")
             return False
 
@@ -381,6 +382,7 @@ class SelfRepairEngine:
             fault.repair_log.append("Deal actualizado y marcado para seguimiento")
             return True
         except Exception as e:
+            logger.exception("_repair_orphaned_deal: error inesperado")
             fault.repair_log.append(f"Error al reparar deal: {e}")
             return False
 
@@ -397,6 +399,7 @@ class SelfRepairEngine:
             fault.repair_log.append("Conversación marcada para reactivación automática")
             return True
         except Exception as e:
+            logger.exception("_repair_stuck_conversation: error inesperado")
             fault.repair_log.append(f"Error al marcar conversación: {e}")
             return False
 
@@ -423,6 +426,7 @@ class SelfRepairEngine:
             fault.repair_log.append("Envíos fallidos marcados para reintento")
             return True
         except Exception as e:
+            logger.exception("_repair_failed_sequence: error inesperado")
             fault.repair_log.append(f"Error al reintentar secuencias: {e}")
             return False
 
@@ -442,6 +446,7 @@ class SelfRepairEngine:
             fault.repair_log.append("Canal marcado para reconexión automática")
             return True
         except Exception as e:
+            logger.exception("_repair_disconnected_channel: error inesperado")
             fault.repair_log.append(f"Error al reconectar canal: {e}")
             return False
 
@@ -484,8 +489,8 @@ class SelfRepairEngine:
                 self.db.add(alert)
             await self.db.commit()
             logger.info(f"[SelfRepair] Alerta de falla enviada al dueño: {fault.fault_type}")
-        except Exception as e:
-            logger.error(f"[SelfRepair] Error notificando falla: {e}")
+        except Exception:
+            logger.exception("[SelfRepair] Error notificando falla")
 
     def get_active_faults(self) -> list[FaultReport]:
         return list(self._active_faults.values())

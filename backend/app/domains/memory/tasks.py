@@ -45,8 +45,8 @@ def summarize_conversation_task(conversation_id: str | None = None):
         for cid in conversation_ids:
             try:
                 processed.append(await _run_single(cid))
-            except Exception as exc:
-                logger.error(f"summarize_conversation_task failed for {cid}: {exc}")
+            except Exception:
+                logger.exception(f"summarize_conversation_task failed for {cid}")
 
         return {
             "status": "ok",

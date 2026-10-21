@@ -64,7 +64,7 @@ class ComputerUseWebSocketManager:
             try:
                 await ws.close()
             except Exception:
-                pass
+                logger.exception("stop: error inesperado")
         self._connections.clear()
         logger.info("ComputerUseWebSocketManager stopped")
 
@@ -90,7 +90,7 @@ class ComputerUseWebSocketManager:
             try:
                 await self._pubsub.unsubscribe(f"cuws:{session_id}")
             except Exception:
-                pass
+                logger.exception("disconnect: error inesperado")
 
         logger.info(f"WS disconnected for session {session_id}")
 
@@ -107,7 +107,7 @@ class ComputerUseWebSocketManager:
                 await ws.send_json(message)
                 return
             except Exception as e:
-                logger.warning(f"Local WS send failed for {session_id}: {e}")
+                logger.warning(f"Local WS send failed for {session_id}: {e}", exc_info=True)
                 # Connection might be broken, remove it
                 async with self._lock:
                     self._connections.pop(session_id, None)
@@ -119,8 +119,8 @@ class ComputerUseWebSocketManager:
                 f"cuws:{session_id}",
                 json.dumps({"target": session_id, "message": message}),
             )
-        except Exception as e:
-            logger.error(f"Redis publish failed for {session_id}: {e}")
+        except Exception:
+            logger.exception(f"Redis publish failed for {session_id}")
 
     async def _listen_loop(self):
         """Escucha mensajes de Redis y los reenvía a conexiones locales."""
@@ -142,15 +142,15 @@ class ComputerUseWebSocketManager:
                                 try:
                                     await ws.send_json(message)
                                 except Exception as e:
-                                    logger.warning(f"WS send via Redis failed: {e}")
+                                    logger.warning(f"WS send via Redis failed: {e}", exc_info=True)
                                     async with self._lock:
                                         self._connections.pop(session_id, None)
-                    except Exception as e:
-                        logger.error(f"Redis message handling error: {e}")
+                    except Exception:
+                        logger.exception("Redis message handling error")
         except asyncio.CancelledError:
             raise
-        except Exception as e:
-            logger.error(f"Redis listener error: {e}")
+        except Exception:
+            logger.exception("Redis listener error")
             # Restart after delay
             await asyncio.sleep(5)
             asyncio.create_task(self._listen_loop())

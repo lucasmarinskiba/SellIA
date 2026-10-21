@@ -92,8 +92,8 @@ async def apply_approved_improvements():
         for imp in improvements:
             try:
                 await create_feature_flag_for_improvement(db, imp)
-            except Exception as e:
-                logger.error(f"Failed to create feature flag for {imp.id}: {e}")
+            except Exception:
+                logger.exception(f"Failed to create feature flag for {imp.id}")
 
         logger.info(f"Applied {len(improvements)} approved improvements")
         return {"applied": len(improvements)}
@@ -120,8 +120,8 @@ async def rollout_progressive():
         for flag in flags:
             try:
                 await increment_rollout(db, flag.name, increment=10)
-            except Exception as e:
-                logger.error(f"Failed to increment rollout for {flag.name}: {e}")
+            except Exception:
+                logger.exception(f"Failed to increment rollout for {flag.name}")
 
         logger.info(f"Progressive rollout updated for {len(flags)} features")
         return {"flags_updated": len(flags)}

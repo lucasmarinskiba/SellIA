@@ -3,11 +3,14 @@
 Registra handlers para eventos del sistema que conectan dominios.
 """
 
+import logging
 from typing import Any
 from uuid import UUID
 
 from app.core.database import AsyncSessionLocal
 from app.core.events import event_bus
+
+logger = logging.getLogger(__name__)
 
 
 async def _on_lead_score_changed(payload: dict[str, Any]):
@@ -95,6 +98,7 @@ async def _on_human_handoff(payload: dict[str, Any]):
         r.expire("human_handoff_queue", 86400)  # 24h TTL
         r.close()
     except Exception as e:
+        logger.exception("_on_human_handoff: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Handoff queue error: {e}")
 
@@ -171,6 +175,7 @@ async def _on_order_created_growth(payload: dict[str, Any]):
                     f"XP: +{result['xp_gained']}, celebrations: {result['celebration_intensity']}"
                 )
         except Exception as e:
+            logger.exception("_on_order_created_growth: error inesperado")
             from app.core.logger import get_logger
             get_logger(__name__).info(f"Gamification sale recording skipped: {e}")
 
@@ -184,6 +189,7 @@ async def _on_order_created_growth(payload: dict[str, Any]):
                     conversation_id=UUID(conversation_id),
                 )
             except Exception as e:
+                logger.exception("_on_order_created_growth: error inesperado")
                 from app.core.logger import get_logger
                 get_logger(__name__).info(f"Referral link generation skipped: {e}")
 
@@ -200,6 +206,7 @@ async def _on_order_created_growth(payload: dict[str, Any]):
                     delay_hours=72,
                 )
             except Exception as e:
+                logger.exception("_on_order_created_growth: error inesperado")
                 from app.core.logger import get_logger
                 get_logger(__name__).info(f"Review request scheduling skipped: {e}")
 

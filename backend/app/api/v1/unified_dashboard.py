@@ -1,5 +1,6 @@
 """Unified analytics dashboard API endpoints."""
 
+import logging
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
 from uuid import UUID
@@ -13,6 +14,8 @@ from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.domains.analytics.unified_dashboard_service import UnifiedDashboardService
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1", tags=["unified-dashboard"])
 
@@ -47,6 +50,7 @@ async def aggregate_location_metrics(
         )
         return result
     except Exception as e:
+        logger.exception("aggregate_location_metrics: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -70,6 +74,7 @@ async def generate_business_summary(
         )
         return result
     except Exception as e:
+        logger.exception("generate_business_summary: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -93,6 +98,7 @@ async def compare_locations(
         )
         return result
     except Exception as e:
+        logger.exception("compare_locations: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -140,6 +146,7 @@ async def get_location_unified_metrics(
             "data_points": metric_data
         }
     except Exception as e:
+        logger.exception("get_location_unified_metrics: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -188,4 +195,5 @@ async def get_business_dashboard(
             "last_updated": summary.timestamp.isoformat()
         }
     except Exception as e:
+        logger.exception("get_business_dashboard: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

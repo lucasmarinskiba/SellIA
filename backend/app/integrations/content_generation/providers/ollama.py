@@ -6,9 +6,13 @@ Recommended models: llama3.1, mistral, qwen2.5, phi4
 """
 
 
+import logging
+
 from app.core.config import get_settings
 
 from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -28,6 +32,7 @@ class OllamaProvider(BaseProvider):
             # Use a simple sync check for property; async check is done in router
             return True  # Router will verify availability before calling
         except Exception:
+            logger.exception("is_available: error inesperado")
             return False
 
     def estimate_cost(self, config: GenerationConfig) -> float:
@@ -97,4 +102,5 @@ class OllamaProvider(BaseProvider):
             )
 
         except Exception as e:
+            logger.exception("generate: error inesperado")
             return GenerationResult(success=False, error_message=str(e))

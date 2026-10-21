@@ -74,5 +74,5 @@ class LocationQRGenerator:
                 "business_id": params.get("business")
             }
         except Exception as e:
-            logger.error(f"Failed to parse QR payload: {e}")
+            logger.exception("Failed to parse QR payload")
             return {"valid": False, "error": str(e)}

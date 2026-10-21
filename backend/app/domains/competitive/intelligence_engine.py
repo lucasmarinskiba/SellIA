@@ -78,6 +78,7 @@ def _normalize_price(value: str) -> float | None:
             cleaned = ''.join(parts[:-1]) + '.' + parts[-1]
         return float(cleaned)
     except Exception:
+        logger.exception("_normalize_price: error inesperado")
         return None
 
 
@@ -163,7 +164,7 @@ class CompetitiveIntelligenceEngine:
         except Exception as e:
             monitor.status = 'error'
             await self.db.commit()
-            logger.error(f"Scrape error {monitor.competitor_url}: {e}")
+            logger.exception(f"Scrape error {monitor.competitor_url}")
             return {"error": str(e), "status": "error"}
 
     async def detect_changes(self, business_id: uuid.UUID) -> list[dict[str, Any]]:
@@ -325,8 +326,8 @@ class CompetitiveIntelligenceEngine:
                 "options": options if options else ["Evaluar manualmente"],
                 "risk_note": risk_note,
             }
-        except Exception as e:
-            logger.error(f"Error generando estrategia: {e}")
+        except Exception:
+            logger.exception("Error generando estrategia")
             return {
                 "change": change,
                 "suggestion": "Recomendacion: Ofrecer bundle con mayor valor percibido",

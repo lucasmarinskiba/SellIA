@@ -1,5 +1,6 @@
 """Services API Router"""
 
+import logging
 from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
@@ -27,6 +28,8 @@ from app.domains.services.schemas import (
     ServiceDeliveryUpdate,
 )
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -77,6 +80,7 @@ async def create_delivery(
     try:
         return await service_services.create_service_delivery(db, data.order_id, data.model_dump())
     except Exception:
+        logger.exception("create_delivery: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).exception("Error creating delivery")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -171,6 +175,7 @@ async def create_appointment(
     try:
         return await service_services.create_appointment(db, current_user.businesses[0].id if hasattr(current_user, 'businesses') else data.order_id, data.model_dump())
     except Exception:
+        logger.exception("create_appointment: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).exception("Error creating appointment")
         raise HTTPException(status_code=500, detail="Internal server error")

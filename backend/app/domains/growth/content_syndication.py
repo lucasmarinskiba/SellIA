@@ -65,7 +65,7 @@ class ContentSyndicationEngine:
                     )
                     self.db.add(entry)
             except Exception as e:
-                logger.error(f"Failed to syndicate to {platform}: {e}")
+                logger.exception(f"Failed to syndicate to {platform}")
                 results[platform] = {"error": str(e)}
 
         await self.db.commit()
@@ -125,8 +125,8 @@ Responde en JSON:
             )
             import json
             return json.loads(response or "{}")
-        except Exception as e:
-            logger.error(f"Instagram adaptation failed: {e}")
+        except Exception:
+            logger.exception("Instagram adaptation failed")
             return self._fallback_instagram(title, body)
 
     async def _adapt_tiktok(self, business_id: uuid.UUID, title: str, body: str) -> dict:
@@ -160,8 +160,8 @@ Responde en JSON:
             )
             import json
             return json.loads(response or "{}")
-        except Exception as e:
-            logger.error(f"TikTok adaptation failed: {e}")
+        except Exception:
+            logger.exception("TikTok adaptation failed")
             return self._fallback_tiktok(title, body)
 
     async def _adapt_linkedin(self, business_id: uuid.UUID, title: str, body: str) -> dict:
@@ -192,8 +192,8 @@ Responde en JSON:
             )
             import json
             return json.loads(response or "{}")
-        except Exception as e:
-            logger.error(f"LinkedIn adaptation failed: {e}")
+        except Exception:
+            logger.exception("LinkedIn adaptation failed")
             return self._fallback_linkedin(title, body)
 
     async def _adapt_whatsapp_status(self, business_id: uuid.UUID, title: str, body: str) -> dict:
@@ -223,8 +223,8 @@ Responde en JSON:
             )
             import json
             return json.loads(response or "{}")
-        except Exception as e:
-            logger.error(f"WhatsApp Status adaptation failed: {e}")
+        except Exception:
+            logger.exception("WhatsApp Status adaptation failed")
             return self._fallback_whatsapp_status(title, body)
 
     async def _adapt_email(self, business_id: uuid.UUID, title: str, body: str) -> dict:
@@ -258,8 +258,8 @@ Responde en JSON:
             )
             import json
             return json.loads(response or "{}")
-        except Exception as e:
-            logger.error(f"Email adaptation failed: {e}")
+        except Exception:
+            logger.exception("Email adaptation failed")
             return self._fallback_email(title, body)
 
     # ========== Fallbacks ==========

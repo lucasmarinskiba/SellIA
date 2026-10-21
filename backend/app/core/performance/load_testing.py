@@ -224,8 +224,8 @@ class LoadTestRunner:
 
                 metrics.append(response_time)
 
-            except Exception as e:
-                logger.error(f"Request error in user {user_id}: {e}")
+            except Exception:
+                logger.exception(f"Request error in user {user_id}")
 
             # Wait before next request
             await asyncio.sleep(actual_interval)
@@ -257,6 +257,7 @@ class LoadTestRunner:
             )
 
         except Exception as e:
+            logger.exception("_send_request: error inesperado")
             response_time_ms = (time.time() - start_time) * 1000
 
             return RequestMetrics(

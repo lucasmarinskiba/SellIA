@@ -4,11 +4,14 @@ Handles order notifications, inventory updates, and buyer messages.
 Docs: https://developer-docs.amazon.com/sp-api/docs
 """
 
+import logging
 from typing import Any
 
 from app.domains.channels.connectors.base import BaseChannelConnector
 from app.domains.channels.models import ChannelPlatform
 from app.domains.channels.schemas import WebhookPayload
+
+logger = logging.getLogger(__name__)
 
 
 class AmazonSellerConnector(BaseChannelConnector):
@@ -247,6 +250,7 @@ class AmazonSellerConnector(BaseChannelConnector):
             try:
                 await self._refresh_access_token()
             except Exception:
+                logger.exception("validate_credentials: error inesperado")
                 return False
         if not self.access_token:
             return False
@@ -258,4 +262,5 @@ class AmazonSellerConnector(BaseChannelConnector):
                 response = await client.get(url, headers=headers)
                 return response.status_code == 200
         except Exception:
+            logger.exception("validate_credentials: error inesperado")
             return False

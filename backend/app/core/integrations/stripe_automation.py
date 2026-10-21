@@ -258,8 +258,8 @@ class StripeAutomation:
                 db.add(payment)
                 await db.commit()
                 logger.info(f"Payment {payment_intent['id']} saved to database")
-        except Exception as e:
-            logger.error(f"Failed to save payment to DB: {e!s}")
+        except Exception:
+            logger.exception("Failed to save payment to DB")
             # No fallar el webhook, pero loguear el error
 
         return {

@@ -110,8 +110,8 @@ La guía debe:
             )
             import json
             article = json.loads(response or "{}")
-        except Exception as e:
-            logger.error(f"Failed to generate guide: {e}")
+        except Exception:
+            logger.exception("Failed to generate guide")
             article = {
                 "title": f"Guía completa: {topic}",
                 "body": f"Contenido sobre {topic}...",
@@ -189,8 +189,8 @@ Requisitos:
             )
             import json
             return json.loads(response or "{}")
-        except Exception as e:
-            logger.error(f"Article generation failed: {e}")
+        except Exception:
+            logger.exception("Article generation failed")
             return {
                 "title": keyword.title(),
                 "body": f"Artículo sobre {keyword}...",
@@ -228,8 +228,8 @@ Responde en JSON:
             )
             import json
             return json.loads(response or "{}")
-        except Exception as e:
-            logger.error(f"Meta generation failed: {e}")
+        except Exception:
+            logger.exception("Meta generation failed")
             return {
                 "meta_description": f"Descubre todo sobre {keyword}. Guía completa con consejos prácticos.",
                 "schema_markup": "",
@@ -320,6 +320,6 @@ Responde en JSON:
                     campaign_id=campaign_id,
                 )
                 contents.append(content)
-            except Exception as e:
-                logger.error(f"Failed to generate content for '{keyword}': {e}")
+            except Exception:
+                logger.exception(f"Failed to generate content for '{keyword}'")
         return contents

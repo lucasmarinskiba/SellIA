@@ -34,7 +34,7 @@ def auto_deliver_invoices():
                     res = await engine.auto_deliver_invoices(business.id)
                     total_delivered += res.get('delivered', 0)
                 except Exception as e:
-                    logger.error(f'Failed auto-deliver for business {business.id}: {e}')
+                    logger.exception(f'Failed auto-deliver for business {business.id}: {e}')
 
             logger.info(f'Finance auto-deliver: {total_delivered} invoices delivered')
             return {'delivered': total_delivered}
@@ -59,7 +59,7 @@ def dunning_sequence():
                     res = await engine.run_dunning_sequence(business.id)
                     total_reminders += res.get('reminders_sent', 0)
                 except Exception as e:
-                    logger.error(f'Failed dunning for business {business.id}: {e}')
+                    logger.exception(f'Failed dunning for business {business.id}: {e}')
 
             logger.info(f'Finance dunning: {total_reminders} reminders sent')
             return {'reminders_sent': total_reminders}
@@ -84,7 +84,7 @@ def cash_flow_forecast():
                     await engine.forecast_cash_flow(business.id, days=30)
                     forecasts += 1
                 except Exception as e:
-                    logger.error(f'Failed cash flow forecast for business {business.id}: {e}')
+                    logger.exception(f'Failed cash flow forecast for business {business.id}: {e}')
 
             logger.info(f'Finance cash flow: {forecasts} forecasts generated')
             return {'forecasts': forecasts}
@@ -106,8 +106,8 @@ def ledger_bank_reconciliation():
                 try:
                     res = await ReconciliationService(db).run_reconciliation(business.id)
                     matched += res.get("auto_matched", 0) + res.get("rule_categorized", 0)
-                except Exception as e:
-                    logger.error(f"Ledger reconcile failed for business {business.id}: {e}")
+                except Exception:
+                    logger.exception(f"Ledger reconcile failed for business {business.id}")
             logger.info(f"Ledger bank reconciliation: {matched} movements resolved")
             return {"resolved": matched}
 
@@ -139,7 +139,7 @@ def ledger_month_close():
                     await LedgerReports(db).close_period(business.id, period_name, lock=False)
                     closed += 1
                 except Exception as e:
-                    logger.warning(f"Month close skipped for business {business.id}: {e}")
+                    logger.warning(f"Month close skipped for business {business.id}: {e}", exc_info=True)
             logger.info(f"Ledger month close ({period_name}): {closed} businesses closed")
             return {"period": period_name, "closed": closed}
 
@@ -163,7 +163,7 @@ def auto_reconcile_payments():
                     res = await engine.auto_reconcile_payments(business.id)
                     total_reconciled += res.get('reconciled', 0)
                 except Exception as e:
-                    logger.error(f'Failed reconcile for business {business.id}: {e}')
+                    logger.exception(f'Failed reconcile for business {business.id}: {e}')
 
             logger.info(f'Finance reconcile: {total_reconciled} payments reconciled')
             return {'reconciled': total_reconciled}

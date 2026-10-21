@@ -50,8 +50,8 @@ def autopilot_recommendation_executor():
                         executed += 1
                     else:
                         escalated += 1
-                except Exception as e:
-                    logger.exception(f"Failed to execute recommendation {rec.id}: {e}")
+                except Exception:
+                    logger.exception(f"Failed to execute recommendation {rec.id}")
 
             logger.info(f"Autopilot recommendation executor: {executed} executed, {escalated} escalated")
             return {"executed": executed, "escalated": escalated}
@@ -76,8 +76,8 @@ def autopilot_daily_report_generator():
                 try:
                     await report_service.generate_daily_report(business.id)
                     generated += 1
-                except Exception as e:
-                    logger.error(f"Failed to generate daily report for business {business.id}: {e}")
+                except Exception:
+                    logger.exception(f"Failed to generate daily report for business {business.id}")
 
             logger.info(f"Generated {generated} daily autopilot reports")
             return {"generated": generated}
@@ -102,8 +102,8 @@ def fatigue_score_recalculation():
                 try:
                     count = await service.recalculate_all_scores(business.id)
                     total_updated += count
-                except Exception as e:
-                    logger.error(f"Failed to recalculate fatigue for business {business.id}: {e}")
+                except Exception:
+                    logger.exception(f"Failed to recalculate fatigue for business {business.id}")
 
             logger.info(f"Recalculated fatigue scores for {total_updated} conversations")
             return {"updated": total_updated}
@@ -141,8 +141,8 @@ def health_score_recalculation():
                 try:
                     count = await service.recalculate_all_health_scores(business.id)
                     total_updated += count
-                except Exception as e:
-                    logger.error(f"Failed to recalculate health scores for business {business.id}: {e}")
+                except Exception:
+                    logger.exception(f"Failed to recalculate health scores for business {business.id}")
 
             logger.info(f"Recalculated health scores for {total_updated} customers")
             return {"updated": total_updated}
@@ -167,8 +167,8 @@ def churn_prevention_activator():
                 try:
                     actions = await engine.activate_prevention_for_business(business.id)
                     total_actions += len(actions)
-                except Exception as e:
-                    logger.error(f"Failed churn prevention for business {business.id}: {e}")
+                except Exception:
+                    logger.exception(f"Failed churn prevention for business {business.id}")
 
             logger.info(f"Churn prevention: {total_actions} actions activated")
             return {"activated": total_actions}
@@ -208,8 +208,8 @@ def cadence_engine_scheduler():
                         # In a full implementation, this would queue the message
                         # For now, we log that cadence recommends sending
                         scheduled += 1
-                except Exception as e:
-                    logger.error(f"Cadence scheduling failed for conv {conv.id}: {e}")
+                except Exception:
+                    logger.exception(f"Cadence scheduling failed for conv {conv.id}")
 
             logger.info(f"Cadence scheduler: {scheduled} contacts recommended")
             return {"recommended": scheduled}
@@ -252,8 +252,8 @@ def director_executive_loop():
                                     # In full implementation, would trigger actual workflow
 
                     logger.info(f"Director executive loop completed for business {business.id}")
-                except Exception as e:
-                    logger.error(f"Director executive loop failed for business {business.id}: {e}")
+                except Exception:
+                    logger.exception(f"Director executive loop failed for business {business.id}")
 
             return {"businesses_evaluated": len(businesses)}
 

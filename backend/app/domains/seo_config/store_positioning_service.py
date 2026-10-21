@@ -90,7 +90,7 @@ class StorePositioningScoreService:
             return connector
 
         except Exception as e:
-            logger.error(f"Error getting store ranking connector: {str(e)[:200]}")
+            logger.exception(f"Error getting store ranking connector: {str(e)[:200]}")
             return None
 
     async def compute_store_score(
@@ -114,7 +114,7 @@ class StorePositioningScoreService:
         try:
             signals = await connector.get_store_signals(external_id)
         except Exception as e:
-            logger.error(f"Failed to fetch store signals for {business_id}/{platform_name}: {str(e)[:200]}")
+            logger.exception(f"Failed to fetch store signals for {business_id}/{platform_name}: {str(e)[:200]}")
             return None
 
         signal_map = {s.key: s for s in signals}
@@ -252,5 +252,5 @@ class StorePositioningScoreService:
                     primary_link_platform=link.platform,
                 )
         except Exception as e:
-            logger.warning(f"Could not read web_presence primary link: {str(e)[:150]}")
+            logger.warning(f"Could not read web_presence primary link: {str(e)[:150]}", exc_info=True)
         return out

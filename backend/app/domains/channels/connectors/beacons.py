@@ -4,11 +4,14 @@ Handles link-in-bio analytics, monetization events, and contact form submissions
 Docs: https://beacons.ai/developers
 """
 
+import logging
 from typing import Any
 
 from app.domains.channels.connectors.base import BaseChannelConnector
 from app.domains.channels.models import ChannelPlatform
 from app.domains.channels.schemas import WebhookPayload
+
+logger = logging.getLogger(__name__)
 
 
 class BeaconsConnector(BaseChannelConnector):
@@ -176,4 +179,5 @@ class BeaconsConnector(BaseChannelConnector):
                 response = await client.get(url, headers=headers)
                 return response.status_code == 200
         except Exception:
+            logger.exception("validate_credentials: error inesperado")
             return False

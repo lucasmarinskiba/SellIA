@@ -154,7 +154,7 @@ class ReActOrchestrator:
             data = json.loads(text)
             return ReActStep.model_validate(data)
         except Exception:
-            pass
+            logger.exception("_parse_step: error inesperado")
 
         # Markdown code block ```json
         if "```json" in text:
@@ -164,7 +164,7 @@ class ReActOrchestrator:
                 data = json.loads(text[start:end].strip())
                 return ReActStep.model_validate(data)
             except Exception:
-                pass
+                logger.exception("_parse_step: error inesperado")
 
         # Any code block ```
         if "```" in text:
@@ -174,7 +174,7 @@ class ReActOrchestrator:
                 data = json.loads(text[start:end].strip())
                 return ReActStep.model_validate(data)
             except Exception:
-                pass
+                logger.exception("_parse_step: error inesperado")
 
         # JSON between braces
         try:
@@ -183,7 +183,7 @@ class ReActOrchestrator:
             data = json.loads(text[start:end])
             return ReActStep.model_validate(data)
         except Exception:
-            pass
+            logger.exception("_parse_step: error inesperado")
 
         return None
 
@@ -298,7 +298,7 @@ class ReActOrchestrator:
                     tokens_used=response.response_metadata.get("token_usage", {}).get("total_tokens") if hasattr(response, "response_metadata") else None,
                 )
         except Exception as exc:
-            logger.warning(f"Native tool calling failed: {exc}. Falling back to JSON mode.")
+            logger.warning(f"Native tool calling failed: {exc}. Falling back to JSON mode.", exc_info=True)
             return None
 
     # ------------------------------------------------------------------
@@ -333,7 +333,7 @@ class ReActOrchestrator:
                 },
             )
         except Exception as exc:
-            logger.warning(f"Failed to log AI call: {exc}")
+            logger.warning(f"Failed to log AI call: {exc}", exc_info=True)
 
     # ------------------------------------------------------------------
     # Main loop
@@ -360,7 +360,7 @@ class ReActOrchestrator:
                 self._raw_business_type = btype.value
                 return self._raw_business_type
         except Exception as exc:
-            logger.debug(f"Could not load business_type: {exc}")
+            logger.debug(f"Could not load business_type: {exc}", exc_info=True)
         return None
 
     async def process(

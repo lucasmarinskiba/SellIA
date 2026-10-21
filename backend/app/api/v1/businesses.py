@@ -79,6 +79,7 @@ async def debug_conversation_state(
         quals = qual_res.scalars().all()
         out["qualifications"] = [{"id": str(q.id), "status": q.status, "score": float(q.qualification_score), "bant": q.bant_score} for q in quals]
     except Exception as e:
+        logger.exception("debug_conversation_state: error inesperado")
         out["error"] = str(e)
     return out
 
@@ -118,6 +119,7 @@ async def debug_llm_test(
     except TimeoutError:
         return {"status": "timeout", "steps": steps}
     except BaseException as e:
+        logger.exception("debug_llm_test: error inesperado")
         return {"status": "error", "type": type(e).__name__, "error": str(e)[:500], "steps": steps}
 
 
@@ -135,6 +137,7 @@ async def debug_qualify(
         result = await lq_service.qualify_lead(db=db, conversation_id=conversation_id, business_id=business_id)
         return {"status": "ok", "result": {k: str(v) for k, v in result.items()}}
     except Exception as e:
+        logger.exception("debug_qualify: error inesperado")
         import traceback
         return {"status": "error", "error": str(e), "trace": traceback.format_exc()[-1500:]}
 
@@ -174,6 +177,7 @@ async def debug_add_type_column(
         await db.commit()
         return {"status": "ok"}
     except Exception as e:
+        logger.exception("debug_add_type_column: error inesperado")
         await db.rollback()
         return {"status": "error", "error": str(e)}
 
@@ -193,6 +197,7 @@ async def debug_add_config_column(
         await db.commit()
         return {"status": "ok"}
     except Exception as e:
+        logger.exception("debug_add_config_column: error inesperado")
         await db.rollback()
         return {"status": "error", "error": str(e)}
 
@@ -214,6 +219,7 @@ async def debug_create_table(
             await conn.run_sync(lambda sync_conn: table.create(sync_conn, checkfirst=True))
         return {"status": "ok", "table": table_name}
     except Exception as e:
+        logger.exception("debug_create_table: error inesperado")
         return {"status": "error", "table": table_name, "error": str(e)}
 
 
@@ -246,7 +252,7 @@ async def create_business(
         # Log pero no fallar si seed falla
         import logging
         logger = logging.getLogger(__name__)
-        logger.warning(f"Failed to seed toggles for business {business.id}: {e}")
+        logger.warning(f"Failed to seed toggles for business {business.id}: {e}", exc_info=True)
 
     return {"id": str(business.id), "name": business.name}
 

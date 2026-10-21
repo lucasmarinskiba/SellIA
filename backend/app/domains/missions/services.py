@@ -3,6 +3,7 @@
 Servicios para crear, ejecutar y monitorear misiones cross-plataforma.
 """
 
+import logging
 import uuid
 from typing import Any
 
@@ -22,6 +23,8 @@ from .schemas import (
     MissionUpdate,
     PlaybookRead,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class MissionService:
@@ -300,7 +303,7 @@ class MissionService:
                     "has_physical_location": bc.has_physical_location,
                 }
         except Exception:
-            pass
+            logger.exception("run_diagnostic: error inesperado")
 
         diagnostics_data = run_diagnostic(business_metrics, context)
 

@@ -3,9 +3,12 @@ Validación de Cloudflare Turnstile (CAPTCHA invisible).
 Docs: https://developers.cloudflare.com/turnstile/
 """
 
+import logging
 import os
 
 import httpx
+
+logger = logging.getLogger(__name__)
 
 TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 TURNSTILE_SECRET_KEY = os.getenv("TURNSTILE_SECRET_KEY", "")
@@ -44,4 +47,5 @@ async def verify_turnstile_token(token: str, remote_ip: str | None = None) -> tu
         return False, f"Turnstile rechazado: {', '.join(error_codes)}"
 
     except Exception as e:
+        logger.exception("verify_turnstile_token: error inesperado")
         return False, f"Error al verificar Turnstile: {e!s}"

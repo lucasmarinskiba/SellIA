@@ -126,7 +126,7 @@ class AmazonRankingConnector(PlatformRankingConnector):
                 )
                 return resp.status_code == 200
         except Exception as e:
-            logger.error(f"Amazon ranking credentials validation failed: {str(e)[:100]}")
+            logger.exception(f"Amazon ranking credentials validation failed: {str(e)[:100]}")
             return False
 
     async def get_ranking_signals(self, external_id: str) -> list[RankingSignal]:
@@ -163,6 +163,7 @@ class AmazonRankingConnector(PlatformRankingConnector):
         try:
             body = resp.json()
         except Exception:
+            logger.exception("_get_json: error inesperado")
             body = None
         return resp.status_code, body
 
@@ -185,7 +186,7 @@ class AmazonRankingConnector(PlatformRankingConnector):
                 return body["items"][0]
             logger.warning(f"Amazon ranking: listing lookup for {asin} returned {status}")
         except Exception as e:
-            logger.warning(f"Amazon ranking: listing lookup failed: {str(e)[:100]}")
+            logger.warning(f"Amazon ranking: listing lookup failed: {str(e)[:100]}", exc_info=True)
         return None
 
     async def _account_health_signals(self, client: httpx.AsyncClient) -> list[RankingSignal]:
@@ -248,7 +249,7 @@ class AmazonRankingConnector(PlatformRankingConnector):
                 self._rate_signal("account_vtr_pct", vtr, f"Amazon: mantener por encima de {VTR_TARGET_PCT}%. {unit_note}"),
             ]
         except Exception as e:
-            logger.warning(f"Amazon ranking: account health fetch failed: {str(e)[:100]}")
+            logger.warning(f"Amazon ranking: account health fetch failed: {str(e)[:100]}", exc_info=True)
             return self._health_unavailable(keys, str(e)[:100])
 
     def _health_unavailable(self, keys: tuple[str, ...], detail: str) -> list[RankingSignal]:
@@ -276,6 +277,7 @@ class AmazonRankingConnector(PlatformRankingConnector):
         try:
             return json.loads(raw.decode("utf-8"))
         except Exception:
+            logger.exception("_download_report_document: error inesperado")
             return None
 
     def _find_rate(self, node: Any, key: str) -> float | None:
@@ -349,6 +351,7 @@ class AmazonRankingConnector(PlatformRankingConnector):
         try:
             current_price = float(offers[0]["price"]["amount"]) if offers else None
         except Exception:
+            logger.exception("_price_competitiveness_signals: error inesperado")
             current_price = None
 
         if not sku or current_price is None:
@@ -395,7 +398,7 @@ class AmazonRankingConnector(PlatformRankingConnector):
                               detail="<=1.0 significa precio en o por debajo del FOEP"),
             ]
         except Exception as e:
-            logger.warning(f"Amazon ranking: FOEP fetch failed: {str(e)[:100]}")
+            logger.warning(f"Amazon ranking: FOEP fetch failed: {str(e)[:100]}", exc_info=True)
             return [RankingSignal("price_vs_foep_ratio", None, measured=False, detail=str(e)[:100])]
 
     async def _catalog_signals(self, client: httpx.AsyncClient, asin: str) -> list[RankingSignal]:
@@ -447,7 +450,7 @@ class AmazonRankingConnector(PlatformRankingConnector):
             ))
             return out
         except Exception as e:
-            logger.warning(f"Amazon ranking: catalog fetch failed: {str(e)[:100]}")
+            logger.warning(f"Amazon ranking: catalog fetch failed: {str(e)[:100]}", exc_info=True)
             return [RankingSignal("catalog_completeness_pct", None, measured=False, detail=str(e)[:100])]
 
     # ── Scoring ──

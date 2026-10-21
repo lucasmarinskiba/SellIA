@@ -165,7 +165,7 @@ class FailsafeEngine:
                 return {"status": "error", "error": "Unknown channel", "retryable": False}
 
         except Exception as e:
-            logger.error(f"Error sending via {channel.value}: {e!s}")
+            logger.exception(f"Error sending via {channel.value}")
             return {
                 "status": "error",
                 "error": str(e),

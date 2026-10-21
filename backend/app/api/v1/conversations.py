@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
@@ -25,6 +26,8 @@ from app.domains.channels.schemas import (
     MessageResponse,
 )
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -233,6 +236,7 @@ async def send_message(
             if sent is not None:
                 return sent
         except Exception as e:
+            logger.exception("send_message: error inesperado")
             from app.core.logger import get_logger
 
             get_logger(__name__).error(f"Failed to send outbound message: {e}")

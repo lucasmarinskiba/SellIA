@@ -6,7 +6,11 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
+import logging
+
 from app.core.database import Base, engine
+
+logger = logging.getLogger(__name__)
 
 
 async def init_db():
@@ -28,6 +32,7 @@ async def init_db():
         print("Phase 51 (Content): ContentTemplate, GeneratedContent, ContentPerformance, BulkContentGeneration, ContentVariant")
         return True
     except Exception as e:
+        logger.exception("init_db: error inesperado")
         print(f"❌ Database init failed: {e}")
         import traceback
         traceback.print_exc()

@@ -46,7 +46,7 @@ async def _scrape_with_httpx(url: str) -> dict[str, Any]:
                 "method": "httpx",
             }
     except Exception as e:
-        logger.warning(f"httpx scrape failed for {url}: {e}")
+        logger.warning(f"httpx scrape failed for {url}: {e}", exc_info=True)
         return {"url": url, "error": str(e), "method": "httpx"}
 
 
@@ -75,7 +75,7 @@ async def _scrape_with_browser(url: str) -> dict[str, Any]:
             "method": "browser",
         }
     except Exception as e:
-        logger.warning(f"Browser scrape failed for {url}: {e}")
+        logger.warning(f"Browser scrape failed for {url}: {e}", exc_info=True)
         return {"url": url, "error": str(e), "method": "browser"}
 
 
@@ -132,7 +132,7 @@ async def _analyze_competitor_with_llm(
         parsed = json.loads(content)
         return parsed
     except Exception as e:
-        logger.warning(f"Failed to parse LLM competitor analysis: {e}")
+        logger.warning(f"Failed to parse LLM competitor analysis: {e}", exc_info=True)
         return {
             "price_range": None,
             "key_features": [],
@@ -193,7 +193,7 @@ async def _generate_market_report_with_llm(
             content = content.split("```")[1].split("```")[0].strip()
         return json.loads(content)
     except Exception as e:
-        logger.warning(f"Failed to parse LLM market report: {e}")
+        logger.warning(f"Failed to parse LLM market report: {e}", exc_info=True)
         return {
             "trends": [],
             "gaps": [],
@@ -270,7 +270,7 @@ async def run_market_analysis(
         await db.refresh(job)
 
     except Exception as e:
-        logger.error(f"Market analysis failed for job {job.id}: {e}")
+        logger.exception(f"Market analysis failed for job {job.id}")
         job.status = "failed"
         job.report_data = {"error": str(e)}
         await db.commit()

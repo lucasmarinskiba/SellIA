@@ -144,8 +144,8 @@ class SimulationEngine:
             # Update leaderboard
             await self._update_leaderboard(db, user_id, scenario.agent_type)
 
-        except Exception as e:
-            logger.exception(f"Simulation run failed: {e}")
+        except Exception:
+            logger.exception("Simulation run failed")
             run.status = "failed"
             run.messages = messages_history
             run.duration_seconds = int((datetime.now(UTC) - started).total_seconds())
@@ -342,6 +342,7 @@ class SimulationEngine:
                 cleaned = cleaned.split("```")[1].split("```")[0].strip()
             return json.loads(cleaned)
         except Exception:
+            logger.exception("_extract_json: error inesperado")
             return default
 
     async def _update_leaderboard(

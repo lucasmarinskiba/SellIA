@@ -68,8 +68,8 @@ async def _inbound_content_generator():
 
                 await db.commit()
                 logger.info(f"Generated SEO content for campaign {campaign.id}")
-            except Exception as e:
-                logger.error(f"Failed to generate content for campaign {campaign.id}: {e}")
+            except Exception:
+                logger.exception(f"Failed to generate content for campaign {campaign.id}")
 
 
 @shared_task(name="growth.lead_magnet_distributor")
@@ -107,8 +107,8 @@ async def _lead_magnet_distributor():
                     if result.get("status") == "delivered":
                         delivered += 1
                         lead.nurturing_stage = NurturingStage.AWARENESS
-            except Exception as e:
-                logger.error(f"Failed to deliver lead magnet to lead {lead.id}: {e}")
+            except Exception:
+                logger.exception(f"Failed to deliver lead magnet to lead {lead.id}")
 
         await db.commit()
         logger.info(f"Delivered {delivered} lead magnets")
@@ -163,8 +163,8 @@ async def _cold_lead_nurturer():
                     lead.nurturing_stage = NurturingStage.INTEREST
 
                 nurtured += 1
-            except Exception as e:
-                logger.error(f"Failed to nurture lead {lead.id}: {e}")
+            except Exception:
+                logger.exception(f"Failed to nurture lead {lead.id}")
 
         await db.commit()
         logger.info(f"Nurtured {nurtured} cold leads")
@@ -214,8 +214,8 @@ async def _social_proof_collector():
                     delay_hours=0,
                 )
                 sent += 1
-            except Exception as e:
-                logger.error(f"Failed to request review for order {order.id}: {e}")
+            except Exception:
+                logger.exception(f"Failed to request review for order {order.id}")
 
         await db.commit()
         logger.info(f"Sent {sent} review requests")
@@ -248,8 +248,8 @@ async def _ugc_request_sender():
                 result = await engine.send_ugc_request(req.id)
                 if result.get("status") == "sent":
                     sent += 1
-            except Exception as e:
-                logger.error(f"Failed to send UGC request {req.id}: {e}")
+            except Exception:
+                logger.exception(f"Failed to send UGC request {req.id}")
 
         logger.info(f"Sent {sent} UGC requests")
 
@@ -281,8 +281,8 @@ async def _referral_loop_evaluator():
                 # If K > 1, log celebration
                 if metrics["exponential_growth"]:
                     logger.info(f"🚀 Business {business_id} has achieved viral growth! K={metrics['k_factor']}")
-            except Exception as e:
-                logger.error(f"Failed to evaluate referrals for business {business_id}: {e}")
+            except Exception:
+                logger.exception(f"Failed to evaluate referrals for business {business_id}")
 
 
 @shared_task(name="growth.community_engagement_scanner")
@@ -310,8 +310,8 @@ async def _community_engagement_scanner():
                     f"Business {business_id} comment analytics: "
                     f"{analytics['leads_from_comments']} leads from comments today"
                 )
-            except Exception as e:
-                logger.error(f"Comment scanner error for business {business_id}: {e}")
+            except Exception:
+                logger.exception(f"Comment scanner error for business {business_id}")
 
 
 @shared_task(name="growth.growth_campaign_optimizer")
@@ -353,5 +353,5 @@ async def _growth_campaign_optimizer():
                         f"🌟 High-performing campaign {campaign.id} "
                         f"(conversion: {conversion_rate}%) — consider scaling"
                     )
-            except Exception as e:
-                logger.error(f"Failed to optimize campaign {campaign.id}: {e}")
+            except Exception:
+                logger.exception(f"Failed to optimize campaign {campaign.id}")

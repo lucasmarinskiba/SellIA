@@ -1,8 +1,11 @@
 """Mission WebSocket Manager — real-time progress broadcasting."""
 
+import logging
 from typing import Any
 
 from fastapi import WebSocket
+
+logger = logging.getLogger(__name__)
 
 
 class MissionWebSocketManager:
@@ -34,6 +37,7 @@ class MissionWebSocketManager:
             try:
                 await ws.send_json(message)
             except Exception:
+                logger.exception("broadcast: error inesperado")
                 dead_sockets.append(ws)
         for ws in dead_sockets:
             self.disconnect(user_id, ws)

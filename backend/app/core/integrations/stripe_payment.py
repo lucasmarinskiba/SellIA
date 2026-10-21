@@ -74,7 +74,7 @@ class StripePaymentProcessor:
             logger.error("Stripe authentication error")
             return {"status": "error", "message": "Payment service authentication failed"}
         except Exception as e:
-            logger.error(f"Unexpected error creating payment intent: {e!s}")
+            logger.exception("Unexpected error creating payment intent")
             return {"status": "error", "message": str(e)}
 
     @staticmethod
@@ -127,7 +127,7 @@ class StripePaymentProcessor:
             }
 
         except Exception as e:
-            logger.error(f"Error creating checkout session: {e!s}")
+            logger.exception("Error creating checkout session")
             return {"status": "error", "message": str(e)}
 
     @staticmethod
@@ -146,7 +146,7 @@ class StripePaymentProcessor:
             }
 
         except Exception as e:
-            logger.error(f"Error retrieving payment intent: {e!s}")
+            logger.exception("Error retrieving payment intent")
             return {"status": "error", "message": str(e)}
 
     @staticmethod
@@ -170,7 +170,7 @@ class StripePaymentProcessor:
             }
 
         except Exception as e:
-            logger.error(f"Error refunding payment: {e!s}")
+            logger.exception("Error refunding payment")
             return {"status": "error", "message": str(e)}
 
 
@@ -187,8 +187,8 @@ class StripeWebhookHandler:
         except stripe.error.SignatureVerificationError:
             logger.error("Invalid webhook signature")
             return False
-        except Exception as e:
-            logger.error(f"Webhook verification error: {e!s}")
+        except Exception:
+            logger.exception("Webhook verification error")
             return False
 
     @staticmethod

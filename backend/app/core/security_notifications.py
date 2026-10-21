@@ -4,6 +4,7 @@ Sistema de notificaciones de seguridad:
 - Webhooks a Slack, Discord, Telegram
 """
 
+import logging
 import os
 from datetime import UTC, datetime
 from email.mime.multipart import MIMEMultipart
@@ -16,6 +17,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.domains.security.models import SecurityWebhook
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -52,6 +55,7 @@ async def send_security_email(to_email: str, subject: str, body_html: str, body_
         )
         return True
     except Exception as e:
+        logger.exception("send_security_email: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Email error: {e}")
         return False
@@ -152,6 +156,7 @@ async def send_webhook(webhook: SecurityWebhook, event: str, title: str, descrip
             response.raise_for_status()
 
     except Exception as e:
+        logger.exception("send_webhook: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Webhook error ({webhook.name}): {e}")
 
@@ -183,6 +188,7 @@ async def notify_security_event(
         for wh in webhooks:
             await send_webhook(wh, event, title, description, details)
     except Exception as e:
+        logger.exception("notify_security_event: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Error fetching webhooks: {e}")
 

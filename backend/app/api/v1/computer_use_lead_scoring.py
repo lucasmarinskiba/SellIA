@@ -115,7 +115,7 @@ async def score_lead(
         )
 
     except Exception as e:
-        logger.error(f"Error scoring lead: {e}")
+        logger.exception("Error scoring lead")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -171,7 +171,7 @@ async def batch_score_leads(
         ]
 
     except Exception as e:
-        logger.error(f"Error batch scoring leads: {e}")
+        logger.exception("Error batch scoring leads")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -235,7 +235,7 @@ async def get_leads_by_temperature(
         return recommendations.get(temperature)
 
     except Exception as e:
-        logger.error(f"Error getting temperature info: {e}")
+        logger.exception("Error getting temperature info")
         raise HTTPException(status_code=500, detail=str(e))
 
 

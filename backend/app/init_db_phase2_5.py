@@ -6,6 +6,8 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
+import logging
+
 from app.core.database import engine
 from app.domains.channel_routing.models import (
     ChannelAffinityModel,
@@ -30,6 +32,8 @@ from app.domains.performance_optimization.models import (
     QueryOptimization,
     SlowQuery,
 )
+
+logger = logging.getLogger(__name__)
 
 
 async def init_phase2_5():
@@ -67,6 +71,7 @@ async def init_phase2_5():
         print("\n✅ All Phase 2-5 tables initialized successfully!")
         return True
     except Exception as e:
+        logger.exception("init_phase2_5: error inesperado")
         print(f"Error: {e}")
         import traceback
         traceback.print_exc()

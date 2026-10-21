@@ -5,6 +5,7 @@ Production-ready implementation with async support
 """
 
 import asyncio
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -12,6 +13,8 @@ from typing import Any
 
 from expert_selector import ExpertSelection, ExpertSelector, SalesScenario
 from prompt_registry import ExpertType, SalesContext
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -105,6 +108,7 @@ class ExpertOrchestrator:
             return result
 
         except Exception as e:
+            logger.exception("execute_expert_prompt: error inesperado")
             raise PromptExecutionError(f"Failed to execute expert prompt: {e!s}")
 
     async def _execute_prompt_internal(self, context: PromptExecutionContext) -> PromptExecutionResult:

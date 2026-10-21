@@ -363,8 +363,8 @@ class AdOrchestrator:
 
             return True, campaign_ids
 
-        except Exception as e:
-            self.logger.error(f"Error creating campaign: {e}")
+        except Exception:
+            self.logger.exception("Error creating campaign")
             return False, []
 
     async def get_campaign_performance(self, campaign_id: str) -> dict[str, Any]:
@@ -466,8 +466,8 @@ class AdOrchestrator:
                 self.logger.warning(f"No connector for platform {campaign.platform.value}")
                 campaign.status = "draft"
                 return False
-        except Exception as e:
-            self.logger.error(f"Error launching campaign: {e}")
+        except Exception:
+            self.logger.exception("Error launching campaign")
             campaign.status = "draft"
             return False
 
@@ -516,8 +516,8 @@ class AdOrchestrator:
             self.logger.info(f"Meta campaign launched: {campaign_id} | budget: ${campaign.daily_budget}/day")
             return True
 
-        except Exception as e:
-            self.logger.error(f"Error launching Meta campaign: {e}")
+        except Exception:
+            self.logger.exception("Error launching Meta campaign")
             return False
 
     async def _launch_google_campaign(self, campaign: AdCampaign) -> bool:
@@ -562,8 +562,8 @@ class AdOrchestrator:
             self.logger.info(f"Google campaign launched: {campaign_id} | budget: ${campaign.daily_budget}/day")
             return True
 
-        except Exception as e:
-            self.logger.error(f"Error launching Google campaign: {e}")
+        except Exception:
+            self.logger.exception("Error launching Google campaign")
             return False
 
 

@@ -69,8 +69,8 @@ class SlackService:
             logger.info(f"Slack message sent: {title}")
             return True
 
-        except Exception as e:
-            logger.error(f"Slack send failed: {e}")
+        except Exception:
+            logger.exception("Slack send failed")
             return False
 
     def _build_message_blocks(

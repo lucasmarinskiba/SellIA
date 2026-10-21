@@ -118,7 +118,7 @@ async def diagnose_product(diagnosis: ProductDiagnosis):
         }
 
     except Exception as e:
-        logger.error(f"Error en diagnóstico: {e!s}")
+        logger.exception("Error en diagnóstico")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -222,7 +222,7 @@ async def generate_complete_plan(diagnosis: ProductDiagnosis):
         }
 
     except Exception as e:
-        logger.error(f"Error generando plan: {e!s}")
+        logger.exception("Error generando plan")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -304,5 +304,5 @@ async def execute_immediately(diagnosis: ProductDiagnosis):
         }
 
     except Exception as e:
-        logger.error(f"Error en ejecución: {e!s}")
+        logger.exception("Error en ejecución")
         raise HTTPException(status_code=500, detail=str(e))

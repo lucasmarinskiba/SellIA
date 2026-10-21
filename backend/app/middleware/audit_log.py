@@ -47,7 +47,7 @@ class DataAccessAuditMiddleware(BaseHTTPMiddleware):
                     except ValueError:
                         pass
         except Exception:
-            pass
+            logger.exception("dispatch: error inesperado")
 
         # Async fire-and-forget to DB (non-blocking)
         try:
@@ -71,6 +71,6 @@ class DataAccessAuditMiddleware(BaseHTTPMiddleware):
             import asyncio
             asyncio.create_task(_log())
         except Exception:
-            pass
+            logger.exception("dispatch: error inesperado")
 
         return response

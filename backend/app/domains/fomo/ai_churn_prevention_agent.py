@@ -149,7 +149,7 @@ class ChurnRiskScorer:
             model.fit(X, y)
             return {"model": model, "feature_keys": feature_keys}
         except Exception as e:
-            logger.warning(f"Churn model fit failed ({e}), falling back to heuristic")
+            logger.warning(f"Churn model fit failed ({e}), falling back to heuristic", exc_info=True)
             return None
 
     @staticmethod
@@ -163,7 +163,7 @@ class ChurnRiskScorer:
             churn_class_index = list(fitted["model"].classes_).index(1)
             return float(proba[churn_class_index])
         except Exception as e:
-            logger.warning(f"ML risk scoring failed ({e}), returning neutral score")
+            logger.warning(f"ML risk scoring failed ({e}), returning neutral score", exc_info=True)
             return 0.5
 
 

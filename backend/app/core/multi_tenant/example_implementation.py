@@ -3,6 +3,7 @@ Real-world implementation example: Complete tenant endpoints.
 Shows how to integrate multi-tenant into your FastAPI app.
 """
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -23,6 +24,8 @@ from .tenant_context import (
     require_tenant_context,
 )
 from .tenant_manager import TenantService, TenantTier
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/tenants", tags=["multi-tenant"])
 
@@ -80,6 +83,7 @@ async def create_tenant(
         }
 
     except Exception as e:
+        logger.exception("create_tenant: error inesperado")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
@@ -190,6 +194,7 @@ async def upgrade_tier(
         }
 
     except Exception as e:
+        logger.exception("upgrade_tier: error inesperado")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
@@ -340,6 +345,7 @@ async def create_api_key(
         }
 
     except Exception as e:
+        logger.exception("create_api_key: error inesperado")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
@@ -409,6 +415,7 @@ async def rotate_api_key(
         }
 
     except Exception as e:
+        logger.exception("rotate_api_key: error inesperado")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),

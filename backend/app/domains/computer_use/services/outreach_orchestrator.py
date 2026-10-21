@@ -203,8 +203,8 @@ We help teams fix this. Worth a quick chat?
 
             return False, None
 
-        except Exception as e:
-            self.logger.error(f"Error sending outreach: {e}")
+        except Exception:
+            self.logger.exception("Error sending outreach")
             return False, None
 
     async def send_follow_up(
@@ -248,8 +248,8 @@ We help teams fix this. Worth a quick chat?
 
             return success, msg_id
 
-        except Exception as e:
-            self.logger.error(f"Error sending follow-up: {e}")
+        except Exception:
+            self.logger.exception("Error sending follow-up")
             return False, None
 
     def _personalize_message(

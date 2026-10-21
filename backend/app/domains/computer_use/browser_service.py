@@ -106,10 +106,11 @@ class BrowserService:
             await route.continue_()
         except Exception:
             # Never let a routing error stall the page
+            logger.exception("_route_handler: error inesperado")
             try:
                 await route.continue_()
             except Exception:
-                pass
+                logger.exception("_route_handler: error inesperado")
 
     async def stop(self) -> None:
         """Cierra el navegador y libera recursos."""
@@ -123,7 +124,7 @@ class BrowserService:
                 if coro:
                     await coro
             except Exception as e:
-                logger.warning(f"Error closing {label}: {e}")
+                logger.warning(f"Error closing {label}: {e}", exc_info=True)
         self._page = None
         self._context = None
         self._browser = None
@@ -146,6 +147,7 @@ class BrowserService:
             )
         except Exception:
             # networkidle may never fire on streaming pages — fall back to floor
+            logger.exception("_settle: error inesperado")
             if floor > 0:
                 await self._page.wait_for_timeout(floor)
             return
@@ -197,7 +199,7 @@ class BrowserService:
                 }
             except Exception as e:
                 last_err = str(e)
-                logger.warning(f"Navigation attempt {attempt + 1} failed: {e}")
+                logger.warning(f"Navigation attempt {attempt + 1} failed: {e}", exc_info=True)
         return {"success": False, "error": last_err}
 
     # ── screenshots ─────────────────────────────────────────────────────
@@ -219,7 +221,7 @@ class BrowserService:
             raw = await el.screenshot(type="png")
             return self._encode_jpeg(raw)
         except Exception as e:
-            logger.warning(f"Element screenshot failed: {e}")
+            logger.warning(f"Element screenshot failed: {e}", exc_info=True)
             return None
 
     def _encode_jpeg(self, raw_bytes: bytes) -> bytes:
@@ -244,6 +246,7 @@ class BrowserService:
             await self._settle()
             return {"success": True}
         except Exception as e:
+            logger.exception("click: error inesperado")
             return {"success": False, "error": str(e)}
 
     async def double_click(self, x: int, y: int) -> dict:
@@ -254,6 +257,7 @@ class BrowserService:
             await self._settle()
             return {"success": True}
         except Exception as e:
+            logger.exception("double_click: error inesperado")
             return {"success": False, "error": str(e)}
 
     async def right_click(self, x: int, y: int) -> dict:
@@ -264,6 +268,7 @@ class BrowserService:
             await self._settle()
             return {"success": True}
         except Exception as e:
+            logger.exception("right_click: error inesperado")
             return {"success": False, "error": str(e)}
 
     async def type(self, text: str) -> dict:
@@ -275,6 +280,7 @@ class BrowserService:
             await self._settle()
             return {"success": True}
         except Exception as e:
+            logger.exception("type: error inesperado")
             return {"success": False, "error": str(e)}
 
     async def scroll(self, direction: str, amount: int) -> dict:
@@ -294,6 +300,7 @@ class BrowserService:
             await self._settle()
             return {"success": True}
         except Exception as e:
+            logger.exception("scroll: error inesperado")
             return {"success": False, "error": str(e)}
 
     async def wait(self, seconds: float) -> dict:
@@ -311,6 +318,7 @@ class BrowserService:
             await self._settle()
             return {"success": True}
         except Exception as e:
+            logger.exception("press_key: error inesperado")
             return {"success": False, "error": str(e)}
 
     # ── DOM-precise actions (high accuracy path) ────────────────────────
@@ -323,6 +331,7 @@ class BrowserService:
             await self._settle()
             return {"success": True}
         except Exception as e:
+            logger.exception("click_selector: error inesperado")
             return {"success": False, "error": str(e)}
 
     async def click_text(self, text: str, exact: bool = False) -> dict:
@@ -335,6 +344,7 @@ class BrowserService:
             await self._settle()
             return {"success": True}
         except Exception as e:
+            logger.exception("click_text: error inesperado")
             return {"success": False, "error": str(e)}
 
     async def fill(self, selector: str, value: str) -> dict:
@@ -346,6 +356,7 @@ class BrowserService:
             await self._settle()
             return {"success": True}
         except Exception as e:
+            logger.exception("fill: error inesperado")
             return {"success": False, "error": str(e)}
 
     async def wait_for_selector(self, selector: str, timeout_ms: int | None = None) -> dict:
@@ -358,6 +369,7 @@ class BrowserService:
             )
             return {"success": True}
         except Exception as e:
+            logger.exception("wait_for_selector: error inesperado")
             return {"success": False, "error": str(e)}
 
     async def get_page_info(self) -> dict:
@@ -407,5 +419,5 @@ class BrowserService:
         try:
             return await self._page.evaluate(js, limit)
         except Exception as e:
-            logger.warning(f"get_interactive_elements failed: {e}")
+            logger.warning(f"get_interactive_elements failed: {e}", exc_info=True)
             return []

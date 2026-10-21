@@ -1,5 +1,6 @@
 """Checkout & payment processing endpoints."""
 
+import logging
 import os
 from typing import Annotated
 
@@ -9,6 +10,8 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/checkout", tags=["payments"])
 
@@ -97,6 +100,7 @@ async def create_checkout_session(
                 raise HTTPException(status_code=400, detail="Failed to create checkout")
 
     except Exception as e:
+        logger.exception("create_checkout_session: error inesperado")
         raise HTTPException(status_code=500, detail=f"Checkout error: {e!s}")
 
 
@@ -119,4 +123,5 @@ async def get_checkout_status(preference_id: str):
                 raise HTTPException(status_code=404, detail="Preference not found")
 
     except Exception as e:
+        logger.exception("get_checkout_status: error inesperado")
         raise HTTPException(status_code=500, detail=f"Error: {e!s}")

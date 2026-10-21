@@ -117,7 +117,7 @@ async def create_invoice(
         }
 
     except Exception as e:
-        logger.error(f"Error creando factura: {e!s}")
+        logger.exception("Error creando factura")
         raise HTTPException(status_code=500, detail=str(e))
 
 

@@ -1,4 +1,7 @@
+import logging
 from dataclasses import dataclass
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -32,6 +35,7 @@ class IntegrationsManager:
                 return self._init_zapier(config)
             return False
         except Exception as e:
+            logger.exception("register_integration: error inesperado")
             print(f"Integration registration error: {e}")
             return False
 
@@ -47,6 +51,7 @@ class IntegrationsManager:
             }
             return True
         except Exception as e:
+            logger.exception("_init_salesforce: error inesperado")
             print(f"Salesforce init error: {e}")
             return False
 
@@ -59,6 +64,7 @@ class IntegrationsManager:
             }
             return True
         except Exception as e:
+            logger.exception("_init_hubspot: error inesperado")
             print(f"HubSpot init error: {e}")
             return False
 
@@ -71,6 +77,7 @@ class IntegrationsManager:
             }
             return True
         except Exception as e:
+            logger.exception("_init_stripe: error inesperado")
             print(f"Stripe init error: {e}")
             return False
 
@@ -83,6 +90,7 @@ class IntegrationsManager:
             }
             return True
         except Exception as e:
+            logger.exception("_init_zapier: error inesperado")
             print(f"Zapier init error: {e}")
             return False
 
@@ -99,6 +107,7 @@ class IntegrationsManager:
                 'sobject': sobject,
             }
         except Exception as e:
+            logger.exception("sync_contacts_from_salesforce: error inesperado")
             return {'success': False, 'error': str(e)}
 
     def sync_contacts_from_hubspot(self) -> dict:
@@ -113,6 +122,7 @@ class IntegrationsManager:
                 'synced_count': 0,
             }
         except Exception as e:
+            logger.exception("sync_contacts_from_hubspot: error inesperado")
             return {'success': False, 'error': str(e)}
 
     def create_payment_intent(self, amount: float, currency: str = 'usd') -> dict:
@@ -129,6 +139,7 @@ class IntegrationsManager:
                 'currency': currency,
             }
         except Exception as e:
+            logger.exception("create_payment_intent: error inesperado")
             return {'success': False, 'error': str(e)}
 
     def send_to_zapier(self, event_type: str, data: dict) -> dict:
@@ -144,6 +155,7 @@ class IntegrationsManager:
                 'event': event_type,
             }
         except Exception as e:
+            logger.exception("send_to_zapier: error inesperado")
             return {'success': False, 'error': str(e)}
 
     def get_integration_status(self) -> dict:

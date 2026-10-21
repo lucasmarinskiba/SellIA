@@ -183,8 +183,8 @@ class MessageIntelligenceService:
             )
             return analysis
 
-        except Exception as e:
-            logger.exception(f"Failed to analyze message {message_id}: {e}")
+        except Exception:
+            logger.exception(f"Failed to analyze message {message_id}")
             return None
 
     def _extract_json(self, text: str) -> dict | None:

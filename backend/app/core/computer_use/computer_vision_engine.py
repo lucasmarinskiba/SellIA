@@ -106,7 +106,7 @@ Responde en JSON: {
             }
 
         except Exception as e:
-            logger.error(f"Claude Vision analysis failed: {e!s}")
+            logger.exception("Claude Vision analysis failed")
             return {"status": "error", "error": str(e)}
 
     # ========== BUTTON DETECTION ==========
@@ -187,8 +187,8 @@ Responde en JSON:
                 "elements": detection.get("elements", []),
             }
 
-        except Exception as e:
-            logger.error(f"Element detection failed: {e!s}")
+        except Exception:
+            logger.exception("Element detection failed")
             return {"status": "error"}
 
     # ========== TEXT RECOGNITION (OCR) ==========
@@ -245,8 +245,8 @@ Responde en JSON:
 
             return {"status": "success", "extraction": extraction}
 
-        except Exception as e:
-            logger.error(f"OCR extraction failed: {e!s}")
+        except Exception:
+            logger.exception("OCR extraction failed")
             return {"status": "error"}
 
     # ========== GOOGLE CLOUD VISION (BACKUP) ==========
@@ -294,7 +294,7 @@ Responde en JSON:
                 return {"status": "error", "code": response.status_code}
 
         except Exception as e:
-            logger.error(f"Google Vision detection failed: {e!s}")
+            logger.exception("Google Vision detection failed")
             return {"status": "error", "error": str(e)}
 
     # ========== INTELLIGENT ACTION SUGGESTION ==========
@@ -371,8 +371,8 @@ Responde en JSON: {{
 
             return {"status": "success", "suggestion": suggestion}
 
-        except Exception as e:
-            logger.error(f"Action suggestion failed: {e!s}")
+        except Exception:
+            logger.exception("Action suggestion failed")
             return {"status": "error"}
 
     # ========== VERIFY COMPLETION ==========
@@ -442,8 +442,8 @@ Responde en JSON: {{
 
             return {"status": "success", "verification": verification}
 
-        except Exception as e:
-            logger.error(f"Task verification failed: {e!s}")
+        except Exception:
+            logger.exception("Task verification failed")
             return {"status": "error"}
 
     async def close(self):

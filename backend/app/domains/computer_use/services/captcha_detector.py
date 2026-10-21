@@ -89,7 +89,7 @@ class CaptchaDetector:
             return False, 0.0, "Image analysis not implemented (requires vision model)"
 
         except Exception as e:
-            logger.warning(f"CaptchaDetector image analysis failed: {e}")
+            logger.warning(f"CaptchaDetector image analysis failed: {e}", exc_info=True)
             return False, 0.0, f"Analysis error: {e}"
 
     async def detect_from_page(self, page) -> tuple[bool, float, str]:
@@ -106,7 +106,7 @@ class CaptchaDetector:
                     if element:
                         return True, 0.95, f"CAPTCHA element found: {selector}"
                 except Exception:
-                    pass
+                    logger.exception("detect_from_page: error inesperado")
 
             # Text-based detection
             is_captcha, score, reason = self.detect_from_text(content, url)
@@ -119,12 +119,12 @@ class CaptchaDetector:
                     if any(keyword in frame_url.lower() for keyword in ["recaptcha", "hcaptcha", "turnstile"]):
                         return True, 0.95, f"CAPTCHA iframe detected: {frame_url}"
                 except Exception:
-                    pass
+                    logger.exception("detect_from_page: error inesperado")
 
             return is_captcha, score, reason
 
         except Exception as e:
-            logger.warning(f"CaptchaDetector page analysis failed: {e}")
+            logger.warning(f"CaptchaDetector page analysis failed: {e}", exc_info=True)
             return False, 0.0, f"Page analysis error: {e}"
 
     def get_user_message(self, confidence: float) -> str:
