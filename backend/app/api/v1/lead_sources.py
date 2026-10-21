@@ -6,12 +6,12 @@ Lead Sources + Prospecting
 - Referral tracking
 - Lead source analytics
 """
+import logging
+from datetime import datetime
+from enum import Enum
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional, List
-from datetime import datetime
-import logging
-from enum import Enum
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/lead-sources", tags=["lead-sources"])
@@ -37,23 +37,23 @@ class SourceStatus(str, Enum):
 # ============================================================
 class LinkedInConfig(BaseModel):
     # Para integración real con LinkedIn API
-    search_keywords: List[str]  # ["CTO", "VP Sales", "Founder"]
-    search_title: List[str]  # ["Chief Technology Officer", ...]
-    company_keywords: Optional[List[str]] = None  # ["SaaS", "Tech", ...]
+    search_keywords: list[str]  # ["CTO", "VP Sales", "Founder"]
+    search_title: list[str]  # ["Chief Technology Officer", ...]
+    company_keywords: list[str] | None = None  # ["SaaS", "Tech", ...]
     min_connections: int = 500
-    filter_country: Optional[str] = None
+    filter_country: str | None = None
 
 class WebsiteFormConfig(BaseModel):
     form_endpoint: str  # URL donde recibir submissions
-    form_fields: List[str]  # ["name", "email", "company", "message"]
-    auto_workflow_id: Optional[int] = None  # Auto-enroll en workflow
+    form_fields: list[str]  # ["name", "email", "company", "message"]
+    auto_workflow_id: int | None = None  # Auto-enroll en workflow
 
 class LeadSourceBase(BaseModel):
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     source_type: SourceType
-    auto_workflow_id: Optional[int] = None  # Auto-enroll nuevo lead en este workflow
-    industry_filter: Optional[str] = None
+    auto_workflow_id: int | None = None  # Auto-enroll nuevo lead en este workflow
+    industry_filter: str | None = None
     config: dict  # LinkedInConfig, WebsiteFormConfig, etc.
 
 class LeadSource(LeadSourceBase):
@@ -62,16 +62,16 @@ class LeadSource(LeadSourceBase):
     leads_generated: int
     created_at: datetime
     updated_at: datetime
-    last_fetch: Optional[datetime] = None
+    last_fetch: datetime | None = None
 
 class LeadSourceCreate(LeadSourceBase):
     pass
 
 class LeadSourceUpdate(BaseModel):
-    name: Optional[str] = None
-    status: Optional[SourceStatus] = None
-    config: Optional[dict] = None
-    auto_workflow_id: Optional[int] = None
+    name: str | None = None
+    status: SourceStatus | None = None
+    config: dict | None = None
+    auto_workflow_id: int | None = None
 
 class LinkedInSearchResult(BaseModel):
     name: str
@@ -79,15 +79,15 @@ class LinkedInSearchResult(BaseModel):
     company: str
     location: str
     profile_url: str
-    email: Optional[str] = None
+    email: str | None = None
     linkedin_url: str
     connections: int
 
 class WebsiteFormSubmission(BaseModel):
     name: str
     email: str
-    company: Optional[str] = None
-    message: Optional[str] = None
+    company: str | None = None
+    message: str | None = None
     form_source: str  # URL/form_id
 
 class LeadSourceAnalytics(BaseModel):
@@ -172,7 +172,7 @@ PREDEFINED_SOURCES = {
 # ============================================================
 # FUNCIONES
 # ============================================================
-def mock_linkedin_search(config: dict) -> List[LinkedInSearchResult]:
+def mock_linkedin_search(config: dict) -> list[LinkedInSearchResult]:
     """Sin integración con LinkedIn todavía: no devuelve prospectos inventados.
 
     Los resultados de prueba (MOCK_LINKEDIN_RESULTS) ya no se usan en el flujo.
@@ -218,8 +218,8 @@ async def create_lead_source(source_data: LeadSourceCreate) -> dict:
 
     return source_dict
 
-@router.get("/", response_model=List[LeadSource])
-async def list_lead_sources(status: Optional[SourceStatus] = None) -> list:
+@router.get("/", response_model=list[LeadSource])
+async def list_lead_sources(status: SourceStatus | None = None) -> list:
     """Listar fuentes de leads."""
     sources = list(lead_sources_db.values())
 
@@ -324,7 +324,7 @@ async def handle_referral(
     referrer_email: str,
     referred_name: str,
     referred_email: str,
-    referred_company: Optional[str] = None
+    referred_company: str | None = None
 ) -> dict:
     """Recibir referral de lead."""
     logger.info(f"Referral: {referrer_email} referred {referred_email}")

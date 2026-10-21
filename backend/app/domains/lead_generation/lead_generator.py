@@ -6,9 +6,9 @@ prospect_capture.py (CSV imports), never from invented data.
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
 from datetime import datetime
 from enum import Enum
+from typing import Any
 
 
 class LeadSource(str, Enum):
@@ -35,15 +35,15 @@ class LeadQuality(str, Enum):
 class Lead:
     lead_id: str
     name: str
-    email: Optional[str] = None
-    phone: Optional[str] = None
-    company: Optional[str] = None
-    location: Optional[str] = None
+    email: str | None = None
+    phone: str | None = None
+    company: str | None = None
+    location: str | None = None
     source: LeadSource = LeadSource.GOOGLE_SEARCH
     quality: LeadQuality = LeadQuality.WARM
-    estimated_budget: Optional[float] = None
-    estimated_timeline: Optional[str] = None
+    estimated_budget: float | None = None
+    estimated_timeline: str | None = None
     contact_method: str = "email"
-    raw_data: Dict[str, Any] = field(default_factory=dict)
+    raw_data: dict[str, Any] = field(default_factory=dict)
     created_at: datetime = field(default_factory=datetime.utcnow)
     enriched: bool = False

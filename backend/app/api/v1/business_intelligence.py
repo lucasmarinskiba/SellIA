@@ -1,22 +1,26 @@
 """Phases 10-13: Business intelligence, diagnostics, lead generation, marketing."""
 
-from fastapi import APIRouter, Depends, Query, Body, HTTPException
-from typing import Dict, Any, List
 import logging
+from typing import Any
+
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.business_intelligence.business_model_detector import (
-    BusinessModelDetector
+    BusinessModelDetector,
 )
 from app.domains.business_intelligence.service_diagnostician import (
-    ServiceDiagnostician, CompetitiveAnalyzer
+    CompetitiveAnalyzer,
+    ServiceDiagnostician,
 )
 from app.domains.lead_generation.places_source import (
-    PlacesAPIError, PlacesNotConfiguredError, search_places
+    PlacesAPIError,
+    PlacesNotConfiguredError,
+    search_places,
 )
 from app.domains.marketing.channel_strategy import ChannelStrategyGenerator
 from app.domains.marketing.copy_generator import CopyGenerator
+from app.domains.users.models import User
 
 router = APIRouter(tags=["business-intelligence"])
 logger = logging.getLogger(__name__)
@@ -41,7 +45,7 @@ async def analyze_business(
     location: str = Query(""),
     instagram: str = Query(""),
     facebook: str = Query(""),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Detect business model and adapt strategy."""
 
     try:
@@ -101,7 +105,7 @@ async def find_prospects(
     location: str = Query("", max_length=120),
     limit: int = Query(20, ge=1, le=20),
     current_user: User = Depends(get_current_user),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Busca negocios reales en Google Places. Requiere GOOGLE_PLACES_API_KEY.
 
     No guarda nada: para persistir los resultados usar POST /growth/prospects/search.
@@ -129,7 +133,7 @@ async def find_prospects(
 async def analyze_product(
     business_description: str = Query(...),
     business_model: str = Query(""),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Diagnose product-market fit and issues."""
 
     try:
@@ -175,7 +179,7 @@ async def analyze_product(
 async def analyze_competition(
     business_name: str = Query(...),
     industry: str = Query(""),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Analyze competitive landscape."""
 
     try:
@@ -205,7 +209,7 @@ async def analyze_competition(
 @router.post("/marketing/channel-strategy")
 async def generate_channel_strategy(
     business_model: str = Query(...),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Generate channel-specific marketing strategy."""
 
     try:
@@ -248,7 +252,7 @@ async def generate_channel_strategy(
 async def generate_copy_kit(
     business_name: str = Query(...),
     channel: str = Query(...),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Generate copy and content for channel."""
 
     try:
@@ -274,7 +278,7 @@ async def generate_copy_kit(
 async def get_content_calendar(
     business_model: str = Query(...),
     month: str = Query("current"),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get 30-day content calendar by channel."""
 
     return {
@@ -324,7 +328,7 @@ async def get_content_calendar(
 @router.post("/workflow/startup-plan")
 async def startup_plan(
     business_description: str = Body(...),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Generate complete startup plan: analyze + diagnose + strategy.
 
     Lead search is not part of the plan: it needs a real query (rubro + ciudad)
