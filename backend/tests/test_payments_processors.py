@@ -7,10 +7,8 @@ Run:
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from datetime import datetime, timedelta
-from decimal import Decimal
-import json
 
 # Import all payment modules
 from app.core.payments.stripe_processor import (
@@ -20,21 +18,17 @@ from app.core.payments.stripe_processor import (
 )
 from app.core.payments.mercadopago_processor import (
     MercadoPagoProcessor,
-    MercadoPagoWebhookHandler,
-    CurrencyCode,
 )
 from app.core.payments.crypto_processor import (
     CryptoProcessor,
-    Blockchain,
 )
 from app.core.payments.payment_reconciliation import (
     PaymentReconciler,
-    FulfillmentOrchestrator,
 )
 from app.core.payments.billing_history import BillingHistoryManager
 from app.core.payments.invoice_generator import InvoiceGenerator
 from app.core.payments.payout_manager import PayoutManager
-from app.core.payments.compliance import ComplianceChecker, PciDssCompliance
+from app.core.payments.compliance import ComplianceChecker
 
 
 # ============= STRIPE TESTS =============
