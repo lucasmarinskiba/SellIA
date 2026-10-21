@@ -5,10 +5,10 @@ Fase 11: Encuentra leads en web → enriquece data → segmenta por fit.
 
 import logging
 import uuid
-from typing import List, Dict, Any, Optional
-from datetime import datetime
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -35,16 +35,16 @@ class Lead:
     lead_id: str
     name: str
     email: str
-    phone: Optional[str]
+    phone: str | None
     company: str
     title: str
     industry: str
     company_size: str
 
     # Data enriquecida
-    linkedin_url: Optional[str] = None
-    website: Optional[str] = None
-    budget_estimate: Optional[float] = None
+    linkedin_url: str | None = None
+    website: str | None = None
+    budget_estimate: float | None = None
 
     # Scoring
     fit_score: float = 0.0  # 0-1
@@ -54,7 +54,7 @@ class Lead:
     # Tracking
     source: LeadSource = LeadSource.IMPORT
     created_at: datetime = None
-    last_contacted: Optional[datetime] = None
+    last_contacted: datetime | None = None
     contacted_count: int = 0
     responded: bool = False
 
@@ -62,7 +62,7 @@ class Lead:
         if self.created_at is None:
             self.created_at = datetime.utcnow()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "lead_id": self.lead_id,
             "name": self.name,
@@ -86,13 +86,13 @@ class LeadGenerator:
 
     def __init__(self):
         self.logger = logger
-        self.leads: Dict[str, Lead] = {}
+        self.leads: dict[str, Lead] = {}
 
     async def import_leads(
         self,
-        leads_data: List[Dict[str, Any]],
+        leads_data: list[dict[str, Any]],
         source: LeadSource = LeadSource.IMPORT,
-    ) -> List[Lead]:
+    ) -> list[Lead]:
         """Importa leads desde CSV/API/etc."""
         try:
             imported = []
@@ -152,8 +152,8 @@ class LeadGenerator:
     async def score_lead(
         self,
         lead: Lead,
-        target_industry: Optional[str] = None,
-        target_company_size: Optional[str] = None,
+        target_industry: str | None = None,
+        target_company_size: str | None = None,
     ) -> Lead:
         """Calcula fit score + quality."""
         try:
@@ -202,14 +202,14 @@ class LeadGenerator:
         self,
         quality: LeadQuality,
         limit: int = 10,
-    ) -> List[Lead]:
+    ) -> list[Lead]:
         """Obtiene leads por calidad."""
         leads = [l for l in self.leads.values() if l.quality == quality]
         leads.sort(key=lambda l: (l.fit_score + l.intent_score) / 2, reverse=True)
 
         return leads[:limit]
 
-    async def get_next_to_contact(self, limit: int = 5) -> List[Lead]:
+    async def get_next_to_contact(self, limit: int = 5) -> list[Lead]:
         """Obtiene próximos leads a contactar (HOT primero)."""
         # Priorizar: HOT no contactados → WARM → COLD
         all_leads = list(self.leads.values())

@@ -1,49 +1,67 @@
 """Growth Domain API Router"""
 
 import uuid
-from typing import Optional, List
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user, resolve_business_id
-from app.domains.users.models import User
-from app.domains.lead_generation.places_source import (
-    PlacesAPIError, PlacesNotConfiguredError, search_places,
-)
-from app.domains.lead_generation.prospect_capture import (
-    MAX_CSV_BYTES, parse_csv_contacts, save_csv_contacts, save_place_prospects,
-)
-
-from app.domains.growth.models import (
-    GrowthCampaign, GrowthCampaignType, GrowthCampaignStatus,
-    LeadMagnet, InboundLead, NurturingStage,
-    SocialProofItem, SocialProofType, SocialProofStatus,
-    UgcRequest, ValueSequence,
-)
-from app.domains.growth.schemas import (
-    GrowthCampaignCreate, GrowthCampaignUpdate, GrowthCampaignResponse,
-    LeadMagnetCreate, LeadMagnetResponse, LeadMagnetPerformance,
-    InboundLeadCreate, InboundLeadResponse,
-    ProspectSearchRequest, ProspectSearchResponse,
-    SocialProofCreate, SocialProofResponse, SocialProofStats,
-    UgcRequestCreate, UgcRequestResponse,
-    ValueSequenceCreate, ValueSequenceResponse, ValueSequencePerformance,
-    ReferralCampaignCreate, ReferralMetrics, ReferralCampaignReport,
-    GrowthDashboardMetrics, CampaignEvaluation,
-)
+from app.domains.growth.comment_responder import CommentResponder
+from app.domains.growth.content_syndication import ContentSyndicationEngine
 from app.domains.growth.inbound_engine import InboundGrowthEngine
 from app.domains.growth.lead_magnet_funnel import LeadMagnetEngine
+from app.domains.growth.models import (
+    GrowthCampaignStatus,
+    GrowthCampaignType,
+    LeadMagnet,
+    NurturingStage,
+    SocialProofType,
+    ValueSequence,
+)
+from app.domains.growth.schemas import (
+    CampaignEvaluation,
+    GrowthCampaignCreate,
+    GrowthCampaignResponse,
+    GrowthDashboardMetrics,
+    InboundLeadCreate,
+    InboundLeadResponse,
+    LeadMagnetCreate,
+    LeadMagnetPerformance,
+    LeadMagnetResponse,
+    ProspectSearchRequest,
+    ProspectSearchResponse,
+    ReferralCampaignCreate,
+    ReferralCampaignReport,
+    ReferralMetrics,
+    SocialProofCreate,
+    SocialProofResponse,
+    SocialProofStats,
+    UgcRequestCreate,
+    UgcRequestResponse,
+    ValueSequenceCreate,
+    ValueSequencePerformance,
+    ValueSequenceResponse,
+)
 from app.domains.growth.seo_pipeline import SEOPipeline
-from app.domains.growth.value_outreach import ValueFirstOutreach
-from app.domains.growth.viral_referral import ViralReferralEngine
 from app.domains.growth.social_proof import SocialProofEngine
 from app.domains.growth.ugc_collector import UGCCollector
-from app.domains.growth.warm_lead_detector import WarmLeadDetector
+from app.domains.growth.value_outreach import ValueFirstOutreach
+from app.domains.growth.viral_referral import ViralReferralEngine
 from app.domains.growth.voice_note_engine import VoiceNoteEngine
-from app.domains.growth.content_syndication import ContentSyndicationEngine
-from app.domains.growth.comment_responder import CommentResponder
+from app.domains.growth.warm_lead_detector import WarmLeadDetector
+from app.domains.lead_generation.places_source import (
+    PlacesAPIError,
+    PlacesNotConfiguredError,
+    search_places,
+)
+from app.domains.lead_generation.prospect_capture import (
+    MAX_CSV_BYTES,
+    parse_csv_contacts,
+    save_csv_contacts,
+    save_place_prospects,
+)
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/growth", tags=["growth"])
 
@@ -83,10 +101,10 @@ async def create_campaign(
     return campaign
 
 
-@router.get("/campaigns", response_model=List[GrowthCampaignResponse])
+@router.get("/campaigns", response_model=list[GrowthCampaignResponse])
 async def list_campaigns(
-    campaign_type: Optional[str] = None,
-    status: Optional[str] = None,
+    campaign_type: str | None = None,
+    status: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -154,13 +172,13 @@ async def create_lead_magnet(
     return magnet
 
 
-@router.get("/lead-magnets", response_model=List[LeadMagnetResponse])
+@router.get("/lead-magnets", response_model=list[LeadMagnetResponse])
 async def list_lead_magnets(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """List all lead magnets for the business."""
-    from sqlalchemy import select, desc
+    from sqlalchemy import desc, select
     result = await db.execute(
         select(LeadMagnet).where(
             LeadMagnet.business_id == await resolve_business_id(db, current_user),
@@ -181,7 +199,7 @@ async def get_lead_magnet_performance(
     return await engine.get_performance_report(magnet_id)
 
 
-@router.get("/lead-magnets/top", response_model=List[dict])
+@router.get("/lead-magnets/top", response_model=list[dict])
 async def get_top_lead_magnets(
     limit: int = Query(5, ge=1, le=20),
     db: AsyncSession = Depends(get_db),
@@ -214,10 +232,10 @@ async def capture_inbound_lead(
     return lead
 
 
-@router.get("/leads", response_model=List[InboundLeadResponse])
+@router.get("/leads", response_model=list[InboundLeadResponse])
 async def list_inbound_leads(
-    stage: Optional[str] = None,
-    source_type: Optional[str] = None,
+    stage: str | None = None,
+    source_type: str | None = None,
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -294,7 +312,7 @@ async def generate_seo_blog_post(
     keyword: str,
     search_intent: str = "informational",
     word_count: int = 1200,
-    campaign_id: Optional[uuid.UUID] = None,
+    campaign_id: uuid.UUID | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -314,7 +332,7 @@ async def generate_seo_blog_post(
 async def generate_seo_guide(
     topic: str,
     difficulty: str = "beginner",
-    campaign_id: Optional[uuid.UUID] = None,
+    campaign_id: uuid.UUID | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -331,7 +349,7 @@ async def generate_seo_guide(
 
 @router.get("/seo-content/scheduled")
 async def get_scheduled_content(
-    platform: Optional[str] = None,
+    platform: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -342,11 +360,11 @@ async def get_scheduled_content(
 
 # ========== Social Proof ==========
 
-@router.get("/social-proof", response_model=List[SocialProofResponse])
+@router.get("/social-proof", response_model=list[SocialProofResponse])
 async def get_social_proof_wall(
-    item_type: Optional[str] = None,
+    item_type: str | None = None,
     count: int = Query(10, ge=1, le=50),
-    min_rating: Optional[int] = None,
+    min_rating: int | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -415,7 +433,7 @@ async def get_social_proof_stats(
     return await engine.get_stats(await resolve_business_id(db, current_user))
 
 
-@router.get("/social-proof/moderation-queue", response_model=List[SocialProofResponse])
+@router.get("/social-proof/moderation-queue", response_model=list[SocialProofResponse])
 async def get_moderation_queue(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -459,7 +477,7 @@ async def send_ugc_request(
 
 @router.get("/ugc/gallery")
 async def get_ugc_gallery(
-    content_type: Optional[str] = None,
+    content_type: str | None = None,
     limit: int = Query(50, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -503,7 +521,7 @@ async def create_referral_campaign(
 @router.post("/referrals/generate-link")
 async def generate_referral_link(
     conversation_id: uuid.UUID,
-    program_id: Optional[uuid.UUID] = None,
+    program_id: uuid.UUID | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -559,7 +577,7 @@ async def create_value_sequence(
     return sequence
 
 
-@router.get("/value-sequences", response_model=List[ValueSequenceResponse])
+@router.get("/value-sequences", response_model=list[ValueSequenceResponse])
 async def list_value_sequences(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -590,7 +608,7 @@ async def get_value_sequence_performance(
 async def enroll_in_sequence(
     sequence_id: uuid.UUID,
     conversation_id: uuid.UUID,
-    inbound_lead_id: Optional[uuid.UUID] = None,
+    inbound_lead_id: uuid.UUID | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -671,7 +689,7 @@ async def generate_soft_close_voice_note(
 @router.post("/syndicate/{content_id}")
 async def syndicate_content(
     content_id: uuid.UUID,
-    platforms: List[str],
+    platforms: list[str],
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -689,7 +707,7 @@ async def process_comment(
     comment_id: str,
     author_username: str,
     comment_text: str,
-    author_id: Optional[str] = None,
+    author_id: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

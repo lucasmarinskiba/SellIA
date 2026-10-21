@@ -1,10 +1,10 @@
 """Phase 18: Autonomous Lead Generation Agent - finds leads for any product/service."""
 
+import logging
 from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 from enum import Enum
-import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -40,11 +40,11 @@ class GeneratedLead:
     prospect_location: str
     fit_score: float
     reason_fit: str
-    keywords_matched: List[str]
-    prospect_name: Optional[str] = None
-    prospect_email: Optional[str] = None
-    prospect_phone: Optional[str] = None
-    prospect_company: Optional[str] = None
+    keywords_matched: list[str]
+    prospect_name: str | None = None
+    prospect_email: str | None = None
+    prospect_phone: str | None = None
+    prospect_company: str | None = None
     generated_at: datetime = field(default_factory=datetime.utcnow)
     contact_method: str = "email"
 
@@ -54,13 +54,13 @@ class LeadGenerationCampaign:
     campaign_id: str
     user_id: str
     product: ProductDescriptor
-    sources: List[LeadSourceType]
+    sources: list[LeadSourceType]
     leads_target: int
     leads_generated: int = 0
     leads_qualified: int = 0
     active: bool = True
     created_at: datetime = field(default_factory=datetime.utcnow)
-    last_run: Optional[datetime] = None
+    last_run: datetime | None = None
     run_frequency_hours: int = 24
 
 
@@ -68,8 +68,8 @@ class LeadGenerationAgent:
     """Autonomous agent that generates leads for any product/service"""
 
     def __init__(self):
-        self.campaigns: Dict[str, LeadGenerationCampaign] = {}
-        self.generated_leads: Dict[str, List[GeneratedLead]] = {}
+        self.campaigns: dict[str, LeadGenerationCampaign] = {}
+        self.generated_leads: dict[str, list[GeneratedLead]] = {}
 
     def create_campaign(
         self, user_id: str, product: ProductDescriptor, leads_target: int = 50
@@ -95,7 +95,7 @@ class LeadGenerationAgent:
         logger.info(f"Campaign created: {campaign_id} for {product.name}")
         return campaign
 
-    def _select_best_sources(self, product: ProductDescriptor) -> List[LeadSourceType]:
+    def _select_best_sources(self, product: ProductDescriptor) -> list[LeadSourceType]:
         """Intelligently select lead sources based on product type"""
 
         if product.delivery_model == "online":
@@ -133,7 +133,7 @@ class LeadGenerationAgent:
                 LeadSourceType.MARKETPLACE
             ]
 
-    def generate_leads_for_campaign(self, campaign_id: str, limit: int = 50) -> List[GeneratedLead]:
+    def generate_leads_for_campaign(self, campaign_id: str, limit: int = 50) -> list[GeneratedLead]:
         """Generate leads for a campaign"""
 
         if campaign_id not in self.campaigns:
@@ -171,7 +171,7 @@ class LeadGenerationAgent:
         product: ProductDescriptor,
         source: LeadSourceType,
         limit: int
-    ) -> List[GeneratedLead]:
+    ) -> list[GeneratedLead]:
         """Fuente sin conector real: no inventa prospectos ni emails.
 
         Google Maps se busca con domains/lead_generation/places_source.py (async, vía
@@ -184,7 +184,7 @@ class LeadGenerationAgent:
         )
         return []
 
-    def get_campaign_leads(self, campaign_id: str, min_fit_score: float = 0.7) -> List[GeneratedLead]:
+    def get_campaign_leads(self, campaign_id: str, min_fit_score: float = 0.7) -> list[GeneratedLead]:
         """Get qualified leads from campaign"""
 
         if campaign_id not in self.generated_leads:
@@ -193,7 +193,7 @@ class LeadGenerationAgent:
         leads = self.generated_leads[campaign_id]
         return [l for l in leads if l.fit_score >= min_fit_score]
 
-    def get_campaign_stats(self, campaign_id: str) -> Dict[str, Any]:
+    def get_campaign_stats(self, campaign_id: str) -> dict[str, Any]:
         """Get campaign statistics"""
 
         if campaign_id not in self.campaigns:
@@ -222,7 +222,7 @@ class LeadGenerationAgent:
 
     def schedule_continuous_generation(
         self, campaign_id: str, frequency_hours: int = 24
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Schedule automatic lead generation"""
 
         if campaign_id not in self.campaigns:
@@ -239,7 +239,7 @@ class LeadGenerationAgent:
             "next_run": (datetime.utcnow() + timedelta(hours=frequency_hours)).isoformat()
         }
 
-    def export_leads_for_outreach(self, campaign_id: str, format: str = "csv") -> Dict[str, Any]:
+    def export_leads_for_outreach(self, campaign_id: str, format: str = "csv") -> dict[str, Any]:
         """Export leads in outreach-ready format"""
 
         leads = self.get_campaign_leads(campaign_id)
