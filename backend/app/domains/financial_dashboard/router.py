@@ -4,6 +4,7 @@ app/api/v1/analytics_dashboard.py's /overview with figures actually
 computed from posted journal entries, invoices, ad channels, and cash
 projections."""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
@@ -23,9 +24,9 @@ router = APIRouter(prefix="/{business_id}/financial-dashboard", tags=["Financial
 @cached(ttl_seconds=900, key_prefix="financial_dashboard")
 async def get_financial_dashboard(
     business_id: UUID,
-    period_days: int = Query(30, ge=1, le=365),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    period_days: Annotated[int, Query(ge=1, le=365)] = 30,
 ):
     """Unified financial dashboard: revenue/margins (ledger), ad spend + ROAS
     (ad_budget), accounts receivable + overdue (invoicing), cash + runway

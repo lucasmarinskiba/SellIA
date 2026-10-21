@@ -1,6 +1,7 @@
 """Unified analytics dashboard API endpoints."""
 
 from datetime import UTC, datetime, timedelta
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -98,9 +99,9 @@ async def compare_locations(
 @router.get("/locations/{location_id}/unified-metrics")
 async def get_location_unified_metrics(
     location_id: UUID,
-    days: int = Query(30, ge=1, le=365),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ) -> dict:
     """Get unified metrics for location over time period."""
     await get_owned_location(db, location_id, current_user)
@@ -145,8 +146,8 @@ async def get_location_unified_metrics(
 @router.get("/businesses/{business_id}/unified-dashboard")
 async def get_business_dashboard(
     business_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Get unified dashboard for entire business."""
     await get_owned_business(db, business_id, current_user)

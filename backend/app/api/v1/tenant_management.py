@@ -1,5 +1,6 @@
 """Tenant management API — isolation, audit, compliance."""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
@@ -36,7 +37,7 @@ class LogDataAccessRequest(BaseModel):
 def setup_isolation_policy(
     business_id: UUID,
     request: SetupIsolationPolicyRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Configure tenant isolation policy."""
     return TenantIsolationService.setup_isolation_policy(
@@ -53,7 +54,7 @@ def setup_isolation_policy(
 def add_tenant_user(
     business_id: UUID,
     request: AddTenantUserRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Add user to business tenant."""
     return TenantIsolationService.add_tenant_user(
@@ -68,10 +69,10 @@ def add_tenant_user(
 @router.post("/businesses/{business_id}/log-data-access")
 def log_data_access(
     business_id: UUID,
-    user_email: str = Query(...),
+    user_email: Annotated[str, Query()],
+    db: Annotated[Session, Depends(get_db)],
     request: LogDataAccessRequest = None,
-    user_ip: str | None = Query(None),
-    db: Session = Depends(get_db)
+    user_ip: Annotated[str | None, Query()] = None,
 ):
     """Log data access event."""
     return TenantIsolationService.log_data_access(
@@ -89,10 +90,10 @@ def log_data_access(
 @router.get("/businesses/{business_id}/audit-trail")
 def get_audit_trail(
     business_id: UUID,
-    days: int = Query(30, ge=1, le=365),
-    action_filter: str | None = Query(None),
-    user_filter: str | None = Query(None),
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
+    action_filter: Annotated[str | None, Query()] = None,
+    user_filter: Annotated[str | None, Query()] = None,
 ):
     """Get audit trail for tenant."""
     return TenantIsolationService.get_audit_trail(

@@ -1,5 +1,6 @@
 """Procurement API — /api/v1/businesses/{business_id}/procurement/*"""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
@@ -33,8 +34,8 @@ router = APIRouter(prefix="/{business_id}/procurement", tags=["Procurement"])
 async def create_vendor(
     business_id: UUID,
     body: VendorCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create vendor."""
     svc = VendorService(db)
@@ -44,8 +45,8 @@ async def create_vendor(
 @router.get("/vendors", response_model=list[VendorOut])
 async def list_vendors(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """List vendors."""
     svc = VendorService(db)
@@ -57,8 +58,8 @@ async def score_vendor(
     business_id: UUID,
     vendor_id: UUID,
     body: VendorScoreUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Update vendor scores."""
     svc = VendorService(db)
@@ -70,8 +71,8 @@ async def score_vendor(
 async def create_rfq(
     business_id: UUID,
     body: RFQCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create RFQ."""
     svc = RFQService(db)
@@ -89,8 +90,8 @@ async def create_rfq(
 async def get_rfq(
     business_id: UUID,
     rfq_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get RFQ."""
     svc = RFQService(db)
@@ -102,8 +103,8 @@ async def accept_rfq_response(
     business_id: UUID,
     rfq_id: UUID,
     body: RFQAccept,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Accept RFQ response."""
     svc = RFQService(db)
@@ -115,8 +116,8 @@ async def accept_rfq_response(
 async def create_po(
     business_id: UUID,
     body: PurchaseOrderCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create purchase order."""
     svc = PurchaseOrderService(db)
@@ -135,8 +136,8 @@ async def create_po(
 async def get_po(
     business_id: UUID,
     po_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get purchase order."""
     svc = PurchaseOrderService(db)
@@ -148,8 +149,8 @@ async def update_po_status(
     business_id: UUID,
     po_id: UUID,
     body: PurchaseOrderUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Update PO status."""
     svc = PurchaseOrderService(db)
@@ -165,8 +166,8 @@ async def update_po_status(
 @router.get("/purchase-orders/summary")
 async def po_summary(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get PO summary."""
     svc = PurchaseOrderService(db)

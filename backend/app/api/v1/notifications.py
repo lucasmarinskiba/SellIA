@@ -1,5 +1,6 @@
 """Notifications API endpoints."""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
@@ -41,9 +42,9 @@ class AlertTriggerRequest(BaseModel):
 @router.post("/users/{user_id}/notifications/preferences")
 def set_notification_preferences(
     user_id: UUID,
-    business_id: UUID = Query(...),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[Session, Depends(get_db)],
     request: NotificationPreferenceRequest = None,
-    db: Session = Depends(get_db)
 ):
     """Set user notification preferences."""
     preferences = request.dict(exclude_none=True) if request else {}
@@ -58,8 +59,8 @@ def set_notification_preferences(
 @router.get("/users/{user_id}/notifications/preferences")
 def get_notification_preferences(
     user_id: UUID,
-    business_id: UUID = Query(...),
-    db: Session = Depends(get_db)
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Get user notification preferences."""
     return NotificationService.get_notification_preferences(
@@ -73,7 +74,7 @@ def get_notification_preferences(
 def create_alert_rule(
     business_id: UUID,
     request: AlertRuleRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Create alert rule."""
     return NotificationService.create_alert_rule(
@@ -90,8 +91,8 @@ def create_alert_rule(
 @router.get("/businesses/{business_id}/alerts/rules")
 def get_alert_rules(
     business_id: UUID,
-    enabled_only: bool = Query(True),
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
+    enabled_only: Annotated[bool, Query()] = True,
 ):
     """Get alert rules."""
     return NotificationService.get_alert_rules(
@@ -105,7 +106,7 @@ def get_alert_rules(
 def update_alert_rule(
     rule_id: UUID,
     updates: dict,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Update alert rule."""
     return NotificationService.update_alert_rule(
@@ -119,7 +120,7 @@ def update_alert_rule(
 def trigger_alert(
     business_id: UUID,
     request: AlertTriggerRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Trigger alert."""
     return NotificationService.trigger_alert(
@@ -136,9 +137,9 @@ def trigger_alert(
 @router.get("/users/{user_id}/notifications/history")
 def get_notification_history(
     user_id: UUID,
-    business_id: UUID = Query(...),
-    days: int = Query(30, ge=1, le=365),
-    db: Session = Depends(get_db)
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[Session, Depends(get_db)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ):
     """Get notification history."""
     return NotificationService.get_notification_history(
@@ -152,8 +153,8 @@ def get_notification_history(
 @router.post("/notifications/{notification_id}/read")
 def mark_notification_read(
     notification_id: UUID,
-    action: str | None = Query(None),
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
+    action: Annotated[str | None, Query()] = None,
 ):
     """Mark notification as read."""
     return NotificationService.mark_as_read(
@@ -166,8 +167,8 @@ def mark_notification_read(
 @router.get("/businesses/{business_id}/notifications/metrics")
 def get_notification_metrics(
     business_id: UUID,
-    days: int = Query(30, ge=1, le=365),
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ):
     """Get notification metrics."""
     return NotificationService.get_notification_metrics(

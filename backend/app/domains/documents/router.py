@@ -1,5 +1,6 @@
 """Business Document RAG API Router"""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
@@ -28,10 +29,10 @@ router = APIRouter(tags=["documents"])
 )
 async def upload_document(
     business_id: UUID,
-    file: UploadFile = File(...),
-    title: str | None = Form(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    file: Annotated[UploadFile, File(...)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    title: Annotated[str | None, Form()] = None,
 ):
     svc = DocumentService(db)
     try:
@@ -44,8 +45,8 @@ async def upload_document(
 @router.get("/businesses/{business_id}/documents", response_model=list[BusinessDocumentResponse])
 async def list_documents(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     svc = DocumentService(db)
     return await svc.list_documents(business_id)
@@ -55,8 +56,8 @@ async def list_documents(
 async def get_document(
     business_id: UUID,
     document_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     svc = DocumentService(db)
     doc = await svc.get_document(document_id)
@@ -69,8 +70,8 @@ async def get_document(
 async def delete_document(
     business_id: UUID,
     document_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     svc = DocumentService(db)
     doc = await svc.get_document(document_id)
@@ -86,8 +87,8 @@ async def delete_document(
 async def search_documents(
     business_id: UUID,
     data: DocumentSearchRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     svc = DocumentService(db)
     results = await svc.search_documents(business_id, data.query, data.k)

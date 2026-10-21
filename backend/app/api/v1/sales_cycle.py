@@ -8,6 +8,7 @@ Retorna: cycle_id + status
 
 import logging
 import uuid
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
@@ -41,7 +42,9 @@ class StartSalesCycleRequest(BaseModel):
 
 
 # Mock auth (reemplazar con JWT real)
-def verify_auth(authorization: str = Header(None)) -> dict:
+def verify_auth(
+    authorization: Annotated[str, Header()] = None,
+) -> dict:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Unauthorized")
     token = authorization.split(" ")[1]
@@ -103,7 +106,7 @@ async def start_sales_cycle(
 @router.get("/{cycle_id}/status")
 async def get_cycle_status(
     cycle_id: str,
-    auth: dict = Depends(verify_auth),
+    auth: Annotated[dict, Depends(verify_auth)],
 ):
     """Obtiene status actual del ciclo."""
 
@@ -119,7 +122,7 @@ async def get_cycle_status(
 @router.get("/{cycle_id}/results")
 async def get_cycle_results(
     cycle_id: str,
-    auth: dict = Depends(verify_auth),
+    auth: Annotated[dict, Depends(verify_auth)],
 ):
     """Obtiene resultados finales del ciclo."""
 

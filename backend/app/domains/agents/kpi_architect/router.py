@@ -1,3 +1,4 @@
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -13,8 +14,8 @@ router = APIRouter(prefix="/kpi-architect", tags=["kpi-architect"])
 
 @router.post("/dashboards", status_code=status.HTTP_201_CREATED)
 async def generate_dashboard(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = KPIArchitectService(db)
     try:
@@ -35,10 +36,10 @@ async def generate_dashboard(
 
 @router.get("/dashboards")
 async def list_dashboards(
-    limit: int = Query(50, ge=1, le=200),
-    offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ):
     service = KPIArchitectService(db)
     result = await service.list_dashboards(
@@ -64,8 +65,8 @@ async def list_dashboards(
 @router.get("/dashboards/{dashboard_id}")
 async def get_dashboard(
     dashboard_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = KPIArchitectService(db)
     config = await service.get_dashboard_config(dashboard_id, current_user.business_id)
@@ -77,8 +78,8 @@ async def get_dashboard(
 @router.get("/dashboards/{dashboard_id}/data")
 async def get_dashboard_data(
     dashboard_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = KPIArchitectService(db)
     try:
@@ -91,8 +92,8 @@ async def get_dashboard_data(
 @router.get("/dashboards/{dashboard_id}/alerts")
 async def get_alerts(
     dashboard_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = KPIArchitectService(db)
     try:

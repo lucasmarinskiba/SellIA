@@ -7,6 +7,7 @@ Endpoints para gestionar task queue:
 """
 
 from datetime import datetime
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -67,8 +68,8 @@ class QueueStatusResponse(BaseModel):
 @router.post("/tasks/enqueue", response_model=TaskResponse)
 async def enqueue_task(
     request: EnqueueTaskRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """
     Encola tarea con validación automática de conflictos.
@@ -157,8 +158,8 @@ async def enqueue_task(
 
 @router.get("/tasks/queue-status", response_model=QueueStatusResponse)
 async def get_queue_status(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Retorna estado actual de task queue."""
     try:
@@ -174,7 +175,7 @@ async def get_queue_status(
 
 @router.get("/tasks/info")
 async def get_task_info(
-    current_user: User = Depends(get_current_active_user),
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Retorna info sobre tipos de tareas y prioridades."""
     return {

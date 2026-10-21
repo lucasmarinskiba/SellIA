@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -36,9 +36,9 @@ async def _business_ids(db: AsyncSession, user: User) -> list[Any]:
 
 @router.get("/overview")
 async def overview(
-    days: int = Query(30, ge=1, le=365),
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ) -> dict[str, Any]:
     """Everything the multi-platform screen needs: what each connected platform
     can really do, what it sold, and the consolidated position."""
@@ -99,8 +99,8 @@ async def overview(
 async def update_settings(
     platform: str,
     payload: SettingsIn,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """Declare this platform's real economics. Only the seller knows these:
     a commission rate assumed from a public rate card would be wrong for most
@@ -129,8 +129,8 @@ async def update_settings(
 
 @router.post("/sync")
 async def sync_orders(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """Pull real orders from every connected platform that can report them."""
     business_ids = await _business_ids(db, user)
@@ -145,8 +145,8 @@ async def sync_orders(
 @router.get("/{platform}/pending-questions")
 async def pending_questions(
     platform: str,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """Buyers on this platform still waiting for an answer, with their real
     question -- shown before the AI is allowed to reply to them."""
@@ -160,8 +160,8 @@ async def pending_questions(
 async def run_action(
     platform: str,
     action_key: str,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """Run a real selling action on this platform."""
     business_ids = await _business_ids(db, user)

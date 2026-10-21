@@ -1,6 +1,7 @@
 """BI API endpoints for offline analytics dashboards."""
 
 from datetime import datetime, timedelta
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -23,10 +24,10 @@ router = APIRouter(prefix="", tags=["offline-bi"])
 @router.get("/offline/foot-traffic/{location_id}", response_model=FootTrafficMetrics)
 async def get_foot_traffic_dashboard(
     location_id: UUID,
-    period: str = Query("daily", regex="^(daily|weekly|monthly)$"),
-    days: int = Query(30, ge=1, le=365),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    period: Annotated[str, Query(regex="^(daily|weekly|monthly)$")] = "daily",
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ) -> FootTrafficMetrics:
     """Get foot traffic dashboard for location."""
 
@@ -74,9 +75,9 @@ async def get_foot_traffic_dashboard(
 @router.get("/offline/conversions/{location_id}", response_model=OfflineConversionMetrics)
 async def get_conversion_dashboard(
     location_id: UUID,
-    days: int = Query(30, ge=1, le=365),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ) -> OfflineConversionMetrics:
     """Get offline conversion metrics for location."""
 
@@ -136,9 +137,9 @@ async def get_conversion_dashboard(
 @router.get("/offline/dashboard-summary", response_model=DashboardSummary)
 async def get_dashboard_summary(
     business_id: UUID,
-    period: str = Query("last_30_days"),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    period: Annotated[str, Query()] = "last_30_days",
 ) -> DashboardSummary:
     """Get high-level summary for main offline BI dashboard."""
 

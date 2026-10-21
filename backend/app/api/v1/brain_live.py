@@ -12,6 +12,8 @@ both showed a logged-in user other people's numbers as if they were their own
 and would have exposed real accounts' leads and AI reasoning on a public page.
 """
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 from sqlalchemy import desc, func, select
@@ -281,8 +283,8 @@ async def _lead_notifications(limit: int, user=None) -> list[dict]:
 @router.get("/notifications")
 async def get_notifications(
     request: Request,
-    limit: int = Query(default=30, ge=1, le=100),
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    limit: Annotated[int, Query(ge=1, le=100)] = 30,
 ):
     """Real notifications. A signed-in caller (Bearer token) gets a feed
     aggregated across everything that's actually happened on their own
@@ -302,7 +304,10 @@ async def get_notifications(
 
 
 @router.get("/squads")
-async def get_squads(request: Request, db: AsyncSession = Depends(get_db)):
+async def get_squads(
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """Real squad performance, aggregated from actual lead counts/scores by
     source -- scoped to the caller's own leads when signed in (see
     _owner_filter), platform demo rows for an anonymous visitor."""
@@ -356,7 +361,10 @@ async def get_squads(request: Request, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/kpis")
-async def get_kpis(request: Request, db: AsyncSession = Depends(get_db)):
+async def get_kpis(
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """Real, honestly-computable KPIs from the leads table.
 
     Scoped to the caller's own leads when signed in; the platform's demo rows
@@ -415,7 +423,10 @@ async def get_kpis(request: Request, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/pipeline-summary")
-async def get_pipeline_summary(request: Request, db: AsyncSession = Depends(get_db)):
+async def get_pipeline_summary(
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """Real pipeline totals by status, for the sales pipeline widget --
     the caller's own leads when signed in, demo rows when anonymous."""
     from app.api.v1.brain import _optional_user
@@ -462,8 +473,8 @@ def _serialize_audit_log(log) -> dict:
 @router.get("/audit-log")
 async def get_audit_log(
     request: Request,
-    limit: int = Query(default=50, ge=1, le=200),
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
 ):
     """Real agent audit trail for the caller's own account (demo rows when anonymous)."""
     from app.api.v1.brain import _optional_user
@@ -472,7 +483,10 @@ async def get_audit_log(
 
 
 @router.get("/audit-log/pending")
-async def get_pending_approvals(request: Request, db: AsyncSession = Depends(get_db)):
+async def get_pending_approvals(
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """Real actions awaiting human approval, for the caller's own account."""
     from app.api.v1.brain import _optional_user
     logs, error = await _query_audit_logs(
@@ -533,8 +547,8 @@ HANDOFF_PLATFORMS = ["slack", "whatsapp", "email"]
 @router.get("/handoff-log")
 async def get_handoff_log(
     request: Request,
-    limit: int = Query(default=50, ge=1, le=200),
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
 ):
     """Real agent-to-human handoff events (Slack/WhatsApp/email escalations),
     for the caller's own account."""

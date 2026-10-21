@@ -1,5 +1,7 @@
 """Phase 26: Team Collaboration endpoints - Real-time deal collaboration."""
 
+from typing import Annotated
+
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,10 +21,10 @@ router = APIRouter(prefix="/collaboration", tags=["collaboration"])
 @router.post("/deals/{deal_id}/comments")
 async def add_comment(
     deal_id: str,
-    user_id: str = Query(...),
-    user_name: str = Query(...),
-    content: str = Body(...),
-    db: AsyncSession = Depends(get_db),
+    user_id: Annotated[str, Query()],
+    user_name: Annotated[str, Query()],
+    content: Annotated[str, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Add comment to deal (broadcasts to team via WebSocket)."""
     comment = await CollaborationManager.add_comment(
@@ -41,7 +43,11 @@ async def add_comment(
 
 
 @router.get("/deals/{deal_id}/comments")
-async def list_comments(deal_id: str, limit: int = Query(50), db: AsyncSession = Depends(get_db)):
+async def list_comments(
+    deal_id: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    limit: Annotated[int, Query()] = 50,
+):
     """Get all comments on deal."""
     stmt = (
         select(DealComment)
@@ -125,7 +131,10 @@ async def approve_action(
 
 
 @router.get("/approvals/pending/{user_id}")
-async def list_pending_approvals(user_id: str, db: AsyncSession = Depends(get_db)):
+async def list_pending_approvals(
+    user_id: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """Get pending approvals for user."""
     stmt = select(ApprovalChain).where(
         ApprovalChain.status == "pending",
@@ -152,14 +161,14 @@ async def list_pending_approvals(user_id: str, db: AsyncSession = Depends(get_db
 
 @router.post("/handoffs")
 async def create_handoff(
-    deal_id: str = Query(...),
-    from_user_id: str = Query(...),
-    from_user_name: str = Query(...),
-    to_user_id: str = Query(...),
-    to_user_name: str = Query(...),
-    reason: str = Body(...),
-    notes: str = Body(...),
-    db: AsyncSession = Depends(get_db),
+    deal_id: Annotated[str, Query()],
+    from_user_id: Annotated[str, Query()],
+    from_user_name: Annotated[str, Query()],
+    to_user_id: Annotated[str, Query()],
+    to_user_name: Annotated[str, Query()],
+    reason: Annotated[str, Body()],
+    notes: Annotated[str, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Pass deal to teammate."""
     handoff = await CollaborationManager.create_handoff(
@@ -181,7 +190,10 @@ async def create_handoff(
 
 
 @router.get("/handoffs/incoming/{user_id}")
-async def list_incoming_handoffs(user_id: str, db: AsyncSession = Depends(get_db)):
+async def list_incoming_handoffs(
+    user_id: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """Get incoming handoffs (pending deals from teammates)."""
     stmt = select(Handoff).where(
         Handoff.to_user_id == user_id,
@@ -208,7 +220,10 @@ async def list_incoming_handoffs(user_id: str, db: AsyncSession = Depends(get_db
 
 
 @router.post("/notifications/{notification_id}/read")
-async def mark_notification_read(notification_id: str, db: AsyncSession = Depends(get_db)):
+async def mark_notification_read(
+    notification_id: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """Mark notification as read."""
     stmt = select(TeamNotification).where(TeamNotification.id == notification_id)
     result = await db.execute(stmt)
@@ -225,9 +240,9 @@ async def mark_notification_read(notification_id: str, db: AsyncSession = Depend
 @router.get("/notifications/{user_id}")
 async def list_notifications(
     user_id: str,
-    unread_only: bool = Query(False),
-    limit: int = Query(50),
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    unread_only: Annotated[bool, Query()] = False,
+    limit: Annotated[int, Query()] = 50,
 ):
     """Get user notifications (real-time collaboration updates)."""
     stmt = select(TeamNotification).where(TeamNotification.user_id == user_id)

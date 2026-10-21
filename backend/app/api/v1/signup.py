@@ -5,6 +5,7 @@ import re
 import uuid
 from datetime import timedelta
 from io import BytesIO
+from typing import Annotated
 
 import bcrypt
 import pyotp
@@ -63,7 +64,7 @@ class SignupRequest(BaseModel):
 @router.post("/signup")
 async def signup(
     req: SignupRequest,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Register new user account with strong password requirements."""
     try:
@@ -136,7 +137,7 @@ class SigninRequest(BaseModel):
 @router.post("/signin")
 async def signin(
     req: SigninRequest,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Sign in with password + optional 2FA."""
     try:
@@ -182,7 +183,10 @@ class Enable2FARequest(BaseModel):
 
 
 @router.post("/2fa/enable")
-async def enable_2fa(req: Enable2FARequest, db: AsyncSession = Depends(get_db)):
+async def enable_2fa(
+    req: Enable2FARequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """Generate 2FA secret and QR code."""
     secret = pyotp.random_base32()
     totp = pyotp.TOTP(secret)
@@ -213,7 +217,7 @@ class Verify2FARequest(BaseModel):
 @router.post("/2fa/verify")
 async def verify_2fa(
     request: Verify2FARequest,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Verify 2FA code and enable 2FA for user."""
     try:
@@ -242,7 +246,7 @@ class Disable2FARequest(BaseModel):
 @router.post("/2fa/disable")
 async def disable_2fa(
     req: Disable2FARequest,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Disable 2FA (requires password confirmation)."""
     result = await db.execute(
@@ -264,7 +268,9 @@ async def disable_2fa(
 
 
 @router.get("/me")
-async def get_me(current_user: User = Depends(get_current_user)):
+async def get_me(
+    current_user: Annotated[User, Depends(get_current_user)],
+):
     """Get the AUTHENTICATED caller's own profile.
 
     Was previously `get_current_user(user_id: str)` -- a bare, unauthenticated

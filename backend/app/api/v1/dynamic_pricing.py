@@ -2,6 +2,7 @@
 
 from datetime import UTC
 from decimal import Decimal
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -62,7 +63,7 @@ class CreateABTestRequest(BaseModel):
 @router.post("/pricing/calculate")
 async def calculate_price(
     request: CalculatePriceRequest,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Calculate price with dynamic adjustments."""
     try:
@@ -81,8 +82,8 @@ async def calculate_price(
 @router.post("/pricing/log-transaction")
 async def log_pricing_transaction(
     request: LogPricingRequest,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Log pricing transaction."""
     try:
@@ -104,7 +105,7 @@ async def log_pricing_transaction(
 @router.get("/locations/{location_id}/pricing-tier")
 async def get_pricing_tier(
     location_id: UUID,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Get pricing tier config."""
     try:
@@ -118,8 +119,8 @@ async def get_pricing_tier(
 async def update_pricing_tier(
     location_id: UUID,
     request: UpdateTierRequest,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Update pricing tier."""
     try:
@@ -140,8 +141,8 @@ async def update_pricing_tier(
 async def create_discount_code(
     location_id: UUID,
     request: CreateDiscountRequest,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Create location-specific discount code."""
     try:
@@ -163,8 +164,8 @@ async def create_discount_code(
 @router.get("/discount-codes/{code}/validate")
 async def validate_discount(
     code: str,
-    location_id: UUID = Query(...),
-    db: Session = Depends(get_db),
+    location_id: Annotated[UUID, Query()],
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Validate discount code."""
     try:
@@ -178,8 +179,8 @@ async def validate_discount(
 async def create_ab_test(
     location_id: UUID,
     request: CreateABTestRequest,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Create A/B test for pricing."""
     try:
@@ -201,7 +202,7 @@ async def create_ab_test(
 @router.get("/ab-tests/{test_id}/results")
 async def get_ab_test_results(
     test_id: UUID,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Get A/B test results."""
     try:
@@ -233,8 +234,8 @@ async def get_revenue_impact(
 @router.get("/locations/{location_id}/pricing-analytics")
 async def get_pricing_analytics(
     location_id: UUID,
-    days: int = Query(30, ge=1, le=365),
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ) -> dict:
     """Get pricing analytics for location."""
     try:

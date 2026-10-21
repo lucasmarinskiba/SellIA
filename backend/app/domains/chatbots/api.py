@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -57,8 +57,8 @@ async def _business_ids(db: AsyncSession, user: User) -> list[Any]:
 
 @router.get("")
 async def list_bots(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """One bot per connected platform, with what it really did there."""
     business_ids = await _business_ids(db, user)
@@ -67,8 +67,8 @@ async def list_bots(
 
 @router.get("/personalities")
 async def list_personalities(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     return {"personalities": await service.personalities(db)}
 
@@ -77,8 +77,8 @@ async def list_personalities(
 async def update_bot(
     platform: str,
     payload: BotIn,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     business_ids = await _business_ids(db, user)
     if not business_ids:
@@ -99,7 +99,7 @@ async def update_bot(
 
 @router.get("/playbooks")
 async def list_playbooks(
-    user: User = Depends(get_current_user),
+    user: Annotated[User, Depends(get_current_user)],
 ) -> dict[str, Any]:
     """The rules each platform imposes on a reply, and why they exist.
 
@@ -122,7 +122,7 @@ class CheckIn(BaseModel):
 async def check_against_playbook(
     platform: str,
     payload: CheckIn,
-    user: User = Depends(get_current_user),
+    user: Annotated[User, Depends(get_current_user)],
 ) -> dict[str, Any]:
     """Does this message break the platform's rules?
 
@@ -151,8 +151,8 @@ async def check_against_playbook(
 async def test_bot(
     platform: str,
     payload: TestIn,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """Preview this platform's bot on a question, sending nothing to anyone."""
     business_ids = await _business_ids(db, user)

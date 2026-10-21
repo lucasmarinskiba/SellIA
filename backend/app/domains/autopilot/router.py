@@ -1,6 +1,7 @@
 """Autopilot Engine API Router."""
 
 from datetime import UTC, datetime, timedelta
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -39,8 +40,8 @@ router = APIRouter(prefix="/autopilot", tags=["Autopilot"])
 @router.get("/config/{business_id}", response_model=AutopilotConfigResponse)
 async def get_autopilot_config(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     engine = AutopilotEngine(db)
     config = await engine.get_or_create_config(business_id)
@@ -51,8 +52,8 @@ async def get_autopilot_config(
 async def update_autopilot_config(
     business_id: UUID,
     update: AutopilotConfigUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     engine = AutopilotEngine(db)
     config = await engine.get_or_create_config(business_id)
@@ -72,8 +73,8 @@ async def update_autopilot_config(
 @router.get("/status/{business_id}", response_model=AutopilotStatusResponse)
 async def get_autopilot_status(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     engine = AutopilotEngine(db)
     config = await engine.get_or_create_config(business_id)
@@ -163,13 +164,13 @@ async def get_autopilot_overview(
 @router.get("/audit-log/{business_id}", response_model=list[AutopilotActionLogResponse])
 async def list_audit_logs(
     business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     status: AutopilotActionStatus | None = None,
     action_type: str | None = None,
     entity_type: str | None = None,
     limit: int = 50,
     offset: int = 0,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     query = select(AutopilotActionLog).where(
         AutopilotActionLog.business_id == business_id,
@@ -194,9 +195,9 @@ async def list_audit_logs(
 @router.post("/approve/{action_id}", response_model=AutopilotActionLogResponse)
 async def approve_action(
     action_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     req: AutopilotActionApproveRequest | None = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     engine = AutopilotEngine(db)
     log = await engine.approve_action(action_id, current_user.id, req.reason if req else None)
@@ -209,8 +210,8 @@ async def approve_action(
 async def reject_action(
     action_id: UUID,
     req: AutopilotActionRejectRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     engine = AutopilotEngine(db)
     log = await engine.reject_action(action_id, req.reason)
@@ -226,9 +227,9 @@ async def reject_action(
 @router.post("/pause/{business_id}", response_model=AutopilotConfigResponse)
 async def pause_autopilot(
     business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     reason: str = "Paused by user",
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     engine = AutopilotEngine(db)
     config = await engine.get_or_create_config(business_id)
@@ -243,8 +244,8 @@ async def pause_autopilot(
 @router.post("/resume/{business_id}", response_model=AutopilotConfigResponse)
 async def resume_autopilot(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     engine = AutopilotEngine(db)
     config = await engine.get_or_create_config(business_id)
@@ -263,9 +264,9 @@ async def resume_autopilot(
 @router.get("/daily-reports/{business_id}", response_model=list[AutopilotDailyReportResponse])
 async def list_daily_reports(
     business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     limit: int = 30,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(
         select(AutopilotDailyReport).where(
@@ -283,8 +284,8 @@ async def list_daily_reports(
 @router.get("/overnight-report/{business_id}", response_model=OvernightReportResponse)
 async def get_overnight_report(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     engine = OvernightStoryEngine(db)
     report = await engine.generate_overnight_report(

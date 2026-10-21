@@ -1,7 +1,7 @@
 """Phases 19-22: Launch & Scale Endpoints."""
 
 import logging
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Query
 
@@ -54,8 +54,8 @@ async def get_onboarding_step(session_id: str) -> dict[str, Any]:
 @router.post("/onboarding/complete-step/{session_id}")
 async def complete_onboarding_step(
     session_id: str,
-    step: str = Query(...),
-    answers: dict[str, Any] = Body(...)
+    step: Annotated[str, Query()],
+    answers: Annotated[dict[str, Any], Body()],
 ) -> dict[str, Any]:
     """Complete onboarding step."""
 
@@ -133,7 +133,9 @@ async def get_system_health() -> dict[str, Any]:
 
 
 @router.get("/admin/top-users")
-async def get_top_users(limit: int = Query(10, ge=1, le=100)) -> dict[str, Any]:
+async def get_top_users(
+    limit: Annotated[int, Query(ge=1, le=100)] = 10,
+) -> dict[str, Any]:
     """Get top performing users."""
 
     users = dashboard.get_top_users(limit)
@@ -163,8 +165,8 @@ async def get_insights() -> dict[str, Any]:
 
 @router.post("/tenant/create")
 async def create_tenant(
-    name: str = Query(...),
-    tier: str = Query("pro", regex="^(free|pro|enterprise)$")
+    name: Annotated[str, Query()],
+    tier: Annotated[str, Query(regex="^(free|pro|enterprise)$")] = "pro",
 ) -> dict[str, Any]:
     """Create new tenant."""
 
@@ -196,7 +198,7 @@ async def get_tenant_usage(tenant_id: str) -> dict[str, Any]:
 @router.post("/tenant/{tenant_id}/upgrade")
 async def upgrade_tenant(
     tenant_id: str,
-    new_tier: str = Query(..., regex="^(pro|enterprise)$")
+    new_tier: Annotated[str, Query(regex="^(pro|enterprise)$")],
 ) -> dict[str, Any]:
     """Upgrade tenant plan."""
 
@@ -264,10 +266,10 @@ async def get_system_status() -> dict[str, Any]:
 
 @router.post("/monitoring/alert")
 async def create_alert(
-    alert_type: str = Query(...),
-    severity: str = Query(..., regex="^(critical|high|medium|low|info)$"),
-    title: str = Query(...),
-    message: str = Query(...)
+    alert_type: Annotated[str, Query()],
+    severity: Annotated[str, Query(regex="^(critical|high|medium|low|info)$")],
+    title: Annotated[str, Query()],
+    message: Annotated[str, Query()],
 ) -> dict[str, Any]:
     """Create alert (admin only)."""
 

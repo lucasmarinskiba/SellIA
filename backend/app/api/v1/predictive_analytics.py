@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from decimal import Decimal
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
@@ -49,7 +50,7 @@ class EvaluateAccuracyRequest(BaseModel):
 def predict_churn(
     business_id: UUID,
     request: PredictChurnRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Predict customer churn probability."""
     return PredictiveAnalyticsService.predict_churn(
@@ -66,7 +67,7 @@ def predict_churn(
 def predict_purchase_timing(
     business_id: UUID,
     request: PredictPurchaseTimingRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Predict next purchase timing."""
     last_purchase = datetime.fromisoformat(f"{request.last_purchase_date}T00:00:00+00:00")
@@ -83,7 +84,7 @@ def predict_purchase_timing(
 def forecast_demand(
     business_id: UUID,
     request: ForecastDemandRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Forecast product demand."""
     return PredictiveAnalyticsService.forecast_demand(
@@ -99,7 +100,7 @@ def forecast_demand(
 def forecast_revenue(
     business_id: UUID,
     request: ForecastRevenueRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Forecast business revenue."""
     return PredictiveAnalyticsService.forecast_revenue(
@@ -115,7 +116,7 @@ def forecast_revenue(
 def evaluate_accuracy(
     business_id: UUID,
     request: EvaluateAccuracyRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Evaluate prediction model accuracy."""
     return PredictiveAnalyticsService.evaluate_prediction_accuracy(

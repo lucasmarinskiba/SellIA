@@ -1,5 +1,6 @@
 """Memory Engine API Router"""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -23,13 +24,13 @@ router = APIRouter(prefix="/memory", tags=["memory"])
 
 @router.get("/chunks", response_model=list[MemoryChunkResponse])
 async def retrieve_relevant_chunks(
-    query: str = Query(..., description="Query text for semantic search"),
-    conversation_id: UUID | None = Query(None),
-    business_id: UUID | None = Query(None),
-    customer_id: UUID | None = Query(None),
-    k: int = Query(5, ge=1, le=50),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    query: Annotated[str, Query(description="Query text for semantic search")],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    conversation_id: Annotated[UUID | None, Query()] = None,
+    business_id: Annotated[UUID | None, Query()] = None,
+    customer_id: Annotated[UUID | None, Query()] = None,
+    k: Annotated[int, Query(ge=1, le=50)] = 5,
 ):
     engine = MemoryEngine(db)
     return await engine.retrieve_relevant(
@@ -44,8 +45,8 @@ async def retrieve_relevant_chunks(
 @router.delete("/chunks/{chunk_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_chunk(
     chunk_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     engine = MemoryEngine(db)
     deleted = await engine.delete_chunk(chunk_id)
@@ -58,8 +59,8 @@ async def delete_chunk(
 @router.get("/customer/{customer_id}", response_model=CustomerProfileResponse)
 async def get_customer_profile(
     customer_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     engine = MemoryEngine(db)
     grouped = await engine.get_customer_profile(customer_id)
@@ -75,8 +76,8 @@ async def get_customer_profile(
 @router.post("/customer-fact", response_model=CustomerMemoryResponse, status_code=status.HTTP_201_CREATED)
 async def store_customer_fact(
     data: CustomerMemoryCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     engine = MemoryEngine(db)
     fact = await engine.store_customer_fact(
@@ -97,8 +98,8 @@ async def store_customer_fact(
 @router.post("/summarize/{conversation_id}", status_code=status.HTTP_202_ACCEPTED)
 async def trigger_summarization(
     conversation_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Trigger asynchronous summarization for a conversation."""
     from app.domains.memory.tasks import summarize_conversation_task
@@ -113,8 +114,8 @@ async def trigger_summarization(
 @router.get("/customer/{customer_id}/profile-text")
 async def get_customer_profile_text(
     customer_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get a formatted profile text for injection into agent prompts."""
     engine = MemoryEngine(db)

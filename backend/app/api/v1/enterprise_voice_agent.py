@@ -1,3 +1,4 @@
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket
@@ -24,14 +25,14 @@ async def _get_business_for_user(business_id: UUID, user: User, db: AsyncSession
 @router.post("/voice/config/{business_id}")
 async def update_agent_config(
     business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     agent_name: str = None,
     system_prompt: str = None,
     voice_id: str = None,
     language: str = None,
     greeting_message: str = None,
     temperature: float = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Create/update this business's voice agent configuration.
 
@@ -56,8 +57,8 @@ async def update_agent_config(
 @router.get("/voice/config/{business_id}")
 async def get_agent_config(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get this business's voice agent configuration."""
     await _get_business_for_user(business_id, current_user, db)
@@ -77,9 +78,9 @@ async def initiate_outbound_call(
     business_id: UUID,
     customer_id: UUID,
     phone_number: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     conversation_id: UUID | None = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Initiate outbound call."""
     await _get_business_for_user(business_id, current_user, db)
@@ -92,9 +93,9 @@ async def handle_inbound_call(
     business_id: UUID,
     customer_id: UUID,
     phone_number: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     conversation_id: UUID | None = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Handle inbound call."""
     await _get_business_for_user(business_id, current_user, db)
@@ -108,9 +109,9 @@ async def add_transcript(
     business_id: UUID,
     speaker: str,
     text: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     timestamp: float = 0.0,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Add transcript line to call."""
     await _get_business_for_user(business_id, current_user, db)
@@ -126,8 +127,8 @@ async def update_call_status(
     call_id: UUID,
     business_id: UUID,
     status: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Update call status."""
     await _get_business_for_user(business_id, current_user, db)
@@ -143,8 +144,8 @@ async def set_recording_url(
     call_id: UUID,
     business_id: UUID,
     recording_url: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Set recording URL."""
     await _get_business_for_user(business_id, current_user, db)
@@ -160,8 +161,8 @@ async def set_transcript_summary(
     call_id: UUID,
     business_id: UUID,
     summary: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Set AI-generated transcript summary."""
     await _get_business_for_user(business_id, current_user, db)
@@ -178,8 +179,8 @@ async def analyze_sentiment(
     business_id: UUID,
     sentiment: str,
     score: float,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Set sentiment analysis result."""
     await _get_business_for_user(business_id, current_user, db)
@@ -194,8 +195,8 @@ async def analyze_sentiment(
 async def get_call_detail(
     call_id: UUID,
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get full call details with transcript."""
     await _get_business_for_user(business_id, current_user, db)
@@ -216,9 +217,9 @@ async def get_call_detail(
 @router.get("/voice/calls/business/{business_id}")
 async def get_business_calls(
     business_id: UUID,
-    limit: int = Query(50, le=100),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    limit: Annotated[int, Query(le=100)] = 50,
 ):
     """Get recent calls for this business."""
     await _get_business_for_user(business_id, current_user, db)
@@ -241,9 +242,9 @@ async def get_business_calls(
 @router.get("/voice/analytics/{business_id}")
 async def get_call_analytics(
     business_id: UUID,
-    days: int = Query(30, ge=1, le=365),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ):
     """Get call analytics for this business."""
     await _get_business_for_user(business_id, current_user, db)
@@ -278,7 +279,10 @@ async def websocket_call(websocket: WebSocket, call_id: str):
 
 
 @router.post("/voice/webhooks/twilio")
-async def handle_twilio_webhook(data: dict, db: AsyncSession = Depends(get_db)):
+async def handle_twilio_webhook(
+    data: dict,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """Handle Twilio call-status webhook.
 
     NOT verifying Twilio's request signature (X-Twilio-Signature header) in

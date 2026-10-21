@@ -1,5 +1,6 @@
 """Webhook API — event delivery & streaming."""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
@@ -27,7 +28,7 @@ class TriggerEventRequest(BaseModel):
 def register_webhook(
     business_id: UUID,
     request: RegisterWebhookRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Register webhook endpoint."""
     return WebhookService.register_webhook(
@@ -43,7 +44,7 @@ def register_webhook(
 def trigger_event(
     business_id: UUID,
     request: TriggerEventRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Trigger webhook event."""
     return WebhookService.trigger_event(
@@ -58,7 +59,7 @@ def trigger_event(
 def queue_event(
     business_id: UUID,
     request: TriggerEventRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Queue event for async processing."""
     return WebhookService.queue_event(
@@ -72,8 +73,8 @@ def queue_event(
 @router.get("/businesses/{business_id}/webhooks/stats")
 def get_webhook_stats(
     business_id: UUID,
-    days: int = Query(30, ge=1, le=365),
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ):
     """Get webhook delivery statistics."""
     return WebhookService.get_webhook_stats(

@@ -27,11 +27,11 @@ async def get_db():
 async def create_campaign(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-    name: str = Body(...),
-    campaign_type: str = Body(...),
-    headline: str = Body(...),
-    config: dict = Body(...),
-    trigger_type: str | None = Body(None),
+    name: Annotated[str, Body()],
+    campaign_type: Annotated[str, Body()],
+    headline: Annotated[str, Body()],
+    config: Annotated[dict, Body()],
+    trigger_type: Annotated[str | None, Body()] = None,
 ):
     """Create new FOMO campaign (draft status)."""
     campaign = await fomo_service.create_campaign(
@@ -93,10 +93,10 @@ async def activate_campaign(
 async def log_event(
     campaign_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    event_type: str = Body(...),
-    customer_id: UUID | None = Body(None),
-    product_id: UUID | None = Body(None),
-    metadata: dict | None = Body(None),
+    event_type: Annotated[str, Body()],
+    customer_id: Annotated[UUID | None, Body()] = None,
+    product_id: Annotated[UUID | None, Body()] = None,
+    metadata: Annotated[dict | None, Body()] = None,
 ):
     """Log event (purchase, view, add_to_cart, abandoned)."""
     event = await fomo_service.log_event(
@@ -129,7 +129,7 @@ async def log_event(
 async def get_recent_events(
     campaign_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    limit: int = Query(10, ge=1, le=50),
+    limit: Annotated[int, Query(ge=1, le=50)] = 10,
 ):
     """Get recent events for widget display."""
     events = await fomo_service.get_recent_events(db, campaign_id, limit)
@@ -148,8 +148,8 @@ async def get_recent_events(
 async def get_event_count(
     campaign_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    event_type: str | None = Query(None),
-    hours: int = Query(24, ge=1, le=168),
+    event_type: Annotated[str | None, Query()] = None,
+    hours: Annotated[int, Query(ge=1, le=168)] = 24,
 ):
     """Get count of events in time window."""
     count = await fomo_service.get_event_count(db, campaign_id, event_type, hours)
@@ -162,8 +162,8 @@ async def create_ab_test(
     campaign_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-    variant_a: dict = Body(...),
-    variant_b: dict = Body(...),
+    variant_a: Annotated[dict, Body()],
+    variant_b: Annotated[dict, Body()],
 ):
     """Start A/B test for campaign."""
     campaign = await fomo_service.get_campaign(db, campaign_id)
@@ -221,7 +221,7 @@ async def get_campaign_metrics(
     campaign_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-    days: int = Query(30, ge=1, le=365),
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ):
     """Get metrics for campaign (last N days)."""
     campaign = await fomo_service.get_campaign(db, campaign_id)
@@ -273,7 +273,7 @@ async def get_all_campaigns_with_analytics(
 @router.get("/campaigns-active")
 async def get_active_campaigns(
     db: Annotated[AsyncSession, Depends(get_db)],
-    page: str | None = Query(None),
+    page: Annotated[str | None, Query()] = None,
 ):
     """Get active campaigns for page display."""
     campaigns = await fomo_service.get_active_campaigns(db, page_path=page)
@@ -299,7 +299,7 @@ async def get_active_campaigns(
 @router.get("/social-proof")
 async def get_social_proof(
     db: Annotated[AsyncSession, Depends(get_db)],
-    limit: int = Query(10, ge=1, le=50),
+    limit: Annotated[int, Query(ge=1, le=50)] = 10,
 ):
     """Get recent social proof events."""
     events = await fomo_service.get_recent_social_proof(db, limit)

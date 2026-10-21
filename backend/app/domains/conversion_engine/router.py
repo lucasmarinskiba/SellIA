@@ -11,6 +11,7 @@ datos), y win-deal actualiza esa misma fila en vez de solo devolver un cálculo.
 """
 import uuid
 from datetime import UTC, datetime
+from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy import select
@@ -55,9 +56,9 @@ MAGNET_STATS = {
 @router.post("/start-closing-sequence/{user_id}")
 async def start_closing_sequence(
     user_id: str,
-    email: str = Body(...),
-    personality_type: str = Body(...),
-    db: AsyncSession = Depends(get_db),
+    email: Annotated[str, Body()],
+    personality_type: Annotated[str, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Start 4-touch multi-channel closing sequence - persiste la secuencia real."""
     sequence_content = CLOSING_SEQUENCES.get(personality_type, CLOSING_SEQUENCES["pragmatist"])
@@ -90,12 +91,12 @@ async def start_closing_sequence(
 
 @router.post("/add-attraction-magnet")
 async def create_attraction_magnet(
-    magnet_type: str = Body(...),
-    magnet_title: str = Body(...),
-    magnet_promise: str = Body(...),
-    ideal_customer_profile: str = Body(...),
-    cta_copy: str = Body(...),
-    db: AsyncSession = Depends(get_db),
+    magnet_type: Annotated[str, Body()],
+    magnet_title: Annotated[str, Body()],
+    magnet_promise: Annotated[str, Body()],
+    ideal_customer_profile: Annotated[str, Body()],
+    cta_copy: Annotated[str, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Create lead magnet optimized for conversion - persiste el magnet real."""
     stats = MAGNET_STATS.get(magnet_type, MAGNET_STATS["ebook"])
@@ -129,7 +130,7 @@ async def create_attraction_magnet(
 @router.get("/closing-effectiveness/{user_id}")
 async def get_closing_effectiveness(
     user_id: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Track which closing tactics work for this prospect - lee la secuencia real, 404 si no existe."""
     result = await db.execute(
@@ -162,10 +163,10 @@ async def get_closing_effectiveness(
 @router.post("/win-deal/{user_id}")
 async def record_deal_won(
     user_id: str,
-    deal_value: float = Body(...),
-    contract_term_months: int = Body(...),
-    which_touch_converted: int = Body(...),
-    db: AsyncSession = Depends(get_db),
+    deal_value: Annotated[float, Body()],
+    contract_term_months: Annotated[int, Body()],
+    which_touch_converted: Annotated[int, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Record won deal and attribution - actualiza la secuencia real, no solo calcula."""
     result = await db.execute(

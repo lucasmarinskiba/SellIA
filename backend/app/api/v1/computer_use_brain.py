@@ -8,6 +8,7 @@ Endpoints para que Computer Use consulte SellIA Brain:
 """
 
 import logging
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -109,7 +110,7 @@ class SalesSignalResponse(BaseModel):
 @router.post("/brain/strategy", response_model=StrategyResponse)
 async def get_strategy(
     request: StrategyRequest,
-    current_user: User = Depends(get_current_active_user),
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """
     Consulta SellIA Brain por estrategia óptima.
@@ -166,7 +167,7 @@ async def get_strategy(
 @router.post("/brain/response-prompt", response_model=ResponsePromptResponse)
 async def get_response_prompt(
     request: ResponsePromptRequest,
-    current_user: User = Depends(get_current_active_user),
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """
     Genera prompt completo para responder mensaje.
@@ -215,7 +216,7 @@ async def get_response_prompt(
 @router.post("/brain/score-lead", response_model=LeadScoringResponse)
 async def score_lead(
     request: LeadScoringRequest,
-    current_user: User = Depends(get_current_active_user),
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """
     Scoring automático de lead (hot/warm/cold).
@@ -239,7 +240,7 @@ async def score_lead(
 @router.post("/brain/detect-signals", response_model=SalesSignalResponse)
 async def detect_sales_signals(
     request: SalesSignalRequest,
-    current_user: User = Depends(get_current_active_user),
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """
     Detecta señales de compra en mensaje.

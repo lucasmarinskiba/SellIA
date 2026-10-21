@@ -4,6 +4,7 @@ Endpoints para crear, ejecutar y monitorear misiones cross-plataforma.
 """
 
 import uuid
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,7 +31,9 @@ from app.domains.users.models import User
 router = APIRouter(prefix="/missions", tags=["SellIA Missions"])
 
 
-def get_service(db: AsyncSession = Depends(get_db)) -> MissionService:
+def get_service(
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> MissionService:
     return MissionService(db)
 
 
@@ -39,8 +42,8 @@ def get_service(db: AsyncSession = Depends(get_db)) -> MissionService:
 @router.post("", response_model=MissionRead, status_code=status.HTTP_201_CREATED)
 async def create_mission(
     data: MissionCreate,
-    user: User = Depends(get_current_user),
-    service: MissionService = Depends(get_service),
+    user: Annotated[User, Depends(get_current_user)],
+    service: Annotated[MissionService, Depends(get_service)],
 ):
     """Crear una misión personalizada."""
     return await service.create_custom(user.id, data)
@@ -50,8 +53,8 @@ async def create_mission(
 async def create_mission_from_playbook(
     playbook_slug: str,
     request: MissionLaunchRequest,
-    user: User = Depends(get_current_user),
-    service: MissionService = Depends(get_service),
+    user: Annotated[User, Depends(get_current_user)],
+    service: Annotated[MissionService, Depends(get_service)],
 ):
     """Crear una misión a partir de un playbook."""
     return await service.create_from_playbook(
@@ -64,12 +67,12 @@ async def create_mission_from_playbook(
 
 @router.get("", response_model=list[MissionRead])
 async def list_missions(
-    status: str | None = Query(None, description="Filtrar por estado"),
-    category: str | None = Query(None, description="Filtrar por categoría"),
-    limit: int = Query(50, ge=1, le=100),
-    offset: int = Query(0, ge=0),
-    user: User = Depends(get_current_user),
-    service: MissionService = Depends(get_service),
+    user: Annotated[User, Depends(get_current_user)],
+    service: Annotated[MissionService, Depends(get_service)],
+    status: Annotated[str | None, Query(description="Filtrar por estado")] = None,
+    category: Annotated[str | None, Query(description="Filtrar por categoría")] = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ):
     """Listar misiones del usuario autenticado."""
     return await service.list_by_user(user.id, status=status, category=category, limit=limit, offset=offset)
@@ -80,8 +83,8 @@ async def list_missions(
 @router.post("/diagnostics/run", response_model=DiagnosticRunResponse)
 async def run_diagnostic(
     request: DiagnosticRunRequest,
-    user: User = Depends(get_current_user),
-    service: MissionService = Depends(get_service),
+    user: Annotated[User, Depends(get_current_user)],
+    service: Annotated[MissionService, Depends(get_service)],
 ):
     """Ejecutar diagnóstico completo del negocio."""
     metrics = request.business_id and {} or {}
@@ -105,10 +108,10 @@ async def run_diagnostic(
 
 @router.get("/diagnostics/list", response_model=list[BusinessDiagnosticRead])
 async def list_diagnostics(
-    business_id: uuid.UUID | None = Query(None),
-    is_resolved: bool | None = Query(None),
-    user: User = Depends(get_current_user),
-    service: MissionService = Depends(get_service),
+    user: Annotated[User, Depends(get_current_user)],
+    service: Annotated[MissionService, Depends(get_service)],
+    business_id: Annotated[uuid.UUID | None, Query()] = None,
+    is_resolved: Annotated[bool | None, Query()] = None,
 ):
     """Listar diagnósticos del usuario."""
     return await service.list_diagnostics(user.id, business_id=business_id, is_resolved=is_resolved)
@@ -117,8 +120,8 @@ async def list_diagnostics(
 @router.post("/diagnostics/{diagnostic_id}/resolve")
 async def resolve_diagnostic(
     diagnostic_id: uuid.UUID,
-    user: User = Depends(get_current_user),
-    service: MissionService = Depends(get_service),
+    user: Annotated[User, Depends(get_current_user)],
+    service: Annotated[MissionService, Depends(get_service)],
 ):
     """Marcar un diagnóstico como resuelto."""
     success = await service.resolve_diagnostic(diagnostic_id, user.id)
@@ -131,9 +134,9 @@ async def resolve_diagnostic(
 
 @router.get("/playbooks", response_model=list[PlaybookRead])
 async def list_playbooks(
-    category: str | None = Query(None),
-    user: User = Depends(get_current_user),
-    service: MissionService = Depends(get_service),
+    user: Annotated[User, Depends(get_current_user)],
+    service: Annotated[MissionService, Depends(get_service)],
+    category: Annotated[str | None, Query()] = None,
 ):
     """Listar playbooks disponibles."""
     return await service.list_playbooks(category)
@@ -142,8 +145,8 @@ async def list_playbooks(
 @router.get("/playbooks/{slug}", response_model=PlaybookRead)
 async def get_playbook_detail(
     slug: str,
-    user: User = Depends(get_current_user),
-    service: MissionService = Depends(get_service),
+    user: Annotated[User, Depends(get_current_user)],
+    service: Annotated[MissionService, Depends(get_service)],
 ):
     """Obtener detalle de un playbook."""
     playbook = await service.get_playbook(slug)
@@ -157,7 +160,7 @@ async def get_playbook_detail(
 @router.post("/shipping/recommendations")
 async def shipping_recommendations(
     request: dict,
-    user: User = Depends(get_current_user),
+    user: Annotated[User, Depends(get_current_user)],
 ):
     """Obtener recomendaciones de carriers según contexto."""
     assistant = ShippingConnectorAssistant()
@@ -168,7 +171,7 @@ async def shipping_recommendations(
 async def shipping_setup_steps(
     carrier: str,
     request: dict,
-    user: User = Depends(get_current_user),
+    user: Annotated[User, Depends(get_current_user)],
 ):
     """Obtener pasos de configuración para un carrier."""
     assistant = ShippingConnectorAssistant()
@@ -178,7 +181,7 @@ async def shipping_setup_steps(
 @router.post("/shipping/estimate-costs")
 async def shipping_estimate_costs(
     request: dict,
-    user: User = Depends(get_current_user),
+    user: Annotated[User, Depends(get_current_user)],
 ):
     """Estimar costos de envío."""
     assistant = ShippingConnectorAssistant()
@@ -191,7 +194,7 @@ async def shipping_estimate_costs(
 @router.get("/shipping/cross-border/{target_country}")
 async def cross_border_requirements(
     target_country: str,
-    user: User = Depends(get_current_user),
+    user: Annotated[User, Depends(get_current_user)],
 ):
     """Obtener requisitos de cross-border."""
     assistant = ShippingConnectorAssistant()
@@ -203,7 +206,7 @@ async def cross_border_requirements(
 @router.post("/ads/platform-recommendations")
 async def ads_platform_recommendations(
     request: dict,
-    user: User = Depends(get_current_user),
+    user: Annotated[User, Depends(get_current_user)],
 ):
     """Recomendaciones de plataforma de ads según contexto y presupuesto."""
     assistant = AdSpendAssistant()
@@ -213,7 +216,7 @@ async def ads_platform_recommendations(
 @router.post("/ads/budget-allocation")
 async def ads_budget_allocation(
     request: dict,
-    user: User = Depends(get_current_user),
+    user: Annotated[User, Depends(get_current_user)],
 ):
     """Distribución recomendada de presupuesto."""
     assistant = AdSpendAssistant()
@@ -227,7 +230,7 @@ async def ads_budget_allocation(
 @router.post("/ads/campaign-steps")
 async def ads_campaign_steps(
     request: dict,
-    user: User = Depends(get_current_user),
+    user: Annotated[User, Depends(get_current_user)],
 ):
     """Pasos para crear campaña en una plataforma."""
     assistant = AdSpendAssistant()
@@ -240,7 +243,7 @@ async def ads_campaign_steps(
 @router.post("/ads/estimate-cpa")
 async def ads_estimate_cpa(
     request: dict,
-    user: User = Depends(get_current_user),
+    user: Annotated[User, Depends(get_current_user)],
 ):
     """Estimar CPA por plataforma y país."""
     assistant = AdSpendAssistant()
@@ -254,7 +257,7 @@ async def ads_estimate_cpa(
 @router.post("/ads/creative-recommendations")
 async def ads_creative_recommendations(
     request: dict,
-    user: User = Depends(get_current_user),
+    user: Annotated[User, Depends(get_current_user)],
 ):
     """Recomendaciones de creativos por plataforma."""
     assistant = AdSpendAssistant()
@@ -269,8 +272,8 @@ async def ads_creative_recommendations(
 @router.get("/{mission_id}", response_model=MissionRead)
 async def get_mission(
     mission_id: uuid.UUID,
-    user: User = Depends(get_current_user),
-    service: MissionService = Depends(get_service),
+    user: Annotated[User, Depends(get_current_user)],
+    service: Annotated[MissionService, Depends(get_service)],
 ):
     """Obtener detalle de una misión."""
     mission = await service.get(mission_id, user.id)
@@ -283,8 +286,8 @@ async def get_mission(
 async def update_mission(
     mission_id: uuid.UUID,
     data: MissionUpdate,
-    user: User = Depends(get_current_user),
-    service: MissionService = Depends(get_service),
+    user: Annotated[User, Depends(get_current_user)],
+    service: Annotated[MissionService, Depends(get_service)],
 ):
     """Actualizar una misión."""
     mission = await service.update(mission_id, user.id, data)
@@ -297,8 +300,8 @@ async def update_mission(
 async def approve_mission(
     mission_id: uuid.UUID,
     request: MissionApproveRequest,
-    user: User = Depends(get_current_user),
-    service: MissionService = Depends(get_service),
+    user: Annotated[User, Depends(get_current_user)],
+    service: Annotated[MissionService, Depends(get_service)],
 ):
     """Aprobar una misión propuesta."""
     mission = await service.approve(mission_id, user.id, approve_all_steps=request.approve_all_steps)
@@ -310,8 +313,8 @@ async def approve_mission(
 @router.post("/{mission_id}/start", response_model=MissionRead)
 async def start_mission(
     mission_id: uuid.UUID,
-    user: User = Depends(get_current_user),
-    service: MissionService = Depends(get_service),
+    user: Annotated[User, Depends(get_current_user)],
+    service: Annotated[MissionService, Depends(get_service)],
 ):
     """Iniciar una misión aprobada."""
     mission = await service.start(mission_id, user.id)
@@ -325,8 +328,8 @@ async def update_mission_step(
     mission_id: uuid.UUID,
     step_id: uuid.UUID,
     data: MissionStepUpdate,
-    user: User = Depends(get_current_user),
-    service: MissionService = Depends(get_service),
+    user: Annotated[User, Depends(get_current_user)],
+    service: Annotated[MissionService, Depends(get_service)],
 ):
     """Actualizar estado de un paso de la misión."""
     mission = await service.update_step(mission_id, step_id, user.id, data)
@@ -338,8 +341,8 @@ async def update_mission_step(
 @router.post("/{mission_id}/cancel", response_model=MissionRead)
 async def cancel_mission(
     mission_id: uuid.UUID,
-    user: User = Depends(get_current_user),
-    service: MissionService = Depends(get_service),
+    user: Annotated[User, Depends(get_current_user)],
+    service: Annotated[MissionService, Depends(get_service)],
 ):
     """Cancelar una misión en ejecución o aprobada."""
     mission = await service.get(mission_id, user.id)
@@ -356,8 +359,8 @@ async def cancel_mission(
 @router.delete("/{mission_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_mission(
     mission_id: uuid.UUID,
-    user: User = Depends(get_current_user),
-    service: MissionService = Depends(get_service),
+    user: Annotated[User, Depends(get_current_user)],
+    service: Annotated[MissionService, Depends(get_service)],
 ):
     """Eliminar una misión."""
     mission = await service.get(mission_id, user.id)

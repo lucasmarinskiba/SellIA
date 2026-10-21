@@ -1,5 +1,6 @@
 """Compliance API."""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -52,8 +53,8 @@ async def set_consent(
     customer_id: UUID,
     business_id: UUID,
     request: SetConsentRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
     return await ComplianceService.set_consent(business_id, customer_id, request.consent_type, request.consented, db)
@@ -64,8 +65,8 @@ async def request_export(
     customer_id: UUID,
     business_id: UUID,
     request: ExportRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
     return await ComplianceService.request_data_export(business_id, customer_id, request.export_format, db)
@@ -76,8 +77,8 @@ async def request_deletion(
     customer_id: UUID,
     business_id: UUID,
     request: DeletionRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
     return await ComplianceService.request_data_deletion(business_id, customer_id, request.deletion_type, db)
@@ -87,8 +88,8 @@ async def request_deletion(
 async def get_consent_status(
     customer_id: UUID,
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
     return await ComplianceService.get_consent_status(business_id, customer_id, db)

@@ -1,6 +1,8 @@
 """Phase 32 Platform Monetization API (8 endpoints)."""
 
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -42,7 +44,10 @@ class ConversionRequest(BaseModel):
 
 
 @router.post("/segment/{user_id}", response_model=SegmentResponse)
-def classify_user_segment(user_id: str, db: Session = Depends(get_db)):
+def classify_user_segment(
+    user_id: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Classify user into segment + propensity score."""
     try:
         user_data = {
@@ -70,7 +75,10 @@ def classify_user_segment(user_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/trigger/{user_id}", response_model=TriggerResponse)
-def get_upgrade_trigger(user_id: str, db: Session = Depends(get_db)):
+def get_upgrade_trigger(
+    user_id: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Get optimal upgrade trigger for user."""
     try:
 
@@ -101,7 +109,10 @@ def get_upgrade_trigger(user_id: str, db: Session = Depends(get_db)):
 
 
 @router.post("/send-trigger/{user_id}")
-def send_upgrade_trigger(user_id: str, db: Session = Depends(get_db)):
+def send_upgrade_trigger(
+    user_id: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Send trigger via email + in-app + push."""
     try:
         trigger_engine = UpgradeTriggerEngine(db)
@@ -112,7 +123,11 @@ def send_upgrade_trigger(user_id: str, db: Session = Depends(get_db)):
 
 
 @router.post("/track-conversion/{trigger_id}")
-def track_conversion(trigger_id: str, request: ConversionRequest, db: Session = Depends(get_db)):
+def track_conversion(
+    trigger_id: str,
+    request: ConversionRequest,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Track conversion event (clicked, subscribed, etc)."""
     try:
         return {
@@ -126,7 +141,9 @@ def track_conversion(trigger_id: str, request: ConversionRequest, db: Session = 
 
 
 @router.get("/ab-tests")
-def list_active_tests(db: Session = Depends(get_db)):
+def list_active_tests(
+    db: Annotated[Session, Depends(get_db)],
+):
     """List active A/B tests + results."""
     try:
         return {
@@ -141,7 +158,10 @@ def list_active_tests(db: Session = Depends(get_db)):
 
 
 @router.get("/funnel/{segment}")
-def get_conversion_funnel(segment: str, db: Session = Depends(get_db)):
+def get_conversion_funnel(
+    segment: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Get conversion funnel for segment."""
     try:
         from app.domains.enterprise.platform_monetization import UserSegment
@@ -156,7 +176,9 @@ def get_conversion_funnel(segment: str, db: Session = Depends(get_db)):
 
 
 @router.get("/revenue-forecast")
-def forecast_revenue(db: Session = Depends(get_db)):
+def forecast_revenue(
+    db: Annotated[Session, Depends(get_db)],
+):
     """Forecast monthly revenue based on current metrics."""
     try:
         analytics = ConversionAnalytics(db)
@@ -168,7 +190,9 @@ def forecast_revenue(db: Session = Depends(get_db)):
 
 
 @router.get("/segment-profitability")
-def get_segment_profitability(db: Session = Depends(get_db)):
+def get_segment_profitability(
+    db: Annotated[Session, Depends(get_db)],
+):
     """Rank segments by profitability."""
     try:
         return {

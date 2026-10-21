@@ -1,6 +1,7 @@
 """Social Seller API Router"""
 
 import uuid
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -85,8 +86,8 @@ async def _require_seller_access(db: AsyncSession, seller_id: uuid.UUID, user: U
 @router.post("", response_model=SocialSellerResponse, status_code=status.HTTP_201_CREATED)
 async def create_seller(
     data: SocialSellerCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Crea un nuevo social seller."""
     await _require_business_access(db, data.business_id, current_user)
@@ -107,9 +108,9 @@ async def create_seller(
 @router.get("", response_model=list[SocialSellerResponse])
 async def list_sellers(
     business_id: uuid.UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     status: str | None = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Lista los sellers de un negocio."""
     await _require_business_access(db, business_id, current_user)
@@ -120,8 +121,8 @@ async def list_sellers(
 @router.get("/{seller_id}", response_model=SocialSellerResponse)
 async def get_seller(
     seller_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Obtiene el detalle de un seller."""
     seller = await _require_seller_access(db, seller_id, current_user)
@@ -132,8 +133,8 @@ async def get_seller(
 async def update_seller(
     seller_id: uuid.UUID,
     data: SocialSellerUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Actualiza un seller existente."""
     await _require_seller_access(db, seller_id, current_user)
@@ -151,8 +152,8 @@ async def update_seller(
 @router.delete("/{seller_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_seller(
     seller_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Elimina un seller."""
     await _require_seller_access(db, seller_id, current_user)
@@ -171,8 +172,8 @@ async def delete_seller(
 async def assign_customer(
     seller_id: uuid.UUID,
     data: SellerCustomerCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Asigna un cliente (conversación) a un seller."""
     await _require_seller_access(db, seller_id, current_user)
@@ -190,10 +191,10 @@ async def assign_customer(
 @router.get("/{seller_id}/customers", response_model=list[SellerCustomerResponse])
 async def list_customers(
     seller_id: uuid.UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     stage: str | None = None,
-    limit: int = Query(50, ge=1, le=200),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
 ):
     """Lista los clientes asignados a un seller."""
     await _require_seller_access(db, seller_id, current_user)
@@ -206,10 +207,10 @@ async def list_customers(
 @router.get("/customers/unified", response_model=list[UnifiedCustomerResponse])
 async def list_unified_customers(
     business_id: uuid.UUID,
-    limit: int = Query(50, ge=1, le=200),
-    offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ):
     """Lista los clientes unificados de un negocio."""
     await _require_business_access(db, business_id, current_user)
@@ -221,8 +222,8 @@ async def list_unified_customers(
 @router.get("/customers/unified/{unified_customer_id}", response_model=UnifiedCustomerProfileResponse)
 async def get_unified_customer(
     unified_customer_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Obtiene el perfil unificado completo de un cliente."""
     matcher = CustomerIdentityMatcher(db)
@@ -238,8 +239,8 @@ async def get_unified_customer(
 @router.post("/customers/merge", response_model=MergeResponse)
 async def merge_customers(
     data: MergeRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Fusiona dos clientes unificados."""
     matcher = CustomerIdentityMatcher(db)
@@ -265,8 +266,8 @@ async def suggest_merge(
     business_id: uuid.UUID,
     customer_a_id: uuid.UUID,
     customer_b_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Sugiere la fusión de dos clientes con puntaje de confianza."""
     await _require_business_access(db, business_id, current_user)
@@ -285,8 +286,8 @@ async def suggest_merge(
 @router.get("/{seller_id}/pipeline", response_model=SellerPipelineResponse)
 async def get_pipeline(
     seller_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Obtiene el pipeline desglosado por etapa de relación."""
     await _require_seller_access(db, seller_id, current_user)
@@ -297,9 +298,9 @@ async def get_pipeline(
 @router.get("/{seller_id}/performance", response_model=list[SellerPerformanceResponse])
 async def get_performance(
     seller_id: uuid.UUID,
-    period: str = Query("week"),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    period: Annotated[str, Query()] = "week",
 ):
     """Obtiene métricas de rendimiento del seller."""
     await _require_seller_access(db, seller_id, current_user)
@@ -313,8 +314,8 @@ async def get_performance(
 async def record_sale(
     seller_id: uuid.UUID,
     data: RecordSaleRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Registra una venta cerrada por el seller."""
     await _require_seller_access(db, seller_id, current_user)
@@ -333,8 +334,8 @@ async def record_sale(
 @router.get('/lookalike/profile', response_model=IdealCustomerProfile)
 async def get_lookalike_profile(
     business_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Perfil del cliente ideal basado en el top 20% por LTV."""
     await _require_business_access(db, business_id, current_user)
@@ -345,8 +346,8 @@ async def get_lookalike_profile(
 @router.get('/lookalike/leads', response_model=list[LookalikeLead])
 async def get_lookalike_leads(
     business_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Leads priorizados por similitud al cliente ideal."""
     await _require_business_access(db, business_id, current_user)
@@ -358,9 +359,9 @@ async def get_lookalike_leads(
 async def get_similar_to_customer(
     customer_id: uuid.UUID,
     business_id: uuid.UUID,
-    limit: int = Query(50, ge=1, le=200),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
 ):
     """Leads más similares a un cliente específico."""
     await _require_business_access(db, business_id, current_user)
@@ -371,8 +372,8 @@ async def get_similar_to_customer(
 @router.get('/lookalike/report', response_model=LookalikeReportResponse)
 async def get_lookalike_report(
     business_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Reporte completo de lookalike audience."""
     await _require_business_access(db, business_id, current_user)
@@ -383,9 +384,9 @@ async def get_lookalike_report(
 @router.get("/team-report", response_model=TeamReportResponse)
 async def get_team_report(
     business_id: uuid.UUID,
-    period: str = Query("week"),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    period: Annotated[str, Query()] = "week",
 ):
     """Reporte agregado de todo el equipo de sellers."""
     await _require_business_access(db, business_id, current_user)
@@ -397,8 +398,8 @@ async def get_team_report(
 async def execute_action(
     seller_id: uuid.UUID,
     data: ExecuteActionRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Ejecuta una acción del seller (enviar mensaje, esperar, ofrecer descuento)."""
     await _require_seller_access(db, seller_id, current_user)
@@ -436,8 +437,8 @@ async def execute_action(
 @router.get("/radar", response_model=RadarDataResponse)
 async def get_radar(
     business_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Datos principales para el Radar de Oportunidades."""
     await _require_business_access(db, business_id, current_user)
@@ -448,9 +449,9 @@ async def get_radar(
 @router.get("/radar/opportunities", response_model=list[dict])
 async def list_opportunities(
     business_id: uuid.UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     heat_level: str | None = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Lista oportunidades filtradas por nivel de calor."""
     await _require_business_access(db, business_id, current_user)
@@ -464,8 +465,8 @@ async def list_opportunities(
 @router.get("/radar/{conversation_id}/score", response_model=OpportunityScoreResponse)
 async def get_opportunity_score(
     conversation_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Score detallado de una oportunidad específica."""
     engine = CustomerLifetimeEngine(db)
@@ -481,8 +482,8 @@ async def execute_radar_action(
     conversation_id: uuid.UUID,
     data: RadarActRequest,
     business_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Ejecuta una acción recomendada desde el radar."""
     await _require_business_access(db, business_id, current_user)
@@ -504,9 +505,9 @@ async def execute_radar_action(
 @router.get("/wall-of-fame", response_model=list[WallOfFameCustomer])
 async def get_wall_of_fame(
     business_id: uuid.UUID,
-    limit: int = Query(50, ge=1, le=200),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
 ):
     """Devuelve el Wall of Fame: mejores clientes ordenados por LTV."""
     await _require_business_access(db, business_id, current_user)
@@ -517,8 +518,8 @@ async def get_wall_of_fame(
 @router.get("/customers/{customer_id}/badges", response_model=list[CustomerBadgeResponse])
 async def get_customer_badges(
     customer_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Devuelve todos los badges de un cliente."""
     engine = LoyaltyEngine(db)
@@ -529,8 +530,8 @@ async def get_customer_badges(
 async def check_and_assign_badges(
     customer_id: uuid.UUID,
     business_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Evalúa criterios y asigna badges ganados a un cliente."""
     await _require_business_access(db, business_id, current_user)
@@ -541,8 +542,8 @@ async def check_and_assign_badges(
 @router.get("/loyalty/segments", response_model=LoyaltySegmentsResponse)
 async def get_loyalty_segments(
     business_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Devuelve segmentación RFM de clientes."""
     await _require_business_access(db, business_id, current_user)
@@ -555,8 +556,8 @@ async def create_loyalty_action(
     customer_id: uuid.UUID,
     data: LoyaltyActionRequest,
     business_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Ejecuta una acción de fidelización (regalo, VIP, testimonio, referido)."""
     await _require_business_access(db, business_id, current_user)

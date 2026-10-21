@@ -1,5 +1,6 @@
 """Marketing attribution API — channel ROI + multi-touch attribution."""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
@@ -15,9 +16,9 @@ router = APIRouter(prefix="/api/v1", tags=["marketing-attribution"])
 @router.post("/businesses/{business_id}/channel-metrics")
 def calculate_channel_metrics(
     business_id: UUID,
-    channel: str = Query(..., description="Channel: organic_search, paid_search, social_media, email, etc"),
-    date: str = Query(..., description="YYYY-MM-DD"),
-    db: Session = Depends(get_db)
+    channel: Annotated[str, Query(description="Channel: organic_search, paid_search, social_media, email, etc")],
+    date: Annotated[str, Query(description="YYYY-MM-DD")],
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Calculate attribution metrics for channel on given date."""
     return ChannelAttributionService.calculate_channel_metrics(
@@ -31,11 +32,11 @@ def calculate_channel_metrics(
 @router.post("/locations/{location_id}/channel-attribution")
 def attribute_visits_to_channel(
     location_id: UUID,
-    business_id: UUID = Query(...),
-    attribution_model: str = Query(AttributionModel.FIRST_TOUCH, description="first_touch, last_touch, linear, time_decay"),
-    date_start: str | None = Query(None, description="YYYY-MM-DD"),
-    date_end: str | None = Query(None, description="YYYY-MM-DD"),
-    db: Session = Depends(get_db)
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[Session, Depends(get_db)],
+    attribution_model: Annotated[str, Query(description="first_touch, last_touch, linear, time_decay")] = AttributionModel.FIRST_TOUCH,
+    date_start: Annotated[str | None, Query(description="YYYY-MM-DD")] = None,
+    date_end: Annotated[str | None, Query(description="YYYY-MM-DD")] = None,
 ):
     """Attribute location visits to channels."""
     model = AttributionModel[attribution_model.upper()]
@@ -52,8 +53,8 @@ def attribute_visits_to_channel(
 @router.get("/businesses/{business_id}/channel-roi-report")
 def get_channel_roi_report(
     business_id: UUID,
-    date: str | None = Query(None, description="YYYY-MM-DD, default today"),
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
+    date: Annotated[str | None, Query(description="YYYY-MM-DD, default today")] = None,
 ):
     """Generate ROI ranking by channel."""
     return ChannelAttributionService.generate_channel_roi_report(
@@ -66,9 +67,9 @@ def get_channel_roi_report(
 @router.get("/businesses/{business_id}/top-channels")
 def get_top_channels(
     business_id: UUID,
-    metric: str = Query("revenue", description="revenue, visits, roas"),
-    days: int = Query(30, ge=1, le=365),
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
+    metric: Annotated[str, Query(description="revenue, visits, roas")] = "revenue",
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ):
     """Get top performing channels by metric."""
     return ChannelAttributionService.get_top_performing_channels(

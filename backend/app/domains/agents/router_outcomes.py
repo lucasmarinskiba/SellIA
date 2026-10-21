@@ -4,6 +4,7 @@ Endpoints for recording conversation outcomes, viewing stats,
 and getting AI-suggested prompt improvements.
 """
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
@@ -22,11 +23,11 @@ async def record_outcome(
     conversation_id: UUID,
     agent_type: str,
     outcome: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     revenue: float | None = None,
     confidence: float = 0.0,
     feedback: str | None = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Record the outcome of a conversation."""
     optimizer = PromptOptimizer(db)
@@ -91,9 +92,9 @@ async def record_outcome(
 @router.get("/stats")
 async def get_outcome_stats(
     agent_type: str,
-    days: int = Query(30, ge=1, le=365),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ):
     """Get outcome statistics by agent type."""
     optimizer = PromptOptimizer(db)
@@ -104,9 +105,9 @@ async def get_outcome_stats(
 @router.get("/prompt-suggestions")
 async def get_prompt_suggestions(
     agent_type: str,
-    days: int = Query(30, ge=1, le=365),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ):
     """Get AI-suggested prompt improvements based on failed conversations."""
     optimizer = PromptOptimizer(db)

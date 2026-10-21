@@ -1,5 +1,6 @@
 """Mobile geofence API — auto check-in + nearby locations."""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -37,8 +38,8 @@ class GeofenceCheckRequest(BaseModel):
 @router.post("/geofence/check")
 async def check_geofence(
     request: GeofenceCheckRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Check if user in geofence. Auto check-in if enabled.
 
@@ -78,8 +79,8 @@ async def check_geofence(
 @router.post("/locations/nearby")
 async def get_nearby_locations(
     request: GeofenceCheckRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """List locations within 500m radius."""
     await get_owned_business(db, request.business_id, current_user)
@@ -114,9 +115,9 @@ async def get_nearby_locations(
 @router.post("/geofence/subscribe")
 async def subscribe_to_geofence(
     business_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     radius_km: float = 0.5,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Enable background geofence monitoring (iOS/Android).
 

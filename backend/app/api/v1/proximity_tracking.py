@@ -2,6 +2,7 @@
 
 import logging
 from datetime import UTC, datetime
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
@@ -34,8 +35,8 @@ class ProximityCheckRequest(BaseModel):
 @router.post("/check-nearby")
 async def check_proximity(
     req: ProximityCheckRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Check if user near any business location (Haversine distance)."""
     return {
@@ -49,8 +50,8 @@ async def check_proximity(
 @router.post("/log-visit")
 async def log_offline_conversion(
     conversion: OfflineConversionLog,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Log location visit or offline conversion."""
     return {
@@ -64,8 +65,8 @@ async def log_offline_conversion(
 @router.get("/nearby-users/{location_id}")
 async def get_nearby_users(
     location_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Get users near a location (for business owner)."""
     return {

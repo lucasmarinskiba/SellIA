@@ -6,6 +6,7 @@ import os
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from fastapi_limiter.depends import RateLimiter
@@ -29,8 +30,8 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 )
 async def upload_file(
     request: Request,
-    file: UploadFile = File(...),
-    current_user: User = Depends(get_current_active_user),
+    file: Annotated[UploadFile, File(...)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """
     Endpoint seguro para subida de archivos.
@@ -114,7 +115,10 @@ async def upload_file(
 
 
 @router.get("/upload/download/{filename}")
-async def download_file(filename: str, current_user: User = Depends(get_current_active_user)):
+async def download_file(
+    filename: str,
+    current_user: Annotated[User, Depends(get_current_active_user)],
+):
     """
     Descarga un archivo previamente subido.
     Valida que el nombre no contenga path traversal.

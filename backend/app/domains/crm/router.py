@@ -1,6 +1,7 @@
 """CRM API Router"""
 
 from datetime import UTC, datetime
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -31,9 +32,9 @@ router = APIRouter(prefix="/crm", tags=["crm"])
 
 @router.get("/pipelines", response_model=list[PipelineResponse])
 async def list_pipelines(
-    business_id: UUID = Query(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(Pipeline).where(
@@ -47,8 +48,8 @@ async def list_pipelines(
 @router.post("/pipelines", response_model=PipelineResponse, status_code=status.HTTP_201_CREATED)
 async def create_pipeline(
     data: PipelineCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     pipeline = Pipeline(**data.model_dump())
     db.add(pipeline)
@@ -61,8 +62,8 @@ async def create_pipeline(
 async def update_pipeline(
     pipeline_id: UUID,
     data: PipelineUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(select(Pipeline).where(Pipeline.id == pipeline_id))
     pipeline = result.scalar_one_or_none()
@@ -78,8 +79,8 @@ async def update_pipeline(
 @router.delete("/pipelines/{pipeline_id}")
 async def delete_pipeline(
     pipeline_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(select(Pipeline).where(Pipeline.id == pipeline_id))
     pipeline = result.scalar_one_or_none()
@@ -94,12 +95,12 @@ async def delete_pipeline(
 
 @router.get("/deals", response_model=list[DealResponse])
 async def list_deals(
-    business_id: UUID = Query(...),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
     stage: str | None = None,
     pipeline_id: UUID | None = None,
     search: str | None = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
 ):
     query = select(Deal).where(
         Deal.business_id == business_id,
@@ -120,8 +121,8 @@ async def list_deals(
 @router.post("/deals", response_model=DealResponse, status_code=status.HTTP_201_CREATED)
 async def create_deal(
     data: DealCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     deal_data = data.model_dump()
 
@@ -255,8 +256,8 @@ Genera UNA SOLA ORACIÓN que explique por qué se cerró este deal. Sé objetivo
 async def update_deal(
     deal_id: UUID,
     data: DealUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(select(Deal).where(Deal.id == deal_id))
     deal = result.scalar_one_or_none()
@@ -288,8 +289,8 @@ async def update_deal(
 async def move_deal(
     deal_id: UUID,
     data: MoveDealRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(select(Deal).where(Deal.id == deal_id))
     deal = result.scalar_one_or_none()
@@ -327,8 +328,8 @@ async def move_deal(
 @router.post("/deals/{deal_id}/generate-proposal", response_model=DealResponse)
 async def generate_proposal_endpoint(
     deal_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Generate an AI-powered proposal for a deal."""
     result = await db.execute(select(Deal).where(Deal.id == deal_id))
@@ -350,8 +351,8 @@ async def generate_proposal_endpoint(
 @router.post("/deals/{deal_id}/pricing-recommendation", response_model=DealResponse)
 async def pricing_recommendation_endpoint(
     deal_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Generate a pricing strategy recommendation for a deal."""
     result = await db.execute(select(Deal).where(Deal.id == deal_id))
@@ -373,8 +374,8 @@ async def pricing_recommendation_endpoint(
 @router.post("/deals/{deal_id}/assign-recommendation")
 async def assign_recommendation_endpoint(
     deal_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Get AI-powered deal assignment and handling strategy recommendation."""
     result = await db.execute(select(Deal).where(Deal.id == deal_id))
@@ -469,8 +470,8 @@ ESTIMATED_CLOSE: <estimación de días para cerrar>"""
 @router.delete("/deals/{deal_id}")
 async def delete_deal(
     deal_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(select(Deal).where(Deal.id == deal_id))
     deal = result.scalar_one_or_none()
@@ -485,11 +486,11 @@ async def delete_deal(
 
 @router.get("/lead-scores", response_model=list[LeadScoreResponse])
 async def list_lead_scores(
-    business_id: UUID = Query(...),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
     classification: str | None = None,
     min_score: int | None = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
 ):
     query = select(LeadScore).where(LeadScore.business_id == business_id)
     if classification:
@@ -503,8 +504,8 @@ async def list_lead_scores(
 @router.get("/lead-scores/{conversation_id}", response_model=LeadScoreResponse)
 async def get_lead_score(
     conversation_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(LeadScore).where(LeadScore.conversation_id == conversation_id)

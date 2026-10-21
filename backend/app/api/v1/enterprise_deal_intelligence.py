@@ -1,3 +1,4 @@
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -37,8 +38,8 @@ async def _get_owned_deal(deal_id: UUID, user: User, db: AsyncSession) -> Deal:
 @router.post("/intelligence/analyze-deals/{business_id}")
 async def analyze_deals(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Analyze all open deals for win probability and risk assessment."""
     await _get_business_for_user(business_id, current_user, db)
@@ -49,8 +50,8 @@ async def analyze_deals(
 @router.get("/intelligence/deal-score/{deal_id}")
 async def get_deal_score(
     deal_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get current deal score and risk assessment."""
     deal = await _get_owned_deal(deal_id, current_user, db)
@@ -63,9 +64,9 @@ async def get_deal_score(
 @router.post("/intelligence/forecast-revenue/{business_id}")
 async def forecast_revenue(
     business_id: UUID,
-    periods: list[int] = Query([30, 60, 90]),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    periods: Annotated[list[int], Query()] = [30, 60, 90],
 ):
     """Generate revenue forecast for multiple periods."""
     await _get_business_for_user(business_id, current_user, db)
@@ -76,8 +77,8 @@ async def forecast_revenue(
 @router.get("/intelligence/at-risk-deals/{business_id}")
 async def get_at_risk_deals(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get summary of all at-risk deals for this business."""
     await _get_business_for_user(business_id, current_user, db)
@@ -89,12 +90,12 @@ async def get_at_risk_deals(
 async def record_deal_outcome(
     deal_id: UUID,
     outcome: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     final_value: float = None,
     days_to_close: int = 0,
     forecasted_probability: float = 0.5,
     win_loss_reason: str = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Record deal outcome (won/lost) for forecast-accuracy tracking."""
     deal = await _get_owned_deal(deal_id, current_user, db)
@@ -132,8 +133,8 @@ async def record_deal_outcome(
 @router.get("/intelligence/accuracy-metrics/{business_id}")
 async def get_accuracy_metrics(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get forecast accuracy metrics for this business."""
     await _get_business_for_user(business_id, current_user, db)
@@ -144,8 +145,8 @@ async def get_accuracy_metrics(
 @router.get("/intelligence/win-loss-summary/{business_id}")
 async def get_win_loss_summary(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get win/loss analysis and patterns."""
     await _get_business_for_user(business_id, current_user, db)
@@ -156,8 +157,8 @@ async def get_win_loss_summary(
 @router.get("/intelligence/dashboard/{business_id}")
 async def get_intelligence_dashboard(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Comprehensive deal intelligence dashboard."""
     await _get_business_for_user(business_id, current_user, db)

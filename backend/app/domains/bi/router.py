@@ -1,5 +1,6 @@
 """BI API Router."""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
@@ -19,9 +20,9 @@ router = APIRouter(prefix="/{business_id}/bi", tags=["Business Intelligence"])
 async def generate_funnel(
     business_id: UUID,
     period: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     period_type: str = "monthly",
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     service = BiService(db)
     return await service.generate_funnel_report(business_id, period, period_type)
@@ -31,8 +32,8 @@ async def generate_funnel(
 @router.get("/funnel/latest", response_model=FunnelMetricsResponse | None)
 async def get_latest_funnel(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = BiService(db)
     return await service.get_latest_funnel(business_id)
@@ -42,9 +43,9 @@ async def get_latest_funnel(
 @router.get("/insights", response_model=list[InsightAlertResponse])
 async def list_insights(
     business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     insight_type: str | None = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     service = BiService(db)
     return await service.list_insight_alerts(business_id, insight_type)

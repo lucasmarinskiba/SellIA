@@ -1,5 +1,6 @@
 """Swarm API Router — Multi-Agent Collaboration Endpoints."""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -29,9 +30,9 @@ router = APIRouter()
 @router.post("/execute", response_model=SwarmExecuteResponse)
 async def execute_swarm(
     data: SwarmExecuteRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
     business_id: UUID | None = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
 ):
     """Execute a multi-agent swarm task."""
     if business_id:
@@ -63,9 +64,9 @@ async def execute_swarm(
 
 @router.get("/sessions", response_model=list[SwarmSessionResponse])
 async def list_swarm_sessions(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
     business_id: UUID | None = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
 ):
     """List swarm sessions for the current user."""
     query = select(SwarmSession)
@@ -106,8 +107,8 @@ async def list_swarm_sessions(
 @router.get("/sessions/{session_id}", response_model=SwarmSessionResponse)
 async def get_swarm_session(
     session_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Get a single swarm session with all messages."""
     result = await db.execute(
@@ -138,8 +139,8 @@ async def get_swarm_session(
 @router.post("/suggest-agents", response_model=SwarmSuggestResponse)
 async def suggest_agents(
     data: SwarmSuggestRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Suggest agents and roles for a given task."""
     coordinator = SwarmCoordinator()

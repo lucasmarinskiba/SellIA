@@ -1,6 +1,7 @@
 """API endpoints for offline-triggered re-engagement sequences."""
 
 from enum import Enum
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
@@ -140,8 +141,8 @@ OFFLINE_TEMPLATES = [
 )
 async def trigger_offline_sequence(
     request: OfflineSequenceTriggerRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> OfflineSequenceTriggerResponse:
     """Trigger post-visit sequence for offline conversion."""
     try:
@@ -207,7 +208,7 @@ async def trigger_offline_sequence(
     response_model=list[OfflineSequenceTemplate],
 )
 async def list_sequence_templates(
-    current_user: User = Depends(get_current_user),
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> list[OfflineSequenceTemplate]:
     """List all available offline sequence templates."""
     return OFFLINE_TEMPLATES
@@ -218,7 +219,7 @@ async def list_sequence_templates(
     response_model=list[dict],
 )
 async def list_trigger_types(
-    current_user: User = Depends(get_current_user),
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> list[dict]:
     """List all offline trigger types."""
     return [
@@ -232,7 +233,7 @@ async def list_trigger_types(
     response_model=dict,
 )
 async def get_visit_type_mapping(
-    current_user: User = Depends(get_current_user),
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> dict:
     """Map visit types to default sequences."""
     mapping = {

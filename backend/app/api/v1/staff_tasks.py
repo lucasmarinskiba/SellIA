@@ -1,6 +1,7 @@
 """Staff task management API endpoints."""
 
 from datetime import datetime
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -41,8 +42,8 @@ class TaskActionRequest(BaseModel):
 @router.post("/tasks/assign")
 async def assign_task(
     request: CreateTaskRequest,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Assign task to staff member."""
     try:
@@ -79,9 +80,9 @@ async def assign_task(
 @router.get("/staff/{staff_id}/tasks")
 async def get_staff_tasks(
     staff_id: UUID,
-    location_id: UUID | None = Query(None),
-    status: str | None = Query(None),
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
+    location_id: Annotated[UUID | None, Query()] = None,
+    status: Annotated[str | None, Query()] = None,
 ) -> dict:
     """Get tasks assigned to staff."""
     try:
@@ -121,7 +122,7 @@ async def get_staff_tasks(
 @router.post("/tasks/{task_id}/acknowledge")
 async def acknowledge_task(
     task_id: UUID,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Staff acknowledges task assignment."""
     try:
@@ -134,7 +135,7 @@ async def acknowledge_task(
 @router.post("/tasks/{task_id}/start")
 async def start_task(
     task_id: UUID,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Mark task as in-progress."""
     try:
@@ -148,7 +149,7 @@ async def start_task(
 async def complete_task(
     task_id: UUID,
     request: TaskActionRequest,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Mark task as completed."""
     try:
@@ -166,8 +167,8 @@ async def complete_task(
 @router.post("/tasks/{task_id}/cancel")
 async def cancel_task(
     task_id: UUID,
-    reason: str | None = Query(None),
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
+    reason: Annotated[str | None, Query()] = None,
 ) -> dict:
     """Cancel task."""
     try:
@@ -180,8 +181,8 @@ async def cancel_task(
 @router.get("/locations/{location_id}/task-queue")
 async def get_location_task_queue(
     location_id: UUID,
-    max_results: int = Query(10, ge=1, le=50),
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
+    max_results: Annotated[int, Query(ge=1, le=50)] = 10,
 ) -> dict:
     """Get pending tasks for location."""
     try:
@@ -221,7 +222,7 @@ async def auto_assign_shift_tasks(
 @router.get("/tasks/{task_id}/notifications")
 async def get_task_notifications(
     task_id: UUID,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Get notification history for task."""
     try:
@@ -253,7 +254,7 @@ async def get_task_notifications(
 @router.post("/notifications/{notification_id}/read")
 async def mark_notification_read(
     notification_id: UUID,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Mark notification as read."""
     try:
@@ -297,8 +298,8 @@ async def get_shift_readiness_report(
 @router.get("/staff/{staff_id}/performance")
 async def get_staff_performance(
     staff_id: UUID,
-    days: int = Query(30, ge=1, le=365),
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ) -> dict:
     """Get staff task performance metrics."""
     try:

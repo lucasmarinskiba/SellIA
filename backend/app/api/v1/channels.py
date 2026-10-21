@@ -1,5 +1,5 @@
 import hmac
-from typing import Any
+from typing import Annotated, Any
 from urllib.parse import urlencode
 from uuid import UUID
 
@@ -50,8 +50,8 @@ async def _get_business_for_user(
 async def create_channel(
     business_id: UUID,
     channel_in: ChannelConnectionCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
 
@@ -91,8 +91,8 @@ async def create_channel(
 @router.get("/{business_id}/channels", response_model=list[ChannelConnectionResponse])
 async def list_channels(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
     try:
@@ -113,8 +113,8 @@ async def list_channels(
 async def get_channel(
     business_id: UUID,
     channel_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
     result = await db.execute(
@@ -134,8 +134,8 @@ async def update_channel(
     business_id: UUID,
     channel_id: UUID,
     channel_in: ChannelConnectionUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
     result = await db.execute(
@@ -161,8 +161,8 @@ async def update_channel(
 async def delete_channel(
     business_id: UUID,
     channel_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
     result = await db.execute(
@@ -183,8 +183,8 @@ async def delete_channel(
 async def test_channel_connection(
     business_id: UUID,
     channel_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Test channel credentials by validating them with the platform."""
     await _get_business_for_user(business_id, current_user, db)
@@ -225,8 +225,8 @@ async def test_channel_connection(
 async def get_oauth_url(
     business_id: UUID,
     platform: ChannelPlatform,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Generate OAuth authorization URL for supported platforms."""
     await _get_business_for_user(business_id, current_user, db)
@@ -335,11 +335,11 @@ async def get_oauth_url(
 @router.get("/oauth/callback/{platform}")
 async def oauth_callback(
     platform: ChannelPlatform,
-    code: str | None = Query(default=None),
-    state: str | None = Query(default=None),
-    error: str | None = Query(default=None),
-    error_reason: str | None = Query(default=None),
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    code: Annotated[str | None, Query()] = None,
+    state: Annotated[str | None, Query()] = None,
+    error: Annotated[str | None, Query()] = None,
+    error_reason: Annotated[str | None, Query()] = None,
 ):
     """OAuth callback handler for supported platforms."""
     import httpx
@@ -494,8 +494,8 @@ async def oauth_callback(
 @router.get("/{business_id}/channels/whatsapp/embedded-signup-config")
 async def get_whatsapp_embedded_signup_config(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """App ID for the frontend's Facebook JS SDK -- not a secret, just avoids
     needing a separate NEXT_PUBLIC_ env var kept in sync with the backend's."""
@@ -509,8 +509,8 @@ async def get_whatsapp_embedded_signup_config(
 async def whatsapp_embedded_signup(
     business_id: UUID,
     payload: dict[str, Any],
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Finish WhatsApp's Embedded Signup: the frontend runs FB.login() with
     the 'whatsapp_embedded_signup' feature (a JS SDK popup, not a redirect --
@@ -597,11 +597,11 @@ async def whatsapp_embedded_signup(
 @router.get("/webhook/{platform}", status_code=status.HTTP_200_OK)
 async def verify_webhook(
     platform: ChannelPlatform,
-    hub_mode: str = Query(None, alias="hub.mode"),
-    hub_verify_token: str = Query(None, alias="hub.verify_token"),
-    hub_challenge: str = Query(None, alias="hub.challenge"),
-    token: str = Query(None),
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    hub_mode: Annotated[str, Query(alias="hub.mode")] = None,
+    hub_verify_token: Annotated[str, Query(alias="hub.verify_token")] = None,
+    hub_challenge: Annotated[str, Query(alias="hub.challenge")] = None,
+    token: Annotated[str, Query()] = None,
 ):
     """Verify webhook subscription (used by WhatsApp Business API, Meta, etc.)."""
     # Si hay token, verificar por token directo (Telegram, Webchat)
@@ -645,8 +645,8 @@ async def verify_webhook(
 async def receive_webhook(
     platform: ChannelPlatform,
     request: Request,
-    token: str = Query(None),
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    token: Annotated[str, Query()] = None,
 ):
     """Receive incoming webhook from any platform.
     

@@ -1,5 +1,6 @@
 """Export & BI API — data export, reports, dashboards."""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
@@ -47,7 +48,7 @@ class CreateBIDashboardRequest(BaseModel):
 def create_export(
     business_id: UUID,
     request: CreateExportRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Request data export."""
     return ExportBIService.create_export(
@@ -66,7 +67,7 @@ def create_export(
 @router.get("/exports/{export_id}")
 def get_export_status(
     export_id: UUID,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Get export status."""
     return ExportBIService.get_export_status(
@@ -79,7 +80,7 @@ def get_export_status(
 def create_scheduled_report(
     business_id: UUID,
     request: CreateScheduledReportRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Create scheduled report."""
     return ExportBIService.create_scheduled_report(
@@ -97,7 +98,7 @@ def create_scheduled_report(
 def setup_warehouse_sync(
     business_id: UUID,
     request: SetupWarehouseSyncRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Configure data warehouse integration."""
     return ExportBIService.setup_warehouse_sync(
@@ -114,7 +115,7 @@ def setup_warehouse_sync(
 def create_bi_dashboard(
     business_id: UUID,
     request: CreateBIDashboardRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Create BI dashboard."""
     return ExportBIService.create_bi_dashboard(
@@ -129,8 +130,8 @@ def create_bi_dashboard(
 @router.get("/businesses/{business_id}/export-metrics")
 def get_export_metrics(
     business_id: UUID,
-    date: str | None = Query(None, description="YYYY-MM-DD"),
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
+    date: Annotated[str | None, Query(description="YYYY-MM-DD")] = None,
 ):
     """Get export & BI metrics."""
     return ExportBIService.get_export_metrics(

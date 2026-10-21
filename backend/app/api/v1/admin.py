@@ -26,7 +26,9 @@ async def get_db():
         yield session
 
 
-async def require_admin(current_user: User = Depends(get_current_user)) -> User:
+async def require_admin(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> User:
     if not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
     return current_user
@@ -38,8 +40,8 @@ async def require_admin(current_user: User = Depends(get_current_user)) -> User:
 async def get_admin_churn_signals(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(require_admin)],
-    page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=200),
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=200)] = 50,
 ):
     """Admin-only: list ALL ChurnRiskSignal records with pagination."""
     offset = (page - 1) * page_size
@@ -85,7 +87,7 @@ async def get_admin_churn_signals(
 async def get_admin_margins(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(require_admin)],
-    days: int = Query(30, ge=1, le=90),
+    days: Annotated[int, Query(ge=1, le=90)] = 30,
 ):
     """Admin-only: margin analysis per user (plan price vs AI cost)."""
     return await consumo_service.get_user_margins(db, days=days)
@@ -137,7 +139,7 @@ async def get_admin_nps_stats(
 async def get_admin_referral_stats(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(require_admin)],
-    top_n: int = Query(10, ge=1, le=100),
+    top_n: Annotated[int, Query(ge=1, le=100)] = 10,
 ):
     """Admin-only: global referral statistics."""
     total_codes_result = await db.execute(select(func.count(ReferralCode.id)))

@@ -1,5 +1,6 @@
 """Attribution API."""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -45,8 +46,8 @@ async def log_touchpoint(
     customer_id: UUID,
     business_id: UUID,
     request: LogTouchpointRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
     return await AttributionService.log_touchpoint(
@@ -58,8 +59,8 @@ async def log_touchpoint(
 async def attribute_revenue(
     business_id: UUID,
     request: AttributeRevenueRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
     return await AttributionService.attribute_revenue(request.order_id, business_id, request.order_value, request.attribution_model, db)
@@ -68,9 +69,9 @@ async def attribute_revenue(
 @router.get("/businesses/{business_id}/channel-performance")
 async def get_channel_performance(
     business_id: UUID,
-    days: int = Query(30),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    days: Annotated[int, Query()] = 30,
 ):
     await _get_business_for_user(business_id, current_user, db)
     return await AttributionService.get_channel_performance(business_id, days, db)
@@ -79,8 +80,8 @@ async def get_channel_performance(
 @router.get("/businesses/{business_id}/attribution/metrics")
 async def get_metrics(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
     return await AttributionService.get_metrics(business_id, db)

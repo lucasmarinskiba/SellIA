@@ -3,6 +3,7 @@
 import json
 import logging
 from datetime import UTC, datetime, timedelta
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
@@ -70,7 +71,7 @@ manager = LocationDashboardManager()
 async def websocket_location_dashboard(
     location_id: str,
     websocket: WebSocket,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Real-time dashboard WebSocket for location.
 

@@ -3,6 +3,8 @@
 Endpoints para el flujo de onboarding automático con IA.
 """
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,8 +27,8 @@ router = APIRouter(tags=["Onboarding Mágico"])
 @router.post("/analyze", response_model=OnboardingAnalyzeResponse)
 async def analyze_source(
     req: OnboardingAnalyzeRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Analiza un Instagram handle o URL y devuelve datos estructurados del negocio."""
     try:
@@ -47,8 +49,8 @@ async def analyze_source(
 @router.post("/create", response_model=OnboardingCreateResponse)
 async def create_from_discovery(
     req: OnboardingCreateRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Crea negocio, catálogo, agentes y workflows a partir de un descubrimiento IA."""
     generator = OnboardingGenerator(db)

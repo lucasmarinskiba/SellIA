@@ -3,6 +3,8 @@ Real-world implementation example: Complete tenant endpoints.
 Shows how to integrate multi-tenant into your FastAPI app.
 """
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -32,10 +34,10 @@ router = APIRouter(prefix="/api/v1/tenants", tags=["multi-tenant"])
 @router.post("")
 async def create_tenant(
     name: str,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     description: str = None,
     tier: str = TenantTier.STARTER,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
 ):
     """
     Create new tenant (organization).
@@ -86,8 +88,8 @@ async def create_tenant(
 
 @router.get("/my-tenants")
 async def list_my_tenants(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """List all tenants user belongs to."""
     service = TenantService(db)
@@ -108,8 +110,8 @@ async def list_my_tenants(
 @router.get("/{tenant_id}")
 async def get_tenant(
     tenant_id: str,
-    tenant_context: TenantContext = Depends(require_tenant_context),
-    db: AsyncSession = Depends(get_db),
+    tenant_context: Annotated[TenantContext, Depends(require_tenant_context)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Get tenant details (members only)."""
     if tenant_context.tenant_id != tenant_id:
@@ -138,10 +140,10 @@ async def get_tenant(
 @router.put("/{tenant_id}")
 async def update_tenant(
     tenant_id: str,
+    tenant_context: Annotated[TenantContext, Depends(require_admin_access)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     name: str = None,
     description: str = None,
-    tenant_context: TenantContext = Depends(require_admin_access),
-    db: AsyncSession = Depends(get_db),
 ):
     """Update tenant settings (admin only)."""
     if tenant_context.tenant_id != tenant_id:
@@ -168,8 +170,8 @@ async def update_tenant(
 async def upgrade_tier(
     tenant_id: str,
     new_tier: str,
-    tenant_context: TenantContext = Depends(require_owner_access),
-    db: AsyncSession = Depends(get_db),
+    tenant_context: Annotated[TenantContext, Depends(require_owner_access)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Upgrade tenant tier (owner only)."""
     if tenant_context.tenant_id != tenant_id:
@@ -201,8 +203,8 @@ async def upgrade_tier(
 @router.get("/{tenant_id}/members")
 async def list_members(
     tenant_id: str,
-    tenant_context: TenantContext = Depends(require_tenant_context),
-    db: AsyncSession = Depends(get_db),
+    tenant_context: Annotated[TenantContext, Depends(require_tenant_context)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """List tenant members."""
     if tenant_context.tenant_id != tenant_id:
@@ -233,9 +235,9 @@ async def list_members(
 async def invite_member(
     tenant_id: str,
     email: str,
+    tenant_context: Annotated[TenantContext, Depends(require_admin_access)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     role: str = "member",
-    tenant_context: TenantContext = Depends(require_admin_access),
-    db: AsyncSession = Depends(get_db),
 ):
     """Invite user to tenant (admin only)."""
     if tenant_context.tenant_id != tenant_id:
@@ -295,10 +297,10 @@ async def invite_member(
 async def create_api_key(
     tenant_id: str,
     name: str,
+    tenant_context: Annotated[TenantContext, Depends(require_admin_access)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     scopes: list = None,
     rate_limit_per_minute: int = 100,
-    tenant_context: TenantContext = Depends(require_admin_access),
-    db: AsyncSession = Depends(get_db),
 ):
     """Create API key (admin only)."""
     if tenant_context.tenant_id != tenant_id:
@@ -347,8 +349,8 @@ async def create_api_key(
 @router.get("/{tenant_id}/api-keys")
 async def list_api_keys(
     tenant_id: str,
-    tenant_context: TenantContext = Depends(require_admin_access),
-    db: AsyncSession = Depends(get_db),
+    tenant_context: Annotated[TenantContext, Depends(require_admin_access)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """List API keys (admin only)."""
     if tenant_context.tenant_id != tenant_id:
@@ -376,8 +378,8 @@ async def list_api_keys(
 async def rotate_api_key(
     tenant_id: str,
     key_id: str,
-    tenant_context: TenantContext = Depends(require_admin_access),
-    db: AsyncSession = Depends(get_db),
+    tenant_context: Annotated[TenantContext, Depends(require_admin_access)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Rotate API key (revoke old, create new)."""
     if tenant_context.tenant_id != tenant_id:
@@ -420,8 +422,8 @@ async def rotate_api_key(
 @router.get("/{tenant_id}/billing/usage")
 async def get_billing_usage(
     tenant_id: str,
-    tenant_context: TenantContext = Depends(require_tenant_context),
-    db: AsyncSession = Depends(get_db),
+    tenant_context: Annotated[TenantContext, Depends(require_tenant_context)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Get current billing period usage."""
     if tenant_context.tenant_id != tenant_id:
@@ -440,11 +442,11 @@ async def get_billing_usage(
 @router.get("/{tenant_id}/audit-logs")
 async def get_audit_logs(
     tenant_id: str,
+    tenant_context: Annotated[TenantContext, Depends(require_admin_access)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     action: str = None,
     days_back: int = 30,
     limit: int = 100,
-    tenant_context: TenantContext = Depends(require_admin_access),
-    db: AsyncSession = Depends(get_db),
 ):
     """Get audit logs (admin only)."""
     if tenant_context.tenant_id != tenant_id:
@@ -477,7 +479,7 @@ async def get_audit_logs(
 
 # Dependency for use in other routers
 def inject_tenant_id_from_context(
-    tenant_context: TenantContext = Depends(require_tenant_context),
+    tenant_context: Annotated[TenantContext, Depends(require_tenant_context)],
 ) -> str:
     """Extract tenant_id from context for use in other endpoints."""
     return tenant_context.tenant_id

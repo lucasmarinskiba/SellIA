@@ -1,5 +1,6 @@
 import uuid
 from datetime import UTC, datetime, timedelta
+from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -194,7 +195,7 @@ Equipo de Seguridad SellIA
 async def register(
     request: Request,
     user_in: UserCreate,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     from app.core.security import get_password_hash
 
@@ -244,8 +245,8 @@ async def register(
 async def login(
     request: Request,
     response: Response,
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: AsyncSession = Depends(get_db),
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     result = await db.execute(select(User).where(User.email == form_data.username))
     user = result.scalar_one_or_none()
@@ -634,7 +635,7 @@ Si no fuiste vos, cambiá tu contraseña inmediatamente.
 async def logout(
     request: Request,
     response: Response,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     token = None
     auth_header = request.headers.get("Authorization", "")
@@ -665,7 +666,7 @@ async def logout(
 @router.post("/2fa/setup")
 async def setup_2fa(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     from app.core.deps import get_current_user
     user = await get_current_user(request, db)
@@ -706,7 +707,7 @@ async def setup_2fa(
 async def verify_2fa_setup(
     request: Request,
     code: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     from app.core.deps import get_current_user
     user = await get_current_user(request, db)
@@ -748,7 +749,7 @@ async def verify_2fa_setup(
 async def disable_2fa(
     request: Request,
     code: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     from app.core.deps import get_current_user
     user = await get_current_user(request, db)
@@ -783,7 +784,7 @@ async def disable_2fa(
 @router.get("/2fa/backup-codes")
 async def list_backup_codes_status(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Devuelve cuántos códigos de backup quedan disponibles."""
     from app.core.deps import get_current_user
@@ -857,8 +858,8 @@ Si no pediste esto, ignorá este email.
 
 @router.post("/forgot-password", dependencies=[Depends(RateLimiter(times=3, seconds=300))])
 async def forgot_password(
-    db: AsyncSession = Depends(get_db),
-    email: str = Body(..., embed=True),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    email: Annotated[str, Body(embed=True)],
 ):
     """Pide un link para restablecer contraseña. La respuesta nunca revela
     si ese email tiene cuenta, para no filtrar emails registrados."""
@@ -880,9 +881,9 @@ async def forgot_password(
 
 @router.post("/reset-password")
 async def reset_password(
-    db: AsyncSession = Depends(get_db),
-    token: str = Body(..., embed=True),
-    new_password: str = Body(..., embed=True),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    token: Annotated[str, Body(embed=True)],
+    new_password: Annotated[str, Body(embed=True)],
 ):
     """Restablece la contraseña con un token de /forgot-password."""
     if len(new_password) < 8:
@@ -910,7 +911,7 @@ async def reset_password(
 @router.get("/verify-email")
 async def verify_email(
     token: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Verifica el email del usuario con un token JWT de un solo uso."""
     payload = decode_access_token(token)
@@ -935,8 +936,8 @@ async def verify_email(
 @router.post("/resend-verification", dependencies=[Depends(RateLimiter(times=3, seconds=300))])
 async def resend_verification(
     request: Request,
-    db: AsyncSession = Depends(get_db),
-    email: str | None = Body(default=None, embed=True),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    email: Annotated[str | None, Body(embed=True)] = None,
 ):
     """Reenvía el email de verificación.
 
@@ -981,7 +982,7 @@ def _otp_purpose(raw: str | None) -> str:
 @router.get("/2fa/email/status")
 async def email_otp_status(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Whether this account has the emailed second factor turned on.
 
@@ -1001,7 +1002,7 @@ async def email_otp_status(
 @router.post("/2fa/email/setup", dependencies=[Depends(RateLimiter(times=3, seconds=300))])
 async def setup_email_otp(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Start turning on the emailed second factor: sends the confirmation code.
 
@@ -1039,7 +1040,7 @@ async def setup_email_otp(
 @router.post("/2fa/email/disable")
 async def disable_email_otp(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Turn the emailed second factor off, and tell the owner it happened.
 
@@ -1086,7 +1087,7 @@ async def disable_email_otp(
 @router.post("/2fa/email/send", dependencies=[Depends(RateLimiter(times=3, seconds=300))])
 async def send_email_otp(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
     purpose: str | None = None,
 ):
     """Envía un código OTP por email."""
@@ -1109,7 +1110,7 @@ async def send_email_otp(
 async def verify_email_otp_endpoint(
     code: str,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
     purpose: str | None = None,
 ):
     """Verifica un código OTP por email.
@@ -1141,7 +1142,7 @@ async def verify_email_otp_endpoint(
 @router.post("/webauthn/register-begin")
 async def webauthn_register_begin(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Inicia registro de passkey."""
     from app.core.deps import get_current_user
@@ -1156,9 +1157,9 @@ async def webauthn_register_begin(
 async def webauthn_register_finish(
     credential_id: str,
     public_key: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
     device_name: str = "Passkey",
     request: Request = None,
-    db: AsyncSession = Depends(get_db),
 ):
     """Finaliza registro de passkey."""
     from app.core.deps import get_current_user
@@ -1179,7 +1180,7 @@ async def webauthn_login_begin():
 @router.get("/webauthn/credentials")
 async def list_webauthn_credentials(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Lista passkeys registrados."""
     from app.core.deps import get_current_user
@@ -1197,7 +1198,7 @@ async def list_webauthn_credentials(
 async def delete_webauthn_credential(
     cred_id: uuid.UUID,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Elimina un passkey."""
     from app.core.deps import get_current_user
@@ -1217,7 +1218,7 @@ async def delete_webauthn_credential(
 @router.get("/devices")
 async def list_trusted_devices(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Lista dispositivos del usuario."""
     from app.core.deps import get_current_user
@@ -1246,7 +1247,7 @@ async def list_trusted_devices(
 async def trust_device_endpoint(
     device_id: uuid.UUID,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Marca un dispositivo como de confianza."""
     from app.core.deps import get_current_user
@@ -1263,7 +1264,7 @@ async def trust_device_endpoint(
 async def block_device_endpoint(
     device_id: uuid.UUID,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Bloquea un dispositivo."""
     from app.core.deps import get_current_user
@@ -1283,7 +1284,7 @@ async def block_device_endpoint(
 @router.get("/me/export-data")
 async def export_my_data(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Exporta todos los datos personales del usuario."""
     from app.core.data_deletion import export_user_data
@@ -1297,7 +1298,7 @@ async def export_my_data(
 @router.get("/security-status")
 async def security_status(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """One honest summary of how protected this account actually is.
 
@@ -1403,7 +1404,7 @@ async def security_status(
 async def revoke_device(
     device_id: uuid.UUID,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Stop trusting a device. The screen offered this and it did not exist.
 
@@ -1433,7 +1434,7 @@ async def revoke_device(
 @router.post("/me/delete-account")
 async def delete_my_account(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Borra la cuenta del usuario (GDPR)."""
     from app.core.data_deletion import secure_delete_user
@@ -1467,7 +1468,10 @@ class Disable2FARequest(BaseModel):
     password: str
 
 @router.post("/2fa/enable")
-async def enable_2fa(req: Enable2FARequest, db: AsyncSession = Depends(get_db)):
+async def enable_2fa(
+    req: Enable2FARequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """Generate 2FA secret and QR code."""
     if not pyotp:
         raise HTTPException(status_code=501, detail="2FA not available")
@@ -1492,7 +1496,10 @@ async def enable_2fa(req: Enable2FARequest, db: AsyncSession = Depends(get_db)):
     }
 
 @router.post("/2fa/verify")
-async def verify_2fa(request: Verify2FARequest, db: AsyncSession = Depends(get_db)):
+async def verify_2fa(
+    request: Verify2FARequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """Verify 2FA code and enable 2FA for user."""
     if not pyotp:
         raise HTTPException(status_code=501, detail="2FA not available")

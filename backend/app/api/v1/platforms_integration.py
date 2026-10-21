@@ -23,7 +23,7 @@ Error Handling: Standardized error responses with correlation IDs
 import logging
 import uuid
 from datetime import UTC, datetime
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from pydantic import BaseModel, Field
@@ -96,8 +96,8 @@ class AlertRequest(BaseModel):
 @router.post("/facebook-shop/webhooks/orders")
 async def facebook_shop_webhook_orders(
     request: Request,
-    account_id: str = Header(...),
-    x_hub_signature: str = Header(...),
+    account_id: Annotated[str, Header()],
+    x_hub_signature: Annotated[str, Header()],
 ) -> WebhookResponse:
     """
     Handle Facebook Shop webhook for orders.
@@ -140,7 +140,7 @@ async def facebook_shop_webhook_orders(
 @router.post("/facebook-shop/config")
 async def facebook_shop_config(
     config: PlatformConfig,
-    account_id: str = Header(...),
+    account_id: Annotated[str, Header()],
 ) -> dict[str, Any]:
     """
     Configure Facebook Shop integration.
@@ -177,7 +177,7 @@ async def facebook_shop_config(
 @router.post("/facebook-shop/sync/products")
 async def facebook_shop_sync_products(
     request: OrderSyncRequest,
-    account_id: str = Header(...),
+    account_id: Annotated[str, Header()],
 ) -> SyncResponse:
     """
     Sync products from Facebook Shop to local DB.
@@ -217,7 +217,7 @@ async def facebook_shop_sync_products(
 @router.get("/facebook-shop/orders/{order_id}")
 async def facebook_shop_get_order(
     order_id: str,
-    account_id: str = Header(...),
+    account_id: Annotated[str, Header()],
 ) -> dict[str, Any]:
     """
     Fetch Facebook Shop order details.
@@ -252,8 +252,8 @@ async def facebook_shop_get_order(
 @router.post("/instagram-shop/webhooks/orders")
 async def instagram_shop_webhook_orders(
     request: Request,
-    account_id: str = Header(...),
-    x_hub_signature: str = Header(...),
+    account_id: Annotated[str, Header()],
+    x_hub_signature: Annotated[str, Header()],
 ) -> WebhookResponse:
     """Handle Instagram Shop webhook for orders."""
     correlation_id = str(uuid.uuid4())
@@ -280,7 +280,7 @@ async def instagram_shop_webhook_orders(
 @router.post("/instagram-shop/sync/products")
 async def instagram_shop_sync_products(
     request: OrderSyncRequest,
-    account_id: str = Header(...),
+    account_id: Annotated[str, Header()],
 ) -> SyncResponse:
     """Sync products to Instagram Shop."""
     import time
@@ -307,7 +307,7 @@ async def instagram_shop_sync_products(
 
 @router.get("/instagram-shop/analytics")
 async def instagram_shop_analytics(
-    account_id: str = Header(...),
+    account_id: Annotated[str, Header()],
     days: int = 30,
 ) -> dict[str, Any]:
     """Fetch Instagram Shop analytics."""
@@ -334,7 +334,7 @@ async def instagram_shop_analytics(
 @router.post("/tiktok-shop/webhooks/orders")
 async def tiktok_shop_webhook_orders(
     request: Request,
-    account_id: str = Header(...),
+    account_id: Annotated[str, Header()],
 ) -> WebhookResponse:
     """Handle TikTok Shop webhook for orders."""
     correlation_id = str(uuid.uuid4())
@@ -361,7 +361,7 @@ async def tiktok_shop_webhook_orders(
 @router.post("/tiktok-shop/config")
 async def tiktok_shop_config(
     config: PlatformConfig,
-    account_id: str = Header(...),
+    account_id: Annotated[str, Header()],
 ) -> dict[str, Any]:
     """Configure TikTok Shop OAuth."""
     try:
@@ -407,8 +407,8 @@ async def _get_tiktok_shop_connection(account_id: str, db: AsyncSession) -> Chan
 @router.post("/tiktok-shop/sync/orders")
 async def tiktok_shop_sync_orders(
     request: OrderSyncRequest,
-    account_id: str = Header(...),
-    db: AsyncSession = Depends(get_db),
+    account_id: Annotated[str, Header()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> SyncResponse:
     """Sync orders reales desde TikTok Shop Seller API."""
     import time
@@ -447,7 +447,7 @@ async def tiktok_shop_sync_orders(
 @router.post("/calendly/webhooks/events")
 async def calendly_webhook_events(
     payload: dict[str, Any],
-    account_id: str = Header(...),
+    account_id: Annotated[str, Header()],
 ) -> WebhookResponse:
     """Handle Calendly webhook for scheduled events."""
     correlation_id = str(uuid.uuid4())
@@ -473,7 +473,7 @@ async def calendly_webhook_events(
 @router.post("/calendly/config")
 async def calendly_config(
     config: PlatformConfig,
-    account_id: str = Header(...),
+    account_id: Annotated[str, Header()],
 ) -> dict[str, Any]:
     """Configure Calendly integration."""
     try:
@@ -495,7 +495,7 @@ async def calendly_config(
 
 @router.get("/calendly/events")
 async def calendly_list_events(
-    account_id: str = Header(...),
+    account_id: Annotated[str, Header()],
     days: int = 7,
 ) -> dict[str, Any]:
     """List upcoming Calendly events."""
@@ -520,7 +520,7 @@ async def calendly_list_events(
 @router.post("/slack/commands")
 async def slack_command_handler(
     request: Request,
-    account_id: str = Header(...),
+    account_id: Annotated[str, Header()],
 ) -> dict[str, Any]:
     """
     Handle Slack slash commands.
@@ -558,7 +558,7 @@ async def slack_command_handler(
 @router.post("/slack/events")
 async def slack_events_handler(
     payload: dict[str, Any],
-    account_id: str = Header(...),
+    account_id: Annotated[str, Header()],
 ) -> dict[str, Any]:
     """Handle Slack Events API."""
     try:
@@ -580,7 +580,7 @@ async def slack_events_handler(
 @router.post("/slack/alerts")
 async def slack_send_alert(
     alert: AlertRequest,
-    account_id: str = Header(...),
+    account_id: Annotated[str, Header()],
 ) -> dict[str, Any]:
     """Send alert via Slack bot."""
     try:
@@ -604,7 +604,7 @@ async def slack_send_alert(
 @router.post("/telegram/webhooks/updates")
 async def telegram_webhook_updates(
     request: Request,
-    account_id: str = Header(...),
+    account_id: Annotated[str, Header()],
 ) -> dict[str, Any]:
     """Handle Telegram bot updates."""
     correlation_id = str(uuid.uuid4())
@@ -631,7 +631,7 @@ async def telegram_webhook_updates(
 @router.post("/telegram/config")
 async def telegram_config(
     config: PlatformConfig,
-    account_id: str = Header(...),
+    account_id: Annotated[str, Header()],
 ) -> dict[str, Any]:
     """Configure Telegram bot."""
     try:
@@ -654,7 +654,7 @@ async def telegram_config(
 @router.post("/telegram/send-notification")
 async def telegram_send_notification(
     alert: AlertRequest,
-    account_id: str = Header(...),
+    account_id: Annotated[str, Header()],
 ) -> dict[str, Any]:
     """Send Telegram notification."""
     try:
@@ -698,8 +698,8 @@ async def platforms_health() -> dict[str, Any]:
 
 @router.get("/status")
 async def platforms_status(
-    account_id: str = Header(...),
-    db: AsyncSession = Depends(get_db),
+    account_id: Annotated[str, Header()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """Get platform integration status for account.
 

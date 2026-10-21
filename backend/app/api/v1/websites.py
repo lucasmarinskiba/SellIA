@@ -1,5 +1,6 @@
 import re
 from datetime import UTC
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -48,7 +49,7 @@ def _validate_subdomain(subdomain: str) -> bool:
 @router.get("/onboarding/subdomain-check")
 async def check_subdomain_available(
     subdomain: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Live availability check used while the user types (see /sellia-onboarding
     step 1). Public/no-auth by design -- it never reveals anything beyond a
@@ -64,8 +65,8 @@ async def check_subdomain_available(
 @router.post("/onboarding/complete", response_model=WebsiteResponse)
 async def complete_onboarding(
     req: OnboardingCompleteRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Complete onboarding: create business + website + domain in one call."""
 
@@ -141,8 +142,8 @@ async def complete_onboarding(
 async def create_website(
     business_id: UUID,
     req: WebsiteCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create website for a business."""
     await _get_business_for_user(business_id, current_user, db)
@@ -197,8 +198,8 @@ async def create_website(
 @router.get("/businesses/{business_id}/website", response_model=WebsiteResponse)
 async def get_website(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get website for a business."""
     await _get_business_for_user(business_id, current_user, db)
@@ -217,8 +218,8 @@ async def get_website(
 async def update_website(
     business_id: UUID,
     req: WebsiteUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Update website."""
     await _get_business_for_user(business_id, current_user, db)
@@ -251,8 +252,8 @@ async def update_website(
 @router.post("/businesses/{business_id}/website/publish", response_model=WebsiteResponse)
 async def publish_website(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Publish website (make it live)."""
     await _get_business_for_user(business_id, current_user, db)
@@ -276,8 +277,8 @@ async def publish_website(
 @router.get("/businesses/{business_id}/domain", response_model=DomainResponse)
 async def get_domain(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get domain info for business website."""
     await _get_business_for_user(business_id, current_user, db)
@@ -303,8 +304,8 @@ async def get_domain(
 async def update_domain(
     business_id: UUID,
     req: DomainUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Update domain (e.g., add custom domain)."""
     await _get_business_for_user(business_id, current_user, db)

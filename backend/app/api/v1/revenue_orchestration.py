@@ -1,12 +1,17 @@
 """Phase 27: Revenue Orchestration - Deal optimization, proposal engine, contract terms."""
 
+from typing import Annotated
+
 from fastapi import APIRouter, Body, Query
 
 router = APIRouter(prefix="/revenue-orchestration", tags=["revenue-orchestration"])
 
 
 @router.post("/deals/optimize")
-async def optimize_deal(deal_id: str = Query(...), current_value: float = Body(...)):
+async def optimize_deal(
+    deal_id: Annotated[str, Query()],
+    current_value: Annotated[float, Body()],
+):
     """AI-powered deal optimization - adjust terms, scope, pricing."""
     return {
         "deal_id": deal_id,
@@ -19,7 +24,10 @@ async def optimize_deal(deal_id: str = Query(...), current_value: float = Body(.
 
 
 @router.post("/proposals/generate")
-async def generate_proposal(deal_id: str = Query(...), buyer_profile: dict = Body(...)):
+async def generate_proposal(
+    deal_id: Annotated[str, Query()],
+    buyer_profile: Annotated[dict, Body()],
+):
     """Generate optimized proposal based on buyer profile."""
     return {
         "proposal_id": f"prop-{deal_id}",
@@ -36,7 +44,10 @@ async def generate_proposal(deal_id: str = Query(...), buyer_profile: dict = Bod
 
 
 @router.post("/contracts/negotiate")
-async def ai_negotiate_terms(deal_id: str = Query(...), proposed_terms: dict = Body(...)):
+async def ai_negotiate_terms(
+    deal_id: Annotated[str, Query()],
+    proposed_terms: Annotated[dict, Body()],
+):
     """AI negotiation assistant - counter-offer generator."""
     return {
         "deal_id": deal_id,
@@ -50,7 +61,10 @@ async def ai_negotiate_terms(deal_id: str = Query(...), proposed_terms: dict = B
 
 
 @router.get("/cash-flow/forecast")
-async def cash_flow_forecast(seller_id: str = Query(...), months_ahead: int = Query(12)):
+async def cash_flow_forecast(
+    seller_id: Annotated[str, Query()],
+    months_ahead: Annotated[int, Query()] = 12,
+):
     """Monthly cash flow forecast based on deal pipeline."""
     return {
         "seller_id": seller_id,

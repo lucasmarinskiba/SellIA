@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -28,7 +29,11 @@ async def _get_website_for_user(business_id: UUID, user: User, db: AsyncSession)
     return website
 
 @router.post("/track/event")
-async def track_event(data: dict, request: Request, db: AsyncSession = Depends(get_db)):
+async def track_event(
+    data: dict,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     try:
         website_id = data.get("website_id")
         event_type = data.get("event_type", "page_view")
@@ -58,7 +63,11 @@ async def track_event(data: dict, request: Request, db: AsyncSession = Depends(g
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/track/conversion")
-async def track_conversion(data: dict, request: Request, db: AsyncSession = Depends(get_db)):
+async def track_conversion(
+    data: dict,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     try:
         website_id = data.get("website_id")
         conversion_type = data.get("conversion_type")
@@ -81,7 +90,12 @@ async def track_conversion(data: dict, request: Request, db: AsyncSession = Depe
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/businesses/{business_id}/analytics/summary")
-async def get_analytics_summary(business_id: UUID, days: int = 30, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def get_analytics_summary(
+    business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    days: int = 30,
+):
     website = await _get_website_for_user(business_id, current_user, db)
     since = datetime.now(UTC) - timedelta(days=days)
     views_result = await db.execute(select(func.count(AnalyticsEvent.id)).where(AnalyticsEvent.website_id == website.id, AnalyticsEvent.event_type == EventType.PAGE_VIEW, AnalyticsEvent.created_at >= since))
@@ -96,7 +110,13 @@ async def get_analytics_summary(business_id: UUID, days: int = 30, db: AsyncSess
     return {"period_days": days, "total_views": total_views, "unique_sessions": unique_sessions, "total_conversions": total_conversions, "conversion_rate": round(conversion_rate, 2), "total_conversion_value": round(total_value, 2), "avg_views_per_session": round(total_views / unique_sessions, 2) if unique_sessions > 0 else 0}
 
 @router.get("/businesses/{business_id}/analytics/pages")
-async def get_top_pages(business_id: UUID, days: int = 30, limit: int = 10, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def get_top_pages(
+    business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    days: int = 30,
+    limit: int = 10,
+):
     website = await _get_website_for_user(business_id, current_user, db)
     since = datetime.now(UTC) - timedelta(days=days)
     result = await db.execute(select(AnalyticsEvent.page_url, AnalyticsEvent.page_title, func.count(AnalyticsEvent.id).label("views"), func.count(func.distinct(AnalyticsEvent.session_id)).label("sessions")).where(AnalyticsEvent.website_id == website.id, AnalyticsEvent.event_type == EventType.PAGE_VIEW, AnalyticsEvent.created_at >= since).group_by(AnalyticsEvent.page_url, AnalyticsEvent.page_title).order_by(func.count(AnalyticsEvent.id).desc()).limit(limit))
@@ -104,7 +124,12 @@ async def get_top_pages(business_id: UUID, days: int = 30, limit: int = 10, db: 
     return {"pages": pages}
 
 @router.get("/businesses/{business_id}/analytics/conversions")
-async def get_conversions(business_id: UUID, days: int = 30, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def get_conversions(
+    business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    days: int = 30,
+):
     website = await _get_website_for_user(business_id, current_user, db)
     since = datetime.now(UTC) - timedelta(days=days)
     result = await db.execute(select(Conversion.conversion_type, func.count(Conversion.id).label("count"), func.sum(Conversion.conversion_value).label("total_value")).where(Conversion.website_id == website.id, Conversion.created_at >= since).group_by(Conversion.conversion_type).order_by(func.count(Conversion.id).desc()))

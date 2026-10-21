@@ -1,3 +1,4 @@
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
@@ -31,10 +32,10 @@ async def _require_admin(business_id: UUID, user: User, db: AsyncSession) -> str
 @router.post("/teams/members/{business_id}")
 async def add_team_member(
     business_id: UUID,
-    user_id: UUID = Query(...),
-    role: str = Query("member", description="admin, member"),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    user_id: Annotated[UUID, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    role: Annotated[str, Query(description="admin, member")] = "member",
 ):
     """Add (or reactivate) a team member."""
     await _require_admin(business_id, current_user, db)
@@ -49,8 +50,8 @@ async def add_team_member(
 @router.get("/teams/members/{business_id}")
 async def list_team_members(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """List all team members (owner + active members)."""
     await _require_member(business_id, current_user, db)
@@ -62,8 +63,8 @@ async def list_team_members(
 async def remove_team_member(
     business_id: UUID,
     member_user_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Remove a team member."""
     await _require_admin(business_id, current_user, db)
@@ -74,10 +75,10 @@ async def remove_team_member(
 @router.post("/teams/deals/{business_id}/assign")
 async def assign_deal(
     business_id: UUID,
-    deal_id: UUID = Query(...),
-    member_user_id: UUID = Query(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    deal_id: Annotated[UUID, Query()],
+    member_user_id: Annotated[UUID, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Assign a deal to a team member."""
     await _require_admin(business_id, current_user, db)
@@ -89,8 +90,8 @@ async def assign_deal(
 async def unassign_deal(
     business_id: UUID,
     deal_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Unassign a deal."""
     await _require_admin(business_id, current_user, db)
@@ -102,8 +103,8 @@ async def unassign_deal(
 async def get_member_deals(
     business_id: UUID,
     member_user_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Deals assigned to a team member."""
     await _require_member(business_id, current_user, db)
@@ -119,8 +120,8 @@ async def get_member_deals(
 async def get_member_performance(
     business_id: UUID,
     member_user_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Real performance metrics for a team member, derived from their
     assigned deals' actual outcomes. avg_response_time_seconds and
@@ -134,8 +135,8 @@ async def get_member_performance(
 @router.get("/teams/metrics/{business_id}")
 async def get_team_metrics(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Overall team metrics."""
     await _require_member(business_id, current_user, db)
@@ -146,8 +147,8 @@ async def get_team_metrics(
 @router.get("/teams/workload/{business_id}")
 async def get_workload_distribution(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Open-deal workload distribution across the team."""
     await _require_member(business_id, current_user, db)
@@ -158,8 +159,8 @@ async def get_workload_distribution(
 @router.post("/teams/rebalance/{business_id}")
 async def rebalance_workload(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Round-robin assign every unassigned open deal across the team."""
     await _require_admin(business_id, current_user, db)
@@ -170,12 +171,12 @@ async def rebalance_workload(
 @router.post("/teams/delegate/{business_id}")
 async def create_delegation(
     business_id: UUID,
-    to_user_id: UUID = Query(...),
-    deal_ids: list[UUID] = Body(..., description="Deals being handed off"),
-    reason: str = Query(...),
-    duration_hours: int = Query(24),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    to_user_id: Annotated[UUID, Query()],
+    deal_ids: Annotated[list[UUID], Body(description="Deals being handed off")],
+    reason: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    duration_hours: Annotated[int, Query()] = 24,
 ):
     """Request handing off a set of deals to another team member.
 
@@ -201,8 +202,8 @@ async def create_delegation(
 async def approve_delegation(
     business_id: UUID,
     delegation_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Approve a delegation request. Only the recipient (to_user_id) or an
     owner/admin can decide it."""
@@ -215,8 +216,8 @@ async def approve_delegation(
 async def reject_delegation(
     business_id: UUID,
     delegation_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Reject a delegation request."""
     await _require_member(business_id, current_user, db)
@@ -227,8 +228,8 @@ async def reject_delegation(
 @router.get("/teams/delegations/pending/{business_id}")
 async def list_pending_delegations(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """List delegation requests pending the caller's own decision."""
     await _require_member(business_id, current_user, db)

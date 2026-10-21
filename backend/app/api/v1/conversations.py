@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -47,10 +48,10 @@ async def _get_business_for_user(
 @router.get("/{business_id}/conversations", response_model=list[ConversationListResponse])
 async def list_conversations(
     business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     status: ConversationStatus | None = None,
     platform: str | None = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """List real conversations for a business -- this is what proves the AI
     reply bot is actually running on each connected channel (WhatsApp,
@@ -112,8 +113,8 @@ async def list_conversations(
 async def get_conversation(
     business_id: UUID,
     conversation_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
     result = await db.execute(
@@ -134,8 +135,8 @@ async def update_conversation(
     business_id: UUID,
     conversation_id: UUID,
     conv_in: ConversationUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
     result = await db.execute(
@@ -164,8 +165,8 @@ async def update_conversation(
 async def list_messages(
     business_id: UUID,
     conversation_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
     result = await db.execute(
@@ -181,8 +182,8 @@ async def send_message(
     business_id: UUID,
     conversation_id: UUID,
     message_in: MessageCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
     result = await db.execute(

@@ -17,6 +17,7 @@ import os
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
+from typing import Annotated
 
 import httpx
 from fastapi import Depends, FastAPI, HTTPException, Request
@@ -1821,7 +1822,9 @@ async def ping():
     return {"status": "ok", "service": "SellIA Sellbot", "timestamp": datetime.now().isoformat()}
 
 @app.get("/api/health", tags=["system"])
-async def health_check(db: AsyncSession = Depends(get_db)):
+async def health_check(
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """Detailed health check with dependency status.
 
     This is the *liveness* probe (Railway's healthcheck): it answers as soon as

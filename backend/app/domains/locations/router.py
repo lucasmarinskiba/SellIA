@@ -1,5 +1,6 @@
 """Phase 5A: Location Endpoints."""
 from datetime import datetime
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -61,7 +62,7 @@ class BusinessModelResponse(BaseModel):
 async def create_location(
     business_id: UUID,
     req: LocationCreateRequest,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> LocationResponse:
     loc = await LocationService.create_location(
         db=db,
@@ -81,7 +82,10 @@ async def create_location(
 
 
 @router.get("/list")
-async def list_locations(business_id: UUID, db: AsyncSession = Depends(get_db)) -> list[LocationResponse]:
+async def list_locations(
+    business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> list[LocationResponse]:
     locs = await LocationService.list_locations(db, business_id)
     return [LocationResponse.from_orm(loc) for loc in locs]
 
@@ -90,7 +94,7 @@ async def list_locations(business_id: UUID, db: AsyncSession = Depends(get_db)) 
 async def location_metrics(
     business_id: UUID,
     location_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     metrics = await LocationService.get_location_metrics(db, business_id, location_id)
     return metrics
@@ -99,7 +103,7 @@ async def location_metrics(
 @router.post("/detect-model")
 async def detect_business_model(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> BusinessModelResponse:
     model = await LocationService.detect_business_model(db, business_id)
     return BusinessModelResponse.from_orm(model)
@@ -110,12 +114,12 @@ def log_offline_conversion(
     business_id: UUID,
     location_id: UUID,
     visit_type: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
     user_id: UUID | None = None,
     entry_method: str | None = None,
     phone: str | None = None,
     email: str | None = None,
     notes: str | None = None,
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     conversion = LocationService.log_offline_conversion(
         db=db,
@@ -136,8 +140,8 @@ def log_visit(
     business_id: UUID,
     location_id: UUID,
     user_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
     entry_channel: str | None = None,
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     visit = LocationService.log_location_visit(
         db=db,
@@ -152,7 +156,7 @@ def log_visit(
 @router.post("/visit-end")
 def end_visit(
     visit_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     visit = LocationService.end_location_visit(db, visit_id)
     if not visit:

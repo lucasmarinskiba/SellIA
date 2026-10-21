@@ -1,7 +1,7 @@
 """Phases 23-24: Entrepreneurship Coach & Adaptive Architecture."""
 
 import logging
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Query
 
@@ -25,10 +25,10 @@ adaptive_engine = AdaptiveEngine()
 @router.post("/coach/assess/{user_id}")
 async def assess_entrepreneur(
     user_id: str,
-    days_in_business: int = Query(...),
-    leads_generated: int = Query(0),
-    deals_closed: int = Query(0),
-    revenue: float = Query(0.0),
+    days_in_business: Annotated[int, Query()],
+    leads_generated: Annotated[int, Query()] = 0,
+    deals_closed: Annotated[int, Query()] = 0,
+    revenue: Annotated[float, Query()] = 0.0,
 ) -> dict[str, Any]:
     """Assess entrepreneur stage and create coaching profile."""
 
@@ -92,7 +92,7 @@ async def get_milestones(user_id: str) -> dict[str, Any]:
 @router.post("/coach/emergency-support/{user_id}")
 async def emergency_support(
     user_id: str,
-    issue: str = Query(...)
+    issue: Annotated[str, Query()],
 ) -> dict[str, Any]:
     """Emergency support for struggling entrepreneurs."""
 
@@ -129,10 +129,10 @@ async def emergency_support(
 @router.post("/adaptive/analyze-user/{user_id}")
 async def analyze_user_needs(
     user_id: str,
-    days_in_business: int = Query(...),
-    leads_generated: int = Query(0),
-    deals_closed: int = Query(0),
-    hours_since_last_activity: int = Query(999)
+    days_in_business: Annotated[int, Query()],
+    leads_generated: Annotated[int, Query()] = 0,
+    deals_closed: Annotated[int, Query()] = 0,
+    hours_since_last_activity: Annotated[int, Query()] = 999,
 ) -> dict[str, Any]:
     """Analyze user and determine personalization strategy."""
 
@@ -178,9 +178,9 @@ async def get_personalization_summary(user_id: str) -> dict[str, Any]:
 
 @router.post("/adaptive/personalize-response")
 async def personalize_response(
-    user_id: str = Query(...),
-    endpoint_name: str = Query(...),
-    base_response: dict[str, Any] = Body(...)
+    user_id: Annotated[str, Query()],
+    endpoint_name: Annotated[str, Query()],
+    base_response: Annotated[dict[str, Any], Body()],
 ) -> dict[str, Any]:
     """Personalize any endpoint response based on user context."""
 

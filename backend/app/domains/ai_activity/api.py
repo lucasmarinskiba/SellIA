@@ -1,5 +1,7 @@
 """AI Activity API — per-user account summary + recent AI action feed."""
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,8 +16,8 @@ router = APIRouter(prefix="/ai-activity", tags=["AI Activity"])
 
 @router.get("/summary")
 async def account_summary(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Registration + questionnaire + AI-activity completeness for the current user."""
     return await service.get_account_summary(db, user)
@@ -23,8 +25,8 @@ async def account_summary(
 
 @router.get("/business-snapshot")
 async def business_snapshot(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Verification signals, per-platform channel activity and real order
     revenue for the current account. Feeds the SEO / autoridad / vendedor
@@ -34,8 +36,8 @@ async def business_snapshot(
 
 @router.get("/account-kpis")
 async def account_kpis(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Real KPIs for the current account only (canales, conversaciones,
     respuestas de la IA, acciones registradas). Unlike GET /brain/kpis, which
@@ -46,9 +48,9 @@ async def account_kpis(
 
 @router.get("")
 async def recent_actions(
-    limit: int = Query(default=50, ge=1, le=200),
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
 ):
     """Recent real AI/automation actions taken for the current user's account(s)."""
     return {"actions": await service.list_recent_actions(db, user.id, limit)}

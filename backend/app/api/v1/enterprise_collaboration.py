@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, WebSocket
@@ -46,11 +47,11 @@ async def _verify_deal_access(deal_id: str, user: User, db: AsyncSession) -> Dea
 
 @router.post("/collaboration/comment")
 async def add_comment(
-    deal_id: str = Query(...),
-    content: str = Body(...),
-    mentions: list[str] = Body(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    deal_id: Annotated[str, Query()],
+    content: Annotated[str, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    mentions: Annotated[list[str], Body()] = None,
 ):
     """Add comment to deal."""
     await _verify_deal_access(deal_id, current_user, db)
@@ -71,9 +72,9 @@ async def add_comment(
 @router.get("/collaboration/comments/{deal_id}")
 async def get_comments(
     deal_id: str,
-    limit: int = Query(50, le=100),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    limit: Annotated[int, Query(le=100)] = 50,
 ):
     """Get all comments for deal."""
     await _verify_deal_access(deal_id, current_user, db)
@@ -97,11 +98,11 @@ async def get_comments(
 
 @router.post("/collaboration/share")
 async def share_deal(
-    deal_id: str = Query(...),
-    shared_with: str = Query(...),
-    permissions: str = Query("read"),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    deal_id: Annotated[str, Query()],
+    shared_with: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    permissions: Annotated[str, Query()] = "read",
 ):
     """Share deal with team member."""
     await _verify_deal_access(deal_id, current_user, db)
@@ -118,12 +119,12 @@ async def share_deal(
 
 @router.post("/collaboration/approval")
 async def create_approval(
-    action_id: str = Query(...),
-    action_type: CollaborationActionEnum = Query(...),
-    deal_id: str = Query(..., description="Deal this action applies to, for ownership verification"),
-    approvers: list[str] = Body(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    action_id: Annotated[str, Query()],
+    action_type: Annotated[CollaborationActionEnum, Query()],
+    deal_id: Annotated[str, Query(description="Deal this action applies to, for ownership verification")],
+    approvers: Annotated[list[str], Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create approval chain for action."""
     await _verify_deal_access(deal_id, current_user, db)
@@ -142,11 +143,11 @@ async def create_approval(
 
 @router.post("/collaboration/approve")
 async def approve_action(
-    action_id: str = Query(...),
-    decision: str = Query(..., description="approved or rejected"),
-    rejection_reason: str = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    action_id: Annotated[str, Query()],
+    decision: Annotated[str, Query(description="approved or rejected")],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    rejection_reason: Annotated[str, Query()] = None,
 ):
     """Approve or reject action. Only someone actually listed as an approver
     on this action can decide it -- collab_manager.approve_action raises if
@@ -168,8 +169,8 @@ async def approve_action(
 @router.get("/collaboration/pending/{user_id}")
 async def get_pending_approvals(
     user_id: str,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Get pending approvals for user."""
     if user_id != str(current_user.id):
@@ -195,9 +196,9 @@ async def get_pending_approvals(
 @router.get("/collaboration/activity/{deal_id}")
 async def get_activity_feed(
     deal_id: str,
-    limit: int = Query(50, le=100),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    limit: Annotated[int, Query(le=100)] = 50,
 ):
     """Get activity feed for deal (comments + shares)."""
     await _verify_deal_access(deal_id, current_user, db)

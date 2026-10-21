@@ -1,5 +1,6 @@
 """Workflow automation API endpoints."""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -77,8 +78,8 @@ class ExecuteWorkflowRequest(BaseModel):
 async def create_workflow(
     business_id: UUID,
     request: CreateWorkflowRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create workflow."""
     await _get_business_for_user(business_id, current_user, db)
@@ -100,9 +101,9 @@ async def create_workflow(
 @router.get("/businesses/{business_id}/workflows")
 async def get_workflows(
     business_id: UUID,
-    active_only: bool = Query(True),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    active_only: Annotated[bool, Query()] = True,
 ):
     """Get workflows."""
     await _get_business_for_user(business_id, current_user, db)
@@ -116,8 +117,8 @@ async def get_workflows(
 @router.post("/workflows/{workflow_id}/activate")
 async def activate_workflow(
     workflow_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Activate workflow."""
     workflow = await _get_owned_workflow(workflow_id, current_user, db)
@@ -131,8 +132,8 @@ async def activate_workflow(
 @router.post("/workflows/{workflow_id}/pause")
 async def pause_workflow(
     workflow_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Pause workflow."""
     workflow = await _get_owned_workflow(workflow_id, current_user, db)
@@ -147,8 +148,8 @@ async def pause_workflow(
 async def execute_workflow(
     workflow_id: UUID,
     request: ExecuteWorkflowRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Execute workflow."""
     workflow = await _get_owned_workflow(workflow_id, current_user, db)
@@ -164,9 +165,9 @@ async def execute_workflow(
 @router.get("/workflows/{workflow_id}/executions")
 async def get_workflow_executions(
     workflow_id: UUID,
-    limit: int = Query(50, ge=1, le=200),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
 ):
     """Get workflow execution history."""
     workflow = await _get_owned_workflow(workflow_id, current_user, db)
@@ -181,8 +182,8 @@ async def get_workflow_executions(
 @router.get("/workflows/{workflow_id}/metrics")
 async def get_workflow_metrics(
     workflow_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get workflow metrics."""
     workflow = await _get_owned_workflow(workflow_id, current_user, db)

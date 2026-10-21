@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -75,9 +75,9 @@ class PreferencesUpdate(BaseModel):
 
 @router.get("")
 async def get_preferences(
-    business_id: uuid.UUID | None = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    business_id: Annotated[uuid.UUID | None, Query()] = None,
 ) -> dict[str, Any]:
     """The saved configuration, the options it can take, and what is missing."""
     resolved = await _resolve_business(db, current_user, business_id)
@@ -93,9 +93,9 @@ async def get_preferences(
 @router.put("")
 async def update_preferences(
     data: PreferencesUpdate,
-    business_id: uuid.UUID | None = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    business_id: Annotated[uuid.UUID | None, Query()] = None,
 ) -> dict[str, Any]:
     resolved = await _resolve_business(db, current_user, business_id)
     if not resolved:
@@ -110,9 +110,9 @@ async def update_preferences(
 
 @router.get("/platform-suggestions")
 async def platform_suggestions(
-    business_id: uuid.UUID | None = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    business_id: Annotated[uuid.UUID | None, Query()] = None,
 ) -> dict[str, Any]:
     """Platforms that fit this seller, with the reason each one is on the list."""
     resolved = await _resolve_business(db, current_user, business_id)
