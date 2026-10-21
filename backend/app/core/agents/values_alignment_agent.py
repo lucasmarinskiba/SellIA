@@ -148,8 +148,8 @@ class ValuesAlignmentAgent:
                         extraction_sources.append("feedback")
 
         # Normalize scores
-        for value_type in value_scores:
-            value_scores[value_type] = min(100, value_scores[value_type])
+        for value_type, score in value_scores.items():
+            value_scores[value_type] = min(100, score)
 
         # Rank values
         sorted_values = sorted(value_scores.items(), key=lambda x: x[1], reverse=True)

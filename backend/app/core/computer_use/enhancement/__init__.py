@@ -26,7 +26,7 @@ Status: PRODUCTION READY - Listo para automatizar cualquier plataforma sin fallo
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any
 
 # Configure logging
 logging.basicConfig(
@@ -134,7 +134,6 @@ try:
         ChaosMonkey,
         CircuitBreaker,
         CircuitBreakerConfig,
-        CircuitBreakerState,
         FallbackStrategy,
         ResilienceCoordinator,
         ThrottlingPolicy,
@@ -201,40 +200,53 @@ async def create_enhancement_system(computer_use_engine) -> dict[str, Any]:
 # ============================================================================
 
 __all__ = [
+    "Alert",
     "AlertManager",
+    "AlertSeverity",
     "BulkheadManager",
+    "BulkheadPartition",
     "ChaosMonkey",
     "CircuitBreaker",
+    "CircuitBreakerConfig",
+    "CircuitBreakerState",
+    "DataType",
+    "DataValidator",
     "EmailPlatformHandler",
     "ErrorCategory",
     "ErrorDetector",
-    # Error Recovery
+    "ErrorEvent",
     "ErrorRecoveryManager",
     "ErrorTracker",
     "ExtractionResult",
     "ExtractionRule",
+    "ExtractionStrategy",
     "FacebookPlatformHandler",
     "FallbackStrategy",
     "FileUploadVerifier",
     "FormFillPattern",
     "FormSubmissionVerifier",
-    # Interaction Patterns
     "InteractionPatternLibrary",
+    "InteractionResult",
     "LoginPattern",
-    # Platform Handlers
     "MercadoLibrePlatformHandler",
     "MessageDeliveryVerifier",
-    # Monitoring
+    "MetadataExtractor",
+    "MetricPoint",
+    "MetricType",
     "MetricsCollector",
     "ModalHandlingPattern",
     "MonitoringDashboard",
     "NavigationVerifier",
+    "PageLoadEvent",
     "PaginationPattern",
+    "PatternResult",
     "PaymentVerifier",
+    "PerformanceMetrics",
     "PerformanceReporter",
     "PlatformHandlerFactory",
+    "PlatformMetadata",
+    "RecoveryAttempt",
     "RecoveryStrategy",
-    # Resilience
     "ResilienceCoordinator",
     "ResilientAction",
     "SearchPattern",
@@ -243,19 +255,18 @@ __all__ = [
     "StructuredDataExtractor",
     "ThrottlingPolicy",
     "TimeoutPolicy",
-    # Data Extraction
     "UniversalDataExtractor",
     "UnstructuredDataExtractor",
     "UploadPattern",
-    # Action Verification
     "VerificationCoordinator",
+    "VerificationResult",
+    "VerificationStatus",
+    "VerificationType",
     "WhatsAppPlatformHandler",
     "__author__",
     "__description__",
     "__status__",
-    # Version
     "__version__",
-    # Initialization
     "create_enhancement_system",
 ]
 

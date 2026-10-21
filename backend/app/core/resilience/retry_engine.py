@@ -218,6 +218,7 @@ class RetryEngine:
             f"Starting retry execution: {operation_name} (id: {operation_id}, policy: {policy.value})"
         )
 
+        last_exc: BaseException | None = None
         for attempt in range(config.max_retries + 1):
             # Circuit breaker check
             if circuit_breaker and not circuit_breaker.can_attempt():
@@ -254,13 +255,15 @@ class RetryEngine:
                 )
                 return result
 
-            except TimeoutError:
+            except TimeoutError as exc:
+                last_exc = exc
                 error_msg = f"Timeout after {config.timeout}s"
                 self._record_attempt(history, attempt, config, error_msg, timeout=True)
 
             except Exception as e:
                 logger.exception("execute_with_retry: error inesperado")
                 error_msg = str(e)
+                last_exc = e
                 status_code = getattr(e, "status_code", None)
                 self._record_attempt(history, attempt, config, error_msg, status_code)
 
@@ -288,7 +291,8 @@ class RetryEngine:
                     f"(attempts: {config.max_retries + 1}, duration: {elapsed:.2f}s, "
                     f"error: {error_msg})"
                 )
-                raise
+                assert last_exc is not None
+                raise last_exc
 
     def _calculate_delay(self, attempt: int, config: RetryConfig) -> float:
         """Calcula delay con exponential backoff + jitter."""

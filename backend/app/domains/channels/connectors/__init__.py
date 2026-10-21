@@ -34,6 +34,36 @@ from app.domains.channels.connectors.whatsapp import WhatsAppConnector
 from app.domains.channels.connectors.woocommerce import WooCommerceConnector
 from app.domains.channels.models import ChannelPlatform
 
+__all__ = [
+    "AmazonSellerConnector",
+    "BaseChannelConnector",
+    "BeaconsConnector",
+    "ChannelPlatform",
+    "EmailConnector",
+    "EtsyConnector",
+    "FacebookAdsConnector",
+    "FacebookMarketplaceConnector",
+    "GoogleAdsConnector",
+    "HotmartConnector",
+    "InstagramConnector",
+    "LinkedInConnector",
+    "ManyChatConnector",
+    "MercadoLibreConnector",
+    "MessengerConnector",
+    "MetaAdsConnector",
+    "ShopifyConnector",
+    "TelegramConnector",
+    "ThreadsConnector",
+    "TikTokAdsConnector",
+    "TikTokConnector",
+    "TikTokShopConnector",
+    "Type",
+    "WebChatConnector",
+    "WhatsAppConnector",
+    "WooCommerceConnector",
+    "XConnector",
+]
+
 CONNECTOR_REGISTRY: dict[ChannelPlatform, type[BaseChannelConnector]] = {
     ChannelPlatform.WHATSAPP: WhatsAppConnector,
     ChannelPlatform.EMAIL: EmailConnector,

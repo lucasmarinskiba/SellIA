@@ -833,7 +833,7 @@ class BrainRegistry:
             steps: list[dict[str, Any]] = []
             edges: list[dict[str, Any]] = []
 
-            def step(sid: str, label: str, kind: str, group: str, col: int) -> str:
+            def step(sid: str, label: str, kind: str, group: str, col: int, steps: list[dict[str, Any]] = steps) -> str:
                 steps.append({"id": sid, "label": label, "kind": kind, "group": group, "col": col})
                 return sid
 

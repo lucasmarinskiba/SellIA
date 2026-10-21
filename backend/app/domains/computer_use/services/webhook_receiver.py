@@ -14,7 +14,7 @@ Normaliza a formato estándar → Message Queue.
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, ClassVar
 
@@ -117,7 +117,7 @@ class WhatsAppWebhookHandler:
                 source=MessageSource.WHATSAPP,
                 message_type=MessageType.DIRECT_MESSAGE,
                 content=content,
-                platform_timestamp=datetime.utcfromtimestamp(int(msg_data.get("timestamp", 0))),
+                platform_timestamp=datetime.fromtimestamp(int(msg_data.get("timestamp", 0)), UTC).replace(tzinfo=None),
                 raw_data=payload,
             )
 

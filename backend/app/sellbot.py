@@ -1915,7 +1915,6 @@ async def queue_stats():
 @app.get("/api/v1/queue/peek")
 async def queue_peek(count: int = 5):
     """Peek at queue (non-destructive)."""
-    global scheduler
     if not scheduler:
         return {"status": "error", "detail": "Scheduler not initialized"}
 

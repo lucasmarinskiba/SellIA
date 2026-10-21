@@ -18,7 +18,6 @@ Status: PRODUCTION READY
 """
 
 import logging
-from typing import Any, Dict, List, Optional
 
 # Configure logging
 logging.basicConfig(
@@ -189,49 +188,47 @@ logger.info(f"Status: {__status__}")
 # ============================================================================
 
 __all__ = [
-    "ENTERPRISE_CONFIG",
-    "MEDIUM_BUSINESS_CONFIG",
-    # Config templates
-    "MINIMAL_CONFIG",
-    "SMALL_BUSINESS_CONFIG",
-    # Data structures
     "Action",
     "ActionResult",
-    # Enums
     "ActionType",
     "BrowserAutomationUtils",
-    # Main classes
+    "BrowserSession",
     "ComputerUseOrchestrator",
+    "DirectoryScraper",
+    "ENTERPRISE_CONFIG",
     "EmailComputerUseHandler",
     "EnrichedLead",
     "ErrorHandler",
     "FacebookComputerUseHandler",
+    "LeadCaptureEngine",
     "LeadData",
-    # Lead management
     "LeadEnricher",
-    # Platform handlers
+    "LeadScore",
+    "MEDIUM_BUSINESS_CONFIG",
+    "MINIMAL_CONFIG",
     "MercadoLibreComputerUseHandler",
+    "MessageLeadExtractor",
     "NurturingWorkflow",
     "OrderData",
+    "PlatformHandlerFactory",
     "PlatformType",
-    # Workflows
     "ProspectingWorkflow",
     "RetentionWorkflow",
+    "SMALL_BUSINESS_CONFIG",
     "SellingWorkflow",
     "ShopifyComputerUseHandler",
     "StrategyType",
-    # Utilities
     "VisionEngine",
+    "WebFormFiller",
     "WhatsAppComputerUseHandler",
+    "WorkflowConfig",
     "WorkflowExecution",
     "WorkflowOrchestrator",
     "WorkflowPhase",
     "__author__",
     "__description__",
     "__status__",
-    # Metadata
     "__version__",
-    # Functions
     "create_orchestrator",
     "create_workflow_orchestrator",
 ]

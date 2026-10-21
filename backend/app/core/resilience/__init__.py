@@ -1,11 +1,9 @@
 """Resilience module — Retry engines, circuit breakers, failover logic."""
 import asyncio
 import logging
-import re as _re
 from collections.abc import Callable
-from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 

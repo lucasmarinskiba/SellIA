@@ -236,7 +236,7 @@ class MercadoLibrePlatformHandler:
                 if response and len(response) > 100:
                     return response
 
-                raise Exception("Empty response")
+                raise RuntimeError("Empty response")
 
             except Exception as e:
                 wait_time = (2 ** attempt) + (0.1 * attempt)  # Backoff exponencial

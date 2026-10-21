@@ -9,7 +9,7 @@ import json
 import logging
 from collections.abc import Callable, Coroutine
 from datetime import UTC, datetime
-from typing import Any, Optional
+from typing import Any, Optional, Self
 
 import redis.asyncio as redis
 
@@ -32,7 +32,7 @@ class EventBus:
     _pubsub: redis.client.PubSub | None = None
     _listener_task: asyncio.Task | None = None
 
-    def __new__(cls) -> "EventBus":
+    def __new__(cls) -> Self:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance

@@ -32,7 +32,7 @@ class ProductionMonitoring:
     def _init_datadog(self):
         """Initialize Datadog APM + metrics."""
         try:
-            from datadog import initialize, statsd
+            from datadog import initialize, statsd  # noqa: F401 - sonda de disponibilidad
             from ddtrace import patch_all
 
             patch_all()

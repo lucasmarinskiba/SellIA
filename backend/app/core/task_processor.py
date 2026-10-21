@@ -220,19 +220,16 @@ async def init_processor(scheduler: EmailScheduler) -> TaskProcessor:
 
 async def start_processor() -> None:
     """Start processor (call from app startup)."""
-    global processor
     if processor:
         await processor.start()
 
 async def stop_processor() -> None:
     """Stop processor (call from app shutdown)."""
-    global processor
     if processor:
         await processor.stop()
 
 async def get_processor_stats() -> dict:
     """Get processor queue stats."""
-    global processor
     if not processor:
         return {"error": "processor not initialized"}
 

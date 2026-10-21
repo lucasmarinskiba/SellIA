@@ -267,7 +267,7 @@ class LoyaltyEngine:
                         ReferralCode.total_conversions > 0,
                     )
                 )
-                if ref_result.scalar() or 0 > 0:
+                if ref_result.scalar():
                     earned = True
 
             if earned:

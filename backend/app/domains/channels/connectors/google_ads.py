@@ -178,4 +178,4 @@ class GoogleAdsConnector(BaseChannelConnector):
 
         response = campaign_service.mutate_campaigns(customer_id=self.customer_id, operations=[operation])
         if not response.results:
-            raise Exception("Google Ads API: no results returned")
+            raise RuntimeError("Google Ads API: no results returned")

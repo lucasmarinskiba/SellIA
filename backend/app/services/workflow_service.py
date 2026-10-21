@@ -231,7 +231,6 @@ async def init_workflow_service(scheduler: EmailScheduler) -> WorkflowService:
 
 async def get_workflow_service() -> WorkflowService:
     """Get service instance."""
-    global service
     if not service:
         raise RuntimeError("Workflow service not initialized")
     return service

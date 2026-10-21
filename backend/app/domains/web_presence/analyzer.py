@@ -227,6 +227,10 @@ def _iter_ld_nodes(value: Any) -> list[dict[str, Any]]:
     return out
 
 
+def _strip_www(host: str) -> str:
+    return host[4:] if host.startswith("www.") else host
+
+
 def analyze(html: str, final_url: str) -> PageAudit:
     """Parse a real page body into a real audit."""
     parser = _PageParser()
@@ -240,10 +244,10 @@ def analyze(html: str, final_url: str) -> PageAudit:
     audit.is_https = final_url.lower().startswith("https://")
     audit.word_count = len([w for w in re.split(r"\s+", parser.text) if len(w) > 1])
 
-    base_host = (urlparse(final_url).hostname or "").lower().lstrip("www.")
+    base_host = _strip_www((urlparse(final_url).hostname or "").lower())
     hosts: list[str] = []
     for href in parser.raw_links:
-        host = (urlparse(urljoin(final_url, href)).hostname or "").lower().lstrip("www.")
+        host = _strip_www((urlparse(urljoin(final_url, href)).hostname or "").lower())
         if not host or host == base_host:
             audit.internal_links += 1
         else:

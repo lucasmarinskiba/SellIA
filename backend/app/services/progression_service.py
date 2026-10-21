@@ -349,7 +349,6 @@ async def init_progression_service(scheduler: EmailScheduler) -> ProgressionServ
 
 async def get_progression_service() -> ProgressionService:
     """Get service."""
-    global progression_service
     if not progression_service:
         raise RuntimeError("Progression service not initialized")
     return progression_service

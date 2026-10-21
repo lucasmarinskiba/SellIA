@@ -116,6 +116,6 @@ def require_permission(resource: str, action: str = "read"):
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail=f"No tienes permiso para {action} en {resource}.",
                 )
-            return await func(business_id=business_id, db=db, current_user=current_user, *args, **kwargs)
+            return await func(*args, business_id=business_id, db=db, current_user=current_user, **kwargs)
         return wrapper
     return decorator

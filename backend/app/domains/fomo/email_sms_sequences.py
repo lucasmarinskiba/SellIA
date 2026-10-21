@@ -2,6 +2,7 @@
 
 from datetime import UTC, datetime
 from enum import Enum
+from typing import ClassVar
 
 from app.domains.notifications.service import email_service, sms_service
 
@@ -214,4 +215,3 @@ class EmailSequence:
 
 
 import asyncio
-from typing import ClassVar

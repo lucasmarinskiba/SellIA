@@ -384,8 +384,8 @@ class BudgetAllocationNetwork:
             # Normalize
             total_allocated = sum(channel_allocation.values())
             if total_allocated > 0:
-                for ch in channel_allocation:
-                    channel_allocation[ch] = (channel_allocation[ch] / total_allocated) * total_budget
+                for ch, alloc in channel_allocation.items():
+                    channel_allocation[ch] = (alloc / total_allocated) * total_budget
 
             expected_revenue = total_budget * roi * 3.5  # 3.5x ROI on average
 

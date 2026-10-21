@@ -485,7 +485,7 @@ class ChaosMonkey:
         # Inyectar fallo
         if random.random() < self.failure_rate:
             logger.warning("Chaos monkey: injecting failure")
-            raise Exception("Chaos monkey injected failure")
+            raise RuntimeError("Chaos monkey injected failure")
 
         return await func(*args, **kwargs)
 

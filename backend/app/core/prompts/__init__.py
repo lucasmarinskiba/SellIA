@@ -66,12 +66,13 @@ except ImportError:
     pass
 
 __all__ = [
+    "EXPERT_COUNT",
     "ExpertOrchestrator",
     "ExpertSelector",
     "ExpertType",
-    # Expert voices (if available)
     "ExpertVoiceManager",
     "MarketingPrompts",
+    "PROMPT_COUNT",
     "PositioningPrompts",
     "PromptExecutionMode",
     "PromptOrchestrator",
