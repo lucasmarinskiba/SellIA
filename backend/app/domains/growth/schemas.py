@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Optional, Any, List
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 # ========== GrowthCampaign ==========
@@ -114,6 +114,19 @@ class InboundLeadCreate(BaseModel):
     lead_magnet_id: Optional[uuid.UUID] = None
     contact_info: Optional[dict] = {}
     source_detail: Optional[str] = ""
+
+
+class ProspectSearchRequest(BaseModel):
+    query: str = Field(..., min_length=3, max_length=120, description="Rubro o palabra clave, ej. 'peluquería'")
+    location: Optional[str] = Field(None, max_length=120, description="Ciudad o zona, ej. 'Rosario'")
+    limit: int = Field(20, ge=1, le=20)
+
+
+class ProspectSearchResponse(BaseModel):
+    found: int
+    created: int
+    skipped_duplicates: int
+    prospects: List[dict]
 
 
 class InboundLeadResponse(BaseModel):

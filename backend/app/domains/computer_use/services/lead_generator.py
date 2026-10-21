@@ -129,12 +129,7 @@ class LeadGenerator:
     ) -> Lead:
         """Enriquece lead con datos adicionales."""
         try:
-            # Mock enrichment (en prod: usar APIs como Hunter, RocketReach, Apollo)
-            if "@" not in lead.email and lead.email:
-                # Intentar generar email
-                domain = self._guess_company_domain(lead.company)
-                lead.email = f"{lead.name.split()[0].lower()}.{lead.name.split()[-1].lower()}@{domain}"
-
+            # Sin fuente externa de contactos: no se inventan emails ni perfiles.
             # Estimar budget basado en company size
             if lead.company_size:
                 size_map = {
@@ -145,10 +140,6 @@ class LeadGenerator:
                     "500+": 1000000,
                 }
                 lead.budget_estimate = size_map.get(lead.company_size, 50000)
-
-            # LinkedIn URL
-            if not lead.linkedin_url:
-                lead.linkedin_url = f"https://linkedin.com/in/{lead.name.replace(' ', '-').lower()}"
 
             self.logger.info(f"Enriched lead: {lead.email}")
 
@@ -231,14 +222,6 @@ class LeadGenerator:
         ))
 
         return all_leads[:limit]
-
-    def _guess_company_domain(self, company: str) -> str:
-        """Adivina dominio empresa."""
-        # Simplificar nombre
-        domain = company.lower()
-        domain = domain.replace(" ", "").replace("inc.", "").replace("llc", "")
-
-        return f"{domain}.com"
 
 
 def get_lead_generator() -> LeadGenerator:

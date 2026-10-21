@@ -1,17 +1,20 @@
 """Phases 10-13: Business intelligence, diagnostics, lead generation, marketing."""
 
-from fastapi import APIRouter, Query, Body, HTTPException
+from fastapi import APIRouter, Depends, Query, Body, HTTPException
 from typing import Dict, Any, List
 import logging
 
+from app.core.deps import get_current_user
+from app.domains.users.models import User
 from app.domains.business_intelligence.business_model_detector import (
-    BusinessModelDetector, BusinessProfile
+    BusinessModelDetector
 )
 from app.domains.business_intelligence.service_diagnostician import (
     ServiceDiagnostician, CompetitiveAnalyzer
 )
-from app.domains.lead_generation.lead_generator import LeadGenerator
-from app.domains.lead_generation.lead_enricher import LeadEnricher
+from app.domains.lead_generation.places_source import (
+    PlacesAPIError, PlacesNotConfiguredError, search_places
+)
 from app.domains.marketing.channel_strategy import ChannelStrategyGenerator
 from app.domains.marketing.copy_generator import CopyGenerator
 
@@ -22,8 +25,6 @@ logger = logging.getLogger(__name__)
 detector = BusinessModelDetector()
 diagnostician = ServiceDiagnostician()
 competitive_analyzer = CompetitiveAnalyzer()
-lead_generator = LeadGenerator()
-lead_enricher = LeadEnricher()
 strategy_gen = ChannelStrategyGenerator()
 copy_gen = CopyGenerator()
 
@@ -96,75 +97,27 @@ async def analyze_business(
 
 @router.post("/lead-generation/find-prospects")
 async def find_prospects(
-    business_model: str = Query(...),
-    location: str = Query(""),
-    target_audience: str = Query(""),
-    limit: int = Query(100, ge=1, le=500),
+    query: str = Query(..., min_length=3, max_length=120, description="Rubro o palabra clave, ej. 'peluquería'"),
+    location: str = Query("", max_length=120),
+    limit: int = Query(20, ge=1, le=20),
+    current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
-    """Generate prospects using multi-channel lead gen."""
+    """Busca negocios reales en Google Places. Requiere GOOGLE_PLACES_API_KEY.
 
+    No guarda nada: para persistir los resultados usar POST /growth/prospects/search.
+    """
     try:
-        from app.domains.business_intelligence.business_model_detector import BusinessModel
+        prospects = await search_places(query, location, limit)
+    except PlacesNotConfiguredError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+    except PlacesAPIError:
+        raise HTTPException(status_code=502, detail="Google Places no respondió; probá de nuevo más tarde")
 
-        leads = lead_generator.generate_leads(
-            business_model, location, target_audience, limit
-        )
-
-        if not leads:
-            return {
-                "status": "no_leads",
-                "message": "No leads found for this model",
-                "count": 0,
-            }
-
-        # Convert string to enum
-        try:
-            model_enum = BusinessModel(business_model)
-        except ValueError:
-            model_enum = BusinessModel.HYBRID
-
-        enriched_leads = [
-            lead_enricher.enrich_lead(
-                lead,
-                BusinessProfile(
-                    business_id="temp",
-                    name="Temp",
-                    description="",
-                    model=model_enum
-                )
-            )
-            for lead in leads[:limit]
-        ]
-
-        return {
-            "status": "success",
-            "count": len(enriched_leads),
-            "leads": [
-                {
-                    "lead_id": lead.lead_id,
-                    "name": lead.name,
-                    "email": lead.email,
-                    "phone": lead.phone,
-                    "company": lead.company,
-                    "location": lead.location,
-                    "source": lead.source.value,
-                    "quality": lead.quality.value,
-                    "estimated_budget": lead.estimated_budget,
-                    "contact_method": lead.contact_method,
-                }
-                for lead in enriched_leads
-            ],
-            "summary": {
-                "hot_leads": sum(1 for l in enriched_leads if l.quality.value == "hot"),
-                "warm_leads": sum(1 for l in enriched_leads if l.quality.value == "warm"),
-                "cold_leads": sum(1 for l in enriched_leads if l.quality.value == "cold"),
-                "avg_budget": sum(l.estimated_budget or 0 for l in enriched_leads) / len(enriched_leads) if enriched_leads else 0,
-            }
-        }
-
-    except Exception as e:
-        logger.error(f"Lead generation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    return {
+        "status": "success",
+        "count": len(prospects),
+        "prospects": [prospect.to_contact_info() for prospect in prospects],
+    }
 
 
 # ============================================================
@@ -372,17 +325,17 @@ async def get_content_calendar(
 async def startup_plan(
     business_description: str = Body(...),
 ) -> Dict[str, Any]:
-    """Generate complete startup plan: analyze + diagnose + generate leads + strategy."""
+    """Generate complete startup plan: analyze + diagnose + strategy.
+
+    Lead search is not part of the plan: it needs a real query (rubro + ciudad)
+    and a Places key, so it is reported as a pending step instead of invented.
+    """
 
     try:
         # Step 1: Analyze business
         profile = detector.detect_model(business_description)
 
-        # Step 2: Generate leads
-        leads = lead_generator.generate_leads(profile.model.value, limit=50)
-        enriched_leads = lead_enricher.enrich_batch(leads, profile)
-
-        # Step 3: Diagnose
+        # Step 2: Diagnose
         diagnosis = diagnostician.diagnose(business_description)
 
         # Step 4: Strategy
@@ -396,12 +349,9 @@ async def startup_plan(
                     "channels": [ch.value for ch in profile.channels],
                 },
                 "phase_2_lead_generation": {
-                    "leads_found": len(enriched_leads),
-                    "quality_breakdown": {
-                        "hot": sum(1 for l in enriched_leads if l.quality.value == "hot"),
-                        "warm": sum(1 for l in enriched_leads if l.quality.value == "warm"),
-                        "cold": sum(1 for l in enriched_leads if l.quality.value == "cold"),
-                    }
+                    "status": "requires_search",
+                    "leads_found": 0,
+                    "detail": "Buscá prospectos reales con POST /api/v1/growth/prospects/search (rubro + ciudad)",
                 },
                 "phase_3_diagnostics": {
                     "pmf_score": diagnosis.pmf_score,

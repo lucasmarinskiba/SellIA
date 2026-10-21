@@ -173,9 +173,12 @@ PREDEFINED_SOURCES = {
 # FUNCIONES
 # ============================================================
 def mock_linkedin_search(config: dict) -> List[LinkedInSearchResult]:
-    """Mock LinkedIn search (v2: integrar con LinkedIn API)."""
-    logger.info(f"[MOCK] LinkedIn search: {config}")
-    return MOCK_LINKEDIN_RESULTS
+    """Sin integración con LinkedIn todavía: no devuelve prospectos inventados.
+
+    Los resultados de prueba (MOCK_LINKEDIN_RESULTS) ya no se usan en el flujo.
+    """
+    logger.warning("LinkedIn search no integrado; fuente sin resultados: %s", config)
+    return []
 
 def create_lead_from_linkedin(result: LinkedInSearchResult, source_id: int) -> dict:
     """Convertir LinkedIn result a lead."""
