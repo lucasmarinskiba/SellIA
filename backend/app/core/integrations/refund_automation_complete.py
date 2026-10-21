@@ -422,7 +422,7 @@ class RefundAutomationComplete:
             }
 
         except Exception as e:
-            logger.error(f"Refund processing exception: {e!s}")
+            logger.exception("Refund processing exception")
             return {"status": "error", "error": str(e)}
 
     async def _process_stripe_refund(
@@ -445,7 +445,7 @@ class RefundAutomationComplete:
             )
             return refund_result
         except Exception as e:
-            logger.error(f"Stripe refund error: {e!s}")
+            logger.exception("Stripe refund error")
             return {"status": "error", "error": str(e)}
 
     async def _process_ml_refund(
@@ -460,7 +460,7 @@ class RefundAutomationComplete:
             refund_result = await self.ml.process_refund(order_id, amount, "customer_request")
             return refund_result
         except Exception as e:
-            logger.error(f"ML refund error: {e!s}")
+            logger.exception("ML refund error")
             return {"status": "error", "error": str(e)}
 
     async def _notify_refund_processed(
@@ -484,8 +484,8 @@ class RefundAutomationComplete:
                     currency="USD",
                     refund_reason=analysis.reason.value,
                 )
-            except Exception as e:
-                logger.error(f"Failed to send refund email: {e!s}")
+            except Exception:
+                logger.exception("Failed to send refund email")
 
         # SMS
         if request.customer_phone:
@@ -495,8 +495,8 @@ class RefundAutomationComplete:
                     order_id=request.order_id,
                     refund_amount=amount,
                 )
-            except Exception as e:
-                logger.error(f"Failed to send refund SMS: {e!s}")
+            except Exception:
+                logger.exception("Failed to send refund SMS")
 
     # ========== CHARGEBACK HANDLING ==========
 
@@ -544,7 +544,7 @@ class RefundAutomationComplete:
             return {"status": "chargeback_accepted", "order_id": order_id}
 
         except Exception as e:
-            logger.error(f"Chargeback handling error: {e!s}")
+            logger.exception("Chargeback handling error")
             return {"status": "error", "error": str(e)}
 
     async def _gather_chargeback_evidence(self, order_id: str) -> dict[str, Any]:
@@ -621,7 +621,7 @@ class RefundAutomationComplete:
             }
 
         except Exception as e:
-            logger.error(f"Replacement processing error: {e!s}")
+            logger.exception("Replacement processing error")
             return {"status": "error", "error": str(e)}
 
     async def _create_replacement_order(

@@ -95,7 +95,7 @@ class FeedIAPartnerIntegration:
                 return {"status": "error"}
 
         except Exception as e:
-            logger.error(f"Request carousel failed: {e!s}")
+            logger.exception("Request carousel failed")
             return {"status": "error", "error": str(e)}
 
     async def request_reel_for_product(
@@ -148,8 +148,8 @@ class FeedIAPartnerIntegration:
             else:
                 return {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"Request reel failed: {e!s}")
+        except Exception:
+            logger.exception("Request reel failed")
             return {"status": "error"}
 
     async def request_tiktok_video(
@@ -203,8 +203,8 @@ class FeedIAPartnerIntegration:
             else:
                 return {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"Request TikTok failed: {e!s}")
+        except Exception:
+            logger.exception("Request TikTok failed")
             return {"status": "error"}
 
     # ========== PUBLISHING ==========
@@ -251,8 +251,8 @@ class FeedIAPartnerIntegration:
             else:
                 return {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"Publish failed: {e!s}")
+        except Exception:
+            logger.exception("Publish failed")
             return {"status": "error"}
 
     async def publish_reel_to_instagram(
@@ -284,6 +284,7 @@ class FeedIAPartnerIntegration:
                 return {"status": "error"}
 
         except Exception:
+            logger.exception("publish_reel_to_instagram: error inesperado")
             return {"status": "error"}
 
     async def publish_tiktok_video(
@@ -315,6 +316,7 @@ class FeedIAPartnerIntegration:
                 return {"status": "error"}
 
         except Exception:
+            logger.exception("publish_tiktok_video: error inesperado")
             return {"status": "error"}
 
     # ========== ANALYTICS & FEEDBACK LOOP ==========
@@ -354,6 +356,7 @@ class FeedIAPartnerIntegration:
                 return {"status": "error"}
 
         except Exception:
+            logger.exception("get_content_performance: error inesperado")
             return {"status": "error"}
 
     async def report_sale_attribution(
@@ -390,6 +393,7 @@ class FeedIAPartnerIntegration:
                 return {"status": "error"}
 
         except Exception:
+            logger.exception("report_sale_attribution: error inesperado")
             return {"status": "error"}
 
     # ========== FEEDIA CAPABILITIES ACCESS ==========
@@ -428,6 +432,7 @@ class FeedIAPartnerIntegration:
                 return {"status": "error"}
 
         except Exception:
+            logger.exception("list_feedia_services: error inesperado")
             return {"status": "error"}
 
     async def close(self):

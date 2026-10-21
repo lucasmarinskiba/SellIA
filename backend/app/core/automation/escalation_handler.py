@@ -115,15 +115,15 @@ class EscalationHandler:
                     body=message,
                 )
                 notifications.append("email")
-            except Exception as e:
-                logger.error(f"Failed to send escalation email: {e!s}")
+            except Exception:
+                logger.exception("Failed to send escalation email")
 
         # Slack (if configured)
         try:
             await self._send_slack_alert(escalation, message)
             notifications.append("slack")
         except Exception as e:
-            logger.debug(f"Slack notification not available: {e!s}")
+            logger.debug(f"Slack notification not available: {e!s}", exc_info=True)
 
         # SMS for critical
         if escalation.severity == "critical" and self.notification_service:
@@ -134,7 +134,7 @@ class EscalationHandler:
                 )
                 notifications.append("sms")
             except Exception as e:
-                logger.debug(f"SMS notification failed: {e!s}")
+                logger.debug(f"SMS notification failed: {e!s}", exc_info=True)
 
         escalation.notifications_sent = notifications
         logger.info(f"Escalation notified via: {', '.join(notifications)}")

@@ -150,7 +150,7 @@ class GrowthAutomationEngine:
             return result
 
         except Exception as e:
-            self.logger.error(f"Error in daily growth cycle: {e}")
+            self.logger.exception("Error in daily growth cycle")
             return {"status": "error", "message": str(e)}
 
     async def get_growth_recommendations(
@@ -196,8 +196,8 @@ class GrowthAutomationEngine:
                 ],
             }
 
-        except Exception as e:
-            self.logger.error(f"Error getting recommendations: {e}")
+        except Exception:
+            self.logger.exception("Error getting recommendations")
             return {}
 
     # ── Private ──────────────────────────────────────────
@@ -234,8 +234,8 @@ class GrowthAutomationEngine:
 
             return True, post.post_id
 
-        except Exception as e:
-            self.logger.error(f"Error publishing post: {e}")
+        except Exception:
+            self.logger.exception("Error publishing post")
             return False, None
 
 

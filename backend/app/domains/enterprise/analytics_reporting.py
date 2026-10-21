@@ -1,3 +1,4 @@
+import logging
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -5,6 +6,8 @@ from enum import Enum
 from typing import Any
 
 from app.core.clock import utc_now
+
+logger = logging.getLogger(__name__)
 
 
 class ReportFormat(str, Enum):
@@ -135,6 +138,7 @@ class AnalyticsReportingManager:
                 'recipients': report.recipients,
             }
         except Exception as e:
+            logger.exception("execute_report: error inesperado")
             return {'success': False, 'error': str(e)}
 
     def export_data(
@@ -169,6 +173,7 @@ class AnalyticsReportingManager:
                 'row_count': len(rows),
             }
         except Exception as e:
+            logger.exception("export_data: error inesperado")
             return {'success': False, 'error': str(e)}
 
     def get_realtime_metrics(self, user_id: str) -> dict:
@@ -195,6 +200,7 @@ class AnalyticsReportingManager:
             }
             return True
         except Exception:
+            logger.exception("track_metric: error inesperado")
             return False
 
     def get_metric_history(

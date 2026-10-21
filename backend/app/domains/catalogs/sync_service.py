@@ -4,6 +4,7 @@ Synchronizes catalog items between SellIA and external platforms
 (Shopify, MercadoLibre, Amazon, Meta, TikTok).
 """
 
+import logging
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
@@ -16,6 +17,8 @@ from app.domains.catalogs.models import CatalogItem
 from app.domains.channels.connectors import get_connector
 from app.domains.channels.models import ChannelConnection, ChannelPlatform
 from app.domains.platform_commerce import capabilities as platform_capabilities
+
+logger = logging.getLogger(__name__)
 
 
 class CatalogSyncResult:
@@ -99,6 +102,7 @@ class CatalogSyncService:
                         await connector.create_product(product_data)
                         items_synced += 1
                 except Exception as e:
+                    logger.exception("push_to_platform: error inesperado")
                     from app.core.logger import get_logger
                     get_logger(__name__).error(f"Error pushing {item.id} to {platform.value}: {e}")
                     continue
@@ -110,6 +114,7 @@ class CatalogSyncService:
                 items_synced,
             )
         except Exception as e:
+            logger.exception("push_to_platform: error inesperado")
             return CatalogSyncResult(platform.value, False, f"Error: {e!s}")
 
     async def push_all(self, business_id: UUID) -> list[CatalogSyncResult]:
@@ -190,7 +195,8 @@ class CatalogSyncService:
                             fields["type"] = item_type
                             fields["category"] = fields.get("category") or category
                         except Exception:
-                            pass  # keeps the platform-mapper's own fallback
+                            logger.exception("pull_from_platform: error inesperado")
+                            # keeps the platform-mapper's own fallback
 
                         item = CatalogItem(
                             business_id=business_id,
@@ -201,6 +207,7 @@ class CatalogSyncService:
                         self.db.add(item)
                         created += 1
                 except Exception as e:
+                    logger.exception("pull_from_platform: error inesperado")
                     from app.core.logger import get_logger
                     get_logger(__name__).error(f"Error pulling product to catalog: {e}")
                     continue
@@ -211,6 +218,7 @@ class CatalogSyncService:
                 detail += ". Amazon no devuelve precio en este endpoint -- completalo a mano."
             return CatalogSyncResult(platform.value, True, detail, created + updated)
         except Exception as e:
+            logger.exception("pull_from_platform: error inesperado")
             return CatalogSyncResult(platform.value, False, f"Error: {e!s}")
 
     async def pull_all(self, business_id: UUID) -> list[CatalogSyncResult]:

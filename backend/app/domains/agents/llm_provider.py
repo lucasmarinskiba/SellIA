@@ -68,8 +68,8 @@ class OpenAIProvider(BaseLLMProvider):
                 model=model,
                 provider=self.provider_name,
             )
-        except Exception as e:
-            logger.error(f"OpenAI generation failed: {e}")
+        except Exception:
+            logger.exception("OpenAI generation failed")
             return None
 
 
@@ -135,8 +135,8 @@ class OllamaProvider(BaseLLMProvider):
                 tokens_used=data.get("eval_count", 0) + data.get("prompt_eval_count", 0),
             )
 
-        except Exception as e:
-            logger.error(f"Ollama generation failed: {e}")
+        except Exception:
+            logger.exception("Ollama generation failed")
             return None
 
 
@@ -167,8 +167,8 @@ class KimiProvider(BaseLLMProvider):
                 model=model,
                 provider=self.provider_name,
             )
-        except Exception as e:
-            logger.error(f"Kimi generation failed: {e}")
+        except Exception:
+            logger.exception("Kimi generation failed")
             return None
 
 
@@ -202,8 +202,8 @@ class GroqProvider(BaseLLMProvider):
                 model=model,
                 provider=self.provider_name,
             )
-        except Exception as e:
-            logger.error(f"Groq generation failed: {e}")
+        except Exception:
+            logger.exception("Groq generation failed")
             return None
 
 
@@ -232,8 +232,8 @@ class AnthropicProvider(BaseLLMProvider):
                 model=model,
                 provider=self.provider_name,
             )
-        except Exception as e:
-            logger.error(f"Anthropic generation failed: {e}")
+        except Exception:
+            logger.exception("Anthropic generation failed")
             return None
 
 
@@ -312,6 +312,7 @@ async def _is_ollama_available() -> bool:
             async with session.get(f"{base_url}/api/tags", timeout=aiohttp.ClientTimeout(total=3)) as resp:
                 return resp.status == 200
     except Exception:
+        logger.exception("_is_ollama_available: error inesperado")
         return False
 
 
@@ -370,10 +371,10 @@ async def resolve_api_keys(
             if key_record and key_record.api_key_fernet:
                 try:
                     keys[provider] = decrypt_value(key_record.api_key_fernet).strip()
-                except Exception as e:
-                    logger.error(f"Failed to decrypt {provider} key: {e}")
+                except Exception:
+                    logger.exception(f"Failed to decrypt {provider} key")
     except Exception as e:
-        logger.warning(f"Per-business API keys unavailable, using platform keys: {e}")
+        logger.warning(f"Per-business API keys unavailable, using platform keys: {e}", exc_info=True)
         try:
             await db.rollback()
         except Exception:  # noqa: BLE001
@@ -471,7 +472,7 @@ async def _check_and_increment_daily_usage(db: AsyncSession, business_id: uuid.U
 
     except Exception as e:
         await db.rollback()
-        logger.debug(f"LLM usage cap check skipped (non-fatal): {e}")
+        logger.debug(f"LLM usage cap check skipped (non-fatal): {e}", exc_info=True)
         return True
 
 
@@ -507,7 +508,7 @@ async def generate_with_fallback(
             # "current transaction is aborted" -- which looked exactly like
             # "no API keys configured" and silently downgraded every AI
             # response in the app to a template.
-            logger.warning(f"Auto-load business_context failed: {exc}")
+            logger.warning(f"Auto-load business_context failed: {exc}", exc_info=True)
             try:
                 await db.rollback()
             except Exception:  # noqa: BLE001
@@ -535,7 +536,7 @@ async def generate_with_fallback(
                     tokens_used=0,
                 )
         except Exception as e:
-            logger.warning(f"Semantic cache lookup failed: {e}")
+            logger.warning(f"Semantic cache lookup failed: {e}", exc_info=True)
 
     # 2. Resolve keys
     keys = await resolve_api_keys(db, business_id)
@@ -581,6 +582,6 @@ async def generate_with_fallback(
         try:
             await semantic_cache.set(prompt_text, response.content, business_id=business_id)
         except Exception as e:
-            logger.warning(f"Semantic cache store failed: {e}")
+            logger.warning(f"Semantic cache store failed: {e}", exc_info=True)
 
     return response

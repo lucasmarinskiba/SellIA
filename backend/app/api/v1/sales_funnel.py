@@ -55,6 +55,7 @@ async def run_complete_pipeline(
         return result
 
     except Exception as e:
+        logger.exception("run_complete_pipeline: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -99,6 +100,7 @@ async def import_leads(
         }
 
     except Exception as e:
+        logger.exception("import_leads: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -161,6 +163,7 @@ async def send_outreach(
         }
 
     except Exception as e:
+        logger.exception("send_outreach: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -229,6 +232,7 @@ async def send_email_sequence(
         }
 
     except Exception as e:
+        logger.exception("send_email_sequence: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -245,6 +249,7 @@ async def get_pipeline_status(
         return await orchestrator.get_pipeline_status()
 
     except Exception as e:
+        logger.exception("get_pipeline_status: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -312,8 +317,13 @@ async def get_dashboard_metrics() -> dict[str, Any]:
         }
 
     except Exception as e:
+        logger.exception("get_dashboard_metrics: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 # Importar datetime
+import logging
+
 from app.core.clock import utc_now
+
+logger = logging.getLogger(__name__)

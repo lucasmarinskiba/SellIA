@@ -138,8 +138,8 @@ class AgentRouter:
                 performance_bonus = agent.success_rate * 0.2
                 scores[agent_type] = base_score + performance_bonus
 
-            except Exception as e:
-                logger.error(f"Agent evaluation failed: {agent_type} - {e}")
+            except Exception:
+                logger.exception(f"Agent evaluation failed: {agent_type}")
                 continue
 
         if not scores:

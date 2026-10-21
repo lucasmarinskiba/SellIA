@@ -138,7 +138,7 @@ class ComputerUseSessionManagerV2:
         try:
             await ws_manager.send_message(self.session_id, message)
         except Exception as e:
-            logger.warning(f"WS send failed for session {self.session_id}: {e}")
+            logger.warning(f"WS send failed for session {self.session_id}: {e}", exc_info=True)
 
     async def start(self) -> None:
         self._session_start_time = time.time()
@@ -150,7 +150,7 @@ class ComputerUseSessionManagerV2:
             try:
                 self._provider_name = getattr(self.vision.provider, "provider_name", "unknown")
             except Exception:
-                pass
+                logger.exception("start: error inesperado")
 
             COMPUTER_USE_SESSIONS_CREATED.labels(provider=self._provider_name).inc()
             COMPUTER_USE_ACTIVE_SESSIONS.inc()
@@ -178,7 +178,7 @@ class ComputerUseSessionManagerV2:
                             "data": {"role": "system", "content": f"✅ Auto-login exitoso en {self.start_url}"},
                         })
                 except Exception as e:
-                    logger.warning(f"Auto-login failed for {self.start_url}: {e}")
+                    logger.warning(f"Auto-login failed for {self.start_url}: {e}", exc_info=True)
 
             await self._run_loop()
 
@@ -216,6 +216,7 @@ class ComputerUseSessionManagerV2:
                 try:
                     screenshot_bytes = await self.retry_handler.execute(self.browser.screenshot)
                 except Exception as e:
+                    logger.exception("_run_loop: error inesperado")
                     await self._fail(f"Screenshot error: {e}")
                     return
 
@@ -252,7 +253,7 @@ class ComputerUseSessionManagerV2:
                             )
                         await self._pause_event.wait()
                 except Exception as e:
-                    logger.warning(f"CAPTCHA detection error: {e}")
+                    logger.warning(f"CAPTCHA detection error: {e}", exc_info=True)
 
                 page_info = await self.browser.get_page_info()
 
@@ -270,7 +271,7 @@ class ComputerUseSessionManagerV2:
                                 + "\n".join(lines[:40])
                             )
                 except Exception as e:
-                    logger.debug(f"interactive elements snapshot skipped: {e}")
+                    logger.debug(f"interactive elements snapshot skipped: {e}", exc_info=True)
 
                 # Expert sales-agent knowledge → richer, on-domain decisions.
                 try:
@@ -279,7 +280,7 @@ class ComputerUseSessionManagerV2:
                     if self._skill_brief:
                         page_info["skill_brief"] = self._skill_brief
                 except Exception as e:
-                    logger.debug(f"skill brief skipped: {e}")
+                    logger.debug(f"skill brief skipped: {e}", exc_info=True)
 
                 # Send screenshot
                 await self._send_ws({
@@ -313,6 +314,7 @@ class ComputerUseSessionManagerV2:
                         page_info=page_info,
                     )
                 except Exception as e:
+                    logger.exception("_run_loop: error inesperado")
                     await self._fail(f"Vision agent error: {e}")
                     return
 
@@ -352,7 +354,7 @@ class ComputerUseSessionManagerV2:
                                     1.0, f"confirmation_required: {decision.reason}", wh.get("secret"),
                                 )
                             except Exception as e:
-                                logger.debug(f"confirm webhook skipped: {e}")
+                                logger.debug(f"confirm webhook skipped: {e}", exc_info=True)
                         await self.pause()
                         await self._pause_event.wait()  # resume = aprobación humana
                         if self._stop_event.is_set():
@@ -388,6 +390,7 @@ class ComputerUseSessionManagerV2:
                 try:
                     execution_result = await self.retry_handler.execute(self._execute_action, action)
                 except Exception as e:
+                    logger.exception("_run_loop: error inesperado")
                     execution_result = f"Error tras reintentos: {e}"
 
                 await self._update_step_result(self.current_step, execution_result)
@@ -461,6 +464,7 @@ class ComputerUseSessionManagerV2:
             else:
                 result = {"success": False, "error": f"Acción no soportada: {action.action_type}"}
         except Exception as e:
+            logger.exception("_execute_action: error inesperado")
             result = {"success": False, "error": str(e)}
 
         return "success" if result.get("success") else result.get("error", "Error desconocido")
@@ -537,7 +541,7 @@ class ComputerUseSessionManagerV2:
         try:
             await self.browser.stop()
         except Exception as e:
-            logger.warning(f"Browser cleanup error: {e}")
+            logger.warning(f"Browser cleanup error: {e}", exc_info=True)
 
     async def send_chat_message(self, message: str) -> None:
         self.user_chat_queue.append(message)
@@ -567,8 +571,8 @@ class ComputerUseSessionManagerV2:
                 if status == "running" and not session.started_at:
                     session.started_at = datetime.now(UTC)
                 await self.db.commit()
-        except Exception as e:
-            logger.error(f"DB update error: {e}")
+        except Exception:
+            logger.exception("DB update error")
 
     async def _update_session_progress(self, current_url: str | None) -> None:
         try:
@@ -582,8 +586,8 @@ class ComputerUseSessionManagerV2:
                 if current_url:
                     session.current_url = current_url
                 await self.db.commit()
-        except Exception as e:
-            logger.error(f"DB progress update error: {e}")
+        except Exception:
+            logger.exception("DB progress update error")
 
     async def _save_step(self, step_number: int, screenshot_path: str, action: ComputerUseAction, page_url: str | None) -> None:
         try:
@@ -599,8 +603,8 @@ class ComputerUseSessionManagerV2:
             )
             self.db.add(step)
             await self.db.commit()
-        except Exception as e:
-            logger.error(f"DB save step error: {e}")
+        except Exception:
+            logger.exception("DB save step error")
             await self.db.rollback()
 
     async def _update_step_result(self, step_number: int, execution_result: str) -> None:
@@ -617,8 +621,8 @@ class ComputerUseSessionManagerV2:
                 step.execution_result = execution_result
                 step.execution_ms = 0
                 await self.db.commit()
-        except Exception as e:
-            logger.error(f"DB update step error: {e}")
+        except Exception:
+            logger.exception("DB update step error")
 
     async def _save_message(self, role: str, content: str) -> None:
         try:
@@ -629,8 +633,8 @@ class ComputerUseSessionManagerV2:
             )
             self.db.add(msg)
             await self.db.commit()
-        except Exception as e:
-            logger.error(f"DB save message error: {e}")
+        except Exception:
+            logger.exception("DB save message error")
             await self.db.rollback()
 
     async def _enrich_vision_prompt_with_brain_strategy(
@@ -691,8 +695,8 @@ Template guidance:
 
             return enriched_prompt
 
-        except Exception as e:
-            logger.error(f"Error enriching prompt with brain strategy: {e}")
+        except Exception:
+            logger.exception("Error enriching prompt with brain strategy")
             return base_prompt
 
     def _detect_platform_from_context(self) -> Platform:

@@ -85,7 +85,7 @@ class SellIAFeedIAWorkflow:
             return workflow_result
 
         except Exception as e:
-            logger.error(f"Workflow failed: {e!s}")
+            logger.exception("Workflow failed")
             workflow_result["status"] = "error"
             workflow_result["error"] = str(e)
             return workflow_result

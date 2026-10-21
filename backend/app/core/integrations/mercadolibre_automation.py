@@ -97,7 +97,7 @@ class MercadoLibreAutomation:
             }
 
         except Exception as e:
-            logger.error(f"Orders sync failed: {e!s}")
+            logger.exception("Orders sync failed")
             return {"status": "error", "error": str(e)}
 
     async def _fetch_new_orders(self) -> list[dict[str, Any]]:
@@ -121,8 +121,8 @@ class MercadoLibreAutomation:
                 logger.error(f"ML API error: {response.status_code}")
                 return []
 
-        except Exception as e:
-            logger.error(f"Fetch orders failed: {e!s}")
+        except Exception:
+            logger.exception("Fetch orders failed")
             return []
 
     async def _fetch_order_details(self, order_id: str) -> dict[str, Any] | None:
@@ -140,8 +140,8 @@ class MercadoLibreAutomation:
                 logger.error(f"Order details error: {response.status_code}")
                 return None
 
-        except Exception as e:
-            logger.error(f"Fetch order details failed: {e!s}")
+        except Exception:
+            logger.exception("Fetch order details failed")
             return None
 
     async def _confirm_purchase(self, order_id: str) -> dict[str, Any]:
@@ -163,8 +163,8 @@ class MercadoLibreAutomation:
                 logger.warning(f"Confirm failed: {response.status_code}")
                 return {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"Confirm purchase failed: {e!s}")
+        except Exception:
+            logger.exception("Confirm purchase failed")
             return {"status": "error"}
 
     # ========== AUTO-RESPONSE ==========
@@ -219,8 +219,8 @@ class MercadoLibreAutomation:
                 "responses": responses,
             }
 
-        except Exception as e:
-            logger.error(f"Auto-response failed: {e!s}")
+        except Exception:
+            logger.exception("Auto-response failed")
             return {"status": "error"}
 
     def _get_faq_response(self, question: str) -> str | None:
@@ -264,8 +264,8 @@ class MercadoLibreAutomation:
                 logger.warning(f"Answer failed: {response.status_code}")
                 return {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"Answer question failed: {e!s}")
+        except Exception:
+            logger.exception("Answer question failed")
             return {"status": "error"}
 
     # ========== SHIPPING & FULFILLMENT ==========
@@ -313,8 +313,8 @@ class MercadoLibreAutomation:
                 logger.warning(f"Label generation failed: {response.status_code}")
                 return {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"Generate label failed: {e!s}")
+        except Exception:
+            logger.exception("Generate label failed")
             return {"status": "error"}
 
     # ========== TRACKING UPDATES ==========
@@ -349,8 +349,8 @@ class MercadoLibreAutomation:
             else:
                 return {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"Update tracking failed: {e!s}")
+        except Exception:
+            logger.exception("Update tracking failed")
             return {"status": "error"}
 
     # ========== DB INTEGRATION ==========
@@ -404,8 +404,8 @@ class MercadoLibreAutomation:
                 logger.error(f"Token refresh failed: {response.status_code}")
                 return None
 
-        except Exception as e:
-            logger.error(f"Refresh token failed: {e!s}")
+        except Exception:
+            logger.exception("Refresh token failed")
             return None
 
     async def close(self):

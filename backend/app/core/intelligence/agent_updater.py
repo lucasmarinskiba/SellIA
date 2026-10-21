@@ -73,8 +73,8 @@ async def check_and_deploy_model_updates(db: AsyncSession) -> dict[str, Any]:
                         "model": "intent_classifier",
                         "reason": f"Improvement {new_accuracy - current_accuracy:.3f} below threshold",
                     })
-        except Exception as e:
-            logger.error(f"Failed to deploy model update: {e}")
+        except Exception:
+            logger.exception("Failed to deploy model update")
 
     return updates
 

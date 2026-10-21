@@ -1,3 +1,4 @@
+import logging
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import Any
@@ -7,6 +8,8 @@ import aiosmtplib
 from app.domains.channels.connectors.base import BaseChannelConnector
 from app.domains.channels.models import ChannelPlatform
 from app.domains.channels.schemas import WebhookPayload
+
+logger = logging.getLogger(__name__)
 
 
 class EmailConnector(BaseChannelConnector):
@@ -71,4 +74,5 @@ class EmailConnector(BaseChannelConnector):
             )
             return True
         except Exception:
+            logger.exception("validate_credentials: error inesperado")
             return False

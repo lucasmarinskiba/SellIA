@@ -102,7 +102,7 @@ class PlanningAgent:
             data = json.loads(text)
             plan = Plan.model_validate(data)
         except Exception as exc:
-            logger.warning(f"Failed to parse plan JSON: {exc}. Text: {text[:500]}")
+            logger.warning(f"Failed to parse plan JSON: {exc}. Text: {text[:500]}", exc_info=True)
             # Fallback single-step plan
             plan = Plan(
                 sub_tasks=[
@@ -129,7 +129,7 @@ class PlanningAgent:
                 metadata={"task": task_description, "plan": plan.model_dump()},
             )
         except Exception as exc:
-            logger.warning(f"Failed to log planning call: {exc}")
+            logger.warning(f"Failed to log planning call: {exc}", exc_info=True)
 
         return plan
 
@@ -170,7 +170,7 @@ class PlanningAgent:
                     "result": step_result,
                 })
             except Exception as exc:
-                logger.exception(f"Plan step {step.id} failed: {exc}")
+                logger.exception(f"Plan step {step.id} failed")
                 results.append({
                     "step_id": step.id,
                     "status": "failed",

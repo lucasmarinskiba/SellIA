@@ -79,8 +79,8 @@ def smart_action_router_evaluator():
                 try:
                     actions = await router.route_event(event_type, context)
                     actions_taken += len(actions)
-                except Exception as e:
-                    logger.error(f"Router error: {e}")
+                except Exception:
+                    logger.exception("Router error")
 
             logger.info(f"Smart action router: {actions_taken} actions executed")
             return {"actions_taken": actions_taken}
@@ -101,8 +101,8 @@ def proactive_outreach_scheduler():
                 try:
                     results = await engine.schedule_outreach_for_business(business.id)
                     total += len(results)
-                except Exception as e:
-                    logger.error(f"Proactive outreach failed for business {business.id}: {e}")
+                except Exception:
+                    logger.exception(f"Proactive outreach failed for business {business.id}")
 
             logger.info(f"Proactive outreach scheduler: {total} outreach messages scheduled")
             return {"scheduled": total}
@@ -123,8 +123,8 @@ def briefing_delivery():
                 try:
                     await service.deliver_daily_briefing(business.id)
                     delivered += 1
-                except Exception as e:
-                    logger.error(f"Briefing delivery failed for business {business.id}: {e}")
+                except Exception:
+                    logger.exception(f"Briefing delivery failed for business {business.id}")
 
             logger.info(f"Briefing delivery: {delivered} briefings sent")
             return {"delivered": delivered}
@@ -170,8 +170,8 @@ def handoff_alert_sender():
                         urgency="normal",
                     )
                     sent += 1
-                except Exception as e:
-                    logger.error(f"Handoff alert failed: {e}")
+                except Exception:
+                    logger.exception("Handoff alert failed")
 
             logger.info(f"Handoff alert sender: {sent} alerts sent")
             return {"sent": sent}
@@ -192,8 +192,8 @@ def experiment_evaluator():
                 try:
                     outcomes = await runner.evaluate_experiments(business.id)
                     evaluated += len(outcomes)
-                except Exception as e:
-                    logger.error(f"Experiment evaluation failed for business {business.id}: {e}")
+                except Exception:
+                    logger.exception(f"Experiment evaluation failed for business {business.id}")
 
             logger.info(f"Experiment evaluator: {evaluated} experiments evaluated")
             return {"evaluated": evaluated}
@@ -214,8 +214,8 @@ def auto_optimizer_runner():
                 try:
                     opts = await optimizer.run_optimization_cycle(business.id)
                     adjustments += len(opts)
-                except Exception as e:
-                    logger.error(f"Auto optimizer failed for business {business.id}: {e}")
+                except Exception:
+                    logger.exception(f"Auto optimizer failed for business {business.id}")
 
             logger.info(f"Auto optimizer: {adjustments} adjustments recommended")
             return {"adjustments": adjustments}
@@ -281,8 +281,8 @@ def pipeline_automation_trigger_scanner():
                         deal.id,
                     )
                     triggered += 1
-                except Exception as e:
-                    logger.error(f"Pipeline automation error: {e}")
+                except Exception:
+                    logger.exception("Pipeline automation error")
 
             logger.info(f"Pipeline trigger scanner: {triggered} automations triggered")
             return {"triggered": triggered}
@@ -346,7 +346,7 @@ def autonomous_operations_cycle(self, business_id: str | None = None):
                             "duration_s": r.get("cycle_duration_seconds", 0),
                         })
                     except Exception as e:
-                        logger.error(f"[AOC] Error business {biz.id}: {e}")
+                        logger.exception(f"[AOC] Error business {biz.id}")
                         summaries.append({"business_id": str(biz.id), "error": str(e)[:100]})
 
                 logger.info(f"[AOC] Ciclos completados para {len(businesses)} negocios")
@@ -355,7 +355,7 @@ def autonomous_operations_cycle(self, business_id: str | None = None):
     try:
         return run_async(_run())
     except Exception as exc:
-        logger.error(f"[AOC] autonomous_operations_cycle error: {exc}")
+        logger.exception("[AOC] autonomous_operations_cycle error")
         raise self.retry(exc=exc)
 
 
@@ -425,8 +425,8 @@ def deep_system_optimization(business_id: str | None = None):
                     try:
                         await engine.run_optimization_cycle(biz.id)
                         await engine.run_ab_test_analysis(biz.id)
-                    except Exception as e:
-                        logger.error(f"[DeepOpt] Error {biz.id}: {e}")
+                    except Exception:
+                        logger.exception(f"[DeepOpt] Error {biz.id}")
                 logger.info(f"[DeepOpt] Completado para {len(businesses)} negocios")
                 return {"businesses_processed": len(businesses)}
 
@@ -576,8 +576,8 @@ def weekly_executive_report(business_id: str | None = None):
                 try:
                     if await _weekly_report_for(db, center, biz_id, biz_name, now):
                         created += 1
-                except Exception as e:
-                    logger.error(f"[WeeklyReport] Error {biz_id}: {e}")
+                except Exception:
+                    logger.exception(f"[WeeklyReport] Error {biz_id}")
                     await db.rollback()  # else this failure aborts the transaction for every later business
             logger.info(f"[WeeklyReport] {created} reportes creados para {len(targets)} negocios")
 

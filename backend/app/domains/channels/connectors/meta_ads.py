@@ -4,6 +4,7 @@ Manages campaigns, adsets, ads, and lead retrieval beyond basic lead webhooks.
 Docs: https://developers.facebook.com/docs/marketing-api
 """
 
+import logging
 from typing import Any
 
 import httpx
@@ -11,6 +12,8 @@ import httpx
 from app.domains.channels.connectors.base import BaseChannelConnector
 from app.domains.channels.models import ChannelPlatform
 from app.domains.channels.schemas import WebhookPayload
+
+logger = logging.getLogger(__name__)
 
 
 class MetaAdsConnector(BaseChannelConnector):
@@ -239,4 +242,5 @@ class MetaAdsConnector(BaseChannelConnector):
             result = await self._api_get("me", {"fields": "id,name"})
             return "id" in result
         except Exception:
+            logger.exception("validate_credentials: error inesperado")
             return False

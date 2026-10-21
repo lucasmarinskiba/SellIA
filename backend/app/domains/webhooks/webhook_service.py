@@ -174,7 +174,7 @@ class WebhookService:
             return response.status_code == 200
 
         except Exception as e:
-            logger.error(f"Webhook delivery failed: {webhook.url} - {e!s}")
+            logger.exception(f"Webhook delivery failed: {webhook.url}")
 
             log = WebhookDeliveryLog(
                 webhook_event_id=event.id,

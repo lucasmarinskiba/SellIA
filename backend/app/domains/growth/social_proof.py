@@ -66,7 +66,7 @@ class SocialProofEngine:
                     content_type="text",
                 )
             except Exception as e:
-                logger.error(f"Failed to send review request: {e}")
+                logger.exception("Failed to send review request")
                 return {"status": "error", "reason": str(e)}
 
         logger.info(f"Sent review request for order {order_id} to conversation {conversation_id}")
@@ -105,8 +105,8 @@ Ejemplo: "¡Hola! Espero que estés disfrutando [producto]. Me ayudaría MUCHO s
                 max_tokens=400,
                 temperature=0.7,
             ) or "¡Hola! Espero que estés disfrutando tu compra. Me ayudaría MUCHO si me contás cómo fue tu experiencia. Simplemente respondé con ⭐ (1-5) y una frase. ¡Gracias de corazón!"
-        except Exception as e:
-            logger.error(f"Failed to generate review request: {e}")
+        except Exception:
+            logger.exception("Failed to generate review request")
             return "¡Hola! Espero que estés disfrutando tu compra. Me ayudaría MUCHO si me contás cómo fue tu experiencia. Simplemente respondé con ⭐ (1-5) y una frase. ¡Gracias de corazón!"
 
     async def collect_testimonial(
@@ -193,6 +193,7 @@ Ejemplo: "¡Hola! Espero que estés disfrutando [producto]. Me ayudaría MUCHO s
                 temperature=0.5,
             ) or ""
         except Exception:
+            logger.exception("_generate_summary: error inesperado")
             return ""
 
     async def _extract_quotes(self, business_id: uuid.UUID, content: str) -> list[str]:
@@ -210,6 +211,7 @@ Ejemplo: "¡Hola! Espero que estés disfrutando [producto]. Me ayudaría MUCHO s
             parsed = json.loads(response or "{}")
             return parsed.get("quotes", [])
         except Exception:
+            logger.exception("_extract_quotes: error inesperado")
             return []
 
     # ========== Moderation ==========

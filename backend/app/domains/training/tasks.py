@@ -40,7 +40,7 @@ def run_simulation_task(scenario_id: str, agent_type: str, run_id: str):
                     "objective_achieved": run.objective_achieved,
                 }
             except Exception as exc:
-                logger.exception(f"Simulation task failed for run {run_id}: {exc}")
+                logger.exception(f"Simulation task failed for run {run_id}")
                 # Attempt to mark run as failed
                 try:
                     from datetime import datetime
@@ -58,8 +58,8 @@ def run_simulation_task(scenario_id: str, agent_type: str, run_id: str):
                         run.feedback = f"Task error: {str(exc)[:500]}"
                         run.completed_at = datetime.now(UTC)
                         await db.commit()
-                except Exception as inner_exc:
-                    logger.error(f"Failed to mark run as failed: {inner_exc}")
+                except Exception:
+                    logger.exception("Failed to mark run as failed")
                 raise
 
     return run_async(_run())

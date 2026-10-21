@@ -4,10 +4,13 @@ Connects landing visitors, dashboard users, admin panel
 """
 
 import asyncio
+import logging
 from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -44,7 +47,8 @@ class ConnectionManager:
         for conn in self.landing_connections:
             try:
                 await conn.send_json(data)
-            except:
+            except Exception:
+                logger.exception("broadcast_landing: error inesperado")
                 dead.add(conn)
         for c in dead:
             self.landing_connections.discard(c)
@@ -55,7 +59,8 @@ class ConnectionManager:
         for uid, conn in targets.items():
             try:
                 await conn.send_json(data)
-            except:
+            except Exception:
+                logger.exception("broadcast_dashboard: error inesperado")
                 dead.add(uid)
         for uid in dead:
             self.dashboard_connections.pop(uid, None)
@@ -108,6 +113,7 @@ async def generate_proof_events():
             await manager.broadcast_all(proof_event)
 
         except Exception as e:
+            logger.exception("generate_proof_events: error inesperado")
             print(f"Error: {e}")
 
 

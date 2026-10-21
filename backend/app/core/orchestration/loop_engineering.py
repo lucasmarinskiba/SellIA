@@ -120,7 +120,7 @@ class LoopEngineering:
                 logger.info(f"Applied correction: {correction.get('adjustment')}")
 
             except Exception as e:
-                logger.error(f"Loop {objective} error on iteration {iteration}: {e!s}")
+                logger.exception(f"Loop {objective} error on iteration {iteration}")
                 loop_log["corrections"].append({"error": str(e)})
 
         # Final status

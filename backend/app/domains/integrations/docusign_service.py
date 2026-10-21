@@ -108,8 +108,8 @@ class DocusignService:
                 "deadline": (utc_now() + timedelta(days=signing_deadline_days)).isoformat(),
             }
 
-        except Exception as e:
-            logger.error(f"Docusign send failed: {e}")
+        except Exception:
+            logger.exception("Docusign send failed")
             return None
 
     async def get_signature_status(self, envelope_id: str) -> dict[str, Any] | None:
@@ -132,8 +132,8 @@ class DocusignService:
                 ],
             }
 
-        except Exception as e:
-            logger.error(f"Docusign status check failed: {e}")
+        except Exception:
+            logger.exception("Docusign status check failed")
             return None
 
     async def download_signed_document(self, envelope_id: str) -> bytes | None:
@@ -144,8 +144,8 @@ class DocusignService:
             logger.info(f"Downloading signed document: {envelope_id}")
             return b"PDF_CONTENT_HERE"
 
-        except Exception as e:
-            logger.error(f"Docusign download failed: {e}")
+        except Exception:
+            logger.exception("Docusign download failed")
             return None
 
 

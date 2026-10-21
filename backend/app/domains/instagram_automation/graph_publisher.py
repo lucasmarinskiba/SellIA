@@ -17,9 +17,12 @@ InstagramNotConfiguredError en vez de simular un post exitoso — coherente
 con la regla de integridad del framework FOMO: nada se "publica" si no es real.
 """
 import asyncio
+import logging
 import os
 
 import httpx
+
+logger = logging.getLogger(__name__)
 
 
 class InstagramNotConfiguredError(Exception):
@@ -158,6 +161,7 @@ class InstagramGraphPublisher:
             try:
                 detail = response.json()
             except Exception:
+                logger.exception("_raise_for_graph_error: error inesperado")
                 detail = {"raw": response.text}
             error_message = detail.get("error", {}).get("message", "Error desconocido de Graph API")
             raise InstagramPublishError(f"Graph API error: {error_message}", detail=detail)

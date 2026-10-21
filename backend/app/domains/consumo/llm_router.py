@@ -131,7 +131,7 @@ class SmartRouterV2:
         try:
             prompt_embedding = await embedding_service.embed_text(prompt)
         except Exception as e:
-            logger.warning(f"Embedding classification failed, using heuristic: {e}")
+            logger.warning(f"Embedding classification failed, using heuristic: {e}", exc_info=True)
             return _heuristic_classify(prompt)
 
         best_complexity = TaskComplexity.MEDIUM

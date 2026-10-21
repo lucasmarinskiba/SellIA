@@ -1,4 +1,5 @@
 import hmac
+import logging
 from typing import Annotated, Any
 from urllib.parse import urlencode
 from uuid import UUID
@@ -25,6 +26,8 @@ from app.domains.channels.schemas import (
 )
 from app.domains.subscriptions.services import check_subscription_limit, track_usage
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 settings = get_settings()
@@ -78,7 +81,7 @@ async def create_channel(
         try:
             await track_usage(db, current_user.id, "channels", quantity=1, business_id=business_id)
         except Exception:
-            pass
+            logger.exception("create_channel: error inesperado")
 
         return channel
     except Exception as e:
@@ -213,6 +216,7 @@ async def test_channel_connection(
             await db.commit()
             return {"status": "error", "valid": False, "detail": "Credenciales inválidas"}
     except Exception as e:
+        logger.exception("test_channel_connection: error inesperado")
         channel.status = ChannelStatus.ERROR
         channel.status_message = str(e)[:255]
         await db.commit()
@@ -683,7 +687,7 @@ async def receive_webhook(
             metadata = value.get("metadata", {})
             phone_number_id = metadata.get("phone_number_id")
         except Exception:
-            pass
+            logger.exception("receive_webhook: error inesperado")
 
         if phone_number_id:
             result = await db.execute(
@@ -744,7 +748,7 @@ async def receive_webhook(
             entry = raw_json.get("entry", [{}])[0]
             page_id = entry.get("id")
         except Exception:
-            pass
+            logger.exception("receive_webhook: error inesperado")
 
         if page_id:
             # Buscar por page_id o instagram_account_id en credentials
@@ -769,7 +773,7 @@ async def receive_webhook(
             # Se debe usar ?token=xxx o verificar por webhook_secret
             pass
         except Exception:
-            pass
+            logger.exception("receive_webhook: error inesperado")
 
     # Estrategia 5: Para MercadoLibre, identificar por seller_id (user_id en notificación)
     elif platform == ChannelPlatform.MERCADOLIBRE:
@@ -793,7 +797,7 @@ async def receive_webhook(
             value = changes.get("value", {})
             page_id = value.get("page_id") or entry.get("id")
         except Exception:
-            pass
+            logger.exception("receive_webhook: error inesperado")
 
         if page_id:
             result = await db.execute(
@@ -872,7 +876,7 @@ async def receive_webhook(
             value = changes.get("value", {})
             page_id = value.get("page_id") or entry.get("id")
         except Exception:
-            pass
+            logger.exception("receive_webhook: error inesperado")
 
         if page_id:
             result = await db.execute(
@@ -978,7 +982,7 @@ async def receive_webhook(
             entry = raw_json.get("entry", [{}])[0]
             page_id = entry.get("id")
         except Exception:
-            pass
+            logger.exception("receive_webhook: error inesperado")
 
         if page_id:
             result = await db.execute(
@@ -1015,6 +1019,7 @@ async def receive_webhook(
                 extra_data=raw_json,
             )
     except Exception as e:
+        logger.exception("receive_webhook: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Webhook parse error for {platform}: {e}")
         raise HTTPException(status_code=400, detail="Payload inválido")

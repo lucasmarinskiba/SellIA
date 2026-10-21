@@ -213,7 +213,7 @@ class SmartActionRouter:
                         )
                         return {"action": "send_proposal", "conversation_id": str(conversation_id), "log_id": str(log.id)}
                     except Exception as e:
-                        logger.warning(f"Failed to send AI proposal: {e}")
+                        logger.warning(f"Failed to send AI proposal: {e}", exc_info=True)
 
         elif intent_type == "support" or intent_type == "complaint":
             if config.auto_escalate_to_human:
@@ -274,7 +274,7 @@ class SmartActionRouter:
             )
             return {"action": "handle_objection", "conversation_id": str(conversation_id), "log_id": str(log.id)}
         except Exception as e:
-            logger.warning(f"Failed to handle objection: {e}")
+            logger.warning(f"Failed to handle objection: {e}", exc_info=True)
 
         return None
 
@@ -380,7 +380,7 @@ class SmartActionRouter:
             )
             return {"action": "re_engagement", "conversation_id": str(conversation_id), "log_id": str(log.id)}
         except Exception as e:
-            logger.warning(f"Failed to send re-engagement: {e}")
+            logger.warning(f"Failed to send re-engagement: {e}", exc_info=True)
 
         return None
 
@@ -532,5 +532,5 @@ async def _on_event(event_type: str, payload: dict):
             actions = await router.route_event(event_type, payload)
             if actions:
                 logger.info(f"SmartActionRouter executed {len(actions)} actions for {event_type}")
-    except Exception as e:
-        logger.exception(f"SmartActionRouter error handling {event_type}: {e}")
+    except Exception:
+        logger.exception(f"SmartActionRouter error handling {event_type}")

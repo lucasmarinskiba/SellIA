@@ -1,10 +1,13 @@
 """Multi-language FOMO copy generation (ES, EN, PT)."""
 
+import logging
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.seo_config.fomo_generator import PublicationFOMOGenerator
+
+logger = logging.getLogger(__name__)
 
 
 class FOMALanguageGenerator:
@@ -49,6 +52,7 @@ class FOMALanguageGenerator:
             'language_name': self.LANGUAGE_NAMES[lang],
           }
       except Exception as e:
+        logger.exception("generate_multilingual: error inesperado")
         print(f'Error generating {lang} copy: {e}')
         results[lang] = {'error': str(e)}
 
@@ -89,6 +93,7 @@ class FOMALanguageGenerator:
       else:
         return {'error': 'Failed to generate copy'}
     except Exception as e:
+      logger.exception("generate_for_language: error inesperado")
       return {'error': str(e)}
 
   async def get_language_comparison(

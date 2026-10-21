@@ -92,8 +92,8 @@ class InstagramShopAutomation:
             ).hexdigest()
 
             return hmac.compare_digest(signature, expected_signature)
-        except Exception as e:
-            logger.error(f"Webhook signature verification error: {e}")
+        except Exception:
+            logger.exception("Webhook signature verification error")
             return False
 
     async def handle_webhook(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -138,7 +138,7 @@ class InstagramShopAutomation:
             return {"status": "success"}
 
         except Exception as e:
-            logger.error(f"Webhook processing error: {e}")
+            logger.exception("Webhook processing error")
             return {"status": "error", "message": str(e)}
 
     async def _handle_order_update(self, order_data: dict[str, Any]) -> None:
@@ -311,7 +311,7 @@ class InstagramShopAutomation:
             }
 
         except Exception as e:
-            logger.error(f"Error syncing products to Instagram: {e}")
+            logger.exception("Error syncing products to Instagram")
             return {"status": "error", "message": str(e)}
 
     async def _find_product_by_sku(self, sku: str) -> dict[str, Any] | None:
@@ -462,8 +462,8 @@ class InstagramShopAutomation:
             logger.info(f"Generated checkout link: {checkout_url}")
             return checkout_url
 
-        except Exception as e:
-            logger.error(f"Error creating checkout link: {e}")
+        except Exception:
+            logger.exception("Error creating checkout link")
             return None
 
     # ========== SHIPPING & FULFILLMENT ==========
@@ -504,8 +504,8 @@ class InstagramShopAutomation:
                 tracking_info,
             )
 
-        except Exception as e:
-            logger.error(f"Error updating tracking: {e}")
+        except Exception:
+            logger.exception("Error updating tracking")
             return False
 
     # ========== MESSAGE INTEGRATION ==========

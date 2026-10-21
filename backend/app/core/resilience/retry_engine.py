@@ -259,6 +259,7 @@ class RetryEngine:
                 self._record_attempt(history, attempt, config, error_msg, timeout=True)
 
             except Exception as e:
+                logger.exception("execute_with_retry: error inesperado")
                 error_msg = str(e)
                 status_code = getattr(e, "status_code", None)
                 self._record_attempt(history, attempt, config, error_msg, status_code)

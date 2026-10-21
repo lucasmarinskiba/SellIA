@@ -62,7 +62,7 @@ async def get_analytics_overview(
         }
 
     except Exception as e:
-        logger.error(f"Overview failed: {e!s}")
+        logger.exception("Overview failed")
         return {"status": "error", "error": str(e)}
 
 
@@ -117,8 +117,8 @@ async def get_sales_by_channel(
             "total_orders": 87,
         }
 
-    except Exception as e:
-        logger.error(f"Sales by channel failed: {e!s}")
+    except Exception:
+        logger.exception("Sales by channel failed")
         return {"status": "error"}
 
 
@@ -165,8 +165,8 @@ async def get_conversion_funnel(
             "overall_conversion": 0.0070,  # 0.7% awareness → purchase
         }
 
-    except Exception as e:
-        logger.error(f"Funnel failed: {e!s}")
+    except Exception:
+        logger.exception("Funnel failed")
         return {"status": "error"}
 
 
@@ -210,8 +210,8 @@ async def get_cohort_analysis(
             ],
         }
 
-    except Exception as e:
-        logger.error(f"Cohorts failed: {e!s}")
+    except Exception:
+        logger.exception("Cohorts failed")
         return {"status": "error"}
 
 
@@ -248,6 +248,6 @@ async def get_revenue_forecast(
             "assumption": "12% MoM growth based on historical trend",
         }
 
-    except Exception as e:
-        logger.error(f"Forecast failed: {e!s}")
+    except Exception:
+        logger.exception("Forecast failed")
         return {"status": "error"}

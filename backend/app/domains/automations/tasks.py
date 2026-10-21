@@ -62,8 +62,8 @@ async def send_toggle_notification(
                         # Queue email task (non-blocking)
                         send_email.delay(to_email=email, subject=subject, body=body)
                     channels_sent.append("email")
-                except Exception as e:
-                    logger.error(f"Failed to send email notification: {e}")
+                except Exception:
+                    logger.exception("Failed to send email notification")
 
             # Webhook notification
             if rule.notify_via_webhook and rule.webhook_url:
@@ -87,8 +87,8 @@ async def send_toggle_notification(
                             headers=headers,
                         )
                         channels_sent.append("webhook")
-                except Exception as e:
-                    logger.error(f"Failed to send webhook notification: {e}")
+                except Exception:
+                    logger.exception("Failed to send webhook notification")
 
             # Log notification
             log = ToggleNotificationLog(
@@ -104,8 +104,8 @@ async def send_toggle_notification(
             db.add(log)
             await db.commit()
 
-    except Exception as e:
-        logger.error(f"Error sending toggle notification: {e}")
+    except Exception:
+        logger.exception("Error sending toggle notification")
 
 
 @shared_task(bind=True, max_retries=3)
@@ -189,7 +189,7 @@ async def _execute_schedules():
                             schedule.is_active = False
                             logger.info(f"Schedule {schedule.id} has no more occurrences, disabling")
                     except Exception as e:
-                        logger.error(f"Error parsing recurrence rule for schedule {schedule.id}: {e}")
+                        logger.exception(f"Error parsing recurrence rule for schedule {schedule.id}")
                         schedule.failed_count += 1
                         schedule.last_error = f"Recurrence parsing error: {e!s}"
                         failed += 1
@@ -214,7 +214,7 @@ async def _execute_schedules():
                 logger.info(f"Executed schedule {schedule.id}: {schedule.action} for toggle {schedule.toggle_id}")
 
             except Exception as e:
-                logger.error(f"Error executing schedule {schedule.id}: {e}")
+                logger.exception(f"Error executing schedule {schedule.id}")
                 schedule.failed_count += 1
                 schedule.last_error = str(e)
                 await db.commit()

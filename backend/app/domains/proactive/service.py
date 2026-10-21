@@ -164,7 +164,7 @@ class ProactiveService:
                 "text",
             )
         except Exception as e:
-            logger.exception(f"Failed to send outreach for opportunity {opportunity_id}: {e}")
+            logger.exception(f"Failed to send outreach for opportunity {opportunity_id}")
             return {"status": "error", "detail": str(e)}
 
         opp.status = "sent"

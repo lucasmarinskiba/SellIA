@@ -1214,6 +1214,7 @@ async def ingest_mercado_libre_webhook(
     try:
         payload = await request.json()
     except Exception:
+        logger.exception("ingest_mercado_libre_webhook: error inesperado")
         raise HTTPException(status_code=400, detail="Payload inválido")
 
     try:

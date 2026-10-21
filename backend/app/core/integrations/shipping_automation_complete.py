@@ -158,7 +158,7 @@ class DHLIntegration:
             }
 
         except Exception as e:
-            logger.error(f"DHL shipment creation failed: {e!s}")
+            logger.exception("DHL shipment creation failed")
             return {"status": "error", "error": str(e)}
 
     async def get_tracking(self, tracking_number: str) -> dict[str, Any]:
@@ -186,7 +186,7 @@ class DHLIntegration:
             }
 
         except Exception as e:
-            logger.error(f"DHL tracking failed: {e!s}")
+            logger.exception("DHL tracking failed")
             return {"status": "error", "error": str(e)}
 
 
@@ -289,7 +289,7 @@ class FedExIntegration:
             }
 
         except Exception as e:
-            logger.error(f"FedEx shipment creation failed: {e!s}")
+            logger.exception("FedEx shipment creation failed")
             return {"status": "error", "error": str(e)}
 
     async def get_tracking(self, tracking_number: str) -> dict[str, Any]:
@@ -319,7 +319,7 @@ class FedExIntegration:
             }
 
         except Exception as e:
-            logger.error(f"FedEx tracking failed: {e!s}")
+            logger.exception("FedEx tracking failed")
             return {"status": "error", "error": str(e)}
 
 
@@ -393,7 +393,7 @@ class ShippingAutomationComplete:
             return result
 
         except Exception as e:
-            logger.error(f"Failed to create shipping label: {e!s}")
+            logger.exception("Failed to create shipping label")
             return {"status": "error", "error": str(e)}
 
     async def _create_local_shipment(
@@ -468,7 +468,7 @@ class ShippingAutomationComplete:
             }
 
         except Exception as e:
-            logger.error(f"Failed to get tracking: {e!s}")
+            logger.exception("Failed to get tracking")
             return {"status": "error", "error": str(e)}
 
     async def update_tracking_status(
@@ -509,8 +509,8 @@ class ShippingAutomationComplete:
                     products=[],  # TODO: extraer productos
                     tracking_url=tracking_url,
                 )
-            except Exception as e:
-                logger.error(f"Failed to send shipment email: {e!s}")
+            except Exception:
+                logger.exception("Failed to send shipment email")
 
         # SMS
         if self.sms:
@@ -521,8 +521,8 @@ class ShippingAutomationComplete:
                     tracking_number=tracking_number,
                     tracking_url=tracking_url,
                 )
-            except Exception as e:
-                logger.error(f"Failed to send shipment SMS: {e!s}")
+            except Exception:
+                logger.exception("Failed to send shipment SMS")
 
     async def bulk_create_labels(
         self,
@@ -564,7 +564,7 @@ class ShippingAutomationComplete:
                     results["errors"].append({"order_id": order.get("id"), "error": result.get("error")})
 
             except Exception as e:
-                logger.error(f"Failed to create label for order {order.get('id')}: {e!s}")
+                logger.exception(f"Failed to create label for order {order.get('id')}")
                 results["failed"] += 1
                 results["errors"].append({"order_id": order.get("id"), "error": str(e)})
 

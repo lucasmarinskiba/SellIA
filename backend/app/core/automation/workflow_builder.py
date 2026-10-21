@@ -276,7 +276,7 @@ class WorkflowExecutor:
                 raise ValueError("Workflow has no steps")
 
         except Exception as e:
-            logger.error(f"Workflow execution failed: {e!s}")
+            logger.exception("Workflow execution failed")
             execution_result["status"] = "failed"
             execution_result["error"] = str(e)
             workflow.failure_count += 1

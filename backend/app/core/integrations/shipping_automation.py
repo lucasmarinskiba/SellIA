@@ -158,7 +158,7 @@ class ShippingAutomation:
                 return {"status": "error", "error": response.text}
 
         except Exception as e:
-            logger.error(f"DHL label generation failed: {e!s}")
+            logger.exception("DHL label generation failed")
             return {"status": "error", "error": str(e)}
 
     async def _generate_fedex_label(
@@ -246,7 +246,7 @@ class ShippingAutomation:
                 return {"status": "error", "error": response.text}
 
         except Exception as e:
-            logger.error(f"FedEx label generation failed: {e!s}")
+            logger.exception("FedEx label generation failed")
             return {"status": "error", "error": str(e)}
 
     # ========== TRACKING ==========
@@ -291,8 +291,8 @@ class ShippingAutomation:
             else:
                 return {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"DHL tracking failed: {e!s}")
+        except Exception:
+            logger.exception("DHL tracking failed")
             return {"status": "error"}
 
     async def _track_fedex(self, tracking_number: str) -> dict[str, Any]:
@@ -334,8 +334,8 @@ class ShippingAutomation:
             else:
                 return {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"FedEx tracking failed: {e!s}")
+        except Exception:
+            logger.exception("FedEx tracking failed")
             return {"status": "error"}
 
     async def close(self):

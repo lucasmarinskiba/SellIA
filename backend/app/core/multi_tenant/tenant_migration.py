@@ -127,6 +127,7 @@ class MigrationService:
                     "reason": e.message,
                 })
             except Exception as e:
+                logger.exception("migrate_bulk_users: error inesperado")
                 results["failed"] += 1
                 results["errors"].append({
                     "user_id": user_id,

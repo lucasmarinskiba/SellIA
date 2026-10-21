@@ -3,6 +3,7 @@
 Chequea si un toggle está enabled y dentro de límite antes de ejecutar endpoints.
 """
 
+import logging
 from collections.abc import Callable
 from uuid import UUID
 
@@ -11,6 +12,8 @@ from sqlalchemy import select
 
 from app.core.database import get_db
 from app.domains.automations.models import AutomationToggle
+
+logger = logging.getLogger(__name__)
 
 # Mapeo de rutas → toggle_key que requireren
 PROTECTED_ROUTES: dict[str, str] = {
@@ -62,7 +65,7 @@ def _extract_business_id(request: Request) -> UUID | None:
             # Better approach: use a Depends(get_business_id) in each endpoint
             pass
         except Exception:
-            pass
+            logger.exception("_extract_business_id: error inesperado")
 
     return None
 
@@ -141,6 +144,7 @@ async def toggle_enforcement_middleware(request: Request, call_next: Callable) -
                         toggle_name=toggle.display_name,
                     )
                 except Exception as e:
+                    logger.exception("toggle_enforcement_middleware: error inesperado")
                     print(f"[toggle_enforcement] Error sending notification: {e}")
 
         return response
@@ -149,5 +153,6 @@ async def toggle_enforcement_middleware(request: Request, call_next: Callable) -
         raise
     except Exception as e:
         # Log pero no bloquear
+        logger.exception("toggle_enforcement_middleware: error inesperado")
         print(f"[toggle_enforcement] Error: {e}")
         return await call_next(request)

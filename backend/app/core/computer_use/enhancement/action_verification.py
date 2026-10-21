@@ -175,7 +175,7 @@ class FormSubmissionVerifier:
             )
 
         except Exception as e:
-            logger.error(f"Form verification failed: {e!s}")
+            logger.exception("Form verification failed")
             return VerificationResult(
                 action_id=action_id,
                 action_type="form_submission",
@@ -205,7 +205,7 @@ class FormSubmissionVerifier:
                     if element:
                         return True
                 except Exception:
-                    pass
+                    logger.exception("_verify_success_message: error inesperado")
 
             # Si hay mensaje específico esperado
             if expected_message:
@@ -218,7 +218,7 @@ class FormSubmissionVerifier:
             return False
 
         except Exception as e:
-            logger.debug(f"Success message verification failed: {e!s}")
+            logger.debug(f"Success message verification failed: {e!s}", exc_info=True)
             return False
 
     async def _verify_db_insert(
@@ -247,7 +247,7 @@ class FormSubmissionVerifier:
             return None
 
         except Exception as e:
-            logger.warning(f"DB verification failed: {e!s}")
+            logger.warning(f"DB verification failed: {e!s}", exc_info=True)
             return None
 
 
@@ -308,7 +308,7 @@ class FileUploadVerifier:
             )
 
         except Exception as e:
-            logger.error(f"File upload verification failed: {e!s}")
+            logger.exception("File upload verification failed")
             return VerificationResult(
                 action_id=action_id,
                 action_type="file_upload",
@@ -330,6 +330,7 @@ class FileUploadVerifier:
             return bool(element)
 
         except Exception:
+            logger.exception("_verify_file_in_ui: error inesperado")
             return False
 
 
@@ -405,7 +406,7 @@ class PaymentVerifier:
             )
 
         except Exception as e:
-            logger.error(f"Payment verification failed: {e!s}")
+            logger.exception("Payment verification failed")
             return VerificationResult(
                 action_id=action_id,
                 action_type="payment",
@@ -439,7 +440,7 @@ class PaymentVerifier:
             return None
 
         except Exception as e:
-            logger.debug(f"Payment gateway verification failed: {e!s}")
+            logger.debug(f"Payment gateway verification failed: {e!s}", exc_info=True)
             return None
 
     async def _verify_payment_in_ui(self) -> dict[str, Any] | None:
@@ -461,6 +462,7 @@ class PaymentVerifier:
             return None
 
         except Exception:
+            logger.exception("_verify_payment_in_ui: error inesperado")
             return None
 
 
@@ -522,7 +524,7 @@ class MessageDeliveryVerifier:
             )
 
         except Exception as e:
-            logger.error(f"Message verification failed: {e!s}")
+            logger.exception("Message verification failed")
             return VerificationResult(
                 action_id=action_id,
                 action_type="message_send",
@@ -552,11 +554,12 @@ class MessageDeliveryVerifier:
                     if element:
                         return True
                 except Exception:
-                    pass
+                    logger.exception("_find_message_in_conversation: error inesperado")
 
             return False
 
         except Exception:
+            logger.exception("_find_message_in_conversation: error inesperado")
             return False
 
 
@@ -627,7 +630,7 @@ class NavigationVerifier:
             )
 
         except Exception as e:
-            logger.error(f"Navigation verification failed: {e!s}")
+            logger.exception("Navigation verification failed")
             return VerificationResult(
                 action_id=action_id,
                 action_type="navigation",

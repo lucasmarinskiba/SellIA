@@ -1,5 +1,6 @@
 """Phase 33 Multi-Platform Seller API (12 endpoints)."""
 
+import logging
 from datetime import timedelta
 from typing import Annotated
 
@@ -18,6 +19,8 @@ from app.domains.enterprise.platform_integration import (
     Product,
     SEOOptimizationEngine,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/platforms", tags=["platforms"])
 
@@ -127,6 +130,7 @@ def create_multiplatform_product(
             created_at=utc_now().isoformat(),
         )
     except Exception as e:
+        logger.exception("create_multiplatform_product: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -169,6 +173,7 @@ def sync_inventory(
             sync_results=sync_results,
         )
     except Exception as e:
+        logger.exception("sync_inventory: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -238,6 +243,7 @@ def get_pricing_recommendation(
             reasoning=recommendation.reasoning,
         )
     except Exception as e:
+        logger.exception("get_pricing_recommendation: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -256,6 +262,7 @@ def reprice_all_products(
         results = pricing_engine.reprice_all_products(platform_enum, frequency="hourly")
         return results
     except Exception as e:
+        logger.exception("reprice_all_products: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -300,6 +307,7 @@ def get_foom_triggers(
             call_to_action=triggers.get("call_to_action", ""),
         )
     except Exception as e:
+        logger.exception("get_foom_triggers: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -319,6 +327,7 @@ def research_keywords(
         keywords = seo_engine.research_keywords(category, platform_enum)
         return {"category": category, "platform": platform, "keywords": keywords}
     except Exception as e:
+        logger.exception("research_keywords: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -355,6 +364,7 @@ def optimize_listing(
 
         return {"product_id": product_id, "platform": platform, "optimized_listing": optimized}
     except Exception as e:
+        logger.exception("optimize_listing: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -374,6 +384,7 @@ def track_rankings(
         rankings = seo_engine.track_rankings(product_id, platform_enum)
         return rankings
     except Exception as e:
+        logger.exception("track_rankings: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -594,4 +605,5 @@ def get_platform_performance(
                 },
             }
     except Exception as e:
+        logger.exception("get_platform_performance: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

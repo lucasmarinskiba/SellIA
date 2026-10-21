@@ -1,6 +1,7 @@
 """FOOM Monetization API - Convert free users to paid + Enable user FOOM selling."""
 
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -14,6 +15,8 @@ from app.domains.enterprise.foom_monetization import (
     PlatformMonetizationFOOM,
     UserFOOMEnablement,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/foom-monetization", tags=["foom-monetization"])
 
@@ -106,6 +109,7 @@ def get_upgrade_trigger(
             expected_conversion=trigger.expected_conversion,
         )
     except Exception as e:
+        logger.exception("get_upgrade_trigger: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -137,6 +141,7 @@ def generate_user_foom_strategy(
             social_posts=strategy["social_posts"],
         )
     except Exception as e:
+        logger.exception("generate_user_foom_strategy: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -164,6 +169,7 @@ def optimize_foom_strategy(
             revenue_lift=optimization["expected_revenue_lift"],
         )
     except Exception as e:
+        logger.exception("optimize_foom_strategy: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -188,4 +194,5 @@ def get_referral_foom(
             "lifetime_value": ltv_with_network,
         }
     except Exception as e:
+        logger.exception("get_referral_foom: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

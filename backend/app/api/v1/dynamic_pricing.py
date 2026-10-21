@@ -1,5 +1,6 @@
 """Dynamic pricing API endpoints."""
 
+import logging
 from datetime import UTC
 from decimal import Decimal
 from typing import Annotated
@@ -18,6 +19,8 @@ from app.domains.pricing.pricing_service import (
     RevenueAnalyticsService,
 )
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1", tags=["pricing"])
 
@@ -76,6 +79,7 @@ async def calculate_price(
         )
         return result
     except Exception as e:
+        logger.exception("calculate_price: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -99,6 +103,7 @@ async def log_pricing_transaction(
         )
         return result
     except Exception as e:
+        logger.exception("log_pricing_transaction: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -112,6 +117,7 @@ async def get_pricing_tier(
         result = DynamicPricingService.get_location_pricing_tier(location_id, db)
         return result
     except Exception as e:
+        logger.exception("get_pricing_tier: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -134,6 +140,7 @@ async def update_pricing_tier(
         )
         return result
     except Exception as e:
+        logger.exception("update_pricing_tier: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -158,6 +165,7 @@ async def create_discount_code(
         )
         return result
     except Exception as e:
+        logger.exception("create_discount_code: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -172,6 +180,7 @@ async def validate_discount(
         result = DiscountCodeService.validate_discount_code(code, location_id, db)
         return result
     except Exception as e:
+        logger.exception("validate_discount: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -196,6 +205,7 @@ async def create_ab_test(
         )
         return result
     except Exception as e:
+        logger.exception("create_ab_test: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -209,6 +219,7 @@ async def get_ab_test_results(
         result = ABTestService.get_test_results(test_id, db)
         return result
     except Exception as e:
+        logger.exception("get_ab_test_results: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -228,6 +239,7 @@ async def get_revenue_impact(
         )
         return result
     except Exception as e:
+        logger.exception("get_revenue_impact: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -279,6 +291,7 @@ async def get_pricing_analytics(
             "daily_breakdown": impact_data
         }
     except Exception as e:
+        logger.exception("get_pricing_analytics: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 

@@ -92,7 +92,7 @@ async def list_products(category: str | None = None, tag: str | None = None, lim
                 "products": products_list
             }
     except Exception as e:
-        logger.error(f"Error listando productos: {e!s}")
+        logger.exception("Error listando productos")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -123,7 +123,7 @@ async def get_product(product_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error obteniendo producto: {e!s}")
+        logger.exception("Error obteniendo producto")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -163,7 +163,7 @@ async def create_product(product: Product):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creando producto: {e!s}")
+        logger.exception("Error creando producto")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -236,7 +236,7 @@ async def checkout(order_req: OrderRequest, user_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error en checkout: {e!s}")
+        logger.exception("Error en checkout")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -263,7 +263,7 @@ async def get_orders(user_id: str):
                 ]
             }
     except Exception as e:
-        logger.error(f"Error obteniendo órdenes: {e!s}")
+        logger.exception("Error obteniendo órdenes")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -292,5 +292,5 @@ async def get_order_details(order_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error obteniendo orden: {e!s}")
+        logger.exception("Error obteniendo orden")
         raise HTTPException(status_code=500, detail=str(e))

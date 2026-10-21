@@ -72,7 +72,7 @@ class ComputerUseOrchestrator:
                     logger.warning(f"Action {i+1} failed: {result.get('error')}")
 
             except Exception as e:
-                logger.error(f"Action {i+1} exception: {e!s}")
+                logger.exception(f"Action {i+1} exception")
                 self.current_workflow["failed"] += 1
                 self.current_workflow["results"].append({
                     "action": i + 1,

@@ -155,8 +155,8 @@ class StructuredDataExtractor:
             logger.info(f"Extracted {len(rows)} rows from table")
             return rows
 
-        except Exception as e:
-            logger.error(f"Table extraction failed: {e!s}")
+        except Exception:
+            logger.exception("Table extraction failed")
             return []
 
     async def extract_list(
@@ -186,8 +186,8 @@ class StructuredDataExtractor:
             logger.info(f"Extracted {len(items)} items from list")
             return items
 
-        except Exception as e:
-            logger.error(f"List extraction failed: {e!s}")
+        except Exception:
+            logger.exception("List extraction failed")
             return []
 
     async def extract_grid(
@@ -213,8 +213,8 @@ class StructuredDataExtractor:
             logger.info(f"Extracted {len(items)} cells from grid")
             return items
 
-        except Exception as e:
-            logger.error(f"Grid extraction failed: {e!s}")
+        except Exception:
+            logger.exception("Grid extraction failed")
             return []
 
 
@@ -271,8 +271,8 @@ class SemiStructuredDataExtractor:
             logger.info(f"Extracted {len(properties)} properties")
             return properties
 
-        except Exception as e:
-            logger.error(f"Property list extraction failed: {e!s}")
+        except Exception:
+            logger.exception("Property list extraction failed")
             return {}
 
     async def extract_key_value_pairs(
@@ -292,8 +292,8 @@ class SemiStructuredDataExtractor:
 
             return pairs
 
-        except Exception as e:
-            logger.error(f"Key-value extraction failed: {e!s}")
+        except Exception:
+            logger.exception("Key-value extraction failed")
             return {}
 
 
@@ -327,8 +327,8 @@ class UnstructuredDataExtractor:
 
             return text
 
-        except Exception as e:
-            logger.error(f"Text extraction failed: {e!s}")
+        except Exception:
+            logger.exception("Text extraction failed")
             return ""
 
     async def extract_from_image(
@@ -371,12 +371,12 @@ class UnstructuredDataExtractor:
                         # Ejecutar OCR
                         result["text"] = await self.ocr.extract_text(image_data)
                 except Exception as e:
-                    logger.debug(f"OCR failed: {e!s}")
+                    logger.debug(f"OCR failed: {e!s}", exc_info=True)
 
             return result
 
-        except Exception as e:
-            logger.error(f"Image extraction failed: {e!s}")
+        except Exception:
+            logger.exception("Image extraction failed")
             return {}
 
 
@@ -401,8 +401,8 @@ class MetadataExtractor:
                 "author": await self._extract_author(),
                 "description": await self._extract_description(),
             }
-        except Exception as e:
-            logger.error(f"Metadata extraction failed: {e!s}")
+        except Exception:
+            logger.exception("Metadata extraction failed")
             return {}
 
     async def _extract_language(self) -> str | None:
@@ -412,6 +412,7 @@ class MetadataExtractor:
             match = re.search(r'lang=["\']([^"\']+)["\']', html)
             return match.group(1) if match else None
         except Exception:
+            logger.exception("_extract_language: error inesperado")
             return None
 
     async def _extract_author(self) -> str | None:
@@ -420,6 +421,7 @@ class MetadataExtractor:
             # Buscar meta author
             pass
         except Exception:
+            logger.exception("_extract_author: error inesperado")
             return None
 
     async def _extract_description(self) -> str | None:
@@ -428,6 +430,7 @@ class MetadataExtractor:
             # Buscar meta description
             pass
         except Exception:
+            logger.exception("_extract_description: error inesperado")
             return None
 
     async def extract_element_metadata(self, selector: str) -> dict[str, Any]:
@@ -444,8 +447,8 @@ class MetadataExtractor:
                 "position": await self.computer_use.get_element_position(element),
                 "size": await self.computer_use.get_element_size(element),
             }
-        except Exception as e:
-            logger.error(f"Element metadata extraction failed: {e!s}")
+        except Exception:
+            logger.exception("Element metadata extraction failed")
             return {}
 
     async def _extract_data_attributes(self, element: Any) -> dict[str, str]:
@@ -454,6 +457,7 @@ class MetadataExtractor:
             # En producción, parsear atributos data-*
             return {}
         except Exception:
+            logger.exception("_extract_data_attributes: error inesperado")
             return {}
 
 
@@ -509,6 +513,7 @@ class DataValidator:
                     if not is_valid:
                         errors[rule.field_name] = ["Custom validation failed"]
                 except Exception as e:
+                    logger.exception("validate: error inesperado")
                     errors[rule.field_name] = [f"Validation error: {e!s}"]
 
         return errors
@@ -626,7 +631,7 @@ class UniversalDataExtractor:
 
                 except Exception as e:
                     errors.append(f"{rule.field_name}: {e!s}")
-                    logger.warning(f"Extraction error for {rule.field_name}: {e!s}")
+                    logger.warning(f"Extraction error for {rule.field_name}: {e!s}", exc_info=True)
 
             # Validar
             validation_errors = await self.validator.validate(extracted_data, rules)
@@ -667,7 +672,7 @@ class UniversalDataExtractor:
             if element:
                 return await self.computer_use.get_element_text(element)
         except Exception:
-            pass
+            logger.exception("_extract_by_vision: error inesperado")
         return None
 
 

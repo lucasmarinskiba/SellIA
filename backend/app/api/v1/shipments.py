@@ -1,5 +1,6 @@
 """Shipments API Router"""
 
+import logging
 from typing import Annotated
 from uuid import UUID
 
@@ -22,6 +23,8 @@ from app.domains.shipments.schemas import (
     ShipmentUpdate,
 )
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -139,6 +142,7 @@ async def create_shipment(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception:
+        logger.exception("create_shipment: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).exception("Error creating shipment")
         raise HTTPException(status_code=500, detail="Internal server error")

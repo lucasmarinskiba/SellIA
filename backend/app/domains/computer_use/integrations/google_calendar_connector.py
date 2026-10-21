@@ -89,8 +89,8 @@ class GoogleCalendarConnector:
 
             return True, credentials
 
-        except Exception as e:
-            logger.error(f"Failed to get credentials: {e}")
+        except Exception:
+            logger.exception("Failed to get credentials")
             return False, None
 
     async def get_available_slots(
@@ -158,8 +158,8 @@ class GoogleCalendarConnector:
         except GoogleAPIError as e:
             logger.error(f"Google Calendar API error: {e}")
             return []
-        except Exception as e:
-            logger.error(f"Error getting available slots: {e}")
+        except Exception:
+            logger.exception("Error getting available slots")
             return []
 
     async def create_event(
@@ -220,8 +220,8 @@ class GoogleCalendarConnector:
         except GoogleAPIError as e:
             logger.error(f"Google Calendar API error: {e}")
             return False, None
-        except Exception as e:
-            logger.error(f"Error creating event: {e}")
+        except Exception:
+            logger.exception("Error creating event")
             return False, None
 
     async def delete_event(
@@ -243,8 +243,8 @@ class GoogleCalendarConnector:
         except GoogleAPIError as e:
             logger.error(f"Google Calendar API error: {e}")
             return False
-        except Exception as e:
-            logger.error(f"Error deleting event: {e}")
+        except Exception:
+            logger.exception("Error deleting event")
             return False
 
 

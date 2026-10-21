@@ -120,7 +120,7 @@ async def trigger_no_engagement_email(
         }
 
     except Exception as e:
-        logger.error(f"No-engagement trigger failed: {e}")
+        logger.exception("No-engagement trigger failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{lead_id}/workflow-executions")
@@ -186,7 +186,7 @@ async def simulate_email_opened(
             "execution_id": execution.id
         }
     except Exception as e:
-        logger.error(f"Simulate open failed: {e}")
+        logger.exception("Simulate open failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/{lead_id}/simulate-click")
@@ -219,7 +219,7 @@ async def simulate_email_clicked(
             "url": url
         }
     except Exception as e:
-        logger.error(f"Simulate click failed: {e}")
+        logger.exception("Simulate click failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/{lead_id}/simulate-bounce")
@@ -241,7 +241,7 @@ async def simulate_email_bounced(
             "reason": reason
         }
     except Exception as e:
-        logger.error(f"Simulate bounce failed: {e}")
+        logger.exception("Simulate bounce failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Import for datetime

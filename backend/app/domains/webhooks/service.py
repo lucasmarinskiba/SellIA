@@ -5,6 +5,7 @@ Webhook Service
 import hashlib
 import hmac
 import json
+import logging
 import uuid
 from datetime import UTC, datetime
 
@@ -13,6 +14,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.webhooks.models import WebhookDelivery, WebhookSubscription
+
+logger = logging.getLogger(__name__)
 
 
 async def create_subscription(
@@ -124,6 +127,7 @@ async def deliver_webhook(
             success = 200 <= response.status_code < 300
             return success, response.status_code, response.text
         except Exception as e:
+            logger.exception("deliver_webhook: error inesperado")
             return False, None, str(e)
 
 
@@ -198,6 +202,7 @@ async def fire_business_event(db: AsyncSession, business_id: uuid.UUID, event_ty
             return 0
         return await trigger_event(db, business.user_id, event_type, payload)
     except Exception:
+        logger.exception("fire_business_event: error inesperado")
         return 0
 
 

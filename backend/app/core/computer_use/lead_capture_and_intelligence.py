@@ -187,8 +187,8 @@ class WebFormFiller:
             logger.info(f"Form submitted successfully: {form_name}")
             return True
 
-        except Exception as e:
-            logger.error(f"Error filling form: {e!s}")
+        except Exception:
+            logger.exception("Error filling form")
             self.form_submissions.append(WebFormData(
                 form_url=form_url,
                 form_name=form_name,
@@ -307,13 +307,13 @@ class DirectoryScraper:
                     await asyncio.sleep(1)
 
                 except Exception as e:
-                    logger.warning(f"Error scraping business {i+1}: {e!s}")
+                    logger.warning(f"Error scraping business {i+1}: {e!s}", exc_info=True)
 
             logger.info(f"Scraped {len(businesses)} businesses from Google Maps")
             return businesses
 
-        except Exception as e:
-            logger.error(f"Error scraping Google Maps: {e!s}")
+        except Exception:
+            logger.exception("Error scraping Google Maps")
             return []
 
     def _parse_business_info(self, screenshot: dict[str, Any]) -> dict[str, Any] | None:
@@ -343,8 +343,8 @@ class DirectoryScraper:
 
             return []
 
-        except Exception as e:
-            logger.error(f"Error scraping Yellow Pages: {e!s}")
+        except Exception:
+            logger.exception("Error scraping Yellow Pages")
             return []
 
     async def scrape_linkedin_search(
@@ -395,13 +395,13 @@ class DirectoryScraper:
                     await asyncio.sleep(2)
 
                 except Exception as e:
-                    logger.warning(f"Error scraping profile {i+1}: {e!s}")
+                    logger.warning(f"Error scraping profile {i+1}: {e!s}", exc_info=True)
 
             logger.info(f"Scraped {len(profiles)} LinkedIn profiles")
             return profiles
 
-        except Exception as e:
-            logger.error(f"Error scraping LinkedIn: {e!s}")
+        except Exception:
+            logger.exception("Error scraping LinkedIn")
             return []
 
     def _parse_linkedin_profile(self, screenshot: dict[str, Any]) -> dict[str, Any] | None:
@@ -554,8 +554,8 @@ class LeadEnricher:
             logger.info(f"Lead enriched. Score: {lead.score.overall_score:.0f}")
             return lead
 
-        except Exception as e:
-            logger.error(f"Error enriching lead: {e!s}")
+        except Exception:
+            logger.exception("Error enriching lead")
             return EnrichedLead(email=email or "")
 
     async def _find_email_hunter(self, name: str, company: str) -> str | None:
@@ -576,7 +576,7 @@ class LeadEnricher:
 
             return None
         except Exception as e:
-            logger.warning(f"Error finding email: {e!s}")
+            logger.warning(f"Error finding email: {e!s}", exc_info=True)
             return None
 
     async def _verify_email(self, email: str) -> bool:
@@ -590,7 +590,7 @@ class LeadEnricher:
             return True
 
         except Exception as e:
-            logger.warning(f"Error verifying email: {e!s}")
+            logger.warning(f"Error verifying email: {e!s}", exc_info=True)
             return False
 
     async def _get_company_data_clearbit(self, company: str) -> dict[str, Any] | None:
@@ -606,7 +606,7 @@ class LeadEnricher:
 
             return None
         except Exception as e:
-            logger.warning(f"Error getting company data: {e!s}")
+            logger.warning(f"Error getting company data: {e!s}", exc_info=True)
             return None
 
     async def _get_person_data_clearbit(self, email: str) -> dict[str, Any] | None:
@@ -622,7 +622,7 @@ class LeadEnricher:
 
             return None
         except Exception as e:
-            logger.warning(f"Error getting person data: {e!s}")
+            logger.warning(f"Error getting person data: {e!s}", exc_info=True)
             return None
 
     def _calculate_lead_score(self, lead: EnrichedLead) -> LeadScore:

@@ -12,6 +12,7 @@ both showed a logged-in user other people's numbers as if they were their own
 and would have exposed real accounts' leads and AI reasoning on a public page.
 """
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -22,6 +23,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.db.database import AsyncSessionLocal as LeadsSessionLocal
 from app.db.models import Lead as LeadModel
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["brain-live"])
 
@@ -72,6 +75,7 @@ async def _query_audit_logs(**filters):
             result = await db.execute(query)
             return result.scalars().all(), None
     except Exception as e:
+        logger.exception("_query_audit_logs: error inesperado")
         return [], str(e)
 
 
@@ -154,7 +158,7 @@ async def _real_user_notifications(user, limit: int) -> list[dict]:
                     "read": False,
                 })
         except Exception:
-            pass
+            logger.exception("_real_user_notifications: error inesperado")
 
         # 2) Real inbound customer messages across every connected channel
         if business_ids:
@@ -181,7 +185,7 @@ async def _real_user_notifications(user, limit: int) -> list[dict]:
                         "read": False,
                     })
             except Exception:
-                pass
+                logger.exception("_real_user_notifications: error inesperado")
 
             # 3) Real deals won
             try:
@@ -204,7 +208,7 @@ async def _real_user_notifications(user, limit: int) -> list[dict]:
                         "read": False,
                     })
             except Exception:
-                pass
+                logger.exception("_real_user_notifications: error inesperado")
 
     # 4) Real pending Computer Use approvals (already user-scoped)
     try:
@@ -224,14 +228,14 @@ async def _real_user_notifications(user, limit: int) -> list[dict]:
                 "read": False,
             })
     except Exception:
-        pass
+        logger.exception("_real_user_notifications: error inesperado")
 
     # 5) Real activity on this account's own leads (they carry an owner now,
     #    so a user's own pipeline movement finally reaches their bell).
     try:
         notifications.extend(await _lead_notifications(limit, user))
     except Exception:
-        pass
+        logger.exception("_real_user_notifications: error inesperado")
 
     notifications.sort(key=lambda n: n["ts"], reverse=True)
     return notifications[:limit]
@@ -517,6 +521,7 @@ async def approve_action(log_id: str):
     except HTTPException:
         raise
     except Exception as e:
+        logger.exception("approve_action: error inesperado")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -538,6 +543,7 @@ async def reject_action(log_id: str, decision: ApprovalDecision):
     except HTTPException:
         raise
     except Exception as e:
+        logger.exception("reject_action: error inesperado")
         raise HTTPException(status_code=500, detail=str(e))
 
 

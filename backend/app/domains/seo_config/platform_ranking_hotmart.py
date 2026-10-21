@@ -121,7 +121,7 @@ class HotmartRankingConnector(PlatformRankingConnector):
                 await self._get_access_token(client)
                 return True
         except Exception as e:
-            logger.error(f"Hotmart ranking credentials validation failed: {str(e)[:100]}")
+            logger.exception(f"Hotmart ranking credentials validation failed: {str(e)[:100]}")
             return False
 
     async def get_ranking_signals(self, external_id: str) -> list[RankingSignal]:
@@ -140,7 +140,7 @@ class HotmartRankingConnector(PlatformRankingConnector):
                 token = await self._get_access_token(client)
                 counts = await self._count_all_statuses(client, token, product_id, start_ms, end_ms)
         except Exception as e:
-            logger.warning(f"Hotmart ranking: sales fetch failed: {str(e)[:100]}")
+            logger.warning(f"Hotmart ranking: sales fetch failed: {str(e)[:100]}", exc_info=True)
             return self._unavailable(f"Sales API no disponible: {str(e)[:100]}")
 
         if counts is None:

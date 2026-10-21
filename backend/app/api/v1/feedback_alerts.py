@@ -1,5 +1,6 @@
 """Real-time feedback alerts API endpoints."""
 
+import logging
 from typing import Annotated
 from uuid import UUID
 
@@ -14,6 +15,8 @@ from app.domains.feedback.feedback_alert_service import (
     NPSDashboardService,
 )
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1", tags=["feedback-alerts"])
 
@@ -57,6 +60,7 @@ async def evaluate_feedback(
         )
         return result
     except Exception as e:
+        logger.exception("evaluate_feedback: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -75,6 +79,7 @@ async def acknowledge_alert(
         )
         return result
     except Exception as e:
+        logger.exception("acknowledge_alert: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -96,6 +101,7 @@ async def escalate_alert(
         )
         return result
     except Exception as e:
+        logger.exception("escalate_alert: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -115,6 +121,7 @@ async def resolve_alert(
         )
         return result
     except Exception as e:
+        logger.exception("resolve_alert: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -135,6 +142,7 @@ async def get_location_alerts(
         )
         return result
     except Exception as e:
+        logger.exception("get_location_alerts: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -153,6 +161,7 @@ async def update_nps_metrics(
         )
         return result
     except Exception as e:
+        logger.exception("update_nps_metrics: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -171,6 +180,7 @@ async def get_nps_dashboard(
         )
         return result
     except Exception as e:
+        logger.exception("get_nps_dashboard: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -190,6 +200,7 @@ async def calculate_sentiment_trend(
         )
         return result
     except Exception as e:
+        logger.exception("calculate_sentiment_trend: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -228,4 +239,5 @@ async def get_staff_assigned_alerts(
             "alerts": alert_list
         }
     except Exception as e:
+        logger.exception("get_staff_assigned_alerts: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

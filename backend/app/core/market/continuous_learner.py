@@ -79,7 +79,7 @@ class ContinuousLearner:
                 "version": f"1.0.{len(new_agents)}",
             }
         except Exception as e:
-            logger.error(f"Error checking Real Estate updates: {e}")
+            logger.exception("Error checking Real Estate updates")
             return {"status": "error", "error": str(e)}
 
     def _check_comercial_updates(self) -> dict[str, Any]:
@@ -123,7 +123,7 @@ class ContinuousLearner:
                 "version": f"1.0.{len(new_agents)}",
             }
         except Exception as e:
-            logger.error(f"Error checking Commercial Advisor updates: {e}")
+            logger.exception("Error checking Commercial Advisor updates")
             return {"status": "error", "error": str(e)}
 
     def sync_from_external_systems(self) -> dict[str, Any]:
@@ -145,6 +145,7 @@ class ContinuousLearner:
                 )
                 logger.info("Real Estate agents synced")
             except Exception as e:
+                logger.exception("sync_from_external_systems: error inesperado")
                 sync_result["errors"].append(f"Real Estate sync failed: {e}")
 
         if updates["comercial"]["status"] == "ok" and updates["comercial"]["updated"]:
@@ -155,6 +156,7 @@ class ContinuousLearner:
                 )
                 logger.info("Commercial Advisor agents synced")
             except Exception as e:
+                logger.exception("sync_from_external_systems: error inesperado")
                 sync_result["errors"].append(f"Commercial Advisor sync failed: {e}")
 
         return sync_result
@@ -165,8 +167,8 @@ class ContinuousLearner:
             try:
                 with open(self.version_file, "r") as f:
                     return json.load(f)
-            except Exception as e:
-                logger.error(f"Error loading versions: {e}")
+            except Exception:
+                logger.exception("Error loading versions")
         return {}
 
     def _save_versions(self) -> None:
@@ -175,8 +177,8 @@ class ContinuousLearner:
             os.makedirs(os.path.dirname(self.version_file), exist_ok=True)
             with open(self.version_file, "w") as f:
                 json.dump(self.versions, f, indent=2)
-        except Exception as e:
-            logger.error(f"Error saving versions: {e}")
+        except Exception:
+            logger.exception("Error saving versions")
 
     def rollback_to_version(self, system: str, version: str) -> bool:
         """Rollback to previous version."""
@@ -189,8 +191,8 @@ class ContinuousLearner:
             )
             logger.info(f"Rolled back {system} to {version}")
             return True
-        except Exception as e:
-            logger.error(f"Rollback failed: {e}")
+        except Exception:
+            logger.exception("Rollback failed")
             return False
 
     def get_learning_status(self) -> dict[str, Any]:

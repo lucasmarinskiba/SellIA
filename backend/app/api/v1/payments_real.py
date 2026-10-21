@@ -100,7 +100,7 @@ async def create_checkout(
         }
 
     except Exception as e:
-        logger.error(f"Error creating checkout: {e!s}")
+        logger.exception("Error creating checkout")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -160,7 +160,7 @@ async def stripe_webhook(
         return {"status": "webhook_processed"}
 
     except Exception as e:
-        logger.error(f"Error processing webhook: {e!s}")
+        logger.exception("Error processing webhook")
         raise HTTPException(status_code=500, detail=str(e))
 
 

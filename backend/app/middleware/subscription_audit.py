@@ -60,7 +60,7 @@ class SubscriptionAuditMiddleware(BaseHTTPMiddleware):
                             success=response.status_code < 400,
                         )
             except Exception as e:
-                logger.warning(f"Subscription audit log failed: {e}")
+                logger.warning(f"Subscription audit log failed: {e}", exc_info=True)
 
         return response
 

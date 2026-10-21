@@ -423,7 +423,7 @@ def create_app() -> FastAPI:
         try:
             redis_client = redis.asyncio.from_url("redis://localhost:6379")
         except Exception as e:
-            logger.warning(f"Redis unavailable, using local cache: {e}")
+            logger.warning(f"Redis unavailable, using local cache: {e}", exc_info=True)
             redis_client = None
 
         app.state.performance = setup_performance_stack(app, redis_client)

@@ -105,7 +105,7 @@ async def _generate_copy_with_llm(
             content = content.split("```")[1].split("```")[0].strip()
         return json.loads(content)
     except Exception as e:
-        logger.warning(f"Failed to parse landing copy LLM output: {e}")
+        logger.warning(f"Failed to parse landing copy LLM output: {e}", exc_info=True)
         return {
             "headline": "Bienvenido",
             "subheadline": "Descubre nuestra solución",
@@ -308,7 +308,7 @@ async def generate_landing_page(
         await db.refresh(job)
 
     except Exception as e:
-        logger.error(f"Landing page generation failed for job {job.id}: {e}")
+        logger.exception(f"Landing page generation failed for job {job.id}")
         job.status = "failed"
         job.generated_code = {"error": str(e)}
         await db.commit()

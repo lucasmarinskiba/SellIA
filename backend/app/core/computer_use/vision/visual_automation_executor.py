@@ -139,7 +139,7 @@ class VisualAutomationExecutor:
             return result
 
         except Exception as e:
-            logger.error(f"Action execution failed: {e}")
+            logger.exception("Action execution failed")
             return {
                 "success": False,
                 "action": action_description,
@@ -251,7 +251,7 @@ class VisualAutomationExecutor:
                 await asyncio.sleep(0.2)
 
             except Exception as e:
-                logger.error(f"Error filling {field_label}: {e}")
+                logger.exception(f"Error filling {field_label}")
                 results["failed_fields"].append(field_label)
                 results["errors"].append(str(e))
 
@@ -515,7 +515,7 @@ class VisualAutomationExecutor:
                 }
 
         except Exception as e:
-            logger.error(f"Action execution error: {e}")
+            logger.exception("Action execution error")
             return {
                 "success": False,
                 "error": str(e),

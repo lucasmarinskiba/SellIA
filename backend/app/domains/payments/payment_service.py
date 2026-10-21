@@ -255,8 +255,8 @@ class PaymentService:
         # else writes to that table, so it stays at zero forever otherwise.
         try:
             await PaymentService._update_payment_metrics(transaction.business_id, db)
-        except Exception as e:
-            logger.error(f"PaymentMetrics update failed for transaction {transaction.id}: {e}")
+        except Exception:
+            logger.exception(f"PaymentMetrics update failed for transaction {transaction.id}")
 
         # Sale confirmed on a bot-originated conversation → close the loop:
         # tag the subscriber (so the business's own chat flow can branch on
@@ -266,8 +266,8 @@ class PaymentService:
         if transaction.status == TransactionStatus.APPROVED and transaction.conversation_id:
             try:
                 await PaymentService._notify_purchase_confirmed(transaction, db)
-            except Exception as e:
-                logger.error(f"Post-purchase notification failed for transaction {transaction.id}: {e}")
+            except Exception:
+                logger.exception(f"Post-purchase notification failed for transaction {transaction.id}")
 
         return {
             "status": "processed",

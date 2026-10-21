@@ -102,7 +102,7 @@ class UGCCollector:
                 content_type="text",
             )
         except Exception as e:
-            logger.error(f"Failed to send UGC request: {e}")
+            logger.exception("Failed to send UGC request")
             return {"status": "error", "reason": str(e)}
 
         ugc_request.status = UgcRequestStatus.SENT
@@ -159,8 +159,8 @@ Ejemplo para lifestyle photo:
                 max_tokens=500,
                 temperature=0.75,
             ) or "¡Hola! Me encantaría ver tu experiencia con nuestro producto. ¿Podrías compartir una foto? Te lo agradezco mucho."
-        except Exception as e:
-            logger.error(f"Failed to generate UGC request: {e}")
+        except Exception:
+            logger.exception("Failed to generate UGC request")
             return "¡Hola! Me encantaría ver tu experiencia con nuestro producto. ¿Podrías compartir una foto? Te lo agradezco mucho."
 
     # ========== Collection ==========
@@ -249,8 +249,8 @@ Responde en JSON:
             )
             import json
             campaign_data = json.loads(response or "{}")
-        except Exception as e:
-            logger.error(f"Failed to generate UGC campaign: {e}")
+        except Exception:
+            logger.exception("Failed to generate UGC campaign")
             campaign_data = {
                 "campaign_name": f"Desafío {theme}",
                 "hashtag": f"#{theme.replace(' ', '')}",

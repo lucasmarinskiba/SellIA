@@ -13,11 +13,14 @@ connection setup.
 Docs: https://developer.etsy.com/documentation/reference
 """
 
+import logging
 from typing import Any
 
 from app.domains.channels.connectors.base import BaseChannelConnector
 from app.domains.channels.models import ChannelPlatform
 from app.domains.channels.schemas import WebhookPayload
+
+logger = logging.getLogger(__name__)
 
 _RECEIPT_STATUS_LABELS = {
     "paid": "pagado",
@@ -107,4 +110,5 @@ class EtsyConnector(BaseChannelConnector):
                 response = await client.get(url, headers=headers, timeout=10)
                 return response.status_code == 200
         except Exception:
+            logger.exception("validate_credentials: error inesperado")
             return False

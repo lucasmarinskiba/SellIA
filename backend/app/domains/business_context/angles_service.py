@@ -114,7 +114,7 @@ async def generate_communication_angles(db: AsyncSession, ctx: BusinessContext) 
         try:
             result = _parse_response(raw)
         except Exception as e:
-            logger.warning(f"Failed to parse communication angles JSON: {e}")
+            logger.warning(f"Failed to parse communication angles JSON: {e}", exc_info=True)
 
     ctx.communication_angles = result["communication_angles"]
     ctx.winning_offer_summary = result["winning_offer_summary"] or ctx.winning_offer_summary

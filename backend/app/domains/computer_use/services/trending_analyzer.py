@@ -138,8 +138,8 @@ class TrendingAnalyzer:
 
             return topics[:top_n]
 
-        except Exception as e:
-            self.logger.error(f"Error getting trending topics: {e}")
+        except Exception:
+            self.logger.exception("Error getting trending topics")
             return []
 
     async def get_best_posting_time(

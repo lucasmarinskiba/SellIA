@@ -1,7 +1,10 @@
+import logging
 import os
 
 from twilio.rest import Client
 from twilio.twiml.voice_response import VoiceResponse
+
+logger = logging.getLogger(__name__)
 
 
 class TwilioVoiceService:
@@ -36,6 +39,7 @@ class TwilioVoiceService:
                 'status': call.status,
             }
         except Exception as e:
+            logger.exception("make_outbound_call: error inesperado")
             return {
                 'success': False,
                 'error': str(e),
@@ -84,6 +88,7 @@ class TwilioVoiceService:
                 'status': call.status,
             }
         except Exception as e:
+            logger.exception("end_call: error inesperado")
             return {
                 'success': False,
                 'error': str(e),
@@ -104,6 +109,7 @@ class TwilioVoiceService:
                 'transfer_to': transfer_to,
             }
         except Exception as e:
+            logger.exception("transfer_call: error inesperado")
             return {
                 'success': False,
                 'error': str(e),
@@ -122,6 +128,7 @@ class TwilioVoiceService:
                 'media_url': recording.media_url,
             }
         except Exception as e:
+            logger.exception("get_call_recording: error inesperado")
             return {
                 'success': False,
                 'error': str(e),
@@ -138,6 +145,7 @@ class TwilioVoiceService:
                 'status': transcription.status,
             }
         except Exception as e:
+            logger.exception("transcribe_recording: error inesperado")
             return {
                 'success': False,
                 'error': str(e),

@@ -10,9 +10,12 @@ has registered.
 """
 
 import json
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -126,6 +129,7 @@ async def get_memory(user_id: str = Depends(get_user_id), db = Depends(get_db)):
             "updated_at": row[20],
         }
     except Exception as e:
+        logger.exception("get_memory: error inesperado")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -184,6 +188,7 @@ async def update_memory(data: dict, user_id: str = Depends(get_user_id), db = De
     except HTTPException:
         raise
     except Exception as e:
+        logger.exception("update_memory: error inesperado")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -219,6 +224,7 @@ async def log_event(data: dict, user_id: str = Depends(get_user_id), db = Depend
 
         return {"status": "logged", "total_messages": row[0] if row else 0}
     except Exception as e:
+        logger.exception("log_event: error inesperado")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -246,6 +252,7 @@ async def add_interest(interest: str, user_id: str = Depends(get_user_id), db = 
 
         return {"status": "added", "interests": interests}
     except Exception as e:
+        logger.exception("add_interest: error inesperado")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -273,6 +280,7 @@ async def add_challenge(challenge: str, user_id: str = Depends(get_user_id), db 
 
         return {"status": "added", "challenges": challenges}
     except Exception as e:
+        logger.exception("add_challenge: error inesperado")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -302,6 +310,7 @@ async def set_preference(data: dict, user_id: str = Depends(get_user_id), db = D
         await db.commit()
         return {"status": "set", "key": key}
     except Exception as e:
+        logger.exception("set_preference: error inesperado")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -318,6 +327,7 @@ async def get_preference(key: str, user_id: str = Depends(get_user_id), db = Dep
         value = _loads(row[0]) if row else None
         return {"key": key, "value": value}
     except Exception as e:
+        logger.exception("get_preference: error inesperado")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -343,4 +353,5 @@ async def get_events(limit: int = 50, user_id: str = Depends(get_user_id), db = 
         ]
         return {"events": events, "count": len(events)}
     except Exception as e:
+        logger.exception("get_events: error inesperado")
         raise HTTPException(status_code=500, detail=str(e))

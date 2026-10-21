@@ -45,8 +45,8 @@ class CalendlyConnector:
 
             return result.get("data", {}).get("available_periods", [])
 
-        except Exception as e:
-            logger.error(f"Error getting availability: {e}")
+        except Exception:
+            logger.exception("Error getting availability")
             return []
 
     async def create_event(
@@ -79,8 +79,8 @@ class CalendlyConnector:
 
             return True, event_id
 
-        except Exception as e:
-            logger.error(f"Error creating event: {e}")
+        except Exception:
+            logger.exception("Error creating event")
             return False, None
 
     async def close(self):

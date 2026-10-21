@@ -5,9 +5,13 @@ Strengths: SEO optimization, ad scoring, landing pages, blog posts
 """
 
 
+import logging
+
 from app.core.config import get_settings
 
 from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -67,4 +71,5 @@ class WritesonicProvider(BaseProvider):
             )
 
         except Exception as e:
+            logger.exception("generate: error inesperado")
             return GenerationResult(success=False, error_message=str(e))

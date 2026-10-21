@@ -160,7 +160,7 @@ async def get_strategy(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting strategy: {e}")
+        logger.exception("Error getting strategy")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -209,7 +209,7 @@ async def get_response_prompt(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error generating response prompt: {e}")
+        logger.exception("Error generating response prompt")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -233,7 +233,7 @@ async def score_lead(
         return LeadScoringResponse(**result)
 
     except Exception as e:
-        logger.error(f"Error scoring lead: {e}")
+        logger.exception("Error scoring lead")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -267,5 +267,5 @@ async def detect_sales_signals(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error detecting signals: {e}")
+        logger.exception("Error detecting signals")
         raise HTTPException(status_code=500, detail=str(e))

@@ -36,7 +36,7 @@ class SmartWait:
                 await page.wait_for_selector(selector, state="detached", timeout=timeout)
             return True
         except Exception as e:
-            logger.warning(f"SmartWait: element {selector} not {state}: {e}")
+            logger.warning(f"SmartWait: element {selector} not {state}: {e}", exc_info=True)
             return False
 
     async def wait_for_navigation(
@@ -53,7 +53,7 @@ class SmartWait:
                 await page.wait_for_load_state("networkidle", timeout=timeout)
             return True
         except Exception as e:
-            logger.warning(f"SmartWait: navigation timeout: {e}")
+            logger.warning(f"SmartWait: navigation timeout: {e}", exc_info=True)
             return False
 
     async def wait_for_text(
@@ -79,7 +79,7 @@ class SmartWait:
                     if text in content:
                         return True
             except Exception:
-                pass
+                logger.exception("wait_for_text: error inesperado")
             await asyncio.sleep(self.POLL_INTERVAL / 1000)
         logger.warning(f"SmartWait: text '{text}' not found")
         return False
@@ -108,7 +108,7 @@ class SmartWait:
                     stable_since = None
                     last_html = current_html
             except Exception:
-                pass
+                logger.exception("wait_for_stable: error inesperado")
             await asyncio.sleep(self.POLL_INTERVAL / 1000)
 
         logger.warning("SmartWait: DOM never stabilized")
@@ -126,7 +126,7 @@ class SmartWait:
                 pass
             return True
         except Exception as e:
-            logger.warning(f"SmartWait: request {url_pattern} not seen: {e}")
+            logger.warning(f"SmartWait: request {url_pattern} not seen: {e}", exc_info=True)
             return False
 
     async def wait_for_console_message(
@@ -143,5 +143,5 @@ class SmartWait:
                 pass
             return True
         except Exception as e:
-            logger.warning(f"SmartWait: console message not seen: {e}")
+            logger.warning(f"SmartWait: console message not seen: {e}", exc_info=True)
             return False

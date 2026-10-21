@@ -59,7 +59,7 @@ class DealProbabilityModel:
             try:
                 self.load_model(str(MODEL_PATH))
             except Exception as e:
-                logger.warning(f"Failed to load default model: {e}. Using random forest fallback.")
+                logger.warning(f"Failed to load default model: {e}. Using random forest fallback.", exc_info=True)
                 self._create_fallback_model()
         else:
             logger.info("No model found. Using random forest fallback.")
@@ -75,8 +75,8 @@ class DealProbabilityModel:
                 self.training_date = model_data.get("training_date")
                 self.auc_score = model_data.get("auc_score")
             logger.info(f"Loaded model version {self.model_version} (AUC: {self.auc_score})")
-        except Exception as e:
-            logger.error(f"Error loading model: {e}")
+        except Exception:
+            logger.exception("Error loading model")
             self._create_fallback_model()
 
     def save_model(self, path: str):
@@ -93,8 +93,8 @@ class DealProbabilityModel:
             with open(path, "wb") as f:
                 pickle.dump(model_data, f)
             logger.info(f"Saved model to {path}")
-        except Exception as e:
-            logger.error(f"Error saving model: {e}")
+        except Exception:
+            logger.exception("Error saving model")
 
     def _create_fallback_model(self):
         """Create simple fallback model if XGBoost unavailable."""
@@ -107,8 +107,8 @@ class DealProbabilityModel:
                     objective="binary:logistic",
                     random_state=42,
                 )
-            except Exception as e:
-                logger.error(f"Failed to create XGBoost model: {e}")
+            except Exception:
+                logger.exception("Failed to create XGBoost model")
                 self.model = None
         else:
             logger.warning("XGBoost not installed. Model predictions will be random.")
@@ -226,7 +226,8 @@ class DealProbabilityModel:
                         100,
                     )
                 )
-            except:
+            except Exception:
+                logger.exception("predict: error inesperado")
                 confidence = float(abs(self.model.predict_proba(features)[0][0]
                     - self.model.predict_proba(features)[0][1]) * 100)
 
@@ -238,8 +239,8 @@ class DealProbabilityModel:
 
             return (probability, confidence, probability_low, probability_high)
 
-        except Exception as e:
-            logger.error(f"Error during prediction: {e}")
+        except Exception:
+            logger.exception("Error during prediction")
             return (50.0, 0.5, 30.0, 70.0)
 
     def train(
@@ -312,7 +313,7 @@ class DealProbabilityModel:
             }
 
         except Exception as e:
-            logger.error(f"Error training model: {e}")
+            logger.exception("Error training model")
             return {"error": str(e)}
 
     def get_feature_importance(self) -> dict[str, float]:
@@ -323,6 +324,6 @@ class DealProbabilityModel:
         try:
             importance_dict = dict(zip(self.FEATURES, self.model.feature_importances_))
             return dict(sorted(importance_dict.items(), key=lambda x: x[1], reverse=True))
-        except Exception as e:
-            logger.error(f"Error getting feature importance: {e}")
+        except Exception:
+            logger.exception("Error getting feature importance")
             return {}

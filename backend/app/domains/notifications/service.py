@@ -70,7 +70,7 @@ class NotificationService:
             except Exception as e:
                 delivery.status = NotificationStatus.FAILED
                 delivery.error_message = str(e)
-                logger.error(f"Failed to send {delivery.channel} notification: {e}")
+                logger.exception(f"Failed to send {delivery.channel} notification")
 
         await self.db.commit()
         return deliveries

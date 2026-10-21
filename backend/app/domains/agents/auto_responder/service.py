@@ -68,7 +68,7 @@ async def check_and_respond(db: AsyncSession, business_id: uuid.UUID) -> list[di
                     profile = await memory_engine.get_customer_profile_summary(uuid.UUID(customer_id))
                     customer_memories = [profile] if profile else []
             except Exception as e:
-                logger.warning(f"Memory load failed for conversation {conv.id}: {e}")
+                logger.warning(f"Memory load failed for conversation {conv.id}: {e}", exc_info=True)
 
             # Check for buy-ready signals
             last_msg_result = await db.execute(
@@ -178,6 +178,7 @@ async def _find_matching_conversations(
             import zoneinfo
             tz = zoneinfo.ZoneInfo(tz_name)
         except Exception:
+            logger.exception("_find_matching_conversations: error inesperado")
             tz = UTC
         local_now = now.astimezone(tz)
         start_str = rule.trigger_config.get("start", "18:00")

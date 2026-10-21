@@ -176,7 +176,7 @@ class ComputerUseExecutor:
             )
 
         except Exception as e:
-            logger.error(f"[SellIA] Execution failed: {e!s}")
+            logger.exception("[SellIA] Execution failed")
             return ExecutionResult(
                 success=False,
                 actions_executed=actions_executed,

@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -16,6 +17,8 @@ from app.domains.channels.models import (
     MessageStatus,
 )
 from app.domains.channels.schemas import WebhookPayload
+
+logger = logging.getLogger(__name__)
 
 
 async def _ai_classify_intent(
@@ -81,6 +84,7 @@ Intent:"""
 
         return None
     except Exception as e:
+        logger.exception("_ai_classify_intent: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).error(f"AI intent classification error: {e}")
         return None
@@ -167,7 +171,7 @@ Competitors (JSON array only):"""
                 },
             )
         except Exception:
-            pass
+            logger.exception("_detect_competitor_mentions: error inesperado")
 
         # Create Alert + Recommendation
         try:
@@ -210,10 +214,12 @@ Competitors (JSON array only):"""
             db.add(recommendation)
             await db.commit()
         except Exception as e:
+            logger.exception("_detect_competitor_mentions: error inesperado")
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Competitor alert creation error: {e}")
 
     except Exception as e:
+        logger.exception("_detect_competitor_mentions: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Competitor detection inner error: {e}")
 
@@ -290,6 +296,7 @@ async def _apply_chatbot_rule(
                 lead_name=conversation.lead_name,
             )
         except Exception as e:
+            logger.exception("_apply_chatbot_rule: error inesperado")
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Handoff emit error: {e}")
         return True
@@ -319,6 +326,7 @@ async def _apply_chatbot_rule(
         try:
             await send_outbound_message(db, conversation.id, response_text)
         except Exception as e:
+            logger.exception("_apply_chatbot_rule: error inesperado")
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Chatbot rule send error: {e}")
 
@@ -616,6 +624,7 @@ async def process_incoming_message(
     try:
         await _process_appointment_confirmation(db, conversation, payload.content)
     except Exception as e:
+        logger.exception("process_incoming_message: error inesperado")
         await db.rollback()
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Appointment confirmation error: {e}")
@@ -632,6 +641,7 @@ async def process_incoming_message(
             is_new_conversation=is_new_conversation,
         )
     except Exception as e:
+        logger.exception("process_incoming_message: error inesperado")
         await db.rollback()
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Event emit error: {e}")
@@ -645,6 +655,7 @@ async def process_incoming_message(
         if matched_rule:
             await _apply_chatbot_rule(db, matched_rule, conversation, channel.platform)
     except Exception as e:
+        logger.exception("process_incoming_message: error inesperado")
         await db.rollback()
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Chatbot rule evaluation error: {e}")
@@ -661,6 +672,7 @@ async def process_incoming_message(
             description=f"Mensaje recibido por {channel.platform.value}",
         )
     except Exception as e:
+        logger.exception("process_incoming_message: error inesperado")
         await db.rollback()
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Lead scoring error: {e}")
@@ -713,6 +725,7 @@ async def process_incoming_message(
                         if ctx and ctx.scheduling_link:
                             pitch = f"{pitch}\n\nAgendá acá: {ctx.scheduling_link}"
                     except Exception as e:
+                        logger.exception("process_incoming_message: error inesperado")
                         from app.core.logger import get_logger
                         get_logger(__name__).error(f"Angle/scheduling lookup error: {e}")
 
@@ -721,6 +734,7 @@ async def process_incoming_message(
                 elif lead_status == "disqualified" and hasattr(connector, "tag_subscriber"):
                     await connector.tag_subscriber(payload.external_id, "sellia_disqualified")
     except Exception as e:
+        logger.exception("process_incoming_message: error inesperado")
         await db.rollback()
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Auto-qualification error: {e}")
@@ -747,6 +761,7 @@ async def process_incoming_message(
             )
             await send_outbound_message(db, conversation.id, checkout_msg)
     except Exception as e:
+        logger.exception("process_incoming_message: error inesperado")
         await db.rollback()
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Checkout trigger error: {e}")
@@ -755,6 +770,7 @@ async def process_incoming_message(
     try:
         await _detect_competitor_mentions(db, conversation, payload.content, channel.business_id)
     except Exception as e:
+        logger.exception("process_incoming_message: error inesperado")
         await db.rollback()
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Competitor detection error: {e}")
@@ -777,6 +793,7 @@ async def process_incoming_message(
                 },
             )
         except Exception as e:
+            logger.exception("process_incoming_message: error inesperado")
             await db.rollback()
             from app.core.logger import get_logger
             get_logger(__name__).error(f"NEW_LEAD trigger error: {e}")
@@ -788,6 +805,7 @@ async def process_incoming_message(
             processor = EcommerceWebhookProcessor(db)
             await processor.process_order_webhook(channel, conversation, payload)
         except Exception as e:
+            logger.exception("process_incoming_message: error inesperado")
             await db.rollback()
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Ecommerce webhook processing error: {e}")
@@ -816,6 +834,7 @@ async def process_incoming_message(
                 conversation_id=str(conversation.id),
             )
         except Exception as e:
+            logger.exception("process_incoming_message: error inesperado")
             await db.rollback()
             from app.core.logger import get_logger
             get_logger(__name__).error(f"ORDER_CREATED trigger error: {e}")
@@ -835,6 +854,7 @@ async def process_incoming_message(
                 },
             )
         except Exception as e:
+            logger.exception("process_incoming_message: error inesperado")
             await db.rollback()
             from app.core.logger import get_logger
             get_logger(__name__).error(f"CART_ABANDONED trigger error: {e}")
@@ -857,6 +877,7 @@ async def process_incoming_message(
             },
         )
     except Exception as e:
+        logger.exception("process_incoming_message: error inesperado")
         await db.rollback()
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Workflow trigger error: {e}")
@@ -865,6 +886,7 @@ async def process_incoming_message(
     try:
         await _maybe_ai_auto_reply(db, channel, conversation, payload)
     except Exception as e:
+        logger.exception("process_incoming_message: error inesperado")
         await db.rollback()
         from app.core.logger import get_logger
         get_logger(__name__).error(f"AI auto-reply error: {e}")
@@ -942,6 +964,7 @@ async def send_outbound_message(
             content=content,
         )
     except Exception as e:
+        logger.exception("send_outbound_message: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Send event error: {e}")
 

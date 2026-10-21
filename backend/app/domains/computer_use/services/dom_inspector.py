@@ -45,10 +45,11 @@ class DOMInspector:
                     if info and info.is_visible:
                         result.append(info)
                 except Exception:
+                    logger.exception("extract_interactive_elements: error inesperado")
                     continue
             return result
         except Exception as e:
-            logger.warning(f"DOM extraction failed: {e}")
+            logger.warning(f"DOM extraction failed: {e}", exc_info=True)
             return []
 
     async def _extract_element_info(self, element, index: int) -> DOMElement | None:
@@ -103,6 +104,7 @@ class DOMInspector:
                 is_interactive=is_interactive,
             )
         except Exception:
+            logger.exception("_extract_element_info: error inesperado")
             return None
 
     async def find_clickable_by_text(self, page, text: str) -> dict[str, Any] | None:
@@ -130,7 +132,7 @@ class DOMInspector:
                 }
             return {"found": False}
         except Exception as e:
-            logger.warning(f"Find clickable failed: {e}")
+            logger.warning(f"Find clickable failed: {e}", exc_info=True)
             return {"found": False, "error": str(e)}
 
     async def get_page_accessibility_tree(self, page) -> dict[str, Any]:
@@ -139,7 +141,7 @@ class DOMInspector:
             tree = await page.accessibility.snapshot()
             return self._simplify_tree(tree)
         except Exception as e:
-            logger.warning(f"Accessibility tree failed: {e}")
+            logger.warning(f"Accessibility tree failed: {e}", exc_info=True)
             return {}
 
     def _simplify_tree(self, node: dict[str, Any]) -> dict[str, Any]:
@@ -178,5 +180,5 @@ class DOMInspector:
                 }
             """)
         except Exception as e:
-            logger.warning(f"Form state extraction failed: {e}")
+            logger.warning(f"Form state extraction failed: {e}", exc_info=True)
             return []

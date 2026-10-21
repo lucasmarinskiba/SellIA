@@ -169,7 +169,7 @@ Previous actions:
             response = await llm.ainvoke(messages)
             return self._parse_action(response.content)
         except Exception as e:
-            logger.error(f"OpenAI vision call failed: {e}")
+            logger.exception("OpenAI vision call failed")
             return ComputerUseAction(
                 action_type="error",
                 params={"message": str(e)[:200]},
@@ -194,6 +194,6 @@ Previous actions:
             )
             response = await llm.ainvoke(messages)
             return response.content
-        except Exception as e:
-            logger.error(f"Summary generation failed: {e}")
+        except Exception:
+            logger.exception("Summary generation failed")
             return "Sesión completada."

@@ -1,6 +1,7 @@
 """User signup/registration endpoints with secure password validation and 2FA."""
 
 import base64
+import logging
 import re
 import uuid
 from datetime import timedelta
@@ -19,6 +20,8 @@ from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -110,7 +113,7 @@ async def signup(
             verify_url = f"{settings.FRONTEND_URL or 'http://localhost:3000'}/verify-email?token={verify_token}"
             await _send_verification_email(req.email, req.full_name, verify_url)
         except Exception:
-            pass
+            logger.exception("signup: error inesperado")
 
         return {
             "user_id": user_id,
@@ -124,6 +127,7 @@ async def signup(
         await db.rollback()
         raise
     except Exception as e:
+        logger.exception("signup: error inesperado")
         await db.rollback()
         raise HTTPException(status_code=500, detail=f"Signup failed: {e!s}")
 
@@ -175,6 +179,7 @@ async def signin(
     except HTTPException:
         raise
     except Exception as e:
+        logger.exception("signin: error inesperado")
         raise HTTPException(status_code=500, detail=f"Signin failed: {e!s}")
 
 
@@ -235,6 +240,7 @@ async def verify_2fa(
     except HTTPException:
         raise
     except Exception as e:
+        logger.exception("verify_2fa: error inesperado")
         raise HTTPException(status_code=500, detail=f"2FA verify failed: {e!s}")
 
 

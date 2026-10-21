@@ -1,5 +1,6 @@
 """API endpoints for offline-triggered re-engagement sequences."""
 
+import logging
 from enum import Enum
 from typing import Annotated
 from uuid import UUID
@@ -12,6 +13,8 @@ from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.domains.businesses.models import Business
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="", tags=["offline-sequences"])
 
@@ -197,6 +200,7 @@ async def trigger_offline_sequence(
         )
 
     except Exception as e:
+        logger.exception("trigger_offline_sequence: error inesperado")
         return OfflineSequenceTriggerResponse(
             success=False,
             message=f"Error triggering sequence: {e!s}"

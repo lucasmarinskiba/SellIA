@@ -52,7 +52,7 @@ async def detect_market(request: DetectMarketRequest) -> DetectMarketResponse:
             keywords=profile.keywords,
         )
     except Exception as e:
-        logger.error(f"Market detection failed: {e}")
+        logger.exception("Market detection failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -68,6 +68,7 @@ async def get_available_agents(market: str | None = None) -> dict[str, Any]:
                 type('MarketProfile', (), {'recommended_agents': agents})()
             )}
         except Exception as e:
+            logger.exception("get_available_agents: error inesperado")
             raise HTTPException(status_code=400, detail=f"Invalid market: {e}")
     return {"agents": AgentLoader.get_loaded_agents()}
 
@@ -88,6 +89,7 @@ async def get_market_rules(market: str) -> dict[str, Any]:
             "payment": MarketRulesEngine.get_payment_rules(rules),
         }
     except Exception as e:
+        logger.exception("get_market_rules: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -102,7 +104,7 @@ async def sync_external_systems() -> dict[str, Any]:
             "timestamp": utc_now().isoformat(),
         }
     except Exception as e:
-        logger.error(f"Sync failed: {e}")
+        logger.exception("Sync failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -116,5 +118,5 @@ async def get_market_status() -> dict[str, Any]:
             "timestamp": utc_now().isoformat(),
         }
     except Exception as e:
-        logger.error(f"Status check failed: {e}")
+        logger.exception("Status check failed")
         raise HTTPException(status_code=500, detail=str(e))

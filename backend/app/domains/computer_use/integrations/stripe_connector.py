@@ -66,8 +66,8 @@ class StripeConnector:
         except stripe.error.StripeError as e:
             logger.error(f"Stripe error: {e}")
             return False, None
-        except Exception as e:
-            logger.error(f"Error creating checkout: {e}")
+        except Exception:
+            logger.exception("Error creating checkout")
             return False, None
 
     async def create_payment_intent(
@@ -99,8 +99,8 @@ class StripeConnector:
         except stripe.error.StripeError as e:
             logger.error(f"Stripe error: {e}")
             return False, None
-        except Exception as e:
-            logger.error(f"Error creating intent: {e}")
+        except Exception:
+            logger.exception("Error creating intent")
             return False, None
 
     async def get_payment_status(self, session_id: str) -> dict[str, Any]:
@@ -116,8 +116,8 @@ class StripeConnector:
                 "payment_intent": session.payment_intent,
             }
 
-        except Exception as e:
-            logger.error(f"Error getting payment status: {e}")
+        except Exception:
+            logger.exception("Error getting payment status")
             return {}
 
     async def create_refund(
@@ -139,8 +139,8 @@ class StripeConnector:
         except stripe.error.StripeError as e:
             logger.error(f"Stripe error: {e}")
             return False, None
-        except Exception as e:
-            logger.error(f"Error creating refund: {e}")
+        except Exception:
+            logger.exception("Error creating refund")
             return False, None
 
 

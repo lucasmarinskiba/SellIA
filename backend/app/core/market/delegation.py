@@ -76,7 +76,7 @@ class DelegationLayer:
             }
 
         except Exception as e:
-            logger.error(f"Error delegating to real estate: {e!s}")
+            logger.exception("Error delegating to real estate")
             return {"error": f"Delegation failed: {e!s}"}
 
     async def _handle_with_sellias(

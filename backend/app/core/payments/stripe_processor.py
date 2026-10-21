@@ -163,7 +163,7 @@ class StripeProcessor:
             logger.error(f"Stripe error: {e.message}")
             return {"status": "error", "error": str(e.message)}
         except Exception as e:
-            logger.error(f"Unexpected error creating checkout: {e!s}")
+            logger.exception("Unexpected error creating checkout")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -223,7 +223,7 @@ class StripeProcessor:
             }
 
         except Exception as e:
-            logger.error(f"Error creating payment intent: {e!s}")
+            logger.exception("Error creating payment intent")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -241,7 +241,7 @@ class StripeProcessor:
                 "metadata": session.metadata,
             }
         except Exception as e:
-            logger.error(f"Error retrieving session: {e!s}")
+            logger.exception("Error retrieving session")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -267,7 +267,7 @@ class StripeProcessor:
                 ],
             }
         except Exception as e:
-            logger.error(f"Error retrieving payment intent: {e!s}")
+            logger.exception("Error retrieving payment intent")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -328,7 +328,7 @@ class StripeProcessor:
             logger.error(f"Invalid refund request: {e.message}")
             return {"status": "error", "error": e.message}
         except Exception as e:
-            logger.error(f"Error refunding payment: {e!s}")
+            logger.exception("Error refunding payment")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -401,7 +401,7 @@ class StripeProcessor:
             }
 
         except Exception as e:
-            logger.error(f"Error creating invoice: {e!s}")
+            logger.exception("Error creating invoice")
             return {"status": "error", "error": str(e)}
 
 
@@ -421,8 +421,8 @@ class StripeWebhookHandler:
         except stripe.error.SignatureVerificationError as e:
             logger.warning(f"Invalid webhook signature: {e}")
             return False
-        except Exception as e:
-            logger.error(f"Webhook verification error: {e!s}")
+        except Exception:
+            logger.exception("Webhook verification error")
             return False
 
     @staticmethod
@@ -440,8 +440,8 @@ class StripeWebhookHandler:
         except stripe.error.SignatureVerificationError:
             logger.warning("Invalid webhook signature")
             return None
-        except Exception as e:
-            logger.error(f"Error constructing event: {e!s}")
+        except Exception:
+            logger.exception("Error constructing event")
             return None
 
     @staticmethod
@@ -478,7 +478,7 @@ class StripeWebhookHandler:
                 }
 
         except Exception as e:
-            logger.error(f"Error handling event {event_id}: {e!s}")
+            logger.exception(f"Error handling event {event_id}")
             return {
                 "status": "error",
                 "event_type": event_type,

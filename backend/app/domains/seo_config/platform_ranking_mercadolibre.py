@@ -49,7 +49,7 @@ class MercadoLibreRankingConnector(PlatformRankingConnector):
                 )
                 return resp.status_code == 200
         except Exception as e:
-            logger.error(f"MercadoLibre ranking credentials validation failed: {str(e)[:100]}")
+            logger.exception(f"MercadoLibre ranking credentials validation failed: {str(e)[:100]}")
             return False
 
     async def get_ranking_signals(self, external_id: str) -> list[RankingSignal]:
@@ -80,7 +80,7 @@ class MercadoLibreRankingConnector(PlatformRankingConnector):
             if resp.status_code == 200:
                 return resp.json()
         except Exception as e:
-            logger.warning(f"MercadoLibre ranking: item fetch failed for {external_id}: {str(e)[:100]}")
+            logger.warning(f"MercadoLibre ranking: item fetch failed for {external_id}: {str(e)[:100]}", exc_info=True)
         return None
 
     async def _reputation_signals(
@@ -125,7 +125,7 @@ class MercadoLibreRankingConnector(PlatformRankingConnector):
                 detail="e.g. 5_green = top tier, 1_red = lowest",
             ))
         except Exception as e:
-            logger.warning(f"MercadoLibre ranking: reputation fetch failed: {str(e)[:100]}")
+            logger.warning(f"MercadoLibre ranking: reputation fetch failed: {str(e)[:100]}", exc_info=True)
             out.append(RankingSignal("seller_claims_rate", None, measured=False, detail=str(e)[:100]))
 
         # Reputation Health Gauge is a documented, per-item query parameter on
@@ -148,7 +148,7 @@ class MercadoLibreRankingConnector(PlatformRankingConnector):
             else:
                 out.append(RankingSignal("seller_has_unhealthy_items", None, measured=False))
         except Exception as e:
-            logger.warning(f"MercadoLibre ranking: reputation gauge fetch failed: {str(e)[:100]}")
+            logger.warning(f"MercadoLibre ranking: reputation gauge fetch failed: {str(e)[:100]}", exc_info=True)
             out.append(RankingSignal("seller_has_unhealthy_items", None, measured=False, detail=str(e)[:100]))
 
         return out
@@ -223,6 +223,7 @@ class MercadoLibreRankingConnector(PlatformRankingConnector):
                     replied = datetime.fromisoformat(q["answer"]["date_created"].replace("Z", "+00:00"))
                     latencies.append((replied - asked).total_seconds() / 60)
                 except Exception:
+                    logger.exception("_question_signals: error inesperado")
                     continue
 
             avg_latency = round(sum(latencies) / len(latencies), 1) if latencies else None
@@ -239,7 +240,7 @@ class MercadoLibreRankingConnector(PlatformRankingConnector):
                 ),
             ]
         except Exception as e:
-            logger.warning(f"MercadoLibre ranking: question signals failed: {str(e)[:100]}")
+            logger.warning(f"MercadoLibre ranking: question signals failed: {str(e)[:100]}", exc_info=True)
             return [
                 RankingSignal("question_response_latency_minutes", None, measured=False, detail=str(e)[:100]),
                 RankingSignal("question_answer_rate_pct", None, measured=False, detail=str(e)[:100]),
@@ -290,7 +291,7 @@ class MercadoLibreRankingConnector(PlatformRankingConnector):
                 detail=f"{len(required_attr_ids) - len(filled_required)} required attribute(s) missing",
             )]
         except Exception as e:
-            logger.warning(f"MercadoLibre ranking: completeness check failed: {str(e)[:100]}")
+            logger.warning(f"MercadoLibre ranking: completeness check failed: {str(e)[:100]}", exc_info=True)
             return [RankingSignal("listing_completeness_pct", None, measured=False, detail=str(e)[:100])]
 
     def _title_and_photo_signals(self, item_data: dict[str, Any] | None) -> list[RankingSignal]:

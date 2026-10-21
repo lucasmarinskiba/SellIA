@@ -329,6 +329,7 @@ async def whatsapp_receive(request: Request):
     try:
         body = await request.json()
     except Exception:
+        logger.exception("whatsapp_receive: error inesperado")
         return {"status": "ok"}
 
     try:
@@ -369,7 +370,7 @@ async def whatsapp_receive(request: Request):
         sent = await _send_whatsapp_message(sender, reply, phone_number_id, token)
         logger.info(f"Reply sent to {sender}: {sent}")
 
-    except Exception as e:
-        logger.error(f"WhatsApp webhook error: {e}")
+    except Exception:
+        logger.exception("WhatsApp webhook error")
 
     return {"status": "ok"}

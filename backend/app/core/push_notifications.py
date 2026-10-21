@@ -15,10 +15,14 @@ except ImportError:
     WebPushException = Exception
     WEBPUSH_AVAILABLE = False
 
+import logging
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.security.models import PushSubscription
+
+logger = logging.getLogger(__name__)
 
 # VAPID keys (generar con: openssl ecparam -genkey -name prime256v1 -noout -out vapid_private.pem)
 VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY", "")
@@ -104,6 +108,7 @@ async def send_push_notification(
                 from app.core.logger import get_logger
                 get_logger(__name__).error(f"Error enviando push: {e}")
         except Exception as e:
+            logger.exception("send_push_notification: error inesperado")
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Error inesperado: {e}")
 

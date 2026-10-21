@@ -72,7 +72,7 @@ class CredentialManager:
                         login_url=url,
                     )
             except Exception as e:
-                logger.debug(f"DB credential lookup failed: {e}")
+                logger.debug(f"DB credential lookup failed: {e}", exc_info=True)
         
         return self._credentials.get(domain)
 
@@ -126,6 +126,7 @@ class CredentialManager:
                     await page.fill(sel, username, timeout=2000)
                     break
                 except Exception:
+                    logger.exception("_perform_login: error inesperado")
                     continue
             
             # Find and fill password
@@ -141,6 +142,7 @@ class CredentialManager:
                     await page.fill(sel, password, timeout=2000)
                     break
                 except Exception:
+                    logger.exception("_perform_login: error inesperado")
                     continue
             
             # Click submit
@@ -158,6 +160,7 @@ class CredentialManager:
                     await page.click(sel, timeout=3000)
                     break
                 except Exception:
+                    logger.exception("_perform_login: error inesperado")
                     continue
             
             await page.wait_for_timeout(3000)
@@ -177,5 +180,5 @@ class CredentialManager:
             
             return {"success": True, "domain": domain}
         except Exception as e:
-            logger.error(f"Login attempt failed for {domain}: {e}")
+            logger.exception(f"Login attempt failed for {domain}")
             return {"success": False, "reason": "login_failed", "error": str(e)}

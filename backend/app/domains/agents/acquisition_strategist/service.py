@@ -81,7 +81,7 @@ async def design_acquisition_strategy(
                 content = content.split("```")[1].split("```")[0].strip()
             parsed = json.loads(content)
         except Exception as e:
-            logger.warning(f"Failed to parse acquisition strategy LLM output: {e}")
+            logger.warning(f"Failed to parse acquisition strategy LLM output: {e}", exc_info=True)
 
     strategy = AcquisitionStrategy(
         business_id=business_id,

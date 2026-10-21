@@ -12,6 +12,7 @@ Gen-4 Standard para producción.
 """
 
 import asyncio
+import logging
 
 from app.core.config import get_settings
 
@@ -22,6 +23,8 @@ from ..base import (
     GenerationConfig,
     GenerationResult,
 )
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -101,6 +104,7 @@ class RunwayProvider(BaseProvider):
                     error_message=f"Tipo {config.content_type.value} no soportado por Runway",
                 )
         except Exception as e:
+            logger.exception("generate: error inesperado")
             return GenerationResult(
                 success=False,
                 error_message=str(e),

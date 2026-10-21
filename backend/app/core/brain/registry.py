@@ -322,7 +322,7 @@ def _computer_use_skill_caps() -> list[Capability]:
             SKILL_DOMAINS,
         )
     except Exception as exc:  # pragma: no cover - defensivo
-        logger.warning("Computer Use skills no disponibles: %s", exc)
+        logger.warning("Computer Use skills no disponibles: %s", exc, exc_info=True)
         return []
 
     out: list[Capability] = []

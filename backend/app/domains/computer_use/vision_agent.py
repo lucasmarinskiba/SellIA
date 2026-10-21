@@ -67,7 +67,7 @@ class VisionAgent:
                 page_info=page_info,
             )
         except Exception as e:
-            logger.error(f"VisionAgent failed: {e}")
+            logger.exception("VisionAgent failed")
             return ComputerUseAction(
                 action_type="error",
                 params={"message": str(e)[:200]},
@@ -79,6 +79,6 @@ class VisionAgent:
         try:
             provider = await self._get_provider()
             return await provider.generate_summary(actions_log)
-        except Exception as e:
-            logger.error(f"Summary generation failed: {e}")
+        except Exception:
+            logger.exception("Summary generation failed")
             return "Sesión completada."

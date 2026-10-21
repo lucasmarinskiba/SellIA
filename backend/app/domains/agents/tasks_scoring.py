@@ -126,7 +126,7 @@ def update_deal_scores_task():
                             alerts_created += 1
 
                 except Exception as exc:
-                    logger.warning(f"Failed to score conversation {conv.id}: {exc}")
+                    logger.warning(f"Failed to score conversation {conv.id}: {exc}", exc_info=True)
                     continue
 
             logger.info(

@@ -1,3 +1,4 @@
+import logging
 from typing import Annotated, Any
 from uuid import UUID
 
@@ -16,6 +17,8 @@ from app.domains.catalogs.schemas import (
     CatalogItemUpdate,
 )
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -243,6 +246,7 @@ async def debug_add_listing_columns(
         await db.commit()
         return {"status": "ok"}
     except Exception as e:
+        logger.exception("debug_add_listing_columns: error inesperado")
         await db.rollback()
         return {"status": "error", "error": str(e)}
 
@@ -380,6 +384,7 @@ DESCRIPCIÓN: {item.description or 'sin descripción'}
         title = str(parsed.get("title", item.name))[:70]
         meta_description = str(parsed.get("meta_description", ""))[:170]
     except Exception:
+        logger.exception("seo_optimize_catalog_item: error inesperado")
         title, meta_description = item.name, (item.description or "")[:160]
 
     schema_type = "Service" if item_type == "service" else "Product"
@@ -481,6 +486,7 @@ DISPONIBLE: {'sí' if item.is_available else 'no'}
         parsed = _json.loads(raw.strip())
         headline = str(parsed.get("headline", ""))[:120]
     except Exception:
+        logger.exception("fomo_generate_catalog_item: error inesperado")
         headline = raw.strip()[:120]
 
     if not item.extra_data:

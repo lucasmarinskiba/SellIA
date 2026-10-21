@@ -57,7 +57,7 @@ class EmotionDetector:
                 return EmotionResult(**data)
             await redis_client.close()
         except Exception as e:
-            logger.warning(f"Redis cache miss/error for emotion: {e}")
+            logger.warning(f"Redis cache miss/error for emotion: {e}", exc_info=True)
 
         # Build prompt
         history_text = ""
@@ -92,8 +92,8 @@ class EmotionDetector:
                 max_tokens=300,
                 temperature=0.2,
             )
-        except Exception as e:
-            logger.error(f"Emotion LLM detection failed: {e}")
+        except Exception:
+            logger.exception("Emotion LLM detection failed")
             raw = None
 
         # Parse response
@@ -128,7 +128,7 @@ class EmotionDetector:
                     triggers=triggers,
                 )
             except Exception as e:
-                logger.warning(f"Failed to parse emotion JSON: {e}")
+                logger.warning(f"Failed to parse emotion JSON: {e}", exc_info=True)
 
         # Cache for 1 hour
         try:
@@ -145,7 +145,7 @@ class EmotionDetector:
             )
             await redis_client.close()
         except Exception as e:
-            logger.warning(f"Failed to cache emotion result: {e}")
+            logger.warning(f"Failed to cache emotion result: {e}", exc_info=True)
 
         # Persist to DB if we have conversation_id
         if conversation_id and message_id:
@@ -160,7 +160,7 @@ class EmotionDetector:
                 db.add(detection)
                 await db.commit()
             except Exception as e:
-                logger.warning(f"Failed to persist emotion detection: {e}")
+                logger.warning(f"Failed to persist emotion detection: {e}", exc_info=True)
                 await db.rollback()
 
         return result

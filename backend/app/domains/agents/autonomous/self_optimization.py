@@ -138,7 +138,7 @@ class SelfOptimizationEngine:
                     priority=2,
                 ))
         except Exception as e:
-            logger.warning(f"[SelfOptimization] Error en response time: {e}")
+            logger.warning(f"[SelfOptimization] Error en response time: {e}", exc_info=True)
         return insights
 
     async def _apply_response_optimization(self, business_id: uuid.UUID | None) -> str:
@@ -158,7 +158,7 @@ class SelfOptimizationEngine:
                 await self.db.commit()
                 return f"Auto-reply habilitado en {len(configs)} configuraciones de agente"
         except Exception as e:
-            logger.warning(f"[SelfOptimization] Error habilitando auto-reply: {e}")
+            logger.warning(f"[SelfOptimization] Error habilitando auto-reply: {e}", exc_info=True)
         return "Sin cambio aplicado"
 
     async def _optimize_pipeline_conversion(
@@ -206,7 +206,7 @@ class SelfOptimizationEngine:
                     priority=1,
                 ))
         except Exception as e:
-            logger.warning(f"[SelfOptimization] Error en pipeline conversion: {e}")
+            logger.warning(f"[SelfOptimization] Error en pipeline conversion: {e}", exc_info=True)
         return insights
 
     async def _optimize_message_performance(
@@ -244,7 +244,7 @@ class SelfOptimizationEngine:
                         priority=3,
                     ))
         except Exception as e:
-            logger.warning(f"[SelfOptimization] Error en message performance: {e}")
+            logger.warning(f"[SelfOptimization] Error en message performance: {e}", exc_info=True)
         return insights
 
     async def _optimize_agent_assignment(
@@ -293,7 +293,7 @@ class SelfOptimizationEngine:
                         priority=5,
                     ))
         except Exception as e:
-            logger.warning(f"[SelfOptimization] Error en agent assignment: {e}")
+            logger.warning(f"[SelfOptimization] Error en agent assignment: {e}", exc_info=True)
         return insights
 
     async def _optimize_send_times(
@@ -336,7 +336,7 @@ class SelfOptimizationEngine:
                     priority=6,
                 ))
         except Exception as e:
-            logger.warning(f"[SelfOptimization] Error en send times: {e}")
+            logger.warning(f"[SelfOptimization] Error en send times: {e}", exc_info=True)
         return insights
 
     async def run_ab_test_analysis(
@@ -377,7 +377,7 @@ class SelfOptimizationEngine:
 
             return {"tests_analyzed": len(active_tests), "promoted": promoted}
         except Exception as e:
-            logger.warning(f"[SelfOptimization] Error en A/B analysis: {e}")
+            logger.warning(f"[SelfOptimization] Error en A/B analysis: {e}", exc_info=True)
             return {"status": "error", "error": str(e)}
 
     def get_top_insights(self, n: int = 10) -> list[dict[str, Any]]:

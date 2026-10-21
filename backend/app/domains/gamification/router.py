@@ -1,5 +1,6 @@
 """Gamification & Experience API Router"""
 
+import logging
 import uuid
 from typing import Annotated
 
@@ -32,6 +33,8 @@ from app.domains.gamification.schemas import (
 )
 from app.domains.gamification.service import GamificationEngine, GamificationSeeder
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/gamification", tags=["gamification"])
 
@@ -197,6 +200,7 @@ async def mood_checkin(
         )
         log.ai_response = companion_response or "Entendido. Estoy acá para lo que necesites. 💪"
     except Exception:
+        logger.exception("mood_checkin: error inesperado")
         log.ai_response = "Entendido. Estoy acá para lo que necesites. 💪"
 
     db.add(log)

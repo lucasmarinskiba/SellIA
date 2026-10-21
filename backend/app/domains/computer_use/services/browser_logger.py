@@ -98,6 +98,7 @@ class BrowserLogger:
                     val = arg.json_value()
                     args.append(str(val)[:500])
                 except Exception:
+                    logger.exception("_on_console: error inesperado")
                     args.append("[object]")
 
             self.console_logs.append(ConsoleLog(
@@ -109,7 +110,7 @@ class BrowserLogger:
                 args=args,
             ))
         except Exception as e:
-            logger.warning(f"Console log processing error: {e}")
+            logger.warning(f"Console log processing error: {e}", exc_info=True)
 
     def _on_request(self, request) -> None:
         """Procesa request de red."""
@@ -125,7 +126,7 @@ class BrowserLogger:
                 error=None,
             ))
         except Exception as e:
-            logger.warning(f"Request processing error: {e}")
+            logger.warning(f"Request processing error: {e}", exc_info=True)
 
     def _on_response(self, response) -> None:
         """Procesa response de red."""
@@ -142,9 +143,9 @@ class BrowserLogger:
                     if timing and "endTime" in timing and "startTime" in timing:
                         req.duration_ms = timing["endTime"] - timing["startTime"]
                 except Exception:
-                    pass
+                    logger.exception("_on_response: error inesperado")
         except Exception as e:
-            logger.warning(f"Response processing error: {e}")
+            logger.warning(f"Response processing error: {e}", exc_info=True)
 
     def get_errors(self) -> list[ConsoleLog]:
         """Obtiene solo errores de consola."""

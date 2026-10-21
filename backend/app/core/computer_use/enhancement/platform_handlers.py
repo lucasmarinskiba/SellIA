@@ -205,7 +205,7 @@ class MercadoLibrePlatformHandler:
             }
 
         except Exception as e:
-            logger.error(f"Failed to get ML item details {item_id}: {e!s}")
+            logger.exception(f"Failed to get ML item details {item_id}")
             return {"success": False, "error": str(e)}
 
     async def _navigate_with_retry(
@@ -260,8 +260,8 @@ class MercadoLibrePlatformHandler:
                 if item:
                     results.append(item)
 
-        except Exception as e:
-            logger.error(f"Error extracting search results: {e!s}")
+        except Exception:
+            logger.exception("Error extracting search results")
 
         return results
 
@@ -275,6 +275,7 @@ class MercadoLibrePlatformHandler:
             }
             return {k: v.group(1) if v else None for k, v in item.items()}
         except Exception:
+            logger.exception("_parse_item_element: error inesperado")
             return None
 
     async def _extract_text(self, selector: str, max_length: int = 500) -> str:
@@ -284,7 +285,7 @@ class MercadoLibrePlatformHandler:
             text = await self.computer_use.read_highlighted_text()
             return text[:max_length] if text else ""
         except Exception as e:
-            logger.debug(f"Error extracting text '{selector}': {e!s}")
+            logger.debug(f"Error extracting text '{selector}': {e!s}", exc_info=True)
             return ""
 
     async def _extract_price(self) -> float | None:
@@ -296,7 +297,7 @@ class MercadoLibrePlatformHandler:
             if match:
                 return float(match.group())
         except Exception:
-            pass
+            logger.exception("_extract_price: error inesperado")
         return None
 
     async def _extract_availability(self) -> dict[str, Any]:
@@ -309,6 +310,7 @@ class MercadoLibrePlatformHandler:
                 "text": availability_text
             }
         except Exception:
+            logger.exception("_extract_availability: error inesperado")
             return {"in_stock": True, "quantity": 1}
 
     async def _extract_image_urls(self) -> list[str]:
@@ -318,7 +320,7 @@ class MercadoLibrePlatformHandler:
             # En producción: parsear DOM para <img> tags
             pass
         except Exception:
-            pass
+            logger.exception("_extract_image_urls: error inesperado")
         return images
 
     async def _extract_seller_info(self) -> dict[str, Any]:
@@ -331,6 +333,7 @@ class MercadoLibrePlatformHandler:
                 "sales_count": int(re.search(r'\d+', await self._extract_text("sales count")) or [0]).group() if await self._extract_text("sales count") else 0
             }
         except Exception:
+            logger.exception("_extract_seller_info: error inesperado")
             return {}
 
     async def _extract_ratings(self) -> dict[str, Any]:
@@ -342,6 +345,7 @@ class MercadoLibrePlatformHandler:
                 "distribution": {}
             }
         except Exception:
+            logger.exception("_extract_ratings: error inesperado")
             return {"average": 0, "review_count": 0}
 
     async def _extract_shipping_info(self) -> dict[str, Any]:
@@ -354,6 +358,7 @@ class MercadoLibrePlatformHandler:
                 "zones": []
             }
         except Exception:
+            logger.exception("_extract_shipping_info: error inesperado")
             return {}
 
 
@@ -416,7 +421,7 @@ class ShopifyPlatformHandler:
             }
 
         except Exception as e:
-            logger.error(f"Failed to create Shopify product: {e!s}")
+            logger.exception("Failed to create Shopify product")
             return {"success": False, "error": str(e)}
 
     async def _fill_product_form(
@@ -521,7 +526,7 @@ class FacebookPlatformHandler:
             }
 
         except Exception as e:
-            logger.error(f"Facebook listing failed: {e!s}")
+            logger.exception("Facebook listing failed")
             return {"success": False, "error": str(e)}
 
 
@@ -577,7 +582,7 @@ class WhatsAppPlatformHandler:
             }
 
         except Exception as e:
-            logger.error(f"WhatsApp send failed: {e!s}")
+            logger.exception("WhatsApp send failed")
             return {"success": False, "error": str(e)}
 
     async def queue_message(self, phone: str, message: str) -> None:
@@ -606,8 +611,8 @@ class WhatsAppPlatformHandler:
                         self.message_queue.remove(item)
                         results["failed"] += 1
 
-            except Exception as e:
-                logger.error(f"Queue processing error: {e!s}")
+            except Exception:
+                logger.exception("Queue processing error")
                 item["retry_count"] += 1
                 if item["retry_count"] >= 3:
                     self.message_queue.remove(item)
@@ -669,7 +674,7 @@ class EmailPlatformHandler:
                 return {"success": False, "error": "Unknown email provider"}
 
         except Exception as e:
-            logger.error(f"Email send failed: {e!s}")
+            logger.exception("Email send failed")
             return {"success": False, "error": str(e)}
 
     async def _send_gmail(
@@ -707,7 +712,7 @@ class EmailPlatformHandler:
             }
 
         except Exception as e:
-            logger.error(f"Gmail send failed: {e!s}")
+            logger.exception("Gmail send failed")
             return {"success": False, "error": str(e)}
 
     async def _send_outlook(
@@ -742,7 +747,7 @@ class EmailPlatformHandler:
             }
 
         except Exception as e:
-            logger.error(f"Outlook send failed: {e!s}")
+            logger.exception("Outlook send failed")
             return {"success": False, "error": str(e)}
 
 

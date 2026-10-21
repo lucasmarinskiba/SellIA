@@ -92,8 +92,8 @@ class ConnectorRegistry:
                 success = await connector.authenticate()
                 results[name] = success
                 logger.info(f"{name}: {'✅' if success else '❌'}")
-            except Exception as e:
-                logger.error(f"{name} auth failed: {e!s}")
+            except Exception:
+                logger.exception(f"{name} auth failed")
                 results[name] = False
         return results
 
@@ -107,7 +107,7 @@ class ConnectorRegistry:
                     results[name] = result
                     logger.info(f"Product listed on {name}: {result.get('listing_id')}")
                 except Exception as e:
-                    logger.error(f"Error listing on {name}: {e!s}")
+                    logger.exception(f"Error listing on {name}")
                     results[name] = {"status": "error", "error": str(e)}
         return results
 
@@ -120,8 +120,8 @@ class ConnectorRegistry:
                     for recipient in recipients:
                         result = await connector.send_message(recipient, message)
                         results[f"{name}_{recipient}"] = result
-                except Exception as e:
-                    logger.error(f"Error sending via {name}: {e!s}")
+                except Exception:
+                    logger.exception(f"Error sending via {name}")
         return results
 
     async def get_unified_metrics(self) -> dict[str, Any]:
@@ -142,7 +142,7 @@ class ConnectorRegistry:
                 unified["total_clicks"] += metrics.get("clicks", 0)
                 unified["total_conversions"] += metrics.get("conversions", 0)
                 unified["total_revenue"] += metrics.get("revenue", 0)
-            except Exception as e:
-                logger.error(f"Error fetching metrics from {name}: {e!s}")
+            except Exception:
+                logger.exception(f"Error fetching metrics from {name}")
 
         return unified

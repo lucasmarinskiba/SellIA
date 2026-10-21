@@ -59,7 +59,7 @@ def run_sales_cycle_task(self, cycle_data: dict[str, Any]) -> dict[str, Any]:
         return result
 
     except Exception as e:
-        logger.error(f"Error in sales cycle {cycle_data.get('id')}: {e!s}")
+        logger.exception(f"Error in sales cycle {cycle_data.get('id')}")
         # Retry con exponential backoff
         raise self.retry(exc=e, countdown=60 * (2 ** self.request.retries))
 
@@ -78,7 +78,7 @@ def process_lead_task(lead_data: dict[str, Any]) -> dict[str, Any]:
         return {"lead_id": lead_id, "score": score, "qualified": score > 70}
 
     except Exception as e:
-        logger.error(f"Error processing lead: {e!s}")
+        logger.exception("Error processing lead")
         return {"error": str(e)}
 
 
@@ -93,7 +93,7 @@ def send_email_task(email_data: dict[str, Any]) -> dict[str, Any]:
         return {"email_sent": True, "to": email_data.get("to")}
 
     except Exception as e:
-        logger.error(f"Error sending email: {e!s}")
+        logger.exception("Error sending email")
         return {"error": str(e)}
 
 
@@ -112,7 +112,7 @@ def run_browser_automation_task(automation_data: dict[str, Any]) -> dict[str, An
         return {"automation": script_name, "status": "success"}
 
     except Exception as e:
-        logger.error(f"Error running automation: {e!s}")
+        logger.exception("Error running automation")
         return {"error": str(e)}
 
 

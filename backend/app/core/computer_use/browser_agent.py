@@ -49,12 +49,14 @@ class BrowserAgent:
                 # Intentar Firefox primero (abierto, menos memory)
                 try:
                     self.browser = await p.firefox.launch()
-                except:
+                except Exception:
                     # Fallback a Chrome
+                    logger.exception("start_browser: error inesperado")
                     try:
                         self.browser = await p.chromium.launch()
-                    except:
+                    except Exception:
                         # Fallback a Safari (macOS)
+                        logger.exception("start_browser: error inesperado")
                         self.browser = await p.webkit.launch()
             else:
                 # Usar ruta específica
@@ -99,7 +101,7 @@ class BrowserAgent:
             return result
 
         except Exception as e:
-            logger.error(f"Error executing action: {e!s}")
+            logger.exception("Error executing action")
             return {"status": "error", "error": str(e)}
 
     async def _navigate(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -110,7 +112,7 @@ class BrowserAgent:
             logger.info(f"Navigated to {url}")
             return {"status": "success", "url": url}
         except Exception as e:
-            logger.error(f"Navigation failed: {e!s}")
+            logger.exception("Navigation failed")
             return {"status": "error", "error": str(e)}
 
     async def _fill_form(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -122,6 +124,7 @@ class BrowserAgent:
                 logger.info(f"Filled {selector} with {value}")
             return {"status": "success", "fields_filled": len(fields)}
         except Exception as e:
+            logger.exception("_fill_form: error inesperado")
             return {"status": "error", "error": str(e)}
 
     async def _click(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -133,6 +136,7 @@ class BrowserAgent:
             logger.info(f"Clicked {selector}")
             return {"status": "success", "clicked": selector}
         except Exception as e:
+            logger.exception("_click: error inesperado")
             return {"status": "error", "error": str(e)}
 
     async def _extract_data(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -152,6 +156,7 @@ class BrowserAgent:
             logger.info(f"Extracted {len(data)} elements from {selector}")
             return {"status": "success", "data": data, "count": len(data)}
         except Exception as e:
+            logger.exception("_extract_data: error inesperado")
             return {"status": "error", "error": str(e)}
 
     async def _wait(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -163,6 +168,7 @@ class BrowserAgent:
             logger.info(f"Element {selector} appeared")
             return {"status": "success", "selector": selector}
         except Exception as e:
+            logger.exception("_wait: error inesperado")
             return {"status": "error", "error": str(e)}
 
     async def _screenshot(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -174,6 +180,7 @@ class BrowserAgent:
             logger.info(f"Screenshot saved: {path}")
             return {"status": "success", "path": path}
         except Exception as e:
+            logger.exception("_screenshot: error inesperado")
             return {"status": "error", "error": str(e)}
 
     async def run_automation_script(self, script: list[dict[str, Any]]) -> dict[str, Any]:
@@ -204,5 +211,5 @@ class BrowserAgent:
             if self.browser:
                 await self.browser.close()
                 logger.info("Browser closed")
-        except Exception as e:
-            logger.error(f"Error closing browser: {e!s}")
+        except Exception:
+            logger.exception("Error closing browser")

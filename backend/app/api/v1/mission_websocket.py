@@ -1,10 +1,14 @@
 """Mission WebSocket Endpoint"""
 
 
+import logging
+
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 
 from app.core.deps import get_current_user_ws
 from app.domains.missions.websocket_manager import mission_ws_manager
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Mission WebSocket"])
 
@@ -34,6 +38,7 @@ async def mission_websocket(
             await websocket.close(code=4001, reason="Unauthorized")
             return
     except Exception:
+        logger.exception("mission_websocket: error inesperado")
         await websocket.close(code=4001, reason="Unauthorized")
         return
 
@@ -73,8 +78,9 @@ async def mission_websocket(
     except WebSocketDisconnect:
         mission_ws_manager.disconnect(user_id, websocket)
     except Exception as e:
+        logger.exception("mission_websocket: error inesperado")
         mission_ws_manager.disconnect(user_id, websocket)
         try:
             await websocket.close(code=1011, reason=str(e))
         except Exception:
-            pass
+            logger.exception("mission_websocket: error inesperado")

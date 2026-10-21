@@ -154,7 +154,7 @@ class PaymentReconciler:
             }
 
         except Exception as e:
-            logger.error(f"Reconciliation error: {e!s}")
+            logger.exception("Reconciliation error")
             db.rollback()
             return {
                 "status": "error",
@@ -197,7 +197,7 @@ class PaymentReconciler:
             )
 
         except Exception as e:
-            logger.error(f"Stripe sync error: {e!s}")
+            logger.exception("Stripe sync error")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -242,7 +242,7 @@ class PaymentReconciler:
             )
 
         except Exception as e:
-            logger.error(f"MercadoPago sync error: {e!s}")
+            logger.exception("MercadoPago sync error")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -285,7 +285,7 @@ class PaymentReconciler:
             )
 
         except Exception as e:
-            logger.error(f"Crypto sync error: {e!s}")
+            logger.exception("Crypto sync error")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -330,8 +330,8 @@ class PaymentReconciler:
                 for p in unmatched
             ]
 
-        except Exception as e:
-            logger.error(f"Error getting unreconciled payments: {e!s}")
+        except Exception:
+            logger.exception("Error getting unreconciled payments")
             return []
 
 
@@ -383,7 +383,7 @@ class FulfillmentOrchestrator:
                 raise ValueError(f"Unknown fulfillment type: {fulfillment_type}")
 
         except Exception as e:
-            logger.error(f"Fulfillment error: {e!s}")
+            logger.exception("Fulfillment error")
             return {"status": "error", "order_id": order_id, "error": str(e)}
 
     @staticmethod
@@ -407,7 +407,7 @@ class FulfillmentOrchestrator:
             }
 
         except Exception as e:
-            logger.error(f"Digital fulfillment error: {e!s}")
+            logger.exception("Digital fulfillment error")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -429,7 +429,7 @@ class FulfillmentOrchestrator:
             }
 
         except Exception as e:
-            logger.error(f"Physical fulfillment error: {e!s}")
+            logger.exception("Physical fulfillment error")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -451,5 +451,5 @@ class FulfillmentOrchestrator:
             }
 
         except Exception as e:
-            logger.error(f"Service fulfillment error: {e!s}")
+            logger.exception("Service fulfillment error")
             return {"status": "error", "error": str(e)}

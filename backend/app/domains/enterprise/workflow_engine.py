@@ -1,7 +1,10 @@
+import logging
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
+
+logger = logging.getLogger(__name__)
 
 
 class ActionType(str, Enum):
@@ -130,6 +133,7 @@ class WorkflowEngine:
                 'results': results,
             }
         except Exception as e:
+            logger.exception("execute_workflow: error inesperado")
             return {
                 'success': False,
                 'error': str(e),
@@ -145,6 +149,7 @@ class WorkflowEngine:
                 'to': config.get('to'),
             }
         except Exception as e:
+            logger.exception("_send_email: error inesperado")
             return {'success': False, 'status': 'failed', 'error': str(e)}
 
     def _send_sms(self, step: WorkflowStep, context: dict) -> dict:
@@ -157,6 +162,7 @@ class WorkflowEngine:
                 'to': config.get('phone'),
             }
         except Exception as e:
+            logger.exception("_send_sms: error inesperado")
             return {'success': False, 'status': 'failed', 'error': str(e)}
 
     def _create_task(self, step: WorkflowStep, context: dict) -> dict:
@@ -169,6 +175,7 @@ class WorkflowEngine:
                 'task_id': str(uuid.uuid4()),
             }
         except Exception as e:
+            logger.exception("_create_task: error inesperado")
             return {'success': False, 'status': 'failed', 'error': str(e)}
 
     def _update_field(self, step: WorkflowStep, context: dict) -> dict:
@@ -181,6 +188,7 @@ class WorkflowEngine:
                 'field': config.get('field'),
             }
         except Exception as e:
+            logger.exception("_update_field: error inesperado")
             return {'success': False, 'status': 'failed', 'error': str(e)}
 
     def _call_webhook(self, step: WorkflowStep, context: dict) -> dict:
@@ -193,6 +201,7 @@ class WorkflowEngine:
                 'url': config.get('url'),
             }
         except Exception as e:
+            logger.exception("_call_webhook: error inesperado")
             return {'success': False, 'status': 'failed', 'error': str(e)}
 
     def _wait(self, step: WorkflowStep, context: dict) -> dict:
@@ -205,6 +214,7 @@ class WorkflowEngine:
                 'duration': config.get('duration'),
             }
         except Exception as e:
+            logger.exception("_wait: error inesperado")
             return {'success': False, 'status': 'failed', 'error': str(e)}
 
     def _conditional(self, step: WorkflowStep, context: dict) -> dict:
@@ -218,6 +228,7 @@ class WorkflowEngine:
                 'status': 'evaluated',
             }
         except Exception as e:
+            logger.exception("_conditional: error inesperado")
             return {'success': False, 'status': 'failed', 'error': str(e)}
 
     def _loop(self, step: WorkflowStep, context: dict) -> dict:
@@ -230,6 +241,7 @@ class WorkflowEngine:
                 'iterations': config.get('iterations', 1),
             }
         except Exception as e:
+            logger.exception("_loop: error inesperado")
             return {'success': False, 'status': 'failed', 'error': str(e)}
 
     def _find_step(self, workflow: Workflow, step_id: str | None) -> WorkflowStep | None:

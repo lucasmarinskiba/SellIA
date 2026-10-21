@@ -180,7 +180,7 @@ class EmailSender:
                     }
 
         except Exception as e:
-            logger.error(f"SendGrid send failed: {e}")
+            logger.exception("SendGrid send failed")
             return {
                 "status": "failed",
                 "provider": "sendgrid",
@@ -242,7 +242,7 @@ class EmailSender:
                     }
 
         except Exception as e:
-            logger.error(f"Resend send failed: {e}")
+            logger.exception("Resend send failed")
             return {
                 "status": "failed",
                 "provider": "resend",
@@ -270,7 +270,7 @@ class EmailSender:
             }
 
         except Exception as e:
-            logger.error(f"SMTP send failed: {e}")
+            logger.exception("SMTP send failed")
             return {
                 "status": "failed",
                 "provider": "smtp",
@@ -408,7 +408,7 @@ class EmailScheduler:
                     return result
 
             except Exception as e:
-                logger.warning(f"Attempt {attempt + 1} failed: {e}")
+                logger.warning(f"Attempt {attempt + 1} failed: {e}", exc_info=True)
 
                 if attempt == max_retries - 1:
                     return {

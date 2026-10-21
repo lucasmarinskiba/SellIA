@@ -171,7 +171,7 @@ class TelegramAutomation:
             return {"status": "ok"}
 
         except Exception as e:
-            logger.error(f"Error handling update: {e}")
+            logger.exception("Error handling update")
             return {"status": "error", "message": str(e)}
 
     async def _handle_message(self, message: dict[str, Any]) -> dict[str, Any]:
@@ -267,7 +267,7 @@ class TelegramAutomation:
                 )
 
         except Exception as e:
-            logger.error(f"Error handling command: {e}")
+            logger.exception("Error handling command")
             return await self.send_message(
                 chat_id,
                 f"Error processing command: {e!s}",
@@ -505,8 +505,8 @@ class TelegramAutomation:
 
             return result.get("ok", False)
 
-        except Exception as e:
-            logger.error(f"Error sending notification: {e}")
+        except Exception:
+            logger.exception("Error sending notification")
             return False
 
     async def send_order_notification(

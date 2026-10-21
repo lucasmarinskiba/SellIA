@@ -7,6 +7,7 @@ Docs: https://shopify.dev/docs/api/admin-rest
 
 import hashlib
 import hmac
+import logging
 from typing import Any
 
 import httpx
@@ -14,6 +15,8 @@ import httpx
 from app.domains.channels.connectors.base import BaseChannelConnector
 from app.domains.channels.models import ChannelPlatform
 from app.domains.channels.schemas import WebhookPayload
+
+logger = logging.getLogger(__name__)
 
 _API_VERSION = "2024-01"
 
@@ -56,6 +59,7 @@ class ShopifyConnector(BaseChannelConnector):
                 response.raise_for_status()
                 return {"status": "logged", "note": "Nota agregada a la orden (Shopify no soporta mensajería directa al comprador)"}
         except Exception as e:
+            logger.exception("send_message: error inesperado")
             return {"status": "failed", "error": str(e)}
 
     async def push_catalog_item(self, item: Any) -> dict[str, Any]:
@@ -208,4 +212,5 @@ class ShopifyConnector(BaseChannelConnector):
                 response = await client.get(url, headers=headers)
                 return response.status_code == 200
         except Exception:
+            logger.exception("validate_credentials: error inesperado")
             return False

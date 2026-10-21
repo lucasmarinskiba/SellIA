@@ -121,8 +121,8 @@ class SlackAutomation:
 
             return hmac.compare_digest(signature, expected_signature)
 
-        except Exception as e:
-            logger.error(f"Signature verification error: {e}")
+        except Exception:
+            logger.exception("Signature verification error")
             return False
 
     # ========== COMMAND HANDLING ==========
@@ -165,7 +165,7 @@ class SlackAutomation:
                 return {"text": f"Unknown command: /{command}"}
 
         except Exception as e:
-            logger.error(f"Error handling command: {e}")
+            logger.exception("Error handling command")
             return {"text": f"Error processing command: {e!s}"}
 
     async def _handle_status_command(
@@ -422,8 +422,8 @@ class SlackAutomation:
 
             return await self._send_api_message(payload)
 
-        except Exception as e:
-            logger.error(f"Error sending alert: {e}")
+        except Exception:
+            logger.exception("Error sending alert")
             return False
 
     async def send_order_alert(
@@ -454,8 +454,8 @@ class SlackAutomation:
                 },
             )
 
-        except Exception as e:
-            logger.error(f"Error sending order alert: {e}")
+        except Exception:
+            logger.exception("Error sending order alert")
             return False
 
     async def send_payment_confirmation(

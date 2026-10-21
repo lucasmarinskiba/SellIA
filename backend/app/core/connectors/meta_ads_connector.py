@@ -28,8 +28,8 @@ class MetaAdsConnector(BaseConnector):
                         self.authenticated = True
                         return True
                     return False
-        except Exception as e:
-            logger.error(f"Meta auth failed: {e!s}")
+        except Exception:
+            logger.exception("Meta auth failed")
             return False
 
     async def create_campaign(self, campaign: dict[str, Any]) -> dict[str, Any]:
@@ -51,7 +51,7 @@ class MetaAdsConnector(BaseConnector):
                         return {"status": "created", "campaign_id": data.get("id")}
                     return {"status": "error"}
         except Exception as e:
-            logger.error(f"Error creating campaign: {e!s}")
+            logger.exception("Error creating campaign")
             return {"status": "error", "error": str(e)}
 
     async def list_products(self) -> list[dict[str, Any]]:
@@ -79,6 +79,6 @@ class MetaAdsConnector(BaseConnector):
                             "spend": float(results.get("spend", 0)),
                         }
                     return {}
-        except Exception as e:
-            logger.error(f"Error fetching metrics: {e!s}")
+        except Exception:
+            logger.exception("Error fetching metrics")
             return {}

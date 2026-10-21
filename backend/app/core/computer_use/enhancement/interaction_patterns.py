@@ -155,7 +155,7 @@ class LoginPattern:
 
         except Exception as e:
             duration_ms = int((time.time() - start_time) * 1000)
-            logger.error(f"Login pattern failed: {e!s}")
+            logger.exception("Login pattern failed")
 
             return PatternResult(
                 pattern_name=self.pattern_name,
@@ -257,7 +257,7 @@ class SearchPattern:
 
         except Exception as e:
             duration_ms = int((time.time() - start_time) * 1000)
-            logger.error(f"Search pattern failed: {e!s}")
+            logger.exception("Search pattern failed")
 
             return PatternResult(
                 pattern_name=self.pattern_name,
@@ -277,7 +277,7 @@ class SearchPattern:
             # Por ahora, retornar estructura
             pass
         except Exception as e:
-            logger.debug(f"Error extracting results: {e!s}")
+            logger.debug(f"Error extracting results: {e!s}", exc_info=True)
 
         return results
 
@@ -386,7 +386,7 @@ class FormFillPattern:
 
         except Exception as e:
             duration_ms = int((time.time() - start_time) * 1000)
-            logger.error(f"Form fill pattern failed: {e!s}")
+            logger.exception("Form fill pattern failed")
 
             return PatternResult(
                 pattern_name=self.pattern_name,
@@ -410,7 +410,7 @@ class FormFillPattern:
                 if element:
                     fields[field_name] = "identified"
             except Exception:
-                pass
+                logger.exception("_identify_form_fields: error inesperado")
 
         return fields
 
@@ -488,7 +488,7 @@ class PaginationPattern:
                     await asyncio.sleep(2)  # Esperar carga
 
                 except Exception as e:
-                    logger.info(f"Pagination ended: {e!s}")
+                    logger.info(f"Pagination ended: {e!s}", exc_info=True)
                     break
 
                 steps += 1
@@ -508,7 +508,7 @@ class PaginationPattern:
 
         except Exception as e:
             duration_ms = int((time.time() - start_time) * 1000)
-            logger.error(f"Pagination pattern failed: {e!s}")
+            logger.exception("Pagination pattern failed")
 
             return PatternResult(
                 pattern_name=self.pattern_name,
@@ -584,7 +584,8 @@ class ModalHandlingPattern:
             try:
                 await self.computer_use.wait_for_element_to_disappear(modal, timeout_ms=3000)
             except Exception:
-                pass  # Ya no está visible
+                logger.exception("execute: error inesperado")
+                # Ya no está visible
 
             steps += 1
 
@@ -603,7 +604,7 @@ class ModalHandlingPattern:
 
         except Exception as e:
             duration_ms = int((time.time() - start_time) * 1000)
-            logger.error(f"Modal handling failed: {e!s}")
+            logger.exception("Modal handling failed")
 
             return PatternResult(
                 pattern_name=self.pattern_name,
@@ -691,7 +692,7 @@ class UploadPattern:
 
         except Exception as e:
             duration_ms = int((time.time() - start_time) * 1000)
-            logger.error(f"Upload pattern failed: {e!s}")
+            logger.exception("Upload pattern failed")
 
             return PatternResult(
                 pattern_name=self.pattern_name,
@@ -747,7 +748,7 @@ class InteractionPatternLibrary:
             return result
 
         except Exception as e:
-            logger.error(f"Pattern execution failed: {e!s}")
+            logger.exception("Pattern execution failed")
             return PatternResult(
                 pattern_name=pattern_name,
                 success=False,

@@ -312,5 +312,5 @@ async def fetch_competitor_page(url: str, timeout_seconds: int = 10) -> str | No
                     return None
                 return await resp.text()
     except Exception as e:
-        logger.warning(f"Competitor page fetch failed for {url}: {e}")
+        logger.warning(f"Competitor page fetch failed for {url}: {e}", exc_info=True)
         return None

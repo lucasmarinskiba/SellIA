@@ -104,7 +104,7 @@ class ChainOfThought:
             parsed = _parse_json_response(response, ThoughtProcess)
             return parsed.steps if parsed else []
         except Exception as e:
-            logger.warning(f"Chain-of-thought generation failed: {e}")
+            logger.warning(f"Chain-of-thought generation failed: {e}", exc_info=True)
             return []
 
     @staticmethod
@@ -199,7 +199,7 @@ class SelfReflection:
             result = _parse_json_response(response, ReflectionResult)
             return result
         except Exception as e:
-            logger.warning(f"Self-reflection generation failed: {e}")
+            logger.warning(f"Self-reflection generation failed: {e}", exc_info=True)
             return None
 
     @staticmethod
@@ -277,7 +277,7 @@ def _parse_json_response(text: str, model_class) -> Any | None:
         data = json.loads(text)
         return model_class.model_validate(data)
     except Exception:
-        pass
+        logger.exception("_parse_json_response: error inesperado")
 
     # Try markdown code blocks
     if "```json" in text:
@@ -287,7 +287,7 @@ def _parse_json_response(text: str, model_class) -> Any | None:
             data = json.loads(text[start:end].strip())
             return model_class.model_validate(data)
         except Exception:
-            pass
+            logger.exception("_parse_json_response: error inesperado")
 
     if "```" in text:
         try:
@@ -296,7 +296,7 @@ def _parse_json_response(text: str, model_class) -> Any | None:
             data = json.loads(text[start:end].strip())
             return model_class.model_validate(data)
         except Exception:
-            pass
+            logger.exception("_parse_json_response: error inesperado")
 
     # Try JSON between braces
     try:
@@ -305,7 +305,7 @@ def _parse_json_response(text: str, model_class) -> Any | None:
         data = json.loads(text[start:end])
         return model_class.model_validate(data)
     except Exception:
-        pass
+        logger.exception("_parse_json_response: error inesperado")
 
     logger.warning(f"Could not parse JSON response into {model_class.__name__}")
     return None

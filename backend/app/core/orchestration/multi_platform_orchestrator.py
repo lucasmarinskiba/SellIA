@@ -200,7 +200,7 @@ class MultiPlatformOrchestrator:
                 analytics = await self._extract_platform_metrics(platform)
                 results["platforms"][platform] = analytics
             except Exception as e:
-                logger.error(f"Failed to extract {platform} analytics: {e!s}")
+                logger.exception(f"Failed to extract {platform} analytics")
                 results["platforms"][platform] = {"error": str(e)}
 
         # Guardar en cache (1 hora)

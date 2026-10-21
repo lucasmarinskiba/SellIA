@@ -93,7 +93,7 @@ async def analyze_market(product: ProductInput):
         }
 
     except Exception as e:
-        logger.error(f"Error analizando mercado: {e!s}")
+        logger.exception("Error analizando mercado")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -160,7 +160,7 @@ async def generate_strategy(product: ProductInput):
         }
 
     except Exception as e:
-        logger.error(f"Error generando estrategia: {e!s}")
+        logger.exception("Error generando estrategia")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -221,7 +221,7 @@ async def optimize_strategy(
         }
 
     except Exception as e:
-        logger.error(f"Error optimizando estrategia: {e!s}")
+        logger.exception("Error optimizando estrategia")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -299,5 +299,5 @@ async def generate_full_report(product: ProductInput):
         }
 
     except Exception as e:
-        logger.error(f"Error generando reporte: {e!s}")
+        logger.exception("Error generando reporte")
         raise HTTPException(status_code=500, detail=str(e))

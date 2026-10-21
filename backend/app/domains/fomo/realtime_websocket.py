@@ -1,10 +1,13 @@
 """Real-time WebSocket Manager - Live FOMO widget updates"""
 
 import asyncio
+import logging
 from enum import Enum
 from typing import Any
 
 from app.core.clock import utc_now
+
+logger = logging.getLogger(__name__)
 
 
 class WebSocketEventType(str, Enum):
@@ -76,6 +79,7 @@ class WebSocketConnectionPool:
             try:
                 await connection.send_json(event)
             except Exception:
+                logger.exception("broadcast_to_campaign: error inesperado")
                 disconnected.append(connection)
 
         # Clean up disconnected connections
@@ -306,7 +310,7 @@ class WebSocketHeartbeat:
         try:
             await connection.send_json(heartbeat)
         except Exception:
-            pass
+            logger.exception("send_heartbeat: error inesperado")
 
     @staticmethod
     async def start_heartbeat_loop(
@@ -326,6 +330,7 @@ class WebSocketHeartbeat:
                 )
                 await asyncio.sleep(interval_seconds)
             except Exception:
+                logger.exception("start_heartbeat_loop: error inesperado")
                 break
 
 

@@ -172,7 +172,7 @@ class EnsemblePredictor:
                     )
                     votes.append(vote)
                 except Exception as e:
-                    logger.warning(f"Model {name} failed: {e}")
+                    logger.warning(f"Model {name} failed: {e}", exc_info=True)
 
             all_votes.append(votes)
 
@@ -198,7 +198,7 @@ class EnsemblePredictor:
 
                 performance[name] = float(score)
             except Exception as e:
-                logger.warning(f"Could not evaluate {name}: {e}")
+                logger.warning(f"Could not evaluate {name}: {e}", exc_info=True)
                 performance[name] = 0.0
 
         return performance
@@ -289,7 +289,7 @@ class ModelSelector:
                 scores = cross_val_score(model, X, y, cv=5, scoring="r2" if task == "regression" else "accuracy")
                 self.model_scores[name] = float(np.mean(scores))
             except Exception as e:
-                logger.warning(f"Error evaluating {name}: {e}")
+                logger.warning(f"Error evaluating {name}: {e}", exc_info=True)
                 self.model_scores[name] = 0.0
 
         # Rank models

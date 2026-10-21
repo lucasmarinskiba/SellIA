@@ -70,8 +70,8 @@ class StripeService:
 
             return hmac.compare_digest(stripe_signature, expected_sig)
 
-        except Exception as e:
-            logger.error(f"Webhook verification failed: {e}")
+        except Exception:
+            logger.exception("Webhook verification failed")
             return False
 
     async def handle_payment_succeeded(
@@ -97,8 +97,8 @@ class StripeService:
                 "action": "activate_subscription",  # Auto-activate subscription
             }
 
-        except Exception as e:
-            logger.error(f"Payment success handler failed: {e}")
+        except Exception:
+            logger.exception("Payment success handler failed")
             return None
 
     async def handle_payment_failed(
@@ -120,8 +120,8 @@ class StripeService:
                 "action": "retry_payment",  # Retry logic
             }
 
-        except Exception as e:
-            logger.error(f"Payment failure handler failed: {e}")
+        except Exception:
+            logger.exception("Payment failure handler failed")
             return None
 
     async def handle_invoice_paid(
@@ -146,8 +146,8 @@ class StripeService:
                 "status": "paid",
             }
 
-        except Exception as e:
-            logger.error(f"Invoice paid handler failed: {e}")
+        except Exception:
+            logger.exception("Invoice paid handler failed")
             return None
 
     async def create_customer(
@@ -159,8 +159,8 @@ class StripeService:
             logger.info(f"Stripe customer created: {name} ({email})")
             return f"cus_{datetime.now().timestamp()}"
 
-        except Exception as e:
-            logger.error(f"Customer creation failed: {e}")
+        except Exception:
+            logger.exception("Customer creation failed")
             return None
 
     async def create_subscription(
@@ -177,8 +177,8 @@ class StripeService:
             )
             return f"sub_{datetime.now().timestamp()}"
 
-        except Exception as e:
-            logger.error(f"Subscription creation failed: {e}")
+        except Exception:
+            logger.exception("Subscription creation failed")
             return None
 
 

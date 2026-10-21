@@ -45,6 +45,7 @@ async def _is_ollama_available() -> bool:
                 for m in models
             )
     except Exception:
+        logger.exception("_is_ollama_available: error inesperado")
         return False
 
 
@@ -183,6 +184,7 @@ class FallbackComputerUseProvider(ComputerUseProvider):
                     return result
                 errors.append(f"{provider.provider_name}: {result.params.get('message', 'error')}")
             except Exception as e:
+                logger.exception("decide_action: error inesperado")
                 errors.append(f"{provider.provider_name}: {e!s}")
                 continue
 
@@ -198,5 +200,6 @@ class FallbackComputerUseProvider(ComputerUseProvider):
             try:
                 return await provider.generate_summary(actions_log)
             except Exception:
+                logger.exception("generate_summary: error inesperado")
                 continue
         return "Sesión completada."

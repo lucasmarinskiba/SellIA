@@ -7,12 +7,15 @@
 4. SEOOptimizationEngine - Keyword ranking + listing A/B testing
 """
 
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from typing import Any
 
 from app.core.clock import utc_now
+
+logger = logging.getLogger(__name__)
 
 
 class Platform(Enum):
@@ -168,6 +171,7 @@ class PlatformSyncEngine:
                     product_id, platform, platform_allocation
                 )
             except Exception as e:
+                logger.exception("sync_inventory: error inesperado")
                 sync_results[platform.value] = False
                 print(f"Sync failed for {platform.value}: {e!s}")
 

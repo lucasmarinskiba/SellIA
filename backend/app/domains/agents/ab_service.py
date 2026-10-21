@@ -419,7 +419,7 @@ class ABTestEngine:
             )
             await ABTestEngine.check_auto_promote(db, experiment_id)
         except Exception as e:
-            logger.warning(f"Failed to record AB outcome for key '{tracking_key}': {e}")
+            logger.warning(f"Failed to record AB outcome for key '{tracking_key}': {e}", exc_info=True)
 
     @staticmethod
     async def check_auto_promote(

@@ -145,7 +145,7 @@ class PositioningScoreService:
             return connector
 
         except Exception as e:
-            logger.error(f"Error getting ranking connector: {str(e)[:200]}")
+            logger.exception(f"Error getting ranking connector: {str(e)[:200]}")
             return None
 
     async def compute_score_for_link(
@@ -181,7 +181,7 @@ class PositioningScoreService:
             external_id = link.url  # connectors resolve their own id shape internally where needed
             signals = await connector.get_ranking_signals(external_id)
         except Exception as e:
-            logger.error(f"Failed to fetch ranking signals for link {link.id}: {str(e)[:200]}")
+            logger.exception(f"Failed to fetch ranking signals for link {link.id}: {str(e)[:200]}")
             return None
 
         if platform == "instagram":
@@ -396,7 +396,7 @@ class PositioningScoreService:
                         "pages_analyzed": web_data.get("pages_analyzed"),
                     }
         except Exception as e:
-            logger.warning(f"Could not merge web_presence data into positioning summary: {str(e)[:150]}")
+            logger.warning(f"Could not merge web_presence data into positioning summary: {str(e)[:150]}", exc_info=True)
 
         return summary
 

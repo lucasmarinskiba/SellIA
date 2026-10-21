@@ -3,9 +3,12 @@
 import base64
 import hashlib
 import io
+import logging
 
 import aiohttp
 from PIL import Image
+
+logger = logging.getLogger(__name__)
 
 
 def hash_prompt(prompt: str) -> str:
@@ -73,6 +76,7 @@ async def download_url(url: str, timeout: int = 60) -> bytes | None:
                     return await resp.read()
                 return None
     except Exception:
+        logger.exception("download_url: error inesperado")
         return None
 
 

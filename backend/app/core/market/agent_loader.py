@@ -28,8 +28,8 @@ class AgentLoader:
                     if agent:
                         agents.append(agent)
                         AgentLoader._agent_cache[agent_id] = agent
-                except Exception as e:
-                    logger.error(f"Error loading agent {agent_id}: {e}")
+                except Exception:
+                    logger.exception(f"Error loading agent {agent_id}")
 
         return agents
 

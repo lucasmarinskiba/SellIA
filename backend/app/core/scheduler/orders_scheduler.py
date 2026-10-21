@@ -71,7 +71,7 @@ class OrdersScheduler:
             }
 
         except Exception as e:
-            logger.error(f"Add ML sync job failed: {e!s}")
+            logger.exception("Add ML sync job failed")
             return {"status": "error", "error": str(e)}
 
     async def add_amazon_sync(
@@ -103,8 +103,8 @@ class OrdersScheduler:
                 "interval_minutes": interval_minutes,
             }
 
-        except Exception as e:
-            logger.error(f"Add Amazon sync job failed: {e!s}")
+        except Exception:
+            logger.exception("Add Amazon sync job failed")
             return {"status": "error"}
 
     async def add_shopify_sync(
@@ -136,8 +136,8 @@ class OrdersScheduler:
                 "interval_minutes": interval_minutes,
             }
 
-        except Exception as e:
-            logger.error(f"Add Shopify sync job failed: {e!s}")
+        except Exception:
+            logger.exception("Add Shopify sync job failed")
             return {"status": "error"}
 
     def remove_job(self, job_id: str) -> dict[str, Any]:
@@ -150,8 +150,8 @@ class OrdersScheduler:
             logger.info(f"Job {job_id} removed")
             return {"status": "success"}
 
-        except Exception as e:
-            logger.error(f"Remove job failed: {e!s}")
+        except Exception:
+            logger.exception("Remove job failed")
             return {"status": "error"}
 
     def list_jobs(self) -> dict[str, Any]:
@@ -182,8 +182,8 @@ class OrdersScheduler:
             logger.info(f"Executing ML sync for {seller_id}")
             result = await ml_service.sync_orders()
             logger.info(f"ML sync complete: {result.get('orders_synced', 0)} orders")
-        except Exception as e:
-            logger.error(f"ML sync wrapper failed: {e!s}")
+        except Exception:
+            logger.exception("ML sync wrapper failed")
 
     @staticmethod
     async def _sync_amazon_orders_wrapper(amazon_service, seller_id: str):
@@ -192,8 +192,8 @@ class OrdersScheduler:
             logger.info(f"Executing Amazon sync for {seller_id}")
             result = await amazon_service.sync_orders()
             logger.info("Amazon sync complete")
-        except Exception as e:
-            logger.error(f"Amazon sync wrapper failed: {e!s}")
+        except Exception:
+            logger.exception("Amazon sync wrapper failed")
 
     @staticmethod
     async def _sync_shopify_orders_wrapper(shopify_service, store_url: str):
@@ -202,5 +202,5 @@ class OrdersScheduler:
             logger.info(f"Executing Shopify sync for {store_url}")
             result = await shopify_service.sync_orders()
             logger.info("Shopify sync complete")
-        except Exception as e:
-            logger.error(f"Shopify sync wrapper failed: {e!s}")
+        except Exception:
+            logger.exception("Shopify sync wrapper failed")

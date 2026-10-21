@@ -5,9 +5,12 @@ Usa la API gratuita ip-api.com para obtener coordenadas de una IP.
 Para producción, se recomienda MaxMind GeoIP2.
 """
 
+import logging
 import math
 
 import aiohttp
+
+logger = logging.getLogger(__name__)
 
 GEO_API_URL = "http://ip-api.com/json/{ip}?fields=status,country,countryCode,region,city,lat,lon,query"
 
@@ -71,6 +74,7 @@ async def get_ip_geolocation(ip: str) -> dict | None:
                     "ip": data.get("query") or ip,
                 }
     except Exception as e:
+        logger.exception("get_ip_geolocation: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).warning(f"Error geolocalizando IP: {e}")
         return None

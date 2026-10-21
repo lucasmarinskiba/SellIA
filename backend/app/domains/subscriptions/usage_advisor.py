@@ -182,4 +182,5 @@ async def _get_cache_hit_rate(user_id: uuid.UUID) -> float:
         total = hits + misses
         return hits / total if total > 0 else 0.0
     except Exception:
+        logger.exception("_get_cache_hit_rate: error inesperado")
         return 0.0

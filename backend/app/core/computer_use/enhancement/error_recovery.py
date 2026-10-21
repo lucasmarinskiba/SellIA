@@ -367,7 +367,7 @@ class ErrorRecoveryManager:
                 retry_count += 1
 
             except Exception as e:
-                logger.warning(f"Recovery attempt {retry_count+1} failed: {e!s}")
+                logger.warning(f"Recovery attempt {retry_count+1} failed: {e!s}", exc_info=True)
                 retry_count += 1
 
         # Abrir circuit breaker si es necesario
@@ -389,6 +389,7 @@ class ErrorRecoveryManager:
                 result = await action_callable()
                 return {"success": True, "result": result}
             except Exception as e:
+                logger.exception("_retry_action: error inesperado")
                 return {"success": False, "error": str(e)}
         return {"success": False, "error": "No action callable provided"}
 
@@ -399,6 +400,7 @@ class ErrorRecoveryManager:
             await asyncio.sleep(2)
             return await self._retry_action(**kwargs)
         except Exception as e:
+            logger.exception("_refresh_and_retry: error inesperado")
             return {"success": False, "error": f"Refresh failed: {e!s}"}
 
     async def _navigate_home_and_retry(self, **kwargs) -> dict[str, Any]:
@@ -408,6 +410,7 @@ class ErrorRecoveryManager:
             await asyncio.sleep(3)
             return await self._retry_action(**kwargs)
         except Exception as e:
+            logger.exception("_navigate_home_and_retry: error inesperado")
             return {"success": False, "error": f"Navigation failed: {e!s}"}
 
     async def _relogin_and_retry(self, **kwargs) -> dict[str, Any]:
@@ -434,6 +437,7 @@ class ErrorRecoveryManager:
             return await self._retry_action(**kwargs)
 
         except Exception as e:
+            logger.exception("_relogin_and_retry: error inesperado")
             return {"success": False, "error": f"Re-login failed: {e!s}"}
 
     async def _wait_and_retry(
@@ -543,7 +547,7 @@ class ResilientAction:
             )
 
         except Exception as e:
-            logger.warning(f"Action failed: {e!s}")
+            logger.warning(f"Action failed: {e!s}", exc_info=True)
             return await self.recovery_manager.handle_error(
                 e,
                 action=self.action_callable.__name__,

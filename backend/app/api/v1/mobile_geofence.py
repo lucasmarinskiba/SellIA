@@ -1,5 +1,6 @@
 """Mobile geofence API — auto check-in + nearby locations."""
 
+import logging
 from typing import Annotated
 from uuid import UUID
 
@@ -14,6 +15,8 @@ from app.core.deps import get_current_user
 from app.domains.businesses.location_models import Location
 from app.domains.locations.geofence_service import GeofenceTriggerService
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/mobile", tags=["mobile-geofence"])
 
@@ -73,6 +76,7 @@ async def check_geofence(
             "error": result.get("error")
         }
     except Exception as e:
+        logger.exception("check_geofence: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -109,6 +113,7 @@ async def get_nearby_locations(
             "count": len(nearby)
         }
     except Exception as e:
+        logger.exception("get_nearby_locations: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -153,4 +158,5 @@ async def subscribe_to_geofence(
             "note": "iOS requires location permission 'Always'. Android requires 'Allow all the time'."
         }
     except Exception as e:
+        logger.exception("subscribe_to_geofence: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

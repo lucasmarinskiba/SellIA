@@ -5,12 +5,15 @@ Clasifica automáticamente tickets por categoría y prioridad usando LLM.
 Detecta urgencia y keywords críticas para escalamiento automático.
 """
 
+import logging
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.agents.ai_reply import generate_raw_ai_response
 from app.domains.support.models import TicketCategory, TicketPriority
+
+logger = logging.getLogger(__name__)
 
 # Keywords que disparan escalamiento inmediato a CRITICAL
 URGENT_KEYWORDS = [
@@ -81,6 +84,7 @@ Classify this ticket:"""
 
         return category, priority, confidence
     except Exception:
+        logger.exception("classify_ticket: error inesperado")
         return TicketCategory.OTHER, TicketPriority.MEDIUM, 0.5
 
 

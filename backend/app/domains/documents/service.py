@@ -75,7 +75,7 @@ class DocumentService:
         try:
             process_document_task.delay(str(doc.id))
         except Exception as exc:
-            logger.warning(f"Could not queue Celery task: {exc}; processing will happen on next read or manually")
+            logger.warning(f"Could not queue Celery task: {exc}; processing will happen on next read or manually", exc_info=True)
 
         return doc
 

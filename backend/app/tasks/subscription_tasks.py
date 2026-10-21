@@ -159,8 +159,8 @@ def process_crypto_pending_payments():
                                     logger.info(f"Crypto payment completed: tx {tx.id}, sub {sub.id}")
 
                     await db.commit()
-                except Exception as e:
-                    logger.error(f"Error checking crypto tx {tx.id}: {e}")
+                except Exception:
+                    logger.exception(f"Error checking crypto tx {tx.id}")
 
     run_async(_run())
 
@@ -335,8 +335,8 @@ def generate_recurring_invoices():
                         region=region,
                     )
                     logger.info(f"Invoice generada para usuario {user.id}, plan {plan.slug}")
-                except Exception as e:
-                    logger.error(f"Error generando invoice para {user.id}: {e}")
+                except Exception:
+                    logger.exception(f"Error generando invoice para {user.id}")
 
     run_async(_run())
 
@@ -495,7 +495,7 @@ def sync_mercadopago_preapprovals():
                                     pass
 
                     await db.commit()
-                except Exception as e:
-                    logger.error(f"Error sync preapproval {sub.mercadopago_preapproval_id}: {e}")
+                except Exception:
+                    logger.exception(f"Error sync preapproval {sub.mercadopago_preapproval_id}")
 
     run_async(_run())

@@ -72,8 +72,8 @@ class PlatformAutomationEngine:
             else:
                 return False, None
 
-        except Exception as e:
-            self.logger.error(f"Error sending response: {e}")
+        except Exception:
+            self.logger.exception("Error sending response")
             return False, None
 
     async def respond_to_comment(
@@ -109,8 +109,8 @@ class PlatformAutomationEngine:
 
             return False, None
 
-        except Exception as e:
-            self.logger.error(f"Error responding to comment: {e}")
+        except Exception:
+            self.logger.exception("Error responding to comment")
             return False, None
 
     # ── Private ──────────────────────────────────────────────
@@ -178,8 +178,8 @@ class PlatformAutomationEngine:
 
             return True
 
-        except Exception as e:
-            self.logger.error(f"Error executing steps: {e}")
+        except Exception:
+            self.logger.exception("Error executing steps")
             return False
 
 

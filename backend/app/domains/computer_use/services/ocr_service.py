@@ -82,7 +82,7 @@ class OCRService:
                 return self._engine.image_to_string(img, lang="spa+eng")
 
         except Exception as e:
-            logger.warning(f"OCR extraction failed: {e}")
+            logger.warning(f"OCR extraction failed: {e}", exc_info=True)
             return ""
 
         return ""
@@ -125,7 +125,7 @@ class OCRService:
                         ))
 
         except Exception as e:
-            logger.warning(f"OCR region extraction failed: {e}")
+            logger.warning(f"OCR region extraction failed: {e}", exc_info=True)
 
         return regions
 

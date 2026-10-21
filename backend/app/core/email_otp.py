@@ -149,6 +149,6 @@ async def send_otp_email(email: str, code: str, purpose: str) -> bool:
         if not delivered:
             logger.warning("OTP email for %s was not delivered by the mail service", email)
         return bool(delivered)
-    except Exception as e:
-        logger.error(f"Failed to send OTP email: {e}")
+    except Exception:
+        logger.exception("Failed to send OTP email")
         return False

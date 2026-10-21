@@ -154,6 +154,7 @@ class RetryableTask:
                 return True
 
             except Exception as e:
+                logger.exception("execute: error inesperado")
                 self.last_error = str(e)
 
                 if attempt < self.policy.max_retries:

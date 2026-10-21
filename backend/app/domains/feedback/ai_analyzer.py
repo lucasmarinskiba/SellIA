@@ -9,6 +9,7 @@ Analiza feedback de usuarios con LLM para:
 """
 
 import json
+import logging
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +17,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domains.agents.ai_reply import generate_raw_ai_response
 from app.domains.feedback.models import FeedbackSeverity, FeedbackType, UserFeedback
 from app.domains.feedback.service import FeedbackService
+
+logger = logging.getLogger(__name__)
 
 # Keywords para clasificación rápida sin LLM
 BUG_KEYWORDS = ["bug", "error", "falla", "crashea", "no funciona", "broken", "se rompe", "problema"]
@@ -109,6 +112,7 @@ Analyze this feedback:"""
             None,
         )
     except Exception:
+        logger.exception("analyze_feedback: error inesperado")
         return feedback_type, "general", severity, "", "", 0.5, None
 
 

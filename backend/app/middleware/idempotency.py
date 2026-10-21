@@ -89,7 +89,7 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
                         headers=dict(response.headers),
                     )
                 except Exception as e:
-                    logger.warning(f"Failed to cache idempotency response: {e}")
+                    logger.warning(f"Failed to cache idempotency response: {e}", exc_info=True)
                     # Fall through to return original response
 
             return response

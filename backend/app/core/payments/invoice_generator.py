@@ -165,7 +165,7 @@ class InvoiceGenerator:
             return result
 
         except Exception as e:
-            logger.error(f"Invoice generation error: {e!s}")
+            logger.exception("Invoice generation error")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -457,5 +457,5 @@ class InvoiceGenerator:
             }
 
         except Exception as e:
-            logger.error(f"Error sending invoice email: {e!s}")
+            logger.exception("Error sending invoice email")
             return {"status": "error", "error": str(e)}

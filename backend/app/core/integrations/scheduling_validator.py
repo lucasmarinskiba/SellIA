@@ -61,7 +61,7 @@ async def validate_scheduling_request(
         }
 
     except Exception as e:
-        logger.error(f"Scheduling validation error: {e!s}")
+        logger.exception("Scheduling validation error")
         return {
             "allowed": False,
             "error": "validation_error",

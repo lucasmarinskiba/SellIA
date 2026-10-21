@@ -131,8 +131,8 @@ El lead magnet debe:
             import json
             parsed = json.loads(response or "{}")
             return parsed
-        except Exception as e:
-            logger.error(f"Failed to generate lead magnet content: {e}")
+        except Exception:
+            logger.exception("Failed to generate lead magnet content")
             return {
                 "title": f"Guía gratuita: {topic}",
                 "description": f"Descubre cómo resolver {topic} con esta guía práctica.",
@@ -168,8 +168,8 @@ Máximo 200 palabras. Tono: conversacional, urgencia suave, sin ser agresivo."""
                 max_tokens=800,
                 temperature=0.7,
             ) or ""
-        except Exception as e:
-            logger.error(f"Failed to generate landing copy: {e}")
+        except Exception:
+            logger.exception("Failed to generate landing copy")
             return ""
 
     async def _generate_delivery_message(self, business_id: uuid.UUID, topic: str, magnet_format: LeadMagnetFormat) -> str:
@@ -196,8 +196,8 @@ Ejemplo de tono: "¡Hola [nombre]! Aquí tienes la guía que pediste. Espero que
                 max_tokens=400,
                 temperature=0.7,
             ) or ""
-        except Exception as e:
-            logger.error(f"Failed to generate delivery message: {e}")
+        except Exception:
+            logger.exception("Failed to generate delivery message")
             return f"¡Hola! Aquí tienes la guía sobre {topic} que solicitaste. Espero que te sea de gran ayuda."
 
     # ========== Delivery ==========
@@ -232,7 +232,7 @@ Ejemplo de tono: "¡Hola [nombre]! Aquí tienes la guía que pediste. Espero que
                 content_type="text",
             )
         except Exception as e:
-            logger.error(f"Failed to send lead magnet message: {e}")
+            logger.exception("Failed to send lead magnet message")
             return {"status": "error", "reason": str(e)}
 
         # Update metrics

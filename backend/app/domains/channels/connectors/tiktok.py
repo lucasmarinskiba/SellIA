@@ -4,11 +4,14 @@ Handles TikTok direct messages (DMs) and comment webhooks.
 Docs: https://developers.tiktok.com/doc/webhooks-webhook
 """
 
+import logging
 from typing import Any
 
 from app.domains.channels.connectors.base import BaseChannelConnector
 from app.domains.channels.models import ChannelPlatform
 from app.domains.channels.schemas import WebhookPayload
+
+logger = logging.getLogger(__name__)
 
 
 class TikTokConnector(BaseChannelConnector):
@@ -108,4 +111,5 @@ class TikTokConnector(BaseChannelConnector):
                 response = await client.get(url, headers=headers)
                 return response.status_code == 200
         except Exception:
+            logger.exception("validate_credentials: error inesperado")
             return False

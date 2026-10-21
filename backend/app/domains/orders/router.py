@@ -2,6 +2,7 @@
 
 import csv
 import io
+import logging
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
 from uuid import UUID
@@ -34,6 +35,8 @@ from app.domains.services.models import (
     ServiceDeliveryStatus,
 )
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
@@ -143,6 +146,7 @@ async def create_order(
                 wf.conversion_count = (wf.conversion_count or 0) + 1
                 await db.commit()
         except Exception as e:
+            logger.exception("create_order: error inesperado")
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Error updating workflow conversion_count: {e}")
 

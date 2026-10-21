@@ -496,7 +496,7 @@ class EmailService:
             elif self.provider == EmailProvider.SMTP:
                 return await self._send_smtp(message)
         except Exception as e:
-            logger.error(f"Failed to send email: {e!s}")
+            logger.exception("Failed to send email")
             return {"status": "error", "error": str(e)}
 
     async def _send_sendgrid(self, message: EmailMessage) -> dict[str, Any]:
@@ -531,7 +531,7 @@ class EmailService:
             }
 
         except Exception as e:
-            logger.error(f"SendGrid error: {e!s}")
+            logger.exception("SendGrid error")
             return {"status": "error", "error": str(e)}
 
     async def _send_ses(self, message: EmailMessage) -> dict[str, Any]:
@@ -562,7 +562,7 @@ class EmailService:
             }
 
         except Exception as e:
-            logger.error(f"AWS SES error: {e!s}")
+            logger.exception("AWS SES error")
             return {"status": "error", "error": str(e)}
 
     async def _send_smtp(self, message: EmailMessage) -> dict[str, Any]:
@@ -594,7 +594,7 @@ class EmailService:
             return {"status": "success", "message": "Email sent via SMTP"}
 
         except Exception as e:
-            logger.error(f"SMTP error: {e!s}")
+            logger.exception("SMTP error")
             return {"status": "error", "error": str(e)}
 
     def _render_products_html(self, products: list[dict[str, Any]]) -> str:

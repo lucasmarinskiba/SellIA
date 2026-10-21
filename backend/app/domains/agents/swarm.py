@@ -301,8 +301,8 @@ class AgentSwarm:
                         use_smart_router=True,
                     )
                     raw_text = response.content if response else "{}"
-                except Exception as e:
-                    logger.error(f"Swarm LLM call failed for {agent_slug}: {e}")
+                except Exception:
+                    logger.exception(f"Swarm LLM call failed for {agent_slug}")
                     raw_text = "{}"
 
                 parsed = _parse_swarm_response(raw_text)

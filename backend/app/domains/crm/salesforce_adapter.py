@@ -114,8 +114,8 @@ class SalesforceAdapter(CRMAdapter):
                 custom_fields={k: v for k, v in result.items() if k.endswith("__c")},
             )
 
-        except Exception as e:
-            logger.error(f"Salesforce fetch_lead failed: {lead_id} - {e}")
+        except Exception:
+            logger.exception(f"Salesforce fetch_lead failed: {lead_id}")
             return None
 
     async def fetch_leads(
@@ -164,8 +164,8 @@ class SalesforceAdapter(CRMAdapter):
             logger.info(f"Fetched {len(leads)} leads from Salesforce")
             return leads
 
-        except Exception as e:
-            logger.error(f"Salesforce fetch_leads failed: {e}")
+        except Exception:
+            logger.exception("Salesforce fetch_leads failed")
             return []
 
     async def update_lead(self, lead_id: str, data: dict[str, Any]) -> bool:
@@ -176,8 +176,8 @@ class SalesforceAdapter(CRMAdapter):
             logger.info(f"Updated lead {lead_id} in Salesforce")
             return True
 
-        except Exception as e:
-            logger.error(f"Salesforce update_lead failed: {lead_id} - {e}")
+        except Exception:
+            logger.exception(f"Salesforce update_lead failed: {lead_id}")
             return False
 
     async def create_activity(
@@ -199,6 +199,6 @@ class SalesforceAdapter(CRMAdapter):
             logger.info(f"Logged activity for lead {lead_id}: {activity_type}")
             return True
 
-        except Exception as e:
-            logger.error(f"Salesforce create_activity failed: {lead_id} - {e}")
+        except Exception:
+            logger.exception(f"Salesforce create_activity failed: {lead_id}")
             return False

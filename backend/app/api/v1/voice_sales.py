@@ -1,5 +1,6 @@
 """Phase 29 Voice Sales API endpoints."""
 
+import logging
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -11,6 +12,8 @@ from app.domains.enterprise.voice_sales import (
     PlaybookRecommender,
     VoiceCallManager,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/voice", tags=["voice-sales"])
 
@@ -96,6 +99,7 @@ def initiate_call(
             script=result.script,
         )
     except Exception as e:
+        logger.exception("initiate_call: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -115,6 +119,7 @@ def handle_call_input(
             call_id=request.call_id,
         )
     except Exception as e:
+        logger.exception("handle_call_input: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -139,6 +144,7 @@ def end_call(
             meeting_booked=result.get("meeting_booked", False),
         )
     except Exception as e:
+        logger.exception("end_call: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -166,6 +172,7 @@ def recommend_playbook(
             confidence=recommendation.confidence,
         )
     except Exception as e:
+        logger.exception("recommend_playbook: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -199,4 +206,5 @@ def get_voice_metrics(
             average_objections_handled=avg_objections,
         )
     except Exception as e:
+        logger.exception("get_voice_metrics: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

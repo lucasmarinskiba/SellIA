@@ -4,6 +4,7 @@ Captures leads from Facebook Lead Ads and Instagram Lead Ads.
 Docs: https://developers.facebook.com/docs/marketing-api/guides/lead-ads/
 """
 
+import logging
 from typing import Any
 
 import httpx
@@ -11,6 +12,8 @@ import httpx
 from app.domains.channels.connectors.base import BaseChannelConnector
 from app.domains.channels.models import ChannelPlatform
 from app.domains.channels.schemas import WebhookPayload
+
+logger = logging.getLogger(__name__)
 
 
 class FacebookAdsConnector(BaseChannelConnector):
@@ -135,4 +138,5 @@ class FacebookAdsConnector(BaseChannelConnector):
                 response = await client.get(url, params=params)
                 return response.status_code == 200
         except Exception:
+            logger.exception("validate_credentials: error inesperado")
             return False

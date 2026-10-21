@@ -3,6 +3,7 @@ Metadata API v1 — SEO-optimized structured data endpoints
 Generates dynamic JSON-LD schemas for each entity type.
 """
 
+import logging
 from datetime import datetime
 from typing import Annotated, Any
 
@@ -12,6 +13,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.domains.businesses.models import Business
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["metadata"])
 
@@ -126,6 +129,7 @@ async def get_business_metadata(
         }
 
     except Exception as e:
+        logger.exception("get_business_metadata: error inesperado")
         raise HTTPException(500, f"Error fetching business metadata: {e!s}")
 
 

@@ -706,7 +706,7 @@ class PipelineAutomationEngine:
                 logger.info(f"[PipelineAuto] Rule '{rule.name}' executed for deal {deal_id}")
             except Exception as e:
                 results.append({"rule": rule.id, "status": "error", "error": str(e)})
-                logger.error(f"[PipelineAuto] Rule '{rule.name}' failed: {e}")
+                logger.exception(f"[PipelineAuto] Rule '{rule.name}' failed")
 
         return results
 
@@ -800,7 +800,7 @@ class PipelineAutomationEngine:
 
             return {"status": "sent", "template": template}
         except Exception as e:
-            logger.error(f"[PipelineAuto] Message send error: {e}")
+            logger.exception("[PipelineAuto] Message send error")
             return {"status": "error", "error": str(e)}
 
     async def _update_crm(self, fields: dict, deal_id: str | None, business_id: str) -> dict:
@@ -825,7 +825,7 @@ class PipelineAutomationEngine:
             await self.db.commit()
             return {"status": "updated", "fields": list(resolved_fields.keys())}
         except Exception as e:
-            logger.error(f"[PipelineAuto] CRM update error: {e}")
+            logger.exception("[PipelineAuto] CRM update error")
             return {"status": "error", "error": str(e)}
 
     async def _advance_pipeline_stage(
@@ -849,7 +849,7 @@ class PipelineAutomationEngine:
             logger.info(f"[PipelineAuto] Deal {deal_id} advanced to {to_stage}")
             return {"status": "advanced", "to_stage": to_stage.value}
         except Exception as e:
-            logger.error(f"[PipelineAuto] Stage advance error: {e}")
+            logger.exception("[PipelineAuto] Stage advance error")
             return {"status": "error", "error": str(e)}
 
     #: The same pipeline condition is evaluated on every run; one alert per distinct message per hour.
@@ -889,7 +889,7 @@ class PipelineAutomationEngine:
             await self.db.commit()
             return {"status": "alert_created"}
         except Exception as e:
-            logger.error(f"[PipelineAuto] Alert send error: {e}")
+            logger.exception("[PipelineAuto] Alert send error")
             return {"status": "error", "error": str(e)}
 
     async def _activate_workflow(self, action: dict, business_id: str, context: dict) -> dict:
@@ -914,6 +914,7 @@ class PipelineAutomationEngine:
 
             return {"status": "workflow_not_found", "type": workflow_type}
         except Exception as e:
+            logger.exception("_activate_workflow: error inesperado")
             return {"status": "error", "error": str(e)}
 
     async def _escalate_to_human(
@@ -944,6 +945,7 @@ class PipelineAutomationEngine:
 
             return {"status": "escalated"}
         except Exception as e:
+            logger.exception("_escalate_to_human: error inesperado")
             return {"status": "error", "error": str(e)}
 
     async def _generate_ai_content(self, action: dict, context: dict, business_id: str) -> dict:
@@ -968,6 +970,7 @@ class PipelineAutomationEngine:
 
             return {"status": "content_generated", "content_type": content_type, "length": len(content or "")}
         except Exception as e:
+            logger.exception("_generate_ai_content: error inesperado")
             return {"status": "error", "error": str(e)}
 
     async def _send_referral_request(self, action: dict, context: dict, business_id: str) -> dict:

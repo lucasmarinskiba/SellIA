@@ -1,5 +1,6 @@
 """Phase 33 Celery Tasks - Async operations for multi-platform automation."""
 
+import logging
 from datetime import timedelta
 
 from celery import shared_task
@@ -17,6 +18,8 @@ from app.models.platform_integration import (
     Product,
     SellerMetrics,
 )
+
+logger = logging.getLogger(__name__)
 
 
 @shared_task(bind=True, max_retries=3)
@@ -57,6 +60,7 @@ def sync_inventory_task(self, product_id: str):
         }
     except Exception as exc:
         # Retry with exponential backoff
+        logger.exception("sync_inventory_task: error inesperado")
         raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
     finally:
         db.close()
@@ -108,6 +112,7 @@ def reprice_products_task(self, platform: str = None):
             "message": f"Repriced products across {len(platforms)} platforms",
         }
     except Exception as exc:
+        logger.exception("reprice_products_task: error inesperado")
         raise self.retry(exc=exc, countdown=60)
     finally:
         db.close()
@@ -194,6 +199,7 @@ def update_seller_metrics_task():
             "timestamp": utc_now().isoformat(),
         }
     except Exception as e:
+        logger.exception("update_seller_metrics_task: error inesperado")
         db.rollback()
         return {"status": "error", "message": str(e)}
     finally:
@@ -241,6 +247,7 @@ def generate_review_requests_task():
             "timestamp": utc_now().isoformat(),
         }
     except Exception as e:
+        logger.exception("generate_review_requests_task: error inesperado")
         return {"status": "error", "message": str(e)}
     finally:
         db.close()

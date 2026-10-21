@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from typing import Annotated
 from uuid import UUID
@@ -15,6 +16,8 @@ from app.domains.enterprise.collaboration import (
     CollaborationManager,
 )
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["collaboration"])
 collab_manager = CollaborationManager()
@@ -265,6 +268,7 @@ async def websocket_deal(websocket: WebSocket, deal_id: str):
                 })
 
     except Exception as e:
+        logger.exception("websocket_deal: error inesperado")
         print(f"WebSocket error: {e}")
     finally:
         await websocket.close()

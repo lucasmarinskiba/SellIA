@@ -337,7 +337,7 @@ class WorkflowEngine:
                 return {"action_type": action_type, "status": "unknown_action"}
 
         except Exception as e:
-            logger.error(f"Action execution failed: {action_type} - {e!s}")
+            logger.exception(f"Action execution failed: {action_type}")
             return {"action_type": action_type, "status": "failed", "error": str(e)}
 
     @staticmethod

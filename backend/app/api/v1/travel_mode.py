@@ -127,7 +127,7 @@ async def set_travel_mode(
         raise HTTPException(status_code=400, detail="Fechas inválidas. Usar YYYY-MM-DD")
 
     except Exception as e:
-        logger.error(f"Travel mode setup failed: {e!s}")
+        logger.exception("Travel mode setup failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -171,8 +171,8 @@ async def get_travel_mode_status(seller_id: str) -> dict[str, Any]:
                 "message": "Sistema en modo normal",
             }
 
-    except Exception as e:
-        logger.error(f"Get status failed: {e!s}")
+    except Exception:
+        logger.exception("Get status failed")
         return {"status": "error"}
 
 
@@ -223,8 +223,8 @@ async def get_pending_items_for_return(seller_id: str) -> dict[str, Any]:
             "summary": f"Mientras viajabas: {pending['orders_completed']} órdenes, ${pending['revenue_generated']} revenue, {pending['content_published']} posts.",
         }
 
-    except Exception as e:
-        logger.error(f"Get pending failed: {e!s}")
+    except Exception:
+        logger.exception("Get pending failed")
         return {"status": "error"}
 
 
@@ -340,7 +340,7 @@ async def _save_travel_mode_db(
                 "is_active": travel_mode.is_active,
             }
     except Exception as e:
-        logger.error(f"Error saving travel mode: {e!s}")
+        logger.exception("Error saving travel mode")
         return {"status": "error", "error": str(e)}
 
 
@@ -369,6 +369,6 @@ async def _get_travel_mode_db(seller_id: str) -> dict[str, Any]:
                     "notes": travel_mode.notes,
                 }
             return None
-    except Exception as e:
-        logger.error(f"Error getting travel mode: {e!s}")
+    except Exception:
+        logger.exception("Error getting travel mode")
         return None

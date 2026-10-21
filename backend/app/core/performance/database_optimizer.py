@@ -387,7 +387,7 @@ class DatabaseOptimizer:
                 "last_analyzed": utc_now().isoformat(),
             }
         except Exception as e:
-            logger.error(f"Error analyzing table stats for {table_name}: {e}")
+            logger.exception(f"Error analyzing table stats for {table_name}")
             return {
                 "table": table_name,
                 "error": str(e),

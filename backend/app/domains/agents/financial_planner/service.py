@@ -90,7 +90,7 @@ async def create_financial_plan(
                 content = content.split("```")[1].split("```")[0].strip()
             parsed = json.loads(content)
         except Exception as e:
-            logger.warning(f"Failed to parse financial plan LLM output: {e}")
+            logger.warning(f"Failed to parse financial plan LLM output: {e}", exc_info=True)
 
     plan = FinancialPlan(
         business_id=business_id,

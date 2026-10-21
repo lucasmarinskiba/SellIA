@@ -37,6 +37,7 @@ class EmbeddingService:
             else:
                 self._fallback = True
         except Exception:
+            logger.exception("__init__: error inesperado")
             self._fallback = True
 
     async def embed(self, texts: list[str]) -> list[list[float]]:
@@ -49,7 +50,7 @@ class EmbeddingService:
                 )
                 return [item.embedding for item in response.data]
             except Exception as exc:
-                logger.warning(f"OpenAI embedding failed: {exc}; using fallback")
+                logger.warning(f"OpenAI embedding failed: {exc}; using fallback", exc_info=True)
                 self._fallback = True
         return [self._random_vector(768) for _ in texts]
 
@@ -80,7 +81,7 @@ def _extract_text_pdf(file_path: str) -> str:
                     text_parts.append(page_text)
         return "\n\n".join(text_parts)
     except Exception:
-        pass
+        logger.exception("_extract_text_pdf: error inesperado")
 
     # Fallback to PyPDF2
     try:
@@ -93,7 +94,7 @@ def _extract_text_pdf(file_path: str) -> str:
                     text_parts.append(page_text)
         return "\n\n".join(text_parts)
     except Exception:
-        pass
+        logger.exception("_extract_text_pdf: error inesperado")
 
     logger.warning(f"Could not extract text from PDF: {file_path}")
     return ""
@@ -105,7 +106,7 @@ def _extract_text_docx(file_path: str) -> str:
         doc = docx.Document(file_path)
         return "\n".join(p.text for p in doc.paragraphs if p.text)
     except Exception:
-        logger.warning(f"Could not extract text from DOCX: {file_path}")
+        logger.warning(f"Could not extract text from DOCX: {file_path}", exc_info=True)
         return ""
 
 
@@ -201,7 +202,7 @@ class DocumentProcessor:
             await db.commit()
             logger.info(f"Document {document_id} processed with {len(chunks)} chunks")
         except Exception as exc:
-            logger.exception(f"Failed to process document {document_id}: {exc}")
+            logger.exception(f"Failed to process document {document_id}")
             doc.status = "error"
             doc.extra_data = {**(doc.extra_data or {}), "error": str(exc)}
             await db.commit()
@@ -250,7 +251,7 @@ class DocumentProcessor:
                 for row in rows
             ]
         except Exception as exc:
-            logger.warning(f"Vector search failed ({exc}), falling back to text search")
+            logger.warning(f"Vector search failed ({exc}), falling back to text search", exc_info=True)
             await db.rollback()
             # Fallback: simple text search on content
             result = await db.execute(
@@ -290,7 +291,7 @@ class DocumentProcessor:
             if fp.exists():
                 fp.unlink()
         except Exception as exc:
-            logger.warning(f"Could not delete file {doc.file_path}: {exc}")
+            logger.warning(f"Could not delete file {doc.file_path}: {exc}", exc_info=True)
 
         # Delete chunks and document (cascade handles chunks in DB)
         await db.delete(doc)

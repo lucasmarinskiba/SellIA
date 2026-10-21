@@ -1,5 +1,6 @@
 """Telegram Bot Connector."""
 
+import logging
 from typing import Any
 
 import httpx
@@ -7,6 +8,8 @@ import httpx
 from app.domains.channels.connectors.base import BaseChannelConnector
 from app.domains.channels.models import ChannelPlatform
 from app.domains.channels.schemas import WebhookPayload
+
+logger = logging.getLogger(__name__)
 
 
 class TelegramConnector(BaseChannelConnector):
@@ -61,4 +64,5 @@ class TelegramConnector(BaseChannelConnector):
                 data = response.json()
                 return data.get("ok", False)
         except Exception:
+            logger.exception("validate_credentials: error inesperado")
             return False

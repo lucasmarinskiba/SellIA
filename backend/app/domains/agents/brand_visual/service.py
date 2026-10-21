@@ -258,7 +258,7 @@ class BrandVisualService:
                     content = data["choices"][0]["message"]["content"]
                     return json.loads(content)
             except Exception as e:
-                logger.warning(f"OpenAI palette generation failed: {e}")
+                logger.warning(f"OpenAI palette generation failed: {e}", exc_info=True)
 
         # Fallback palette
         return [
@@ -317,7 +317,7 @@ class BrandVisualService:
                     content = data["choices"][0]["message"]["content"]
                     return json.loads(content)
             except Exception as e:
-                logger.warning(f"OpenAI typography generation failed: {e}")
+                logger.warning(f"OpenAI typography generation failed: {e}", exc_info=True)
 
         return [
             {"name": "Inter", "category": "sans-serif", "usage": "Headings & UI", "weights": [400, 600, 700]},
@@ -388,7 +388,7 @@ class BrandVisualService:
                         f.write(img_resp.content)
                     return f"/storage/media/brand/{file_name}"
             except Exception as e:
-                logger.warning(f"DALL-E 3 generation failed: {e}")
+                logger.warning(f"DALL-E 3 generation failed: {e}", exc_info=True)
 
         # Fallback: Stable Diffusion via Stability AI
         if settings.STABILITY_API_KEY:
@@ -411,7 +411,7 @@ class BrandVisualService:
                         f.write(response.content)
                     return f"/storage/media/brand/{file_name}"
             except Exception as e:
-                logger.warning(f"Stable Diffusion generation failed: {e}")
+                logger.warning(f"Stable Diffusion generation failed: {e}", exc_info=True)
 
         # Development fallback
         logger.info("Image generation fallback: returning placeholder")

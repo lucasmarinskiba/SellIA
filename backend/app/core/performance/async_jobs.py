@@ -166,6 +166,7 @@ class AsyncJobQueue:
             self._handle_job_failure(job)
 
         except Exception as e:
+            logger.exception("execute_job: error inesperado")
             job.error = str(e)
 
             # Retry if under limit

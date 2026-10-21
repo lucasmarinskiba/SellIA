@@ -1,5 +1,6 @@
 """OAuth endpoints for platform integrations."""
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -16,6 +17,8 @@ from app.core.oauth_connectors import (
     store_platform_credential,
 )
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/oauth", tags=["oauth"])
 settings = get_settings()
@@ -53,6 +56,7 @@ async def mercado_libre_callback(
             "seller_username": cred.seller_username,
         }
     except Exception as e:
+        logger.exception("mercado_libre_callback: error inesperado")
         raise HTTPException(status_code=400, detail=f"OAuth failed: {e!s}")
 
 
@@ -85,6 +89,7 @@ async def amazon_callback(
         )
         return {"status": "connected", "platform": "amazon"}
     except Exception as e:
+        logger.exception("amazon_callback: error inesperado")
         raise HTTPException(status_code=400, detail=f"OAuth failed: {e!s}")
 
 
@@ -120,6 +125,7 @@ async def hotmart_callback(
             "seller_username": cred.seller_username,
         }
     except Exception as e:
+        logger.exception("hotmart_callback: error inesperado")
         raise HTTPException(status_code=400, detail=f"OAuth failed: {e!s}")
 
 

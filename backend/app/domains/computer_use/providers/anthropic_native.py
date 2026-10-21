@@ -233,8 +233,8 @@ Previous actions:
 
             return self._parse_tool_use(response.content)
 
-        except Exception as e:
-            logger.error(f"Anthropic native API failed: {e}")
+        except Exception:
+            logger.exception("Anthropic native API failed")
             # Fallback: try standard Anthropic via LangChain
             return await self._fallback_to_langchain(
                 screenshot_bytes, task, history, user_message, page_info
@@ -308,7 +308,7 @@ Previous actions:
             response = await llm.ainvoke(messages)
             return provider._parse_action(response.content)
         except Exception as e2:
-            logger.error(f"Anthropic fallback also failed: {e2}")
+            logger.exception("Anthropic fallback also failed")
             return ComputerUseAction(
                 action_type="error",
                 params={"message": f"Anthropic failed: {str(e2)[:200]}"},
@@ -331,6 +331,6 @@ Previous actions:
             )
             text_blocks = [b for b in response.content if b.type == "text"]
             return text_blocks[0].text if text_blocks else "Sesión completada."
-        except Exception as e:
-            logger.error(f"Summary generation failed: {e}")
+        except Exception:
+            logger.exception("Summary generation failed")
             return "Sesión completada."

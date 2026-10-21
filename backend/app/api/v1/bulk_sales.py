@@ -67,7 +67,7 @@ async def start_bulk_campaigns(request: BulkCampaignRequest):
         }
 
     except Exception as e:
-        logger.error(f"Error starting bulk campaign {batch_id}: {e!s}")
+        logger.exception(f"Error starting bulk campaign {batch_id}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

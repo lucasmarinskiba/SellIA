@@ -11,6 +11,7 @@ Soporta:
 """
 
 import json
+import logging
 from collections.abc import AsyncGenerator
 from typing import Any
 
@@ -31,6 +32,8 @@ from app.domains.agents.prompts.business_context_adapter import (
 from app.domains.agents.services import AgentService
 from app.domains.agents.tool_registry import RetrieveKnowledgeTool
 from app.domains.subscriptions.models import UserAPIKey
+
+logger = logging.getLogger(__name__)
 
 SELLIA_SYSTEM_PROMPT = """You are "SellIA", the intelligent assistant for an AI agent platform called SellIA.
 
@@ -304,6 +307,7 @@ class SellIAOrchestrator:
                 "Mapa de Interacciones del Cerebro → Activar/Desactivar."
             )
         except Exception:
+            logger.exception("_build_capability_context: error inesperado")
             return "Estado de capacidades no disponible en este momento."
 
     async def _build_business_context(self, business_id: str | None) -> str:
@@ -322,6 +326,7 @@ class SellIAOrchestrator:
             ctx = await get_agent_prompt_context(self.db, business_id)
             return format_business_context_for_prompt(ctx)
         except Exception:
+            logger.exception("_build_business_context: error inesperado")
             return ""
 
     # Curated, explicit platform -> reach hints -- only for the marketplaces
@@ -380,6 +385,7 @@ class SellIAOrchestrator:
                 return "Sin alcance geográfico confirmado ni marketplaces conectados que sugieran uno -- preguntá qué alcance busca el usuario antes de asumir."
             return "SUGERENCIA (sin confirmar todavía) según sus marketplaces conectados: " + "; ".join(hints)
         except Exception:
+            logger.exception("_build_market_reach_context: error inesperado")
             return ""
 
     async def _build_knowledge_context(self, business_id: str | None, user_input: str) -> str:
@@ -398,6 +404,7 @@ class SellIAOrchestrator:
                 lines.append(f"- [{it.get('category', '')}] {it.get('principle', '')}: {it.get('tactic', '')}")
             return "\n".join(lines)
         except Exception:
+            logger.exception("_build_knowledge_context: error inesperado")
             return "(sin resultados relevantes en la biblioteca para este mensaje)"
 
     async def _resolve_api_key(self, user_id: Any) -> str | None:
@@ -491,6 +498,7 @@ class SellIAOrchestrator:
             action = await self._execute_action_if_needed(action, user_id, business_id)
             return action
         except Exception as e:
+            logger.exception("process_intent: error inesperado")
             return {
                 "action": "ASK_CLARIFICATION",
                 "response": f"Perdón, tuve un problema procesando tu solicitud. ¿Podés reformularla? (Error: {str(e)[:100]})",
@@ -563,6 +571,7 @@ class SellIAOrchestrator:
             yield json.dumps({"type": "action", "data": action})
 
         except Exception as e:
+            logger.exception("process_intent_stream: error inesperado")
             yield json.dumps({
                 "type": "error",
                 "message": f"Error: {str(e)[:200]}",
@@ -655,6 +664,7 @@ class SellIAOrchestrator:
             is_enabled = result.scalar_one_or_none()
             return is_enabled is False
         except Exception:
+            logger.exception("_is_capability_disabled: error inesperado")
             return False
 
     def _should_use_react(self, action_type: str) -> bool:

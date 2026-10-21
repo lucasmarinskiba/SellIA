@@ -55,8 +55,8 @@ class LocationDashboardManager:
         for websocket in self.active_connections[location_id]:
             try:
                 await websocket.send_json(message)
-            except Exception as e:
-                logger.error(f"Failed to send WebSocket message: {e}")
+            except Exception:
+                logger.exception("Failed to send WebSocket message")
                 disconnected.add(websocket)
 
         # Clean up dead connections
@@ -121,8 +121,8 @@ async def websocket_location_dashboard(
 
     except WebSocketDisconnect:
         await manager.disconnect(location_id, websocket)
-    except Exception as e:
-        logger.error(f"WebSocket error: {e}")
+    except Exception:
+        logger.exception("WebSocket error")
         await manager.disconnect(location_id, websocket)
 
 

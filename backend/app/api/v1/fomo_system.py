@@ -13,6 +13,7 @@ Routes:
 """
 
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -31,6 +32,8 @@ from app.domains.enterprise.fomo_system import (
     ScarcityEngine,
     SocialProofEngine,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/foom", tags=["foom-system"])
 
@@ -128,6 +131,7 @@ def get_deal_foom_status(
 
         return foom_status
     except Exception as e:
+        logger.exception("get_deal_foom_status: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -141,6 +145,7 @@ def get_platform_foom_metrics(
         metrics = dashboard.get_platform_foom_metrics()
         return metrics
     except Exception as e:
+        logger.exception("get_platform_foom_metrics: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -203,6 +208,7 @@ def generate_all_triggers(
             ],
         )
     except Exception as e:
+        logger.exception("generate_all_triggers: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -223,6 +229,7 @@ def calculate_cost_of_delay(
             urgency_message=cost["urgency_message"],
         )
     except Exception as e:
+        logger.exception("calculate_cost_of_delay: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -273,6 +280,7 @@ def generate_social_post(
 
         return SocialPostResponse(post=post, platform="social")
     except Exception as e:
+        logger.exception("generate_social_post: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -316,6 +324,7 @@ def generate_email_subject(
 
         return EmailSubjectResponse(subject=subject, expected_open_rate=0.35)
     except Exception as e:
+        logger.exception("generate_email_subject: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -358,6 +367,7 @@ def generate_video_script(
 
         return VideoScriptResponse(script=script, duration_seconds=request.duration_seconds)
     except Exception as e:
+        logger.exception("generate_video_script: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -382,6 +392,7 @@ def get_micro_commitment(
             "if_objection": commitment["ifno"],
         }
     except Exception as e:
+        logger.exception("get_micro_commitment: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -404,4 +415,5 @@ def get_competitor_intelligence(
             market_share_at_risk=market_share_trends.get("at_risk_percent", 0),
         )
     except Exception as e:
+        logger.exception("get_competitor_intelligence: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

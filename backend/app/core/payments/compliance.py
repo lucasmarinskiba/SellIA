@@ -118,7 +118,7 @@ class ComplianceChecker:
             }
 
         except Exception as e:
-            logger.error(f"Error validating customer: {e!s}")
+            logger.exception("Error validating customer")
             return {
                 "status": "error",
                 "error": str(e),
@@ -219,7 +219,7 @@ class ComplianceChecker:
             }
 
         except Exception as e:
-            logger.error(f"Error screening transaction: {e!s}")
+            logger.exception("Error screening transaction")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -302,7 +302,7 @@ class ComplianceChecker:
             }
 
         except Exception as e:
-            logger.error(f"Error logging compliance event: {e!s}")
+            logger.exception("Error logging compliance event")
             return {"status": "error", "error": str(e)}
 
     # Private helper methods

@@ -166,7 +166,7 @@ class BrowserPoolManager:
                     instance.session_id = None
                     logger.info(f"BrowserPool: recycled instance {instance_id}")
                 except Exception as e:
-                    logger.warning(f"BrowserPool: failed to recycle {instance_id}: {e}")
+                    logger.warning(f"BrowserPool: failed to recycle {instance_id}: {e}", exc_info=True)
                     await self._destroy_instance(instance_id)
             else:
                 await self._destroy_instance(instance_id)
@@ -181,7 +181,7 @@ class BrowserPoolManager:
             await instance.browser.close()
             logger.info(f"BrowserPool: destroyed instance {instance_id}")
         except Exception as e:
-            logger.warning(f"BrowserPool: error destroying {instance_id}: {e}")
+            logger.warning(f"BrowserPool: error destroying {instance_id}: {e}", exc_info=True)
 
     async def get_instance_for_session(self, session_id: str) -> BrowserInstance | None:
         """Obtiene la instancia asociada a una sesión."""

@@ -108,7 +108,7 @@ async def get_stage_voice_slug(
         return voice_slug, experiment.id, variant
 
     except Exception as e:
-        logger.warning(f"Funnel A/B voice selection failed for stage '{stage.value}': {e}")
+        logger.warning(f"Funnel A/B voice selection failed for stage '{stage.value}': {e}", exc_info=True)
         return fallback, None, None
 
 
@@ -137,7 +137,7 @@ async def record_stage_conversion(db: AsyncSession, conversation: Conversation) 
         await ABTestEngine.check_auto_promote(db, experiment_id)
 
     except Exception as e:
-        logger.warning(f"Failed to record funnel A/B conversion: {e}")
+        logger.warning(f"Failed to record funnel A/B conversion: {e}", exc_info=True)
 
 
 __all__ = ["get_stage_voice_slug", "record_stage_conversion"]

@@ -97,7 +97,7 @@ class WhatsAppAutomation:
                 return await self._generate_response(sender_id, message_text)
 
         except Exception as e:
-            logger.error(f"Handle message failed: {e!s}")
+            logger.exception("Handle message failed")
             return {"status": "error", "error": str(e)}
 
     def _classify_message(self, text: str) -> str:
@@ -282,8 +282,8 @@ class WhatsAppAutomation:
                 logger.error(f"Send failed: {response.status_code}")
                 return {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"Send via API failed: {e!s}")
+        except Exception:
+            logger.exception("Send via API failed")
             return {"status": "error"}
 
     async def _send_via_computer_use(self, recipient_id: str, text: str) -> dict[str, Any]:

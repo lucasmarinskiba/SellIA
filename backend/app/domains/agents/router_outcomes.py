@@ -4,6 +4,7 @@ Endpoints for recording conversation outcomes, viewing stats,
 and getting AI-suggested prompt improvements.
 """
 
+import logging
 from typing import Annotated
 from uuid import UUID
 
@@ -14,6 +15,8 @@ from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.domains.agents.prompt_optimizer import PromptOptimizer
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/outcomes", tags=["outcomes"])
 
@@ -74,6 +77,7 @@ async def record_outcome(
                         result=causal_result,
                     )
         except Exception as e:
+            logger.exception("record_outcome: error inesperado")
             import logging
             logging.getLogger(__name__).warning(f"Post-outcome analysis failed: {e}")
 

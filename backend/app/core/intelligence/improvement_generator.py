@@ -96,8 +96,8 @@ Generate improvement proposals based on this data."""
         logger.info(f"Generated {len(improvements)} system improvements from health report")
         return improvements
 
-    except Exception as e:
-        logger.error(f"Failed to generate improvements: {e}")
+    except Exception:
+        logger.exception("Failed to generate improvements")
         return []
 
 

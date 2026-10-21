@@ -21,7 +21,7 @@ try:
     import stripe as stripe_lib
 except Exception as _import_exc:  # pragma: no cover
     stripe_lib = None  # type: ignore[assignment]
-    logger.warning("stripe library not installed: %s", _import_exc)
+    logger.warning("stripe library not installed: %s", _import_exc, exc_info=True)
 
 
 # ---------------------------------------------------------------------------
@@ -459,7 +459,7 @@ def process_stripe_webhook(event: Any) -> dict[str, Any]:
                         "message": getattr(last_charge, "message", None),
                     }
             except Exception as exc:
-                logger.debug("Could not retrieve payment intent %s: %s", payment_intent, exc)
+                logger.debug("Could not retrieve payment intent %s: %s", payment_intent, exc, exc_info=True)
 
         result.update(
             {

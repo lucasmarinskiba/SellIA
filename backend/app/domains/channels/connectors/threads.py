@@ -90,5 +90,5 @@ class ThreadsConnector(BaseChannelConnector):
                 response = await client.get(url, headers=headers, timeout=30.0)
                 return response.status_code == 200
         except Exception as exc:
-            logger.error("Threads credential validation failed: %s", exc)
+            logger.exception("Threads credential validation failed: %s", exc)
             return False

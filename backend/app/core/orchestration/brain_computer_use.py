@@ -183,7 +183,7 @@ class BrainComputerUseCoordinator:
             return result
 
         except Exception as e:
-            logger.error(f"Error executing action {action_type}: {e!s}")
+            logger.exception(f"Error executing action {action_type}")
             return {"status": "error", "action": action_type, "error": str(e)}
 
     async def _monitor_execution(self, results: list[dict[str, Any]]) -> dict[str, Any]:
@@ -251,8 +251,8 @@ class BrainComputerUseCoordinator:
                     "timestamp": self._current_timestamp(),
                 })
 
-            except Exception as e:
-                logger.error(f"Error in optimization iteration {iteration}: {e!s}")
+            except Exception:
+                logger.exception(f"Error in optimization iteration {iteration}")
 
             # Esperar próxima iteración
             await asyncio.sleep(interval_hours * 3600)

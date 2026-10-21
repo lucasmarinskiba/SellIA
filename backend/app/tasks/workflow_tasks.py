@@ -3,6 +3,7 @@
 Tareas en background que requieren acceso a la base de datos.
 """
 
+import logging
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -22,6 +23,8 @@ from app.domains.automations.models import (
 )
 from app.domains.businesses.models import Business
 from app.domains.channels.models import ChannelConnection, ChannelPlatform, Conversation
+
+logger = logging.getLogger(__name__)
 
 
 # Helper para correr código async desde sync Celery
@@ -58,7 +61,7 @@ def execute_workflow_task(self, execution_id: str, business_id: str, selected_ac
                         wf_row = await db3.execute(select(Workflow.name).where(Workflow.id == execution.workflow_id))
                         wf_name = wf_row.scalar_one_or_none()
             except Exception:
-                pass
+                logger.exception("_run: error inesperado")
             await log_ai_action(
                 user_id=owner_id,
                 business_id=business_id,
@@ -72,6 +75,7 @@ def execute_workflow_task(self, execution_id: str, business_id: str, selected_ac
     try:
         run_async(_run())
     except Exception as exc:
+        logger.exception("execute_workflow_task: error inesperado")
         raise self.retry(exc=exc, countdown=60)
 
 
@@ -284,6 +288,7 @@ Write ONLY the email body text. Be concise and compelling."""
                         payload={"subscription_id": str(subscription.id), "step_id": step_id, "subject": subject},
                     )
             except Exception as e:
+                logger.exception("_run: error inesperado")
                 log.status = "failed"
                 await db.commit()
                 from app.core.logger import get_logger
@@ -439,6 +444,7 @@ def check_human_handoffs():
             # TODO: Send push notifications, emails, or WebSocket events to dashboard
         r.close()
     except Exception as e:
+        logger.exception("check_human_handoffs: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Redis error: {e}")
 

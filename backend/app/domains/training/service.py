@@ -111,7 +111,7 @@ async def start_simulation(
         )
         logger.info(f"Queued simulation task for run {run.id}, scenario {scenario_id}")
     except Exception as exc:
-        logger.error(f"Failed to queue simulation task: {exc}")
+        logger.exception("Failed to queue simulation task")
         run.status = "failed"
         run.feedback = f"Failed to queue task: {str(exc)[:200]}"
         run.completed_at = __import__("datetime").datetime.now(__import__("datetime").timezone.utc)

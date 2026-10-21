@@ -62,7 +62,7 @@ async def generate_health_report(db: AsyncSession) -> SystemHealthReport:
         )
         report.unresolved_tickets = result.scalar() or 0
     except Exception as e:
-        logger.warning(f"Could not collect ticket metrics: {e}")
+        logger.warning(f"Could not collect ticket metrics: {e}", exc_info=True)
 
     # 3. Feedback themes (top categorías reportadas)
     try:
@@ -76,7 +76,7 @@ async def generate_health_report(db: AsyncSession) -> SystemHealthReport:
         )
         report.top_feedback_themes = [f"{cat}: {count}" for cat, count in result.all() if cat]
     except Exception as e:
-        logger.warning(f"Could not collect feedback themes: {e}")
+        logger.warning(f"Could not collect feedback themes: {e}", exc_info=True)
 
     # 4. Conversaciones fallidas (sin respuesta AI)
     try:
@@ -90,7 +90,7 @@ async def generate_health_report(db: AsyncSession) -> SystemHealthReport:
         )
         report.conversation_failures = result.scalar() or 0
     except Exception as e:
-        logger.warning(f"Could not collect conversation metrics: {e}")
+        logger.warning(f"Could not collect conversation metrics: {e}", exc_info=True)
 
     # 5. Errores recientes (de logs)
     report.errors = await _collect_recent_errors()
@@ -121,7 +121,7 @@ async def _collect_prometheus_metrics() -> dict[str, Any]:
         metrics["new_devices"] = SELLIA_NEW_DEVICES._value if hasattr(SELLIA_NEW_DEVICES, '_value') else 0
         metrics["active_sessions"] = SELLIA_ACTIVE_SESSIONS._value.get() if hasattr(SELLIA_ACTIVE_SESSIONS, '_value') else 0
     except Exception as e:
-        logger.warning(f"Could not collect Prometheus metrics: {e}")
+        logger.warning(f"Could not collect Prometheus metrics: {e}", exc_info=True)
     return metrics
 
 

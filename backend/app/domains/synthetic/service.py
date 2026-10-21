@@ -101,6 +101,7 @@ async def _run_single_check(check: SyntheticCheck):
         else:
             return False, None, None, f"Unknown check type: {check.check_type}"
     except Exception as exc:
+        logger.exception("_run_single_check: error inesperado")
         elapsed = (time.time() - start) * 1000
         return False, round(elapsed, 2), None, str(exc)
 

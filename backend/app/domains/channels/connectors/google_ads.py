@@ -7,11 +7,14 @@ Docs: https://developers.google.com/google-ads/api/docs/start
 import base64
 import hashlib
 import hmac
+import logging
 from typing import Any
 
 from app.domains.channels.connectors.base import BaseChannelConnector
 from app.domains.channels.models import ChannelPlatform
 from app.domains.channels.schemas import WebhookPayload
+
+logger = logging.getLogger(__name__)
 
 
 class GoogleAdsConnector(BaseChannelConnector):
@@ -120,6 +123,7 @@ class GoogleAdsConnector(BaseChannelConnector):
             ).decode()
             return hmac.compare_digest(expected, signature_header)
         except Exception:
+            logger.exception("verify_webhook: error inesperado")
             return False
 
     async def validate_credentials(self) -> bool:
@@ -138,6 +142,7 @@ class GoogleAdsConnector(BaseChannelConnector):
                 response = await client.get(url, headers=headers, params={"pageSize": "1"})
                 return response.status_code == 200
         except Exception:
+            logger.exception("validate_credentials: error inesperado")
             return False
 
     async def update_campaign_budget(self, campaign_id: str, new_budget_aed: float) -> None:

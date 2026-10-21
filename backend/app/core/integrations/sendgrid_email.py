@@ -68,7 +68,7 @@ class EmailService:
             }
 
         except Exception as e:
-            logger.error(f"Error sending email: {e!s}")
+            logger.exception("Error sending email")
             return {"status": "error", "message": str(e)}
 
     @staticmethod
@@ -116,7 +116,7 @@ class EmailService:
             }
 
         except Exception as e:
-            logger.error(f"Error sending email with attachment: {e!s}")
+            logger.exception("Error sending email with attachment")
             return {"status": "error", "message": str(e)}
 
     @staticmethod

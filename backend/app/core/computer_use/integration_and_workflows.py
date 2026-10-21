@@ -155,7 +155,7 @@ class ProspectingWorkflow:
                         await asyncio.sleep(2)
 
                     except Exception as e:
-                        logger.warning(f"Error searching {query} in {location}: {e!s}")
+                        logger.warning(f"Error searching {query} in {location}: {e!s}", exc_info=True)
 
             logger.info(f"Found {len(all_leads)} leads")
 
@@ -189,7 +189,7 @@ class ProspectingWorkflow:
             }
 
         except Exception as e:
-            logger.error(f"Prospecting cycle failed: {e!s}")
+            logger.exception("Prospecting cycle failed")
             return {"error": str(e)}
 
 
@@ -261,8 +261,8 @@ class SellingWorkflow:
 
                         execution.completed_tasks += 1
 
-                    except Exception as e:
-                        logger.error(f"Error listing product: {e!s}")
+                    except Exception:
+                        logger.exception("Error listing product")
                         execution.failed_tasks += 1
 
                     # Rate limiting
@@ -288,7 +288,7 @@ class SellingWorkflow:
                         execution.completed_tasks += execution_result.completed_actions
 
                     except Exception as e:
-                        logger.warning(f"Error checking inquiries: {e!s}")
+                        logger.warning(f"Error checking inquiries: {e!s}", exc_info=True)
 
                 # Espera 5 min antes siguiente check
                 if i < 2:
@@ -312,7 +312,7 @@ class SellingWorkflow:
             }
 
         except Exception as e:
-            logger.error(f"Sales cycle failed: {e!s}")
+            logger.exception("Sales cycle failed")
             return {"error": str(e)}
 
     def _string_to_platform(self, platform_str: str):
@@ -396,7 +396,7 @@ class NurturingWorkflow:
                             await asyncio.sleep(delay_between_emails)
 
                         except Exception as e:
-                            logger.warning(f"Error sending email: {e!s}")
+                            logger.warning(f"Error sending email: {e!s}", exc_info=True)
                             execution.failed_tasks += 1
 
                     results.append({
@@ -405,8 +405,8 @@ class NurturingWorkflow:
                         "status": "sent",
                     })
 
-                except Exception as e:
-                    logger.error(f"Error processing lead: {e!s}")
+                except Exception:
+                    logger.exception("Error processing lead")
                     execution.failed_tasks += 1
 
             execution.completed_at = utc_now()
@@ -423,7 +423,7 @@ class NurturingWorkflow:
             }
 
         except Exception as e:
-            logger.error(f"Nurture campaign failed: {e!s}")
+            logger.exception("Nurture campaign failed")
             return {"error": str(e)}
 
 
@@ -483,7 +483,7 @@ class RetentionWorkflow:
             }
 
         except Exception as e:
-            logger.error(f"Customer engagement failed: {e!s}")
+            logger.exception("Customer engagement failed")
             return {"error": str(e)}
 
 
@@ -547,7 +547,7 @@ class WorkflowOrchestrator:
             }
 
         except Exception as e:
-            logger.error(f"Prospecting-to-selling cycle failed: {e!s}")
+            logger.exception("Prospecting-to-selling cycle failed")
             return {"error": str(e)}
 
     async def run_full_sales_machine(

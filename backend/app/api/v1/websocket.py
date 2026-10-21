@@ -30,15 +30,15 @@ class ConnectionManager:
         for connection in self.active_connections:
             try:
                 await connection.send_json(message)
-            except Exception as e:
-                logger.error(f"Error broadcasting: {e}")
+            except Exception:
+                logger.exception("Error broadcasting")
 
     async def send_personal(self, websocket: WebSocket, message: dict):
         """Send to specific client."""
         try:
             await websocket.send_json(message)
-        except Exception as e:
-            logger.error(f"Error sending personal: {e}")
+        except Exception:
+            logger.exception("Error sending personal")
 
 
 manager = ConnectionManager()
@@ -94,8 +94,8 @@ async def websocket_brain(websocket: WebSocket):
         manager.disconnect(websocket)
         logger.info("Client disconnected")
 
-    except Exception as e:
-        logger.error(f"WebSocket error: {e}")
+    except Exception:
+        logger.exception("WebSocket error")
         manager.disconnect(websocket)
 
 

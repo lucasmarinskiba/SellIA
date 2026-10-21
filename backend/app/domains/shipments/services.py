@@ -3,6 +3,7 @@
 Lógica de negocio para crear, rastrear y gestionar envíos.
 """
 
+import logging
 import uuid
 from datetime import UTC, datetime
 from typing import Any
@@ -21,6 +22,8 @@ from app.domains.shipments.models import (
     ShipmentStatus,
     ShipmentTrackingEvent,
 )
+
+logger = logging.getLogger(__name__)
 
 # ============================================================
 # SHIPMENT CONFIG
@@ -98,6 +101,7 @@ async def test_shipment_config(db: AsyncSession, config: ShipmentConfig) -> dict
         test_result = await connector.get_tracking("TEST123")
         return {"success": True, "message": f"Conexión exitosa con {config.carrier.value}", "details": test_result}
     except Exception as e:
+        logger.exception("test_shipment_config: error inesperado")
         return {"success": False, "message": f"Error de conexión: {e!s}"}
 
 
@@ -109,7 +113,8 @@ def _get_connector_from_config(config: ShipmentConfig):
             try:
                 creds[key] = decrypt_value(creds[key])
             except Exception:
-                pass  # Assume plain text
+                logger.exception("_get_connector_from_config: error inesperado")
+                # Assume plain text
     return get_connector(config.carrier.value, creds, config.is_test_mode)
 
 
@@ -247,6 +252,7 @@ async def create_shipment(db: AsyncSession, business_id: uuid.UUID, data: dict[s
                     order.shipped_at = datetime.now(UTC)
 
         except Exception as e:
+            logger.exception("create_shipment: error inesperado")
             shipment.notes = f"{shipment.notes or ''}\nError al generar etiqueta: {e!s}".strip()
             shipment.status = ShipmentStatus.EXCEPTION
 
@@ -372,6 +378,7 @@ async def refresh_tracking(db: AsyncSession, shipment: Shipment) -> dict[str, An
         }
 
     except Exception as e:
+        logger.exception("refresh_tracking: error inesperado")
         return {"success": False, "message": f"Error: {e!s}", "new_events_count": 0, "current_status": shipment.status.value}
 
 
@@ -431,6 +438,7 @@ async def notify_customer(db: AsyncSession, shipment: Shipment, channel: str | N
 
         return {"success": True, "channel": channel, "message": "Notificación enviada al cliente"}
     except Exception as e:
+        logger.exception("notify_customer: error inesperado")
         return {"success": False, "channel": channel, "message": f"Error al notificar: {e!s}"}
 
 
@@ -443,7 +451,8 @@ async def cancel_shipment(db: AsyncSession, shipment: Shipment) -> bool:
                 connector = _get_connector_from_config(config)
                 await connector.cancel_shipment(shipment.tracking_number)
             except Exception:
-                pass  # Continue with local cancellation
+                logger.exception("cancel_shipment: error inesperado")
+                # Continue with local cancellation
 
     shipment.status = ShipmentStatus.CANCELLED
     shipment.is_active = False

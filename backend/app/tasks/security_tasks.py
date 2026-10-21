@@ -233,7 +233,7 @@ def data_retention_cleanup():
                     await savepoint.commit()
                 except Exception as e:
                     await savepoint.rollback()
-                    logger.error(f"Data retention cleanup error for {tbl}: {e}")
+                    logger.exception(f"Data retention cleanup error for {tbl}")
                     log_entry.status = "error"
                     log_entry.error_message = str(e)[:500]
 
@@ -346,7 +346,7 @@ def rotate_expired_secrets():
                     wh.secret = new_secret
                     total["webhook_secrets"] += 1
                 except Exception as e:
-                    logger.error(f"Failed to rotate security webhook secret {wh.id}: {e}")
+                    logger.exception(f"Failed to rotate security webhook secret {wh.id}")
                     log.status = "error"
                     log.error_message = str(e)[:500]
                     total["errors"] += 1
@@ -360,8 +360,8 @@ def rotate_expired_secrets():
                     )
                 )
                 total["sessions_cleaned"] = res.rowcount
-            except Exception as e:
-                logger.error(f"Failed to clean expired sessions: {e}")
+            except Exception:
+                logger.exception("Failed to clean expired sessions")
                 total["errors"] += 1
 
             await db.commit()
@@ -467,7 +467,7 @@ def security_audit_report():
                             if resp.status >= 400:
                                 logger.warning(f"Webhook {wh.id} returned {resp.status}")
                 except Exception as e:
-                    logger.warning(f"Failed to send audit report to webhook {wh.id}: {e}")
+                    logger.warning(f"Failed to send audit report to webhook {wh.id}: {e}", exc_info=True)
 
             return report
 

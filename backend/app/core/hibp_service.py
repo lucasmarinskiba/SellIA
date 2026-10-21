@@ -19,8 +19,11 @@ Para no enviar el email directo, implementamos un wrapper que:
 """
 
 import hashlib
+import logging
 
 import aiohttp
+
+logger = logging.getLogger(__name__)
 
 HIBP_API_BASE = "https://haveibeenpwned.com/api/v3"
 PWNED_PASSWORDS_API = "https://api.pwnedpasswords.com/range"
@@ -76,6 +79,7 @@ async def check_email_breaches(email: str, api_key: str) -> dict | None:
                 "details": breaches,
             }
     except Exception as e:
+        logger.exception("check_email_breaches: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Error consultando breaches: {e}")
         return None
@@ -126,6 +130,7 @@ async def check_password_breach(password: str) -> dict | None:
 
             return {"found": False, "count": 0}
     except Exception as e:
+        logger.exception("check_password_breach: error inesperado")
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Error consultando password: {e}")
         return None

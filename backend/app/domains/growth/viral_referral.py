@@ -175,8 +175,8 @@ Ejemplo de estructura:
                 max_tokens=500,
                 temperature=0.75,
             ) or f"¡Hola! Estoy usando este servicio y me encanta. Si querés probarlo, usá mi código {code} y conseguís un descuento especial. ¡Saludos!"
-        except Exception as e:
-            logger.error(f"Failed to generate referral message: {e}")
+        except Exception:
+            logger.exception("Failed to generate referral message")
             return f"¡Hola! Estoy usando este servicio y me encanta. Si querés probarlo, usá mi código {code} y conseguís un descuento especial. ¡Saludos!"
 
     # ========== Tracking ==========

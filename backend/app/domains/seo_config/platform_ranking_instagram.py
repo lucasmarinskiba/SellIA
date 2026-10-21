@@ -52,7 +52,7 @@ class InstagramRankingConnector(PlatformRankingConnector):
                 )
                 return resp.status_code == 200
         except Exception as e:
-            logger.error(f"Instagram ranking credentials validation failed: {str(e)[:100]}")
+            logger.exception(f"Instagram ranking credentials validation failed: {str(e)[:100]}")
             return False
 
     async def resolve_media_id(self, client: httpx.AsyncClient, url: str) -> str | None:
@@ -76,7 +76,7 @@ class InstagramRankingConnector(PlatformRankingConnector):
                         if permalink:
                             self._media_cache[permalink.rstrip("/")] = item["id"]
             except Exception as e:
-                logger.warning(f"Instagram ranking: media list fetch failed: {str(e)[:100]}")
+                logger.warning(f"Instagram ranking: media list fetch failed: {str(e)[:100]}", exc_info=True)
 
         return self._media_cache.get(url.rstrip("/"))
 
@@ -114,7 +114,7 @@ class InstagramRankingConnector(PlatformRankingConnector):
                 out[entry["name"]] = values[0]["value"] if values else None
             return out
         except Exception as e:
-            logger.warning(f"Instagram ranking: insights fetch failed: {str(e)[:100]}")
+            logger.warning(f"Instagram ranking: insights fetch failed: {str(e)[:100]}", exc_info=True)
             return {}
 
     async def _fetch_media_fields(self, client: httpx.AsyncClient, media_id: str) -> dict[str, Any]:
@@ -127,7 +127,7 @@ class InstagramRankingConnector(PlatformRankingConnector):
             if resp.status_code == 200:
                 return resp.json()
         except Exception as e:
-            logger.warning(f"Instagram ranking: media fields fetch failed: {str(e)[:100]}")
+            logger.warning(f"Instagram ranking: media fields fetch failed: {str(e)[:100]}", exc_info=True)
         return {}
 
     def _engagement_signals(self, insights: dict[str, Any]) -> list[RankingSignal]:

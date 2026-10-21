@@ -37,7 +37,7 @@ class MercadoLibreListingSync(PlatformListingSyncConnector):
                 )
                 return resp.status_code == 200
         except Exception as e:
-            logger.error(f"MercadoLibre credentials validation failed: {str(e)[:100]}")
+            logger.exception(f"MercadoLibre credentials validation failed: {str(e)[:100]}")
             return False
 
     async def extract_listing_id(self, url: str) -> str | None:
@@ -79,7 +79,7 @@ class MercadoLibreListingSync(PlatformListingSyncConnector):
 
         except Exception as e:
             error_msg = str(e)[:200]
-            logger.error(f"MercadoLibre title sync error: {error_msg}")
+            logger.exception(f"MercadoLibre title sync error: {error_msg}")
             return {"status": "failed", "error_message": error_msg}
 
     async def update_listing_description(self, external_id: str, description: str) -> dict[str, Any]:
@@ -123,5 +123,5 @@ class MercadoLibreListingSync(PlatformListingSyncConnector):
 
         except Exception as e:
             error_msg = str(e)[:200]
-            logger.error(f"MercadoLibre description sync error: {error_msg}")
+            logger.exception(f"MercadoLibre description sync error: {error_msg}")
             return {"status": "failed", "error_message": error_msg}

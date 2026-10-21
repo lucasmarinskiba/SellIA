@@ -3,12 +3,15 @@ Bloqueo por país configurable.
 En producción con Cloudflare, usa CF-IPCountry.
 """
 
+import logging
 import os
 
 from sqlalchemy import select
 
 from app.core.database import AsyncSessionLocal
 from app.domains.security.models import SecurityConfig
+
+logger = logging.getLogger(__name__)
 
 
 async def get_blocked_countries() -> set[str]:
@@ -26,7 +29,7 @@ async def get_blocked_countries() -> set[str]:
             if config and config.blocked_countries:
                 return {c.strip().upper() for c in config.blocked_countries.split(",") if c.strip()}
     except Exception:
-        pass
+        logger.exception("get_blocked_countries: error inesperado")
 
     return set()
 

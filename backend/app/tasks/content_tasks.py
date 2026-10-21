@@ -160,6 +160,7 @@ def generate_product_images_task(self, business_id: str, catalog_item_id: str, i
                         gc.feedback_notes = gen_result.error_message
 
                 except Exception as e:
+                    logger.exception("_run: error inesperado")
                     gc.status = "failed"
                     gc.feedback_notes = str(e)
                     # Retry
@@ -184,6 +185,7 @@ def generate_product_images_task(self, business_id: str, catalog_item_id: str, i
     try:
         return run_async(_run())
     except Exception as exc:
+        logger.exception("generate_product_images_task: error inesperado")
         raise self.retry(exc=exc)
 
 
@@ -271,6 +273,7 @@ def generate_video_clips_task(self, business_id: str, catalog_item_id: str, vide
                         gc.feedback_notes = gen_result.error_message
 
                 except Exception as e:
+                    logger.exception("_run: error inesperado")
                     gc.status = "failed"
                     gc.feedback_notes = str(e)
                     raise self.retry(exc=e)
@@ -294,6 +297,7 @@ def generate_video_clips_task(self, business_id: str, catalog_item_id: str, vide
     try:
         return run_async(_run())
     except Exception as exc:
+        logger.exception("generate_video_clips_task: error inesperado")
         raise self.retry(exc=exc)
 
 
@@ -370,6 +374,7 @@ def generate_product_copy_task(self, business_id: str, catalog_item_id: str, cop
                         gc.ai_model_used = "prompt-only"
                         gc.feedback_notes = "No hay proveedor LLM disponible. Modo demo."
                 except Exception as e:
+                    logger.exception("_run: error inesperado")
                     gc.status = "failed"
                     gc.feedback_notes = str(e)
                     raise self.retry(exc=e)
@@ -390,6 +395,7 @@ def generate_product_copy_task(self, business_id: str, catalog_item_id: str, cop
     try:
         return run_async(_run())
     except Exception as exc:
+        logger.exception("generate_product_copy_task: error inesperado")
         raise self.retry(exc=exc)
 
 
@@ -452,6 +458,7 @@ def generate_carousel_task(self, business_id: str, catalog_item_id: str, carouse
                     gc.ai_model_used = "prompt-only"
                     gc.feedback_notes = "No hay proveedor LLM disponible. Modo demo."
             except Exception as e:
+                logger.exception("_run: error inesperado")
                 gc.status = "failed"
                 gc.feedback_notes = str(e)
                 raise self.retry(exc=e)
@@ -466,6 +473,7 @@ def generate_carousel_task(self, business_id: str, catalog_item_id: str, carouse
     try:
         return run_async(_run())
     except Exception as exc:
+        logger.exception("generate_carousel_task: error inesperado")
         raise self.retry(exc=exc)
 
 
@@ -518,6 +526,7 @@ def generate_thumbnail_task(self, business_id: str, video_title: str, video_desc
                     gc.feedback_notes = gen_result.error_message
 
             except Exception as e:
+                logger.exception("_run: error inesperado")
                 gc.status = "failed"
                 gc.feedback_notes = str(e)
                 raise self.retry(exc=e)
@@ -533,6 +542,7 @@ def generate_thumbnail_task(self, business_id: str, video_title: str, video_desc
     try:
         return run_async(_run())
     except Exception as exc:
+        logger.exception("generate_thumbnail_task: error inesperado")
         raise self.retry(exc=exc)
 
 
@@ -606,8 +616,8 @@ def auto_generate_catalog_content_task(self, business_id: str | None = None):
         for bid in business_ids:
             try:
                 results.append(await _run_single(bid))
-            except Exception as exc:
-                logger.error(f"auto_generate_catalog_content_task failed for {bid}: {exc}")
+            except Exception:
+                logger.exception(f"auto_generate_catalog_content_task failed for {bid}")
         return {"status": "ok", "processed": len(results), "total_businesses": len(business_ids)}
 
     try:
@@ -615,6 +625,7 @@ def auto_generate_catalog_content_task(self, business_id: str | None = None):
             return run_async(_run_single(uuid.UUID(business_id)))
         return run_async(_run_all())
     except Exception as exc:
+        logger.exception("auto_generate_catalog_content_task: error inesperado")
         raise self.retry(exc=exc)
 
 
@@ -681,8 +692,8 @@ def schedule_content_posts_task(self, business_id: str | None = None):
             try:
                 result = await _run_single(bid)
                 total_published += result.get("published_count", 0)
-            except Exception as exc:
-                logger.error(f"schedule_content_posts_task failed for {bid}: {exc}")
+            except Exception:
+                logger.exception(f"schedule_content_posts_task failed for {bid}")
         return {"status": "ok", "total_published": total_published, "total_businesses": len(business_ids)}
 
     try:
@@ -690,6 +701,7 @@ def schedule_content_posts_task(self, business_id: str | None = None):
             return run_async(_run_single(uuid.UUID(business_id)))
         return run_async(_run_all())
     except Exception as exc:
+        logger.exception("schedule_content_posts_task: error inesperado")
         raise self.retry(exc=exc)
 
 
@@ -739,8 +751,8 @@ def analyze_content_performance_task(self, business_id: str | None = None):
         for bid in business_ids:
             try:
                 all_insights.append(await _run_single(bid))
-            except Exception as exc:
-                logger.error(f"analyze_content_performance_task failed for {bid}: {exc}")
+            except Exception:
+                logger.exception(f"analyze_content_performance_task failed for {bid}")
         return {"status": "ok", "insights_count": len(all_insights), "total_businesses": len(business_ids), "insights": all_insights}
 
     try:
@@ -748,6 +760,7 @@ def analyze_content_performance_task(self, business_id: str | None = None):
             return run_async(_run_single(uuid.UUID(business_id)))
         return run_async(_run_all())
     except Exception as exc:
+        logger.exception("analyze_content_performance_task: error inesperado")
         raise self.retry(exc=exc)
 
 
@@ -804,6 +817,7 @@ def cleanup_old_generated_content_task(self, business_id: str = None):
     try:
         return run_async(_run())
     except Exception as exc:
+        logger.exception("cleanup_old_generated_content_task: error inesperado")
         raise self.retry(exc=exc)
 
 

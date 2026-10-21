@@ -4,6 +4,7 @@ Configura Celery con Redis como broker y backend.
 """
 
 import importlib
+import logging
 import sys as _sys
 import traceback
 
@@ -11,6 +12,8 @@ from celery import Celery
 from celery.schedules import crontab
 
 from app.core.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 
 # Import all models so SQLAlchemy mappers are configured in Celery workers.
@@ -24,6 +27,7 @@ def _try_import_domain_models(module_path: str) -> None:
     try:
         importlib.import_module(module_path)
     except Exception:
+        logger.exception("_try_import_domain_models: error inesperado")
         print(f"[celery_app.py] WARNING: skipped model import {module_path!r} due to error:", file=_sys.stderr)
         traceback.print_exc()
 
@@ -150,6 +154,7 @@ for mod in _modules:
         # celery logging "Received unregistered task ... KeyError" every
         # time beat dispatched one of that module's tasks, with no hint of
         # the actual cause. Print the real traceback to stderr instead.
+        logger.exception("modulo: error inesperado")
         print(f"[celery_app.py] WARNING: skipped task module {mod!r} due to error:", file=_sys.stderr)
         traceback.print_exc()
 

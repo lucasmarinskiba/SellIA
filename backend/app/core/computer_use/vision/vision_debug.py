@@ -64,7 +64,7 @@ class VisionDebugAnnotator:
                 try:
                     draw.text((x + 5, y + 5), label, fill='red')
                 except Exception:
-                    pass
+                    logger.exception("annotate_with_buttons: error inesperado")
 
             if output_path:
                 image.save(output_path)
@@ -75,8 +75,8 @@ class VisionDebugAnnotator:
             image.save(output, format="PNG")
             return output.getvalue()
 
-        except Exception as e:
-            logger.error(f"Annotation failed: {e}")
+        except Exception:
+            logger.exception("Annotation failed")
             return screenshot_bytes
 
     @staticmethod
@@ -123,7 +123,7 @@ class VisionDebugAnnotator:
                 try:
                     draw.text((x + 5, y - 15), label_text, fill=color)
                 except Exception:
-                    pass
+                    logger.exception("annotate_with_form_fields: error inesperado")
 
             if output_path:
                 image.save(output_path)
@@ -133,8 +133,8 @@ class VisionDebugAnnotator:
             image.save(output, format="PNG")
             return output.getvalue()
 
-        except Exception as e:
-            logger.error(f"Form annotation failed: {e}")
+        except Exception:
+            logger.exception("Form annotation failed")
             return screenshot_bytes
 
     @staticmethod
@@ -172,8 +172,8 @@ class VisionDebugAnnotator:
             image.save(output, format="PNG")
             return output.getvalue()
 
-        except Exception as e:
-            logger.error(f"All-elements annotation failed: {e}")
+        except Exception:
+            logger.exception("All-elements annotation failed")
             return screenshot_bytes
 
     @staticmethod
@@ -194,7 +194,7 @@ class VisionDebugAnnotator:
         try:
             draw.text((x + 2, y + 2), label_prefix, fill=color)
         except Exception:
-            pass
+            logger.exception("_draw_box: error inesperado")
 
     @staticmethod
     def create_comparison_image(
@@ -233,7 +233,7 @@ class VisionDebugAnnotator:
                 draw.text((20, 10), "BEFORE", fill='black')
                 draw.text((size[0] + 20, 10), "AFTER", fill='black')
             except Exception:
-                pass
+                logger.exception("create_comparison_image: error inesperado")
 
             if output_path:
                 comparison.save(output_path)
@@ -243,8 +243,8 @@ class VisionDebugAnnotator:
             comparison.save(output, format="PNG")
             return output.getvalue()
 
-        except Exception as e:
-            logger.error(f"Comparison creation failed: {e}")
+        except Exception:
+            logger.exception("Comparison creation failed")
             return before_bytes
 
 
@@ -351,8 +351,8 @@ class VisionDebugLogger:
         try:
             with open(self.log_file, 'a') as f:
                 f.write(json.dumps(entry) + '\n')
-        except Exception as e:
-            logger.error(f"Failed to write log entry: {e}")
+        except Exception:
+            logger.exception("Failed to write log entry")
 
     def generate_report(self) -> str:
         """Genera reporte de debug."""

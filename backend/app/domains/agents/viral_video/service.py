@@ -181,7 +181,7 @@ class ViralVideoService:
                     content = data["choices"][0]["message"]["content"]
                     return json.loads(content)
             except Exception as e:
-                logger.warning(f"OpenAI script generation failed: {e}")
+                logger.warning(f"OpenAI script generation failed: {e}", exc_info=True)
 
         return {
             "hook": f"Stop scrolling! You won't believe this about {topic}!",
@@ -218,7 +218,7 @@ class ViralVideoService:
                         f.write(video_bytes)
                     return file_path, provider_name
             except Exception as e:
-                logger.warning(f"{provider_name} video generation failed: {e}")
+                logger.warning(f"{provider_name} video generation failed: {e}", exc_info=True)
 
         # Fallback: create a dummy video file
         logger.info("Video generation fallback: creating dummy file")
@@ -258,7 +258,7 @@ class ViralVideoService:
                     data = response.json()
                     return data["data"][0]["url"]
             except Exception as e:
-                logger.warning(f"Thumbnail generation failed: {e}")
+                logger.warning(f"Thumbnail generation failed: {e}", exc_info=True)
         return None
 
     def _build_srt(self, script_data: dict[str, str], duration: int) -> str:

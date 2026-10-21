@@ -95,8 +95,8 @@ class CalendarService:
 
             return f"event_{start_time.timestamp()}"
 
-        except Exception as e:
-            logger.error(f"Calendar scheduling failed: {e}")
+        except Exception:
+            logger.exception("Calendar scheduling failed")
             return None
 
     async def schedule_demo(

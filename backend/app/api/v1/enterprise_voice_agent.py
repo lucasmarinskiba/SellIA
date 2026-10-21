@@ -1,3 +1,4 @@
+import logging
 from typing import Annotated
 from uuid import UUID
 
@@ -10,6 +11,8 @@ from app.core.deps import get_current_user
 from app.domains.businesses.models import Business
 from app.domains.enterprise.voice_agent import VoiceAgentManager
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -273,6 +276,7 @@ async def websocket_call(websocket: WebSocket, call_id: str):
                 text = data.replace("transcript:", "")
                 await websocket.send_json({"type": "transcript_received", "text": text, "timestamp": 0})
     except Exception as e:
+        logger.exception("websocket_call: error inesperado")
         print(f"WebSocket error: {e}")
     finally:
         await websocket.close()

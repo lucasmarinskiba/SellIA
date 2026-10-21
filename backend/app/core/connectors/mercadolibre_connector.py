@@ -31,8 +31,8 @@ class MercadoLibreConnector(BaseConnector):
                         logger.info("MercadoLibre authenticated")
                         return True
                     return False
-        except Exception as e:
-            logger.error(f"MercadoLibre auth failed: {e!s}")
+        except Exception:
+            logger.exception("MercadoLibre auth failed")
             return False
 
     async def list_products(self) -> list[dict[str, Any]]:
@@ -46,8 +46,8 @@ class MercadoLibreConnector(BaseConnector):
                         data = await resp.json()
                         return data.get("results", [])
                     return []
-        except Exception as e:
-            logger.error(f"Error listing products: {e!s}")
+        except Exception:
+            logger.exception("Error listing products")
             return []
 
     async def create_listing(self, product: dict[str, Any]) -> dict[str, Any]:
@@ -79,7 +79,7 @@ class MercadoLibreConnector(BaseConnector):
                         return {"status": "created", "listing_id": data.get("id")}
                     return {"status": "error", "message": "Failed to create listing"}
         except Exception as e:
-            logger.error(f"Error creating listing: {e!s}")
+            logger.exception("Error creating listing")
             return {"status": "error", "error": str(e)}
 
     async def get_orders(self) -> list[dict[str, Any]]:
@@ -93,8 +93,8 @@ class MercadoLibreConnector(BaseConnector):
                         data = await resp.json()
                         return data.get("results", [])
                     return []
-        except Exception as e:
-            logger.error(f"Error fetching orders: {e!s}")
+        except Exception:
+            logger.exception("Error fetching orders")
             return []
 
     async def send_message(self, recipient: str, message: str) -> dict[str, Any]:
@@ -120,6 +120,6 @@ class MercadoLibreConnector(BaseConnector):
                 "revenue": total_revenue,
                 "platform": "mercadolibre",
             }
-        except Exception as e:
-            logger.error(f"Error fetching metrics: {e!s}")
+        except Exception:
+            logger.exception("Error fetching metrics")
             return {}

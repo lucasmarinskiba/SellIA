@@ -5,6 +5,7 @@ Supports persistent delays via WorkflowExecution state.
 """
 
 import asyncio
+import logging
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -33,6 +34,8 @@ from app.domains.channels.models import (
     Conversation,
     Message,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class WorkflowEngine:
@@ -87,6 +90,7 @@ class WorkflowEngine:
                 from app.tasks.workflow_tasks import execute_workflow_task
                 execute_workflow_task.delay(str(execution.id), str(business_id), selected_actions)
             except Exception as e:
+                logger.exception("process_trigger: error inesperado")
                 from app.core.logger import get_logger
                 get_logger(__name__).warning(f"Celery not available, using asyncio fallback: {e}")
                 asyncio.create_task(self._run_execution(execution.id, business_id, selected_actions))
@@ -208,6 +212,7 @@ class WorkflowEngine:
                 if not should_continue:
                     break
             except Exception as e:
+                logger.exception("execute_workflow: error inesperado")
                 execution.status = "failed"
                 execution.error_message = str(e)
                 await self.db.commit()
@@ -229,6 +234,7 @@ class WorkflowEngine:
                     conversation_id=str(execution.conversation_id) if execution.conversation_id else None,
                 )
             except Exception as e:
+                logger.exception("execute_workflow: error inesperado")
                 from app.core.logger import get_logger
                 get_logger(__name__).error(f"Event emit error: {e}")
 
@@ -409,6 +415,7 @@ class WorkflowEngine:
                 await send_outbound_message(self.db, execution.conversation_id, content)
         except Exception as e:
             # Log but don't fail workflow
+            logger.exception("_action_send_message: error inesperado")
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Failed to send message: {e}")
 
@@ -439,6 +446,7 @@ class WorkflowEngine:
         try:
             await connector.send_message(conversation.lead_email, body, "text")
         except Exception as e:
+            logger.exception("_action_send_email: error inesperado")
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Failed to send email: {e}")
 
@@ -468,6 +476,7 @@ class WorkflowEngine:
             )
             voice_slug = business_context.pop("voice_personality_slug", None)
         except Exception as e:
+            logger.exception("_action_ai_reply: error inesperado")
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Context builder error: {e}")
 
@@ -524,6 +533,7 @@ class WorkflowEngine:
                     from app.core.logger import get_logger
                     get_logger(__name__).info(f"Webhook {url} status: {resp.status}")
         except Exception as e:
+            logger.exception("_action_webhook: error inesperado")
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Webhook failed: {e}")
 
@@ -611,6 +621,7 @@ class WorkflowEngine:
                 stage=deal.stage.value if deal.stage else "new_lead",
             )
         except Exception as e:
+            logger.exception("_action_create_deal: error inesperado")
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Deal event error: {e}")
 
@@ -647,6 +658,7 @@ class WorkflowEngine:
             }
             await shipment_services.create_shipment(self.db, business_id, shipment_data)
         except Exception as e:
+            logger.exception("_action_create_shipment: error inesperado")
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Shipment creation error: {e}")
 
@@ -701,6 +713,7 @@ class WorkflowEngine:
                 }
                 await svc_services.create_appointment(self.db, business_id, appt_data)
         except Exception as e:
+            logger.exception("_action_create_appointment: error inesperado")
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Appointment creation error: {e}")
 
@@ -715,6 +728,7 @@ class WorkflowEngine:
             if appt:
                 await svc_services.send_appointment_reminder(self.db, appt, config.get("channel", "whatsapp"))
         except Exception as e:
+            logger.exception("_action_send_reminder: error inesperado")
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Send reminder error: {e}")
 
@@ -729,6 +743,7 @@ class WorkflowEngine:
             if appt:
                 await svc_services.request_confirmation(self.db, appt, config.get("channel", "whatsapp"))
         except Exception as e:
+            logger.exception("_action_request_confirmation: error inesperado")
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Request confirmation error: {e}")
 
@@ -743,6 +758,7 @@ class WorkflowEngine:
             if appt:
                 await svc_services.request_feedback(self.db, appt, config.get("channel", "whatsapp"))
         except Exception as e:
+            logger.exception("_action_request_feedback: error inesperado")
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Request feedback error: {e}")
 
@@ -758,6 +774,7 @@ class WorkflowEngine:
                 delivery.status = config["status"]
                 await self.db.commit()
         except Exception as e:
+            logger.exception("_action_update_service_status: error inesperado")
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Update service status error: {e}")
 
@@ -830,6 +847,7 @@ Instrucciones:
                 temperature=0.6,
             )
         except Exception as e:
+            logger.exception("_action_send_notification: error inesperado")
             from app.core.logger import get_logger
             get_logger(__name__).warning(f"AI generation failed, using raw: {e}")
             notification_text = raw_message
@@ -844,6 +862,7 @@ Instrucciones:
             from app.core.logger import get_logger
             get_logger(__name__).info(f"Notification sent to user: {notification_text[:80]}...")
         except Exception as e:
+            logger.exception("_action_send_notification: error inesperado")
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Email send failed: {e}")
 
@@ -959,6 +978,7 @@ Instrucciones:
                 lead_name=conversation.lead_name,
             )
         except Exception as e:
+            logger.exception("_action_assign_human: error inesperado")
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Handoff emit error: {e}")
 
@@ -1033,6 +1053,7 @@ Respond with JSON only: {{"hours": <number>, "reason": "<brief reason>"}}"""
                     from app.core.logger import get_logger
                     get_logger(__name__).error(f"JSON parse failed: {e}")
         except Exception as e:
+            logger.exception("_action_ai_wait: error inesperado")
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Optimization failed: {e}")
 
@@ -1097,6 +1118,7 @@ class WorkflowScheduler:
             try:
                 await self._check_pending_executions()
             except Exception as e:
+                logger.exception("_loop: error inesperado")
                 from app.core.logger import get_logger
                 get_logger(__name__).error(f"Error in check loop: {e}")
             await asyncio.sleep(self.check_interval)
@@ -1136,6 +1158,7 @@ class WorkflowScheduler:
                                     )
                                     execute_workflow_task.delay(str(execution.id), str(workflow.business_id))
                                 except Exception as e:
+                                    logger.exception("_check_pending_executions: error inesperado")
                                     from app.core.logger import get_logger
                                     get_logger(__name__).warning(f"Celery fallback: {e}")
                                     engine = WorkflowEngine(db)

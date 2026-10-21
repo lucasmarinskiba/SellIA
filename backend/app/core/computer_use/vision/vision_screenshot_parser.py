@@ -231,8 +231,8 @@ Responde SOLO el texto concatenado (no JSON)."""
 
             return response.content[0].text
 
-        except Exception as e:
-            logger.error(f"Text extraction failed: {e}")
+        except Exception:
+            logger.exception("Text extraction failed")
             return ""
 
     async def identify_all_ui_elements(
@@ -313,8 +313,8 @@ Responde SOLO en JSON:
             response_text = response.content[0].text
             return json.loads(response_text)
 
-        except Exception as e:
-            logger.error(f"UI element identification failed: {e}")
+        except Exception:
+            logger.exception("UI element identification failed")
             return {}
 
     async def detect_viewport_size(
@@ -392,8 +392,8 @@ Responde SOLO: {"viewport_size": "mobile|tablet|desktop", "is_responsive": true|
                 data.get("is_responsive", False)
             )
 
-        except Exception as e:
-            logger.error(f"Viewport detection failed: {e}")
+        except Exception:
+            logger.exception("Viewport detection failed")
             return ViewportSize.DESKTOP, False
 
     async def identify_images(
@@ -465,8 +465,8 @@ Responde SOLO en JSON:
 
             return images
 
-        except Exception as e:
-            logger.error(f"Image identification failed: {e}")
+        except Exception:
+            logger.exception("Image identification failed")
             return []
 
     def _parse_page_structure(self, data: dict[str, Any]) -> PageStructure:

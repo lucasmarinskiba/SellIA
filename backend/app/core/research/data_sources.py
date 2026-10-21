@@ -551,6 +551,7 @@ class DataSourceOrchestrator:
                 # Simple connectivity check
                 health["sources"][name] = {"status": "active", "last_check": utc_now().isoformat()}
             except Exception as e:
+                logger.exception("health_check: error inesperado")
                 health["sources"][name] = {"status": "error", "error": str(e)}
                 health["overall_status"] = "degraded"
 

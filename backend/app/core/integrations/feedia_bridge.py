@@ -72,7 +72,7 @@ class FeedIABridge:
                 return {"status": "error", "code": response.status_code}
 
         except Exception as e:
-            logger.error(f"FeedIA request failed: {e!s}")
+            logger.exception("FeedIA request failed")
             return {"status": "error", "error": str(e)}
 
     async def request_reel_for_product(
@@ -106,7 +106,7 @@ class FeedIABridge:
             return response.json() if response.status_code == 200 else {"status": "error"}
 
         except Exception as e:
-            logger.error(f"FeedIA reel request failed: {e!s}")
+            logger.exception("FeedIA reel request failed")
             return {"status": "error", "error": str(e)}
 
     async def request_tiktok_video_for_product(
@@ -137,8 +137,8 @@ class FeedIABridge:
             )
             return response.json() if response.status_code == 200 else {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"FeedIA TikTok request failed: {e!s}")
+        except Exception:
+            logger.exception("FeedIA TikTok request failed")
             return {"status": "error"}
 
     # ========== PUBLISHING COORDINATION ==========
@@ -168,8 +168,8 @@ class FeedIABridge:
             )
             return response.json() if response.status_code == 200 else {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"Instagram publish failed: {e!s}")
+        except Exception:
+            logger.exception("Instagram publish failed")
             return {"status": "error"}
 
     async def publish_to_tiktok(
@@ -197,8 +197,8 @@ class FeedIABridge:
             )
             return response.json() if response.status_code == 200 else {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"TikTok publish failed: {e!s}")
+        except Exception:
+            logger.exception("TikTok publish failed")
             return {"status": "error"}
 
     # ========== PERFORMANCE FEEDBACK LOOP ==========
@@ -231,8 +231,8 @@ class FeedIABridge:
             )
             return response.json() if response.status_code == 200 else {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"Performance report failed: {e!s}")
+        except Exception:
+            logger.exception("Performance report failed")
             return {"status": "error"}
 
     # ========== AUDIENCE INSIGHTS ==========
@@ -249,8 +249,8 @@ class FeedIABridge:
             )
             return response.json() if response.status_code == 200 else {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"Audience insights request failed: {e!s}")
+        except Exception:
+            logger.exception("Audience insights request failed")
             return {"status": "error"}
 
     # ========== HASHTAG & STRATEGY ==========
@@ -267,8 +267,8 @@ class FeedIABridge:
             )
             return response.json() if response.status_code == 200 else {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"Hashtag strategy request failed: {e!s}")
+        except Exception:
+            logger.exception("Hashtag strategy request failed")
             return {"status": "error"}
 
     async def get_posting_schedule(self, account_id: str) -> dict[str, Any]:
@@ -283,8 +283,8 @@ class FeedIABridge:
             )
             return response.json() if response.status_code == 200 else {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"Schedule request failed: {e!s}")
+        except Exception:
+            logger.exception("Schedule request failed")
             return {"status": "error"}
 
     # ========== TREND MONITORING ==========
@@ -304,8 +304,8 @@ class FeedIABridge:
                 return data.get("hooks", [])
             return []
 
-        except Exception as e:
-            logger.error(f"Trending hooks request failed: {e!s}")
+        except Exception:
+            logger.exception("Trending hooks request failed")
             return []
 
     async def get_competitor_content_analysis(
@@ -325,8 +325,8 @@ class FeedIABridge:
             )
             return response.json() if response.status_code == 200 else {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"Competitor analysis failed: {e!s}")
+        except Exception:
+            logger.exception("Competitor analysis failed")
             return {"status": "error"}
 
     async def close(self):

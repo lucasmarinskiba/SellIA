@@ -1,5 +1,6 @@
 """API endpoints for location check-in/checkout + feedback."""
 
+import logging
 from typing import Annotated
 from uuid import UUID
 
@@ -12,6 +13,8 @@ from app.core.deps import get_current_user
 from app.domains.locations.checkin_models import CheckinType
 from app.domains.locations.checkin_service import LocationCheckinService
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="", tags=["location-checkin"])
 
@@ -75,6 +78,7 @@ async def visitor_checkin(
             "checkin_time": checkin.checkin_time.isoformat()
         }
     except Exception as e:
+        logger.exception("visitor_checkin: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -96,6 +100,7 @@ async def visitor_checkout(
             "dwell_minutes": checkin.dwell_seconds // 60 if checkin.dwell_seconds else 0
         }
     except Exception as e:
+        logger.exception("visitor_checkout: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -122,6 +127,7 @@ async def submit_feedback(
             "requires_followup": feedback.requires_followup
         }
     except Exception as e:
+        logger.exception("submit_feedback: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -147,6 +153,7 @@ async def staff_checkin(
             "checkin_time": checkin.checkin_time.isoformat()
         }
     except Exception as e:
+        logger.exception("staff_checkin: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -174,6 +181,7 @@ async def staff_checkout(
             "sales": checkin.sales_assisted
         }
     except Exception as e:
+        logger.exception("staff_checkout: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -192,6 +200,7 @@ async def get_checkin_summary(
         )
         return summary
     except Exception as e:
+        logger.exception("get_checkin_summary: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -213,4 +222,5 @@ async def get_staff_performance(
         )
         return performance
     except Exception as e:
+        logger.exception("get_staff_performance: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

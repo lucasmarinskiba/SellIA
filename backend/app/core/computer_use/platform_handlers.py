@@ -79,8 +79,8 @@ class MercadoLibreComputerUseHandler:
             self.is_authenticated = True
             return True
 
-        except Exception as e:
-            logger.error(f"Mercado Libre auth failed: {e!s}")
+        except Exception:
+            logger.exception("Mercado Libre auth failed")
             return False
 
     async def post_product(
@@ -172,7 +172,7 @@ class MercadoLibreComputerUseHandler:
 
         except Exception as e:
             duration = (utc_now() - start_time).total_seconds()
-            logger.error(f"Failed to post product: {e!s}")
+            logger.exception("Failed to post product")
             return {
                 "success": False,
                 "product_name": name,
@@ -234,14 +234,14 @@ class MercadoLibreComputerUseHandler:
 
                     logger.info(f"Responded to question {i+1}")
 
-                except Exception as e:
-                    logger.error(f"Error responding to question: {e!s}")
+                except Exception:
+                    logger.exception("Error responding to question")
 
             logger.info(f"Responded to {len(questions)} questions")
             return questions
 
-        except Exception as e:
-            logger.error(f"Error checking questions: {e!s}")
+        except Exception:
+            logger.exception("Error checking questions")
             return []
 
     async def handle_purchase_and_shipping(self, order_id: str) -> bool:
@@ -281,8 +281,8 @@ class MercadoLibreComputerUseHandler:
             logger.info(f"Purchase handled successfully: {order_id}")
             return True
 
-        except Exception as e:
-            logger.error(f"Error handling purchase: {e!s}")
+        except Exception:
+            logger.exception("Error handling purchase")
             return False
 
 
@@ -350,8 +350,8 @@ class ShopifyComputerUseHandler:
             self.is_authenticated = True
             return True
 
-        except Exception as e:
-            logger.error(f"Shopify auth failed: {e!s}")
+        except Exception:
+            logger.exception("Shopify auth failed")
             return False
 
     async def create_product(
@@ -422,7 +422,7 @@ class ShopifyComputerUseHandler:
             return {"success": True, "product_name": name}
 
         except Exception as e:
-            logger.error(f"Failed to create Shopify product: {e!s}")
+            logger.exception("Failed to create Shopify product")
             return {"success": False, "error": str(e)}
 
     async def update_inventory(self, sku: str, new_quantity: int) -> bool:
@@ -457,8 +457,8 @@ class ShopifyComputerUseHandler:
             logger.info(f"Inventory updated for SKU {sku}")
             return True
 
-        except Exception as e:
-            logger.error(f"Error updating inventory: {e!s}")
+        except Exception:
+            logger.exception("Error updating inventory")
             return False
 
     async def process_order(self, order_number: str) -> bool:
@@ -493,8 +493,8 @@ class ShopifyComputerUseHandler:
             logger.info(f"Order processed: {order_number}")
             return True
 
-        except Exception as e:
-            logger.error(f"Error processing order: {e!s}")
+        except Exception:
+            logger.exception("Error processing order")
             return False
 
 
@@ -537,8 +537,8 @@ class FacebookComputerUseHandler:
             self.is_authenticated = True
             return True
 
-        except Exception as e:
-            logger.error(f"Facebook auth failed: {e!s}")
+        except Exception:
+            logger.exception("Facebook auth failed")
             return False
 
     async def post_to_marketplace(
@@ -601,7 +601,7 @@ class FacebookComputerUseHandler:
             return {"success": True, "title": title}
 
         except Exception as e:
-            logger.error(f"Error posting to Facebook: {e!s}")
+            logger.exception("Error posting to Facebook")
             return {"success": False, "error": str(e)}
 
     async def monitor_and_respond_inquiries(self) -> list[dict[str, Any]]:
@@ -645,8 +645,8 @@ class FacebookComputerUseHandler:
 
             return messages
 
-        except Exception as e:
-            logger.error(f"Error checking messages: {e!s}")
+        except Exception:
+            logger.exception("Error checking messages")
             return []
 
 
@@ -699,8 +699,8 @@ class WhatsAppComputerUseHandler:
             self.is_authenticated = True
             return True
 
-        except Exception as e:
-            logger.error(f"WhatsApp auth failed: {e!s}")
+        except Exception:
+            logger.exception("WhatsApp auth failed")
             return False
 
     async def send_message(self, phone_number: str, message: str) -> bool:
@@ -737,8 +737,8 @@ class WhatsAppComputerUseHandler:
             logger.info(f"Message sent to {phone_number}")
             return True
 
-        except Exception as e:
-            logger.error(f"Error sending WhatsApp message: {e!s}")
+        except Exception:
+            logger.exception("Error sending WhatsApp message")
             return False
 
     async def send_product_catalog(
@@ -776,8 +776,8 @@ class WhatsAppComputerUseHandler:
             # Envía
             return await self.send_message(phone_number, catalog)
 
-        except Exception as e:
-            logger.error(f"Error sending catalog: {e!s}")
+        except Exception:
+            logger.exception("Error sending catalog")
             return False
 
     async def lead_qualification_sequence(self, phone_number: str) -> bool:
@@ -811,8 +811,8 @@ class WhatsAppComputerUseHandler:
             logger.info(f"Lead qualification sequence completed: {phone_number}")
             return True
 
-        except Exception as e:
-            logger.error(f"Error in qualification sequence: {e!s}")
+        except Exception:
+            logger.exception("Error in qualification sequence")
             return False
 
 
@@ -862,8 +862,8 @@ class EmailComputerUseHandler:
             self.is_authenticated = True
             return True
 
-        except Exception as e:
-            logger.error(f"Email auth failed: {e!s}")
+        except Exception:
+            logger.exception("Email auth failed")
             return False
 
     async def send_campaign_email(
@@ -916,8 +916,8 @@ class EmailComputerUseHandler:
             logger.info(f"Email sent to {recipient}")
             return True
 
-        except Exception as e:
-            logger.error(f"Error sending email: {e!s}")
+        except Exception:
+            logger.exception("Error sending email")
             return False
 
     async def send_nurture_sequence(
@@ -962,8 +962,8 @@ class EmailComputerUseHandler:
             logger.info(f"Nurture sequence completed: {sent_count}/{len(emails)} emails sent")
             return sent_count
 
-        except Exception as e:
-            logger.error(f"Error in nurture sequence: {e!s}")
+        except Exception:
+            logger.exception("Error in nurture sequence")
             return 0
 
 

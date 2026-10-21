@@ -82,8 +82,8 @@ class OllamaVisionProvider(ComputerUseProvider):
 
             return data.get("response", "")
 
-        except Exception as e:
-            logger.error(f"Ollama call failed: {e}")
+        except Exception:
+            logger.exception("Ollama call failed")
             return None
 
     def _parse_action(self, text: str) -> ComputerUseAction:
