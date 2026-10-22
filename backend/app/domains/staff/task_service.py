@@ -426,18 +426,26 @@ class ShiftReadinessService:
     def get_staff_performance(
         staff_id: UUID,
         days: int = 30,
-        db: Session = None
+        db: Session = None,
+        business_ids: set[UUID] | None = None,
     ) -> dict:
-        """Get staff task performance over time period."""
+        """Get staff task performance over time period.
+
+        ``business_ids`` restricts the count to those businesses -- a staff member can work
+        for several, and a manager must only see the tasks of the ones they manage.
+        """
         if not db:
             raise ValueError("Database session required")
 
         cutoff = datetime.now(timezone.utc) - timedelta(days=days)
 
-        tasks = db.query(StaffTask).filter(
+        query = db.query(StaffTask).filter(
             StaffTask.assigned_to_staff_id == staff_id,
             StaffTask.assigned_at >= cutoff
-        ).all()
+        )
+        if business_ids is not None:
+            query = query.filter(StaffTask.business_id.in_(business_ids))
+        tasks = query.all()
 
         completed = [t for t in tasks if t.status == TaskStatus.COMPLETED]
         total = len(tasks)

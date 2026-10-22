@@ -1432,84 +1432,16 @@ async def delete_my_account(
     return {"message": "Cuenta eliminada correctamente"}
 
 
-# 2FA endpoints
-from pydantic import BaseModel
-import pyotp
-import qrcode as qr_lib
-from io import BytesIO
-
-class Enable2FARequest(BaseModel):
-    user_id: str
-
-class Verify2FARequest(BaseModel):
-    user_id: str
-    secret: str
-    totp_code: str
-
-class Disable2FARequest(BaseModel):
-    user_id: str
-    password: str
-
-@router.post("/2fa/enable")
-async def enable_2fa(req: Enable2FARequest, db: AsyncSession = Depends(get_db)):
-    """Generate 2FA secret and QR code."""
-    if not pyotp:
-        raise HTTPException(status_code=501, detail="2FA not available")
-    
-    secret = pyotp.random_base32()
-    totp = pyotp.TOTP(secret)
-    provisioning_uri = totp.provisioning_uri(name=req.user_id, issuer_name="SellIA")
-
-    qr = qr_lib.QRCode(version=1, box_size=10, border=5)
-    qr.add_data(provisioning_uri)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-
-    img_io = BytesIO()
-    img.save(img_io, format="PNG")
-    img_base64 = base64.b64encode(img_io.getvalue()).decode()
-
-    return {
-        "secret": secret,
-        "qr_code": f"data:image/png;base64,{img_base64}",
-        "message": "Scan QR code with authenticator app",
-    }
-
-@router.post("/2fa/verify")
-async def verify_2fa(request: Verify2FARequest, db: AsyncSession = Depends(get_db)):
-    """Verify 2FA code and enable 2FA for user."""
-    if not pyotp:
-        raise HTTPException(status_code=501, detail="2FA not available")
-    
-    try:
-        totp = pyotp.TOTP(request.secret)
-        if not totp.verify(request.totp_code, valid_window=1):
-            raise HTTPException(status_code=400, detail="Invalid 2FA code")
-
-        await db.execute(
-            select(User).where(User.id == request.user_id)
-        )
-        result = await db.execute(
-            select(User).where(User.id == request.user_id)
-        )
-        user = result.scalars().first()
-        if user:
-            user.totp_secret = request.secret
-            user.is_2fa_enabled = True
-            await db.commit()
-
-        return {"message": "2FA enabled successfully"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"2FA verify failed: {str(e)}")
-
-# NOTE: a second `POST /2fa/disable` used to live here, taking a raw
-# `user_id` + password in the body with no auth dependency at all (not even
-# get_current_user) -- Starlette matches routes in registration order, so it
-# was always shadowed by the real disable_2fa above (line ~719, which
-# requires an authenticated session + a live TOTP code) and never actually
-# ran. Removed as dead code rather than "fixed" -- an unauthenticated
-# password-only disable is a materially weaker security model than the one
-# actually in effect, and reviving it is a product/security decision, not
-# something to silently restore.
+# NOTE: there is ONE 2FA enrolment flow: the authenticated /2fa/setup,
+# /2fa/verify and /2fa/disable above (caller identified by their session, secret
+# generated and stored server-side, code checked against it).
+#
+# A second, unauthenticated flow used to live here and in signup.py
+# (/2fa/enable, /2fa/verify and /2fa/disable taking a client-supplied user_id
+# [+ secret] in the body, no session). It was never reachable under the same
+# paths anyway -- this router is mounted before signup.py, so the routes above
+# shadowed those -- and it must not be revived: /2fa/verify wrote
+# totp_secret + is_2fa_enabled onto ANY user_id with a secret of the caller's
+# choosing, i.e. it could lock anyone out of their account. The signup screen now
+# enrols through the authenticated flow with the token /auth/signup returns.
+# tests/test_route_conflicts.py fails if two routes share method + path again.

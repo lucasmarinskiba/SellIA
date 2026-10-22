@@ -7,10 +7,10 @@ import Link from 'next/link';
 
 export default function SignupPage() {
   const [step, setStep] = useState<'signup' | '2fa' | 'complete'>('signup');
-  const [userId, setUserId] = useState<string | null>(null);
 
-  const handleSignupSuccess = ({ userId: newUserId }: { userId: string; email: string }) => {
-    setUserId(newUserId);
+  // SecureSignupForm has already stored the new account's access token, which is
+  // what authenticates the 2FA setup call -- no user id is carried over.
+  const handleSignupSuccess = () => {
     setStep('2fa');
   };
 
@@ -23,7 +23,6 @@ export default function SignupPage() {
 
   const handle2FACancel = () => {
     setStep('signup');
-    setUserId(null);
   };
 
   return (
@@ -51,10 +50,9 @@ export default function SignupPage() {
           </div>
         )}
 
-        {step === '2fa' && userId && (
+        {step === '2fa' && (
           <div>
             <TwoFactorSetup
-              userId={userId}
               onComplete={handle2FAComplete}
               onCancel={handle2FACancel}
             />

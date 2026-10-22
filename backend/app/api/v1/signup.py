@@ -1,4 +1,4 @@
-"""User signup/registration endpoints with secure password validation and 2FA."""
+"""User signup/signin endpoints with secure password validation (2FA enrolment lives in auth.py)."""
 
 from fastapi import APIRouter, Depends, HTTPException, Body
 from pydantic import BaseModel, EmailStr, field_validator
@@ -10,13 +10,10 @@ from app.core.config import get_settings
 from app.domains.users.models import User
 from datetime import timedelta
 import hashlib
-import base64
 import uuid
 import re
 import bcrypt
 import pyotp
-import qrcode
-from io import BytesIO
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -140,7 +137,7 @@ async def signin(
     """Sign in with password + optional 2FA."""
     try:
         result = await db.execute(
-            text("SELECT id, email, full_name, hashed_password, is_2fa_enabled, totp_secret FROM users WHERE email = :email"),
+            text("SELECT id, email, full_name, hashed_password, is_2fa_enabled FROM users WHERE email = :email"),
             {"email": req.email}
         )
         user_row = result.first()
@@ -148,7 +145,7 @@ async def signin(
         if not user_row:
             raise HTTPException(status_code=401, detail="Invalid email or password")
 
-        user_id, user_email, full_name, hashed_password, is_2fa_enabled, totp_secret = user_row
+        user_id, user_email, full_name, hashed_password, is_2fa_enabled = user_row
 
         if not bcrypt.checkpw(req.password.encode(), hashed_password.encode()):
             raise HTTPException(status_code=401, detail="Invalid email or password")
@@ -157,8 +154,14 @@ async def signin(
             if not req.totp_code:
                 return {"requires_2fa": True, "user_id": str(user_id), "message": "2FA code required"}
 
-            totp = pyotp.TOTP(totp_secret)
-            if not totp.verify(req.totp_code, valid_window=1):
+            # users.totp_secret is an EncryptedString column: a raw SELECT of it returns
+            # the ciphertext (pyotp then fails with "Non-base32 digit found" -> 500, so
+            # nobody with 2FA on could ever sign in). Read it through the typed column so
+            # it comes back decrypted, the same way auth.py's 2FA handlers see it.
+            totp_secret = (
+                await db.execute(select(User.totp_secret).where(User.id == user_id))
+            ).scalar_one_or_none()
+            if not totp_secret or not pyotp.TOTP(totp_secret).verify(req.totp_code, valid_window=1):
                 raise HTTPException(status_code=401, detail="Invalid 2FA code")
 
         from app.core.security import create_access_token
@@ -176,90 +179,10 @@ async def signin(
         raise HTTPException(status_code=500, detail=f"Signin failed: {str(e)}")
 
 
-class Enable2FARequest(BaseModel):
-    user_id: str
-
-
-@router.post("/2fa/enable")
-async def enable_2fa(req: Enable2FARequest, db: AsyncSession = Depends(get_db)):
-    """Generate 2FA secret and QR code."""
-    secret = pyotp.random_base32()
-    totp = pyotp.TOTP(secret)
-    provisioning_uri = totp.provisioning_uri(name=req.user_id, issuer_name="SellIA")
-
-    qr = qrcode.QRCode(version=1, box_size=10, border=5)
-    qr.add_data(provisioning_uri)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-
-    img_io = BytesIO()
-    img.save(img_io, format="PNG")
-    img_base64 = base64.b64encode(img_io.getvalue()).decode()
-
-    return {
-        "secret": secret,
-        "qr_code": f"data:image/png;base64,{img_base64}",
-        "message": "Scan QR code with authenticator app",
-    }
-
-
-class Verify2FARequest(BaseModel):
-    user_id: str
-    secret: str
-    totp_code: str
-
-
-@router.post("/2fa/verify")
-async def verify_2fa(
-    request: Verify2FARequest,
-    db: AsyncSession = Depends(get_db),
-):
-    """Verify 2FA code and enable 2FA for user."""
-    try:
-        totp = pyotp.TOTP(request.secret)
-        if not totp.verify(request.totp_code, valid_window=1):
-            raise HTTPException(status_code=400, detail="Invalid 2FA code")
-
-        await db.execute(
-            text("UPDATE users SET is_2fa_enabled = true, totp_secret = :secret WHERE id = :id"),
-            {"id": request.user_id, "secret": request.secret}
-        )
-        await db.commit()
-
-        return {"message": "2FA enabled successfully"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"2FA verify failed: {str(e)}")
-
-
-class Disable2FARequest(BaseModel):
-    user_id: str
-    password: str
-
-
-@router.post("/2fa/disable")
-async def disable_2fa(
-    req: Disable2FARequest,
-    db: AsyncSession = Depends(get_db),
-):
-    """Disable 2FA (requires password confirmation)."""
-    result = await db.execute(
-        text("SELECT hashed_password FROM users WHERE id = :id"),
-        {"id": req.user_id}
-    )
-    user_row = result.first()
-
-    if not user_row or not bcrypt.checkpw(req.password.encode(), user_row[0].encode()):
-        raise HTTPException(status_code=401, detail="Invalid password")
-
-    await db.execute(
-        text("UPDATE users SET is_2fa_enabled = false, totp_secret = NULL WHERE id = :id"),
-        {"id": req.user_id}
-    )
-    await db.commit()
-
-    return {"message": "2FA disabled"}
+# 2FA enrolment is NOT served from here. It used to be (/2fa/enable, /2fa/verify and
+# /2fa/disable with a client-supplied user_id and secret, no session), but the
+# authenticated flow in auth.py (/2fa/setup, /2fa/verify, /2fa/disable) owns those
+# paths -- see the note at the end of auth.py for why this one must not come back.
 
 
 @router.get("/me")
