@@ -6,7 +6,8 @@ caller), so reading it would report zeros as if they were data.
 
 Conventions:
 * a visit belongs to a period by ``entry_time``; a proximity event by ``created_at``;
-* hours and weekdays are UTC -- no location timezone is stored yet;
+* hours, weekdays and days are local to the location (``locations.timezone``, UTC when unset); a business
+  summary uses each visit's own location, and a visit with no location is UTC;
 * a metric with no underlying rows is ``None``, not zero, when zero would be misleading (averages, peaks);
 * nothing here estimates ROI or writes insight text: those need data this codebase does not record.
 
@@ -15,9 +16,10 @@ parameter so the windows are testable.
 """
 
 from collections import Counter, defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, tzinfo
 from decimal import Decimal
 from uuid import UUID
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from sqlalchemy.orm import Session
 
@@ -35,6 +37,21 @@ CENTS = Decimal("0.01")
 
 def _utc(moment: datetime) -> datetime:
     return moment.replace(tzinfo=timezone.utc) if moment.tzinfo is None else moment.astimezone(timezone.utc)
+
+
+def _zone(name: str | None) -> tzinfo:
+    """A location's own zone. Unset or unknown names fall back to UTC, the behaviour before zones existed."""
+    if not name:
+        return timezone.utc
+    try:
+        return ZoneInfo(name)
+    except (ZoneInfoNotFoundError, OSError, ValueError):
+        return timezone.utc
+
+
+def _location_zone(db: Session, location_id: UUID) -> tzinfo:
+    location = db.get(Location, location_id)
+    return _zone(location.timezone if location else None)
 
 
 def _dec(amount) -> Decimal:
@@ -56,6 +73,10 @@ def _visit_time(visit: OfflineConversion) -> datetime:
     return visit.entry_time
 
 
+def _local(visit: OfflineConversion, zones: dict[UUID | None, tzinfo]) -> datetime:
+    return _utc(_visit_time(visit)).astimezone(zones.get(visit.location_id, timezone.utc))
+
+
 def _event_time(event: GeoProximityEvent) -> datetime:
     return event.created_at
 
@@ -74,9 +95,10 @@ def _hour_label(hour: int) -> str:
     return f"{hour:02d}:00-{(hour + 1) % 24:02d}:00"
 
 
-def traffic_profile(visits: list[OfflineConversion]) -> dict:
-    hours = Counter(_utc(_visit_time(v)).hour for v in visits)
-    weekdays = Counter(WEEKDAYS[_utc(_visit_time(v)).weekday()] for v in visits)
+def traffic_profile(visits: list[OfflineConversion], zones: dict[UUID | None, tzinfo]) -> dict:
+    local = [_local(v, zones) for v in visits]
+    hours = Counter(moment.hour for moment in local)
+    weekdays = Counter(WEEKDAYS[moment.weekday()] for moment in local)
     peak_hour = peak_day = None
     if hours:
         top = max(hours.values())
@@ -97,10 +119,10 @@ def traffic_profile(visits: list[OfflineConversion]) -> dict:
     }
 
 
-def daily_trend(visits: list[OfflineConversion], start: datetime, days: int) -> list[dict]:
-    """One entry per day of the period, zero-filled, so charts do not skip quiet days."""
-    counts = Counter(_utc(_visit_time(v)).date() for v in visits)
-    first = start.date()
+def daily_trend(visits: list[OfflineConversion], start: datetime, days: int, zone: tzinfo) -> list[dict]:
+    """One entry per local day of the period, zero-filled, so charts do not skip quiet days."""
+    counts = Counter(_utc(_visit_time(v)).astimezone(zone).date() for v in visits)
+    first = start.astimezone(zone).date()
     return [
         {"date": (first + timedelta(days=i)).isoformat(), "visits": counts.get(first + timedelta(days=i), 0)}
         for i in range(days)
@@ -120,14 +142,15 @@ def _conversion_block(visits: list[OfflineConversion]) -> dict:
 
 
 def location_foot_traffic(db: Session, location_id: UUID, days: int, now: datetime) -> dict:
+    zone = _location_zone(db, location_id)
     _, start, end = _windows(now, days)
     rows = db.query(OfflineConversion).filter(OfflineConversion.location_id == location_id).all()
     visits = _between(_visit_time, rows, start, end)
     return {
-        **traffic_profile(visits),
+        **traffic_profile(visits, {location_id: zone}),
         "period_days": days,
-        "date_range": f"{start:%Y-%m-%d} to {end:%Y-%m-%d}",
-        "daily_visits_trend": daily_trend(visits, start, days),
+        "date_range": f"{start.astimezone(zone):%Y-%m-%d} to {end.astimezone(zone):%Y-%m-%d}",
+        "daily_visits_trend": daily_trend(visits, start, days, zone),
     }
 
 
@@ -175,7 +198,9 @@ def business_summary(db: Session, business_id: UUID, days: int, now: datetime) -
     current = _between(_visit_time, rows, start, end)
     previous = _between(_visit_time, rows, prev_start, start)
     cur, prev = _conversion_block(current), _conversion_block(previous)
-    profile = traffic_profile(current)
+    locations = db.query(Location).filter(Location.business_id == business_id).all()
+    zones = {location.id: _zone(location.timezone) for location in locations}
+    profile = traffic_profile(current, zones)
 
     per_location = Counter(v.location_id for v in current if v.location_id is not None)
     top_location_name = None
