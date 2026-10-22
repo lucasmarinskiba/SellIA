@@ -7,8 +7,9 @@ import uuid
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import Column, String, Float, Boolean, DateTime, ForeignKey, Text, Enum as SQLEnum, JSON, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -53,6 +54,7 @@ class Location(Base):
     state_province = Column(String(100), nullable=True)
     postal_code = Column(String(20), nullable=True)
     country_code = Column(String(2), nullable=False, default="AR")
+    timezone = Column(String(64), nullable=False, default="UTC", server_default="UTC")  # IANA name, e.g. America/Argentina/Buenos_Aires
 
     # Coordinates
     latitude = Column(Float, nullable=False)
@@ -142,6 +144,20 @@ class LocationHoursWeekly(BaseModel):
         }
 
 
+def _known_timezone(name: str) -> str:
+    """Reject names the IANA database does not know.
+
+    An unknown name would otherwise make the local-time BI figures fall back to UTC without anyone noticing.
+    """
+    try:
+        ZoneInfo(name)
+    except (ZoneInfoNotFoundError, OSError, ValueError):
+        raise ValueError(
+            f"unknown timezone {name!r}; use an IANA name such as America/Argentina/Buenos_Aires"
+        ) from None
+    return name
+
+
 class LocationBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     type: LocationType
@@ -150,6 +166,7 @@ class LocationBase(BaseModel):
     state_province: str | None = None
     postal_code: str | None = None
     country_code: str = "AR"
+    timezone: str = "UTC"  # IANA name; local hours and weekdays in BI are computed in it
     latitude: float = Field(..., ge=-90, le=90)
     longitude: float = Field(..., ge=-180, le=180)
     phone: str | None = None
@@ -167,6 +184,11 @@ class LocationBase(BaseModel):
     allows_demos: bool = False
     service_radius_km: float | None = None
     metadata: dict = Field(default_factory=dict)
+
+    @field_validator("timezone")
+    @classmethod
+    def _timezone_is_iana(cls, value: str) -> str:
+        return _known_timezone(value)
 
 
 class LocationCreate(LocationBase):
@@ -196,8 +218,16 @@ class LocationUpdate(BaseModel):
     allows_pickups: bool | None = None
     allows_demos: bool | None = None
     service_radius_km: float | None = None
+    timezone: str | None = None
     is_active: bool | None = None
     metadata: dict | None = None
+
+    @field_validator("timezone")
+    @classmethod
+    def _timezone_is_iana(cls, value: str | None) -> str | None:
+        if value is None:
+            raise ValueError("timezone cannot be null; omit it to keep the current zone")
+        return _known_timezone(value)
 
 
 class LocationResponse(LocationBase):
