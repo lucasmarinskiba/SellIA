@@ -52,7 +52,9 @@ class ProximityEvent(Base):
 
 
 class OfflineConversion(Base):
-    __tablename__ = "offline_conversions"
+    # Not "offline_conversions": analytics/offline_models.py owns that table (live visit tracking and BI).
+    # Two models on one name fail at import with "Table already defined", which init_db() swallowed.
+    __tablename__ = "location_offline_conversions"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
     location_id = Column(UUID(as_uuid=True), ForeignKey("location_profiles.id", ondelete="CASCADE"), nullable=False)
