@@ -17,6 +17,8 @@ into a 400 by the broad except. The business a row belongs to always comes from 
 the client.
 """
 
+import logging
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -38,6 +40,8 @@ from app.domains.locations.checkin_models import (
 )
 from app.domains.locations.checkin_service import LocationCheckinService
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="", tags=["location-checkin"])
 
@@ -81,8 +85,8 @@ class StaffCheckoutRequest(BaseModel):
 @router.post("/locations/checkin")
 async def visitor_checkin(
     request: VisitorCheckinRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Visitor check-in (walk-in, QR, geofence, appointment)."""
     location = await require_location_access(db, request.location_id, current_user)
@@ -119,14 +123,15 @@ async def visitor_checkin(
             "checkin_time": checkin.checkin_time.isoformat(),
         }
     except Exception as e:
+        logger.exception("visitor_checkin: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/locations/checkout")
 async def visitor_checkout(
     request: VisitorCheckoutRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Visitor check-out, record dwell time."""
     existing = await db.get(LocationCheckin, request.checkin_id)
@@ -153,14 +158,15 @@ async def visitor_checkout(
             ),
         }
     except Exception as e:
+        logger.exception("visitor_checkout: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/locations/feedback")
 async def submit_feedback(
     request: FeedbackRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Submit visitor feedback (NPS, sentiment, topics)."""
     location = await require_location_access(db, request.location_id, current_user)
@@ -191,14 +197,15 @@ async def submit_feedback(
             "requires_followup": feedback.requires_followup,
         }
     except Exception as e:
+        logger.exception("submit_feedback: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/staff/checkin")
 async def staff_checkin(
     request: StaffCheckinRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Staff shift start."""
     # Checking yourself in takes membership; checking someone else in takes a manager.
@@ -231,14 +238,15 @@ async def staff_checkin(
             "checkin_time": checkin.checkin_time.isoformat(),
         }
     except Exception as e:
+        logger.exception("staff_checkin: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/staff/checkout")
 async def staff_checkout(
     request: StaffCheckoutRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Staff shift end, record performance."""
     shift = await db.get(StaffCheckin, request.staff_checkin_id)
@@ -276,15 +284,16 @@ async def staff_checkout(
             "sales": checkin.sales_assisted,
         }
     except Exception as e:
+        logger.exception("staff_checkout: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/locations/{location_id}/checkin-summary")
 async def get_checkin_summary(
     location_id: UUID,
-    hours: int = Query(24, ge=1, le=168),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    hours: Annotated[int, Query(ge=1, le=168)] = 24,
 ) -> dict:
     """Get real-time check-in activity for location."""
     await require_location_access(db, location_id, current_user)
@@ -296,16 +305,17 @@ async def get_checkin_summary(
             )
         )
     except Exception as e:
+        logger.exception("get_checkin_summary: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/staff/{staff_id}/performance")
 async def get_staff_performance(
     staff_id: UUID,
-    location_id: UUID = Query(...),
-    days: int = Query(30, ge=1, le=365),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    location_id: Annotated[UUID, Query()],
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ) -> dict:
     """Get staff member's performance metrics."""
     await require_location_access(
@@ -319,4 +329,5 @@ async def get_staff_performance(
             )
         )
     except Exception as e:
+        logger.exception("get_staff_performance: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

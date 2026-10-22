@@ -1,21 +1,21 @@
-from typing import Optional
+import uuid
+from datetime import UTC, datetime, timedelta
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Response, Body
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_limiter.depends import RateLimiter
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-import uuid
-from datetime import datetime, timedelta, timezone
 
+from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.security import (
-    verify_password,
     create_access_token,
-    get_password_hash,
     decode_access_token,
+    get_password_hash,
+    verify_password,
 )
-from app.core.config import get_settings
 
 # Optional imports with fallback
 try:
@@ -28,8 +28,8 @@ except ImportError:
     device_fingerprint = None
 try:
     from app.core.security_notifications import (
-        notify_security_event,
         email_new_device_alert,
+        notify_security_event,
     )
 except ImportError:
     notify_security_event = None
@@ -49,7 +49,7 @@ except ImportError:
     check_email_breaches = None
     format_breach_alert = None
 try:
-    from app.core.elk_logger import log_login, log_new_device, log_geofence_violation
+    from app.core.elk_logger import log_geofence_violation, log_login, log_new_device
 except ImportError:
     log_login = None
     log_new_device = None
@@ -57,11 +57,11 @@ except ImportError:
 
 try:
     from app.core.metrics import (
-        SELLIA_LOGINS,
+        SELLIA_ACTIVE_SESSIONS,
         SELLIA_FAILED_LOGINS,
         SELLIA_GEOFENCE_VIOLATIONS,
+        SELLIA_LOGINS,
         SELLIA_NEW_DEVICES,
-        SELLIA_ACTIVE_SESSIONS,
     )
 except ImportError:
     SELLIA_LOGINS = None
@@ -71,15 +71,15 @@ except ImportError:
     SELLIA_ACTIVE_SESSIONS = None
 
 from app.domains.users.models import User
-from app.domains.users.schemas import UserCreate, UserResponse, Token
+from app.domains.users.schemas import Token, UserCreate, UserResponse
 
 try:
     from app.domains.security.models import (
-        UserLoginLog,
-        SecurityConfig,
-        UserSession,
-        TwoFABackupCode,
         BreachCheckLog,
+        SecurityConfig,
+        TwoFABackupCode,
+        UserLoginLog,
+        UserSession,
     )
 except ImportError:
     UserLoginLog = None
@@ -96,10 +96,13 @@ try:
     import qrcode
 except ImportError:
     qrcode = None
-import io
 import base64
 import hashlib
+import io
+import logging
 import secrets
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 settings = get_settings()
@@ -195,7 +198,7 @@ Equipo de Seguridad SellIA
 async def register(
     request: Request,
     user_in: UserCreate,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     from app.core.security import get_password_hash
 
@@ -249,8 +252,8 @@ async def register(
 async def login(
     request: Request,
     response: Response,
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: AsyncSession = Depends(get_db),
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     result = await db.execute(select(User).where(User.email == form_data.username))
     user = result.scalar_one_or_none()
@@ -274,7 +277,7 @@ async def login(
         )
 
     # Verificar bloqueo de cuenta
-    if user.locked_until and user.locked_until > datetime.now(timezone.utc):
+    if user.locked_until and user.locked_until > datetime.now(UTC):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cuenta bloqueada temporalmente por múltiples intentos fallidos. Intentá más tarde.",
@@ -283,10 +286,10 @@ async def login(
     # Verificar contraseña
     if not verify_password(form_data.password, user.hashed_password):
         user.failed_login_attempts += 1
-        user.last_failed_login = datetime.now(timezone.utc)
+        user.last_failed_login = datetime.now(UTC)
 
         if user.failed_login_attempts >= MAX_FAILED_ATTEMPTS:
-            user.locked_until = datetime.now(timezone.utc) + timedelta(
+            user.locked_until = datetime.now(UTC) + timedelta(
                 minutes=LOCKOUT_DURATION_MINUTES
             )
             # Revocar todas las sesiones activas al bloquear cuenta
@@ -357,7 +360,7 @@ async def login(
             if backup_code:
                 backup_valid = True
                 backup_code.is_used = True
-                backup_code.used_at = datetime.now(timezone.utc)
+                backup_code.used_at = datetime.now(UTC)
 
         if not totp_valid and not backup_valid:
             await db.commit()
@@ -427,7 +430,7 @@ async def login(
         SELLIA_NEW_DEVICES.inc()
 
     # Actualizar último login
-    user.last_login_at = datetime.now(timezone.utc)
+    user.last_login_at = datetime.now(UTC)
     user.last_device_fingerprint = current_fingerprint
     await db.commit()
 
@@ -463,7 +466,7 @@ async def login(
                 extra={"device_fingerprint": current_fingerprint, "city": city},
             )
         except Exception:
-            pass
+            logger.exception("login: error inesperado")
 
     # Alerta de geofencing
     if geofence_violation and SELLIA_GEOFENCE_VIOLATIONS:
@@ -520,7 +523,7 @@ Si no fuiste vos, cambiá tu contraseña inmediatamente.
                 user_id=str(user.id),
             )
         except Exception:
-            pass
+            logger.exception("login: error inesperado")
 
     # Notificar nuevo dispositivo
     if is_new_device and notify_security_event:
@@ -529,7 +532,7 @@ Si no fuiste vos, cambiá tu contraseña inmediatamente.
             ip=request.state.client_ip,
             country=country,
             user_agent=request.headers.get("user-agent", ""),
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
         )
         await notify_security_event(
             db=db,
@@ -560,7 +563,7 @@ Si no fuiste vos, cambiá tu contraseña inmediatamente.
                 device_info=request.headers.get("user-agent"),
             )
         except Exception:
-            pass
+            logger.exception("login: error inesperado")
 
     # Push notification
     if is_new_device and send_security_push:
@@ -573,6 +576,7 @@ Si no fuiste vos, cambiá tu contraseña inmediatamente.
                 body=f"Alguien inició sesión desde {request.state.client_ip} ({country or 'Desconocido'}). Si no fuiste vos, cambiá tu contraseña.",
             )
         except Exception as e:
+            logger.exception("login: error inesperado")
             from app.core.logger import get_logger
 
             get_logger(__name__).error(f"Push notification error: {e}")
@@ -590,12 +594,12 @@ Si no fuiste vos, cambiá tu contraseña inmediatamente.
                 .where(
                     UserSession.user_id == user.id,
                     UserSession.is_revoked == False,
-                    UserSession.expires_at > datetime.now(timezone.utc),
+                    UserSession.expires_at > datetime.now(UTC),
                 )
             )
             SELLIA_ACTIVE_SESSIONS.set(result.scalar() or 0)
         except Exception:
-            pass
+            logger.exception("login: error inesperado")
 
     # Crear token y sesión
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -613,7 +617,7 @@ Si no fuiste vos, cambiá tu contraseña inmediatamente.
             ip_address=request.state.client_ip,
             user_agent=request.headers.get("user-agent"),
             country=country,
-            expires_at=datetime.now(timezone.utc) + access_token_expires,
+            expires_at=datetime.now(UTC) + access_token_expires,
         )
         db.add(user_session)
         await db.commit()
@@ -650,7 +654,7 @@ Si no fuiste vos, cambiá tu contraseña inmediatamente.
 async def logout(
     request: Request,
     response: Response,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     token = None
     auth_header = request.headers.get("Authorization", "")
@@ -682,7 +686,7 @@ async def logout(
 @router.post("/2fa/setup")
 async def setup_2fa(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     from app.core.deps import get_current_user
 
@@ -724,7 +728,7 @@ async def setup_2fa(
 async def verify_2fa_setup(
     request: Request,
     code: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     from app.core.deps import get_current_user
 
@@ -769,7 +773,7 @@ async def verify_2fa_setup(
 async def disable_2fa(
     request: Request,
     code: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     from app.core.deps import get_current_user
 
@@ -808,7 +812,7 @@ async def disable_2fa(
 @router.get("/2fa/backup-codes")
 async def list_backup_codes_status(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Devuelve cuántos códigos de backup quedan disponibles."""
     from app.core.deps import get_current_user
@@ -857,7 +861,7 @@ Si no creaste esta cuenta, ignorá este email.
 """
         await send_email(to_email, subject, html, text)
     except Exception:
-        pass
+        logger.exception("_send_verification_email: error inesperado")
 
 
 async def _send_password_reset_email(to_email: str, full_name: str, reset_url: str):
@@ -881,15 +885,15 @@ Si no pediste esto, ignorá este email.
 """
         await send_email(to_email, subject, html, text)
     except Exception:
-        pass
+        logger.exception("_send_password_reset_email: error inesperado")
 
 
 @router.post(
     "/forgot-password", dependencies=[Depends(RateLimiter(times=3, seconds=300))]
 )
 async def forgot_password(
-    db: AsyncSession = Depends(get_db),
-    email: str = Body(..., embed=True),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    email: Annotated[str, Body(embed=True)],
 ):
     """Pide un link para restablecer contraseña. La respuesta nunca revela
     si ese email tiene cuenta, para no filtrar emails registrados."""
@@ -913,9 +917,9 @@ async def forgot_password(
 
 @router.post("/reset-password")
 async def reset_password(
-    db: AsyncSession = Depends(get_db),
-    token: str = Body(..., embed=True),
-    new_password: str = Body(..., embed=True),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    token: Annotated[str, Body(embed=True)],
+    new_password: Annotated[str, Body(embed=True)],
 ):
     """Restablece la contraseña con un token de /forgot-password."""
     if len(new_password) < 8:
@@ -945,7 +949,7 @@ async def reset_password(
 @router.get("/verify-email")
 async def verify_email(
     token: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Verifica el email del usuario con un token JWT de un solo uso."""
     payload = decode_access_token(token)
@@ -972,8 +976,8 @@ async def verify_email(
 )
 async def resend_verification(
     request: Request,
-    db: AsyncSession = Depends(get_db),
-    email: str | None = Body(default=None, embed=True),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    email: Annotated[str | None, Body(embed=True)] = None,
 ):
     """Reenvía el email de verificación.
 
@@ -1016,14 +1020,14 @@ async def resend_verification(
 EMAIL_OTP_PURPOSES = ("login", "setup")
 
 
-def _otp_purpose(raw: Optional[str]) -> str:
+def _otp_purpose(raw: str | None) -> str:
     return raw if raw in EMAIL_OTP_PURPOSES else "login"
 
 
 @router.get("/2fa/email/status")
 async def email_otp_status(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Whether this account has the emailed second factor turned on.
 
@@ -1045,7 +1049,7 @@ async def email_otp_status(
 )
 async def setup_email_otp(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Start turning on the emailed second factor: sends the confirmation code.
 
@@ -1085,7 +1089,7 @@ async def setup_email_otp(
 @router.post("/2fa/email/disable")
 async def disable_email_otp(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Turn the emailed second factor off, and tell the owner it happened.
 
@@ -1124,7 +1128,8 @@ async def disable_email_otp(
             # reach the person whose protection was just removed.
             user_email=user.email,
         )
-    except Exception as e:  # noqa: BLE001 -- the setting change stands either way
+    except Exception as e:
+        logger.exception("disable_email_otp: error inesperado")
         import logging
 
         logging.getLogger(__name__).warning(
@@ -1139,8 +1144,8 @@ async def disable_email_otp(
 )
 async def send_email_otp(
     request: Request,
-    db: AsyncSession = Depends(get_db),
-    purpose: Optional[str] = None,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    purpose: str | None = None,
 ):
     """Envía un código OTP por email."""
     from app.core.deps import get_current_user
@@ -1164,8 +1169,8 @@ async def send_email_otp(
 async def verify_email_otp_endpoint(
     code: str,
     request: Request,
-    db: AsyncSession = Depends(get_db),
-    purpose: Optional[str] = None,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    purpose: str | None = None,
 ):
     """Verifica un código OTP por email.
 
@@ -1200,7 +1205,7 @@ async def verify_email_otp_endpoint(
 @router.post("/webauthn/register-begin")
 async def webauthn_register_begin(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Inicia registro de passkey."""
     from app.core.deps import get_current_user
@@ -1215,9 +1220,9 @@ async def webauthn_register_begin(
 async def webauthn_register_finish(
     credential_id: str,
     public_key: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
     device_name: str = "Passkey",
     request: Request = None,
-    db: AsyncSession = Depends(get_db),
 ):
     """Finaliza registro de passkey."""
     from app.core.deps import get_current_user
@@ -1241,7 +1246,7 @@ async def webauthn_login_begin():
 @router.get("/webauthn/credentials")
 async def list_webauthn_credentials(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Lista passkeys registrados."""
     from app.core.deps import get_current_user
@@ -1264,7 +1269,7 @@ async def list_webauthn_credentials(
 async def delete_webauthn_credential(
     cred_id: uuid.UUID,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Elimina un passkey."""
     from app.core.deps import get_current_user
@@ -1285,7 +1290,7 @@ async def delete_webauthn_credential(
 @router.get("/devices")
 async def list_trusted_devices(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Lista dispositivos del usuario."""
     from app.core.deps import get_current_user
@@ -1314,7 +1319,7 @@ async def list_trusted_devices(
 async def trust_device_endpoint(
     device_id: uuid.UUID,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Marca un dispositivo como de confianza."""
     from app.core.deps import get_current_user
@@ -1331,7 +1336,7 @@ async def trust_device_endpoint(
 async def block_device_endpoint(
     device_id: uuid.UUID,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Bloquea un dispositivo."""
     from app.core.deps import get_current_user
@@ -1352,11 +1357,11 @@ async def block_device_endpoint(
 @router.get("/me/export-data")
 async def export_my_data(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Exporta todos los datos personales del usuario."""
-    from app.core.deps import get_current_user
     from app.core.data_deletion import export_user_data
+    from app.core.deps import get_current_user
 
     user = await get_current_user(request, db)
     data = await export_user_data(db, user.id)
@@ -1366,7 +1371,7 @@ async def export_my_data(
 @router.get("/security-status")
 async def security_status(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """One honest summary of how protected this account actually is.
 
@@ -1387,13 +1392,14 @@ async def security_status(
         "unknown": [],
     }
 
-    async def _count(label: str, statement) -> Optional[int]:
+    async def _count(label: str, statement) -> int | None:
         try:
             result = await db.execute(statement)
             return int(result.scalar() or 0)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             # Postgres aborts the transaction on the first failed statement, so
             # roll back before the next count runs.
+            logger.exception("_count: error inesperado")
             await db.rollback()
             status_payload["unknown"].append(label)
             import logging
@@ -1436,7 +1442,8 @@ async def security_status(
             1 for d in devices if getattr(d, "is_trusted", False)
         )
         status_payload["known_devices"] = len(devices)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
+        logger.exception("security_status: error inesperado")
         await db.rollback()
         status_payload["trusted_devices"] = None
         status_payload["known_devices"] = None
@@ -1482,7 +1489,7 @@ async def security_status(
 async def revoke_device(
     device_id: uuid.UUID,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Stop trusting a device. The screen offered this and it did not exist.
 
@@ -1515,11 +1522,11 @@ async def revoke_device(
 @router.post("/me/delete-account")
 async def delete_my_account(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Borra la cuenta del usuario (GDPR)."""
-    from app.core.deps import get_current_user
     from app.core.data_deletion import secure_delete_user
+    from app.core.deps import get_current_user
 
     user = await get_current_user(request, db)
     success = await secure_delete_user(db, user.id)

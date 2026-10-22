@@ -13,14 +13,15 @@ every DB touch runs inside ``await db.run_sync(...)``. Access checks run before 
 block: a 403/404 must not be turned into a 400 by the broad except.
 """
 
+import logging
 from datetime import datetime
-from typing import Optional
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
 
 from app.core.business_access import (
     is_business_participant,
@@ -32,11 +33,13 @@ from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.domains.staff.task_models import StaffTask, TaskNotification
 from app.domains.staff.task_service import (
+    ShiftReadinessService,
     StaffTaskService,
     TaskNotificationService,
-    ShiftReadinessService,
 )
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1", tags=["staff-tasks"])
 
@@ -47,17 +50,17 @@ class CreateTaskRequest(BaseModel):
     task_type: str  # demo_setup, visitor_tour, product_demo, follow_up_call, etc
     title: str
     due_date: str  # ISO8601
-    description: Optional[str] = None
+    description: str | None = None
     priority: str = "medium"
     estimated_duration_minutes: int = 15
-    related_checkin_id: Optional[UUID] = None
-    related_product_id: Optional[str] = None
+    related_checkin_id: UUID | None = None
+    related_product_id: str | None = None
 
 
 class TaskActionRequest(BaseModel):
     task_id: UUID
-    completion_notes: Optional[str] = None
-    completion_evidence: Optional[dict] = None
+    completion_notes: str | None = None
+    completion_evidence: dict | None = None
 
 
 async def _get_task(db: AsyncSession, task_id: UUID) -> StaffTask:
@@ -78,8 +81,8 @@ async def _require_task_actor(db: AsyncSession, task: StaffTask, user: User) -> 
 @router.post("/tasks/assign")
 async def assign_task(
     request: CreateTaskRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Assign task to staff member."""
     location = await require_location_access(
@@ -92,7 +95,7 @@ async def assign_task(
         )
 
     def _assign(sync_db: Session) -> dict:
-        due_date = datetime.fromisoformat(request.due_date.replace("Z", "+00:00"))
+        due_date = datetime.fromisoformat(request.due_date)
 
         result = StaffTaskService.assign_task(
             location_id=request.location_id,
@@ -122,16 +125,17 @@ async def assign_task(
     try:
         return await db.run_sync(_assign)
     except Exception as e:
+        logger.exception("assign_task: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/staff/{staff_id}/tasks")
 async def get_staff_tasks(
     staff_id: UUID,
-    location_id: Optional[UUID] = Query(None),
-    status: Optional[str] = Query(None),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    location_id: Annotated[UUID | None, Query()] = None,
+    status: Annotated[str | None, Query()] = None,
 ) -> dict:
     """Get tasks assigned to staff."""
     scope = await staff_scope(db, staff_id, current_user)
@@ -176,14 +180,15 @@ async def get_staff_tasks(
             "tasks": task_list,
         }
     except Exception as e:
+        logger.exception("get_staff_tasks: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/tasks/{task_id}/acknowledge")
 async def acknowledge_task(
     task_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Staff acknowledges task assignment."""
     await _require_task_actor(db, await _get_task(db, task_id), current_user)
@@ -195,14 +200,15 @@ async def acknowledge_task(
             )
         )
     except Exception as e:
+        logger.exception("acknowledge_task: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/tasks/{task_id}/start")
 async def start_task(
     task_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Mark task as in-progress."""
     await _require_task_actor(db, await _get_task(db, task_id), current_user)
@@ -212,6 +218,7 @@ async def start_task(
             lambda sync_db: StaffTaskService.start_task(task_id=task_id, db=sync_db)
         )
     except Exception as e:
+        logger.exception("start_task: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -219,8 +226,8 @@ async def start_task(
 async def complete_task(
     task_id: UUID,
     request: TaskActionRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Mark task as completed."""
     # The service used the body's id while the path's id was what got authorised.
@@ -240,15 +247,16 @@ async def complete_task(
             )
         )
     except Exception as e:
+        logger.exception("complete_task: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/tasks/{task_id}/cancel")
 async def cancel_task(
     task_id: UUID,
-    reason: Optional[str] = Query(None),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    reason: Annotated[str | None, Query()] = None,
 ) -> dict:
     """Cancel task."""
     task = await _get_task(db, task_id)
@@ -261,15 +269,16 @@ async def cancel_task(
             )
         )
     except Exception as e:
+        logger.exception("cancel_task: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/locations/{location_id}/task-queue")
 async def get_location_task_queue(
     location_id: UUID,
-    max_results: int = Query(10, ge=1, le=50),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    max_results: Annotated[int, Query(ge=1, le=50)] = 10,
 ) -> dict:
     """Get pending tasks for location."""
     await require_location_access(db, location_id, current_user)
@@ -281,6 +290,7 @@ async def get_location_task_queue(
             )
         )
     except Exception as e:
+        logger.exception("get_location_task_queue: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -289,8 +299,8 @@ async def auto_assign_shift_tasks(
     staff_id: UUID,
     location_id: UUID,
     shift_start: str,  # ISO8601
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Auto-assign pending tasks to staff for shift."""
     location = await require_location_access(db, location_id, current_user, manage=True)
@@ -300,7 +310,7 @@ async def auto_assign_shift_tasks(
         )
 
     try:
-        shift_start_dt = datetime.fromisoformat(shift_start.replace("Z", "+00:00"))
+        shift_start_dt = datetime.fromisoformat(shift_start)
 
         return await db.run_sync(
             lambda sync_db: StaffTaskService.auto_assign_tasks_to_shift(
@@ -311,14 +321,15 @@ async def auto_assign_shift_tasks(
             )
         )
     except Exception as e:
+        logger.exception("auto_assign_shift_tasks: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/tasks/{task_id}/notifications")
 async def get_task_notifications(
     task_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Get notification history for task."""
     await _require_task_actor(db, await _get_task(db, task_id), current_user)
@@ -347,14 +358,15 @@ async def get_task_notifications(
 
         return {"task_id": str(task_id), "notifications": notif_list}
     except Exception as e:
+        logger.exception("get_task_notifications: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/notifications/{notification_id}/read")
 async def mark_notification_read(
     notification_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Mark notification as read."""
     notification = await db.get(TaskNotification, notification_id)
@@ -376,6 +388,7 @@ async def mark_notification_read(
             )
         )
     except Exception as e:
+        logger.exception("mark_notification_read: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -384,9 +397,9 @@ async def get_shift_readiness_report(
     staff_id: UUID,
     location_id: UUID,
     shift_start: str,  # ISO8601
-    shift_end: Optional[str] = Query(None),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    shift_end: Annotated[str | None, Query()] = None,
 ) -> dict:
     """Generate shift readiness report."""
     location = await require_location_access(
@@ -395,10 +408,10 @@ async def get_shift_readiness_report(
     business_id = location.business_id
 
     try:
-        shift_start_dt = datetime.fromisoformat(shift_start.replace("Z", "+00:00"))
+        shift_start_dt = datetime.fromisoformat(shift_start)
         shift_end_dt = None
         if shift_end:
-            shift_end_dt = datetime.fromisoformat(shift_end.replace("Z", "+00:00"))
+            shift_end_dt = datetime.fromisoformat(shift_end)
 
         return await db.run_sync(
             lambda sync_db: ShiftReadinessService.generate_shift_report(
@@ -411,6 +424,7 @@ async def get_shift_readiness_report(
             )
         )
     except Exception as e:
+        logger.exception("get_shift_readiness_report: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -419,9 +433,9 @@ async def get_shift_readiness_report(
 @router.get("/staff/{staff_id}/task-performance")
 async def get_staff_task_performance(
     staff_id: UUID,
-    days: int = Query(30, ge=1, le=365),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ) -> dict:
     """Get staff task performance metrics."""
     scope = await staff_scope(db, staff_id, current_user)
@@ -433,4 +447,5 @@ async def get_staff_task_performance(
             )
         )
     except Exception as e:
+        logger.exception("get_staff_task_performance: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

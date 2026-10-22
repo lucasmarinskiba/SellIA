@@ -46,7 +46,7 @@ class LocationQRGenerator:
 
     @staticmethod
     def generate_location_qr_batch(
-        location_id: UUID, qr_types: list[str] = None
+        location_id: UUID, qr_types: list[str] | None = None
     ) -> dict:
         """Generate multiple QR codes for one location.
 

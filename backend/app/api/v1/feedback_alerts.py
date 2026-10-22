@@ -15,13 +15,14 @@ every DB touch runs inside ``await db.run_sync(...)``. Access checks run before 
 block: a 403/404 must not be turned into a 400 by the broad except.
 """
 
-from typing import Optional
+import logging
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, Field
 
 from app.core.business_access import (
     is_business_participant,
@@ -39,6 +40,8 @@ from app.domains.feedback.feedback_alert_service import (
 from app.domains.locations.checkin_models import LocationFeedback
 from app.domains.users.models import User
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/v1", tags=["feedback-alerts"])
 
 
@@ -47,11 +50,11 @@ class EvaluateFeedbackRequest(BaseModel):
     feedback_id: UUID
     nps_score: int = Field(ge=0, le=10)
     sentiment: str
-    comment: Optional[str] = None
-    topics: Optional[list[str]] = None
-    visitor_email: Optional[str] = None
-    visitor_phone: Optional[str] = None
-    visitor_name: Optional[str] = None
+    comment: str | None = None
+    topics: list[str] | None = None
+    visitor_email: str | None = None
+    visitor_phone: str | None = None
+    visitor_name: str | None = None
 
 
 class AlertActionRequest(BaseModel):
@@ -69,8 +72,8 @@ async def _get_alert(db: AsyncSession, alert_id: UUID) -> NPSAlert:
 @router.post("/feedback/evaluate")
 async def evaluate_feedback(
     request: EvaluateFeedbackRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Evaluate feedback. Alert if NPS < 6."""
     location = await require_location_access(db, request.location_id, current_user)
@@ -100,14 +103,15 @@ async def evaluate_feedback(
             )
         )
     except Exception as e:
+        logger.exception("evaluate_feedback: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/alerts/{alert_id}/acknowledge")
 async def acknowledge_alert(
     alert_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Manager acknowledges alert."""
     alert = await _get_alert(db, alert_id)
@@ -120,16 +124,17 @@ async def acknowledge_alert(
             )
         )
     except Exception as e:
+        logger.exception("acknowledge_alert: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/alerts/{alert_id}/escalate")
 async def escalate_alert(
     alert_id: UUID,
-    assigned_to_staff_id: UUID = Query(...),
-    resolution_plan: Optional[str] = Query(None),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    assigned_to_staff_id: Annotated[UUID, Query()],
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    resolution_plan: Annotated[str | None, Query()] = None,
 ) -> dict:
     """Assign staff to resolve alert."""
     alert = await _get_alert(db, alert_id)
@@ -149,15 +154,16 @@ async def escalate_alert(
             )
         )
     except Exception as e:
+        logger.exception("escalate_alert: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/alerts/{alert_id}/resolve")
 async def resolve_alert(
     alert_id: UUID,
-    resolution_notes: Optional[str] = Query(None),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    resolution_notes: Annotated[str | None, Query()] = None,
 ) -> dict:
     """Mark alert as resolved."""
     alert = await _get_alert(db, alert_id)
@@ -176,16 +182,17 @@ async def resolve_alert(
             )
         )
     except Exception as e:
+        logger.exception("resolve_alert: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/locations/{location_id}/alerts")
 async def get_location_alerts(
     location_id: UUID,
-    status: Optional[str] = Query(None),
-    days: int = Query(30, ge=1, le=365),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    status: Annotated[str | None, Query()] = None,
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ) -> dict:
     """Get NPS alerts for location."""
     await require_location_access(db, location_id, current_user)
@@ -197,14 +204,15 @@ async def get_location_alerts(
             )
         )
     except Exception as e:
+        logger.exception("get_location_alerts: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/locations/{location_id}/nps-metrics/update")
 async def update_nps_metrics(
     location_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Update hourly NPS snapshot."""
     location = await require_location_access(db, location_id, current_user, manage=True)
@@ -217,15 +225,16 @@ async def update_nps_metrics(
             )
         )
     except Exception as e:
+        logger.exception("update_nps_metrics: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/locations/{location_id}/nps-dashboard")
 async def get_nps_dashboard(
     location_id: UUID,
-    days: int = Query(30, ge=1, le=365),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ) -> dict:
     """Get NPS dashboard data."""
     await require_location_access(db, location_id, current_user)
@@ -237,15 +246,16 @@ async def get_nps_dashboard(
             )
         )
     except Exception as e:
+        logger.exception("get_nps_dashboard: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/locations/{location_id}/sentiment-trend")
 async def calculate_sentiment_trend(
     location_id: UUID,
-    date: str = Query(...),  # YYYY-MM-DD
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    date: Annotated[str, Query()],  # YYYY-MM-DD
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Calculate daily sentiment trend."""
     location = await require_location_access(db, location_id, current_user, manage=True)
@@ -258,14 +268,15 @@ async def calculate_sentiment_trend(
             )
         )
     except Exception as e:
+        logger.exception("calculate_sentiment_trend: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/staff/{staff_id}/assigned-alerts")
 async def get_staff_assigned_alerts(
     staff_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Get alerts assigned to staff for follow-up."""
     scope = await staff_scope(db, staff_id, current_user)
@@ -307,4 +318,5 @@ async def get_staff_assigned_alerts(
             "alerts": alert_list,
         }
     except Exception as e:
+        logger.exception("get_staff_assigned_alerts: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
