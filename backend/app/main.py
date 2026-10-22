@@ -124,6 +124,9 @@ _try_include("app.api.v1.feedback_alerts.router", "", ["feedback-alerts"])
 _try_include("app.api.v1.staff_tasks.router", "", ["staff-tasks"])
 _try_include("app.domains.channel_integration.router.router", "/api/v1", ["channel-integration"])
 _try_include("app.api.v1.offline_sequences.router", "/api/v1", ["offline-sequences"])
+# customer_journeys: the contact-journey funnel (lead from first contact to repeat purchase). Its service
+# and tables now exist (domains/journeys/contact_journey_*); it was mounted-nowhere before.
+_try_include("app.api.v1.customer_journeys.router", "", ["customer-journeys"])
 _try_include("app.api.v1.websites.router", "/api/v1/websites", ["websites"])
 _try_include("app.api.v1.seo.router", "/api/v1/seo", ["seo"])
 _try_include("app.domains.seo_config.router.router", "/api/v1/businesses", ["seo-config"])

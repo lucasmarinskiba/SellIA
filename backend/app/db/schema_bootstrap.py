@@ -53,6 +53,7 @@ EXTRA_MODEL_MODULES = [
     "app.domains.staff.task_models",
     "app.domains.pricing.pricing_models",
     "app.domains.feedback.feedback_alert_models",
+    "app.domains.journeys.contact_journey_models",
     "app.domains.businesses.team_models",
     "app.domains.agents.llm_usage_models",
     "app.domains.integrations.integration_models",
