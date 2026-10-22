@@ -15,10 +15,10 @@ Conservative by design:
   more than one nudge per scan cycle.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import select, or_
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
@@ -49,7 +49,7 @@ async def _find_cold_conversations(db: AsyncSession) -> list[tuple[Any, Any]]:
     outside an `await` -> MissingGreenlet, which used to abort the whole scan
     (and mask the real send error) as soon as a single conversation failed.
     """
-    threshold = datetime.now(timezone.utc) - timedelta(hours=COLD_THRESHOLD_HOURS)
+    threshold = datetime.now(UTC) - timedelta(hours=COLD_THRESHOLD_HOURS)
 
     result = await db.execute(
         select(Conversation.id, Conversation.business_id)
@@ -103,8 +103,8 @@ async def _build_followup_text(db: AsyncSession, business_id: Any) -> str:
                 )
         if ctx and ctx.scheduling_link:
             return f"¡Hola! ¿Seguís por ahí? Si querés avanzamos: {ctx.scheduling_link}"
-    except Exception as e:
-        logger.error(f"Follow-up angle lookup error for business {business_id}: {e}")
+    except Exception:
+        logger.exception(f"Follow-up angle lookup error for business {business_id}")
 
     return "¡Hola! Vi que quedamos a mitad de charla — ¿seguís interesado/a en avanzar? Estoy para lo que necesites 🙂"
 
@@ -115,8 +115,8 @@ async def scan_and_send_followups(db: AsyncSession) -> dict[str, int]:
 
     try:
         cold_conversations = await _find_cold_conversations(db)
-    except Exception as e:
-        logger.error(f"Follow-up scan query failed: {e}")
+    except Exception:
+        logger.exception("Follow-up scan query failed")
         return stats
 
     stats["scanned"] = len(cold_conversations)
@@ -143,7 +143,7 @@ async def scan_and_send_followups(db: AsyncSession) -> dict[str, int]:
                 continue
 
             followup_number = (conversation.followup_count or 0) + 1
-            conversation.last_followup_sent_at = datetime.now(timezone.utc)
+            conversation.last_followup_sent_at = datetime.now(UTC)
             conversation.followup_count = followup_number
             await db.commit()
 
@@ -152,12 +152,12 @@ async def scan_and_send_followups(db: AsyncSession) -> dict[str, int]:
                 f"Follow-up sent to conversation {conversation_id} (#{followup_number})"
             )
 
-        except Exception as e:
+        except Exception:
             # Only plain values below this line: rollback() expires every loaded instance.
             await db.rollback()
             stats["errors"] += 1
-            logger.error(
-                f"Follow-up send failed for conversation {conversation_id}: {e}"
+            logger.exception(
+                f"Follow-up send failed for conversation {conversation_id}"
             )
 
     if stats["sent"] or stats["errors"]:
