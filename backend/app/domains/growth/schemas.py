@@ -2,33 +2,32 @@
 
 import uuid
 from datetime import datetime
-from typing import Optional, Any, List
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-
 # ========== GrowthCampaign ==========
+
 
 class GrowthCampaignCreate(BaseModel):
     name: str
     campaign_type: str
-    description: Optional[str] = ""
-    config: Optional[dict] = {}
-    target_audience: Optional[str] = ""
-    content_pillars: Optional[List[str]] = []
-    tone_of_voice: Optional[str] = "educational"
+    description: str | None = ""
+    config: dict | None = {}
+    target_audience: str | None = ""
+    content_pillars: list[str] | None = []
+    tone_of_voice: str | None = "educational"
 
 
 class GrowthCampaignUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    status: Optional[str] = None
-    config: Optional[dict] = None
-    target_audience: Optional[str] = None
-    content_pillars: Optional[List[str]] = None
-    tone_of_voice: Optional[str] = None
-    is_active: Optional[bool] = None
+    name: str | None = None
+    description: str | None = None
+    status: str | None = None
+    config: dict | None = None
+    target_audience: str | None = None
+    content_pillars: list[str] | None = None
+    tone_of_voice: str | None = None
+    is_active: bool | None = None
 
 
 class GrowthCampaignResponse(BaseModel):
@@ -37,12 +36,12 @@ class GrowthCampaignResponse(BaseModel):
     id: uuid.UUID
     business_id: uuid.UUID
     name: str
-    description: Optional[str]
+    description: str | None
     campaign_type: str
     status: str
     config: dict
-    target_audience: Optional[str]
-    content_pillars: List[str]
+    target_audience: str | None
+    content_pillars: list[str]
     tone_of_voice: str
     leads_generated: int
     conversions: int
@@ -50,8 +49,8 @@ class GrowthCampaignResponse(BaseModel):
     content_published: int
     engagement_score: Decimal
     metrics_snapshot: dict
-    started_at: Optional[datetime]
-    ended_at: Optional[datetime]
+    started_at: datetime | None
+    ended_at: datetime | None
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -59,11 +58,12 @@ class GrowthCampaignResponse(BaseModel):
 
 # ========== LeadMagnet ==========
 
+
 class LeadMagnetCreate(BaseModel):
     topic: str
-    magnet_format: Optional[str] = "cheat_sheet"
-    target_audience: Optional[str] = ""
-    campaign_id: Optional[uuid.UUID] = None
+    magnet_format: str | None = "cheat_sheet"
+    target_audience: str | None = ""
+    campaign_id: uuid.UUID | None = None
 
 
 class LeadMagnetResponse(BaseModel):
@@ -71,15 +71,15 @@ class LeadMagnetResponse(BaseModel):
 
     id: uuid.UUID
     business_id: uuid.UUID
-    campaign_id: Optional[uuid.UUID]
+    campaign_id: uuid.UUID | None
     title: str
-    description: Optional[str]
+    description: str | None
     format: str
     topic: str
     content: dict
-    landing_page_copy: Optional[str]
-    delivery_message: Optional[str]
-    call_to_action: Optional[str]
+    landing_page_copy: str | None
+    delivery_message: str | None
+    call_to_action: str | None
     times_delivered: int
     times_downloaded: int
     times_converted: int
@@ -107,18 +107,26 @@ class LeadMagnetPerformance(BaseModel):
 
 # ========== InboundLead ==========
 
+
 class InboundLeadCreate(BaseModel):
     source_type: str
-    conversation_id: Optional[uuid.UUID] = None
-    campaign_id: Optional[uuid.UUID] = None
-    lead_magnet_id: Optional[uuid.UUID] = None
-    contact_info: Optional[dict] = {}
-    source_detail: Optional[str] = ""
+    conversation_id: uuid.UUID | None = None
+    campaign_id: uuid.UUID | None = None
+    lead_magnet_id: uuid.UUID | None = None
+    contact_info: dict | None = {}
+    source_detail: str | None = ""
 
 
 class ProspectSearchRequest(BaseModel):
-    query: str = Field(..., min_length=3, max_length=120, description="Rubro o palabra clave, ej. 'peluquería'")
-    location: Optional[str] = Field(None, max_length=120, description="Ciudad o zona, ej. 'Rosario'")
+    query: str = Field(
+        ...,
+        min_length=3,
+        max_length=120,
+        description="Rubro o palabra clave, ej. 'peluquería'",
+    )
+    location: str | None = Field(
+        None, max_length=120, description="Ciudad o zona, ej. 'Rosario'"
+    )
     limit: int = Field(20, ge=1, le=20)
 
 
@@ -126,7 +134,7 @@ class ProspectSearchResponse(BaseModel):
     found: int
     created: int
     skipped_duplicates: int
-    prospects: List[dict]
+    prospects: list[dict]
 
 
 class InboundLeadResponse(BaseModel):
@@ -134,11 +142,11 @@ class InboundLeadResponse(BaseModel):
 
     id: uuid.UUID
     business_id: uuid.UUID
-    conversation_id: Optional[uuid.UUID]
-    campaign_id: Optional[uuid.UUID]
-    lead_magnet_id: Optional[uuid.UUID]
+    conversation_id: uuid.UUID | None
+    campaign_id: uuid.UUID | None
+    lead_magnet_id: uuid.UUID | None
     source_type: str
-    source_detail: Optional[str]
+    source_detail: str | None
     contact_info: dict
     nurturing_stage: str
     engagement_score: int
@@ -146,20 +154,21 @@ class InboundLeadResponse(BaseModel):
     sales_touches_received: int
     first_touch_at: datetime
     last_touch_at: datetime
-    converted_at: Optional[datetime]
+    converted_at: datetime | None
     is_active: bool
 
 
 # ========== SocialProof ==========
 
+
 class SocialProofCreate(BaseModel):
-    conversation_id: Optional[uuid.UUID] = None
-    order_id: Optional[uuid.UUID] = None
+    conversation_id: uuid.UUID | None = None
+    order_id: uuid.UUID | None = None
     item_type: str
     content: str
-    rating: Optional[int] = None
-    customer_name: Optional[str] = None
-    media_urls: Optional[List[str]] = []
+    rating: int | None = None
+    customer_name: str | None = None
+    media_urls: list[str] | None = []
 
 
 class SocialProofResponse(BaseModel):
@@ -167,18 +176,18 @@ class SocialProofResponse(BaseModel):
 
     id: uuid.UUID
     business_id: uuid.UUID
-    conversation_id: Optional[uuid.UUID]
-    order_id: Optional[uuid.UUID]
+    conversation_id: uuid.UUID | None
+    order_id: uuid.UUID | None
     item_type: str
     status: str
     content: str
-    rating: Optional[int]
-    headline: Optional[str]
-    customer_name: Optional[str]
-    media_urls: List[str]
+    rating: int | None
+    headline: str | None
+    customer_name: str | None
+    media_urls: list[str]
     sentiment_score: Decimal
-    ai_summary: Optional[str]
-    key_quotes: List[str]
+    ai_summary: str | None
+    key_quotes: list[str]
     usage_count: int
     is_active: bool
     created_at: datetime
@@ -194,12 +203,13 @@ class SocialProofStats(BaseModel):
 
 # ========== UGC ==========
 
+
 class UgcRequestCreate(BaseModel):
     order_id: uuid.UUID
     conversation_id: uuid.UUID
-    content_type: Optional[str] = "lifestyle_photo"
-    incentive: Optional[str] = ""
-    campaign_id: Optional[uuid.UUID] = None
+    content_type: str | None = "lifestyle_photo"
+    incentive: str | None = ""
+    campaign_id: uuid.UUID | None = None
 
 
 class UgcRequestResponse(BaseModel):
@@ -207,28 +217,29 @@ class UgcRequestResponse(BaseModel):
 
     id: uuid.UUID
     business_id: uuid.UUID
-    order_id: Optional[uuid.UUID]
-    conversation_id: Optional[uuid.UUID]
+    order_id: uuid.UUID | None
+    conversation_id: uuid.UUID | None
     content_type: str
     status: str
     request_message: str
-    incentive_offered: Optional[str]
-    response_media_urls: List[str]
-    response_text: Optional[str]
-    responded_at: Optional[datetime]
-    sent_at: Optional[datetime]
+    incentive_offered: str | None
+    response_media_urls: list[str]
+    response_text: str | None
+    responded_at: datetime | None
+    sent_at: datetime | None
     created_at: datetime
 
 
 # ========== ValueSequence ==========
 
+
 class ValueSequenceCreate(BaseModel):
     name: str
     topic: str
-    message_count: Optional[int] = 3
-    total_duration_days: Optional[int] = 7
-    target_segment: Optional[str] = "cold"
-    campaign_id: Optional[uuid.UUID] = None
+    message_count: int | None = 3
+    total_duration_days: int | None = 7
+    target_segment: str | None = "cold"
+    campaign_id: uuid.UUID | None = None
 
 
 class ValueSequenceResponse(BaseModel):
@@ -262,11 +273,12 @@ class ValueSequencePerformance(BaseModel):
 
 # ========== Referral ==========
 
+
 class ReferralCampaignCreate(BaseModel):
     name: str
-    incentive_type: Optional[str] = "discount_credit"
-    reward_value: Optional[float] = 20.0
-    max_referrals_per_user: Optional[int] = 10
+    incentive_type: str | None = "discount_credit"
+    reward_value: float | None = 20.0
+    max_referrals_per_user: int | None = 10
 
 
 class ReferralMetrics(BaseModel):
@@ -283,11 +295,12 @@ class ReferralMetrics(BaseModel):
 
 
 class ReferralCampaignReport(ReferralMetrics):
-    top_referrers: List[dict]
+    top_referrers: list[dict]
     generated_at: str
 
 
 # ========== Dashboard ==========
+
 
 class GrowthDashboardMetrics(BaseModel):
     leads_this_week: int
@@ -309,4 +322,4 @@ class CampaignEvaluation(BaseModel):
     conversion_rate: float
     revenue_attributed: float
     content_published: int
-    recommendations: List[str]
+    recommendations: list[str]

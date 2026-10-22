@@ -1,72 +1,99 @@
 """Growth Domain API Router"""
 
 import uuid
-from typing import Optional, List
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user, resolve_business_id
-from app.domains.users.models import User
-from app.domains.lead_generation.places_source import (
-    PlacesAPIError, PlacesNotConfiguredError, search_places,
-)
-from app.domains.lead_generation.prospect_capture import (
-    MAX_CSV_BYTES, parse_csv_contacts, save_csv_contacts, save_place_prospects,
-)
-
-from app.domains.growth.models import (
-    GrowthCampaign, GrowthCampaignType, GrowthCampaignStatus,
-    LeadMagnet, InboundLead, NurturingStage,
-    SocialProofItem, SocialProofType, SocialProofStatus,
-    UgcRequest, ValueSequence,
-)
-from app.domains.growth.schemas import (
-    GrowthCampaignCreate, GrowthCampaignUpdate, GrowthCampaignResponse,
-    LeadMagnetCreate, LeadMagnetResponse, LeadMagnetPerformance,
-    InboundLeadCreate, InboundLeadResponse,
-    ProspectSearchRequest, ProspectSearchResponse,
-    SocialProofCreate, SocialProofResponse, SocialProofStats,
-    UgcRequestCreate, UgcRequestResponse,
-    ValueSequenceCreate, ValueSequenceResponse, ValueSequencePerformance,
-    ReferralCampaignCreate, ReferralMetrics, ReferralCampaignReport,
-    GrowthDashboardMetrics, CampaignEvaluation,
-)
+from app.domains.growth.comment_responder import CommentResponder
+from app.domains.growth.content_syndication import ContentSyndicationEngine
 from app.domains.growth.inbound_engine import InboundGrowthEngine
 from app.domains.growth.lead_magnet_funnel import LeadMagnetEngine
+from app.domains.growth.models import (
+    GrowthCampaignStatus,
+    GrowthCampaignType,
+    LeadMagnet,
+    NurturingStage,
+    SocialProofType,
+    ValueSequence,
+)
+from app.domains.growth.schemas import (
+    CampaignEvaluation,
+    GrowthCampaignCreate,
+    GrowthCampaignResponse,
+    GrowthDashboardMetrics,
+    InboundLeadCreate,
+    InboundLeadResponse,
+    LeadMagnetCreate,
+    LeadMagnetPerformance,
+    LeadMagnetResponse,
+    ProspectSearchRequest,
+    ProspectSearchResponse,
+    ReferralCampaignCreate,
+    ReferralCampaignReport,
+    ReferralMetrics,
+    SocialProofCreate,
+    SocialProofResponse,
+    SocialProofStats,
+    UgcRequestCreate,
+    UgcRequestResponse,
+    ValueSequenceCreate,
+    ValueSequencePerformance,
+    ValueSequenceResponse,
+)
 from app.domains.growth.seo_pipeline import SEOPipeline
-from app.domains.growth.value_outreach import ValueFirstOutreach
-from app.domains.growth.viral_referral import ViralReferralEngine
 from app.domains.growth.social_proof import SocialProofEngine
 from app.domains.growth.ugc_collector import UGCCollector
-from app.domains.growth.warm_lead_detector import WarmLeadDetector
+from app.domains.growth.value_outreach import ValueFirstOutreach
+from app.domains.growth.viral_referral import ViralReferralEngine
 from app.domains.growth.voice_note_engine import VoiceNoteEngine
-from app.domains.growth.content_syndication import ContentSyndicationEngine
-from app.domains.growth.comment_responder import CommentResponder
+from app.domains.growth.warm_lead_detector import WarmLeadDetector
+from app.domains.lead_generation.places_source import (
+    PlacesAPIError,
+    PlacesNotConfiguredError,
+    search_places,
+)
+from app.domains.lead_generation.prospect_capture import (
+    MAX_CSV_BYTES,
+    parse_csv_contacts,
+    save_csv_contacts,
+    save_place_prospects,
+)
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/growth", tags=["growth"])
 
 
 # ========== Dashboard ==========
 
+
 @router.get("/dashboard", response_model=GrowthDashboardMetrics)
 async def get_growth_dashboard(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get unified organic growth dashboard metrics."""
     engine = InboundGrowthEngine(db)
-    return await engine.get_dashboard_metrics(await resolve_business_id(db, current_user))
+    return await engine.get_dashboard_metrics(
+        await resolve_business_id(db, current_user)
+    )
 
 
 # ========== Campaigns ==========
 
-@router.post("/campaigns", response_model=GrowthCampaignResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/campaigns",
+    response_model=GrowthCampaignResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_campaign(
     data: GrowthCampaignCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create a new organic growth campaign."""
     engine = InboundGrowthEngine(db)
@@ -83,12 +110,12 @@ async def create_campaign(
     return campaign
 
 
-@router.get("/campaigns", response_model=List[GrowthCampaignResponse])
+@router.get("/campaigns", response_model=list[GrowthCampaignResponse])
 async def list_campaigns(
-    campaign_type: Optional[str] = None,
-    status: Optional[str] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    campaign_type: str | None = None,
+    status: str | None = None,
 ):
     """List growth campaigns with optional filters."""
     engine = InboundGrowthEngine(db)
@@ -103,8 +130,8 @@ async def list_campaigns(
 @router.post("/campaigns/{campaign_id}/activate", response_model=GrowthCampaignResponse)
 async def activate_campaign(
     campaign_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Activate a growth campaign."""
     engine = InboundGrowthEngine(db)
@@ -114,8 +141,8 @@ async def activate_campaign(
 @router.post("/campaigns/{campaign_id}/pause", response_model=GrowthCampaignResponse)
 async def pause_campaign(
     campaign_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Pause a growth campaign."""
     engine = InboundGrowthEngine(db)
@@ -125,8 +152,8 @@ async def pause_campaign(
 @router.get("/campaigns/{campaign_id}/evaluate", response_model=CampaignEvaluation)
 async def evaluate_campaign(
     campaign_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Evaluate campaign performance."""
     engine = InboundGrowthEngine(db)
@@ -135,15 +162,21 @@ async def evaluate_campaign(
 
 # ========== Lead Magnets ==========
 
-@router.post("/lead-magnets", response_model=LeadMagnetResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/lead-magnets",
+    response_model=LeadMagnetResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_lead_magnet(
     data: LeadMagnetCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Generate a new lead magnet with AI."""
     engine = LeadMagnetEngine(db)
     from app.domains.growth.models import LeadMagnetFormat
+
     magnet = await engine.generate_lead_magnet(
         business_id=await resolve_business_id(db, current_user),
         topic=data.topic,
@@ -154,51 +187,61 @@ async def create_lead_magnet(
     return magnet
 
 
-@router.get("/lead-magnets", response_model=List[LeadMagnetResponse])
+@router.get("/lead-magnets", response_model=list[LeadMagnetResponse])
 async def list_lead_magnets(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """List all lead magnets for the business."""
-    from sqlalchemy import select, desc
+    from sqlalchemy import desc, select
+
     result = await db.execute(
-        select(LeadMagnet).where(
+        select(LeadMagnet)
+        .where(
             LeadMagnet.business_id == await resolve_business_id(db, current_user),
             LeadMagnet.is_active == True,
-        ).order_by(desc(LeadMagnet.created_at))
+        )
+        .order_by(desc(LeadMagnet.created_at))
     )
     return list(result.scalars().all())
 
 
-@router.get("/lead-magnets/{magnet_id}/performance", response_model=LeadMagnetPerformance)
+@router.get(
+    "/lead-magnets/{magnet_id}/performance", response_model=LeadMagnetPerformance
+)
 async def get_lead_magnet_performance(
     magnet_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get performance report for a lead magnet."""
     engine = LeadMagnetEngine(db)
     return await engine.get_performance_report(magnet_id)
 
 
-@router.get("/lead-magnets/top", response_model=List[dict])
+@router.get("/lead-magnets/top", response_model=list[dict])
 async def get_top_lead_magnets(
-    limit: int = Query(5, ge=1, le=20),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    limit: Annotated[int, Query(ge=1, le=20)] = 5,
 ):
     """Get top performing lead magnets."""
     engine = LeadMagnetEngine(db)
-    return await engine.get_top_performing_magnets(await resolve_business_id(db, current_user), limit)
+    return await engine.get_top_performing_magnets(
+        await resolve_business_id(db, current_user), limit
+    )
 
 
 # ========== Inbound Leads ==========
 
-@router.post("/leads", response_model=InboundLeadResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/leads", response_model=InboundLeadResponse, status_code=status.HTTP_201_CREATED
+)
 async def capture_inbound_lead(
     data: InboundLeadCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Capture a new organic inbound lead."""
     engine = InboundGrowthEngine(db)
@@ -214,13 +257,13 @@ async def capture_inbound_lead(
     return lead
 
 
-@router.get("/leads", response_model=List[InboundLeadResponse])
+@router.get("/leads", response_model=list[InboundLeadResponse])
 async def list_inbound_leads(
-    stage: Optional[str] = None,
-    source_type: Optional[str] = None,
-    limit: int = Query(50, ge=1, le=200),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    stage: str | None = None,
+    source_type: str | None = None,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
 ):
     """List inbound leads with filters."""
     engine = InboundGrowthEngine(db)
@@ -234,18 +277,21 @@ async def list_inbound_leads(
 
 # ========== Real prospects ==========
 
+
 @router.post("/prospects/search", response_model=ProspectSearchResponse)
 async def search_prospects(
     data: ProspectSearchRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Busca negocios reales en Google Places y guarda los que aún no están cargados."""
     business_id = await resolve_business_id(db, current_user)
     try:
         prospects = await search_places(data.query, data.location, data.limit)
     except PlacesNotConfiguredError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)
+        )
     except PlacesAPIError:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
@@ -263,21 +309,28 @@ async def search_prospects(
 
 @router.post("/leads/import")
 async def import_leads_csv(
-    file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    file: Annotated[UploadFile, File(...)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Importa contactos propios desde CSV (columnas: name, email, phone, company, website)."""
     business_id = await resolve_business_id(db, current_user)
     raw = await file.read(MAX_CSV_BYTES + 1)
     if len(raw) > MAX_CSV_BYTES:
-        raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="El CSV supera 1 MB")
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="El CSV supera 1 MB",
+        )
     try:
         parsed = parse_csv_contacts(raw)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+        )
 
-    outcome = await save_csv_contacts(db, business_id, parsed.contacts, file.filename or "csv")
+    outcome = await save_csv_contacts(
+        db, business_id, parsed.contacts, file.filename or "csv"
+    )
     return {
         "rows": len(parsed.contacts) + parsed.rejected_count,
         "created": len(outcome.created),
@@ -289,14 +342,15 @@ async def import_leads_csv(
 
 # ========== SEO Content ==========
 
+
 @router.post("/seo-content/blog-post")
 async def generate_seo_blog_post(
     keyword: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     search_intent: str = "informational",
     word_count: int = 1200,
-    campaign_id: Optional[uuid.UUID] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    campaign_id: uuid.UUID | None = None,
 ):
     """Generate an SEO-optimized blog post."""
     pipeline = SEOPipeline(db)
@@ -307,16 +361,20 @@ async def generate_seo_blog_post(
         word_count=word_count,
         campaign_id=campaign_id,
     )
-    return {"content_id": str(content.id), "title": content.meta_data.get("title", ""), "status": content.status}
+    return {
+        "content_id": str(content.id),
+        "title": content.meta_data.get("title", ""),
+        "status": content.status,
+    }
 
 
 @router.post("/seo-content/guide")
 async def generate_seo_guide(
     topic: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     difficulty: str = "beginner",
-    campaign_id: Optional[uuid.UUID] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    campaign_id: uuid.UUID | None = None,
 ):
     """Generate a how-to guide."""
     pipeline = SEOPipeline(db)
@@ -326,29 +384,36 @@ async def generate_seo_guide(
         difficulty=difficulty,
         campaign_id=campaign_id,
     )
-    return {"content_id": str(content.id), "title": content.meta_data.get("title", ""), "status": content.status}
+    return {
+        "content_id": str(content.id),
+        "title": content.meta_data.get("title", ""),
+        "status": content.status,
+    }
 
 
 @router.get("/seo-content/scheduled")
 async def get_scheduled_content(
-    platform: Optional[str] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    platform: str | None = None,
 ):
     """Get scheduled SEO content."""
     pipeline = SEOPipeline(db)
-    return await pipeline.get_scheduled_content(await resolve_business_id(db, current_user), platform)
+    return await pipeline.get_scheduled_content(
+        await resolve_business_id(db, current_user), platform
+    )
 
 
 # ========== Social Proof ==========
 
-@router.get("/social-proof", response_model=List[SocialProofResponse])
+
+@router.get("/social-proof", response_model=list[SocialProofResponse])
 async def get_social_proof_wall(
-    item_type: Optional[str] = None,
-    count: int = Query(10, ge=1, le=50),
-    min_rating: Optional[int] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    item_type: str | None = None,
+    count: Annotated[int, Query(ge=1, le=50)] = 10,
+    min_rating: int | None = None,
 ):
     """Get approved social proof items."""
     engine = SocialProofEngine(db)
@@ -361,11 +426,15 @@ async def get_social_proof_wall(
     return items
 
 
-@router.post("/social-proof", response_model=SocialProofResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/social-proof",
+    response_model=SocialProofResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def collect_social_proof(
     data: SocialProofCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Collect a testimonial/review."""
     engine = SocialProofEngine(db)
@@ -383,8 +452,8 @@ async def collect_social_proof(
 @router.post("/social-proof/{item_id}/approve", response_model=SocialProofResponse)
 async def approve_social_proof(
     item_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Approve a social proof item."""
     engine = SocialProofEngine(db)
@@ -395,9 +464,9 @@ async def approve_social_proof(
 @router.post("/social-proof/{item_id}/reject", response_model=SocialProofResponse)
 async def reject_social_proof(
     item_id: uuid.UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     reason: str = "",
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Reject a social proof item."""
     engine = SocialProofEngine(db)
@@ -407,31 +476,38 @@ async def reject_social_proof(
 
 @router.get("/social-proof/stats", response_model=SocialProofStats)
 async def get_social_proof_stats(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get social proof statistics."""
     engine = SocialProofEngine(db)
     return await engine.get_stats(await resolve_business_id(db, current_user))
 
 
-@router.get("/social-proof/moderation-queue", response_model=List[SocialProofResponse])
+@router.get("/social-proof/moderation-queue", response_model=list[SocialProofResponse])
 async def get_moderation_queue(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get pending social proof items for moderation."""
     engine = SocialProofEngine(db)
-    return await engine.get_moderation_queue(await resolve_business_id(db, current_user))
+    return await engine.get_moderation_queue(
+        await resolve_business_id(db, current_user)
+    )
 
 
 # ========== UGC ==========
 
-@router.post("/ugc/requests", response_model=UgcRequestResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/ugc/requests",
+    response_model=UgcRequestResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_ugc_request(
     data: UgcRequestCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create a UGC request."""
     engine = UGCCollector(db)
@@ -449,8 +525,8 @@ async def create_ugc_request(
 @router.post("/ugc/requests/{request_id}/send")
 async def send_ugc_request(
     request_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Send a pending UGC request."""
     engine = UGCCollector(db)
@@ -459,21 +535,23 @@ async def send_ugc_request(
 
 @router.get("/ugc/gallery")
 async def get_ugc_gallery(
-    content_type: Optional[str] = None,
-    limit: int = Query(50, ge=1, le=100),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    content_type: str | None = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
 ):
     """Get approved UGC gallery."""
     engine = UGCCollector(db)
-    return await engine.get_ugc_gallery(await resolve_business_id(db, current_user), content_type, limit)
+    return await engine.get_ugc_gallery(
+        await resolve_business_id(db, current_user), content_type, limit
+    )
 
 
 @router.post("/ugc/requests/{request_id}/approve", response_model=UgcRequestResponse)
 async def approve_ugc(
     request_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Approve a UGC submission."""
     engine = UGCCollector(db)
@@ -482,11 +560,12 @@ async def approve_ugc(
 
 # ========== Referrals ==========
 
+
 @router.post("/referrals/campaign")
 async def create_referral_campaign(
     data: ReferralCampaignCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create or update a referral program."""
     engine = ViralReferralEngine(db)
@@ -497,15 +576,19 @@ async def create_referral_campaign(
         reward_value=data.reward_value,
         max_referrals_per_user=data.max_referrals_per_user,
     )
-    return {"program_id": str(program.id), "name": program.name, "reward_type": program.reward_type}
+    return {
+        "program_id": str(program.id),
+        "name": program.name,
+        "reward_type": program.reward_type,
+    }
 
 
 @router.post("/referrals/generate-link")
 async def generate_referral_link(
     conversation_id: uuid.UUID,
-    program_id: Optional[uuid.UUID] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    program_id: uuid.UUID | None = None,
 ):
     """Generate a referral code for a customer."""
     engine = ViralReferralEngine(db)
@@ -519,18 +602,20 @@ async def generate_referral_link(
 
 @router.get("/referrals/metrics", response_model=ReferralMetrics)
 async def get_referral_metrics(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get viral coefficient and referral metrics."""
     engine = ViralReferralEngine(db)
-    return await engine.calculate_viral_coefficient(await resolve_business_id(db, current_user))
+    return await engine.calculate_viral_coefficient(
+        await resolve_business_id(db, current_user)
+    )
 
 
 @router.get("/referrals/report", response_model=ReferralCampaignReport)
 async def get_referral_report(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get full referral campaign report."""
     engine = ViralReferralEngine(db)
@@ -539,11 +624,16 @@ async def get_referral_report(
 
 # ========== Value Sequences ==========
 
-@router.post("/value-sequences", response_model=ValueSequenceResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/value-sequences",
+    response_model=ValueSequenceResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_value_sequence(
     data: ValueSequenceCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create an educational value sequence."""
     engine = ValueFirstOutreach(db)
@@ -559,13 +649,14 @@ async def create_value_sequence(
     return sequence
 
 
-@router.get("/value-sequences", response_model=List[ValueSequenceResponse])
+@router.get("/value-sequences", response_model=list[ValueSequenceResponse])
 async def list_value_sequences(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """List value sequences."""
     from sqlalchemy import select
+
     result = await db.execute(
         select(ValueSequence).where(
             ValueSequence.business_id == await resolve_business_id(db, current_user),
@@ -575,11 +666,14 @@ async def list_value_sequences(
     return list(result.scalars().all())
 
 
-@router.get("/value-sequences/{sequence_id}/performance", response_model=ValueSequencePerformance)
+@router.get(
+    "/value-sequences/{sequence_id}/performance",
+    response_model=ValueSequencePerformance,
+)
 async def get_value_sequence_performance(
     sequence_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get value sequence performance."""
     engine = ValueFirstOutreach(db)
@@ -590,9 +684,9 @@ async def get_value_sequence_performance(
 async def enroll_in_sequence(
     sequence_id: uuid.UUID,
     conversation_id: uuid.UUID,
-    inbound_lead_id: Optional[uuid.UUID] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    inbound_lead_id: uuid.UUID | None = None,
 ):
     """Enroll a lead in a value sequence."""
     engine = ValueFirstOutreach(db)
@@ -602,40 +696,48 @@ async def enroll_in_sequence(
 
 # ========== Warm Lead Detector ==========
 
+
 @router.get("/warming-leads")
 async def get_warming_leads(
-    lookback_hours: int = Query(24, ge=1, le=168),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    lookback_hours: Annotated[int, Query(ge=1, le=168)] = 24,
 ):
     """Get leads that are showing warming signals."""
     engine = WarmLeadDetector(db)
-    return await engine.scan_for_warming_leads(await resolve_business_id(db, current_user), lookback_hours)
+    return await engine.scan_for_warming_leads(
+        await resolve_business_id(db, current_user), lookback_hours
+    )
 
 
 @router.get("/warming-leads/report")
 async def get_warming_report(
-    days: int = Query(7, ge=1, le=30),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    days: Annotated[int, Query(ge=1, le=30)] = 7,
 ):
     """Get warming leads report."""
     engine = WarmLeadDetector(db)
-    return await engine.get_warming_report(await resolve_business_id(db, current_user), days)
+    return await engine.get_warming_report(
+        await resolve_business_id(db, current_user), days
+    )
 
 
 # ========== Voice Notes ==========
 
+
 @router.post("/voice-notes/welcome")
 async def generate_welcome_voice_note(
     lead_name: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     source: str = "organic",
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Generate a welcome voice note script."""
     engine = VoiceNoteEngine(db)
-    script = await engine.generate_welcome_voice_note(await resolve_business_id(db, current_user), lead_name, source)
+    script = await engine.generate_welcome_voice_note(
+        await resolve_business_id(db, current_user), lead_name, source
+    )
     return {"script": script, "estimated_seconds": len(script.split()) // 2}
 
 
@@ -644,12 +746,14 @@ async def generate_value_voice_note(
     lead_name: str,
     topic: str,
     tip: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Generate a value voice note script."""
     engine = VoiceNoteEngine(db)
-    script = await engine.generate_value_voice_note(await resolve_business_id(db, current_user), lead_name, topic, tip)
+    script = await engine.generate_value_voice_note(
+        await resolve_business_id(db, current_user), lead_name, topic, tip
+    )
     return {"script": script, "estimated_seconds": len(script.split()) // 2}
 
 
@@ -657,30 +761,36 @@ async def generate_value_voice_note(
 async def generate_soft_close_voice_note(
     lead_name: str,
     product_name: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Generate a soft-close voice note script."""
     engine = VoiceNoteEngine(db)
-    script = await engine.generate_soft_close_voice_note(await resolve_business_id(db, current_user), lead_name, product_name)
+    script = await engine.generate_soft_close_voice_note(
+        await resolve_business_id(db, current_user), lead_name, product_name
+    )
     return {"script": script, "estimated_seconds": len(script.split()) // 2}
 
 
 # ========== Content Syndication ==========
 
+
 @router.post("/syndicate/{content_id}")
 async def syndicate_content(
     content_id: uuid.UUID,
-    platforms: List[str],
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    platforms: list[str],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Syndicate content across multiple platforms."""
     engine = ContentSyndicationEngine(db)
-    return await engine.syndicate_content(await resolve_business_id(db, current_user), content_id, platforms)
+    return await engine.syndicate_content(
+        await resolve_business_id(db, current_user), content_id, platforms
+    )
 
 
 # ========== Comment Responder ==========
+
 
 @router.post("/comments/process")
 async def process_comment(
@@ -689,9 +799,9 @@ async def process_comment(
     comment_id: str,
     author_username: str,
     comment_text: str,
-    author_id: Optional[str] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    author_id: str | None = None,
 ):
     """Process a social media comment and generate response strategy."""
     engine = CommentResponder(db)
@@ -708,10 +818,12 @@ async def process_comment(
 
 @router.get("/comments/analytics")
 async def get_comment_analytics(
-    days: int = Query(7, ge=1, le=30),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    days: Annotated[int, Query(ge=1, le=30)] = 7,
 ):
     """Get comment engagement analytics."""
     engine = CommentResponder(db)
-    return await engine.get_comment_analytics(await resolve_business_id(db, current_user), days)
+    return await engine.get_comment_analytics(
+        await resolve_business_id(db, current_user), days
+    )

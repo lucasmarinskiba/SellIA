@@ -1,22 +1,26 @@
 """Phases 10-13: Business intelligence, diagnostics, lead generation, marketing."""
 
-from fastapi import APIRouter, Depends, Query, Body, HTTPException
-from typing import Dict, Any, List
 import logging
+from typing import Annotated, Any
+
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.business_intelligence.business_model_detector import (
-    BusinessModelDetector
+    BusinessModelDetector,
 )
 from app.domains.business_intelligence.service_diagnostician import (
-    ServiceDiagnostician, CompetitiveAnalyzer
+    CompetitiveAnalyzer,
+    ServiceDiagnostician,
 )
 from app.domains.lead_generation.places_source import (
-    PlacesAPIError, PlacesNotConfiguredError, search_places
+    PlacesAPIError,
+    PlacesNotConfiguredError,
+    search_places,
 )
 from app.domains.marketing.channel_strategy import ChannelStrategyGenerator
 from app.domains.marketing.copy_generator import CopyGenerator
+from app.domains.users.models import User
 
 router = APIRouter(tags=["business-intelligence"])
 logger = logging.getLogger(__name__)
@@ -36,12 +40,12 @@ copy_gen = CopyGenerator()
 
 @router.post("/business-intelligence/analyze-business")
 async def analyze_business(
-    business_description: str = Query(...),
-    website: str = Query(""),
-    location: str = Query(""),
-    instagram: str = Query(""),
-    facebook: str = Query(""),
-) -> Dict[str, Any]:
+    business_description: Annotated[str, Query()],
+    website: Annotated[str, Query()] = "",
+    location: Annotated[str, Query()] = "",
+    instagram: Annotated[str, Query()] = "",
+    facebook: Annotated[str, Query()] = "",
+) -> dict[str, Any]:
     """Detect business model and adapt strategy."""
 
     try:
@@ -69,7 +73,9 @@ async def analyze_business(
                 "has_physical_location": profile.has_physical_location,
                 "has_online_presence": profile.has_online_presence,
                 "channels": [ch.value for ch in profile.channels],
-                "primary_channel": profile.primary_channel.value if profile.primary_channel else None,
+                "primary_channel": (
+                    profile.primary_channel.value if profile.primary_channel else None
+                ),
             },
             "lead_sources": [
                 {
@@ -85,9 +91,11 @@ async def analyze_business(
             f"Canales recomendados: {', '.join(ch.value for ch in profile.channels[:3])}",
         }
 
-    except Exception as e:
-        logger.error(f"Business analysis failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as exc:
+        logger.exception("Business analysis failed")
+        raise HTTPException(
+            status_code=500, detail="No se pudo analizar el negocio"
+        ) from exc
 
 
 # ============================================================
@@ -97,11 +105,18 @@ async def analyze_business(
 
 @router.post("/lead-generation/find-prospects")
 async def find_prospects(
-    query: str = Query(..., min_length=3, max_length=120, description="Rubro o palabra clave, ej. 'peluquería'"),
-    location: str = Query("", max_length=120),
-    limit: int = Query(20, ge=1, le=20),
-    current_user: User = Depends(get_current_user),
-) -> Dict[str, Any]:
+    query: Annotated[
+        str,
+        Query(
+            min_length=3,
+            max_length=120,
+            description="Rubro o palabra clave, ej. 'peluquería'",
+        ),
+    ],
+    current_user: Annotated[User, Depends(get_current_user)],
+    location: Annotated[str, Query(max_length=120)] = "",
+    limit: Annotated[int, Query(ge=1, le=20)] = 20,
+) -> dict[str, Any]:
     """Busca negocios reales en Google Places. Requiere GOOGLE_PLACES_API_KEY.
 
     No guarda nada: para persistir los resultados usar POST /growth/prospects/search.
@@ -111,7 +126,10 @@ async def find_prospects(
     except PlacesNotConfiguredError as exc:
         raise HTTPException(status_code=503, detail=str(exc))
     except PlacesAPIError:
-        raise HTTPException(status_code=502, detail="Google Places no respondió; probá de nuevo más tarde")
+        raise HTTPException(
+            status_code=502,
+            detail="Google Places no respondió; probá de nuevo más tarde",
+        )
 
     return {
         "status": "success",
@@ -127,9 +145,9 @@ async def find_prospects(
 
 @router.post("/diagnostics/analyze-product")
 async def analyze_product(
-    business_description: str = Query(...),
-    business_model: str = Query(""),
-) -> Dict[str, Any]:
+    business_description: Annotated[str, Query()],
+    business_model: Annotated[str, Query()] = "",
+) -> dict[str, Any]:
     """Diagnose product-market fit and issues."""
 
     try:
@@ -163,19 +181,21 @@ async def analyze_product(
             "revenue_impact": {
                 "30_days": diagnosis.estimated_revenue_impact_30days,
                 "90_days": diagnosis.estimated_revenue_impact_90days,
-            }
+            },
         }
 
-    except Exception as e:
-        logger.error(f"Product diagnosis failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as exc:
+        logger.exception("Product diagnosis failed")
+        raise HTTPException(
+            status_code=500, detail="No se pudo diagnosticar el producto"
+        ) from exc
 
 
 @router.post("/diagnostics/competitive-analysis")
 async def analyze_competition(
-    business_name: str = Query(...),
-    industry: str = Query(""),
-) -> Dict[str, Any]:
+    business_name: Annotated[str, Query()],
+    industry: Annotated[str, Query()] = "",
+) -> dict[str, Any]:
     """Analyze competitive landscape."""
 
     try:
@@ -192,9 +212,11 @@ async def analyze_competition(
             "growth_rate": analysis["growth_rate"],
         }
 
-    except Exception as e:
-        logger.error(f"Competitive analysis failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as exc:
+        logger.exception("Competitive analysis failed")
+        raise HTTPException(
+            status_code=500, detail="No se pudo analizar la competencia"
+        ) from exc
 
 
 # ============================================================
@@ -204,8 +226,8 @@ async def analyze_competition(
 
 @router.post("/marketing/channel-strategy")
 async def generate_channel_strategy(
-    business_model: str = Query(...),
-) -> Dict[str, Any]:
+    business_model: Annotated[str, Query()],
+) -> dict[str, Any]:
     """Generate channel-specific marketing strategy."""
 
     try:
@@ -239,16 +261,18 @@ async def generate_channel_strategy(
             "phased_approach": strategy.phased_approach,
         }
 
-    except Exception as e:
-        logger.error(f"Strategy generation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as exc:
+        logger.exception("Strategy generation failed")
+        raise HTTPException(
+            status_code=500, detail="No se pudo generar la estrategia"
+        ) from exc
 
 
 @router.post("/marketing/copy-kit")
 async def generate_copy_kit(
-    business_name: str = Query(...),
-    channel: str = Query(...),
-) -> Dict[str, Any]:
+    business_name: Annotated[str, Query()],
+    channel: Annotated[str, Query()],
+) -> dict[str, Any]:
     """Generate copy and content for channel."""
 
     try:
@@ -265,16 +289,18 @@ async def generate_copy_kit(
             "best_practices": copy_kit.best_practices,
         }
 
-    except Exception as e:
-        logger.error(f"Copy generation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as exc:
+        logger.exception("Copy generation failed")
+        raise HTTPException(
+            status_code=500, detail="No se pudo generar el copy"
+        ) from exc
 
 
 @router.get("/marketing/content-calendar")
 async def get_content_calendar(
-    business_model: str = Query(...),
-    month: str = Query("current"),
-) -> Dict[str, Any]:
+    business_model: Annotated[str, Query()],
+    month: Annotated[str, Query()] = "current",
+) -> dict[str, Any]:
     """Get 30-day content calendar by channel."""
 
     return {
@@ -303,7 +329,7 @@ async def get_content_calendar(
                 "content_type": "broadcast",
                 "topic": "Exclusive offer",
                 "send_time": "09:00",
-            }
+            },
         ],
         "next_30_days_summary": {
             "total_posts": 20,
@@ -311,8 +337,13 @@ async def get_content_calendar(
             "google_maps": 5,
             "whatsapp": 4,
             "email": 3,
-            "themes": ["Product showcase", "Customer success", "Deals", "Behind the scenes"],
-        }
+            "themes": [
+                "Product showcase",
+                "Customer success",
+                "Deals",
+                "Behind the scenes",
+            ],
+        },
     }
 
 
@@ -323,8 +354,8 @@ async def get_content_calendar(
 
 @router.post("/workflow/startup-plan")
 async def startup_plan(
-    business_description: str = Body(...),
-) -> Dict[str, Any]:
+    business_description: Annotated[str, Body()],
+) -> dict[str, Any]:
     """Generate complete startup plan: analyze + diagnose + strategy.
 
     Lead search is not part of the plan: it needs a real query (rubro + ciudad)
@@ -361,17 +392,21 @@ async def startup_plan(
                 "phase_4_strategy": {
                     "total_channels": len(strategy.channels),
                     "expected_leads_month": strategy.total_expected_leads_per_month,
-                    "priority_1_channel": strategy.channels[0].channel if strategy.channels else None,
+                    "priority_1_channel": (
+                        strategy.channels[0].channel if strategy.channels else None
+                    ),
                 },
                 "next_steps": [
                     "1. Implement phase 1 actions (Google Maps, website)",
                     "2. Start lead outreach (channel 1)",
                     "3. Setup automation (WhatsApp, email)",
                     "4. Monitor metrics weekly",
-                ]
-            }
+                ],
+            },
         }
 
-    except Exception as e:
-        logger.error(f"Startup plan failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as exc:
+        logger.exception("Startup plan failed")
+        raise HTTPException(
+            status_code=500, detail="No se pudo generar el plan de inicio"
+        ) from exc

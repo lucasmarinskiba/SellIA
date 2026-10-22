@@ -31,7 +31,11 @@ from app.domains.lead_generation.prospect_capture import (
 
 
 def _place(place_id: str, name: str, **extra: object) -> dict:
-    return {"id": place_id, "displayName": {"text": name, "languageCode": "es"}, **extra}
+    return {
+        "id": place_id,
+        "displayName": {"text": name, "languageCode": "es"},
+        **extra,
+    }
 
 
 def _db_with_stored(contact_infos: list[dict]) -> MagicMock:
@@ -46,6 +50,7 @@ def _db_with_stored(contact_infos: list[dict]) -> MagicMock:
 
 
 # ---------- Google Places parsing ----------
+
 
 def test_parse_keeps_open_places_and_maps_fields():
     payload = {
@@ -99,6 +104,7 @@ def test_parse_empty_payload_returns_nothing():
 
 # ---------- Places HTTP client ----------
 
+
 async def test_search_without_key_raises_not_configured(monkeypatch):
     monkeypatch.delenv("GOOGLE_PLACES_API_KEY", raising=False)
 
@@ -115,9 +121,13 @@ async def test_search_sends_key_mask_and_clamped_limit(monkeypatch):
         seen["key"] = request.headers["X-Goog-Api-Key"]
         seen["mask"] = request.headers["X-Goog-FieldMask"]
         seen["body"] = request.read().decode()
-        return httpx.Response(200, json={"places": [_place("p1", "Luna", businessStatus="OPERATIONAL")]})
+        return httpx.Response(
+            200, json={"places": [_place("p1", "Luna", businessStatus="OPERATIONAL")]}
+        )
 
-    prospects = await search_places("peluquería", "Rosario", 50, transport=httpx.MockTransport(handler))
+    prospects = await search_places(
+        "peluquería", "Rosario", 50, transport=httpx.MockTransport(handler)
+    )
 
     assert [p.place_id for p in prospects] == ["p1"]
     assert seen["url"] == places_source.PLACES_TEXT_SEARCH_URL
@@ -156,6 +166,7 @@ async def test_network_failure_maps_to_places_api_error(monkeypatch):
 
 # ---------- CSV import ----------
 
+
 def test_csv_accepts_valid_rows_and_normalizes_email():
     raw = "Name,Email,Phone\nMaría,MARIA@Mail.com,+54 11 4444-5555\n".encode()
 
@@ -169,11 +180,11 @@ def test_csv_accepts_valid_rows_and_normalizes_email():
 def test_csv_rejects_bad_rows_with_reasons():
     raw = (
         b"name,email,phone\n"
-        b",ana@mail.com,\n"            # sin nombre
-        b"Juan,,\n"                    # sin email ni teléfono
-        b"Lu,no-es-email,\n"           # email inválido
+        b",ana@mail.com,\n"  # sin nombre
+        b"Juan,,\n"  # sin email ni teléfono
+        b"Lu,no-es-email,\n"  # email inválido
         b"Pedro,pedro@mail.com,\n"
-        b"Pedro 2,PEDRO@mail.com,\n"   # duplicado dentro del archivo
+        b"Pedro 2,PEDRO@mail.com,\n"  # duplicado dentro del archivo
     )
 
     result = parse_csv_contacts(raw)
@@ -217,6 +228,7 @@ def test_csv_row_limit_is_fatal():
 
 # ---------- Persistence and dedupe (mocked session) ----------
 
+
 async def test_place_capture_skips_place_ids_already_stored():
     business_id = uuid.uuid4()
     db = _db_with_stored([{"place_id": "p1", "name": "Ya cargado"}])
@@ -240,9 +252,27 @@ async def test_csv_capture_skips_existing_email_or_phone():
     business_id = uuid.uuid4()
     db = _db_with_stored([{"email": "ana@mail.com", "phone": "+54 11 4444-5555"}])
     contacts = [
-        {"name": "Ana", "email": "ana@mail.com", "phone": "", "company": "", "website": ""},
-        {"name": "Juan", "email": "", "phone": "54 11 4444 5555", "company": "", "website": ""},
-        {"name": "Lu", "email": "lu@mail.com", "phone": "", "company": "", "website": ""},
+        {
+            "name": "Ana",
+            "email": "ana@mail.com",
+            "phone": "",
+            "company": "",
+            "website": "",
+        },
+        {
+            "name": "Juan",
+            "email": "",
+            "phone": "54 11 4444 5555",
+            "company": "",
+            "website": "",
+        },
+        {
+            "name": "Lu",
+            "email": "lu@mail.com",
+            "phone": "",
+            "company": "",
+            "website": "",
+        },
     ]
 
     outcome = await save_csv_contacts(db, business_id, contacts, "clientes.csv")
@@ -258,7 +288,10 @@ async def test_nothing_new_means_no_commit():
     db = _db_with_stored([{"place_id": "p1"}])
 
     outcome = await save_place_prospects(
-        db, uuid.uuid4(), [PlaceProspect("p1", "Ya", None, None, None, None, None, None)], "x"
+        db,
+        uuid.uuid4(),
+        [PlaceProspect("p1", "Ya", None, None, None, None, None, None)],
+        "x",
     )
 
     assert outcome.created == []
@@ -268,10 +301,13 @@ async def test_nothing_new_means_no_commit():
 
 # ---------- Business-intelligence endpoint (no more invented leads) ----------
 
+
 async def test_find_prospects_returns_real_search_results(monkeypatch):
-    fake_search = AsyncMock(return_value=[
-        PlaceProspect("p1", "Luna", "Av. 1", "+54 341 1", None, None, 4.0, 3),
-    ])
+    fake_search = AsyncMock(
+        return_value=[
+            PlaceProspect("p1", "Luna", "Av. 1", "+54 341 1", None, None, 4.0, 3),
+        ]
+    )
     monkeypatch.setattr(business_intelligence, "search_places", fake_search)
 
     response = await business_intelligence.find_prospects(
@@ -301,6 +337,7 @@ async def test_find_prospects_without_key_is_503(monkeypatch):
 
 # ---------- HTTP wiring (dependencies overridden, no DB) ----------
 
+
 @pytest.fixture
 def growth_client(monkeypatch):
     from fastapi.testclient import TestClient
@@ -313,7 +350,9 @@ def growth_client(monkeypatch):
     db = _db_with_stored([])
     app.dependency_overrides[get_db] = lambda: db
     app.dependency_overrides[get_current_user] = lambda: MagicMock()
-    monkeypatch.setattr(growth_router, "resolve_business_id", AsyncMock(return_value=uuid.uuid4()))
+    monkeypatch.setattr(
+        growth_router, "resolve_business_id", AsyncMock(return_value=uuid.uuid4())
+    )
     try:
         yield TestClient(app), growth_router, db
     finally:
@@ -342,7 +381,11 @@ def test_prospect_search_without_key_returns_503(growth_client, monkeypatch):
     monkeypatch.setattr(
         growth_router,
         "search_places",
-        AsyncMock(side_effect=PlacesNotConfiguredError("Falta GOOGLE_PLACES_API_KEY en el entorno")),
+        AsyncMock(
+            side_effect=PlacesNotConfiguredError(
+                "Falta GOOGLE_PLACES_API_KEY en el entorno"
+            )
+        ),
     )
 
     response = client.post(
@@ -360,10 +403,14 @@ def test_prospect_search_saves_only_new_places(growth_client, monkeypatch):
     monkeypatch.setattr(
         growth_router,
         "search_places",
-        AsyncMock(return_value=[
-            PlaceProspect("p1", "Ya", None, None, None, None, None, None),
-            PlaceProspect("p2", "Nuevo", "Calle 1", "+54 341 000", None, None, 4.5, 10),
-        ]),
+        AsyncMock(
+            return_value=[
+                PlaceProspect("p1", "Ya", None, None, None, None, None, None),
+                PlaceProspect(
+                    "p2", "Nuevo", "Calle 1", "+54 341 000", None, None, 4.5, 10
+                ),
+            ]
+        ),
     )
 
     response = client.post(

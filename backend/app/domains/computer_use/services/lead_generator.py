@@ -5,16 +5,17 @@ Fase 11: Encuentra leads en web → enriquece data → segmenta por fit.
 
 import logging
 import uuid
-from typing import List, Dict, Any, Optional
-from datetime import datetime
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 class LeadSource(str, Enum):
     """Fuentes de leads."""
+
     LINKEDIN = "linkedin"
     WEBSITE = "website"
     DIRECTORY = "directory"
@@ -24,6 +25,7 @@ class LeadSource(str, Enum):
 
 class LeadQuality(str, Enum):
     """Calidad de lead."""
+
     HOT = "hot"  # High fit + high intent
     WARM = "warm"  # Medium fit
     COLD = "cold"  # Low fit, high volume
@@ -32,19 +34,20 @@ class LeadQuality(str, Enum):
 @dataclass
 class Lead:
     """Lead/prospect."""
+
     lead_id: str
     name: str
     email: str
-    phone: Optional[str]
+    phone: str | None
     company: str
     title: str
     industry: str
     company_size: str
 
     # Data enriquecida
-    linkedin_url: Optional[str] = None
-    website: Optional[str] = None
-    budget_estimate: Optional[float] = None
+    linkedin_url: str | None = None
+    website: str | None = None
+    budget_estimate: float | None = None
 
     # Scoring
     fit_score: float = 0.0  # 0-1
@@ -54,15 +57,15 @@ class Lead:
     # Tracking
     source: LeadSource = LeadSource.IMPORT
     created_at: datetime = None
-    last_contacted: Optional[datetime] = None
+    last_contacted: datetime | None = None
     contacted_count: int = 0
     responded: bool = False
 
     def __post_init__(self):
         if self.created_at is None:
-            self.created_at = datetime.utcnow()
+            self.created_at = datetime.now(UTC)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "lead_id": self.lead_id,
             "name": self.name,
@@ -86,19 +89,19 @@ class LeadGenerator:
 
     def __init__(self):
         self.logger = logger
-        self.leads: Dict[str, Lead] = {}
+        self.leads: dict[str, Lead] = {}
 
     async def import_leads(
         self,
-        leads_data: List[Dict[str, Any]],
+        leads_data: list[dict[str, Any]],
         source: LeadSource = LeadSource.IMPORT,
-    ) -> List[Lead]:
+    ) -> list[Lead]:
         """Importa leads desde CSV/API/etc."""
         try:
             imported = []
 
             for i, lead_data in enumerate(leads_data):
-                lead_id = f"lead_{source.value}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{i}_{uuid.uuid4().hex[:6]}"
+                lead_id = f"lead_{source.value}_{datetime.now(UTC).strftime('%Y%m%d%H%M%S')}_{i}_{uuid.uuid4().hex[:6]}"
 
                 lead = Lead(
                     lead_id=lead_id,
@@ -119,8 +122,8 @@ class LeadGenerator:
 
             return imported
 
-        except Exception as e:
-            self.logger.error(f"Error importing leads: {e}")
+        except Exception:
+            self.logger.exception("Error importing leads")
             return []
 
     async def enrich_lead(
@@ -145,15 +148,15 @@ class LeadGenerator:
 
             return lead
 
-        except Exception as e:
-            self.logger.error(f"Error enriching lead: {e}")
+        except Exception:
+            self.logger.exception("Error enriching lead")
             return lead
 
     async def score_lead(
         self,
         lead: Lead,
-        target_industry: Optional[str] = None,
-        target_company_size: Optional[str] = None,
+        target_industry: str | None = None,
+        target_company_size: str | None = None,
     ) -> Lead:
         """Calcula fit score + quality."""
         try:
@@ -161,7 +164,11 @@ class LeadGenerator:
             intent_score = 0.0
 
             # Fit: ¿es el cliente ideal?
-            if target_industry and lead.industry and target_industry.lower() in lead.industry.lower():
+            if (
+                target_industry
+                and lead.industry
+                and target_industry.lower() in lead.industry.lower()
+            ):
                 fit_score += 0.3
 
             if target_company_size and lead.company_size == target_company_size:
@@ -190,36 +197,44 @@ class LeadGenerator:
             else:
                 lead.quality = LeadQuality.COLD
 
-            self.logger.info(f"Scored lead {lead.email}: fit={lead.fit_score:.1%}, quality={lead.quality.value}")
+            self.logger.info(
+                f"Scored lead {lead.email}: fit={lead.fit_score:.1%}, quality={lead.quality.value}"
+            )
 
             return lead
 
-        except Exception as e:
-            self.logger.error(f"Error scoring lead: {e}")
+        except Exception:
+            self.logger.exception("Error scoring lead")
             return lead
 
     async def get_leads_by_quality(
         self,
         quality: LeadQuality,
         limit: int = 10,
-    ) -> List[Lead]:
+    ) -> list[Lead]:
         """Obtiene leads por calidad."""
         leads = [l for l in self.leads.values() if l.quality == quality]
         leads.sort(key=lambda l: (l.fit_score + l.intent_score) / 2, reverse=True)
 
         return leads[:limit]
 
-    async def get_next_to_contact(self, limit: int = 5) -> List[Lead]:
+    async def get_next_to_contact(self, limit: int = 5) -> list[Lead]:
         """Obtiene próximos leads a contactar (HOT primero)."""
         # Priorizar: HOT no contactados → WARM → COLD
         all_leads = list(self.leads.values())
 
         # Sort by: quality, contacted_count, last_contacted
-        all_leads.sort(key=lambda l: (
-            0 if l.quality == LeadQuality.HOT else (1 if l.quality == LeadQuality.WARM else 2),
-            l.contacted_count,
-            l.last_contacted or datetime.min,
-        ))
+        all_leads.sort(
+            key=lambda l: (
+                (
+                    0
+                    if l.quality == LeadQuality.HOT
+                    else (1 if l.quality == LeadQuality.WARM else 2)
+                ),
+                l.contacted_count,
+                l.last_contacted or datetime.min,
+            )
+        )
 
         return all_leads[:limit]
 

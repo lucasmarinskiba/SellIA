@@ -1,10 +1,10 @@
 """Phase 18: Autonomous Lead Generation Agent - finds leads for any product/service."""
 
-from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional
-from datetime import datetime, timedelta
-from enum import Enum
 import logging
+from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +23,7 @@ class LeadSourceType(str, Enum):
 @dataclass
 class ProductDescriptor:
     """User's product/service description"""
+
     name: str
     category: str
     description: str
@@ -40,12 +41,12 @@ class GeneratedLead:
     prospect_location: str
     fit_score: float
     reason_fit: str
-    keywords_matched: List[str]
-    prospect_name: Optional[str] = None
-    prospect_email: Optional[str] = None
-    prospect_phone: Optional[str] = None
-    prospect_company: Optional[str] = None
-    generated_at: datetime = field(default_factory=datetime.utcnow)
+    keywords_matched: list[str]
+    prospect_name: str | None = None
+    prospect_email: str | None = None
+    prospect_phone: str | None = None
+    prospect_company: str | None = None
+    generated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     contact_method: str = "email"
 
 
@@ -54,13 +55,13 @@ class LeadGenerationCampaign:
     campaign_id: str
     user_id: str
     product: ProductDescriptor
-    sources: List[LeadSourceType]
+    sources: list[LeadSourceType]
     leads_target: int
     leads_generated: int = 0
     leads_qualified: int = 0
     active: bool = True
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    last_run: Optional[datetime] = None
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    last_run: datetime | None = None
     run_frequency_hours: int = 24
 
 
@@ -68,15 +69,15 @@ class LeadGenerationAgent:
     """Autonomous agent that generates leads for any product/service"""
 
     def __init__(self):
-        self.campaigns: Dict[str, LeadGenerationCampaign] = {}
-        self.generated_leads: Dict[str, List[GeneratedLead]] = {}
+        self.campaigns: dict[str, LeadGenerationCampaign] = {}
+        self.generated_leads: dict[str, list[GeneratedLead]] = {}
 
     def create_campaign(
         self, user_id: str, product: ProductDescriptor, leads_target: int = 50
     ) -> LeadGenerationCampaign:
         """Create lead generation campaign for user's product"""
 
-        campaign_id = f"campaign_{user_id}_{datetime.utcnow().timestamp()}"
+        campaign_id = f"campaign_{user_id}_{datetime.now(UTC).timestamp()}"
 
         # Auto-select best sources based on product
         sources = self._select_best_sources(product)
@@ -86,7 +87,7 @@ class LeadGenerationAgent:
             user_id=user_id,
             product=product,
             sources=sources,
-            leads_target=leads_target
+            leads_target=leads_target,
         )
 
         self.campaigns[campaign_id] = campaign
@@ -95,7 +96,7 @@ class LeadGenerationAgent:
         logger.info(f"Campaign created: {campaign_id} for {product.name}")
         return campaign
 
-    def _select_best_sources(self, product: ProductDescriptor) -> List[LeadSourceType]:
+    def _select_best_sources(self, product: ProductDescriptor) -> list[LeadSourceType]:
         """Intelligently select lead sources based on product type"""
 
         if product.delivery_model == "online":
@@ -104,7 +105,7 @@ class LeadGenerationAgent:
                 LeadSourceType.MARKETPLACE,
                 LeadSourceType.SOCIAL_MEDIA,
                 LeadSourceType.LINKEDIN,
-                LeadSourceType.EMAIL_DATABASE
+                LeadSourceType.EMAIL_DATABASE,
             ]
         elif product.delivery_model == "offline":
             return [
@@ -112,7 +113,7 @@ class LeadGenerationAgent:
                 LeadSourceType.BUSINESS_DIRECTORY,
                 LeadSourceType.SOCIAL_MEDIA,
                 LeadSourceType.REFERRAL_NETWORK,
-                LeadSourceType.INDUSTRY_FORUM
+                LeadSourceType.INDUSTRY_FORUM,
             ]
         elif product.delivery_model == "hybrid":
             return [
@@ -122,7 +123,7 @@ class LeadGenerationAgent:
                 LeadSourceType.BUSINESS_DIRECTORY,
                 LeadSourceType.SOCIAL_MEDIA,
                 LeadSourceType.EMAIL_DATABASE,
-                LeadSourceType.REFERRAL_NETWORK
+                LeadSourceType.REFERRAL_NETWORK,
             ]
         else:  # hybrid_on_demand / hybrid with scheduling
             return [
@@ -130,10 +131,12 @@ class LeadGenerationAgent:
                 LeadSourceType.SOCIAL_MEDIA,
                 LeadSourceType.BUSINESS_DIRECTORY,
                 LeadSourceType.EMAIL_DATABASE,
-                LeadSourceType.MARKETPLACE
+                LeadSourceType.MARKETPLACE,
             ]
 
-    def generate_leads_for_campaign(self, campaign_id: str, limit: int = 50) -> List[GeneratedLead]:
+    def generate_leads_for_campaign(
+        self, campaign_id: str, limit: int = 50
+    ) -> list[GeneratedLead]:
         """Generate leads for a campaign"""
 
         if campaign_id not in self.campaigns:
@@ -160,7 +163,7 @@ class LeadGenerationAgent:
         self.generated_leads[campaign_id].extend(leads)
         campaign.leads_generated += len(leads)
         campaign.leads_qualified += sum(1 for l in leads if l.fit_score > 0.7)
-        campaign.last_run = datetime.utcnow()
+        campaign.last_run = datetime.now(UTC)
 
         logger.info(f"Generated {len(leads)} leads for {product.name}")
         return leads
@@ -170,8 +173,8 @@ class LeadGenerationAgent:
         campaign_id: str,
         product: ProductDescriptor,
         source: LeadSourceType,
-        limit: int
-    ) -> List[GeneratedLead]:
+        limit: int,
+    ) -> list[GeneratedLead]:
         """Fuente sin conector real: no inventa prospectos ni emails.
 
         Google Maps se busca con domains/lead_generation/places_source.py (async, vía
@@ -180,11 +183,15 @@ class LeadGenerationAgent:
         """
         logger.warning(
             "Lead source %s sin integración real; campaña %s no genera prospectos (limit=%d)",
-            source.value, campaign_id, limit,
+            source.value,
+            campaign_id,
+            limit,
         )
         return []
 
-    def get_campaign_leads(self, campaign_id: str, min_fit_score: float = 0.7) -> List[GeneratedLead]:
+    def get_campaign_leads(
+        self, campaign_id: str, min_fit_score: float = 0.7
+    ) -> list[GeneratedLead]:
         """Get qualified leads from campaign"""
 
         if campaign_id not in self.generated_leads:
@@ -193,7 +200,7 @@ class LeadGenerationAgent:
         leads = self.generated_leads[campaign_id]
         return [l for l in leads if l.fit_score >= min_fit_score]
 
-    def get_campaign_stats(self, campaign_id: str) -> Dict[str, Any]:
+    def get_campaign_stats(self, campaign_id: str) -> dict[str, Any]:
         """Get campaign statistics"""
 
         if campaign_id not in self.campaigns:
@@ -210,19 +217,23 @@ class LeadGenerationAgent:
             "product_name": campaign.product.name,
             "total_generated": campaign.leads_generated,
             "qualified_leads": qualified_leads,
-            "qualification_rate": qualified_leads / campaign.leads_generated if campaign.leads_generated > 0 else 0,
+            "qualification_rate": (
+                qualified_leads / campaign.leads_generated
+                if campaign.leads_generated > 0
+                else 0
+            ),
             "avg_fit_score": avg_fit,
             "sources_used": [s.value for s in campaign.sources],
             "target_leads": campaign.leads_target,
             "progress": f"{campaign.leads_generated}/{campaign.leads_target}",
             "active": campaign.active,
             "created_at": campaign.created_at.isoformat(),
-            "last_run": campaign.last_run.isoformat() if campaign.last_run else None
+            "last_run": campaign.last_run.isoformat() if campaign.last_run else None,
         }
 
     def schedule_continuous_generation(
         self, campaign_id: str, frequency_hours: int = 24
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Schedule automatic lead generation"""
 
         if campaign_id not in self.campaigns:
@@ -236,18 +247,26 @@ class LeadGenerationAgent:
             "status": "success",
             "campaign_id": campaign_id,
             "frequency_hours": frequency_hours,
-            "next_run": (datetime.utcnow() + timedelta(hours=frequency_hours)).isoformat()
+            "next_run": (
+                datetime.now(UTC) + timedelta(hours=frequency_hours)
+            ).isoformat(),
         }
 
-    def export_leads_for_outreach(self, campaign_id: str, format: str = "csv") -> Dict[str, Any]:
+    def export_leads_for_outreach(
+        self, campaign_id: str, format: str = "csv"
+    ) -> dict[str, Any]:
         """Export leads in outreach-ready format"""
 
         leads = self.get_campaign_leads(campaign_id)
 
         if format == "csv":
-            csv_data = "Name,Email,Phone,Company,Location,Fit Score,Best Contact Method\n"
+            csv_data = (
+                "Name,Email,Phone,Company,Location,Fit Score,Best Contact Method\n"
+            )
             for lead in leads:
-                csv_data += f"{lead.prospect_name},{lead.prospect_email},{lead.prospect_phone},"
+                csv_data += (
+                    f"{lead.prospect_name},{lead.prospect_email},{lead.prospect_phone},"
+                )
                 csv_data += f"{lead.prospect_company},{lead.prospect_location},"
                 csv_data += f"{lead.fit_score:.2f},{lead.contact_method}\n"
             return {"status": "success", "format": "csv", "data": csv_data}
@@ -265,10 +284,10 @@ class LeadGenerationAgent:
                         "location": l.prospect_location,
                         "fit_score": l.fit_score,
                         "reason": l.reason_fit,
-                        "contact_method": l.contact_method
+                        "contact_method": l.contact_method,
                     }
                     for l in leads
-                ]
+                ],
             }
 
         else:
