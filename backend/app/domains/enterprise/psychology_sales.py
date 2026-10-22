@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 import json
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.psychology_sales import (
     DiscoveryResponse,
@@ -14,7 +14,6 @@ from app.models.psychology_sales import (
     CloseAttempt,
     SalesConversation,
 )
-from celery_app import celery_app
 import logging
 
 try:
@@ -81,7 +80,7 @@ class DiscoveryQuestionsEngine:
         ],
     }
 
-    def __init__(self, db: Session, claude_api_key: Optional[str] = None):
+    def __init__(self, db: AsyncSession, claude_api_key: Optional[str] = None):
         self.db = db
         self.claude = Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
 
@@ -157,7 +156,7 @@ class DiscoveryQuestionsEngine:
                 for q in base_questions
             ]
 
-    def record_response(self, deal_id: str, question: str, response: str) -> DiscoveryResponse:
+    async def record_response(self, deal_id: str, question: str, response: str) -> DiscoveryResponse:
         """Record discovery response and analyze."""
 
         # Extract pain points, needs, urgency
@@ -174,21 +173,27 @@ class DiscoveryQuestionsEngine:
         )
 
         self.db.add(db_response)
-        self.db.commit()
+        # Awaited: the session is async, and an un-awaited commit() never runs, so the row was lost.
+        await self.db.commit()
 
         return db_response
 
     def _analyze_response(self, response: str) -> Dict[str, Any]:
         """Analyze response for pain points, needs, urgency."""
 
-        pain_keywords = ["losing", "wasting", "frustrated", "struggling", "broken", "pain", "problem"]
+        # English and Spanish: the product sells in Spanish, and the English-only list missed
+        # almost every real Spanish answer ("Pierde 20 horas por semana, está frustrado" had no pain point).
+        pain_keywords = [
+            "losing", "wasting", "frustrated", "struggling", "broken", "pain", "problem",
+            "pierd", "perd", "frustr", "problema", "dolor", "complica", "tiempo", "no funciona", "se rompe", "caro",
+        ]
         pain_points = []
         for keyword in pain_keywords:
             if keyword in response.lower():
                 pain_points.append(response)
 
         # Simple urgency calc (1-10)
-        urgency_keywords = ["asap", "urgent", "immediately", "now", "critical"]
+        urgency_keywords = ["asap", "urgent", "immediately", "now", "critical", "urgente", "ya", "inmediat", "cuanto antes", "esta semana"]
         urgency = 5
         if any(kw in response.lower() for kw in urgency_keywords):
             urgency = 8
@@ -222,11 +227,11 @@ class DiscoveryQuestionsEngine:
 class NeedCreationEngine:
     """Create awareness of buyer need through pain amplification."""
 
-    def __init__(self, db: Session, claude_api_key: Optional[str] = None):
+    def __init__(self, db: AsyncSession, claude_api_key: Optional[str] = None):
         self.db = db
         self.claude = Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
 
-    def create_need_narrative(self, deal_id: str, discovery_responses: List[str]) -> NeedNarrativeResult:
+    async def create_need_narrative(self, deal_id: str, discovery_responses: List[str]) -> NeedNarrativeResult:
         """Build narrative that creates urgency and need."""
 
         # Extract pain points
@@ -246,7 +251,7 @@ class NeedCreationEngine:
             pain_points=pain_points,
         )
         self.db.add(db_narrative)
-        self.db.commit()
+        await self.db.commit()
 
         urgency = min(financial_impact / 100000, 10)  # 1-10 scale
 
@@ -338,7 +343,7 @@ class NeedCreationEngine:
 class UrgencyTriggerEngine:
     """Generate legitimate FOMO/urgency triggers."""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
     def generate_urgency_triggers(self, deal: Dict) -> List[Dict[str, Any]]:
@@ -402,7 +407,7 @@ class UrgencyTriggerEngine:
 class PsychologyObjectionHandler:
     """Handle objections using psychology, not logic."""
 
-    def __init__(self, db: Session, claude_api_key: Optional[str] = None):
+    def __init__(self, db: AsyncSession, claude_api_key: Optional[str] = None):
         self.db = db
         self.claude = Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
 
@@ -484,7 +489,7 @@ class PsychologyObjectionHandler:
 class AssumptiveCloseEngine:
     """Jordan Belfort's 5-step closing sequence."""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
     CLOSE_SEQUENCE = [
@@ -545,29 +550,3 @@ class AssumptiveCloseEngine:
 
         positive_words = ["yes", "sure", "ok", "good", "let's", "when", "how", "sounds"]
         return any(word in response.lower() for word in positive_words)
-
-
-# ============================================================
-# CELERY TASKS
-# ============================================================
-
-
-@celery_app.task(bind=True, max_retries=3)
-def create_need_narrative_async(self, deal_id: str, responses: List[str]):
-    """Create need narrative in background."""
-    try:
-        from app.core.database import SessionLocal
-
-        db = SessionLocal()
-        engine = NeedCreationEngine(db)
-
-        result = engine.create_need_narrative(deal_id, responses)
-
-        logger.info(f"Need narrative created for deal {deal_id}: ${result.financial_impact:,.0f} impact")
-        db.close()
-
-        return {"status": "complete", "deal_id": deal_id, "impact": result.financial_impact}
-
-    except Exception as exc:
-        logger.error(f"Error creating narrative: {exc}")
-        raise self.retry(exc=exc, countdown=60)
