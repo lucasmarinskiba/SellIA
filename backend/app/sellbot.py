@@ -1,7 +1,6 @@
 """
 SellIA Sellbot - Email Delivery + PostgreSQL Persistence
 Endpoints:
-- POST /api/v1/webhooks/whatsapp (Meta webhook)
 - POST /api/v1/webhooks/sendgrid (Email tracking)
 - POST /api/v1/sequences/cold-email (Email generation)
 - POST /api/v1/knowledge/ingest (PDF knowledge)
@@ -1744,31 +1743,6 @@ async def call_anthropic_api(system_prompt: str, user_message: str, retries: int
 
     raise HTTPException(status_code=503, detail=f"Anthropic API unavailable after {retries} attempts: {last_error}")
 
-async def send_whatsapp_message(to: str, text: str, phone_number_id: str, token: str) -> dict:
-    """Envía mensaje vía WhatsApp Graph API."""
-    url = f"https://graph.instagram.com/v18.0/{phone_number_id}/messages"
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                url,
-                params={"access_token": token},
-                json={
-                    "messaging_product": "whatsapp",
-                    "recipient_type": "individual",
-                    "to": to,
-                    "type": "text",
-                    "text": {"body": text},
-                },
-            )
-            response.raise_for_status()
-            return response.json()
-    except httpx.TimeoutException:
-        logger.error(f"WhatsApp API timeout for {to}")
-        raise
-    except httpx.HTTPError as e:
-        logger.error(f"WhatsApp API error for {to}: {e}")
-        raise
-
 # ============================================================
 # ENDPOINTS
 # ============================================================
@@ -1887,49 +1861,6 @@ async def queue_peek(count: int = 5):
     except Exception as e:
         logger.error(f"Queue peek error: {e}")
         return {"status": "error", "detail": str(e)}
-
-@app.post("/api/v1/webhooks/whatsapp")
-async def whatsapp_webhook(request: Request):
-    """Meta WhatsApp webhook - recibe y responde mensajes."""
-    try:
-        body = await request.json()
-
-        # Meta verifica webhook con GET
-        if request.method == "GET":
-            token = os.getenv("META_WEBHOOK_VERIFY_TOKEN", "")
-            verify_token = request.query_params.get("hub.verify_token", "")
-            if verify_token == token:
-                return int(request.query_params.get("hub.challenge", 0))
-            return JSONResponse({"error": "Invalid token"}, status_code=403)
-
-        # Procesa mensaje entrante
-        messages = body.get("entry", [{}])[0].get("changes", [{}])[0].get("value", {}).get("messages", [])
-        if not messages:
-            return JSONResponse({"status": "ok"})
-
-        message = messages[0]
-        from_number = message.get("from")
-        message_text = message.get("text", {}).get("body", "")
-
-        if not message_text:
-            return JSONResponse({"status": "ok"})
-
-        # Genera respuesta con IA
-        response_text = await call_anthropic_api(
-            system_prompt=SALES_SYSTEM_PROMPT,
-            user_message=f"Cliente: {message_text}\n\nResponde como agente de ventas SellIA.",
-        )
-
-        # Envía respuesta
-        phone_number_id = os.getenv("META_PHONE_NUMBER_ID", "")
-        token = os.getenv("META_WHATSAPP_TOKEN", "")
-        if phone_number_id and token:
-            await send_whatsapp_message(from_number, response_text, phone_number_id, token)
-
-        return JSONResponse({"status": "ok", "response_sent": True})
-    except Exception as e:
-        logger.error(f"WhatsApp webhook error: {e}")
-        return JSONResponse({"status": "error", "detail": str(e)}, status_code=500)
 
 @app.post("/api/v1/sequences/cold-email")
 async def generate_cold_email_sequence(req: EmailSequenceRequest):
