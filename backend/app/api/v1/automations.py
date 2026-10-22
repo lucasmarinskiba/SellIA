@@ -30,6 +30,9 @@ from app.domains.automations.schemas import (
     ContentGenerationRequest, ContentGenerationResponse,
     AutomationToggleCreate, AutomationToggleUpdate, AutomationToggleResponse,
     ToggleAuditLogResponse, ToggleDashboardResponse,
+    ToggleScheduleCreate, ToggleScheduleUpdate, ToggleScheduleResponse,
+    ToggleNotificationRuleCreate, ToggleNotificationRuleUpdate,
+    ToggleNotificationRuleResponse, ToggleNotificationLogResponse,
 )
 from app.domains.automations.seed import seed_automations
 
@@ -1312,6 +1315,50 @@ async def list_toggle_schedules(
     return result.scalars().all()
 
 
+@router.patch("/schedule/{schedule_id}", response_model=ToggleScheduleResponse)
+async def update_toggle_schedule(
+    schedule_id: UUID,
+    schedule_in: ToggleScheduleUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Update a toggle schedule; a new start_time reschedules the next execution."""
+    from app.domains.automations.models import ToggleSchedule
+
+    result = await db.execute(select(ToggleSchedule).where(ToggleSchedule.id == schedule_id))
+    schedule = result.scalar_one_or_none()
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+
+    changes = schedule_in.model_dump(exclude_unset=True)
+    for field, value in changes.items():
+        setattr(schedule, field, value)
+    if "start_time" in changes:
+        schedule.next_execution_at = schedule.start_time
+
+    await db.commit()
+    await db.refresh(schedule)
+    return schedule
+
+
+@router.delete("/schedule/{schedule_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_toggle_schedule(
+    schedule_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Delete a toggle schedule."""
+    from app.domains.automations.models import ToggleSchedule
+
+    result = await db.execute(select(ToggleSchedule).where(ToggleSchedule.id == schedule_id))
+    schedule = result.scalar_one_or_none()
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+
+    await db.delete(schedule)
+    await db.commit()
+
+
 # ========== Toggle Notifications (Tier 3) ==========
 
 @router.post("/toggles/{toggle_id}/notification-rule", response_model=ToggleNotificationRuleResponse, status_code=status.HTTP_201_CREATED)
@@ -1379,6 +1426,29 @@ async def delete_notification_rule(
 
     await db.delete(rule)
     await db.commit()
+
+
+@router.patch("/notification-rule/{rule_id}", response_model=ToggleNotificationRuleResponse)
+async def update_notification_rule(
+    rule_id: UUID,
+    rule_in: ToggleNotificationRuleUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Update a notification rule."""
+    from app.domains.automations.models import ToggleNotificationRule
+
+    result = await db.execute(select(ToggleNotificationRule).where(ToggleNotificationRule.id == rule_id))
+    rule = result.scalar_one_or_none()
+    if not rule:
+        raise HTTPException(status_code=404, detail="Rule not found")
+
+    for field, value in rule_in.model_dump(exclude_unset=True).items():
+        setattr(rule, field, value)
+
+    await db.commit()
+    await db.refresh(rule)
+    return rule
 
 
 @router.get("/toggles/{toggle_id}/notification-logs", response_model=list[ToggleNotificationLogResponse])

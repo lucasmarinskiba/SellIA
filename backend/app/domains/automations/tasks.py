@@ -31,9 +31,9 @@ async def send_toggle_notification(
     toggle_name: str = "Toggle",
 ):
     """Send notifications for toggle event."""
-    from app.core.email import send_email  # Assuming email utility exists
-
     try:
+        from app.core.email_service import send_email
+
         # Find matching notification rules
         result = await db.execute(
             select(ToggleNotificationRule).where(
@@ -58,10 +58,11 @@ async def send_toggle_notification(
                 try:
                     subject = f"Toggle Alert: {toggle_name} - {event_type.replace('_', ' ').title()}"
                     body = f"The toggle '{toggle_name}' has {event_type.replace('_', ' ')}."
+                    sent_any = False
                     for email in rule.email_recipients:
-                        # Queue email task (non-blocking)
-                        send_email.delay(to_email=email, subject=subject, body=body)
-                    channels_sent.append("email")
+                        sent_any = await send_email(to_email=email, subject=subject, body_html=f"<p>{body}</p>") or sent_any
+                    if sent_any:
+                        channels_sent.append("email")
                 except Exception as e:
                     logger.error(f"Failed to send email notification: {e}")
 
