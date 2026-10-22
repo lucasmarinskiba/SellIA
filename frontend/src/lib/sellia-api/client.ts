@@ -2,6 +2,7 @@
  * SellIA API client · axios + interceptors + token mgmt.
  */
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios'
+import type { TwoFASetupResponse, TwoFAVerifyResponse } from '../auth'
 
 // NEXT_PUBLIC_API_URL is set (both locally and in Vercel prod) to the bare
 // backend origin (e.g. https://sellia-production.up.railway.app), same as
@@ -144,6 +145,14 @@ export const authApi = {
   },
 
   me: () => api.get<MeResponse>('/auth/me').then((r) => r.data),
+
+  // 2FA enrolment for the signed-in caller. The backend reads WHO from the
+  // Bearer token (the one signup() just returned and setToken() stored), never
+  // from a client-supplied user_id/secret: the secret is generated and kept
+  // server-side by setup2FA, and verify2FA only takes the 6-digit code.
+  setup2FA: () => api.post<TwoFASetupResponse>('/auth/2fa/setup').then((r) => r.data),
+  verify2FA: (code: string) =>
+    api.post<TwoFAVerifyResponse>('/auth/2fa/verify', undefined, { params: { code } }).then((r) => r.data),
 }
 
 /**

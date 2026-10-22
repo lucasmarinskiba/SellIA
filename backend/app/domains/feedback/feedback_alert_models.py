@@ -76,7 +76,12 @@ class NPSAlert(Base):
     )  # Pain points: ["staff_rudeness", "wait_time", "product_quality"]
 
     # Status
-    status = Column(SQLEnum(AlertStatus), default=AlertStatus.ACTIVE)
+    # Explicit Postgres type name: app.domains.alerts.models also has an AlertStatus (UNREAD/READ/DISMISSED),
+    # and an enum type is named after the Python class by default, so both ended up sharing the type
+    # "alertstatus" -- whichever table was created first fixed its labels and every INSERT here failed
+    # with `invalid input value for enum alertstatus: "ACTIVE"`. See repair_enum_columns() for tables that
+    # already exist.
+    status = Column(SQLEnum(AlertStatus, name="nps_alert_status"), default=AlertStatus.ACTIVE)
     acknowledged_by = Column(UUID(as_uuid=True), nullable=True)  # Manager
     acknowledged_at = Column(DateTime(timezone=True), nullable=True)
 

@@ -10,7 +10,7 @@ in one domain must never take down the whole service.
 
 import logging
 
-from app.sellbot import app
+from app.sellbot import app  # noqa: F401  (re-exported below)
 
 logger = logging.getLogger(__name__)
 
@@ -23,9 +23,7 @@ def _try_include(router_path: str, prefix: str, tags: list[str]) -> None:
         app.include_router(router, prefix=prefix, tags=tags)
         logger.info(f"✅ Loaded extra router: {prefix} ({router_path})")
     except Exception as e:
-        logger.warning(
-            f"⚠️  Skipped extra router {prefix} ({router_path}): {e}", exc_info=True
-        )
+        logger.warning(f"⚠️  Skipped extra router {prefix} ({router_path}): {e}")
 
 
 # Extra routers carried over from the legacy main.py entry point.
@@ -127,6 +125,12 @@ _try_include("app.api.v1.location_inventory.router", "/api/v1", ["inventory"])
 # before touching data -- mounting them without that would have been an IDOR.
 _try_include("app.api.v1.mobile_geofence.router", "", ["mobile-geofence"])
 _try_include("app.api.v1.unified_dashboard.router", "", ["unified-dashboard"])
+# dynamic_pricing, feedback_alerts and staff_tasks: same story (written, never mounted,
+# imported get_current_user from a module that does not define it). Access is owner or
+# active BusinessMember, ADMIN to change things (app.core.business_access).
+_try_include("app.api.v1.dynamic_pricing.router", "", ["pricing"])
+_try_include("app.api.v1.feedback_alerts.router", "", ["feedback-alerts"])
+_try_include("app.api.v1.staff_tasks.router", "", ["staff-tasks"])
 _try_include(
     "app.domains.channel_integration.router.router", "/api/v1", ["channel-integration"]
 )

@@ -39,7 +39,7 @@ jobs:
       image: returntocorp/semgrep
     if: (github.actor != 'dependabot[bot]')
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0   # --baseline-commit needs the base commit's history
 
@@ -75,7 +75,7 @@ jobs:
                   backend/ frontend/src/ || true
 
       - name: Upload Semgrep results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: semgrep-results
           path: semgrep-results.json
@@ -100,10 +100,10 @@ jobs:
     name: Trivy Dependency Scan
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Run Trivy on backend dependencies
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: 'fs'
           scan-ref: 'backend/requirements.txt'
@@ -112,7 +112,7 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: Run Trivy on frontend dependencies
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: 'fs'
           scan-ref: 'frontend/package.json'
@@ -121,7 +121,7 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: Upload Trivy results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: trivy-results
           path: |
@@ -141,10 +141,10 @@ jobs:
     name: Bandit Python SAST
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
@@ -161,7 +161,7 @@ jobs:
           bandit -r backend/app/ -f screen || true
 
       - name: Upload Bandit results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: bandit-results
           path: bandit-results.json
@@ -184,10 +184,10 @@ jobs:
     name: pip-audit Dependency Scan
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
@@ -203,7 +203,7 @@ jobs:
           pip-audit -r backend/requirements.txt --format=summary || true
 
       - name: Upload pip-audit results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: pip-audit-results
           path: pip-audit-results.json
@@ -225,7 +225,7 @@ jobs:
     name: OWASP ZAP Baseline Scan
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up environment
         run: |
@@ -267,7 +267,7 @@ jobs:
           allow_issue_writing: false
 
       - name: Upload ZAP report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: zap-baseline-report
           path: |
@@ -295,7 +295,7 @@ jobs:
     runs-on: ubuntu-24.04
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up environment
         run: |
@@ -333,7 +333,7 @@ jobs:
           allow_issue_writing: false
 
       - name: Upload ZAP report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: zap-full-report
           path: |

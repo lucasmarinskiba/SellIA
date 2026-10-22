@@ -1,23 +1,36 @@
-"""QR code generation endpoints."""
+"""QR code generation endpoints.
 
-import logging
+The QR codes are printed on posters at the location and scanned by the mobile app, so generating them is
+for the business's own people: the owner or any active member of the location's business. Parsing needs a
+login too (it is a pure function with no data behind it, but nothing calls it anonymously).
+"""
+
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.locations.qr_generator import LocationQRGenerator
-
-logger = logging.getLogger(__name__)
+from app.core.business_access import require_location_access
+from app.core.database import get_db
+from app.core.deps import get_current_user
+from app.domains.locations.qr_generator import VALID_QR_TYPES, LocationQRGenerator
+from app.domains.users.models import User
 
 router = APIRouter(prefix="", tags=["location-qr"])
 
 
 @router.get("/locations/{location_id}/qr-codes")
-async def get_location_qr_codes(location_id: UUID) -> dict:
+async def get_location_qr_codes(
+    location_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
     """Generate QR codes for location check-in (batch).
 
     Returns 3 QR payloads: visitor_checkin, feedback, staff_checkin
     """
+    await require_location_access(db, location_id, current_user)
+
     try:
         result = LocationQRGenerator.generate_location_qr_batch(location_id)
         return {
@@ -31,37 +44,36 @@ async def get_location_qr_codes(location_id: UUID) -> dict:
             },
         }
     except Exception as e:
-        logger.exception("get_location_qr_codes: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/locations/{location_id}/qr-code")
-async def get_single_qr(location_id: UUID, qr_type: str = "visitor_checkin") -> dict:
+async def get_single_qr(
+    location_id: UUID,
+    qr_type: str = "visitor_checkin",
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
     """Generate single QR code by type."""
-    valid_types = ["visitor_checkin", "feedback", "staff_checkin"]
-    if qr_type not in valid_types:
+    await require_location_access(db, location_id, current_user)
+    if qr_type not in VALID_QR_TYPES:
         raise HTTPException(
-            status_code=400, detail=f"QR type must be one of: {valid_types}"
+            status_code=400, detail=f"QR type must be one of: {list(VALID_QR_TYPES)}"
         )
 
     try:
-        result = LocationQRGenerator.generate_checkin_qr(location_id, None, qr_type)
-        return result
+        return LocationQRGenerator.generate_checkin_qr(location_id, None, qr_type)
     except Exception as e:
-        logger.exception("get_single_qr: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/qr-parse")
-async def parse_qr(payload: str) -> dict:
+async def parse_qr(
+    payload: str = Query(..., max_length=512),
+    current_user: User = Depends(get_current_user),
+) -> dict:
     """Parse QR code payload from mobile scan."""
-    try:
-        result = LocationQRGenerator.parse_qr_payload(payload)
-        if not result["valid"]:
-            raise HTTPException(
-                status_code=400, detail=result.get("error", "Invalid QR")
-            )
-        return result
-    except Exception as e:
-        logger.exception("parse_qr: error inesperado")
-        raise HTTPException(status_code=400, detail=str(e))
+    result = LocationQRGenerator.parse_qr_payload(payload)
+    if not result["valid"]:
+        raise HTTPException(status_code=400, detail=result.get("error", "Invalid QR"))
+    return result
