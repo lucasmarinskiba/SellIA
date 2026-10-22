@@ -1,20 +1,26 @@
-"""BI API endpoints for offline analytics dashboards."""
+"""BI dashboards for offline (in-store) activity.
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
+Dashboards aggregate a business's data, so they are for its owner or an ADMIN member (see
+app.core.business_access). Every figure is computed from the stored visits by app.domains.bi.offline_metrics;
+the old version returned hard-coded numbers and hand-written insights as if they were real.
+"""
+
+from datetime import datetime, timezone
 from uuid import UUID
-from datetime import datetime, timedelta
 
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.business_access import require_business_access, require_location_access
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.domains.businesses.models import Business
+from app.domains.bi import offline_metrics
 from app.domains.bi.offline_dashboards_schemas import (
-    FootTrafficMetrics, OfflineConversionMetrics, OnlineOfflineAttributionMetrics,
-    LocationComparisonMetrics, ProximityTriggerROI, DashboardSummary,
-    LocationAnalyticsDetailedReport
+    DashboardSummary,
+    FootTrafficMetrics,
+    OfflineConversionMetrics,
 )
-from app.domains.analytics.offline_service import OfflineAnalyticsService
+from app.domains.users.models import User
 
 router = APIRouter(prefix="", tags=["offline-bi"])
 
@@ -22,51 +28,22 @@ router = APIRouter(prefix="", tags=["offline-bi"])
 @router.get("/offline/foot-traffic/{location_id}", response_model=FootTrafficMetrics)
 async def get_foot_traffic_dashboard(
     location_id: UUID,
-    period: str = Query("daily", regex="^(daily|weekly|monthly)$"),
     days: int = Query(30, ge=1, le=365),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> FootTrafficMetrics:
-    """Get foot traffic dashboard for location."""
+    """Foot traffic for one location over the last ``days`` days."""
+    location = await require_location_access(db, location_id, current_user, manage=True)
+    now = datetime.now(timezone.utc)
 
-    from app.domains.businesses.location_models import Location
-
-    location = db.query(Location).filter(Location.id == location_id).first()
-    if not location:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Location not found")
-
-    # Verify ownership
-    business = db.query(Business).filter(
-        Business.id == location.business_id,
-        Business.user_id == current_user.id
-    ).first()
-
-    if not business:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
-
-    # Get heatmap data
-    heatmap = OfflineAnalyticsService.get_foot_traffic_heatmap(location_id, days, db)
-
-    start_date = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
-    end_date = datetime.now().strftime("%Y-%m-%d")
-
+    metrics = await db.run_sync(
+        lambda sync_db: offline_metrics.location_foot_traffic(sync_db, location_id, days, now)
+    )
     return FootTrafficMetrics(
         location_id=location_id,
         location_name=location.name,
-        period=period,
-        date_range=f"{start_date} to {end_date}",
-        total_visits=156,
-        walk_in_visits=120,
-        qr_scans=26,
-        scheduled_visits=10,
-        peak_hour="12:00-13:00",
-        peak_day="Friday",
-        avg_dwell_minutes=18,
-        hourly_breakdown=heatmap.get("hourly_heatmap", {}),
-        daily_visits_trend=[
-            {"date": "2026-08-18", "visits": 12},
-            {"date": "2026-08-19", "visits": 15},
-        ]
+        period=f"last_{days}_days",
+        **metrics,
     )
 
 
@@ -77,100 +54,44 @@ async def get_conversion_dashboard(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> OfflineConversionMetrics:
-    """Get offline conversion metrics for location."""
+    """Visits, purchases and revenue from visits to one location over the last ``days`` days."""
+    location = await require_location_access(db, location_id, current_user, manage=True)
+    now = datetime.now(timezone.utc)
 
-    from app.domains.businesses.location_models import Location
-    from decimal import Decimal
-
-    location = db.query(Location).filter(Location.id == location_id).first()
-    if not location:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Location not found")
-
-    # Verify ownership
-    business = db.query(Business).filter(
-        Business.id == location.business_id,
-        Business.user_id == current_user.id
-    ).first()
-
-    if not business:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
-
-    total_visits = 156
-    converted = 18
-    conversion_rate = converted / total_visits if total_visits else 0
-
+    metrics = await db.run_sync(
+        lambda sync_db: offline_metrics.location_conversions(sync_db, location_id, days, now)
+    )
     return OfflineConversionMetrics(
         location_id=location_id,
         location_name=location.name,
-        total_visits=total_visits,
-        visits_converted=converted,
-        conversion_rate=conversion_rate,
-        total_revenue=Decimal("45000.00"),
-        avg_order_value=Decimal("2500.00"),
-        avg_transaction_value=Decimal("2500.00"),
-        by_visit_type={
-            "walk_in": {
-                "visits": 120,
-                "converted": 12,
-                "rate": 0.10,
-                "revenue": 30000
-            },
-            "qr_scan": {
-                "visits": 26,
-                "converted": 4,
-                "rate": 0.15,
-                "revenue": 10000
-            },
-            "scheduled_demo": {
-                "visits": 10,
-                "converted": 2,
-                "rate": 0.20,
-                "revenue": 5000
-            }
-        }
+        total_visits=metrics["total_visits"],
+        visits_converted=metrics["visits_converted"],
+        conversion_rate=metrics["conversion_rate"],
+        total_revenue=metrics["total_revenue"],
+        avg_order_value=metrics["avg_order_value"],
+        avg_transaction_value=metrics["avg_order_value"],
+        by_visit_type=metrics["by_visit_type"],
     )
 
 
 @router.get("/offline/dashboard-summary", response_model=DashboardSummary)
 async def get_dashboard_summary(
     business_id: UUID,
-    period: str = Query("last_30_days"),
+    days: int = Query(30, ge=1, le=365),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> DashboardSummary:
-    """Get high-level summary for main offline BI dashboard."""
+    """Business-wide offline summary: this period against the one before it."""
+    await require_business_access(db, business_id, current_user, manage=True)
+    now = datetime.now(timezone.utc)
 
-    business = db.query(Business).filter(
-        Business.id == business_id,
-        Business.user_id == current_user.id
-    ).first()
-
-    if not business:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
-
-    from decimal import Decimal
-
+    summary = await db.run_sync(
+        lambda sync_db: offline_metrics.business_summary(sync_db, business_id, days, now)
+    )
     return DashboardSummary(
         business_id=business_id,
-        period=period,
-        total_visits=290,
-        visit_trend="↑ +15%",
-        total_conversions=30,
-        conversion_rate=0.103,
-        conversion_trend="↑ +8%",
-        total_revenue=Decimal("85000.00"),
-        revenue_trend="↑ +12%",
-        top_location="Showroom Buenos Aires",
-        top_location_visits=156,
-        best_trigger="proximity_check_nearby",
-        best_trigger_roi=5.2,
-        peak_hour="12:00-13:00",
-        peak_day="Friday",
-        avg_dwell_minutes=18,
-        actionable_insights=[
-            "Impulse offers convert best at 12pm lunch hour",
-            "High-dwell visitors (30+ min) have 25% purchase rate",
-            "Proximity SMS trigger outperforms email by 3x",
-            "Service Center La Plata punches above foot traffic with 20% conversion"
-        ]
+        period=f"last_{days}_days",
+        actionable_insights=[],
+        best_trigger_roi=None,
+        **summary,
     )

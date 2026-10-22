@@ -16,9 +16,9 @@ class FootTrafficMetrics(BaseModel):
     walk_in_visits: int
     qr_scans: int
     scheduled_visits: int
-    peak_hour: str
+    peak_hour: Optional[str]  # None when there are no visits in the period
     peak_day: Optional[str]
-    avg_dwell_minutes: int
+    avg_dwell_minutes: Optional[int]  # None when no visit has a recorded dwell time
     hourly_breakdown: Dict[str, int]
     daily_visits_trend: List[Dict]
 
@@ -31,8 +31,8 @@ class OfflineConversionMetrics(BaseModel):
     visits_converted: int
     conversion_rate: float
     total_revenue: Decimal
-    avg_order_value: Decimal
-    avg_transaction_value: Decimal
+    avg_order_value: Optional[Decimal]  # None when nothing was purchased
+    avg_transaction_value: Optional[Decimal]  # same figure as avg_order_value: kept for API compatibility
     by_visit_type: Dict[str, dict]
 
 
@@ -91,17 +91,17 @@ class DashboardSummary(BaseModel):
     visit_trend: str
     total_conversions: int
     conversion_rate: float
-    conversion_trend: str
+    conversion_trend: str  # change in the number of conversions vs the previous period
     total_revenue: Decimal
     revenue_trend: str
-    top_location: str
+    top_location: Optional[str]
     top_location_visits: int
-    best_trigger: str
-    best_trigger_roi: float
-    peak_hour: str
-    peak_day: str
-    avg_dwell_minutes: int
-    actionable_insights: List[str]
+    best_trigger: Optional[str]  # trigger with the highest execution rate (not an ROI)
+    best_trigger_roi: Optional[float]  # always None: no cost data is recorded, so no ROI can be computed
+    peak_hour: Optional[str]
+    peak_day: Optional[str]
+    avg_dwell_minutes: Optional[int]
+    actionable_insights: List[str]  # always empty: no insight generator is wired; nothing is written by hand
 
 
 class LocationAnalyticsDetailedReport(BaseModel):

@@ -178,6 +178,9 @@ def test_location_routers_are_mounted_in_main_without_collisions() -> None:
         "app.api.v1.staff_tasks",
         "app.api.v1.location_checkin",
         "app.api.v1.location_qr",
+        "app.api.v1.offline_bi",
+        "app.api.v1.offline_tracking",
+        "app.api.v1.offline_sequences",
     }
     owners: dict[tuple[str, str], list[str]] = collections.defaultdict(list)
     for route in app.routes:
@@ -200,6 +203,9 @@ def test_location_routers_are_mounted_in_main_without_collisions() -> None:
         ("POST", "/api/v1/staff/checkout"),
         ("GET", "/api/v1/staff/{staff_id}/performance"),
         ("GET", "/api/v1/locations/{location_id}/qr-codes"),
+        ("POST", "/api/v1/offline-conversions"),
+        ("POST", "/api/v1/offline-sequences/trigger"),
+        ("GET", "/api/v1/bi/offline/dashboard-summary"),
     ):
         assert expected in owners, f"{expected} is not mounted"
 

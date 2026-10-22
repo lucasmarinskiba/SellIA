@@ -186,12 +186,13 @@ class OfflineAnalyticsService:
         if not conversion:
             raise ValueError(f"Conversion {conversion_id} not found")
 
-        conversion.exit_time = datetime.now(timezone.utc)
-
-        # Calculate dwell time
-        if conversion.entry_time and conversion.exit_time:
-            delta = conversion.exit_time - conversion.entry_time
-            conversion.dwell_minutes = int(delta.total_seconds() / 60)
+        # The exit time is fixed by the first call. A later call (typically to record a purchase made
+        # after the visit ended) must not move it: that would silently change the dwell time.
+        if conversion.exit_time is None:
+            conversion.exit_time = datetime.now(timezone.utc)
+            if conversion.entry_time:
+                delta = conversion.exit_time - conversion.entry_time
+                conversion.dwell_minutes = int(delta.total_seconds() / 60)
 
         # Update purchase info
         if purchased:
@@ -338,10 +339,11 @@ class OfflineAnalyticsService:
         start_date = datetime.now(timezone.utc) - timedelta(days=days)
 
         # All offline conversions in period
+        # By the visit's own time, the same definition the BI dashboards use (a visit logged late keeps its date).
         all_conversions = db.query(OfflineConversion).filter(
             and_(
                 OfflineConversion.business_id == business_id,
-                OfflineConversion.created_at >= start_date
+                OfflineConversion.entry_time >= start_date
             )
         ).all()
 
