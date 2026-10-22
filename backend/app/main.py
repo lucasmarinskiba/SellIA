@@ -116,6 +116,12 @@ _try_include("app.api.v1.location_inventory.router", "/api/v1", ["inventory"])
 # before touching data -- mounting them without that would have been an IDOR.
 _try_include("app.api.v1.mobile_geofence.router", "", ["mobile-geofence"])
 _try_include("app.api.v1.unified_dashboard.router", "", ["unified-dashboard"])
+# dynamic_pricing, feedback_alerts and staff_tasks: same story (written, never mounted,
+# imported get_current_user from a module that does not define it). Access is owner or
+# active BusinessMember, ADMIN to change things (app.core.business_access).
+_try_include("app.api.v1.dynamic_pricing.router", "", ["pricing"])
+_try_include("app.api.v1.feedback_alerts.router", "", ["feedback-alerts"])
+_try_include("app.api.v1.staff_tasks.router", "", ["staff-tasks"])
 _try_include("app.domains.channel_integration.router.router", "/api/v1", ["channel-integration"])
 _try_include("app.api.v1.offline_sequences.router", "/api/v1", ["offline-sequences"])
 _try_include("app.api.v1.websites.router", "/api/v1/websites", ["websites"])

@@ -173,6 +173,11 @@ def test_location_routers_are_mounted_in_main_without_collisions() -> None:
         "app.api.v1.mobile_geofence",
         "app.api.v1.unified_dashboard",
         "app.api.v1.location_inventory",
+        "app.api.v1.dynamic_pricing",
+        "app.api.v1.feedback_alerts",
+        "app.api.v1.staff_tasks",
+        "app.api.v1.location_checkin",
+        "app.api.v1.location_qr",
     }
     owners: dict[tuple[str, str], list[str]] = collections.defaultdict(list)
     for route in app.routes:
@@ -187,6 +192,14 @@ def test_location_routers_are_mounted_in_main_without_collisions() -> None:
         ("GET", "/api/v1/locations/{location_id}/unified-metrics"),
         ("GET", "/api/v1/businesses/{business_id}/unified-dashboard"),
         ("GET", "/api/v1/locations/{location_id}/inventory"),
+        ("POST", "/api/v1/tasks/assign"),
+        ("GET", "/api/v1/staff/{staff_id}/task-performance"),
+        ("POST", "/api/v1/alerts/{alert_id}/escalate"),
+        ("POST", "/api/v1/pricing/calculate"),
+        ("POST", "/api/v1/locations/checkin"),
+        ("POST", "/api/v1/staff/checkout"),
+        ("GET", "/api/v1/staff/{staff_id}/performance"),
+        ("GET", "/api/v1/locations/{location_id}/qr-codes"),
     ):
         assert expected in owners, f"{expected} is not mounted"
 
@@ -206,7 +219,8 @@ def test_bootstrap_registers_tables_the_dashboard_endpoints_query() -> None:
         "from app.db.schema_bootstrap import _import_all_models\n"
         "from app.core.database import Base\n"
         "_import_all_models()\n"
-        "need = {'staff_tasks', 'pricing_transactions', 'unified_location_metrics', 'locations'}\n"
+        "need = {'staff_tasks', 'pricing_transactions', 'unified_location_metrics', 'locations', "
+        "'nps_alerts', 'business_members', 'location_pricing_tiers'}\n"
         "print(sorted(need - set(Base.metadata.tables)))\n"
     )
     result = subprocess.run(

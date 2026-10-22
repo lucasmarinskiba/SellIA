@@ -1,10 +1,12 @@
 """QR code generation for location check-ins."""
 
 import logging
+from urllib.parse import parse_qs, urlsplit
 from uuid import UUID
-from typing import Optional
 
 logger = logging.getLogger(__name__)
+
+VALID_QR_TYPES = ("visitor_checkin", "feedback", "staff_checkin")
 
 
 class LocationQRGenerator:
@@ -13,15 +15,24 @@ class LocationQRGenerator:
     @staticmethod
     def generate_checkin_qr(
         location_id: UUID,
-        business_id: UUID,
+        business_id: UUID | None = None,
         qr_type: str = "visitor_checkin"  # visitor_checkin, staff_checkin, feedback
     ) -> dict:
         """Generate QR code data for location check-in.
 
         Returns QR payload that mobile app can scan.
         """
-        # QR payload format: selliaapp://checkin?location={id}&type={type}&timestamp={ts}
-        payload = f"selliaapp://checkin?location={location_id}&business={business_id}&type={qr_type}"
+        if qr_type not in VALID_QR_TYPES:
+            raise ValueError(f"QR type must be one of: {list(VALID_QR_TYPES)}")
+
+        # QR payload format: selliaapp://checkin?location={id}&type={type}
+        # The business id is only added when given: this is printed on a poster in a public place and the
+        # app does not need it (the location already says which business it is). It used to be written
+        # unconditionally, so every payload carried the literal text "business=None".
+        payload = f"selliaapp://checkin?location={location_id}"
+        if business_id is not None:
+            payload += f"&business={business_id}"
+        payload += f"&type={qr_type}"
 
         logger.info(f"Generated QR payload for location {location_id}")
 
@@ -59,21 +70,32 @@ class LocationQRGenerator:
 
     @staticmethod
     def parse_qr_payload(payload: str) -> dict:
-        """Parse QR code payload from mobile app scan."""
-        # Extract from "selliaapp://checkin?location={id}&type={type}"
-        if not payload.startswith("selliaapp://"):
+        """Parse QR code payload from mobile app scan.
+
+        Strict on purpose: the scheme and host must match, ``location`` (and ``business`` when present) must
+        be UUIDs and ``type`` one of the known QR types.
+        """
+        try:
+            parts = urlsplit(payload)
+        except ValueError:
+            return {"valid": False, "error": "Invalid QR format"}
+        if parts.scheme != "selliaapp" or parts.netloc != "checkin":
             return {"valid": False, "error": "Invalid QR format"}
 
+        params = {key: values[-1] for key, values in parse_qs(parts.query).items()}
         try:
-            params_str = payload.split("?", 1)[1]
-            params = dict(param.split("=") for param in params_str.split("&"))
+            location_id = UUID(params["location"])
+            business_id = UUID(params["business"]) if "business" in params else None
+        except (KeyError, ValueError):
+            return {"valid": False, "error": "QR needs a valid location (and business, when present) id"}
 
-            return {
-                "valid": True,
-                "location_id": params.get("location"),
-                "type": params.get("type", "visitor_checkin"),
-                "business_id": params.get("business")
-            }
-        except Exception as e:
-            logger.error(f"Failed to parse QR payload: {e}")
-            return {"valid": False, "error": str(e)}
+        qr_type = params.get("type", "visitor_checkin")
+        if qr_type not in VALID_QR_TYPES:
+            return {"valid": False, "error": f"QR type must be one of: {list(VALID_QR_TYPES)}"}
+
+        return {
+            "valid": True,
+            "location_id": str(location_id),
+            "type": qr_type,
+            "business_id": str(business_id) if business_id else None,
+        }
