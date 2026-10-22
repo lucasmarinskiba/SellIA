@@ -100,6 +100,7 @@ celery_app = Celery(
 
 _modules = [
     "app.tasks.workflow_tasks",
+    "app.tasks.offline_sequence_tasks",
     "app.tasks.authority_tasks",
     "app.tasks.security_tasks",  # referenced by 5 beat_schedule entries below
                                   # (data_retention_cleanup, rotate_webhook_tokens,
@@ -176,6 +177,10 @@ celery_app.conf.beat_schedule = {
     "check-pending-workflows": {
         "task": "app.tasks.workflow_tasks.check_pending_workflows",
         "schedule": 30.0,  # cada 30 segundos
+    },
+    "process-offline-sequence-jobs": {
+        "task": "app.tasks.offline_sequence_tasks.process_offline_sequence_jobs",
+        "schedule": 60.0,  # envía los mensajes post-visita vencidos; no envía nada con el flag apagado
     },
     "check-email-sequences": {
         "task": "app.tasks.workflow_tasks.check_email_sequences",
