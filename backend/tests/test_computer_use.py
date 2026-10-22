@@ -13,12 +13,19 @@ import pytest
 from datetime import datetime
 from typing import Dict, Any, List
 from unittest.mock import AsyncMock, MagicMock, patch
+from app.core.computer_use import computer_use_orchestrator_v2 as _orchestrator_module
 from app.core.computer_use.computer_use_orchestrator_v2 import (
-    ComputerUseOrchestrator,
-    BrowserSession,
-    AutomationAction,
     ActionType,
+    BrowserSession,
+    ComputerUseOrchestrator,
 )
+
+# This file is the specification of a browser driver that ComputerUseOrchestrator does not implement yet:
+# the orchestrator is a strategy layer (post / respond / negotiate / close), and its browser methods, the
+# AutomationAction class and the CHECK/SELECT/FILL action types were never written. The tests below fail
+# on purpose; they are quarantined by id in tests/known_failures.txt and keep running, so the spec stays
+# visible in every summary. Remove an id from that list when the behaviour exists.
+AutomationAction = getattr(_orchestrator_module, "AutomationAction", None)
 
 
 class TestBrowserAutomation:

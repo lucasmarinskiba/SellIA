@@ -45,7 +45,6 @@ _KNOWN_FAILURES_FILE = pathlib.Path(__file__).parent / "known_failures.txt"
 # fails CI instead of being tolerated.
 collect_ignore: list[str] = [
     "test_automation_engine.py",       # imports Workflow, not defined in automation_engine
-    "test_computer_use.py",            # imports AutomationAction, not in computer_use_orchestrator_v2
     "test_ml_engine.py",
     "test_real_estate_agent.py",
     "test_strategy_engine.py",

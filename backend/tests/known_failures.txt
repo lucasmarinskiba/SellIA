@@ -351,3 +351,42 @@ tests/test_security.py::test_totp_verification
 # tests/test_trade_signals_api.py  (2)  e.g. RuntimeError: Event loop is closed
 tests/test_trade_signals_api.py::test_reject_flow
 tests/test_trade_signals_api.py::test_submit_blocked_without_heartbeat
+
+# tests/test_computer_use.py  (36)  specification of an unimplemented browser driver: AutomationAction,
+# ComputerUseOrchestrator.initialize_browser/navigate/..., ActionType.CHECK/SELECT/FILL do not exist
+tests/test_computer_use.py::TestActionValidation::test_detect_phishing_elements
+tests/test_computer_use.py::TestActionValidation::test_rate_limit_checks
+tests/test_computer_use.py::TestActionValidation::test_user_agent_rotation
+tests/test_computer_use.py::TestActionValidation::test_validate_action_before_execution
+tests/test_computer_use.py::TestActionValidation::test_validate_form_security
+tests/test_computer_use.py::TestBrowserAutomation::test_click_element
+tests/test_computer_use.py::TestBrowserAutomation::test_extract_page_content
+tests/test_computer_use.py::TestBrowserAutomation::test_initialize_browser_session
+tests/test_computer_use.py::TestBrowserAutomation::test_navigate_to_url
+tests/test_computer_use.py::TestBrowserAutomation::test_scroll_page
+tests/test_computer_use.py::TestBrowserAutomation::test_take_screenshot
+tests/test_computer_use.py::TestBrowserAutomation::test_type_text
+tests/test_computer_use.py::TestErrorHandling::test_handle_javascript_errors
+tests/test_computer_use.py::TestErrorHandling::test_recovery_after_page_reload
+tests/test_computer_use.py::TestErrorHandling::test_retry_on_element_not_found
+tests/test_computer_use.py::TestFormFilling::test_check_checkbox
+tests/test_computer_use.py::TestFormFilling::test_fill_complete_form
+tests/test_computer_use.py::TestFormFilling::test_fill_text_field
+tests/test_computer_use.py::TestFormFilling::test_select_dropdown_option
+tests/test_computer_use.py::TestFormFilling::test_submit_form
+tests/test_computer_use.py::TestMultiPlatformWorkflows::test_calendar_event_creation
+tests/test_computer_use.py::TestMultiPlatformWorkflows::test_email_campaign_creation
+tests/test_computer_use.py::TestMultiPlatformWorkflows::test_marketplace_listing_creation
+tests/test_computer_use.py::TestMultiPlatformWorkflows::test_social_media_post_creation
+tests/test_computer_use.py::TestPerformanceOptimization::test_batch_action_execution
+tests/test_computer_use.py::TestPerformanceOptimization::test_cache_page_content
+tests/test_computer_use.py::TestPerformanceOptimization::test_parallel_navigation
+tests/test_computer_use.py::TestScreenshotAnalysis::test_analyze_screenshot
+tests/test_computer_use.py::TestScreenshotAnalysis::test_detect_buttons
+tests/test_computer_use.py::TestScreenshotAnalysis::test_detect_forms
+tests/test_computer_use.py::TestScreenshotAnalysis::test_read_text_from_screenshot
+tests/test_computer_use.py::TestWebScraping::test_monitor_element_changes
+tests/test_computer_use.py::TestWebScraping::test_scrape_links
+tests/test_computer_use.py::TestWebScraping::test_scrape_structured_data
+tests/test_computer_use.py::TestWebScraping::test_scrape_table_data
+tests/test_computer_use.py::TestWebScraping::test_scrape_text_content
