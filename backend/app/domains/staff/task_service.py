@@ -1,17 +1,20 @@
 """Staff task service — assignment, dispatch, completion tracking."""
 
 import logging
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from uuid import UUID
+from typing import Optional, List
 
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app.domains.staff.task_models import (
-    ShiftReadinessReport,
     StaffTask,
     TaskNotification,
-    TaskPriority,
+    TaskTemplate,
+    ShiftReadinessReport,
     TaskStatus,
+    TaskPriority,
     TaskType,
 )
 
@@ -29,12 +32,12 @@ class StaffTaskService:
         task_type: str,
         title: str,
         due_date: datetime,
-        description: str | None = None,
+        description: str = None,
         priority: str = "medium",
         estimated_duration_minutes: int = 15,
-        related_checkin_id: UUID | None = None,
-        related_product_id: str | None = None,
-        assigned_by_staff_id: UUID | None = None,
+        related_checkin_id: UUID = None,
+        related_product_id: str = None,
+        assigned_by_staff_id: UUID = None,
         db: Session = None,
     ) -> dict:
         """Create and assign task to staff."""
@@ -73,8 +76,8 @@ class StaffTaskService:
     @staticmethod
     def get_staff_tasks(
         staff_id: UUID,
-        location_id: UUID | None = None,
-        status_filter: str | None = None,
+        location_id: UUID = None,
+        status_filter: str = None,
         db: Session = None,
     ) -> list:
         """Get tasks assigned to staff."""
@@ -90,16 +93,14 @@ class StaffTaskService:
             query = query.filter(StaffTask.status == TaskStatus[status_filter.upper()])
 
         # Check for overdue
-        now = datetime.now(UTC)
+        now = datetime.now(timezone.utc)
         tasks = query.order_by(StaffTask.due_date.asc()).all()
 
         for task in tasks:
-            if (
-                task.status not in [TaskStatus.COMPLETED, TaskStatus.CANCELLED]
-                and task.due_date < now
-            ):
-                task.status = TaskStatus.OVERDUE
-                db.commit()
+            if task.status not in [TaskStatus.COMPLETED, TaskStatus.CANCELLED]:
+                if task.due_date < now:
+                    task.status = TaskStatus.OVERDUE
+                    db.commit()
 
         return tasks
 
@@ -112,7 +113,7 @@ class StaffTaskService:
             raise ValueError(f"Task {task_id} not found")
 
         task.status = TaskStatus.ACKNOWLEDGED
-        task.acknowledged_at = datetime.now(UTC)
+        task.acknowledged_at = datetime.now(timezone.utc)
 
         db.commit()
         db.refresh(task)
@@ -134,7 +135,7 @@ class StaffTaskService:
             raise ValueError(f"Task {task_id} not found")
 
         task.status = TaskStatus.IN_PROGRESS
-        task.started_at = datetime.now(UTC)
+        task.started_at = datetime.now(timezone.utc)
 
         db.commit()
         db.refresh(task)
@@ -150,8 +151,8 @@ class StaffTaskService:
     @staticmethod
     def complete_task(
         task_id: UUID,
-        completion_notes: str | None = None,
-        completion_evidence: dict | None = None,
+        completion_notes: str = None,
+        completion_evidence: dict = None,
         db: Session = None,
     ) -> dict:
         """Mark task as completed."""
@@ -164,7 +165,7 @@ class StaffTaskService:
             raise ValueError(f"Task {task_id} not found")
 
         task.status = TaskStatus.COMPLETED
-        task.completed_at = datetime.now(UTC)
+        task.completed_at = datetime.now(timezone.utc)
         task.completion_notes = completion_notes
         if completion_evidence:
             task.completion_evidence = completion_evidence
@@ -184,9 +185,7 @@ class StaffTaskService:
         }
 
     @staticmethod
-    def cancel_task(
-        task_id: UUID, reason: str | None = None, db: Session = None
-    ) -> dict:
+    def cancel_task(task_id: UUID, reason: str = None, db: Session = None) -> dict:
         """Cancel task."""
         if not db:
             raise ValueError("Database session required")
@@ -220,7 +219,7 @@ class StaffTaskService:
             TaskStatus.ACKNOWLEDGED,
             TaskStatus.IN_PROGRESS,
         ]
-        now = datetime.now(UTC)
+        now = datetime.now(timezone.utc)
 
         tasks = (
             db.query(StaffTask)
@@ -304,7 +303,7 @@ class TaskNotificationService:
     def notify_task_assigned(
         task_id: UUID,
         staff_id: UUID,
-        notification_channels: list | None = None,
+        notification_channels: list = None,
         db: Session = None,
     ) -> dict:
         """Send notification when task assigned to staff."""
@@ -347,7 +346,7 @@ class TaskNotificationService:
         if not notification:
             raise ValueError(f"Notification {notification_id} not found")
 
-        notification.read_at = datetime.now(UTC)
+        notification.read_at = datetime.now(timezone.utc)
         db.commit()
 
         return {
@@ -365,7 +364,7 @@ class ShiftReadinessService:
         business_id: UUID,
         staff_id: UUID,
         shift_start: datetime,
-        shift_end: datetime | None = None,
+        shift_end: datetime = None,
         db: Session = None,
     ) -> dict:
         """Generate task performance report for shift."""
@@ -373,7 +372,7 @@ class ShiftReadinessService:
             raise ValueError("Database session required")
 
         if not shift_end:
-            shift_end = datetime.now(UTC)
+            shift_end = datetime.now(timezone.utc)
 
         # Get all tasks for this shift
         tasks = (
@@ -446,22 +445,27 @@ class ShiftReadinessService:
 
     @staticmethod
     def get_staff_performance(
-        staff_id: UUID, days: int = 30, db: Session = None
+        staff_id: UUID,
+        days: int = 30,
+        db: Session = None,
+        business_ids: set[UUID] | None = None,
     ) -> dict:
-        """Get staff task performance over time period."""
+        """Get staff task performance over time period.
+
+        ``business_ids`` restricts the count to those businesses -- a staff member can work
+        for several, and a manager must only see the tasks of the ones they manage.
+        """
         if not db:
             raise ValueError("Database session required")
 
-        cutoff = datetime.now(UTC) - timedelta(days=days)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
 
-        tasks = (
-            db.query(StaffTask)
-            .filter(
-                StaffTask.assigned_to_staff_id == staff_id,
-                StaffTask.assigned_at >= cutoff,
-            )
-            .all()
+        query = db.query(StaffTask).filter(
+            StaffTask.assigned_to_staff_id == staff_id, StaffTask.assigned_at >= cutoff
         )
+        if business_ids is not None:
+            query = query.filter(StaffTask.business_id.in_(business_ids))
+        tasks = query.all()
 
         completed = [t for t in tasks if t.status == TaskStatus.COMPLETED]
         total = len(tasks)

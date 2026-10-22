@@ -1,17 +1,32 @@
-"""Dynamic pricing API endpoints."""
+"""Dynamic pricing API endpoints.
 
-import logging
-from datetime import UTC
+Who may do what (see app.core.business_access):
+
+* change pricing tiers, create discount codes or A/B tests, aggregate revenue impact (it
+  writes a row) -> the owner or an ADMIN member of the location's business;
+* calculate a price, log a pricing transaction, validate a discount code, read the tier,
+  analytics or an A/B test result -> any member (cashiers and managers use these).
+
+The services are sync (Session.query / commit) while get_db yields an AsyncSession, so
+every DB touch runs inside ``await db.run_sync(...)``. Access checks run before the try
+block: a 403/404 must not be turned into a 400 by the broad except. The business a row
+belongs to always comes from its location -- never from the client.
+"""
+
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from typing import Annotated
+from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
+from pydantic import BaseModel, Field
 
+from app.core.business_access import require_business_access, require_location_access
 from app.core.database import get_db
-from app.core.security import get_current_user
+from app.core.deps import get_current_user
+from app.domains.pricing.pricing_models import LocationRevenueImpact, PricingABTest
 from app.domains.pricing.pricing_service import (
     ABTestService,
     DiscountCodeService,
@@ -20,106 +35,113 @@ from app.domains.pricing.pricing_service import (
 )
 from app.domains.users.models import User
 
-logger = logging.getLogger(__name__)
-
 router = APIRouter(prefix="/api/v1", tags=["pricing"])
 
 
 class CalculatePriceRequest(BaseModel):
     location_id: UUID
-    base_price: Decimal
-    discount_code: str | None = None
-    checkin_id: UUID | None = None
+    base_price: Decimal = Field(ge=0)
+    discount_code: Optional[str] = None
+    checkin_id: Optional[UUID] = None
 
 
 class LogPricingRequest(BaseModel):
     location_id: UUID
     order_id: str
-    base_price: Decimal
-    final_price: Decimal
-    discount_code: str | None = None
-    discount_amount: Decimal | None = None
+    base_price: Decimal = Field(ge=0)
+    final_price: Decimal = Field(ge=0)
+    discount_code: Optional[str] = None
+    discount_amount: Optional[Decimal] = Field(default=None, ge=0)
 
 
 class UpdateTierRequest(BaseModel):
     tier: str  # flagship, standard, discount
-    tier_multiplier: Decimal
-    peak_discount_pct: Decimal | None = None
+    tier_multiplier: Decimal = Field(gt=0, le=10)
+    peak_discount_pct: Optional[Decimal] = Field(default=None, ge=0, le=100)
 
 
 class CreateDiscountRequest(BaseModel):
-    code: str
-    discount_value: Decimal
+    code: str = Field(min_length=1, max_length=64)
+    discount_value: Decimal = Field(gt=0)
     discount_type: str = "percentage"
-    valid_days: int = 30
-    usage_limit: int | None = None
+    valid_days: int = Field(default=30, ge=1, le=365)
+    usage_limit: Optional[int] = Field(default=None, ge=1)
 
 
 class CreateABTestRequest(BaseModel):
     test_name: str
-    control_price: Decimal
-    variant_a_price: Decimal | None = None
-    variant_b_price: Decimal | None = None
-    test_duration_days: int = 14
+    control_price: Decimal = Field(ge=0)
+    variant_a_price: Optional[Decimal] = Field(default=None, ge=0)
+    variant_b_price: Optional[Decimal] = Field(default=None, ge=0)
+    test_duration_days: int = Field(default=14, ge=1, le=365)
 
 
 @router.post("/pricing/calculate")
 async def calculate_price(
     request: CalculatePriceRequest,
-    db: Annotated[Session, Depends(get_db)],
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Calculate price with dynamic adjustments."""
+    await require_location_access(db, request.location_id, current_user)
+
     try:
-        result = DynamicPricingService.calculate_price(
-            location_id=request.location_id,
-            base_price=request.base_price,
-            discount_code=request.discount_code,
-            checkin_id=request.checkin_id,
-            db=db,
+        return await db.run_sync(
+            lambda sync_db: DynamicPricingService.calculate_price(
+                location_id=request.location_id,
+                base_price=request.base_price,
+                discount_code=request.discount_code,
+                checkin_id=request.checkin_id,
+                db=sync_db,
+            )
         )
-        return result
     except Exception as e:
-        logger.exception("calculate_price: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/pricing/log-transaction")
 async def log_pricing_transaction(
     request: LogPricingRequest,
-    current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[Session, Depends(get_db)],
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Log pricing transaction."""
+    location = await require_location_access(db, request.location_id, current_user)
+    business_id = location.business_id
+
     try:
-        result = DynamicPricingService.log_pricing_transaction(
-            location_id=request.location_id,
-            business_id=UUID(
-                "00000000-0000-0000-0000-000000000000"
-            ),  # TODO: from location
-            order_id=request.order_id,
-            base_price=request.base_price,
-            final_price=request.final_price,
-            discount_code=request.discount_code,
-            discount_amount=request.discount_amount,
-            db=db,
+        return await db.run_sync(
+            lambda sync_db: DynamicPricingService.log_pricing_transaction(
+                location_id=request.location_id,
+                business_id=business_id,
+                order_id=request.order_id,
+                base_price=request.base_price,
+                final_price=request.final_price,
+                discount_code=request.discount_code,
+                discount_amount=request.discount_amount,
+                db=sync_db,
+            )
         )
-        return result
     except Exception as e:
-        logger.exception("log_pricing_transaction: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/locations/{location_id}/pricing-tier")
 async def get_pricing_tier(
     location_id: UUID,
-    db: Annotated[Session, Depends(get_db)],
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Get pricing tier config."""
+    await require_location_access(db, location_id, current_user)
+
     try:
-        result = DynamicPricingService.get_location_pricing_tier(location_id, db)
-        return result
+        return await db.run_sync(
+            lambda sync_db: DynamicPricingService.get_location_pricing_tier(
+                location_id, sync_db
+            )
+        )
     except Exception as e:
-        logger.exception("get_pricing_tier: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -127,22 +149,25 @@ async def get_pricing_tier(
 async def update_pricing_tier(
     location_id: UUID,
     request: UpdateTierRequest,
-    current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[Session, Depends(get_db)],
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Update pricing tier."""
+    location = await require_location_access(db, location_id, current_user, manage=True)
+    business_id = location.business_id
+
     try:
-        result = DynamicPricingService.update_pricing_tier(
-            location_id=location_id,
-            business_id=UUID("00000000-0000-0000-0000-000000000000"),
-            tier=request.tier,
-            tier_multiplier=request.tier_multiplier,
-            peak_discount_pct=request.peak_discount_pct,
-            db=db,
+        return await db.run_sync(
+            lambda sync_db: DynamicPricingService.update_pricing_tier(
+                location_id=location_id,
+                business_id=business_id,
+                tier=request.tier,
+                tier_multiplier=request.tier_multiplier,
+                peak_discount_pct=request.peak_discount_pct,
+                db=sync_db,
+            )
         )
-        return result
     except Exception as e:
-        logger.exception("update_pricing_tier: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -150,39 +175,51 @@ async def update_pricing_tier(
 async def create_discount_code(
     location_id: UUID,
     request: CreateDiscountRequest,
-    current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[Session, Depends(get_db)],
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Create location-specific discount code."""
-    try:
-        result = DiscountCodeService.create_discount_code(
-            location_id=location_id,
-            business_id=UUID("00000000-0000-0000-0000-000000000000"),
-            code=request.code,
-            discount_value=request.discount_value,
-            discount_type=request.discount_type,
-            valid_days=request.valid_days,
-            usage_limit=request.usage_limit,
-            db=db,
+    location = await require_location_access(db, location_id, current_user, manage=True)
+    business_id = location.business_id
+    if request.discount_type == "percentage" and request.discount_value > 100:
+        raise HTTPException(
+            status_code=422, detail="Un descuento porcentual no puede superar 100"
         )
-        return result
+
+    try:
+        return await db.run_sync(
+            lambda sync_db: DiscountCodeService.create_discount_code(
+                location_id=location_id,
+                business_id=business_id,
+                code=request.code,
+                discount_value=request.discount_value,
+                discount_type=request.discount_type,
+                valid_days=request.valid_days,
+                usage_limit=request.usage_limit,
+                db=sync_db,
+            )
+        )
     except Exception as e:
-        logger.exception("create_discount_code: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/discount-codes/{code}/validate")
 async def validate_discount(
     code: str,
-    location_id: Annotated[UUID, Query()],
-    db: Annotated[Session, Depends(get_db)],
+    location_id: UUID = Query(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Validate discount code."""
+    await require_location_access(db, location_id, current_user)
+
     try:
-        result = DiscountCodeService.validate_discount_code(code, location_id, db)
-        return result
+        return await db.run_sync(
+            lambda sync_db: DiscountCodeService.validate_discount_code(
+                code, location_id, sync_db
+            )
+        )
     except Exception as e:
-        logger.exception("validate_discount: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -190,85 +227,97 @@ async def validate_discount(
 async def create_ab_test(
     location_id: UUID,
     request: CreateABTestRequest,
-    current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[Session, Depends(get_db)],
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Create A/B test for pricing."""
+    location = await require_location_access(db, location_id, current_user, manage=True)
+    business_id = location.business_id
+
     try:
-        result = ABTestService.create_ab_test(
-            location_id=location_id,
-            business_id=UUID("00000000-0000-0000-0000-000000000000"),
-            test_name=request.test_name,
-            control_price=request.control_price,
-            variant_a_price=request.variant_a_price,
-            variant_b_price=request.variant_b_price,
-            test_duration_days=request.test_duration_days,
-            db=db,
+        return await db.run_sync(
+            lambda sync_db: ABTestService.create_ab_test(
+                location_id=location_id,
+                business_id=business_id,
+                test_name=request.test_name,
+                control_price=request.control_price,
+                variant_a_price=request.variant_a_price,
+                variant_b_price=request.variant_b_price,
+                test_duration_days=request.test_duration_days,
+                db=sync_db,
+            )
         )
-        return result
     except Exception as e:
-        logger.exception("create_ab_test: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/ab-tests/{test_id}/results")
 async def get_ab_test_results(
     test_id: UUID,
-    db: Annotated[Session, Depends(get_db)],
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Get A/B test results."""
+    test = await db.get(PricingABTest, test_id)
+    if test is None:
+        raise HTTPException(status_code=404, detail="Test A/B no encontrado")
+    await require_business_access(db, test.business_id, current_user)
+
     try:
-        result = ABTestService.get_test_results(test_id, db)
-        return result
+        return await db.run_sync(
+            lambda sync_db: ABTestService.get_test_results(test_id, sync_db)
+        )
     except Exception as e:
-        logger.exception("get_ab_test_results: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/locations/{location_id}/revenue-impact")
 async def get_revenue_impact(
     location_id: UUID,
-    date: Annotated[str, Query()],  # YYYY-MM-DD
-    db: Annotated[Session, Depends(get_db)],
+    date: str = Query(...),  # YYYY-MM-DD
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
-    """Get revenue impact for date."""
+    """Get revenue impact for date (aggregates and stores it, hence manager-only)."""
+    location = await require_location_access(db, location_id, current_user, manage=True)
+    business_id = location.business_id
+
     try:
-        result = RevenueAnalyticsService.aggregate_daily_impact(
-            location_id=location_id,
-            business_id=UUID("00000000-0000-0000-0000-000000000000"),
-            date=date,
-            db=db,
+        return await db.run_sync(
+            lambda sync_db: RevenueAnalyticsService.aggregate_daily_impact(
+                location_id=location_id, business_id=business_id, date=date, db=sync_db
+            )
         )
-        return result
     except Exception as e:
-        logger.exception("get_revenue_impact: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/locations/{location_id}/pricing-analytics")
 async def get_pricing_analytics(
     location_id: UUID,
-    db: Annotated[Session, Depends(get_db)],
-    days: Annotated[int, Query(ge=1, le=365)] = 30,
+    days: int = Query(30, ge=1, le=365),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Get pricing analytics for location."""
+    await require_location_access(db, location_id, current_user)
+
     try:
-        from datetime import datetime, timedelta
-
-        from app.domains.pricing.pricing_models import LocationRevenueImpact
-
-        cutoff = datetime.now(UTC) - timedelta(days=days)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
         cutoff_str = cutoff.strftime("%Y-%m-%d")
 
-        impacts = (
-            db.query(LocationRevenueImpact)
-            .filter(
-                LocationRevenueImpact.location_id == location_id,
-                LocationRevenueImpact.date >= cutoff_str,
+        def _load(sync_db: Session) -> list:
+            return (
+                sync_db.query(LocationRevenueImpact)
+                .filter(
+                    LocationRevenueImpact.location_id == location_id,
+                    LocationRevenueImpact.date >= cutoff_str,
+                )
+                .order_by(LocationRevenueImpact.date.desc())
+                .all()
             )
-            .order_by(LocationRevenueImpact.date.desc())
-            .all()
-        )
+
+        impacts = await db.run_sync(_load)
 
         total_base = sum(float(i.total_base_revenue) for i in impacts)
         total_final = sum(float(i.total_final_revenue) for i in impacts)
@@ -298,5 +347,4 @@ async def get_pricing_analytics(
             "daily_breakdown": impact_data,
         }
     except Exception as e:
-        logger.exception("get_pricing_analytics: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
