@@ -1,19 +1,24 @@
 """User signup/signin endpoints with secure password validation (2FA enrolment lives in auth.py)."""
 
-from fastapi import APIRouter, Depends, HTTPException, Body
-from pydantic import BaseModel, EmailStr, field_validator
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, text
-from app.core.database import get_db
-from app.core.deps import get_current_user
-from app.core.config import get_settings
-from app.domains.users.models import User
-from datetime import timedelta
-import hashlib
-import uuid
+import logging
 import re
+import uuid
+from datetime import timedelta
+from typing import Annotated
+
 import bcrypt
 import pyotp
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, field_validator
+from sqlalchemy import select, text
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.config import get_settings
+from app.core.database import get_db
+from app.core.deps import get_current_user
+from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -59,7 +64,7 @@ class SignupRequest(BaseModel):
 @router.post("/signup")
 async def signup(
     req: SignupRequest,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Register new user account with strong password requirements."""
     try:
@@ -116,7 +121,7 @@ async def signup(
             verify_url = f"{settings.FRONTEND_URL or 'http://localhost:3000'}/verify-email?token={verify_token}"
             await _send_verification_email(req.email, req.full_name, verify_url)
         except Exception:
-            pass
+            logger.exception("signup: error inesperado")
 
         return {
             "user_id": user_id,
@@ -130,8 +135,9 @@ async def signup(
         await db.rollback()
         raise
     except Exception as e:
+        logger.exception("signup: error inesperado")
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"Signup failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Signup failed: {e!s}")
 
 
 class SigninRequest(BaseModel):
@@ -143,7 +149,7 @@ class SigninRequest(BaseModel):
 @router.post("/signin")
 async def signin(
     req: SigninRequest,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Sign in with password + optional 2FA."""
     try:
@@ -196,7 +202,8 @@ async def signin(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Signin failed: {str(e)}")
+        logger.exception("signin: error inesperado")
+        raise HTTPException(status_code=500, detail=f"Signin failed: {e!s}")
 
 
 # 2FA enrolment is NOT served from here. It used to be (/2fa/enable, /2fa/verify and
@@ -206,7 +213,9 @@ async def signin(
 
 
 @router.get("/me")
-async def get_me(current_user: User = Depends(get_current_user)):
+async def get_me(
+    current_user: Annotated[User, Depends(get_current_user)],
+):
     """Get the AUTHENTICATED caller's own profile.
 
     Was previously `get_current_user(user_id: str)` -- a bare, unauthenticated

@@ -13,15 +13,16 @@ block: a 403/404 must not be turned into a 400 by the broad except. The business
 belongs to always comes from its location -- never from the client.
 """
 
-from datetime import datetime, timedelta, timezone
+import logging
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Optional
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, Field
 
 from app.core.business_access import require_business_access, require_location_access
 from app.core.database import get_db
@@ -35,14 +36,16 @@ from app.domains.pricing.pricing_service import (
 )
 from app.domains.users.models import User
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/v1", tags=["pricing"])
 
 
 class CalculatePriceRequest(BaseModel):
     location_id: UUID
     base_price: Decimal = Field(ge=0)
-    discount_code: Optional[str] = None
-    checkin_id: Optional[UUID] = None
+    discount_code: str | None = None
+    checkin_id: UUID | None = None
 
 
 class LogPricingRequest(BaseModel):
@@ -50,14 +53,14 @@ class LogPricingRequest(BaseModel):
     order_id: str
     base_price: Decimal = Field(ge=0)
     final_price: Decimal = Field(ge=0)
-    discount_code: Optional[str] = None
-    discount_amount: Optional[Decimal] = Field(default=None, ge=0)
+    discount_code: str | None = None
+    discount_amount: Decimal | None = Field(default=None, ge=0)
 
 
 class UpdateTierRequest(BaseModel):
     tier: str  # flagship, standard, discount
     tier_multiplier: Decimal = Field(gt=0, le=10)
-    peak_discount_pct: Optional[Decimal] = Field(default=None, ge=0, le=100)
+    peak_discount_pct: Decimal | None = Field(default=None, ge=0, le=100)
 
 
 class CreateDiscountRequest(BaseModel):
@@ -65,22 +68,22 @@ class CreateDiscountRequest(BaseModel):
     discount_value: Decimal = Field(gt=0)
     discount_type: str = "percentage"
     valid_days: int = Field(default=30, ge=1, le=365)
-    usage_limit: Optional[int] = Field(default=None, ge=1)
+    usage_limit: int | None = Field(default=None, ge=1)
 
 
 class CreateABTestRequest(BaseModel):
     test_name: str
     control_price: Decimal = Field(ge=0)
-    variant_a_price: Optional[Decimal] = Field(default=None, ge=0)
-    variant_b_price: Optional[Decimal] = Field(default=None, ge=0)
+    variant_a_price: Decimal | None = Field(default=None, ge=0)
+    variant_b_price: Decimal | None = Field(default=None, ge=0)
     test_duration_days: int = Field(default=14, ge=1, le=365)
 
 
 @router.post("/pricing/calculate")
 async def calculate_price(
     request: CalculatePriceRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Calculate price with dynamic adjustments."""
     await require_location_access(db, request.location_id, current_user)
@@ -96,14 +99,15 @@ async def calculate_price(
             )
         )
     except Exception as e:
+        logger.exception("calculate_price: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/pricing/log-transaction")
 async def log_pricing_transaction(
     request: LogPricingRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Log pricing transaction."""
     location = await require_location_access(db, request.location_id, current_user)
@@ -123,14 +127,15 @@ async def log_pricing_transaction(
             )
         )
     except Exception as e:
+        logger.exception("log_pricing_transaction: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/locations/{location_id}/pricing-tier")
 async def get_pricing_tier(
     location_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Get pricing tier config."""
     await require_location_access(db, location_id, current_user)
@@ -142,6 +147,7 @@ async def get_pricing_tier(
             )
         )
     except Exception as e:
+        logger.exception("get_pricing_tier: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -149,8 +155,8 @@ async def get_pricing_tier(
 async def update_pricing_tier(
     location_id: UUID,
     request: UpdateTierRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Update pricing tier."""
     location = await require_location_access(db, location_id, current_user, manage=True)
@@ -168,6 +174,7 @@ async def update_pricing_tier(
             )
         )
     except Exception as e:
+        logger.exception("update_pricing_tier: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -175,8 +182,8 @@ async def update_pricing_tier(
 async def create_discount_code(
     location_id: UUID,
     request: CreateDiscountRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Create location-specific discount code."""
     location = await require_location_access(db, location_id, current_user, manage=True)
@@ -200,15 +207,16 @@ async def create_discount_code(
             )
         )
     except Exception as e:
+        logger.exception("create_discount_code: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/discount-codes/{code}/validate")
 async def validate_discount(
     code: str,
-    location_id: UUID = Query(...),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    location_id: Annotated[UUID, Query()],
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Validate discount code."""
     await require_location_access(db, location_id, current_user)
@@ -220,6 +228,7 @@ async def validate_discount(
             )
         )
     except Exception as e:
+        logger.exception("validate_discount: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -227,8 +236,8 @@ async def validate_discount(
 async def create_ab_test(
     location_id: UUID,
     request: CreateABTestRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Create A/B test for pricing."""
     location = await require_location_access(db, location_id, current_user, manage=True)
@@ -248,14 +257,15 @@ async def create_ab_test(
             )
         )
     except Exception as e:
+        logger.exception("create_ab_test: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/ab-tests/{test_id}/results")
 async def get_ab_test_results(
     test_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Get A/B test results."""
     test = await db.get(PricingABTest, test_id)
@@ -268,15 +278,16 @@ async def get_ab_test_results(
             lambda sync_db: ABTestService.get_test_results(test_id, sync_db)
         )
     except Exception as e:
+        logger.exception("get_ab_test_results: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/locations/{location_id}/revenue-impact")
 async def get_revenue_impact(
     location_id: UUID,
-    date: str = Query(...),  # YYYY-MM-DD
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    date: Annotated[str, Query()],  # YYYY-MM-DD
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Get revenue impact for date (aggregates and stores it, hence manager-only)."""
     location = await require_location_access(db, location_id, current_user, manage=True)
@@ -289,21 +300,22 @@ async def get_revenue_impact(
             )
         )
     except Exception as e:
+        logger.exception("get_revenue_impact: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/locations/{location_id}/pricing-analytics")
 async def get_pricing_analytics(
     location_id: UUID,
-    days: int = Query(30, ge=1, le=365),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ) -> dict:
     """Get pricing analytics for location."""
     await require_location_access(db, location_id, current_user)
 
     try:
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
         cutoff_str = cutoff.strftime("%Y-%m-%d")
 
         def _load(sync_db: Session) -> list:
@@ -347,4 +359,5 @@ async def get_pricing_analytics(
             "daily_breakdown": impact_data,
         }
     except Exception as e:
+        logger.exception("get_pricing_analytics: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

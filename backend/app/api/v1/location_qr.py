@@ -5,6 +5,8 @@ for the business's own people: the owner or any active member of the location's 
 login too (it is a pure function with no data behind it, but nothing calls it anonymously).
 """
 
+import logging
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -16,14 +18,16 @@ from app.core.deps import get_current_user
 from app.domains.locations.qr_generator import VALID_QR_TYPES, LocationQRGenerator
 from app.domains.users.models import User
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="", tags=["location-qr"])
 
 
 @router.get("/locations/{location_id}/qr-codes")
 async def get_location_qr_codes(
     location_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Generate QR codes for location check-in (batch).
 
@@ -44,15 +48,16 @@ async def get_location_qr_codes(
             },
         }
     except Exception as e:
+        logger.exception("get_location_qr_codes: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/locations/{location_id}/qr-code")
 async def get_single_qr(
     location_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     qr_type: str = "visitor_checkin",
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Generate single QR code by type."""
     await require_location_access(db, location_id, current_user)
@@ -64,13 +69,14 @@ async def get_single_qr(
     try:
         return LocationQRGenerator.generate_checkin_qr(location_id, None, qr_type)
     except Exception as e:
+        logger.exception("get_single_qr: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/qr-parse")
 async def parse_qr(
-    payload: str = Query(..., max_length=512),
-    current_user: User = Depends(get_current_user),
+    payload: Annotated[str, Query(max_length=512)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> dict:
     """Parse QR code payload from mobile scan."""
     result = LocationQRGenerator.parse_qr_payload(payload)
