@@ -115,6 +115,8 @@ _try_include("app.api.v1.location_inventory.router", "/api/v1", ["inventory"])
 # proves the caller owns the business/location it names (app.core.business_access)
 # before touching data -- mounting them without that would have been an IDOR.
 _try_include("app.api.v1.mobile_geofence.router", "", ["mobile-geofence"])
+# Seasonal campaign drafts (read-only; nothing is sent from here).
+_try_include("app.api.v1.seasonal_suggestions.router", "", ["seasonal-suggestions"])
 _try_include("app.api.v1.unified_dashboard.router", "", ["unified-dashboard"])
 # dynamic_pricing, feedback_alerts and staff_tasks: same story (written, never mounted,
 # imported get_current_user from a module that does not define it). Access is owner or
