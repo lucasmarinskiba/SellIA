@@ -63,7 +63,8 @@ def test_fixing_a_finding_is_an_improvement_never_a_failure() -> None:
 
 def test_the_committed_baseline_is_well_formed() -> None:
     rows = json.loads(ratchet.BASELINE.read_text(encoding="utf-8"))
-    assert rows, "an empty baseline means the ratchet allows nothing; regenerate it or delete the gate"
+    # Una baseline vacía es válida: significa que no hay hallazgos fatales. El job
+    # Backend Lint compara contra ruff en cada PR, así que no hace falta repetirlo aquí.
     assert all(isinstance(r["count"], int) and r["count"] > 0 for r in rows)
     keys = [(r["file"], r["rule"], r["name"]) for r in rows]
     assert keys == sorted(keys), "keep the baseline sorted so diffs stay reviewable"
