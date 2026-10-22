@@ -30,6 +30,7 @@ from app.core.business_access import (
 )
 from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.core.mobile_auth import MobileCaller, authorize_location, require_mobile_caller
 from app.domains.locations.checkin_models import (
     CheckinStatus,
     CheckinType,
@@ -81,11 +82,11 @@ class StaffCheckoutRequest(BaseModel):
 @router.post("/locations/checkin")
 async def visitor_checkin(
     request: VisitorCheckinRequest,
-    current_user: User = Depends(get_current_user),
+    caller: MobileCaller = Depends(require_mobile_caller("checkin")),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Visitor check-in (walk-in, QR, geofence, appointment)."""
-    location = await require_location_access(db, request.location_id, current_user)
+    location = await authorize_location(db, request.location_id, caller)
     business_id = location.business_id
     if not location.is_active:
         raise HTTPException(status_code=400, detail="La sucursal está inactiva")
@@ -121,14 +122,14 @@ async def visitor_checkin(
 @router.post("/locations/checkout")
 async def visitor_checkout(
     request: VisitorCheckoutRequest,
-    current_user: User = Depends(get_current_user),
+    caller: MobileCaller = Depends(require_mobile_caller("checkout")),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Visitor check-out, record dwell time."""
     existing = await db.get(LocationCheckin, request.checkin_id)
     if existing is None:
         raise HTTPException(status_code=404, detail="Check-in no encontrado")
-    await require_location_access(db, existing.location_id, current_user)
+    await authorize_location(db, existing.location_id, caller)
     # The service recomputes the dwell time on every call: a second check-out would silently inflate it.
     if existing.status != CheckinStatus.CHECKED_IN:
         raise HTTPException(status_code=409, detail="Este check-in ya tiene check-out")
@@ -153,11 +154,11 @@ async def visitor_checkout(
 @router.post("/locations/feedback")
 async def submit_feedback(
     request: FeedbackRequest,
-    current_user: User = Depends(get_current_user),
+    caller: MobileCaller = Depends(require_mobile_caller("feedback")),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Submit visitor feedback (NPS, sentiment, topics)."""
-    location = await require_location_access(db, request.location_id, current_user)
+    location = await authorize_location(db, request.location_id, caller)
     business_id = location.business_id
     if request.checkin_id is not None:
         checkin = await db.get(LocationCheckin, request.checkin_id)

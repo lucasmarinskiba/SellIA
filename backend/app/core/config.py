@@ -127,6 +127,9 @@ class Settings(BaseSettings):
 
     # Computer Use Agents
     COMPUTER_USE_ENABLED: bool = True
+    # Accept the signed-in user's JWT on mobile endpoints. Keep on until the SDK apps use device tokens;
+    # then turn off so a leaked account JWT stops working there (app/core/mobile_auth.py).
+    MOBILE_LEGACY_USER_JWT_ENABLED: bool = True
     COMPUTER_USE_MAX_STEPS: int = 30
     COMPUTER_USE_TIMEOUT_SECONDS: int = 300
     COMPUTER_USE_SCREENSHOT_QUALITY: int = 75

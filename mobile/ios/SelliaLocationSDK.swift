@@ -30,6 +30,7 @@ public class SelliaLocationSDK {
 // MARK: - API Client
 class APIClient {
     var businessId: String?
+    /// Device token ("sdt_...") for this business or location. Not the account login.
     var token: String?
     let baseURL = "https://api.sellia.app/api/v1"
 
@@ -40,7 +41,7 @@ class APIClient {
         visitorPhone: String? = nil,
         completion: @escaping (CheckinResponse?, Error?) -> Void
     ) {
-        let endpoint = "\(baseURL)/mobile/checkin/start"
+        let endpoint = "\(baseURL)/locations/checkin"
         let payload: [String: Any] = [
             "location_id": locationId,
             "checkin_type": checkinType,
@@ -152,7 +153,8 @@ class APIClient {
             "latitude": latitude,
             "longitude": longitude,
             "business_id": businessId ?? "",
-            "accuracy_meters": 10.0
+            "accuracy_meters": 10.0,
+            "visitor_ref": UIDevice.current.identifierForVendor?.uuidString ?? ""
         ]
 
         var request = URLRequest(url: URL(string: endpoint)!)

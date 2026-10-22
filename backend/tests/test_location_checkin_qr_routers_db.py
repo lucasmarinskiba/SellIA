@@ -31,7 +31,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.api.v1 import location_checkin, location_qr
 from app.core.database import Base, get_db
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, get_current_user_optional
 from app.db.schema_bootstrap import ensure_unique_index_names
 from app.domains.businesses.location_models import Location
 from app.domains.businesses.models import Business
@@ -95,6 +95,9 @@ def _build_app(factory, who: dict | None) -> FastAPI:
     app.dependency_overrides[get_db] = _db
     if who is not None:  # None -> the real get_current_user (no token => rejected)
         app.dependency_overrides[get_current_user] = lambda: who["user"]
+        # The mobile routes read the caller through get_current_user_optional (so a device token can fall
+        # through to the JWT check). Overriding only get_current_user would leave that path unauthenticated.
+        app.dependency_overrides[get_current_user_optional] = lambda: who["user"]
     return app
 
 

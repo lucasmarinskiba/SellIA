@@ -46,6 +46,7 @@ logger = get_logger(__name__)
 EXTRA_MODEL_MODULES = [
     "app.models.authority_building",
     "app.domains.businesses.location_models",
+    "app.domains.businesses.mobile_device_models",
     # Read/written by the mounted unified_dashboard endpoints (aggregate_location_day
     # queries staff_tasks and pricing_transactions). Nothing imports the last two at
     # boot, so without listing them here those tables are never created in production.

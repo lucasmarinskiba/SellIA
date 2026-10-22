@@ -33,7 +33,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.api.v1 import location_inventory, mobile_geofence, unified_dashboard
 from app.core.database import Base, get_db
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, get_current_user_optional
 from app.db.schema_bootstrap import ensure_unique_index_names
 from app.domains.analytics.unified_dashboard_models import (
     BusinessDashboardSummary,
@@ -99,6 +99,8 @@ def _build_app(factory, who: dict | None) -> FastAPI:
     app.dependency_overrides[get_db] = _db
     if who is not None:  # None -> keep the real get_current_user (no token => rejected)
         app.dependency_overrides[get_current_user] = lambda: who["user"]
+        # Mobile routes read the caller through get_current_user_optional; override it with the same user.
+        app.dependency_overrides[get_current_user_optional] = lambda: who["user"]
     return app
 
 

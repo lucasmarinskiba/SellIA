@@ -20,12 +20,20 @@ object SelliaLocationSDK {
     private var qrScanner: QRScanner? = null
     private var dashboardClient: DashboardWebSocketClient? = null
 
+    /// apiToken: device token ("sdt_...") issued in the Sellia dashboard for this business or location.
+    /// It is not the account login: it reaches only the operations and location its scope allows.
     fun initialize(context: Context, businessId: String, apiToken: String) {
-        apiClient = APIClient(businessId, apiToken)
+        apiClient = APIClient(businessId, apiToken, deviceId(context))
         geofenceManager = GeofenceManager(context)
         qrScanner = QRScanner()
         dashboardClient = DashboardWebSocketClient()
     }
+
+    /// Per-install id, sent as device_id and visitor_ref. Settings.Secure.ANDROID_ID is the name of the setting;
+    /// its value comes from the content resolver. Passing the name made every phone send the same string.
+    private fun deviceId(context: Context): String =
+        android.provider.Settings.Secure.getString(context.contentResolver, android.provider.Settings.Secure.ANDROID_ID)
+            ?: "unknown-device"
 
     fun getAPIClient() = apiClient ?: throw Exception("SDK not initialized")
     fun getGeofenceManager() = geofenceManager ?: throw Exception("SDK not initialized")
@@ -36,7 +44,8 @@ object SelliaLocationSDK {
 // MARK: - API Client
 class APIClient(
     val businessId: String,
-    val token: String
+    val token: String,
+    val deviceId: String
 ) {
     private val baseURL = "https://api.sellia.app/api/v1"
     private val httpClient = OkHttpClient.Builder()
@@ -52,13 +61,13 @@ class APIClient(
         visitorEmail: String? = null,
         callback: (CheckinResponse?, Throwable?) -> Unit
     ) {
-        val endpoint = "$baseURL/mobile/checkin/start"
+        val endpoint = "$baseURL/locations/checkin"
         val payload = JSONObject().apply {
             put("location_id", locationId)
             put("checkin_type", checkinType)
             if (visitorPhone != null) put("visitor_phone", visitorPhone)
             if (visitorEmail != null) put("visitor_email", visitorEmail)
-            put("device_id", android.provider.Settings.Secure.ANDROID_ID)
+            put("device_id", deviceId)
             put("app_version", getAppVersion())
         }
 
@@ -191,6 +200,7 @@ class APIClient(
             put("longitude", longitude)
             put("business_id", businessId)
             put("accuracy_meters", 10.0)
+            put("visitor_ref", deviceId)
         }
 
         val body = payload.toString().toRequestBody("application/json".toMediaType())
