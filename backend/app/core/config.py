@@ -127,6 +127,9 @@ class Settings(BaseSettings):
 
     # Computer Use Agents
     COMPUTER_USE_ENABLED: bool = True
+    # Send the post-visit messages (app/domains/sequences/offline_sequence_jobs.py). Off by default: the copy
+    # in api/v1/offline_sequences.py is placeholder text that nobody has approved for customers.
+    OFFLINE_SEQUENCE_SEND_ENABLED: bool = False
     COMPUTER_USE_MAX_STEPS: int = 30
     COMPUTER_USE_TIMEOUT_SECONDS: int = 300
     COMPUTER_USE_SCREENSHOT_QUALITY: int = 75

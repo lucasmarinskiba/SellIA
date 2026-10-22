@@ -1,5 +1,6 @@
 """API endpoints for offline-triggered re-engagement sequences."""
 
+from datetime import datetime, timezone
 from enum import Enum
 from uuid import UUID
 
@@ -8,9 +9,11 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.business_access import require_business_access
+from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.domains.analytics.offline_models import OfflineConversion
+from app.domains.sequences.offline_sequence_jobs import queue_post_visit
 from app.domains.users.models import User
 
 router = APIRouter(prefix="", tags=["offline-sequences"])
@@ -143,10 +146,10 @@ async def trigger_offline_sequence(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> OfflineSequenceTriggerResponse:
-    """Pick the post-visit sequence for an offline visit (owner or admin).
+    """Queue the post-visit message for an offline visit (owner or admin).
 
-    This endpoint only SELECTS the template. Nothing is queued or sent: the delivery worker does not exist yet,
-    so the response says so with success=false rather than claiming the sequence was scheduled.
+    The message is queued only when sending is enabled and the visit has a contact email. The beat task
+    process_offline_sequence_jobs sends it once due. The response says whether anything was queued.
     """
     await require_business_access(db, request.business_id, current_user, manage=True)
 
@@ -173,12 +176,19 @@ async def trigger_offline_sequence(
 
     if template is None:
         return OfflineSequenceTriggerResponse(success=False, message="No hay plantilla para este tipo de visita")
+    queued = await queue_post_visit(
+        db,
+        conversion=conversion,
+        template_name=template.name,
+        subject=template.subject,
+        body_text=template.body,
+        delay_hours=template.delay_hours,
+        enabled=get_settings().OFFLINE_SEQUENCE_SEND_ENABLED,
+        now=datetime.now(timezone.utc),
+    )
     return OfflineSequenceTriggerResponse(
-        success=False,
-        message=(
-            f"Plantilla '{template.name}' seleccionada para la visita. El envío todavía no está conectado: "
-            "no se encoló nada."
-        ),
+        success=queued.queued,
+        message=f"Plantilla '{template.name}': {queued.message}",
     )
 
 
