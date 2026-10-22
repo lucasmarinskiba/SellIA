@@ -130,6 +130,9 @@ class Settings(BaseSettings):
     # Send the post-visit messages (app/domains/sequences/offline_sequence_jobs.py). Off by default: the copy
     # in api/v1/offline_sequences.py is placeholder text that nobody has approved for customers.
     OFFLINE_SEQUENCE_SEND_ENABLED: bool = False
+    # Accept the signed-in user's JWT on mobile endpoints. Keep on until the SDK apps use device tokens;
+    # then turn off so a leaked account JWT stops working there (app/core/mobile_auth.py).
+    MOBILE_LEGACY_USER_JWT_ENABLED: bool = True
     COMPUTER_USE_MAX_STEPS: int = 30
     COMPUTER_USE_TIMEOUT_SECONDS: int = 300
     COMPUTER_USE_SCREENSHOT_QUALITY: int = 75
