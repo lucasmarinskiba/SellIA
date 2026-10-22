@@ -106,6 +106,9 @@ _try_include("app.api.v1.bookings.router", "/api/v1", ["bookings"])
 _try_include("app.api.v1.payments.router", "", ["payments"])
 _try_include("app.api.v1.offline_tracking.router", "/api/v1", ["offline-tracking"])
 _try_include("app.api.v1.offline_bi.router", "/api/v1/bi", ["offline-bi"])
+# bi: the funnel and insight alerts the Inteligencia screen calls (/businesses/{id}/bi/*). The router was
+# written and never mounted; it now computes from real records and checks access.
+_try_include("app.domains.bi.router.router", "/api/v1/businesses", ["bi"])
 _try_include("app.api.v1.location_checkin.router", "/api/v1", ["location-checkin"])
 _try_include("app.api.v1.location_qr.router", "/api/v1", ["location-qr"])
 _try_include("app.api.v1.location_inventory.router", "/api/v1", ["inventory"])

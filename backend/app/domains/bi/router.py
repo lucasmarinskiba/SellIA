@@ -1,49 +1,59 @@
-"""BI API Router."""
+"""Business intelligence endpoints, mounted under /api/v1/businesses (the frontend calls /businesses/{id}/bi/*).
 
-from fastapi import APIRouter, Depends, status
-from sqlalchemy.ext.asyncio import AsyncSession
+Who may do what (see app.core.business_access):
+
+* the funnel (computed on demand) is a dashboard -> the owner or an ADMIN member;
+* the insight alerts are read-only and shown to any active member.
+
+No response is cached: a cache key that ignores the caller would hand one business's figures to another user.
+"""
+
 from uuid import UUID
 
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.business_access import require_business_access
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.core.cache import cached
-from app.domains.users.models import User
 from app.domains.bi.schemas import FunnelMetricsResponse, InsightAlertResponse
 from app.domains.bi.services import BiService
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/{business_id}/bi", tags=["Business Intelligence"])
 
 
-@router.post("/funnel", response_model=FunnelMetricsResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/funnel", response_model=FunnelMetricsResponse)
 async def generate_funnel(
     business_id: UUID,
-    period: str,
-    period_type: str = "monthly",
-    db: AsyncSession = Depends(get_db),
+    period: str = Query(..., max_length=50),
+    period_type: str = Query("monthly", pattern="^(daily|weekly|monthly)$"),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    service = BiService(db)
-    return await service.generate_funnel_report(business_id, period, period_type)
+    """The funnel for the window ending now (nothing is stored)."""
+    await require_business_access(db, business_id, current_user, manage=True)
+    return await BiService(db).generate_funnel_report(business_id, period, period_type)
 
 
-@cached(ttl_seconds=300, key_prefix="bi")
-@router.get("/funnel/latest", response_model=FunnelMetricsResponse | None)
+@router.get("/funnel/latest", response_model=FunnelMetricsResponse)
 async def get_latest_funnel(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    service = BiService(db)
-    return await service.get_latest_funnel(business_id)
+    """The current monthly funnel."""
+    await require_business_access(db, business_id, current_user, manage=True)
+    return await BiService(db).get_latest_funnel(business_id)
 
 
-@cached(ttl_seconds=300, key_prefix="bi")
 @router.get("/insights", response_model=list[InsightAlertResponse])
 async def list_insights(
     business_id: UUID,
-    insight_type: str | None = None,
-    db: AsyncSession = Depends(get_db),
+    insight_type: str | None = Query(None, max_length=100),
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    service = BiService(db)
-    return await service.list_insight_alerts(business_id, insight_type)
+    """Active insight alerts written by the analytics engine."""
+    await require_business_access(db, business_id, current_user)
+    return await BiService(db).list_insight_alerts(business_id, insight_type)
