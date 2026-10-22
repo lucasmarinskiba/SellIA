@@ -1,11 +1,15 @@
 """Phase 31 Psychology Sales API endpoints."""
 
+import uuid
 from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Depends
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.domains.crm.models import Deal
 from app.domains.enterprise.psychology_sales import (
     DiscoveryQuestionsEngine,
     NeedCreationEngine,
@@ -15,6 +19,18 @@ from app.domains.enterprise.psychology_sales import (
 )
 
 router = APIRouter(prefix="/api/v1/psychology", tags=["psychology-sales"])
+
+
+async def _deal_or_404(db: AsyncSession, deal_id: str) -> Deal:
+    """The deal the request talks about. 422 for a malformed id, 404 when it does not exist."""
+    try:
+        deal_uuid = uuid.UUID(str(deal_id))
+    except ValueError:
+        raise HTTPException(status_code=422, detail="deal_id must be a UUID")
+    deal = (await db.execute(select(Deal).where(Deal.id == deal_uuid))).scalar_one_or_none()
+    if deal is None:
+        raise HTTPException(status_code=404, detail="Deal not found")
+    return deal
 
 
 # ============================================================
@@ -98,18 +114,14 @@ class CloseResponse(BaseModel):
 
 
 @router.post("/discovery-questions", response_model=DiscoveryQuestionResponse)
-def get_discovery_questions(
+async def get_discovery_questions(
     request: DiscoveryQuestionRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """Get contextual discovery questions for prospect."""
 
     try:
-        from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
-
-        deal = db.query(Deal).filter(Deal.id == request.deal_id).first()
-        if not deal:
-            raise HTTPException(status_code=404, detail="Deal not found")
+        deal = await _deal_or_404(db, request.deal_id)
 
         prospect = {
             "company_name": deal.company_name if hasattr(deal, 'company_name') else "Company",
@@ -125,46 +137,54 @@ def get_discovery_questions(
             psychology=[q.psychology for q in questions],
             next_stage=request.stage,
         )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/record-response", response_model=RecordResponseResponse)
-def record_discovery_response(
+async def record_discovery_response(
     request: RecordResponseRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """Record prospect's response to discovery question."""
 
     try:
+        await _deal_or_404(db, request.deal_id)
         engine = DiscoveryQuestionsEngine(db)
-        db_response = engine.record_response(request.deal_id, request.question, request.response)
+        db_response = await engine.record_response(request.deal_id, request.question, request.response)
 
         return RecordResponseResponse(
             recorded=True,
             urgency_level=db_response.urgency_level or 5,
             pain_points=db_response.pain_points or [],
         )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/create-need-narrative", response_model=NeedNarrativeResponse)
-def create_need_narrative(
+async def create_need_narrative(
     request: NeedNarrativeRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """Create need narrative from discovery responses."""
 
     try:
+        await _deal_or_404(db, request.deal_id)
         engine = NeedCreationEngine(db)
-        result = engine.create_need_narrative(request.deal_id, request.discovery_responses)
+        result = await engine.create_need_narrative(request.deal_id, request.discovery_responses)
 
         return NeedNarrativeResponse(
             narrative=result.narrative,
             financial_impact=result.financial_impact,
             urgency_level=result.urgency_level,
         )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -172,7 +192,7 @@ def create_need_narrative(
 @router.post("/urgency-triggers", response_model=UrgencyTriggersResponse)
 def get_urgency_triggers(
     request: UrgencyTriggersRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """Get FOMO/urgency triggers for deal."""
 
@@ -183,6 +203,8 @@ def get_urgency_triggers(
         triggers = engine.generate_urgency_triggers(deal)
 
         return UrgencyTriggersResponse(triggers=triggers)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -190,7 +212,7 @@ def get_urgency_triggers(
 @router.post("/handle-objection", response_model=ObjectionResponse)
 def handle_objection(
     request: ObjectionRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """Get psychology-based objection response."""
 
@@ -205,6 +227,8 @@ def handle_objection(
             psychology="Validate → Reframe → Question",
             next_step="Ask them to think about impact",
         )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -212,7 +236,7 @@ def handle_objection(
 @router.post("/close", response_model=CloseResponse)
 def get_close(
     request: CloseRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """Get assumptive close for current step."""
 
@@ -241,5 +265,7 @@ def get_close(
             psychology="Build momentum with small commitments",
             is_positive_response=True,
         )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

@@ -1,16 +1,17 @@
 """API endpoints for offline-triggered re-engagement sequences."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import UUID
-from pydantic import BaseModel
-from typing import Optional, List
 from enum import Enum
+from uuid import UUID
 
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.business_access import require_business_access
 from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.domains.analytics.offline_models import OfflineConversion
 from app.domains.users.models import User
-from app.domains.businesses.models import Business
 
 router = APIRouter(prefix="", tags=["offline-sequences"])
 
@@ -54,15 +55,15 @@ class OfflineSequenceTriggerRequest(BaseModel):
     location_id: UUID
     conversion_id: UUID
     visit_type: VisitType
-    dwell_minutes: Optional[int] = None
+    dwell_minutes: int | None = None
 
 
 class OfflineSequenceTriggerResponse(BaseModel):
     """Response from sequence trigger."""
     success: bool
     message: str
-    sequence_id: Optional[UUID] = None
-    next_action: Optional[str] = None
+    sequence_id: UUID | None = None
+    next_action: str | None = None
 
 
 # Pre-defined templates (10+ sequences)
@@ -136,90 +137,69 @@ OFFLINE_TEMPLATES = [
 @router.post(
     "/offline-sequences/trigger",
     response_model=OfflineSequenceTriggerResponse,
-    status_code=status.HTTP_201_CREATED,
 )
 async def trigger_offline_sequence(
     request: OfflineSequenceTriggerRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> OfflineSequenceTriggerResponse:
-    """Trigger post-visit sequence for offline conversion."""
-    try:
-        # Verify business ownership
-        business = None
-        if hasattr(db, 'execute'):
-            # AsyncSession
-            from sqlalchemy import select
-            stmt = select(Business).where(
-                Business.id == request.business_id,
-                Business.user_id == current_user.id
-            )
-            result = await db.execute(stmt)
-            business = result.scalar_one_or_none()
-        else:
-            # Sync fallback
-            business = db.query(Business).filter(
-                Business.id == request.business_id,
-                Business.user_id == current_user.id
-            ).first()
+    """Pick the post-visit sequence for an offline visit (owner or admin).
 
-        if not business:
-            return OfflineSequenceTriggerResponse(
-                success=False,
-                message="Business not found or not authorized"
-            )
+    This endpoint only SELECTS the template. Nothing is queued or sent: the delivery worker does not exist yet,
+    so the response says so with success=false rather than claiming the sequence was scheduled.
+    """
+    await require_business_access(db, request.business_id, current_user, manage=True)
 
-        # Determine sequence template based on visit type and dwell time
-        template = None
-        if request.visit_type == VisitType.QR_SCAN:
-            template = next((t for t in OFFLINE_TEMPLATES if t.trigger_type == OfflineTriggerType.QR_SCAN), None)
-        elif request.visit_type == VisitType.SCHEDULED_DEMO:
-            template = next((t for t in OFFLINE_TEMPLATES if t.trigger_type == OfflineTriggerType.DEMO_ATTENDED), None)
-        elif request.dwell_minutes and request.dwell_minutes > 30:
-            template = next((t for t in OFFLINE_TEMPLATES if t.trigger_type == OfflineTriggerType.LONG_DWELL_TIME), None)
-        else:
-            template = next((t for t in OFFLINE_TEMPLATES if t.trigger_type == OfflineTriggerType.VISIT_WITHOUT_PURCHASE), None)
+    conversion = await db.get(OfflineConversion, request.conversion_id)
+    if (
+        conversion is None
+        or conversion.business_id != request.business_id
+        or conversion.location_id != request.location_id
+    ):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Visita no encontrada")
 
-        if not template:
-            return OfflineSequenceTriggerResponse(
-                success=False,
-                message="No matching sequence template found"
-            )
+    # The stored visit is the source of truth for its type and dwell time, not the request body.
+    visit_type = conversion.visit_type.value
+    dwell = conversion.dwell_minutes if conversion.dwell_minutes is not None else request.dwell_minutes
+    if visit_type == "qr_scan":
+        wanted = OfflineTriggerType.QR_SCAN
+    elif visit_type == "scheduled_demo":
+        wanted = OfflineTriggerType.DEMO_ATTENDED
+    elif dwell and dwell > 30:
+        wanted = OfflineTriggerType.LONG_DWELL_TIME
+    else:
+        wanted = OfflineTriggerType.VISIT_WITHOUT_PURCHASE
+    template = next((tpl for tpl in OFFLINE_TEMPLATES if tpl.trigger_type == wanted), None)
 
-        # TODO: In production, enqueue email task with delay_hours
-        # For now, return success with template info
-        return OfflineSequenceTriggerResponse(
-            success=True,
-            message=f"Sequence '{template.name}' queued with {template.delay_hours}h delay",
-            sequence_id=request.conversion_id,
-            next_action=f"Send {template.name} after {template.delay_hours} hours"
-        )
-
-    except Exception as e:
-        return OfflineSequenceTriggerResponse(
-            success=False,
-            message=f"Error triggering sequence: {str(e)}"
-        )
+    if template is None:
+        return OfflineSequenceTriggerResponse(success=False, message="No hay plantilla para este tipo de visita")
+    return OfflineSequenceTriggerResponse(
+        success=False,
+        message=(
+            f"Plantilla '{template.name}' seleccionada para la visita. El envío todavía no está conectado: "
+            "no se encoló nada."
+        ),
+    )
 
 
 @router.get(
     "/offline-sequences/templates",
-    response_model=List[OfflineSequenceTemplate],
+    response_model=list[OfflineSequenceTemplate],
 )
 async def list_sequence_templates(
     current_user: User = Depends(get_current_user),
-) -> List[OfflineSequenceTemplate]:
+) -> list[OfflineSequenceTemplate]:
     """List all available offline sequence templates."""
     return OFFLINE_TEMPLATES
 
 
 @router.get(
     "/offline-sequences/triggers",
-    response_model=List[dict],
+    response_model=list[dict],
 )
 async def list_trigger_types(
     current_user: User = Depends(get_current_user),
-) -> List[dict]:
+) -> list[dict]:
     """List all offline trigger types."""
     return [
         {"type": t.value, "name": t.name}
