@@ -1,91 +1,93 @@
-"""BI Services."""
+"""BI services: the business funnel, computed on demand from the business's own records.
 
-from typing import Optional
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from uuid import UUID
+Nothing is persisted here. A funnel is a read of the current data for a window; storing it would have meant
+writing into ``funnel_metrics`` with NOT NULL columns for figures this codebase cannot compute. So:
+
+* ``leads_count``    -- conversations started in the window (a conversation is the lead's first contact);
+* ``orders_count``   -- orders in a paid or fulfilled status, and ``revenue_total`` / ``avg_order_value`` from them;
+* everything else is ``None``: qualification, deals, repeat customers and the rates that depend on them.
+  Orders carry no customer key (the buyer's email and phone are encrypted), so repeat purchases cannot be
+  counted reliably, and no qualification or deal field is recorded on conversations.
+"""
+
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from datetime import datetime, timezone, timedelta
+from uuid import UUID, uuid4
 
-from app.domains.bi.models import FunnelMetrics, CohortMetrics, ChurnPrediction, LtvPrediction, InsightAlert
-from app.domains.orders.models import Order
-from app.domains.channels.models import Conversation, Message
-from app.domains.business_context.models import BusinessContext
-from app.domains.analytics.adapters import FunnelAdapter
-from app.core.logger import get_logger
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-logger = get_logger(__name__)
+from app.domains.analytics.models import InsightAlert
+from app.domains.channels.models import Conversation
+from app.domains.orders.models import Order, OrderStatus
+
+# Statuses that mean money was actually committed: paid, shipped or delivered.
+REVENUE_STATUSES = (OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED)
+WINDOWS = {"daily": timedelta(days=1), "weekly": timedelta(weeks=1), "monthly": timedelta(days=30)}
 
 
 class BiService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def _get_business_context(self, business_id: UUID) -> Optional[BusinessContext]:
-        result = await self.db.execute(
-            select(BusinessContext).where(BusinessContext.business_id == business_id)
-        )
-        return result.scalar_one_or_none()
+    @staticmethod
+    def window_start(period_type: str, now: datetime | None = None) -> datetime:
+        end = now or datetime.now(timezone.utc)
+        return end - WINDOWS.get(period_type, WINDOWS["monthly"])
 
-    async def generate_funnel_report(self, business_id: UUID, period: str, period_type: str = "monthly"):
-        """Generate funnel metrics for a given period."""
-        # Count leads (conversations started)
-        leads_result = await self.db.execute(
+    async def generate_funnel_report(
+        self, business_id: UUID, period: str, period_type: str = "monthly", now: datetime | None = None
+    ) -> dict:
+        """The funnel for the window ending now. Returns the response fields; persists nothing."""
+        if period_type not in WINDOWS:
+            raise ValueError(f"period_type inválido: {period_type} (usar daily, weekly o monthly)")
+        start = self.window_start(period_type, now)
+
+        leads = await self.db.execute(
             select(func.count(Conversation.id)).where(
                 Conversation.business_id == business_id,
-                Conversation.created_at >= self._period_start(period, period_type),
+                Conversation.created_at >= start,
             )
         )
-        leads_count = leads_result.scalar() or 0
-
-        # Count orders
-        orders_result = await self.db.execute(
-            select(func.count(Order.id), func.sum(Order.total_amount)).where(
+        orders = await self.db.execute(
+            select(func.count(Order.id), func.coalesce(func.sum(Order.total_amount), 0)).where(
                 Order.business_id == business_id,
-                Order.created_at >= self._period_start(period, period_type),
-                Order.status.in_(["paid", "completed"]),
+                Order.created_at >= start,
+                Order.status.in_(REVENUE_STATUSES),
             )
         )
-        orders_count, revenue_total = orders_result.one() or (0, Decimal("0"))
+        orders_count, revenue = orders.one()
+        orders_count = int(orders_count or 0)
+        revenue_total = Decimal(str(revenue or 0))
 
-        bc = await self._get_business_context(business_id)
-        custom_stages = FunnelAdapter.get_stages(bc.business_type if bc else None)
+        return {
+            "id": uuid4(),  # not stored: the identifier only names this computed response
+            "business_id": business_id,
+            "period": period,
+            "period_type": period_type,
+            "leads_count": int(leads.scalar() or 0),
+            "qualified_count": None,
+            "deals_count": None,
+            "orders_count": orders_count,
+            "repeat_orders_count": None,
+            "conversion_lead_to_qualified": None,
+            "conversion_qualified_to_deal": None,
+            "conversion_deal_to_order": None,
+            "conversion_order_to_repeat": None,
+            "revenue_total": revenue_total,
+            "avg_order_value": (revenue_total / orders_count).quantize(Decimal("0.01")) if orders_count else None,
+            "created_at": now or datetime.now(timezone.utc),
+        }
 
-        fm = FunnelMetrics(
-            business_id=business_id,
-            period=period,
-            period_type=period_type,
-            leads_count=leads_count,
-            orders_count=orders_count or 0,
-            revenue_total=revenue_total or Decimal("0"),
-            avg_order_value=(revenue_total / orders_count) if orders_count else Decimal("0"),
-        )
-        fm._custom_stages = custom_stages  # type: ignore
-        self.db.add(fm)
-        await self.db.commit()
-        return fm
-
-    def _period_start(self, period: str, period_type: str) -> datetime:
-        now = datetime.now(timezone.utc)
-        if period_type == "daily":
-            return now - timedelta(days=1)
-        if period_type == "weekly":
-            return now - timedelta(weeks=1)
-        return now - timedelta(days=30)
-
-    async def get_latest_funnel(self, business_id: UUID):
-        result = await self.db.execute(
-            select(FunnelMetrics)
-            .where(FunnelMetrics.business_id == business_id)
-            .order_by(FunnelMetrics.created_at.desc())
-            .limit(1)
-        )
-        return result.scalar_one_or_none()
+    async def get_latest_funnel(self, business_id: UUID) -> dict:
+        """The current monthly funnel (computed now; there is no stored history to read)."""
+        return await self.generate_funnel_report(business_id, period=datetime.now(timezone.utc).strftime("%Y-%m"))
 
     async def list_insight_alerts(self, business_id: UUID, insight_type: str | None = None):
+        """Alerts written by the analytics engine (read-only here)."""
         q = select(InsightAlert).where(
             InsightAlert.business_id == business_id,
-            InsightAlert.is_active == True,
+            InsightAlert.is_active.is_(True),
         )
         if insight_type:
             q = q.where(InsightAlert.insight_type == insight_type)

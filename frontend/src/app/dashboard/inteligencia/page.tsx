@@ -65,20 +65,21 @@ export default function InteligenciaPage() {
     }
   }
 
+  // Stages the backend cannot compute (null) are left out of the chart, never drawn as zero.
   const funnelStages = funnel ? [
     { name: 'Leads', value: funnel.leads_count, color: '#0EA5E9' },
     { name: 'Calificados', value: funnel.qualified_count, color: '#7C3AED' },
     { name: 'Deals', value: funnel.deals_count, color: '#F59E0B' },
     { name: 'Órdenes', value: funnel.orders_count, color: '#00D4AA' },
     { name: 'Repetición', value: funnel.repeat_orders_count, color: '#FF6B35' },
-  ] : []
+  ].filter((stage): stage is { name: string; value: number; color: string } => stage.value !== null) : []
 
   const conversionRates = funnel ? [
     { name: 'Lead → Calif', value: funnel.conversion_lead_to_qualified },
     { name: 'Calif → Deal', value: funnel.conversion_qualified_to_deal },
     { name: 'Deal → Orden', value: funnel.conversion_deal_to_order },
     { name: 'Orden → Repet', value: funnel.conversion_order_to_repeat },
-  ] : []
+  ].filter((rate): rate is { name: string; value: number } => rate.value !== null) : []
 
   return (
     <div className="space-y-8 max-w-7xl">
@@ -119,7 +120,7 @@ export default function InteligenciaPage() {
           {/* KPI Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <KpiCard label="Ingresos" value={funnel ? `$${funnel.revenue_total.toLocaleString()}` : '$0'} color="#22C55E" icon={TrendingUp} />
-            <KpiCard label="Ticket Promedio" value={funnel ? `$${funnel.avg_order_value.toFixed(0)}` : '$0'} color="#3B82F6" icon={BarChart3} />
+            <KpiCard label="Ticket Promedio" value={funnel && funnel.avg_order_value !== null ? `$${funnel.avg_order_value.toFixed(0)}` : '—'} color="#3B82F6" icon={BarChart3} />
             <KpiCard label="Leads" value={funnel ? funnel.leads_count.toLocaleString() : '0'} color="#0EA5E9" icon={Filter} />
             <KpiCard label="Órdenes" value={funnel ? funnel.orders_count.toLocaleString() : '0'} color="#FF6B35" icon={TrendingUp} />
           </div>

@@ -6,16 +6,17 @@ export interface FunnelMetrics {
   period: string
   period_type: string
   leads_count: number
-  qualified_count: number
-  deals_count: number
+  // null = the backend has no record that can compute this figure (qualification, deals, repeat customers)
+  qualified_count: number | null
+  deals_count: number | null
   orders_count: number
-  repeat_orders_count: number
-  conversion_lead_to_qualified: number
-  conversion_qualified_to_deal: number
-  conversion_deal_to_order: number
-  conversion_order_to_repeat: number
+  repeat_orders_count: number | null
+  conversion_lead_to_qualified: number | null
+  conversion_qualified_to_deal: number | null
+  conversion_deal_to_order: number | null
+  conversion_order_to_repeat: number | null
   revenue_total: number
-  avg_order_value: number
+  avg_order_value: number | null
   created_at: string
 }
 
