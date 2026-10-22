@@ -6,8 +6,8 @@ complementando el DOM.
 """
 
 import io
-from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
+from typing import Any
 
 from PIL import Image
 
@@ -19,6 +19,7 @@ logger = get_logger(__name__)
 @dataclass
 class OCRRegion:
     """Región de texto detectada."""
+
     text: str
     x: int
     y: int
@@ -42,7 +43,8 @@ class OCRService:
         # Try easyocr first (more accurate)
         try:
             import easyocr
-            self._engine = easyocr.Reader(['es', 'en'], gpu=False)
+
+            self._engine = easyocr.Reader(["es", "en"], gpu=False)
             self._engine_name = "easyocr"
             logger.info("OCR engine: easyocr")
             return
@@ -52,6 +54,7 @@ class OCRService:
         # Fallback to pytesseract
         try:
             import pytesseract
+
             self._engine = pytesseract
             self._engine_name = "pytesseract"
             logger.info("OCR engine: pytesseract")
@@ -82,12 +85,12 @@ class OCRService:
                 return self._engine.image_to_string(img, lang="spa+eng")
 
         except Exception as e:
-            logger.warning(f"OCR extraction failed: {e}")
+            logger.warning(f"OCR extraction failed: {e}", exc_info=True)
             return ""
 
         return ""
 
-    async def extract_regions(self, screenshot_bytes: bytes) -> List[OCRRegion]:
+    async def extract_regions(self, screenshot_bytes: bytes) -> list[OCRRegion]:
         """Extrae texto con coordenadas de cada región."""
         self._init_engine()
         if self._engine is None:
@@ -102,34 +105,40 @@ class OCRService:
                 for bbox, text, conf in results:
                     x_coords = [p[0] for p in bbox]
                     y_coords = [p[1] for p in bbox]
-                    regions.append(OCRRegion(
-                        text=text,
-                        x=int(min(x_coords)),
-                        y=int(min(y_coords)),
-                        width=int(max(x_coords) - min(x_coords)),
-                        height=int(max(y_coords) - min(y_coords)),
-                        confidence=float(conf),
-                    ))
+                    regions.append(
+                        OCRRegion(
+                            text=text,
+                            x=int(min(x_coords)),
+                            y=int(min(y_coords)),
+                            width=int(max(x_coords) - min(x_coords)),
+                            height=int(max(y_coords) - min(y_coords)),
+                            confidence=float(conf),
+                        )
+                    )
 
             elif self._engine_name == "pytesseract":
-                data = self._engine.image_to_data(img, lang="spa+eng", output_type=self._engine.Output.DICT)
+                data = self._engine.image_to_data(
+                    img, lang="spa+eng", output_type=self._engine.Output.DICT
+                )
                 for i in range(len(data["text"])):
                     if int(data["conf"][i]) > 30:  # Min confidence
-                        regions.append(OCRRegion(
-                            text=data["text"][i],
-                            x=data["left"][i],
-                            y=data["top"][i],
-                            width=data["width"][i],
-                            height=data["height"][i],
-                            confidence=data["conf"][i] / 100.0,
-                        ))
+                        regions.append(
+                            OCRRegion(
+                                text=data["text"][i],
+                                x=data["left"][i],
+                                y=data["top"][i],
+                                width=data["width"][i],
+                                height=data["height"][i],
+                                confidence=data["conf"][i] / 100.0,
+                            )
+                        )
 
         except Exception as e:
-            logger.warning(f"OCR region extraction failed: {e}")
+            logger.warning(f"OCR region extraction failed: {e}", exc_info=True)
 
         return regions
 
-    async def find_text(self, screenshot_bytes: bytes, target: str) -> Optional[OCRRegion]:
+    async def find_text(self, screenshot_bytes: bytes, target: str) -> OCRRegion | None:
         """Busca texto específico en un screenshot y retorna su ubicación."""
         regions = await self.extract_regions(screenshot_bytes)
         target_lower = target.lower()
@@ -138,7 +147,9 @@ class OCRService:
                 return region
         return None
 
-    async def extract_form_fields(self, screenshot_bytes: bytes) -> List[Dict[str, Any]]:
+    async def extract_form_fields(
+        self, screenshot_bytes: bytes
+    ) -> list[dict[str, Any]]:
         """Intenta identificar campos de formulario visuales."""
         text = await self.extract_text(screenshot_bytes)
         fields = []
@@ -149,16 +160,19 @@ class OCRService:
         ]
 
         import re
+
         lines = text.split("\n")
         for i, line in enumerate(lines):
             for pattern in label_patterns:
                 if re.search(pattern, line, re.IGNORECASE):
                     # Next line might be the value or input placeholder
                     value = lines[i + 1] if i + 1 < len(lines) else ""
-                    fields.append({
-                        "label": line.strip(),
-                        "value": value.strip(),
-                        "line": i,
-                    })
+                    fields.append(
+                        {
+                            "label": line.strip(),
+                            "value": value.strip(),
+                            "line": i,
+                        }
+                    )
 
         return fields

@@ -6,11 +6,12 @@ Orden de preferencia:
 3. Ollama local (gratis, privado, menos preciso)
 """
 
-from typing import Optional, List, Dict, Any
+from typing import Any
 
 from app.core.config import get_settings
 from app.core.logger import get_logger
 from app.domains.computer_use.schemas import ComputerUseAction
+
 from .base import ComputerUseProvider
 
 logger = get_logger(__name__)
@@ -26,32 +27,34 @@ PROVIDER_PRIORITY = [
 async def _is_ollama_available() -> bool:
     """Check if Ollama server is reachable and has a vision model."""
     from app.core.config import get_settings
+
     base_url = get_settings().OLLAMA_BASE_URL.rstrip("/")
     try:
         import aiohttp
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                f"{base_url}/api/tags",
-                timeout=aiohttp.ClientTimeout(total=3),
-            ) as resp:
-                if resp.status != 200:
-                    return False
-                data = await resp.json()
-                models = data.get("models", [])
-                # Check if any vision model is available
-                vision_models = ["llava", "bakllava", "moondream", "llava-phi3"]
-                return any(
-                    any(vm in m.get("name", "").lower() for vm in vision_models)
-                    for m in models
-                )
+
+        async with aiohttp.ClientSession() as session, session.get(
+            f"{base_url}/api/tags",
+            timeout=aiohttp.ClientTimeout(total=3),
+        ) as resp:
+            if resp.status != 200:
+                return False
+            data = await resp.json()
+            models = data.get("models", [])
+            # Check if any vision model is available
+            vision_models = ["llava", "bakllava", "moondream", "llava-phi3"]
+            return any(
+                any(vm in m.get("name", "").lower() for vm in vision_models)
+                for m in models
+            )
     except Exception:
+        logger.exception("_is_ollama_available: error inesperado")
         return False
 
 
 def create_provider(
     provider_name: str,
-    api_key: Optional[str] = None,
-) -> Optional[ComputerUseProvider]:
+    api_key: str | None = None,
+) -> ComputerUseProvider | None:
     """Crea un provider específico.
 
     Args:
@@ -69,6 +72,7 @@ def create_provider(
             return None
         try:
             from .anthropic_native import AnthropicNativeProvider
+
             return AnthropicNativeProvider(api_key=key)
         except ImportError as e:
             logger.warning(f"Anthropic native provider not available: {e}")
@@ -79,10 +83,12 @@ def create_provider(
         if not key:
             return None
         from .openai_vision import OpenAIVisionProvider
+
         return OpenAIVisionProvider(api_key=key)
 
     elif provider_name == "ollama":
         from .ollama_vision import OllamaVisionProvider
+
         return OllamaVisionProvider()
 
     else:
@@ -91,8 +97,8 @@ def create_provider(
 
 
 async def create_provider_with_fallback(
-    preferred_provider: Optional[str] = None,
-    api_key: Optional[str] = None,
+    preferred_provider: str | None = None,
+    api_key: str | None = None,
 ) -> ComputerUseProvider:
     """Crea un provider con fallback automático.
 
@@ -117,7 +123,9 @@ async def create_provider_with_fallback(
         if provider:
             logger.info(f"Using preferred Computer Use provider: {preferred_provider}")
             return provider
-        logger.warning(f"Preferred provider {preferred_provider} not available, trying fallback...")
+        logger.warning(
+            f"Preferred provider {preferred_provider} not available, trying fallback..."
+        )
 
     # Try each provider in priority order
     for provider_name, env_key in PROVIDER_PRIORITY:
@@ -134,7 +142,11 @@ async def create_provider_with_fallback(
             continue
 
         # Check if API key is available
-        key = api_key if env_key and api_key else getattr(settings, env_key, None) if env_key else None
+        key = (
+            api_key
+            if env_key and api_key
+            else getattr(settings, env_key, None) if env_key else None
+        )
         if not key:
             continue
 
@@ -166,9 +178,9 @@ class FallbackComputerUseProvider(ComputerUseProvider):
         self,
         screenshot_bytes: bytes,
         task: str,
-        history: List[Dict[str, Any]] = None,
-        user_message: Optional[str] = None,
-        page_info: Optional[Dict[str, str]] = None,
+        history: list[dict[str, Any]] | None = None,
+        user_message: str | None = None,
+        page_info: dict[str, str] | None = None,
     ) -> ComputerUseAction:
         errors = []
 
@@ -181,9 +193,12 @@ class FallbackComputerUseProvider(ComputerUseProvider):
                 if result.action_type != "error":
                     self.current_index = i
                     return result
-                errors.append(f"{provider.provider_name}: {result.params.get('message', 'error')}")
+                errors.append(
+                    f"{provider.provider_name}: {result.params.get('message', 'error')}"
+                )
             except Exception as e:
-                errors.append(f"{provider.provider_name}: {str(e)}")
+                logger.exception("decide_action: error inesperado")
+                errors.append(f"{provider.provider_name}: {e!s}")
                 continue
 
         # All providers failed
@@ -193,10 +208,11 @@ class FallbackComputerUseProvider(ComputerUseProvider):
             reason="All providers failed",
         )
 
-    async def generate_summary(self, actions_log: List[Dict[str, Any]]) -> str:
+    async def generate_summary(self, actions_log: list[dict[str, Any]]) -> str:
         for provider in self.providers:
             try:
                 return await provider.generate_summary(actions_log)
             except Exception:
+                logger.exception("generate_summary: error inesperado")
                 continue
         return "Sesión completada."

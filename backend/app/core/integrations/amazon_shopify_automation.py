@@ -13,15 +13,14 @@ Sistema:
 """
 
 import logging
-import httpx
-from typing import Dict, List, Any, Optional
-from datetime import datetime
+from typing import Any
+
 # defusedxml, not the stdlib xml.etree.ElementTree: this module parses XML
 # responses from Amazon MWS (external input) — stdlib ElementTree is
 # vulnerable to XXE/billion-laughs on untrusted XML. ET is currently unused
 # in this file, but kept as the safe import so any future response-parsing
 # code added here is safe by default rather than by accident.
-import defusedxml.ElementTree as ET
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -31,14 +30,16 @@ class AmazonAutomation:
 
     BASE_URL = "https://mws.amazonservices.com"
 
-    def __init__(self, mws_key: str, mws_secret: str, seller_id: str, region: str = "NA"):
+    def __init__(
+        self, mws_key: str, mws_secret: str, seller_id: str, region: str = "NA"
+    ):
         self.mws_key = mws_key
         self.mws_secret = mws_secret
         self.seller_id = seller_id
         self.region = region
         self.http_client = httpx.AsyncClient(timeout=30)
 
-    async def sync_orders(self) -> Dict[str, Any]:
+    async def sync_orders(self) -> dict[str, Any]:
         """Sincroniza órdenes Amazon."""
 
         logger.info(f"Syncing Amazon orders for seller {self.seller_id}")
@@ -64,12 +65,14 @@ class AmazonAutomation:
                 # Generar shipping label
                 shipping = await self._generate_label(order_id, order)
 
-                processed.append({
-                    "order_id": order_id,
-                    "confirm": confirm,
-                    "messages": messages,
-                    "shipping": shipping,
-                })
+                processed.append(
+                    {
+                        "order_id": order_id,
+                        "confirm": confirm,
+                        "messages": messages,
+                        "shipping": shipping,
+                    }
+                )
 
             logger.info(f"Synced {len(processed)} Amazon orders")
 
@@ -80,10 +83,10 @@ class AmazonAutomation:
             }
 
         except Exception as e:
-            logger.error(f"Amazon sync failed: {str(e)}")
+            logger.exception("Amazon sync failed")
             return {"status": "error", "error": str(e)}
 
-    async def _fetch_orders(self) -> List[Dict[str, Any]]:
+    async def _fetch_orders(self) -> list[dict[str, Any]]:
         """Obtiene órdenes pendientes."""
 
         try:
@@ -115,11 +118,11 @@ class AmazonAutomation:
                 }
             ]
 
-        except Exception as e:
-            logger.error(f"Fetch orders failed: {str(e)}")
+        except Exception:
+            logger.exception("Fetch orders failed")
             return []
 
-    async def _confirm_order(self, order_id: str) -> Dict[str, Any]:
+    async def _confirm_order(self, order_id: str) -> dict[str, Any]:
         """Auto-confirma orden."""
 
         logger.info(f"Confirming Amazon order {order_id}")
@@ -128,7 +131,7 @@ class AmazonAutomation:
 
         return {"status": "success"}
 
-    async def _respond_buyer_messages(self, order_id: str) -> Dict[str, Any]:
+    async def _respond_buyer_messages(self, order_id: str) -> dict[str, Any]:
         """Auto-responde mensajes de buyer."""
 
         logger.info(f"Checking buyer messages for {order_id}")
@@ -137,7 +140,9 @@ class AmazonAutomation:
 
         return {"status": "success", "messages_answered": 0}
 
-    async def _generate_label(self, order_id: str, order: Dict[str, Any]) -> Dict[str, Any]:
+    async def _generate_label(
+        self, order_id: str, order: dict[str, Any]
+    ) -> dict[str, Any]:
         """Genera shipping label."""
 
         logger.info(f"Generating Amazon label for {order_id}")
@@ -167,7 +172,7 @@ class ShopifyAutomation:
             auth=(api_key, api_password),
         )
 
-    async def sync_orders(self) -> Dict[str, Any]:
+    async def sync_orders(self) -> dict[str, Any]:
         """Sincroniza órdenes Shopify."""
 
         logger.info(f"Syncing Shopify orders from {self.store_url}")
@@ -193,12 +198,14 @@ class ShopifyAutomation:
                 # Generar shipping label
                 shipping = await self._create_fulfillment(order_id, order)
 
-                processed.append({
-                    "order_id": order_id,
-                    "confirm": confirm,
-                    "messages": messages,
-                    "shipping": shipping,
-                })
+                processed.append(
+                    {
+                        "order_id": order_id,
+                        "confirm": confirm,
+                        "messages": messages,
+                        "shipping": shipping,
+                    }
+                )
 
             logger.info(f"Synced {len(processed)} Shopify orders")
 
@@ -209,10 +216,10 @@ class ShopifyAutomation:
             }
 
         except Exception as e:
-            logger.error(f"Shopify sync failed: {str(e)}")
+            logger.exception("Shopify sync failed")
             return {"status": "error", "error": str(e)}
 
-    async def _fetch_orders(self) -> List[Dict[str, Any]]:
+    async def _fetch_orders(self) -> list[dict[str, Any]]:
         """Obtiene órdenes pendientes."""
 
         try:
@@ -228,11 +235,11 @@ class ShopifyAutomation:
                 logger.error(f"Shopify API error: {response.status_code}")
                 return []
 
-        except Exception as e:
-            logger.error(f"Fetch orders failed: {str(e)}")
+        except Exception:
+            logger.exception("Fetch orders failed")
             return []
 
-    async def _confirm_order(self, order_id: str) -> Dict[str, Any]:
+    async def _confirm_order(self, order_id: str) -> dict[str, Any]:
         """Auto-confirma orden."""
 
         logger.info(f"Confirming Shopify order {order_id}")
@@ -241,7 +248,9 @@ class ShopifyAutomation:
 
         return {"status": "success"}
 
-    async def _send_order_confirmation(self, order_id: str, order: Dict[str, Any]) -> Dict[str, Any]:
+    async def _send_order_confirmation(
+        self, order_id: str, order: dict[str, Any]
+    ) -> dict[str, Any]:
         """Envía confirmación de orden."""
 
         logger.info(f"Sending confirmation for {order_id}")
@@ -252,7 +261,9 @@ class ShopifyAutomation:
 
         return {"status": "success", "email_sent": buyer_email}
 
-    async def _create_fulfillment(self, order_id: str, order: Dict[str, Any]) -> Dict[str, Any]:
+    async def _create_fulfillment(
+        self, order_id: str, order: dict[str, Any]
+    ) -> dict[str, Any]:
         """Crea fulfillment (empaquetado + shipping)."""
 
         logger.info(f"Creating fulfillment for {order_id}")

@@ -1,9 +1,21 @@
 """Voice Sales + Playbook models for Phase 29."""
 
-from datetime import datetime
 from uuid import uuid4
-from sqlalchemy import Column, String, DateTime, Boolean, Integer, Float, ForeignKey, Text, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+
+from app.core.clock import utc_now
 from app.core.database import Base
 
 
@@ -14,16 +26,20 @@ class VoiceCall(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     prospect_id = Column(String(255), nullable=False)
-    deal_id = Column(UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)  # str in Python, uuid in the DB (deals.id)
+    deal_id = Column(
+        UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False
+    )  # str in Python, uuid in the DB (deals.id)
 
     call_sid = Column(String(255), unique=True)  # Twilio call ID
     script_used = Column(Text)
 
-    started_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    started_at = Column(DateTime, nullable=False, default=utc_now)
     ended_at = Column(DateTime)
     duration_seconds = Column(Integer)
 
-    status = Column(String(50), default="initiated")  # initiated, in_progress, completed
+    status = Column(
+        String(50), default="initiated"
+    )  # initiated, in_progress, completed
     outcome = Column(String(50))  # meeting_booked, qualified, unqualified
 
     transcript = Column(Text)
@@ -41,15 +57,17 @@ class CallTranscript(Base):
     __tablename__ = "call_transcripts"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    call_id = Column(UUID(as_uuid=True), ForeignKey("voice_calls.id", ondelete="CASCADE"), nullable=False)
+    call_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("voice_calls.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     speaker = Column(String(50), nullable=False)  # prospect, ai
     text = Column(Text, nullable=False)
-    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    timestamp = Column(DateTime, default=utc_now, nullable=False)
 
-    __table_args__ = (
-        Index("idx_call_timestamp", "call_id", "timestamp"),
-    )
+    __table_args__ = (Index("idx_call_timestamp", "call_id", "timestamp"),)
 
 
 class VoiceCallMetrics(Base):
@@ -58,16 +76,18 @@ class VoiceCallMetrics(Base):
     __tablename__ = "voice_call_metrics"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    call_id = Column(UUID(as_uuid=True), ForeignKey("voice_calls.id", ondelete="CASCADE"), nullable=False)
+    call_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("voice_calls.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     objections_raised = Column(Integer, default=0)
     objections_handled = Column(Integer, default=0)
     questions_asked = Column(Integer, default=0)
     time_to_qualification_seconds = Column(Integer)
 
-    __table_args__ = (
-        Index("idx_call_metrics", "call_id"),
-    )
+    __table_args__ = (Index("idx_call_metrics", "call_id"),)
 
 
 class SalesPlaybook(Base):
@@ -86,8 +106,8 @@ class SalesPlaybook(Base):
     steps = Column(JSONB)  # [{step: 1, name: "Opening", script: "..."}]
     extracted_from_calls = Column(Integer)  # How many calls analyzed
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     __table_args__ = (
         Index("idx_industry_stage", "industry", "deal_stage"),
@@ -101,15 +121,15 @@ class PlaybookExecution(Base):
     __tablename__ = "playbook_executions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    playbook_id = Column(UUID(as_uuid=True), ForeignKey("sales_playbooks.id"), nullable=False)
+    playbook_id = Column(
+        UUID(as_uuid=True), ForeignKey("sales_playbooks.id"), nullable=False
+    )
     call_id = Column(UUID(as_uuid=True), ForeignKey("voice_calls.id"), nullable=False)
 
     step_number = Column(Integer)
     rep_deviation = Column(Float)  # How much rep deviated from script (0-1)
 
-    __table_args__ = (
-        Index("idx_playbook_call", "playbook_id", "call_id"),
-    )
+    __table_args__ = (Index("idx_playbook_call", "playbook_id", "call_id"),)
 
 
 class SalesRepPerformance(Base):
@@ -135,11 +155,9 @@ class SalesRepPerformance(Base):
     calls_with_recommendations = Column(Integer, default=0)
     recommendations_accepted = Column(Integer, default=0)
 
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
-    __table_args__ = (
-        Index("idx_rep_id", "rep_id"),
-    )
+    __table_args__ = (Index("idx_rep_id", "rep_id"),)
 
 
 class AICallScript(Base):
@@ -148,18 +166,18 @@ class AICallScript(Base):
     __tablename__ = "ai_call_scripts"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)  # str in Python, uuid in the DB (deals.id)
+    deal_id = Column(
+        UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False
+    )  # str in Python, uuid in the DB (deals.id)
 
     script_template = Column(Text)  # Base script
     personalization_level = Column(String(50))  # high, medium, low
-    generated_at = Column(DateTime, default=datetime.utcnow)
+    generated_at = Column(DateTime, default=utc_now)
 
     used_in_calls = Column(Integer, default=0)
     call_success_rate = Column(Float)  # % of calls using this script that succeeded
 
-    __table_args__ = (
-        Index("idx_deal_id", "deal_id"),
-    )
+    __table_args__ = (Index("idx_deal_id", "deal_id"),)
 
 
 class MeetingBooking(Base):
@@ -169,7 +187,9 @@ class MeetingBooking(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     prospect_id = Column(String(255), nullable=False)
-    deal_id = Column(UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)  # str in Python, uuid in the DB (deals.id)
+    deal_id = Column(
+        UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False
+    )  # str in Python, uuid in the DB (deals.id)
     call_id = Column(UUID(as_uuid=True), ForeignKey("voice_calls.id"), nullable=False)
 
     scheduled_for = Column(DateTime, nullable=False)
@@ -178,7 +198,7 @@ class MeetingBooking(Base):
     confirmed_at = Column(DateTime)
     attended = Column(Boolean)
 
-    booked_at = Column(DateTime, default=datetime.utcnow)
+    booked_at = Column(DateTime, default=utc_now)
 
     __table_args__ = (
         Index("idx_deal_scheduled", "deal_id", "scheduled_for"),

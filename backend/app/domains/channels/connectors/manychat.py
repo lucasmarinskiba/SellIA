@@ -11,16 +11,21 @@ business's own ManyChat flow can branch on SellIA's qualification result
 (e.g. a "sellia_qualified" tag routes to a human, "sellia_disqualified" ends the flow).
 """
 
-import httpx
+import logging
 from typing import Any
 
+import httpx
+
 from app.domains.channels.connectors.base import BaseChannelConnector
-from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.models import ChannelPlatform
+from app.domains.channels.schemas import WebhookPayload
+
+logger = logging.getLogger(__name__)
 
 
 class ManyChatConnector(BaseChannelConnector):
     """Conector para ManyChat (IG/FB/WA automation) usando su API REST."""
+
     platform = "manychat"
     BASE_URL = "https://api.manychat.com"
 
@@ -34,7 +39,9 @@ class ManyChatConnector(BaseChannelConnector):
             "Content-Type": "application/json",
         }
 
-    async def send_message(self, recipient_id: str, content: str, content_type: str = "text") -> dict[str, Any]:
+    async def send_message(
+        self, recipient_id: str, content: str, content_type: str = "text"
+    ) -> dict[str, Any]:
         if not self.api_token:
             raise ValueError("Falta el api_token de ManyChat")
 
@@ -69,7 +76,9 @@ class ManyChatConnector(BaseChannelConnector):
           "last_input_text": "Hola, quiero info del producto"
         }
         """
-        subscriber_id = str(raw_payload.get("subscriber_id") or raw_payload.get("id") or "")
+        subscriber_id = str(
+            raw_payload.get("subscriber_id") or raw_payload.get("id") or ""
+        )
         first_name = raw_payload.get("first_name", "")
         last_name = raw_payload.get("last_name", "")
         sender_name = f"{first_name} {last_name}".strip() or "ManyChat Subscriber"
@@ -96,6 +105,7 @@ class ManyChatConnector(BaseChannelConnector):
                 data = response.json()
                 return data.get("status") == "success"
         except Exception:
+            logger.exception("validate_credentials: error inesperado")
             return False
 
     # -- ManyChat-specific (not part of BaseChannelConnector): lead-filtering hooks --
@@ -111,17 +121,25 @@ class ManyChatConnector(BaseChannelConnector):
                 response = await client.post(url, json=payload, headers=self._headers())
                 return response.status_code == 200
         except Exception:
+            logger.exception("tag_subscriber: error inesperado")
             return False
 
-    async def set_custom_field(self, subscriber_id: str, field_name: str, value: Any) -> bool:
+    async def set_custom_field(
+        self, subscriber_id: str, field_name: str, value: Any
+    ) -> bool:
         """Sets a ManyChat custom field (e.g. sellia_score) on a subscriber."""
         if not self.api_token:
             return False
         try:
             url = f"{self.BASE_URL}/fb/subscriber/setCustomField"
-            payload = {"subscriber_id": subscriber_id, "field_name": field_name, "field_value": value}
+            payload = {
+                "subscriber_id": subscriber_id,
+                "field_name": field_name,
+                "field_value": value,
+            }
             async with httpx.AsyncClient() as client:
                 response = await client.post(url, json=payload, headers=self._headers())
                 return response.status_code == 200
         except Exception:
+            logger.exception("set_custom_field: error inesperado")
             return False

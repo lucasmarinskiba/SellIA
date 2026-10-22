@@ -10,33 +10,34 @@ trying to accomplish right now; an expert voice decides HOW it's said. The
 orchestration layer (PR2) combines both — e.g. CONVERSION stage + Belfort voice.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List
 
 from app.domains.businesses.models import BusinessType
 
 
 class FunnelStage(str, Enum):
     """Stages of the customer journey a SellIA agent operates across."""
-    AWARENESS = "awareness"        # Crear la necesidad
-    URGENCY = "urgency"            # Crear FOMO / escasez
-    ACQUISITION = "acquisition"    # Atraer clientes / generar leads
-    CONVERSION = "conversion"      # Que paguen / cerrar la venta
-    RETENTION = "retention"        # Fidelizarlos
-    EXPANSION = "expansion"        # Upsell, cross-sell, referidos
+
+    AWARENESS = "awareness"  # Crear la necesidad
+    URGENCY = "urgency"  # Crear FOMO / escasez
+    ACQUISITION = "acquisition"  # Atraer clientes / generar leads
+    CONVERSION = "conversion"  # Que paguen / cerrar la venta
+    RETENTION = "retention"  # Fidelizarlos
+    EXPANSION = "expansion"  # Upsell, cross-sell, referidos
 
 
 @dataclass
 class FunnelSpecialist:
     """A specialist agent for one funnel stage."""
+
     stage: FunnelStage
     name: str
     mission: str
-    core_tactics: List[str]
-    business_type_adaptations: Dict[BusinessType, str]
-    example_openers: Dict[BusinessType, str]
-    success_metrics: List[str]
+    core_tactics: list[str]
+    business_type_adaptations: dict[BusinessType, str]
+    example_openers: dict[BusinessType, str]
+    success_metrics: list[str]
     handoff_signal: str  # What tells the orchestrator to move to the next stage
 
     def build_system_prompt(self, business_type: BusinessType) -> str:
@@ -54,7 +55,7 @@ class FunnelSpecialist:
         )
 
 
-FUNNEL_SPECIALISTS: Dict[FunnelStage, FunnelSpecialist] = {
+FUNNEL_SPECIALISTS: dict[FunnelStage, FunnelSpecialist] = {
     FunnelStage.AWARENESS: FunnelSpecialist(
         stage=FunnelStage.AWARENESS,
         name="Creador de Necesidad",
@@ -249,7 +250,7 @@ FUNNEL_SPECIALISTS: Dict[FunnelStage, FunnelSpecialist] = {
 # the voice system actually wired into compose_system_prompt()/voice_slug in
 # the live ai_reply.py pipeline — not the standalone app/core/prompts/expert_voices/
 # package. First slug in each list is the primary/default recommendation.
-FUNNEL_STAGE_VOICE_SLUGS: Dict[FunnelStage, List[str]] = {
+FUNNEL_STAGE_VOICE_SLUGS: dict[FunnelStage, list[str]] = {
     FunnelStage.AWARENESS: ["brian-tracy", "seth-godin", "simon-sinek"],
     FunnelStage.URGENCY: ["jordan-belfort", "grant-cardone", "robert-cialdini"],
     FunnelStage.ACQUISITION: ["russell-brunson", "dan-kennedy", "gary-vee"],
@@ -259,7 +260,7 @@ FUNNEL_STAGE_VOICE_SLUGS: Dict[FunnelStage, List[str]] = {
 }
 
 
-def get_recommended_voice_slugs(stage: FunnelStage) -> List[str]:
+def get_recommended_voice_slugs(stage: FunnelStage) -> list[str]:
     """All recommended expert-voice slugs for a stage, primary first."""
     return FUNNEL_STAGE_VOICE_SLUGS.get(stage, [])
 
@@ -280,7 +281,7 @@ def get_adapted_prompt(stage: FunnelStage, business_type: BusinessType) -> str:
     return FUNNEL_SPECIALISTS[stage].build_system_prompt(business_type)
 
 
-def get_funnel_order() -> List[FunnelStage]:
+def get_funnel_order() -> list[FunnelStage]:
     """Canonical funnel progression order."""
     return [
         FunnelStage.AWARENESS,
@@ -294,7 +295,7 @@ def get_funnel_order() -> List[FunnelStage]:
 
 # Flat registry entries for indexing/search within PromptRegistry (matches the
 # lightweight-dict pattern used by expert_voices_prompts.py's EXPERT_PROMPTS).
-FUNNEL_SPECIALIST_PROMPTS: Dict[str, dict] = {
+FUNNEL_SPECIALIST_PROMPTS: dict[str, dict] = {
     f"funnel_{stage.value}": {
         "expert": specialist.name,
         "voice": f"Funnel Stage: {stage.value}",
@@ -313,15 +314,15 @@ def load_funnel_specialist_prompts() -> dict:
 
 
 __all__ = [
-    "FunnelStage",
-    "FunnelSpecialist",
     "FUNNEL_SPECIALISTS",
     "FUNNEL_SPECIALIST_PROMPTS",
     "FUNNEL_STAGE_VOICE_SLUGS",
-    "get_specialist",
+    "FunnelSpecialist",
+    "FunnelStage",
     "get_adapted_prompt",
     "get_funnel_order",
     "get_recommended_voice_slug",
     "get_recommended_voice_slugs",
+    "get_specialist",
     "load_funnel_specialist_prompts",
 ]

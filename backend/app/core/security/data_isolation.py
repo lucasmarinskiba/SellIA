@@ -6,12 +6,12 @@ Ensures:
 - No cross-tenant data leakage
 """
 
-from typing import Optional, Any, Type, TypeVar, List
-from sqlalchemy import and_
-from sqlalchemy.orm import Session, Query
-from fastapi import Depends, HTTPException, status
-from functools import wraps
 import logging
+from functools import wraps
+from typing import Any, TypeVar
+
+from fastapi import HTTPException, status
+from sqlalchemy.orm import Query, Session
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +21,6 @@ T = TypeVar("T")
 class DataIsolationError(Exception):
     """Raised when data isolation is violated."""
 
-    pass
-
 
 class DataIsolationService:
     """Service for enforcing row-level security (RLS)."""
@@ -30,7 +28,7 @@ class DataIsolationService:
     @staticmethod
     def enforce_seller_id(
         query: Query[T],
-        model: Type[T],
+        model: type[T],
         seller_id: str,
     ) -> Query[T]:
         """
@@ -71,16 +69,16 @@ class DataIsolationService:
                 f"(seller_id={obj.seller_id}) by user with seller_id={seller_id}"
             )
             raise DataIsolationError(
-                f"Access denied: This data belongs to a different account"
+                "Access denied: This data belongs to a different account"
             )
 
         return True
 
     @staticmethod
     def filter_list(
-        items: List[T],
+        items: list[T],
         seller_id: str,
-    ) -> List[T]:
+    ) -> list[T]:
         """Filter list of items by seller_id."""
         result = []
         for item in items:
@@ -99,7 +97,7 @@ class IsolatedQuery:
         self.db = db
         self.seller_id = seller_id
 
-    def query(self, model: Type[T]) -> Query[T]:
+    def query(self, model: type[T]) -> Query[T]:
         """Create isolated query."""
         query = self.db.query(model)
         return DataIsolationService.enforce_seller_id(query, model, self.seller_id)
@@ -116,7 +114,7 @@ def require_seller_context(func):
     """
 
     @wraps(func)
-    async def wrapper(*args, seller_id: Optional[str] = None, **kwargs):
+    async def wrapper(*args, seller_id: str | None = None, **kwargs):
         if not seller_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -161,6 +159,7 @@ async def get_seller_context(
 
 # Data isolation middleware for automatic enforcement
 
+
 class DataIsolationMiddleware:
     """Middleware to attach seller_context to request."""
 
@@ -180,13 +179,14 @@ class DataIsolationMiddleware:
 
 # Audit log for data access violations
 
+
 async def log_isolation_violation(
     seller_id: str,
     user_id: str,
     attempted_seller_id: str,
     resource_type: str,
     resource_id: str,
-    ip_address: Optional[str] = None,
+    ip_address: str | None = None,
 ) -> None:
     """Log data isolation violation for security audit."""
     logger.critical(

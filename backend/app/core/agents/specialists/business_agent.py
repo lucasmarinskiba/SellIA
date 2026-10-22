@@ -9,16 +9,16 @@ Specialties:
 """
 
 import logging
-from typing import Dict, List, Any, Optional
-from enum import Enum
-from datetime import datetime
 from dataclasses import dataclass
+from enum import Enum
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
 
 class RevenueModel(str, Enum):
     """Revenue stream types."""
+
     SUBSCRIPTION = "subscription"
     USAGE_BASED = "usage_based"
     TRANSACTION_FEE = "transaction_fee"
@@ -32,6 +32,7 @@ class RevenueModel(str, Enum):
 
 class CostType(str, Enum):
     """Cost categories."""
+
     COGS = "cogs"  # Cost of goods sold
     PAYROLL = "payroll"
     INFRASTRUCTURE = "infrastructure"
@@ -45,6 +46,7 @@ class CostType(str, Enum):
 @dataclass
 class UnitEconomics:
     """Unit economics definition."""
+
     arpu: float  # Average Revenue Per User
     cac: float  # Customer Acquisition Cost
     payback_period_months: float
@@ -58,7 +60,7 @@ class UnitEconomics:
 class BusinessAgent:
     """Expert in business model design and scaling."""
 
-    REVENUE_MODELS = {
+    REVENUE_MODELS: ClassVar[dict] = {
         RevenueModel.SUBSCRIPTION: {
             "name": "Subscription",
             "description": "Recurring revenue from customers paying regularly",
@@ -121,7 +123,11 @@ class BusinessAgent:
                 "Support costs for free users",
                 "Defining free vs. paid",
             ],
-            "metrics": ["Free to paid conversion rate", "Payback period", "Expansion revenue"],
+            "metrics": [
+                "Free to paid conversion rate",
+                "Payback period",
+                "Expansion revenue",
+            ],
         },
         RevenueModel.MARKETPLACE: {
             "name": "Marketplace",
@@ -147,7 +153,7 @@ class BusinessAgent:
         },
     }
 
-    FINANCIAL_METRICS = {
+    FINANCIAL_METRICS: ClassVar[dict] = {
         "gross_margin": {
             "definition": "(Revenue - COGS) / Revenue",
             "benchmarks": {
@@ -176,7 +182,7 @@ class BusinessAgent:
         },
     }
 
-    CAC_LTV_FRAMEWORK = {
+    CAC_LTV_FRAMEWORK: ClassVar[dict] = {
         "customer_acquisition_cost": {
             "definition": "Total sales & marketing spend / New customers",
             "calculation_steps": [
@@ -221,7 +227,7 @@ class BusinessAgent:
         },
     }
 
-    SCALING_PRINCIPLES = {
+    SCALING_PRINCIPLES: ClassVar[dict] = {
         "unit_economics_first": {
             "principle": "Ensure positive unit economics before scaling",
             "checklist": [
@@ -259,7 +265,7 @@ class BusinessAgent:
         },
     }
 
-    COMPETITIVE_POSITIONING = {
+    COMPETITIVE_POSITIONING: ClassVar[dict] = {
         "analysis_framework": {
             "direct_competitors": "Same solution, same market",
             "indirect_competitors": "Different solution, same job to be done",
@@ -280,7 +286,7 @@ class BusinessAgent:
         cac: float,
         gross_margin: float,
         avg_customer_lifetime_months: int,
-        retention_rate: float
+        retention_rate: float,
     ) -> UnitEconomics:
         """Calculate key unit economics metrics."""
         # LTV calculation
@@ -308,10 +314,8 @@ class BusinessAgent:
 
     @staticmethod
     def assess_scaling_readiness(
-        unit_economics: UnitEconomics,
-        runway_months: int,
-        team_size: int
-    ) -> Dict[str, Any]:
+        unit_economics: UnitEconomics, runway_months: int, team_size: int
+    ) -> dict[str, Any]:
         """Assess readiness to scale."""
         readiness = {
             "ready_to_scale": True,
@@ -327,7 +331,9 @@ class BusinessAgent:
             readiness["strengths"].append("Strong unit economics (LTV:CAC > 3:1)")
         elif unit_economics.ltv_to_cac_ratio >= 1:
             readiness["score"] += 15
-            readiness["concerns"].append(f"Unit economics weak (LTV:CAC = {unit_economics.ltv_to_cac_ratio:.1f}:1)")
+            readiness["concerns"].append(
+                f"Unit economics weak (LTV:CAC = {unit_economics.ltv_to_cac_ratio:.1f}:1)"
+            )
         else:
             readiness["ready_to_scale"] = False
             readiness["concerns"].append("Unit economics negative - fix before scaling")
@@ -335,16 +341,22 @@ class BusinessAgent:
         # Payback period
         if unit_economics.payback_period_months <= 12:
             readiness["score"] += 30
-            readiness["strengths"].append(f"Quick payback ({unit_economics.payback_period_months:.0f} months)")
+            readiness["strengths"].append(
+                f"Quick payback ({unit_economics.payback_period_months:.0f} months)"
+            )
         else:
-            readiness["concerns"].append(f"Long payback period ({unit_economics.payback_period_months:.0f} months)")
+            readiness["concerns"].append(
+                f"Long payback period ({unit_economics.payback_period_months:.0f} months)"
+            )
 
         # Retention
         if unit_economics.retention_rate >= 0.90:
             readiness["score"] += 20
             readiness["strengths"].append("Good retention (90%+)")
         else:
-            readiness["concerns"].append(f"Churn concerns ({unit_economics.churn_rate*100:.0f}% monthly)")
+            readiness["concerns"].append(
+                f"Churn concerns ({unit_economics.churn_rate*100:.0f}% monthly)"
+            )
 
         # Runway
         if runway_months >= 18:
@@ -360,10 +372,8 @@ class BusinessAgent:
 
     @staticmethod
     def design_business_model(
-        business_type: str,
-        target_market: str,
-        competitive_positioning: str
-    ) -> Dict[str, Any]:
+        business_type: str, target_market: str, competitive_positioning: str
+    ) -> dict[str, Any]:
         """Design complete business model."""
         return {
             "business_type": business_type,
@@ -389,10 +399,10 @@ class BusinessAgent:
 
     @staticmethod
     def model_financial_scenarios(
-        base_case: Dict[str, Any],
-        optimistic_case: Dict[str, Any],
-        pessimistic_case: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        base_case: dict[str, Any],
+        optimistic_case: dict[str, Any],
+        pessimistic_case: dict[str, Any],
+    ) -> dict[str, Any]:
         """Model financial scenarios."""
         return {
             "base_case": base_case,
@@ -409,10 +419,8 @@ class BusinessAgent:
 
     @staticmethod
     def analyze_competitive_position(
-        company_positioning: str,
-        competitors: List[str],
-        market_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        company_positioning: str, competitors: list[str], market_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Analyze competitive positioning."""
         return {
             "positioning": company_positioning,
@@ -435,10 +443,8 @@ class BusinessAgent:
 
     @staticmethod
     def forecast_growth(
-        current_revenue: float,
-        growth_rate_percent: float,
-        timeline_years: int
-    ) -> Dict[str, Any]:
+        current_revenue: float, growth_rate_percent: float, timeline_years: int
+    ) -> dict[str, Any]:
         """Forecast revenue growth."""
         forecast = {
             "current_revenue": current_revenue,
@@ -460,7 +466,7 @@ class BusinessAgent:
         return forecast
 
     @staticmethod
-    def get_revenue_model_guidance(business_type: str) -> Dict[str, Any]:
+    def get_revenue_model_guidance(business_type: str) -> dict[str, Any]:
         """Get revenue model recommendations."""
         recommendations = {
             "business_type": business_type,
@@ -473,10 +479,8 @@ class BusinessAgent:
 
     @staticmethod
     def optimize_pricing(
-        current_price: float,
-        elasticity: float,
-        cost_to_serve: float
-    ) -> Dict[str, Any]:
+        current_price: float, elasticity: float, cost_to_serve: float
+    ) -> dict[str, Any]:
         """Optimize pricing strategy."""
         return {
             "current_price": current_price,
@@ -493,14 +497,11 @@ class BusinessAgent:
 
     @staticmethod
     def calculate_payback_period(
-        cac: float,
-        arpu: float,
-        gross_margin: float,
-        monthly_churn: float = 0.05
+        cac: float, arpu: float, gross_margin: float, monthly_churn: float = 0.05
     ) -> float:
         """Calculate customer acquisition payback period."""
         if arpu * gross_margin == 0:
-            return float('inf')
+            return float("inf")
 
         monthly_profit = arpu * gross_margin
         payback_months = 0

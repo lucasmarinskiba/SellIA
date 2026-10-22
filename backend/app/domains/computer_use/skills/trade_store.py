@@ -17,15 +17,14 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from typing import List, Optional
 
 from redis.exceptions import RedisError
 
 from app.core.logger import get_logger
 from app.domains.computer_use.skills.trade_signals import (
-    TradeProposal,
-    ProposalStatus,
     DEFAULT_PRESENCE_WINDOW_SEC,
+    ProposalStatus,
+    TradeProposal,
 )
 
 logger = get_logger(__name__)
@@ -86,7 +85,7 @@ class RedisCopyTradeStore:
             return {"accepted": False, "reason": _UNAVAILABLE}
         return {"accepted": True, "proposal": proposal.to_dict()}
 
-    async def _load(self, user_id: str, proposal_id: str) -> Optional[TradeProposal]:
+    async def _load(self, user_id: str, proposal_id: str) -> TradeProposal | None:
         raw = await self.redis.hget(_proposals_key(user_id), proposal_id)
         if raw is None:
             return None
@@ -99,12 +98,12 @@ class RedisCopyTradeStore:
         # crecimiento ilimitado si el usuario abandona propuestas terminales.
         await self.redis.expire(key, PROPOSALS_KEY_TTL_SEC)
 
-    async def pending(self, user_id: str, now: Optional[datetime] = None) -> List[dict]:
+    async def pending(self, user_id: str, now: datetime | None = None) -> list[dict]:
         if not await self.is_active(user_id):
             return []
         try:
             raw = await self.redis.hgetall(_proposals_key(user_id))
-            out: List[dict] = []
+            out: list[dict] = []
             for pid, payload in (raw or {}).items():
                 p = TradeProposal.from_state(json.loads(payload))
                 if p.status == ProposalStatus.PENDING and p.is_expired(now):
@@ -118,29 +117,43 @@ class RedisCopyTradeStore:
             logger.error(f"copy-trade pending redis error: {e}")
             return []
 
-    async def approve(self, user_id: str, proposal_id: str, now: Optional[datetime] = None) -> dict:
+    async def approve(
+        self, user_id: str, proposal_id: str, now: datetime | None = None
+    ) -> dict:
         try:
             p = await self._load(user_id, proposal_id)
             if p is None:
                 return {"ok": False, "reason": "Propuesta no encontrada."}
             if not await self.is_active(user_id):
-                return {"ok": False, "reason": "Usuario inactivo: no se puede aprobar sin presencia."}
+                return {
+                    "ok": False,
+                    "reason": "Usuario inactivo: no se puede aprobar sin presencia.",
+                }
             if p.is_expired(now):
                 p.status = ProposalStatus.EXPIRED
                 await self._save(user_id, p)
-                return {"ok": False, "reason": "Propuesta expirada; el mercado se movió."}
+                return {
+                    "ok": False,
+                    "reason": "Propuesta expirada; el mercado se movió.",
+                }
             if p.status != ProposalStatus.PENDING:
                 return {"ok": False, "reason": f"Propuesta ya {p.status.value}."}
             p.status = ProposalStatus.APPROVED
             p.decided_at = now or datetime.now(p.created_at.tzinfo)
             await self._save(user_id, p)
             # Invariante: NO se ejecuta la orden. Se devuelve el handoff al usuario.
-            return {"ok": True, "status": p.status.value, "handoff": p.execution_handoff()}
+            return {
+                "ok": True,
+                "status": p.status.value,
+                "handoff": p.execution_handoff(),
+            }
         except RedisError as e:
             logger.error(f"copy-trade approve redis error: {e}")
             return {"ok": False, "reason": _UNAVAILABLE}
 
-    async def reject(self, user_id: str, proposal_id: str, now: Optional[datetime] = None) -> dict:
+    async def reject(
+        self, user_id: str, proposal_id: str, now: datetime | None = None
+    ) -> dict:
         try:
             p = await self._load(user_id, proposal_id)
             if p is None:
@@ -155,7 +168,7 @@ class RedisCopyTradeStore:
             logger.error(f"copy-trade reject redis error: {e}")
             return {"ok": False, "reason": _UNAVAILABLE}
 
-    async def get(self, user_id: str, proposal_id: str) -> Optional[dict]:
+    async def get(self, user_id: str, proposal_id: str) -> dict | None:
         try:
             p = await self._load(user_id, proposal_id)
             return p.to_dict() if p else None

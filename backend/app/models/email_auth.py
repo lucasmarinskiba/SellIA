@@ -1,9 +1,21 @@
 """Email verification & account approval models."""
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from uuid import uuid4
-from sqlalchemy import Column, String, DateTime, Boolean, Integer, ForeignKey, Text, Index
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.dialects.postgresql import UUID
+
+from app.core.clock import utc_now
 from app.core.database import Base
 
 
@@ -13,12 +25,16 @@ class EmailVerificationToken(Base):
     __tablename__ = "email_verification_tokens"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    user_id = Column(UUID(as_uuid=False), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)  # str in Python, uuid in the DB (users.id)
+    user_id = Column(
+        UUID(as_uuid=False), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )  # str in Python, uuid in the DB (users.id)
     email = Column(String(255), nullable=False)
     token = Column(String(255), unique=True, nullable=False)
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    expires_at = Column(DateTime, default=lambda: datetime.utcnow() + timedelta(hours=24), nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+    expires_at = Column(
+        DateTime, default=lambda: utc_now() + timedelta(hours=24), nullable=False
+    )
     verified_at = Column(DateTime)
 
     is_verified = Column(Boolean, default=False)
@@ -37,17 +53,21 @@ class AccountApproval(Base):
     __tablename__ = "account_approvals"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    user_id = Column(UUID(as_uuid=False), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)  # str in Python, uuid in the DB (users.id)
+    user_id = Column(
+        UUID(as_uuid=False), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )  # str in Python, uuid in the DB (users.id)
 
     email = Column(String(255), nullable=False)
     full_name = Column(String(255), nullable=False)
     company = Column(String(255))
     role = Column(String(255))
 
-    requested_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    requested_at = Column(DateTime, default=utc_now, nullable=False)
     requested_by = Column(String(255))  # Usually the user themselves
 
-    approval_status = Column(String(50), default="pending", nullable=False)  # pending, approved, rejected
+    approval_status = Column(
+        String(50), default="pending", nullable=False
+    )  # pending, approved, rejected
     approved_by = Column(String(255))  # Admin who approved
     approved_at = Column(DateTime)
 
@@ -70,17 +90,21 @@ class ApprovalAuditLog(Base):
     __tablename__ = "approval_audit_log"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    approval_id = Column(UUID(as_uuid=True), ForeignKey("account_approvals.id", ondelete="CASCADE"), nullable=False)
+    approval_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("account_approvals.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
-    action = Column(String(50), nullable=False)  # requested, approved, rejected, escalated
+    action = Column(
+        String(50), nullable=False
+    )  # requested, approved, rejected, escalated
     actor_id = Column(String(255))  # Who took action
     notes = Column(Text)
 
-    action_timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    action_timestamp = Column(DateTime, default=utc_now, nullable=False)
 
-    __table_args__ = (
-        Index("idx_audit_approval", "approval_id"),
-    )
+    __table_args__ = (Index("idx_audit_approval", "approval_id"),)
 
 
 class EmailTemplate(Base):
@@ -97,9 +121,7 @@ class EmailTemplate(Base):
     subject = Column(String(255), nullable=False)
     body = Column(Text, nullable=False)  # HTML template with {{placeholders}}
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
-    __table_args__ = (
-        Index("idx_auth_email_templates_name", "template_name"),
-    )
+    __table_args__ = (Index("idx_auth_email_templates_name", "template_name"),)

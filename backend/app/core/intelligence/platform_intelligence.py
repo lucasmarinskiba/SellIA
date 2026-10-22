@@ -13,8 +13,8 @@ Cada plataforma: comisiones, límites, audiencia, API, shipping, conversion rate
 """
 
 import logging
-from typing import Dict, Any
 from dataclasses import dataclass
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class Platform:
 class PlatformIntelligence:
     """Motor de inteligencia de plataformas."""
 
-    PLATFORMS = {
+    PLATFORMS: ClassVar[dict] = {
         "mercado_libre": Platform(
             name="Mercado Libre",
             commission_rate=0.10,
@@ -95,7 +95,7 @@ class PlatformIntelligence:
         product_name: str,
         price: float,
         product_type: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Recomienda mejores plataformas para producto."""
 
         logger.info(f"Analyzing {product_name}")
@@ -107,9 +107,12 @@ class PlatformIntelligence:
             if platform.min_order <= price <= platform.max_order:
                 score += 20
 
-            if product_type == "digital" and "digital" in platform.best_for.lower():
-                score += 30
-            elif product_type == "physical" and ("LatAm" in platform.best_for or "global" in platform.best_for):
+            if (
+                product_type == "digital"
+                and "digital" in platform.best_for.lower()
+                or product_type == "physical"
+                and ("LatAm" in platform.best_for or "global" in platform.best_for)
+            ):
                 score += 30
 
             if platform.commission_rate < 0.15:

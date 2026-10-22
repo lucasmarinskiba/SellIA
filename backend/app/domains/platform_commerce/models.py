@@ -15,7 +15,7 @@ missing.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import Boolean, Column, DateTime, Numeric, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
@@ -32,7 +32,9 @@ class PlatformSettings(Base):
 
     __tablename__ = "platform_settings"
     __table_args__ = (
-        UniqueConstraint("business_id", "platform", name="uq_platform_settings_business_platform"),
+        UniqueConstraint(
+            "business_id", "platform", name="uq_platform_settings_business_platform"
+        ),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -55,11 +57,11 @@ class PlatformSettings(Base):
     currency = Column(String(3), nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     updated_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
 

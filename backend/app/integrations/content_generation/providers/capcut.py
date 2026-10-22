@@ -4,10 +4,14 @@ Pricing: Free tier available
 Strengths: Auto-captions, effects, viral templates, mobile-first
 """
 
-from typing import Dict, Any
+import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
+
+from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -17,7 +21,7 @@ class CapCutProvider(BaseProvider):
 
     name = "CapCut AI"
     slug = "capcut"
-    supports = [ContentType.VIDEO]
+    supports: ClassVar[list] = [ContentType.VIDEO]
 
     @property
     def is_available(self) -> bool:
@@ -26,12 +30,14 @@ class CapCutProvider(BaseProvider):
     def estimate_cost(self, config: GenerationConfig) -> float:
         return 0.0
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {"capcut-edit": 0.0}
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         if not self.is_available:
-            return GenerationResult(success=False, error_message="CAPCUT_API_KEY no configurada")
+            return GenerationResult(
+                success=False, error_message="CAPCUT_API_KEY no configurada"
+            )
 
         try:
             import aiohttp
@@ -46,17 +52,22 @@ class CapCutProvider(BaseProvider):
                 "media_urls": config.extra_params.get("media_urls", []),
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    "https://api.capcut.com/v1/edits",
-                    headers=headers,
-                    json=payload,
-                ) as resp:
-                    data = await resp.json()
+            async with aiohttp.ClientSession() as session, session.post(
+                "https://api.capcut.com/v1/edits",
+                headers=headers,
+                json=payload,
+            ) as resp:
+                data = await resp.json()
 
-            video_url = data.get("video", {}).get("url") if isinstance(data.get("video"), dict) else data.get("url")
+            video_url = (
+                data.get("video", {}).get("url")
+                if isinstance(data.get("video"), dict)
+                else data.get("url")
+            )
             if not video_url:
-                return GenerationResult(success=False, error_message="CapCut no devolvió video")
+                return GenerationResult(
+                    success=False, error_message="CapCut no devolvió video"
+                )
 
             return GenerationResult(
                 success=True,
@@ -69,4 +80,5 @@ class CapCutProvider(BaseProvider):
             )
 
         except Exception as e:
+            logger.exception("generate: error inesperado")
             return GenerationResult(success=False, error_message=str(e))

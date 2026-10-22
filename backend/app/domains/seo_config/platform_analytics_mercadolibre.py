@@ -1,7 +1,8 @@
 """Mercado Libre analytics connector."""
 
+from datetime import date
 from typing import Any
-from datetime import date, datetime, timedelta
+
 import httpx
 
 from app.core.logger import get_logger
@@ -35,8 +36,8 @@ class MercadoLibreAnalytics(PlatformAnalyticsConnector):
                     timeout=10,
                 )
                 return resp.status_code == 200
-        except Exception as e:
-            logger.error(f"MercadoLibre analytics credentials validation failed: {str(e)[:100]}")
+        except Exception:
+            logger.exception("MercadoLibre analytics credentials validation failed")
             return False
 
     async def get_listing_metrics(
@@ -148,7 +149,7 @@ class MercadoLibreAnalytics(PlatformAnalyticsConnector):
 
         except Exception as e:
             error_msg = str(e)[:200]
-            logger.error(f"MercadoLibre analytics fetch failed: {error_msg}")
+            logger.exception(f"MercadoLibre analytics fetch failed: {error_msg}")
             return {
                 "impressions": impressions,
                 "clicks": clicks,

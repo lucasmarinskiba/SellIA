@@ -13,10 +13,11 @@ Sistema:
 """
 
 import logging
+from typing import Any
+
 import httpx
-from typing import Dict, List, Any, Optional
-from datetime import datetime
-import base64
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -26,10 +27,10 @@ class ShippingAutomation:
 
     def __init__(
         self,
-        dhl_api_key: Optional[str] = None,
-        dhl_account: Optional[str] = None,
-        fedex_api_key: Optional[str] = None,
-        fedex_account: Optional[str] = None,
+        dhl_api_key: str | None = None,
+        dhl_account: str | None = None,
+        fedex_api_key: str | None = None,
+        fedex_account: str | None = None,
     ):
         self.dhl_api_key = dhl_api_key
         self.dhl_account = dhl_account
@@ -42,11 +43,11 @@ class ShippingAutomation:
     async def generate_shipping_label(
         self,
         order_id: str,
-        recipient: Dict[str, str],  # {name, address, city, state, zip, country}
-        sender: Dict[str, str],
-        package: Dict[str, Any],  # {weight_kg, dimensions, contents}
+        recipient: dict[str, str],  # {name, address, city, state, zip, country}
+        sender: dict[str, str],
+        package: dict[str, Any],  # {weight_kg, dimensions, contents}
         carrier: str = "dhl",  # "dhl" or "fedex"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Genera shipping label automáticamente.
 
@@ -61,17 +62,19 @@ class ShippingAutomation:
         if carrier.lower() == "dhl":
             return await self._generate_dhl_label(order_id, recipient, sender, package)
         elif carrier.lower() == "fedex":
-            return await self._generate_fedex_label(order_id, recipient, sender, package)
+            return await self._generate_fedex_label(
+                order_id, recipient, sender, package
+            )
         else:
             return {"status": "error", "error": f"Carrier {carrier} not supported"}
 
     async def _generate_dhl_label(
         self,
         order_id: str,
-        recipient: Dict[str, str],
-        sender: Dict[str, str],
-        package: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        recipient: dict[str, str],
+        sender: dict[str, str],
+        package: dict[str, Any],
+    ) -> dict[str, Any]:
         """Genera label DHL."""
 
         logger.info(f"Generating DHL label for {order_id}")
@@ -80,7 +83,7 @@ class ShippingAutomation:
             payload = {
                 "shipments": [
                     {
-                        "plannedShippingDateAndTime": datetime.utcnow().isoformat(),
+                        "plannedShippingDateAndTime": utc_now().isoformat(),
                         "pickup": {
                             "isRequested": False,
                         },
@@ -143,13 +146,19 @@ class ShippingAutomation:
                 data = response.json()
                 shipment = data.get("shipments", [{}])[0]
 
-                logger.info(f"DHL label generated: {shipment.get('shipmentTrackingNumber')}")
+                logger.info(
+                    f"DHL label generated: {shipment.get('shipmentTrackingNumber')}"
+                )
 
                 return {
                     "status": "success",
                     "carrier": "DHL",
                     "tracking_number": shipment.get("shipmentTrackingNumber"),
-                    "label_url": shipment.get("documents", [{}])[0].get("content") if shipment.get("documents") else None,
+                    "label_url": (
+                        shipment.get("documents", [{}])[0].get("content")
+                        if shipment.get("documents")
+                        else None
+                    ),
                     "label_format": "PDF",
                 }
             else:
@@ -157,16 +166,16 @@ class ShippingAutomation:
                 return {"status": "error", "error": response.text}
 
         except Exception as e:
-            logger.error(f"DHL label generation failed: {str(e)}")
+            logger.exception("DHL label generation failed")
             return {"status": "error", "error": str(e)}
 
     async def _generate_fedex_label(
         self,
         order_id: str,
-        recipient: Dict[str, str],
-        sender: Dict[str, str],
-        package: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        recipient: dict[str, str],
+        sender: dict[str, str],
+        package: dict[str, Any],
+    ) -> dict[str, Any]:
         """Genera label FedEx."""
 
         logger.info(f"Generating FedEx label for {order_id}")
@@ -205,7 +214,7 @@ class ShippingAutomation:
                             },
                         }
                     ],
-                    "shipDatestamp": datetime.utcnow().strftime("%Y-%m-%d"),
+                    "shipDatestamp": utc_now().strftime("%Y-%m-%d"),
                     "serviceType": "INTERNATIONAL_PRIORITY",
                     "packages": [
                         {
@@ -231,13 +240,18 @@ class ShippingAutomation:
             if response.status_code in [200, 201]:
                 data = response.json()
 
-                logger.info(f"FedEx label generated")
+                logger.info("FedEx label generated")
 
                 return {
                     "status": "success",
                     "carrier": "FedEx",
-                    "tracking_number": data.get("shipmentDetails", [{}])[0].get("trackingIds", [{}])[0].get("trackingNumber", ""),
-                    "label_url": data.get("output", {}).get("transactionShipments", [{}])[0].get("shipmentDocuments", [{}])[0].get("url", ""),
+                    "tracking_number": data.get("shipmentDetails", [{}])[0]
+                    .get("trackingIds", [{}])[0]
+                    .get("trackingNumber", ""),
+                    "label_url": data.get("output", {})
+                    .get("transactionShipments", [{}])[0]
+                    .get("shipmentDocuments", [{}])[0]
+                    .get("url", ""),
                     "label_format": "PDF",
                 }
             else:
@@ -245,7 +259,7 @@ class ShippingAutomation:
                 return {"status": "error", "error": response.text}
 
         except Exception as e:
-            logger.error(f"FedEx label generation failed: {str(e)}")
+            logger.exception("FedEx label generation failed")
             return {"status": "error", "error": str(e)}
 
     # ========== TRACKING ==========
@@ -254,7 +268,7 @@ class ShippingAutomation:
         self,
         tracking_number: str,
         carrier: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Obtiene status de envío."""
 
         logger.info(f"Tracking {carrier} {tracking_number}")
@@ -266,7 +280,7 @@ class ShippingAutomation:
         else:
             return {"status": "error"}
 
-    async def _track_dhl(self, tracking_number: str) -> Dict[str, Any]:
+    async def _track_dhl(self, tracking_number: str) -> dict[str, Any]:
         """Track DHL shipment."""
 
         try:
@@ -290,11 +304,11 @@ class ShippingAutomation:
             else:
                 return {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"DHL tracking failed: {str(e)}")
+        except Exception:
+            logger.exception("DHL tracking failed")
             return {"status": "error"}
 
-    async def _track_fedex(self, tracking_number: str) -> Dict[str, Any]:
+    async def _track_fedex(self, tracking_number: str) -> dict[str, Any]:
         """Track FedEx shipment."""
 
         try:
@@ -333,8 +347,8 @@ class ShippingAutomation:
             else:
                 return {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"FedEx tracking failed: {str(e)}")
+        except Exception:
+            logger.exception("FedEx tracking failed")
             return {"status": "error"}
 
     async def close(self):

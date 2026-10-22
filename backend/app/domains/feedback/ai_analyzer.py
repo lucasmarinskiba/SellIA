@@ -8,25 +8,65 @@ Analiza feedback de usuarios con LLM para:
 - Asignar plan objetivo según complejidad
 """
 
-import uuid
 import json
-from typing import Optional, Tuple
+import logging
+import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.feedback.models import FeedbackType, FeedbackSeverity, UserFeedback
-from app.domains.feedback.service import FeedbackService
 from app.domains.agents.ai_reply import generate_raw_ai_response
+from app.domains.feedback.models import FeedbackSeverity, FeedbackType, UserFeedback
+from app.domains.feedback.service import FeedbackService
 
+logger = logging.getLogger(__name__)
 
 # Keywords para clasificación rápida sin LLM
-BUG_KEYWORDS = ["bug", "error", "falla", "crashea", "no funciona", "broken", "se rompe", "problema"]
-IDEA_KEYWORDS = ["sugerencia", "sería bueno", "me gustaría", "feature", "funcionalidad", "agregar", "falta"]
-COMPLAINT_KEYWORDS = ["malo", "pesimo", "terrible", "odia", "frustrante", "inútil", "decepcionado"]
-PRAISE_KEYWORDS = ["excelente", "genial", "me encanta", "perfecto", "buenísimo", "increíble"]
+BUG_KEYWORDS = [
+    "bug",
+    "error",
+    "falla",
+    "crashea",
+    "no funciona",
+    "broken",
+    "se rompe",
+    "problema",
+]
+IDEA_KEYWORDS = [
+    "sugerencia",
+    "sería bueno",
+    "me gustaría",
+    "feature",
+    "funcionalidad",
+    "agregar",
+    "falta",
+]
+COMPLAINT_KEYWORDS = [
+    "malo",
+    "pesimo",
+    "terrible",
+    "odia",
+    "frustrante",
+    "inútil",
+    "decepcionado",
+]
+PRAISE_KEYWORDS = [
+    "excelente",
+    "genial",
+    "me encanta",
+    "perfecto",
+    "buenísimo",
+    "increíble",
+]
 
 SEVERITY_KEYWORDS = {
-    "critical": ["seguridad", "hackeado", "robo", "pérdida de datos", "caído", "no puedo acceder"],
+    "critical": [
+        "seguridad",
+        "hackeado",
+        "robo",
+        "pérdida de datos",
+        "caído",
+        "no puedo acceder",
+    ],
     "high": ["lento", "timeout", "falla constantemente", "bloquea"],
     "low": ["diseño", "color", "tipografía", "margen", "alineación"],
 }
@@ -37,7 +77,7 @@ async def analyze_feedback(
     business_id: uuid.UUID,
     title: str,
     description: str,
-) -> Tuple[FeedbackType, str, FeedbackSeverity, str, str, float, Optional[uuid.UUID]]:
+) -> tuple[FeedbackType, str, FeedbackSeverity, str, str, float, uuid.UUID | None]:
     """
     Analiza feedback con LLM.
 
@@ -56,7 +96,15 @@ async def analyze_feedback(
     duplicate_id = _detect_duplicate(title, description, existing)
 
     if duplicate_id:
-        return feedback_type, "general", severity, "Detectado como duplicado.", "", 0.3, duplicate_id
+        return (
+            feedback_type,
+            "general",
+            severity,
+            "Detectado como duplicado.",
+            "",
+            0.3,
+            duplicate_id,
+        )
 
     # 3. LLM deep analysis
     system_prompt = """You are a Product Feedback Analysis AI. Analyze user feedback and respond with ONLY a JSON object:
@@ -111,6 +159,7 @@ Analyze this feedback:"""
             None,
         )
     except Exception:
+        logger.exception("analyze_feedback: error inesperado")
         return feedback_type, "general", severity, "", "", 0.5, None
 
 
@@ -121,7 +170,9 @@ def _keyword_classify_type(content: str) -> FeedbackType:
         FeedbackType.COMPLAINT: sum(1 for kw in COMPLAINT_KEYWORDS if kw in content),
         FeedbackType.PRAISE: sum(1 for kw in PRAISE_KEYWORDS if kw in content),
     }
-    return max(scores, key=scores.get) if max(scores.values()) > 0 else FeedbackType.OTHER
+    return (
+        max(scores, key=scores.get) if max(scores.values()) > 0 else FeedbackType.OTHER
+    )
 
 
 def _keyword_classify_severity(content: str) -> FeedbackSeverity:
@@ -131,15 +182,20 @@ def _keyword_classify_severity(content: str) -> FeedbackSeverity:
     return FeedbackSeverity.MEDIUM
 
 
-def _detect_duplicate(title: str, description: str, existing: list[UserFeedback]) -> Optional[uuid.UUID]:
+def _detect_duplicate(
+    title: str, description: str, existing: list[UserFeedback]
+) -> uuid.UUID | None:
     """Detecta duplicados por similitud de palabras clave."""
     import re
+
     new_words = set(re.findall(r"\b\w{4,}\b", f"{title} {description}".lower()))
     if not new_words:
         return None
 
     for fb in existing:
-        existing_words = set(re.findall(r"\b\w{4,}\b", f"{fb.title} {fb.description}".lower()))
+        existing_words = set(
+            re.findall(r"\b\w{4,}\b", f"{fb.title} {fb.description}".lower())
+        )
         if not existing_words:
             continue
         intersection = new_words & existing_words

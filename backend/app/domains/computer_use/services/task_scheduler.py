@@ -6,17 +6,20 @@ Soporta: responder mensajes, agendar, cerrar ventas, lanzar ads.
 
 import logging
 import uuid
-from typing import Dict, List, Any, Optional, Callable, Tuple
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from dataclasses import dataclass, field
-from heapq import heappush, heappop
+from heapq import heappop, heappush
+from typing import Any, ClassVar
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
 
 class TaskType(str, Enum):
     """Tipos de tareas."""
+
     RESPOND_MESSAGE = "respond_message"
     SCHEDULE_APPOINTMENT = "schedule_appointment"
     CLOSE_SALE = "close_sale"
@@ -29,6 +32,7 @@ class TaskType(str, Enum):
 
 class TaskPriority(int, Enum):
     """Prioridades (lower = ejecuta primero)."""
+
     URGENT = 1  # Responder customer
     HIGH = 2  # Cerrar venta
     MEDIUM = 3  # Seguimiento
@@ -44,12 +48,12 @@ class Task:
     task_type: TaskType
     priority: TaskPriority
     user_id: str
-    customer_id: Optional[str] = None
-    payload: Dict[str, Any] = field(default_factory=dict)  # Datos específicos de tarea
+    customer_id: str | None = None
+    payload: dict[str, Any] = field(default_factory=dict)  # Datos específicos de tarea
     due_at: datetime = None  # Cuándo ejecutar
     retry_count: int = 0
     max_retries: int = 3
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utc_now)
     status: str = "pending"  # pending, running, completed, failed, conflict
 
     # Para heap queue (comparación)
@@ -61,7 +65,7 @@ class Task:
             return self.due_at < other.due_at
         return self.created_at < other.created_at
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "task_id": self.task_id,
             "task_type": self.task_type.value,
@@ -79,15 +83,17 @@ class ConflictCheck:
     def __init__(self, has_conflict: bool, reason: str = ""):
         self.has_conflict = has_conflict
         self.reason = reason
-        self.resolution: Optional[str] = None  # cómo resolverlo
-        self.alternative_time: Optional[datetime] = None
+        self.resolution: str | None = None  # cómo resolverlo
+        self.alternative_time: datetime | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "has_conflict": self.has_conflict,
             "reason": self.reason,
             "resolution": self.resolution,
-            "alternative_time": self.alternative_time.isoformat() if self.alternative_time else None,
+            "alternative_time": (
+                self.alternative_time.isoformat() if self.alternative_time else None
+            ),
         }
 
 
@@ -99,27 +105,33 @@ class TaskScheduler:
     MAX_TASKS_PER_CUSTOMER_PER_HOUR = 5
 
     # Conflictos conocidos
-    CONFLICTING_TASK_PAIRS = [
-        (TaskType.RESPOND_MESSAGE, TaskType.CLOSE_SALE),  # Responder y cerrar simultáneamente no tiene sentido
-        (TaskType.SCHEDULE_APPOINTMENT, TaskType.LAUNCH_AD_CAMPAIGN),  # No en mismo momento
+    CONFLICTING_TASK_PAIRS: ClassVar[list] = [
+        (
+            TaskType.RESPOND_MESSAGE,
+            TaskType.CLOSE_SALE,
+        ),  # Responder y cerrar simultáneamente no tiene sentido
+        (
+            TaskType.SCHEDULE_APPOINTMENT,
+            TaskType.LAUNCH_AD_CAMPAIGN,
+        ),  # No en mismo momento
     ]
 
     def __init__(self):
         self.logger = logger
-        self.task_queue: List[Task] = []  # Priority queue
-        self.executing_tasks: Dict[str, Task] = {}  # task_id → Task (running)
-        self.customer_task_history: Dict[str, List[Task]] = {}  # customer_id → tasks
-        self.completed_tasks: List[Task] = []
+        self.task_queue: list[Task] = []  # Priority queue
+        self.executing_tasks: dict[str, Task] = {}  # task_id → Task (running)
+        self.customer_task_history: dict[str, list[Task]] = {}  # customer_id → tasks
+        self.completed_tasks: list[Task] = []
 
     async def enqueue_task(
         self,
         task_type: TaskType,
         user_id: str,
-        payload: Dict[str, Any],
-        priority: Optional[TaskPriority] = None,
-        customer_id: Optional[str] = None,
-        due_at: Optional[datetime] = None,
-    ) -> Tuple[str, bool, Optional[str]]:
+        payload: dict[str, Any],
+        priority: TaskPriority | None = None,
+        customer_id: str | None = None,
+        due_at: datetime | None = None,
+    ) -> tuple[str, bool, str | None]:
         """
         Encola tarea con validación de conflictos.
 
@@ -131,9 +143,9 @@ class TaskScheduler:
 
         # Usar ahora si no hay due_at
         if not due_at:
-            due_at = datetime.utcnow()
+            due_at = utc_now()
 
-        task_id = f"task_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{task_type.value}_{uuid.uuid4().hex[:6]}"
+        task_id = f"task_{utc_now().strftime('%Y%m%d%H%M%S')}_{task_type.value}_{uuid.uuid4().hex[:6]}"
 
         task = Task(
             task_id=task_id,
@@ -152,10 +164,14 @@ class TaskScheduler:
             # Intentar reschedule
             if conflict.alternative_time:
                 task.due_at = conflict.alternative_time
-                self.logger.info(f"Task rescheduled: {task_id} | reason={conflict.reason}")
+                self.logger.info(
+                    f"Task rescheduled: {task_id} | reason={conflict.reason}"
+                )
             else:
                 task.status = "conflict"
-                self.logger.warning(f"Task conflict (not resolvable): {task_id} | reason={conflict.reason}")
+                self.logger.warning(
+                    f"Task conflict (not resolvable): {task_id} | reason={conflict.reason}"
+                )
                 return task_id, False, conflict.reason
 
         # Encolar
@@ -167,11 +183,13 @@ class TaskScheduler:
                 self.customer_task_history[customer_id] = []
             self.customer_task_history[customer_id].append(task)
 
-        self.logger.info(f"Task enqueued: {task_id} | type={task_type.value} | priority={priority.name}")
+        self.logger.info(
+            f"Task enqueued: {task_id} | type={task_type.value} | priority={priority.name}"
+        )
 
         return task_id, True, None
 
-    async def execute_next(self) -> Optional[Task]:
+    async def execute_next(self) -> Task | None:
         """Ejecuta siguiente tarea en queue."""
         if not self.task_queue:
             return None
@@ -189,7 +207,9 @@ class TaskScheduler:
         task.status = "running"
         self.executing_tasks[task.task_id] = task
 
-        self.logger.info(f"Executing task: {task.task_id} | type={task.task_type.value}")
+        self.logger.info(
+            f"Executing task: {task.task_id} | type={task.task_type.value}"
+        )
 
         return task
 
@@ -220,7 +240,7 @@ class TaskScheduler:
         if task.retry_count <= task.max_retries:
             # Re-encolar con backoff
             task.status = "pending"
-            task.due_at = datetime.utcnow() + timedelta(seconds=2 ** task.retry_count)
+            task.due_at = utc_now() + timedelta(seconds=2**task.retry_count)
             heappush(self.task_queue, task)
 
             self.logger.warning(
@@ -235,7 +255,7 @@ class TaskScheduler:
             self.logger.error(f"Task permanently failed: {task_id} | error={error}")
             return False
 
-    async def get_queue_status(self) -> Dict[str, Any]:
+    async def get_queue_status(self) -> dict[str, Any]:
         """Retorna status actual de la queue."""
         pending_by_priority = {}
         for task in self.task_queue:
@@ -260,9 +280,10 @@ class TaskScheduler:
             return TaskPriority.URGENT
         elif task_type in (TaskType.CLOSE_SALE, TaskType.SCHEDULE_APPOINTMENT):
             return TaskPriority.HIGH
-        elif task_type == TaskType.SEND_FOLLOW_UP:
-            return TaskPriority.MEDIUM
-        elif task_type == TaskType.LAUNCH_AD_CAMPAIGN:
+        elif (
+            task_type == TaskType.SEND_FOLLOW_UP
+            or task_type == TaskType.LAUNCH_AD_CAMPAIGN
+        ):
             return TaskPriority.MEDIUM
         else:
             return TaskPriority.LOW
@@ -275,12 +296,12 @@ class TaskScheduler:
             recent_tasks = [
                 t
                 for t in customer_tasks
-                if (datetime.utcnow() - t.created_at).total_seconds() < 3600  # Última hora
+                if (utc_now() - t.created_at).total_seconds() < 3600  # Última hora
             ]
 
             if len(recent_tasks) >= self.MAX_TASKS_PER_CUSTOMER_PER_HOUR:
                 # Sugerir ejecutar después de 1 hora
-                alt_time = datetime.utcnow() + timedelta(hours=1)
+                utc_now() + timedelta(hours=1)
                 return ConflictCheck(
                     has_conflict=True,
                     reason=f"Too many tasks for this customer in past hour ({len(recent_tasks)}/{self.MAX_TASKS_PER_CUSTOMER_PER_HOUR})",
@@ -291,7 +312,10 @@ class TaskScheduler:
             if task.task_type == task_type_a:
                 # Verificar si hay tarea_b ejecutándose
                 for exec_task in self.executing_tasks.values():
-                    if exec_task.task_type == task_type_b and exec_task.customer_id == task.customer_id:
+                    if (
+                        exec_task.task_type == task_type_b
+                        and exec_task.customer_id == task.customer_id
+                    ):
                         return ConflictCheck(
                             has_conflict=True,
                             reason=f"Conflict: cannot execute {task.task_type.value} while {task_type_b.value} is running",

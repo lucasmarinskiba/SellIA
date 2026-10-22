@@ -15,10 +15,11 @@ Sistema:
 """
 
 import logging
+from typing import Any
+
 import httpx
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
-import json
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,9 @@ class MercadoLibreAutomation:
 
     BASE_URL = "https://api.mercadolibre.com"
 
-    def __init__(self, seller_id: str, access_token: str, refresh_token: Optional[str] = None):
+    def __init__(
+        self, seller_id: str, access_token: str, refresh_token: str | None = None
+    ):
         self.seller_id = seller_id
         self.access_token = access_token
         self.refresh_token = refresh_token
@@ -36,7 +39,7 @@ class MercadoLibreAutomation:
 
     # ========== ORDERS SYNC ==========
 
-    async def sync_orders(self) -> Dict[str, Any]:
+    async def sync_orders(self) -> dict[str, Any]:
         """
         Sincroniza órdenes desde Mercado Libre automáticamente.
 
@@ -72,20 +75,24 @@ class MercadoLibreAutomation:
                 messages_result = await self._respond_buyer_questions(order_id)
 
                 # Generar shipping label automático
-                shipping_result = await self._generate_shipping_label(order_id, order_details)
+                shipping_result = await self._generate_shipping_label(
+                    order_id, order_details
+                )
 
                 # Actualizar status en DB
                 db_result = await self._save_order_to_db(
                     order_id, order_details, shipping_result
                 )
 
-                processed_orders.append({
-                    "order_id": order_id,
-                    "confirm": confirm_result,
-                    "messages": messages_result,
-                    "shipping": shipping_result,
-                    "saved": db_result,
-                })
+                processed_orders.append(
+                    {
+                        "order_id": order_id,
+                        "confirm": confirm_result,
+                        "messages": messages_result,
+                        "shipping": shipping_result,
+                        "saved": db_result,
+                    }
+                )
 
             logger.info(f"Synced {len(processed_orders)} orders")
 
@@ -96,10 +103,10 @@ class MercadoLibreAutomation:
             }
 
         except Exception as e:
-            logger.error(f"Orders sync failed: {str(e)}")
+            logger.exception("Orders sync failed")
             return {"status": "error", "error": str(e)}
 
-    async def _fetch_new_orders(self) -> List[Dict[str, Any]]:
+    async def _fetch_new_orders(self) -> list[dict[str, Any]]:
         """Obtiene órdenes nuevas (sin procesar)."""
 
         try:
@@ -120,11 +127,11 @@ class MercadoLibreAutomation:
                 logger.error(f"ML API error: {response.status_code}")
                 return []
 
-        except Exception as e:
-            logger.error(f"Fetch orders failed: {str(e)}")
+        except Exception:
+            logger.exception("Fetch orders failed")
             return []
 
-    async def _fetch_order_details(self, order_id: str) -> Optional[Dict[str, Any]]:
+    async def _fetch_order_details(self, order_id: str) -> dict[str, Any] | None:
         """Obtiene detalles de orden (buyer, producto, dirección)."""
 
         try:
@@ -139,11 +146,11 @@ class MercadoLibreAutomation:
                 logger.error(f"Order details error: {response.status_code}")
                 return None
 
-        except Exception as e:
-            logger.error(f"Fetch order details failed: {str(e)}")
+        except Exception:
+            logger.exception("Fetch order details failed")
             return None
 
-    async def _confirm_purchase(self, order_id: str) -> Dict[str, Any]:
+    async def _confirm_purchase(self, order_id: str) -> dict[str, Any]:
         """Auto-confirma compra (cambiar status a packed)."""
 
         logger.info(f"Confirming purchase {order_id}")
@@ -162,13 +169,13 @@ class MercadoLibreAutomation:
                 logger.warning(f"Confirm failed: {response.status_code}")
                 return {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"Confirm purchase failed: {str(e)}")
+        except Exception:
+            logger.exception("Confirm purchase failed")
             return {"status": "error"}
 
     # ========== AUTO-RESPONSE ==========
 
-    async def _respond_buyer_questions(self, order_id: str) -> Dict[str, Any]:
+    async def _respond_buyer_questions(self, order_id: str) -> dict[str, Any]:
         """Auto-responde preguntas frecuentes de buyers."""
 
         logger.info(f"Checking buyer questions for order {order_id}")
@@ -204,11 +211,13 @@ class MercadoLibreAutomation:
                 if auto_response:
                     # Responder automático
                     answer_result = await self._answer_question(q_id, auto_response)
-                    responses.append({
-                        "question_id": q_id,
-                        "answered": answer_result["status"] == "success",
-                        "response": auto_response,
-                    })
+                    responses.append(
+                        {
+                            "question_id": q_id,
+                            "answered": answer_result["status"] == "success",
+                            "response": auto_response,
+                        }
+                    )
 
             logger.info(f"Answered {len(responses)} questions")
 
@@ -218,11 +227,11 @@ class MercadoLibreAutomation:
                 "responses": responses,
             }
 
-        except Exception as e:
-            logger.error(f"Auto-response failed: {str(e)}")
+        except Exception:
+            logger.exception("Auto-response failed")
             return {"status": "error"}
 
-    def _get_faq_response(self, question: str) -> Optional[str]:
+    def _get_faq_response(self, question: str) -> str | None:
         """Detecta pregunta frecuente, retorna respuesta automática."""
 
         faq = {
@@ -243,7 +252,9 @@ class MercadoLibreAutomation:
 
         return None
 
-    async def _answer_question(self, question_id: str, answer_text: str) -> Dict[str, Any]:
+    async def _answer_question(
+        self, question_id: str, answer_text: str
+    ) -> dict[str, Any]:
         """Responde pregunta automáticamente."""
 
         try:
@@ -263,8 +274,8 @@ class MercadoLibreAutomation:
                 logger.warning(f"Answer failed: {response.status_code}")
                 return {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"Answer question failed: {str(e)}")
+        except Exception:
+            logger.exception("Answer question failed")
             return {"status": "error"}
 
     # ========== SHIPPING & FULFILLMENT ==========
@@ -272,15 +283,15 @@ class MercadoLibreAutomation:
     async def _generate_shipping_label(
         self,
         order_id: str,
-        order_details: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        order_details: dict[str, Any],
+    ) -> dict[str, Any]:
         """Genera shipping label automáticamente."""
 
         logger.info(f"Generating shipping label for {order_id}")
 
         try:
             # Extraer dirección
-            receiver = order_details.get("shipping", {}).get("receiver_address", {})
+            order_details.get("shipping", {}).get("receiver_address", {})
 
             # Generar label via ML shipping
             response = await self.http_client.post(
@@ -312,13 +323,15 @@ class MercadoLibreAutomation:
                 logger.warning(f"Label generation failed: {response.status_code}")
                 return {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"Generate label failed: {str(e)}")
+        except Exception:
+            logger.exception("Generate label failed")
             return {"status": "error"}
 
     # ========== TRACKING UPDATES ==========
 
-    async def update_tracking(self, shipment_id: str, buyer_email: str) -> Dict[str, Any]:
+    async def update_tracking(
+        self, shipment_id: str, buyer_email: str
+    ) -> dict[str, Any]:
         """Actualiza tracking automáticamente y notifica buyer."""
 
         logger.info(f"Updating tracking for shipment {shipment_id}")
@@ -348,8 +361,8 @@ class MercadoLibreAutomation:
             else:
                 return {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"Update tracking failed: {str(e)}")
+        except Exception:
+            logger.exception("Update tracking failed")
             return {"status": "error"}
 
     # ========== DB INTEGRATION ==========
@@ -357,9 +370,9 @@ class MercadoLibreAutomation:
     async def _save_order_to_db(
         self,
         order_id: str,
-        order_details: Dict[str, Any],
-        shipping_result: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        order_details: dict[str, Any],
+        shipping_result: dict[str, Any],
+    ) -> dict[str, Any]:
         """Guarda orden en DB para tracking."""
 
         logger.info(f"Saving order {order_id} to DB")
@@ -370,12 +383,12 @@ class MercadoLibreAutomation:
         return {
             "status": "success",
             "order_id": order_id,
-            "saved_at": datetime.utcnow().isoformat(),
+            "saved_at": utc_now().isoformat(),
         }
 
     # ========== TOKEN REFRESH ==========
 
-    async def refresh_access_token(self) -> Optional[str]:
+    async def refresh_access_token(self) -> str | None:
         """Refresh OAuth token si expiró."""
 
         if not self.refresh_token:
@@ -403,8 +416,8 @@ class MercadoLibreAutomation:
                 logger.error(f"Token refresh failed: {response.status_code}")
                 return None
 
-        except Exception as e:
-            logger.error(f"Refresh token failed: {str(e)}")
+        except Exception:
+            logger.exception("Refresh token failed")
             return None
 
     async def close(self):

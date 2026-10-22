@@ -29,7 +29,11 @@ CONNECTOR_CATALOG: dict[str, dict[str, Any]] = {
             {"key": "phone_number_id", "label": "Phone Number ID", "secret": False},
         ],
         "optional": [
-            {"key": "business_account_id", "label": "WhatsApp Business Account ID", "secret": False},
+            {
+                "key": "business_account_id",
+                "label": "WhatsApp Business Account ID",
+                "secret": False,
+            },
         ],
         "help": "Se obtienen en Meta for Developers → tu app → WhatsApp → Configuración de la API.",
         "docs_url": "https://developers.facebook.com/docs/whatsapp/cloud-api/get-started",
@@ -39,8 +43,16 @@ CONNECTOR_CATALOG: dict[str, dict[str, Any]] = {
         "group": "redes",
         "oauth": True,
         "required": [
-            {"key": "api_token", "label": "Token de página (Page Access Token)", "secret": True},
-            {"key": "instagram_account_id", "label": "Instagram Business Account ID", "secret": False},
+            {
+                "key": "api_token",
+                "label": "Token de página (Page Access Token)",
+                "secret": True,
+            },
+            {
+                "key": "instagram_account_id",
+                "label": "Instagram Business Account ID",
+                "secret": False,
+            },
         ],
         "optional": [{"key": "page_id", "label": "Facebook Page ID", "secret": False}],
         "help": "Tu cuenta de Instagram tiene que ser Profesional y estar vinculada a una página de Facebook.",
@@ -63,7 +75,9 @@ CONNECTOR_CATALOG: dict[str, dict[str, Any]] = {
         "group": "mensajeria",
         "oauth": False,
         "required": [{"key": "bot_token", "label": "Token del bot", "secret": True}],
-        "optional": [{"key": "webhook_secret", "label": "Secreto del webhook", "secret": True}],
+        "optional": [
+            {"key": "webhook_secret", "label": "Secreto del webhook", "secret": True}
+        ],
         "help": "Creá el bot con @BotFather en Telegram y pegá el token que te da.",
         "docs_url": "https://core.telegram.org/bots#how-do-i-create-a-bot",
     },
@@ -77,10 +91,14 @@ CONNECTOR_CATALOG: dict[str, dict[str, Any]] = {
         ],
         "optional": [
             {"key": "seller_id", "label": "ID de vendedor", "secret": False},
-            {"key": "access_token", "label": "Access token (lo completa la autorización)", "secret": True},
+            {
+                "key": "access_token",
+                "label": "Access token (lo completa la autorización)",
+                "secret": True,
+            },
         ],
         "help": "Creá una aplicación en MercadoLibre Developers; después usá 'Autorizar' para que ML "
-                "te devuelva el token. Con esto la IA responde también las preguntas de tus publicaciones.",
+        "te devuelva el token. Con esto la IA responde también las preguntas de tus publicaciones.",
         "docs_url": "https://developers.mercadolibre.com.ar/es_ar/registra-tu-aplicacion",
     },
     "amazon": {
@@ -107,8 +125,16 @@ CONNECTOR_CATALOG: dict[str, dict[str, Any]] = {
         "group": "ecommerce",
         "oauth": False,
         "required": [
-            {"key": "shop_domain", "label": "Dominio de la tienda (mitienda.myshopify.com)", "secret": False},
-            {"key": "admin_api_token", "label": "Admin API access token", "secret": True},
+            {
+                "key": "shop_domain",
+                "label": "Dominio de la tienda (mitienda.myshopify.com)",
+                "secret": False,
+            },
+            {
+                "key": "admin_api_token",
+                "label": "Admin API access token",
+                "secret": True,
+            },
         ],
         "optional": [
             {"key": "api_key", "label": "API key", "secret": False},
@@ -127,7 +153,9 @@ CONNECTOR_CATALOG: dict[str, dict[str, Any]] = {
             {"key": "consumer_key", "label": "Consumer key", "secret": False},
             {"key": "consumer_secret", "label": "Consumer secret", "secret": True},
         ],
-        "optional": [{"key": "webhook_secret", "label": "Webhook secret", "secret": True}],
+        "optional": [
+            {"key": "webhook_secret", "label": "Webhook secret", "secret": True}
+        ],
         "help": "WooCommerce → Ajustes → Avanzado → REST API → Añadir clave (permisos de lectura/escritura).",
         "docs_url": "https://woocommerce.github.io/woocommerce-rest-api-docs/#authentication",
     },
@@ -157,7 +185,9 @@ CONNECTOR_CATALOG: dict[str, dict[str, Any]] = {
             {"key": "access_token", "label": "Access token", "secret": True},
             {"key": "shop_id", "label": "Shop ID", "secret": False},
         ],
-        "optional": [{"key": "shared_secret", "label": "Shared secret", "secret": True}],
+        "optional": [
+            {"key": "shared_secret", "label": "Shared secret", "secret": True}
+        ],
         "help": "Registrá una app en Etsy Developers y autorizala sobre tu tienda.",
         "docs_url": "https://developers.etsy.com/documentation/essentials/authentication",
     },
@@ -170,7 +200,13 @@ CONNECTOR_CATALOG: dict[str, dict[str, Any]] = {
             {"key": "client_secret", "label": "Client secret", "secret": True},
             {"key": "basic_token", "label": "Basic token", "secret": True},
         ],
-        "optional": [{"key": "hottok", "label": "Hottok (validación de webhooks)", "secret": True}],
+        "optional": [
+            {
+                "key": "hottok",
+                "label": "Hottok (validación de webhooks)",
+                "secret": True,
+            }
+        ],
         "help": "Hotmart → Herramientas → Credenciales de API.",
         "docs_url": "https://developers.hotmart.com/docs/en/start/app-auth/",
     },
@@ -231,7 +267,9 @@ SECRET_KEYS = {
 
 
 def catalog_entries() -> list[dict[str, Any]]:
-    return [{"platform": platform, **spec} for platform, spec in CONNECTOR_CATALOG.items()]
+    return [
+        {"platform": platform, **spec} for platform, spec in CONNECTOR_CATALOG.items()
+    ]
 
 
 def mask_credentials(credentials: dict[str, Any] | None) -> dict[str, Any]:

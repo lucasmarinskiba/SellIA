@@ -1,15 +1,17 @@
 """Phase 26c: Deal Intelligence - Scoring, Forecasting, Risk Analysis."""
 
-from sqlalchemy import Column, String, Float, DateTime, Text, Boolean, Index
-from sqlalchemy.dialects.postgresql import UUID, JSON
-from datetime import datetime, timedelta
 import uuid
 
+from sqlalchemy import Boolean, Column, DateTime, Float, Index, String, Text
+from sqlalchemy.dialects.postgresql import JSON
+
+from app.core.clock import utc_now
 from app.database import Base
 
 
 class DealScore(Base):
     """Win probability per deal (ML-powered scoring)."""
+
     __tablename__ = "deal_scores"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -29,28 +31,31 @@ class DealScore(Base):
 
     # Risk indicators
     is_at_risk = Column(Boolean, default=False)
-    risk_reason = Column(Text, nullable=True)  # "No response in 7d", "Competitor signal", etc
+    risk_reason = Column(
+        Text, nullable=True
+    )  # "No response in 7d", "Competitor signal", etc
     days_since_last_contact = Column(Float, nullable=True)
 
     # Trend
     score_trend = Column(String(20), default="stable")  # up, down, stable
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     __table_args__ = (
-        Index('idx_deal_score', 'seller_id', 'win_probability'),
-        Index('idx_at_risk', 'seller_id', 'is_at_risk'),
+        Index("idx_deal_score", "seller_id", "win_probability"),
+        Index("idx_at_risk", "seller_id", "is_at_risk"),
     )
 
 
 class ForecastSnapshot(Base):
     """Daily revenue forecast snapshot."""
+
     __tablename__ = "forecast_snapshots"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     seller_id = Column(String(255), nullable=False)
-    forecast_date = Column(DateTime, default=datetime.utcnow)
+    forecast_date = Column(DateTime, default=utc_now)
 
     # Aggregates
     total_pipeline_value = Column(Float, default=0)
@@ -68,15 +73,14 @@ class ForecastSnapshot(Base):
     # Deal breakdown
     deal_breakdown = Column(JSON, nullable=True)  # {prob_bucket: count, ...}
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
-    __table_args__ = (
-        Index('idx_forecast_seller', 'seller_id', 'forecast_date'),
-    )
+    __table_args__ = (Index("idx_forecast_seller", "seller_id", "forecast_date"),)
 
 
 class WinLossAnalysis(Base):
     """Post-close analysis: why deals won or lost."""
+
     __tablename__ = "win_loss_analysis"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -102,11 +106,9 @@ class WinLossAnalysis(Base):
     price_was_factor = Column(Boolean, default=False)
     timing_was_factor = Column(Boolean, default=False)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
-    __table_args__ = (
-        Index('idx_win_loss', 'seller_id', 'outcome'),
-    )
+    __table_args__ = (Index("idx_win_loss", "seller_id", "outcome"),)
 
 
 class DealIntelligenceManager:
@@ -156,7 +158,9 @@ class DealIntelligenceManager:
     def forecast_revenue(deals: list[dict]) -> dict:
         """Forecast 30/60/90 day revenue from deal list."""
         total_pipeline = sum(d.get("value", 0) for d in deals)
-        weighted_pipeline = sum(d.get("value", 0) * d.get("win_prob", 0.5) for d in deals)
+        weighted_pipeline = sum(
+            d.get("value", 0) * d.get("win_prob", 0.5) for d in deals
+        )
 
         # Simple forecast: weighted * close probability over time
         close_velocity = 0.3  # 30% of deals close in 30d (tunable)

@@ -25,84 +25,74 @@ Usage:
     confirmed = await orchestrator.verify_action_succeeded(before, after)
 """
 
-from .visual_analyzer import (
-    VisualAnalyzer,
-    PageAnalysis,
-    ButtonDetection,
-    FormField,
-    TextRegion,
-    LayoutRegion,
-)
-
-from .vision_navigator import (
-    VisionNavigator,
-    ElementType,
-    ElementMatch,
-    ViewportState,
-)
-
-from .visual_confirmation import (
-    VisualConfirmation,
-    Confirmation,
-    ActionResult,
-)
-
-from .vision_screenshot_parser import (
-    VisionScreenshotParser,
-    ViewportSize,
-    PageStructure,
-    PageMetadata,
-    Heading,
-    ImageContent,
-)
-
-from .visual_automation_executor import (
-    VisualAutomationExecutor,
-    ActionType,
-    ExecutionPlan,
-)
-
 from .vision_debug import (
+    VisionComparator,
     VisionDebugAnnotator,
     VisionDebugLogger,
-    VisionComparator,
+)
+from .vision_navigator import (
+    ElementMatch,
+    ElementType,
+    ViewportState,
+    VisionNavigator,
+)
+from .vision_screenshot_parser import (
+    Heading,
+    ImageContent,
+    PageMetadata,
+    PageStructure,
+    ViewportSize,
+    VisionScreenshotParser,
+)
+from .visual_analyzer import (
+    ButtonDetection,
+    FormField,
+    LayoutRegion,
+    PageAnalysis,
+    TextRegion,
+    VisualAnalyzer,
+)
+from .visual_automation_executor import (
+    ActionType,
+    ExecutionPlan,
+    VisualAutomationExecutor,
+)
+from .visual_confirmation import (
+    ActionResult,
+    Confirmation,
+    VisualConfirmation,
 )
 
 __all__ = [
-    # Analyzer
-    "VisualAnalyzer",
-    "PageAnalysis",
-    "ButtonDetection",
-    "FormField",
-    "TextRegion",
-    "LayoutRegion",
-
-    # Navigator
-    "VisionNavigator",
-    "ElementType",
-    "ElementMatch",
-    "ViewportState",
-
-    # Confirmation
-    "VisualConfirmation",
-    "Confirmation",
     "ActionResult",
-
-    # Parser
-    "VisionScreenshotParser",
-    "ViewportSize",
-    "PageStructure",
-    "PageMetadata",
+    "ActionType",
+    "ButtonDetection",
+    "Confirmation",
+    "ElementMatch",
+    "ElementType",
+    "ExecutionPlan",
+    "FormField",
     "Heading",
     "ImageContent",
-
-    # Executor
-    "VisualAutomationExecutor",
-    "ActionType",
-    "ExecutionPlan",
-
+    "LayoutRegion",
+    "PageAnalysis",
+    "PageMetadata",
+    "PageStructure",
+    "TextRegion",
+    "ViewportSize",
+    "ViewportState",
+    "VisionComparator",
     # Debug
     "VisionDebugAnnotator",
     "VisionDebugLogger",
-    "VisionComparator",
+    # Navigator
+    "VisionNavigator",
+    # Parser
+    "VisionScreenshotParser",
+    # Analyzer
+    "VisualAnalyzer",
+    # Executor
+    "VisualAutomationExecutor",
+    # Confirmation
+    "VisualConfirmation",
 ]

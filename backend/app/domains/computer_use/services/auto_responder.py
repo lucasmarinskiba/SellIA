@@ -16,32 +16,39 @@ Integración con Scheduling:
 """
 
 import logging
-from typing import Optional, Dict, Any, Tuple
-from datetime import datetime
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.computer_use.services.webhook_receiver import IncomingMessage, MessageSource, MessageType
-from app.domains.computer_use.services.sellia_brain_service import (
-    get_brain_service,
-    ActionContext,
-    SalesStage,
-    Platform,
-)
-from app.domains.computer_use.services.audit_log_service import AuditLogEntry, AuditLogService
-from app.domains.computer_use.services.scheduling_orchestrator import SchedulingOrchestrator
-from app.domains.computer_use.services.sales_closer import get_sales_closer_service
+from app.core.config import get_settings
 from app.domains.computer_use.integrations import (
-    WhatsAppConnector,
-    InstagramConnector,
-    get_whatsapp_connector,
     get_instagram_connector,
+    get_whatsapp_connector,
+)
+from app.domains.computer_use.services.audit_log_service import (
+    AuditLogEntry,
+    AuditLogService,
 )
 from app.domains.computer_use.services.conversion_tracker import get_conversion_tracker
 from app.domains.computer_use.services.platform_automation_engine import (
-    get_platform_automation_engine,
     PlatformAutomationType,
+    get_platform_automation_engine,
 )
-from app.core.config import get_settings
+from app.domains.computer_use.services.sales_closer import get_sales_closer_service
+from app.domains.computer_use.services.scheduling_orchestrator import (
+    SchedulingOrchestrator,
+)
+from app.domains.computer_use.services.sellia_brain_service import (
+    ActionContext,
+    Platform,
+    SalesStage,
+    get_brain_service,
+)
+from app.domains.computer_use.services.webhook_receiver import (
+    IncomingMessage,
+    MessageSource,
+    MessageType,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +63,7 @@ class AutoResponderService:
     def __init__(
         self,
         db: AsyncSession,
-        scheduling_orchestrator: Optional[SchedulingOrchestrator] = None,
+        scheduling_orchestrator: SchedulingOrchestrator | None = None,
         closer_mode: str = "supervised",  # auto | supervised
     ):
         self.db = db
@@ -74,13 +81,17 @@ class AutoResponderService:
             get_whatsapp_connector(
                 business_account_id=settings.WHATSAPP_BUSINESS_ACCOUNT_ID,
                 access_token=settings.WHATSAPP_ACCESS_TOKEN,
-            ) if hasattr(settings, 'WHATSAPP_BUSINESS_ACCOUNT_ID') else None
+            )
+            if hasattr(settings, "WHATSAPP_BUSINESS_ACCOUNT_ID")
+            else None
         )
         self.instagram_connector = (
             get_instagram_connector(
                 business_account_id=settings.INSTAGRAM_BUSINESS_ACCOUNT_ID,
                 access_token=settings.INSTAGRAM_ACCESS_TOKEN,
-            ) if hasattr(settings, 'INSTAGRAM_BUSINESS_ACCOUNT_ID') else None
+            )
+            if hasattr(settings, "INSTAGRAM_BUSINESS_ACCOUNT_ID")
+            else None
         )
 
         # Payment tracking
@@ -93,7 +104,7 @@ class AutoResponderService:
         self,
         user_id: str,
         message: IncomingMessage,
-    ) -> Tuple[Optional[str], str, float]:
+    ) -> tuple[str | None, str, float]:
         """
         Procesa mensaje → genera respuesta.
 
@@ -105,13 +116,19 @@ class AutoResponderService:
         try:
             # 0. SCHEDULING: Detectar si es request de agendar
             if self.scheduling_orchestrator:
-                intent, scheduled_response, scheduling_state = await self.scheduling_orchestrator.process_message(
-                    message.customer_id,
-                    message.content,
+                intent, scheduled_response, scheduling_state = (
+                    await self.scheduling_orchestrator.process_message(
+                        message.customer_id,
+                        message.content,
+                    )
                 )
 
                 # Si es scheduling intent → manejar especialmente
-                if intent != self.scheduling_orchestrator.SchedulingIntent.SCHEDULE_REQUEST or scheduling_state:
+                if (
+                    intent
+                    != self.scheduling_orchestrator.SchedulingIntent.SCHEDULE_REQUEST
+                    or scheduling_state
+                ):
                     # Registrar scheduling action en audit log
                     await self._log_scheduling_activity(
                         user_id=user_id,
@@ -120,7 +137,11 @@ class AutoResponderService:
                         intent=intent.value,
                         state=scheduling_state,
                     )
-                    return scheduled_response, "success", 0.95  # Scheduling es high-confidence
+                    return (
+                        scheduled_response,
+                        "success",
+                        0.95,
+                    )  # Scheduling es high-confidence
 
             # 1. Detectar plataforma
             platform = self._source_to_platform(message.source)
@@ -139,10 +160,14 @@ class AutoResponderService:
                     "id": message.customer_id,
                     "email": message.customer_email,
                 },
-                product_info={
-                    "product_id": message.product_id,
-                    "order_id": message.order_id,
-                } if message.product_id or message.order_id else None,
+                product_info=(
+                    {
+                        "product_id": message.product_id,
+                        "order_id": message.order_id,
+                    }
+                    if message.product_id or message.order_id
+                    else None
+                ),
                 conversation_history=message.previous_messages or [],
             )
 
@@ -153,44 +178,65 @@ class AutoResponderService:
 
             # 5. Generar respuesta
             instruction = self._build_instruction(message, strategy)
-            response_prompt = await self.brain_service.get_response_prompt(context, instruction)
+            response_prompt = await self.brain_service.get_response_prompt(
+                context, instruction
+            )
 
             # 6. LLM genera respuesta (placeholder — usar vision agent o LLM provider)
             response_text = await self._generate_response(response_prompt, context)
 
             # 7. Detectar señales de compra
-            signals = await self.brain_service.detect_sales_signals(message.content, context)
+            signals = await self.brain_service.detect_sales_signals(
+                message.content, context
+            )
 
             # 7.5 SALES CLOSING: Evaluar si cerrar venta
             if signals.get("signal_found"):
-                closing_msg, closing_status, closing_confidence = await self.sales_closer.evaluate_and_close(
-                    user_id=user_id,
-                    message=message,
-                    conversation_history=context.conversation_history,
-                    customer_profile=context.customer_profile,
-                    product_info=strategy.metadata if strategy else {},
-                    mode=self.closer_mode,
+                closing_msg, closing_status, closing_confidence = (
+                    await self.sales_closer.evaluate_and_close(
+                        user_id=user_id,
+                        message=message,
+                        conversation_history=context.conversation_history,
+                        customer_profile=context.customer_profile,
+                        product_info=strategy.metadata if strategy else {},
+                        mode=self.closer_mode,
+                    )
                 )
 
                 if closing_msg and closing_status != "not_ready_to_close":
                     response_text = closing_msg
                     confidence = closing_confidence
-                    status = "success" if closing_status == "closing_attempt" else "pending_approval"
+                    status = (
+                        "success"
+                        if closing_status == "closing_attempt"
+                        else "pending_approval"
+                    )
 
                     # GENERAR PAYMENT LINK si sale CERRADA
                     if closing_status == "closing_attempt" and status == "success":
-                        checkout_success, checkout_url = await self.conversion_tracker.process_sale_to_payment(
-                            user_id=user_id,
-                            customer_id=message.customer_id,
-                            customer_email=message.customer_email,
-                            customer_name=message.customer_name,
-                            product_info=strategy.metadata or {},
-                            amount_cents=int((strategy.metadata.get("price", 0) if strategy.metadata else 0) * 100),
+                        checkout_success, checkout_url = (
+                            await self.conversion_tracker.process_sale_to_payment(
+                                user_id=user_id,
+                                customer_id=message.customer_id,
+                                customer_email=message.customer_email,
+                                customer_name=message.customer_name,
+                                product_info=strategy.metadata or {},
+                                amount_cents=int(
+                                    (
+                                        strategy.metadata.get("price", 0)
+                                        if strategy.metadata
+                                        else 0
+                                    )
+                                    * 100
+                                ),
+                            )
                         )
 
                         if checkout_success and checkout_url:
                             # Agregar link de pago al mensaje
-                            response_text += f"\n\n💳 Confirma tu compra aquí: {checkout_url}"
+                            response_text += (
+                                f"\n\n💳 Confirma tu compra aquí: {checkout_url}"
+                            )
 
                     await self._log_activity(
                         user_id=user_id,
@@ -214,17 +260,14 @@ class AutoResponderService:
             # 9. Decidir acción
             if confidence >= CONFIDENCE_THRESHOLD_AUTO:
                 status = "success"
-                action_desc = "Auto-responder enviado"
             elif confidence >= CONFIDENCE_THRESHOLD_ESCALATE:
                 status = "pending_approval"
-                action_desc = "Pendiente aprobación del usuario"
             else:
                 status = "escalated"
-                action_desc = "Escalado a supervisor (confianza baja)"
 
             # 10. ENVIAR respuesta si status=success
             if status == "success" and response_text:
-                send_success, send_msg_id = await self._send_response(
+                send_success, _send_msg_id = await self._send_response(
                     platform=platform,
                     recipient_id=message.customer_id,
                     response_text=response_text,
@@ -255,7 +298,7 @@ class AutoResponderService:
             return response_text, status, confidence
 
         except Exception as e:
-            logger.error(f"Error processing message: {e}")
+            logger.exception("Error processing message")
             await self._log_activity(
                 user_id=user_id,
                 message=message,
@@ -270,7 +313,7 @@ class AutoResponderService:
 
     # ── Private Methods ──────────────────────────────────────────────
 
-    def _source_to_platform(self, source: MessageSource) -> Optional[Platform]:
+    def _source_to_platform(self, source: MessageSource) -> Platform | None:
         """Mapea MessageSource a Platform."""
         mapping = {
             MessageSource.WHATSAPP: Platform.WHATSAPP,
@@ -333,7 +376,7 @@ class AutoResponderService:
         recipient_id: str,
         response_text: str,
         message: IncomingMessage,
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """Envía respuesta por WhatsApp/Instagram. Retorna (success, message_id)."""
         try:
             # Intentar API primero (más confiable)
@@ -349,7 +392,9 @@ class AutoResponderService:
                 )
 
             # Fallback: browser automation si API no disponible
-            logger.info(f"API not available for {platform.value}, using browser automation")
+            logger.info(
+                f"API not available for {platform.value}, using browser automation"
+            )
 
             if platform == Platform.WHATSAPP:
                 success, msg_id = await self.platform_automation.send_response(
@@ -371,14 +416,14 @@ class AutoResponderService:
                 logger.warning(f"No handler for platform {platform.value}")
                 return False, None
 
-        except Exception as e:
-            logger.error(f"Error sending response: {e}")
+        except Exception:
+            logger.exception("Error sending response")
             return False, None
 
     def _calculate_confidence(
         self,
         strategy: Any,
-        signals: Dict[str, Any],
+        signals: dict[str, Any],
         message: IncomingMessage,
     ) -> float:
         """Calcula score de confianza (0-1)."""
@@ -402,19 +447,23 @@ class AutoResponderService:
         self,
         user_id: str,
         message: IncomingMessage,
-        response: Optional[str],
+        response: str | None,
         strategy: Any,
         status: str,
         confidence: float,
-        signals: Optional[Dict[str, Any]],
-        error: Optional[str] = None,
+        signals: dict[str, Any] | None,
+        error: str | None = None,
     ) -> None:
         """Registra actividad en Audit Log."""
         try:
             log_entry = AuditLogEntry(
                 user_id=user_id,
                 platform=message.source.value,
-                action_type="message_response" if message.message_type == MessageType.DIRECT_MESSAGE else "comment_response",
+                action_type=(
+                    "message_response"
+                    if message.message_type == MessageType.DIRECT_MESSAGE
+                    else "comment_response"
+                ),
             )
 
             log_entry.with_input(message.content)
@@ -435,17 +484,19 @@ class AutoResponderService:
             else:
                 log_entry.failed(error or "Unknown error")
 
-            log_entry.with_metadata({
-                "customer_id": message.customer_id,
-                "customer_name": message.customer_name,
-                "message_id": message.message_id,
-                "signals": signals,
-            })
+            log_entry.with_metadata(
+                {
+                    "customer_id": message.customer_id,
+                    "customer_name": message.customer_name,
+                    "message_id": message.message_id,
+                    "signals": signals,
+                }
+            )
 
             await self.audit_service.log(log_entry)
 
-        except Exception as e:
-            logger.error(f"Error logging activity: {e}")
+        except Exception:
+            logger.exception("Error logging activity")
 
     async def _log_scheduling_activity(
         self,
@@ -453,7 +504,7 @@ class AutoResponderService:
         message: IncomingMessage,
         response: str,
         intent: str,
-        state: Optional[Any],
+        state: Any | None,
     ) -> None:
         """Registra scheduling action en Audit Log."""
         try:
@@ -477,18 +528,24 @@ class AutoResponderService:
             }
 
             if state:
-                metadata.update({
-                    "proposed_slot": state.proposed_slot.to_dict() if state.proposed_slot else None,
-                    "confirmed": state.confirmed,
-                    "event_id": state.event_id,
-                })
+                metadata.update(
+                    {
+                        "proposed_slot": (
+                            state.proposed_slot.to_dict()
+                            if state.proposed_slot
+                            else None
+                        ),
+                        "confirmed": state.confirmed,
+                        "event_id": state.event_id,
+                    }
+                )
 
             log_entry.with_metadata(metadata)
 
             await self.audit_service.log(log_entry)
 
-        except Exception as e:
-            logger.error(f"Error logging scheduling activity: {e}")
+        except Exception:
+            logger.exception("Error logging scheduling activity")
 
 
 def get_auto_responder_service(db: AsyncSession) -> AutoResponderService:

@@ -10,15 +10,15 @@ Sales executor — Ejecuta venta completa end-to-end (lead → close → deliver
 """
 
 import logging
-from typing import Dict, List, Any
 from enum import Enum
-from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 class SalesPhase(str, Enum):
     """Fase del ciclo venta."""
+
     CAPTURE = "capture"  # Atrae leads
     NURTURE = "nurture"  # Convence
     CLOSE = "close"  # Cierra
@@ -33,10 +33,10 @@ class SalesExecutor:
     def build_complete_sales_plan(
         product: str,
         category: str,
-        market_analysis: Dict[str, Any],
-        strategy: Dict[str, Any],
-        problems: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        market_analysis: dict[str, Any],
+        strategy: dict[str, Any],
+        problems: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """
         Construye plan venta completo 90 días.
 
@@ -57,7 +57,7 @@ class SalesExecutor:
         return plan
 
     @staticmethod
-    def _phase_capture(category: str, strategy: Dict[str, Any]) -> Dict[str, Any]:
+    def _phase_capture(category: str, strategy: dict[str, Any]) -> dict[str, Any]:
         """Fase 1: Captura de leads (Semanas 1-2)."""
 
         channels = strategy.get("recommended_channels", {})
@@ -90,7 +90,9 @@ class SalesExecutor:
         }
 
     @staticmethod
-    def _phase_nurture(strategy: Dict[str, Any], problems: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _phase_nurture(
+        strategy: dict[str, Any], problems: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Fase 2: Nutrición de leads (Semanas 3-5)."""
 
         return {
@@ -126,10 +128,10 @@ class SalesExecutor:
         }
 
     @staticmethod
-    def _phase_close(strategy: Dict[str, Any]) -> Dict[str, Any]:
+    def _phase_close(strategy: dict[str, Any]) -> dict[str, Any]:
         """Fase 3: Cierre (Semanas 6-8)."""
 
-        segment = strategy.get("segment", "growth")
+        strategy.get("segment", "growth")
 
         return {
             "phase": "Close (Weeks 6-8)",
@@ -181,7 +183,7 @@ class SalesExecutor:
         }
 
     @staticmethod
-    def _phase_deliver(product: str, category: str) -> Dict[str, Any]:
+    def _phase_deliver(product: str, category: str) -> dict[str, Any]:
         """Fase 4: Entrega (Semana 9)."""
 
         return {
@@ -217,7 +219,7 @@ class SalesExecutor:
         }
 
     @staticmethod
-    def _phase_retain(product: str) -> Dict[str, Any]:
+    def _phase_retain(product: str) -> dict[str, Any]:
         """Fase 5: Retención + Growth (Semanas 10-12)."""
 
         return {
@@ -259,7 +261,7 @@ class SalesExecutor:
         }
 
     @staticmethod
-    def _define_kpis() -> Dict[str, Any]:
+    def _define_kpis() -> dict[str, Any]:
         """Define KPIs por fase."""
 
         return {

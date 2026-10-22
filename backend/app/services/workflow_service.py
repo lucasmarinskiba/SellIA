@@ -4,16 +4,19 @@ Workflow Service - Orchestrates leads through email sequences.
 - Handles step progression
 - Applies personalization
 """
+
 import logging
 from datetime import datetime, timedelta
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import Lead, Workflow, WorkflowExecution
-from app.core.scheduler import EmailScheduler
 from app.api.v1.workflows import render_email_template
+from app.core.scheduler import EmailScheduler
+from app.db.models import Lead, WorkflowExecution
 
 logger = logging.getLogger(__name__)
+
 
 # ============================================================
 # WORKFLOW SERVICE
@@ -25,11 +28,7 @@ class WorkflowService:
         self.scheduler = scheduler
 
     async def enroll_lead(
-        self,
-        session: AsyncSession,
-        workflow_id: int,
-        lead_id: int,
-        workflow: dict
+        self, session: AsyncSession, workflow_id: int, lead_id: int, workflow: dict
     ) -> dict:
         """
         Enroll lead in workflow.
@@ -60,12 +59,11 @@ class WorkflowService:
             "name": lead.name,
             "company": lead.company or "your company",
             "industry": lead.industry or "your industry",
-            "offer": "SellIA"
+            "offer": "SellIA",
         }
 
         subject, body = render_email_template(
-            type('Template', (), email_template),
-            lead_data
+            type("Template", (), email_template), lead_data
         )
 
         # Determine send time
@@ -88,7 +86,7 @@ class WorkflowService:
             step_number=1,
             email_status="scheduled",
             email_subject=subject,
-            email_body=body
+            email_body=body,
         )
         session.add(execution)
         await session.flush()  # Get ID before commit
@@ -100,13 +98,15 @@ class WorkflowService:
             subject=subject,
             body=body,
             send_at=send_at,
-            priority=5
+            priority=5,
         )
 
         execution.tracking_id = task_id
         await session.commit()
 
-        logger.info(f"✅ Lead {lead_id} enrolled in workflow {workflow_id} (exec: {execution.id})")
+        logger.info(
+            f"✅ Lead {lead_id} enrolled in workflow {workflow_id} (exec: {execution.id})"
+        )
 
         return {
             "id": execution.id,
@@ -116,7 +116,7 @@ class WorkflowService:
             "step_number": 1,
             "email_status": "scheduled",
             "tracking_id": task_id,
-            "send_at": send_at.isoformat() if send_at else None
+            "send_at": send_at.isoformat() if send_at else None,
         }
 
     async def progress_to_next_step(
@@ -124,7 +124,7 @@ class WorkflowService:
         session: AsyncSession,
         execution_id: int,
         workflow: dict,
-        scheduler: EmailScheduler
+        scheduler: EmailScheduler,
     ) -> dict:
         """
         Move execution to next step.
@@ -148,7 +148,9 @@ class WorkflowService:
 
         # Find next step in workflow
         steps = workflow.get("steps", [])
-        next_step = next((s for s in steps if s.get("step_number") == next_step_num), None)
+        next_step = next(
+            (s for s in steps if s.get("step_number") == next_step_num), None
+        )
 
         if not next_step:
             logger.info(f"Workflow complete: no more steps after {current_step}")
@@ -166,12 +168,11 @@ class WorkflowService:
             "name": lead.name,
             "company": lead.company or "your company",
             "industry": lead.industry or "your industry",
-            "offer": "SellIA"
+            "offer": "SellIA",
         }
 
         subject, body = render_email_template(
-            type('Template', (), email_template),
-            lead_data
+            type("Template", (), email_template), lead_data
         )
 
         # Determine send time
@@ -190,7 +191,7 @@ class WorkflowService:
             step_number=next_step_num,
             email_status="scheduled",
             email_subject=subject,
-            email_body=body
+            email_body=body,
         )
         session.add(next_execution)
         await session.flush()
@@ -202,25 +203,29 @@ class WorkflowService:
             subject=subject,
             body=body,
             send_at=send_at,
-            priority=5
+            priority=5,
         )
 
         next_execution.tracking_id = task_id
         await session.commit()
 
-        logger.info(f"⏭️ Execution {execution_id} → step {next_step_num} (new exec: {next_execution.id})")
+        logger.info(
+            f"⏭️ Execution {execution_id} → step {next_step_num} (new exec: {next_execution.id})"
+        )
 
         return {
             "execution_id": next_execution.id,
             "step_number": next_step_num,
             "tracking_id": task_id,
-            "send_at": send_at.isoformat() if send_at else None
+            "send_at": send_at.isoformat() if send_at else None,
         }
+
 
 # ============================================================
 # GLOBAL SERVICE INSTANCE
 # ============================================================
 service: WorkflowService = None
+
 
 async def init_workflow_service(scheduler: EmailScheduler) -> WorkflowService:
     """Initialize service."""
@@ -228,9 +233,9 @@ async def init_workflow_service(scheduler: EmailScheduler) -> WorkflowService:
     service = WorkflowService(scheduler)
     return service
 
+
 async def get_workflow_service() -> WorkflowService:
     """Get service instance."""
-    global service
     if not service:
         raise RuntimeError("Workflow service not initialized")
     return service

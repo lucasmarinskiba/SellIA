@@ -1,17 +1,21 @@
 """Unified analytics dashboard API endpoints."""
 
+import logging
+from datetime import UTC, datetime, timedelta
+from typing import Annotated
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
-from uuid import UUID
-from typing import Optional
-from datetime import timezone, timedelta, datetime
 
 from app.core.business_access import get_owned_business, get_owned_location
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.domains.analytics.unified_dashboard_service import UnifiedDashboardService
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1", tags=["unified-dashboard"])
 
@@ -27,9 +31,9 @@ router = APIRouter(prefix="/api/v1", tags=["unified-dashboard"])
 @router.post("/locations/{location_id}/metrics/aggregate")
 async def aggregate_location_metrics(
     location_id: UUID,
-    date: str = Query(...),  # YYYY-MM-DD
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    date: Annotated[str, Query()],  # YYYY-MM-DD
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Aggregate all metrics for location on given date."""
     location = await get_owned_location(db, location_id, current_user)
@@ -38,23 +42,21 @@ async def aggregate_location_metrics(
     try:
         result = await db.run_sync(
             lambda sync_db: UnifiedDashboardService.aggregate_location_day(
-                location_id=location_id,
-                business_id=business_id,
-                date=date,
-                db=sync_db
+                location_id=location_id, business_id=business_id, date=date, db=sync_db
             )
         )
         return result
     except Exception as e:
+        logger.exception("aggregate_location_metrics: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/businesses/{business_id}/summary")
 async def generate_business_summary(
     business_id: UUID,
-    date: Optional[str] = Query(None),  # YYYY-MM-DD, default today
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    date: Annotated[str | None, Query()] = None,  # YYYY-MM-DD, default today
 ) -> dict:
     """Generate high-level business summary."""
     await get_owned_business(db, business_id, current_user)
@@ -62,22 +64,21 @@ async def generate_business_summary(
     try:
         result = await db.run_sync(
             lambda sync_db: UnifiedDashboardService.generate_business_summary(
-                business_id=business_id,
-                date=date,
-                db=sync_db
+                business_id=business_id, date=date, db=sync_db
             )
         )
         return result
     except Exception as e:
+        logger.exception("generate_business_summary: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/businesses/{business_id}/location-comparison")
 async def compare_locations(
     business_id: UUID,
-    date: str = Query(...),  # YYYY-MM-DD
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    date: Annotated[str, Query()],  # YYYY-MM-DD
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Compare metrics across locations."""
     await get_owned_business(db, business_id, current_user)
@@ -85,22 +86,21 @@ async def compare_locations(
     try:
         result = await db.run_sync(
             lambda sync_db: UnifiedDashboardService.compare_locations(
-                business_id=business_id,
-                date=date,
-                db=sync_db
+                business_id=business_id, date=date, db=sync_db
             )
         )
         return result
     except Exception as e:
+        logger.exception("compare_locations: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/locations/{location_id}/unified-metrics")
 async def get_location_unified_metrics(
     location_id: UUID,
-    days: int = Query(30, ge=1, le=365),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ) -> dict:
     """Get unified metrics for location over time period."""
     await get_owned_location(db, location_id, current_user)
@@ -108,14 +108,19 @@ async def get_location_unified_metrics(
     try:
         from app.domains.analytics.unified_dashboard_models import UnifiedLocationMetric
 
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
         cutoff_str = cutoff.strftime("%Y-%m-%d")
 
         def _load(db: Session) -> list:
-            return db.query(UnifiedLocationMetric).filter(
-                UnifiedLocationMetric.location_id == location_id,
-                UnifiedLocationMetric.date >= cutoff_str
-            ).order_by(UnifiedLocationMetric.date.desc()).all()
+            return (
+                db.query(UnifiedLocationMetric)
+                .filter(
+                    UnifiedLocationMetric.location_id == location_id,
+                    UnifiedLocationMetric.date >= cutoff_str,
+                )
+                .order_by(UnifiedLocationMetric.date.desc())
+                .all()
+            )
 
         metrics = await db.run_sync(_load)
 
@@ -136,28 +141,33 @@ async def get_location_unified_metrics(
         return {
             "location_id": str(location_id),
             "period_days": days,
-            "data_points": metric_data
+            "data_points": metric_data,
         }
     except Exception as e:
+        logger.exception("get_location_unified_metrics: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/businesses/{business_id}/unified-dashboard")
 async def get_business_dashboard(
     business_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Get unified dashboard for entire business."""
     await get_owned_business(db, business_id, current_user)
 
     try:
-        from app.domains.analytics.unified_dashboard_models import BusinessDashboardSummary
+        from app.domains.analytics.unified_dashboard_models import (
+            BusinessDashboardSummary,
+        )
 
         def _load(db: Session) -> BusinessDashboardSummary | None:
-            return db.query(BusinessDashboardSummary).filter(
-                BusinessDashboardSummary.business_id == business_id
-            ).first()
+            return (
+                db.query(BusinessDashboardSummary)
+                .filter(BusinessDashboardSummary.business_id == business_id)
+                .first()
+            )
 
         summary = await db.run_sync(_load)
 
@@ -182,7 +192,8 @@ async def get_business_dashboard(
                 "stock_outs": summary.total_stock_outs,
             },
             "health_score": summary.overall_health_score,
-            "last_updated": summary.timestamp.isoformat()
+            "last_updated": summary.timestamp.isoformat(),
         }
     except Exception as e:
+        logger.exception("get_business_dashboard: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

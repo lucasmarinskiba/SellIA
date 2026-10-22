@@ -5,13 +5,28 @@ SQLAlchemy ORM Models
 - Workflow Executions (email tracking)
 - Lead Sources
 """
+
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Text, ForeignKey, JSON, Enum, Index, Uuid, UniqueConstraint
+
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    Uuid,
+)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-from enum import Enum as PyEnum
 
 Base = declarative_base()
+
 
 # ============================================================
 # LEADS
@@ -44,18 +59,24 @@ class Lead(Base):
     budget = Column(Float)
     timeline = Column(String(50))
     source = Column(String(50))  # "linkedin", "website", "manual", "referral"
-    status = Column(String(50), default="new")  # new, contacted, engaged, qualified, won, lost
+    status = Column(
+        String(50), default="new"
+    )  # new, contacted, engaged, qualified, won, lost
     score = Column(Float, default=0)
     score_breakdown = Column(JSON)  # {completeness: 10, engagement: 30, fit: 60}
     last_contacted = Column(DateTime)
     notes = Column(Text)
 
     created_at = Column(DateTime, default=datetime.now, nullable=False)
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
+    updated_at = Column(
+        DateTime, default=datetime.now, onupdate=datetime.now, nullable=False
+    )
     deleted_at = Column(DateTime, nullable=True)  # Soft delete timestamp
 
     # Relationships
-    workflow_executions = relationship("WorkflowExecution", back_populates="lead", cascade="all, delete-orphan")
+    workflow_executions = relationship(
+        "WorkflowExecution", back_populates="lead", cascade="all, delete-orphan"
+    )
 
     # Indexes for query performance
     __table_args__ = (
@@ -67,6 +88,7 @@ class Lead(Base):
         Index("idx_lead_owner_status", "user_id", "status", "deleted_at"),
         UniqueConstraint("user_id", "email", name="uq_leads_user_email"),
     )
+
 
 # ============================================================
 # WORKFLOWS
@@ -84,10 +106,15 @@ class Workflow(Base):
     steps = Column(JSON)  # Array of steps with templates
 
     created_at = Column(DateTime, default=datetime.now, nullable=False)
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
+    updated_at = Column(
+        DateTime, default=datetime.now, onupdate=datetime.now, nullable=False
+    )
 
     # Relationships
-    executions = relationship("WorkflowExecution", back_populates="workflow", cascade="all, delete-orphan")
+    executions = relationship(
+        "WorkflowExecution", back_populates="workflow", cascade="all, delete-orphan"
+    )
+
 
 # ============================================================
 # WORKFLOW EXECUTIONS - Email Tracking
@@ -100,7 +127,9 @@ class WorkflowExecution(Base):
     lead_id = Column(Integer, ForeignKey("leads.id"), nullable=False)
     lead_email = Column(String(255))  # Denormalized for quick lookup
     step_number = Column(Integer)
-    email_status = Column(String(50), default="scheduled")  # scheduled, sent, delivered, opened, clicked, bounced, unsubscribed
+    email_status = Column(
+        String(50), default="scheduled"
+    )  # scheduled, sent, delivered, opened, clicked, bounced, unsubscribed
     tracking_id = Column(String(100), unique=True)  # For webhook tracking
 
     sent_at = Column(DateTime)
@@ -116,11 +145,14 @@ class WorkflowExecution(Base):
     email_body = Column(Text)
 
     created_at = Column(DateTime, default=datetime.now, nullable=False)
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
+    updated_at = Column(
+        DateTime, default=datetime.now, onupdate=datetime.now, nullable=False
+    )
 
     # Relationships
     workflow = relationship("Workflow", back_populates="executions")
     lead = relationship("Lead", back_populates="workflow_executions")
+
 
 # ============================================================
 # LEAD SOURCES
@@ -131,7 +163,9 @@ class LeadSource(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
     description = Column(Text)
-    source_type = Column(String(50), nullable=False)  # linkedin, website, manual, referral, email, cold_outreach
+    source_type = Column(
+        String(50), nullable=False
+    )  # linkedin, website, manual, referral, email, cold_outreach
     status = Column(String(50), default="active")  # active, paused, inactive
     auto_workflow_id = Column(Integer, ForeignKey("workflows.id"), nullable=True)
     industry_filter = Column(String(100))
@@ -141,7 +175,10 @@ class LeadSource(Base):
     last_fetch = Column(DateTime)
 
     created_at = Column(DateTime, default=datetime.now, nullable=False)
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
+    updated_at = Column(
+        DateTime, default=datetime.now, onupdate=datetime.now, nullable=False
+    )
+
 
 # ============================================================
 # EMAIL LOGS (for audit trail)
@@ -164,7 +201,10 @@ class EmailLog(Base):
     clicked_at = Column(DateTime)
 
     created_at = Column(DateTime, default=datetime.now, nullable=False)
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
+    updated_at = Column(
+        DateTime, default=datetime.now, onupdate=datetime.now, nullable=False
+    )
+
 
 # ============================================================
 # WEBHOOK EVENTS (for tracking opens/clicks)
@@ -183,6 +223,7 @@ class WebhookEvent(Base):
     received_at = Column(DateTime, default=datetime.now, nullable=False)
     processed_at = Column(DateTime)
 
+
 # ============================================================
 # AUDIT LOG (for compliance + debugging)
 # ============================================================
@@ -197,6 +238,8 @@ class AuditLog(Base):
     new_values = Column(JSON)  # New state
     user_id = Column(String(100), nullable=True)  # Who did it (API key, user email)
     ip_address = Column(String(45), nullable=True)  # IP for traceability
-    reason = Column(String(255), nullable=True)  # Why (workflow automation, manual edit)
+    reason = Column(
+        String(255), nullable=True
+    )  # Why (workflow automation, manual edit)
 
     created_at = Column(DateTime, default=datetime.now, nullable=False)

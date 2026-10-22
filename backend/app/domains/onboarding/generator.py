@@ -2,15 +2,16 @@
 
 import uuid
 from typing import Any
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.businesses.models import Business, BusinessType
-from app.domains.business_context.models import BusinessContext as BizCtxModel
-from app.domains.catalogs.models import CatalogItem, CatalogItemType
-from app.domains.agents.models import AgentPersonality, AgentConfig
+from app.domains.agents.models import AgentConfig, AgentPersonality
 from app.domains.automations.models import Workflow
+from app.domains.business_context.models import BusinessContext as BizCtxModel
+from app.domains.businesses.models import Business, BusinessType
+from app.domains.catalogs.models import CatalogItem, CatalogItemType
 from app.domains.onboarding.schemas import BusinessDiscovery
 
 logger = get_logger(__name__)
@@ -22,7 +23,9 @@ class OnboardingGenerator:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def generate(self, user_id: uuid.UUID, discovery: BusinessDiscovery) -> dict[str, Any]:
+    async def generate(
+        self, user_id: uuid.UUID, discovery: BusinessDiscovery
+    ) -> dict[str, Any]:
         """Genera todas las entidades y devuelve resumen."""
         business = await self._create_business(user_id, discovery)
         await self._create_business_context(user_id, business.id, discovery)
@@ -40,7 +43,9 @@ class OnboardingGenerator:
             "message": f"¡{business.name} está listo! Se crearon {catalog_count} productos, {agent_count} agentes y {workflow_count} automatizaciones.",
         }
 
-    async def _create_business(self, user_id: uuid.UUID, discovery: BusinessDiscovery) -> Business:
+    async def _create_business(
+        self, user_id: uuid.UUID, discovery: BusinessDiscovery
+    ) -> Business:
         btype = BusinessType.SERVICES
         try:
             btype = BusinessType(discovery.type)
@@ -48,6 +53,7 @@ class OnboardingGenerator:
             pass
 
         from app.domains.businesses.models import DEFAULT_CONFIGS
+
         config = DEFAULT_CONFIGS.get(btype, {})
         if discovery.tone_of_voice:
             config["tone_of_voice"] = discovery.tone_of_voice
@@ -88,7 +94,7 @@ class OnboardingGenerator:
         try:
             specific_type = type_mapping.get(btype_str, BizCtxModel.BusinessType.OTHER)
         except Exception:
-            pass
+            logger.exception("_create_business_context: error inesperado")
 
         ctx = BizCtxModel(
             id=uuid.uuid4(),
@@ -107,13 +113,19 @@ class OnboardingGenerator:
         await self.db.flush()
         logger.info(f"Onboarding: BusinessContext creado para {business_id}")
 
-    async def _create_catalog(self, business_id: uuid.UUID, discovery: BusinessDiscovery) -> int:
+    async def _create_catalog(
+        self, business_id: uuid.UUID, discovery: BusinessDiscovery
+    ) -> int:
         count = 0
         for p in discovery.products:
             item = CatalogItem(
                 id=uuid.uuid4(),
                 business_id=business_id,
-                type=CatalogItemType.SERVICE if discovery.type == "services" else CatalogItemType.PRODUCT,
+                type=(
+                    CatalogItemType.SERVICE
+                    if discovery.type == "services"
+                    else CatalogItemType.PRODUCT
+                ),
                 name=p.name,
                 description=p.description or "",
                 price=p.price or 0,
@@ -130,7 +142,9 @@ class OnboardingGenerator:
         logger.info(f"Onboarding: {count} items de catálogo creados")
         return count
 
-    async def _create_agents(self, business_id: uuid.UUID, discovery: BusinessDiscovery) -> int:
+    async def _create_agents(
+        self, business_id: uuid.UUID, discovery: BusinessDiscovery
+    ) -> int:
         count = 0
         for agent_def in discovery.suggested_agents:
             slug = agent_def.get("slug", f"agent-{count}")
@@ -169,7 +183,9 @@ class OnboardingGenerator:
         logger.info(f"Onboarding: {count} agentes creados")
         return count
 
-    async def _create_workflows(self, business_id: uuid.UUID, discovery: BusinessDiscovery) -> int:
+    async def _create_workflows(
+        self, business_id: uuid.UUID, discovery: BusinessDiscovery
+    ) -> int:
         count = 0
         for wf_def in discovery.suggested_workflows:
             workflow = Workflow(

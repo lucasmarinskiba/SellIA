@@ -1,9 +1,11 @@
+import hashlib
+import hmac
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Optional
-import hashlib
-import hmac
+
+logger = logging.getLogger(__name__)
 
 
 class Platform(str, Enum):
@@ -28,7 +30,7 @@ class WebhookConfig:
     api_secret: str
     enabled: bool = True
     verified: bool = False
-    last_verified: Optional[datetime] = None
+    last_verified: datetime | None = None
 
 
 @dataclass
@@ -36,12 +38,12 @@ class Message:
     id: str
     platform: Platform
     contact_id: str
-    contact_name: Optional[str]
+    contact_name: str | None
     content: str
     direction: str  # inbound, outbound
     status: MessageStatus
     timestamp: datetime
-    delivery_timestamp: Optional[datetime] = None
+    delivery_timestamp: datetime | None = None
     metadata: dict = field(default_factory=dict)
 
 
@@ -50,7 +52,7 @@ class ConversationThread:
     id: str
     platform: Platform
     contact_id: str
-    contact_name: Optional[str]
+    contact_name: str | None
     last_message_at: datetime
     message_count: int
     unread_count: int
@@ -74,9 +76,9 @@ class ChannelStats:
 class PlatformCredentials:
     platform: Platform
     account_id: str
-    account_name: Optional[str]
-    phone_number: Optional[str]  # WhatsApp only
-    bot_token: Optional[str]  # Telegram only
+    account_name: str | None
+    phone_number: str | None  # WhatsApp only
+    bot_token: str | None  # Telegram only
     api_key: str
     api_secret: str
     is_verified: bool = False
@@ -97,7 +99,7 @@ class WhatsAppAgent:
         return hmac.compare_digest(computed, signature)
 
     def format_outbound_message(
-        self, contact_id: str, message_content: str, media_url: Optional[str] = None
+        self, contact_id: str, message_content: str, media_url: str | None = None
     ) -> dict:
         return {
             "messaging_product": "whatsapp",
@@ -107,7 +109,7 @@ class WhatsAppAgent:
             "image": {"link": media_url} if media_url else None,
         }
 
-    def parse_inbound_webhook(self, payload: dict) -> Optional[Message]:
+    def parse_inbound_webhook(self, payload: dict) -> Message | None:
         try:
             entry = payload.get("entry", [{}])[0]
             changes = entry.get("changes", [{}])[0]
@@ -133,6 +135,7 @@ class WhatsAppAgent:
                 timestamp=timestamp,
             )
         except Exception as e:
+            logger.exception("parse_inbound_webhook: error inesperado")
             print(f"WhatsApp webhook parse error: {e}")
             return None
 
@@ -142,16 +145,12 @@ class TelegramAgent:
         self.credentials = credentials
         self.platform = Platform.TELEGRAM
 
-    def verify_webhook_signature(
-        self, payload: str, bot_token: str
-    ) -> bool:
-        expected = hmac.new(
-            bot_token.encode(), payload.encode(), hashlib.sha256
-        ).hexdigest()
+    def verify_webhook_signature(self, payload: str, bot_token: str) -> bool:
+        hmac.new(bot_token.encode(), payload.encode(), hashlib.sha256).hexdigest()
         return True  # Telegram uses different verification
 
     def format_outbound_message(
-        self, chat_id: str, message_content: str, keyboard: Optional[list] = None
+        self, chat_id: str, message_content: str, keyboard: list | None = None
     ) -> dict:
         return {
             "chat_id": chat_id,
@@ -160,7 +159,7 @@ class TelegramAgent:
             "reply_markup": {"inline_keyboard": keyboard} if keyboard else None,
         }
 
-    def parse_inbound_webhook(self, payload: dict) -> Optional[Message]:
+    def parse_inbound_webhook(self, payload: dict) -> Message | None:
         try:
             update = payload.get("message", {})
             message_id = update.get("message_id", "")
@@ -183,6 +182,7 @@ class TelegramAgent:
                 timestamp=timestamp,
             )
         except Exception as e:
+            logger.exception("parse_inbound_webhook: error inesperado")
             print(f"Telegram webhook parse error: {e}")
             return None
 
@@ -193,9 +193,7 @@ class IntegrationManager:
         self.conversations = {}
         self.message_log = []
 
-    def register_platform(
-        self, user_id: str, credentials: PlatformCredentials
-    ) -> bool:
+    def register_platform(self, user_id: str, credentials: PlatformCredentials) -> bool:
         key = f"{user_id}:{credentials.platform.value}"
 
         if credentials.platform == Platform.WHATSAPP:
@@ -205,7 +203,9 @@ class IntegrationManager:
 
         return True
 
-    def get_channel_stats(self, user_id: str, platform: Platform) -> Optional[ChannelStats]:
+    def get_channel_stats(
+        self, user_id: str, platform: Platform
+    ) -> ChannelStats | None:
         import random
         from datetime import datetime, timedelta
 
@@ -222,9 +222,9 @@ class IntegrationManager:
 
     def get_conversation(
         self, user_id: str, platform: Platform, contact_id: str
-    ) -> Optional[ConversationThread]:
+    ) -> ConversationThread | None:
         import random
-        from datetime import datetime, timedelta
+        from datetime import datetime
 
         key = f"{user_id}:{platform.value}:{contact_id}"
 
@@ -244,11 +244,13 @@ class IntegrationManager:
         return self.conversations[key]
 
     def log_message(self, user_id: str, message: Message) -> None:
-        self.message_log.append({
-            "user_id": user_id,
-            "message": message,
-            "logged_at": datetime.now(),
-        })
+        self.message_log.append(
+            {
+                "user_id": user_id,
+                "message": message,
+                "logged_at": datetime.now(),
+            }
+        )
         # Keep last 10000 messages
         if len(self.message_log) > 10000:
             self.message_log = self.message_log[-10000:]
@@ -259,9 +261,11 @@ class IntegrationManager:
         matching = [
             entry["message"]
             for entry in self.message_log
-            if (entry["user_id"] == user_id
+            if (
+                entry["user_id"] == user_id
                 and entry["message"].platform == platform
-                and entry["message"].contact_id == contact_id)
+                and entry["message"].contact_id == contact_id
+            )
         ]
         return matching[-limit:]
 

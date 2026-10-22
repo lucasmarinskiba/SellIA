@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -23,8 +24,8 @@ router = APIRouter(prefix="/{business_id}/forecasting", tags=["Demand Forecastin
 @router.post("/sync")
 async def sync_series(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     return await ForecastingService(db).sync_series(business_id)
 
@@ -32,20 +33,24 @@ async def sync_series(
 @router.get("/series", response_model=list[SeriesResponse])
 async def list_series(
     business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     active_only: bool = True,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
-    return await ForecastingService(db).list_series(business_id, active_only=active_only)
+    return await ForecastingService(db).list_series(
+        business_id, active_only=active_only
+    )
 
 
 @router.post("/run")
 async def run_all(
     business_id: UUID,
-    body: RunRequest = RunRequest(),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    body: RunRequest | None = None,
 ):
+    if body is None:
+        body = RunRequest()
     return await ForecastingService(db).run_all(
         business_id, horizon=body.horizon, reconcile=body.reconcile
     )
@@ -55,9 +60,9 @@ async def run_all(
 async def run_one(
     business_id: UUID,
     series_id: UUID,
-    horizon: int = Query(28, ge=7, le=180),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    horizon: Annotated[int, Query(ge=7, le=180)] = 28,
 ):
     svc = ForecastingService(db)
     rows = await svc.list_series(business_id, active_only=False)
@@ -70,10 +75,10 @@ async def run_one(
 @router.get("/forecast", response_model=ForecastResponse)
 async def get_forecast(
     business_id: UUID,
-    series_key: str = Query(..., description="e.g. total:revenue:daily:*"),
-    horizon: int | None = Query(None, ge=1, le=180),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    series_key: Annotated[str, Query(description="e.g. total:revenue:daily:*")],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    horizon: Annotated[int | None, Query(ge=1, le=180)] = None,
 ):
     res = await ForecastingService(db).get_forecast(business_id, series_key, horizon)
     if res is None:
@@ -84,8 +89,8 @@ async def get_forecast(
 @router.post("/evaluate-accuracy")
 async def evaluate_accuracy(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     return await ForecastingService(db).evaluate_accuracy(business_id)
 
@@ -93,7 +98,7 @@ async def evaluate_accuracy(
 @router.get("/dashboard")
 async def dashboard(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     return await ForecastingService(db).dashboard(business_id)

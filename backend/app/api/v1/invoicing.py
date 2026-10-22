@@ -2,21 +2,25 @@
 Invoicing — Generación de facturas PDF, historial, email automático.
 """
 
+import logging
+from datetime import datetime
+from typing import Any
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional, Dict, List, Any
-from datetime import datetime
-import logging
+
+from app.core.clock import utc_now
 
 router = APIRouter(prefix="/api/v1/invoicing", tags=["invoicing"])
 logger = logging.getLogger(__name__)
 
 # Mock invoice DB
-_INVOICES_DB: Dict[str, Any] = {}
+_INVOICES_DB: dict[str, Any] = {}
 
 
 class InvoiceLineItem(BaseModel):
     """Item en factura."""
+
     product_name: str
     qty: int
     unit_price: float
@@ -25,6 +29,7 @@ class InvoiceLineItem(BaseModel):
 
 class Invoice(BaseModel):
     """Factura."""
+
     id: str
     invoice_number: str  # INV-2026-0001
     order_id: str
@@ -32,7 +37,7 @@ class Invoice(BaseModel):
     business_tax_id: str
     customer_name: str
     customer_email: str
-    items: List[InvoiceLineItem]
+    items: list[InvoiceLineItem]
     subtotal: float
     tax_pct: float
     tax_amount: float
@@ -47,7 +52,7 @@ async def create_invoice(
     order_id: str,
     customer_name: str,
     customer_email: str,
-    items: List[Dict[str, Any]],
+    items: list[dict[str, Any]],
     subtotal: float,
     tax_pct: float = 0.0,
 ):
@@ -67,7 +72,7 @@ async def create_invoice(
         total = subtotal + tax_amount
 
         # Generar número de factura (TODO: incrementar desde última)
-        invoice_number = f"INV-{datetime.utcnow().strftime('%Y')}-0001"
+        invoice_number = f"INV-{utc_now().strftime('%Y')}-0001"
         invoice_id = f"inv_{order_id}"
 
         # Crear factura
@@ -84,8 +89,8 @@ async def create_invoice(
             "tax_pct": tax_pct,
             "tax_amount": round(tax_amount, 2),
             "total": round(total, 2),
-            "issued_at": datetime.utcnow().isoformat(),
-            "due_date": datetime.utcnow().isoformat(),  # TODO: +30 días si crédito
+            "issued_at": utc_now().isoformat(),
+            "due_date": utc_now().isoformat(),  # TODO: +30 días si crédito
             "status": "issued",
         }
 
@@ -114,7 +119,7 @@ async def create_invoice(
         }
 
     except Exception as e:
-        logger.error(f"Error creando factura: {str(e)}")
+        logger.exception("Error creando factura")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -137,14 +142,16 @@ async def send_invoice_email(invoice_id: str):
 
     invoice = _INVOICES_DB[invoice_id]
 
-    logger.info(f"Reenviando factura {invoice['invoice_number']} a {invoice['customer_email']}")
+    logger.info(
+        f"Reenviando factura {invoice['invoice_number']} a {invoice['customer_email']}"
+    )
 
     # TODO: send_email con PDF adjunto
 
     return {
         "status": "sent",
         "invoice_number": invoice["invoice_number"],
-        "sent_to": invoice["customer_email"]
+        "sent_to": invoice["customer_email"],
     }
 
 

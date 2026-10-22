@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Query
-from datetime import datetime, timedelta
+
 from app.domains.enterprise.performance_dashboard import (
     PerformanceDashboardEngine,
     TimeRange,
@@ -13,7 +13,9 @@ dashboard_engine = PerformanceDashboardEngine()
 async def get_performance_dashboard(
     user_id: str,
     segment: str = Query("active", description="User segment"),
-    time_range: str = Query("month", description="Time range: today, week, month, quarter, year"),
+    time_range: str = Query(
+        "month", description="Time range: today, week, month, quarter, year"
+    ),
 ):
     """Get complete performance dashboard for user."""
     try:

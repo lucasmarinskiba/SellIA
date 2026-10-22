@@ -1,12 +1,22 @@
 """Competitive intelligence models — competitor tracking + market analysis."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from decimal import Decimal
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Decimal, Enum as SQLEnum, Index, Float, Boolean
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Decimal,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+)
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -14,6 +24,7 @@ from app.core.database import Base
 
 class CompetitorType(str, Enum):
     """Competitor classification."""
+
     DIRECT = "direct"  # Same product/service + location
     INDIRECT = "indirect"  # Similar product, different approach
     SUBSTITUTE = "substitute"  # Alternative solution
@@ -22,6 +33,7 @@ class CompetitorType(str, Enum):
 
 class CompetitorStatus(str, Enum):
     """Tracking status."""
+
     ACTIVE = "active"
     INACTIVE = "inactive"
     MONITORING = "monitoring"
@@ -29,10 +41,16 @@ class CompetitorStatus(str, Enum):
 
 class Competitor(Base):
     """Tracked competitor business."""
+
     __tablename__ = "competitors"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Identity
     name = Column(String(255), nullable=False)
@@ -67,8 +85,8 @@ class Competitor(Base):
     notes = Column(String(1000), nullable=True)
     threat_level = Column(String(20), nullable=True)  # low, medium, high, critical
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc), index=True)
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC), index=True)
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_business_competitor", "business_id", "competitor_type"),
@@ -77,11 +95,21 @@ class Competitor(Base):
 
 class CompetitorPricing(Base):
     """Track competitor pricing snapshots."""
+
     __tablename__ = "competitor_pricing"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    competitor_id = Column(UUID(as_uuid=True), ForeignKey("competitors.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False)
+    competitor_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("competitors.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     # Product/service
     product_name = Column(String(255), nullable=False)
@@ -101,7 +129,7 @@ class CompetitorPricing(Base):
     date_observed = Column(String(10), nullable=False)  # YYYY-MM-DD
     source = Column(String(100), nullable=True)  # website, store_visit, aggregator
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     competitor = relationship("Competitor", foreign_keys=[competitor_id])
 
@@ -113,11 +141,21 @@ class CompetitorPricing(Base):
 
 class CompetitorOffering(Base):
     """Track competitor product/service offerings."""
+
     __tablename__ = "competitor_offerings"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    competitor_id = Column(UUID(as_uuid=True), ForeignKey("competitors.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False)
+    competitor_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("competitors.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     # Offering
     offering_type = Column(String(50), nullable=False)  # product, service, feature
@@ -126,7 +164,9 @@ class CompetitorOffering(Base):
 
     # Details
     description = Column(String(500), nullable=True)
-    features = Column(JSONB, default=list)  # ["premium_support", "api_access", "white_label"]
+    features = Column(
+        JSONB, default=list
+    )  # ["premium_support", "api_access", "white_label"]
     launch_date = Column(String(10), nullable=True)  # YYYY-MM-DD
     status = Column(String(20), default="active")  # active, beta, discontinued
 
@@ -134,21 +174,26 @@ class CompetitorOffering(Base):
     our_has_equivalent = Column(Boolean, default=False)
     competitive_advantage = Column(String(500), nullable=True)  # What they do better
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     competitor = relationship("Competitor", foreign_keys=[competitor_id])
 
-    __table_args__ = (
-        Index("idx_competitor_category", "competitor_id", "category"),
-    )
+    __table_args__ = (Index("idx_competitor_category", "competitor_id", "category"),)
 
 
 class CompetitivePosition(Base):
     """Aggregate competitive position snapshot."""
+
     __tablename__ = "competitive_positions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
 
     # Date
     date = Column(String(10), nullable=False)  # YYYY-MM-DD
@@ -160,8 +205,12 @@ class CompetitivePosition(Base):
 
     # Market position
     price_position = Column(String(20), nullable=True)  # premium, market_rate, discount
-    feature_parity_score = Column(Decimal(3, 1), nullable=True)  # 0-10 (vs top 3 competitors)
-    market_differentiation = Column(String(500), nullable=True)  # Our competitive advantage
+    feature_parity_score = Column(
+        Decimal(3, 1), nullable=True
+    )  # 0-10 (vs top 3 competitors)
+    market_differentiation = Column(
+        String(500), nullable=True
+    )  # Our competitive advantage
 
     # Price intelligence
     avg_competitor_price = Column(Decimal(10, 2), nullable=True)
@@ -172,10 +221,8 @@ class CompetitivePosition(Base):
     avg_competitor_rating = Column(Decimal(2, 1), nullable=True)  # 1-5
     avg_review_count = Column(Integer, default=0)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     business = relationship("Business", foreign_keys=[business_id])
 
-    __table_args__ = (
-        Index("idx_business_date", "business_id", "date"),
-    )
+    __table_args__ = (Index("idx_business_date", "business_id", "date"),)

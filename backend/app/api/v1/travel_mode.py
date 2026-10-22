@@ -19,9 +19,12 @@ Sistema entonces:
 """
 
 import logging
-from typing import Dict, Any
 from datetime import datetime
+from typing import Any
+
 from fastapi import APIRouter, HTTPException
+
+from app.core.clock import utc_now
 from app.core.database import AsyncSessionLocal
 
 logger = logging.getLogger(__name__)
@@ -39,7 +42,7 @@ async def set_travel_mode(
     notes: str = "",
     calendar_service=None,  # DI
     whatsapp_service=None,  # DI
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Usuario avisa que se va de viaje.
 
@@ -81,7 +84,7 @@ async def set_travel_mode(
                 logger.info(f"WhatsApp auto-response set: {wa_result}")
 
             # 3. Guardar estado en DB
-            db_result = await _save_travel_mode_db(
+            await _save_travel_mode_db(
                 seller_id=seller_id,
                 start_date=start_dt,
                 end_date=end_dt,
@@ -105,7 +108,7 @@ async def set_travel_mode(
 
         elif status.lower() == "off":
             # Desactivar travel mode
-            db_result = await _save_travel_mode_db(
+            await _save_travel_mode_db(
                 seller_id=seller_id,
                 status="inactive",
             )
@@ -120,16 +123,16 @@ async def set_travel_mode(
             raise HTTPException(status_code=400, detail="Status debe ser 'on' o 'off'")
 
     except ValueError as e:
-        logger.error(f"Date parsing error: {str(e)}")
+        logger.error(f"Date parsing error: {e!s}")
         raise HTTPException(status_code=400, detail="Fechas inválidas. Usar YYYY-MM-DD")
 
     except Exception as e:
-        logger.error(f"Travel mode setup failed: {str(e)}")
+        logger.exception("Travel mode setup failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/travel-mode/status")
-async def get_travel_mode_status(seller_id: str) -> Dict[str, Any]:
+async def get_travel_mode_status(seller_id: str) -> dict[str, Any]:
     """
     Obtiene status actual de travel mode.
 
@@ -144,7 +147,7 @@ async def get_travel_mode_status(seller_id: str) -> Dict[str, Any]:
 
         if status and status["is_active"]:
             end_dt = datetime.fromisoformat(status["end_date"])
-            days_left = (end_dt - datetime.utcnow()).days
+            days_left = (end_dt - utc_now()).days
 
             return {
                 "status": "success",
@@ -168,13 +171,13 @@ async def get_travel_mode_status(seller_id: str) -> Dict[str, Any]:
                 "message": "Sistema en modo normal",
             }
 
-    except Exception as e:
-        logger.error(f"Get status failed: {str(e)}")
+    except Exception:
+        logger.exception("Get status failed")
         return {"status": "error"}
 
 
 @router.get("/travel-mode/pending-items")
-async def get_pending_items_for_return(seller_id: str) -> Dict[str, Any]:
+async def get_pending_items_for_return(seller_id: str) -> dict[str, Any]:
     """
     Obtiene items pendientes mientras estaba de viaje (para cuando vuelve).
 
@@ -220,8 +223,8 @@ async def get_pending_items_for_return(seller_id: str) -> Dict[str, Any]:
             "summary": f"Mientras viajabas: {pending['orders_completed']} órdenes, ${pending['revenue_generated']} revenue, {pending['content_published']} posts.",
         }
 
-    except Exception as e:
-        logger.error(f"Get pending failed: {str(e)}")
+    except Exception:
+        logger.exception("Get pending failed")
         return {"status": "error"}
 
 
@@ -236,12 +239,12 @@ async def is_travel_mode_active(seller_id: str) -> bool:
     travel_mode = await _get_travel_mode_db(seller_id)
     if travel_mode and travel_mode.get("is_active"):
         end_date = datetime.fromisoformat(travel_mode["end_date"])
-        if datetime.utcnow() < end_date:
+        if utc_now() < end_date:
             return True
     return False
 
 
-async def validate_travel_mode_for_scheduling(seller_id: str) -> Dict[str, Any]:
+async def validate_travel_mode_for_scheduling(seller_id: str) -> dict[str, Any]:
     """
     P1: Valida si se puede agendar una call.
     Si travel_mode está activo, retorna error.
@@ -261,7 +264,7 @@ async def _setup_travel_autoresponse(
     start_dt,
     end_dt,
     notes: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Configura auto-respuestas WhatsApp durante viaje."""
 
     # Auto-respuesta predefinida
@@ -289,13 +292,15 @@ async def _save_travel_mode_db(
     start_date=None,
     end_date=None,
     notes: str = "",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Guarda travel mode en DB real."""
 
     try:
-        from app.core.database.payment_models import TravelMode
-        from sqlalchemy import select
         import uuid
+
+        from sqlalchemy import select
+
+        from app.core.database.payment_models import TravelMode
 
         async with AsyncSessionLocal() as db:
             # Buscar registro existente
@@ -311,7 +316,7 @@ async def _save_travel_mode_db(
                 if end_date:
                     travel_mode.end_date = end_date
                 travel_mode.notes = notes
-                travel_mode.updated_at = datetime.utcnow()
+                travel_mode.updated_at = utc_now()
             else:
                 # Crear nuevo
                 travel_mode = TravelMode(
@@ -335,21 +340,21 @@ async def _save_travel_mode_db(
                 "is_active": travel_mode.is_active,
             }
     except Exception as e:
-        logger.error(f"Error saving travel mode: {str(e)}")
+        logger.exception("Error saving travel mode")
         return {"status": "error", "error": str(e)}
 
 
-async def _get_travel_mode_db(seller_id: str) -> Dict[str, Any]:
+async def _get_travel_mode_db(seller_id: str) -> dict[str, Any]:
     """Obtiene travel mode del DB."""
 
     try:
-        from app.core.database.payment_models import TravelMode
         from sqlalchemy import select
+
+        from app.core.database.payment_models import TravelMode
 
         async with AsyncSessionLocal() as db:
             stmt = select(TravelMode).where(
-                TravelMode.seller_id == seller_id,
-                TravelMode.is_active == True
+                TravelMode.seller_id == seller_id, TravelMode.is_active == True
             )
             result = await db.execute(stmt)
             travel_mode = result.scalars().first()
@@ -358,11 +363,19 @@ async def _get_travel_mode_db(seller_id: str) -> Dict[str, Any]:
                 return {
                     "is_active": True,
                     "seller_id": seller_id,
-                    "start_date": travel_mode.start_date.isoformat() if travel_mode.start_date else None,
-                    "end_date": travel_mode.end_date.isoformat() if travel_mode.end_date else None,
+                    "start_date": (
+                        travel_mode.start_date.isoformat()
+                        if travel_mode.start_date
+                        else None
+                    ),
+                    "end_date": (
+                        travel_mode.end_date.isoformat()
+                        if travel_mode.end_date
+                        else None
+                    ),
                     "notes": travel_mode.notes,
                 }
             return None
-    except Exception as e:
-        logger.error(f"Error getting travel mode: {str(e)}")
+    except Exception:
+        logger.exception("Error getting travel mode")
         return None

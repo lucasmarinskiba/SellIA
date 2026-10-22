@@ -3,14 +3,13 @@ FOMO Workflow Actions - Integration with Workflow Engine
 Triggers FOMO campaigns from workflow events
 """
 
-from typing import Optional, Any
+from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
-from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.fomo.service import fomo_service
-from app.domains.fomo.models import FOMOCampaign
 
 
 class FOMOWorkflowActions:
@@ -38,17 +37,19 @@ class FOMOWorkflowActions:
         event = await fomo_service.log_event(
             db,
             campaign_id=campaign_id,
-            event_type='view',
+            event_type="view",
             customer_id=customer_id,
             product_id=product_id,
             metadata={
-                'stock_available': stock_available,
-                'stock_total': stock_total,
-                'urgency_level': 'high' if stock_available < stock_total * 0.2 else 'medium',
+                "stock_available": stock_available,
+                "stock_total": stock_total,
+                "urgency_level": (
+                    "high" if stock_available < stock_total * 0.2 else "medium"
+                ),
             },
         )
 
-        await fomo_service.record_metric(db, campaign_id, 'impression')
+        await fomo_service.record_metric(db, campaign_id, "impression")
         await db.commit()
 
         return {
@@ -77,18 +78,20 @@ class FOMOWorkflowActions:
             return {"success": False, "error": "Campaign not found"}
 
         config = campaign.config or {}
-        discount_percent = config.get('discountPercent', 0)
+        discount_percent = config.get("discountPercent", 0)
 
         event = await fomo_service.log_event(
             db,
             campaign_id=campaign_id,
-            event_type='abandoned',
+            event_type="abandoned",
             customer_id=customer_id,
             product_id=product_id,
             metadata={
-                'cart_value': cart_value,
-                'items_count': items_count,
-                'recovery_offer': f"{discount_percent}% OFF" if discount_percent > 0 else None,
+                "cart_value": cart_value,
+                "items_count": items_count,
+                "recovery_offer": (
+                    f"{discount_percent}% OFF" if discount_percent > 0 else None
+                ),
             },
         )
 
@@ -107,9 +110,9 @@ class FOMOWorkflowActions:
         campaign_id: UUID,
         customer_id: UUID,
         product_id: UUID,
-        event_type: str = 'purchase',
-        customer_name: Optional[str] = None,
-        product_name: Optional[str] = None,
+        event_type: str = "purchase",
+        customer_name: str | None = None,
+        product_name: str | None = None,
         **kwargs: Any,
     ) -> dict:
         """
@@ -127,13 +130,13 @@ class FOMOWorkflowActions:
             customer_id=customer_id,
             product_id=product_id,
             metadata={
-                'customer_name': customer_name or 'Usuario',
-                'product_name': product_name or 'Producto',
+                "customer_name": customer_name or "Usuario",
+                "product_name": product_name or "Producto",
             },
         )
 
-        if event_type == 'purchase':
-            await fomo_service.record_metric(db, campaign_id, 'conversion')
+        if event_type == "purchase":
+            await fomo_service.record_metric(db, campaign_id, "conversion")
 
         await db.commit()
 
@@ -162,15 +165,15 @@ class FOMOWorkflowActions:
         event = await fomo_service.log_event(
             db,
             campaign_id=campaign_id,
-            event_type='view',
+            event_type="view",
             customer_id=customer_id,
             metadata={
-                'countdown_hours': countdown_hours,
-                'deadline': (datetime.now(timezone.utc).isoformat()),
+                "countdown_hours": countdown_hours,
+                "deadline": (datetime.now(UTC).isoformat()),
             },
         )
 
-        await fomo_service.record_metric(db, campaign_id, 'impression')
+        await fomo_service.record_metric(db, campaign_id, "impression")
         await db.commit()
 
         return {
@@ -185,7 +188,7 @@ class FOMOWorkflowActions:
         db: AsyncSession,
         campaign_id: UUID,
         customer_id: UUID,
-        customer_segment: str = 'vip',
+        customer_segment: str = "vip",
         **kwargs: Any,
     ) -> dict:
         """
@@ -199,50 +202,50 @@ class FOMOWorkflowActions:
         event = await fomo_service.log_event(
             db,
             campaign_id=campaign_id,
-            event_type='view',
+            event_type="view",
             customer_id=customer_id,
             metadata={
-                'segment': customer_segment,
-                'exclusive': True,
+                "segment": customer_segment,
+                "exclusive": True,
             },
         )
 
-        await fomo_service.record_metric(db, campaign_id, 'impression')
+        await fomo_service.record_metric(db, campaign_id, "impression")
         await db.commit()
 
         segment_labels = {
-            'vip': 'Acceso exclusivo VIP',
-            'early_adopter': 'Early access para clientes destacados',
-            'high_value': 'Oferta especial para ti',
+            "vip": "Acceso exclusivo VIP",
+            "early_adopter": "Early access para clientes destacados",
+            "high_value": "Oferta especial para ti",
         }
 
         return {
             "success": True,
             "event_id": str(event.id),
-            "message": segment_labels.get(customer_segment, 'Acceso exclusivo'),
+            "message": segment_labels.get(customer_segment, "Acceso exclusivo"),
         }
 
 
 # Workflow trigger mapping
 FOMO_WORKFLOW_TRIGGERS = {
-    'cart_abandon': {
-        'action': FOMOWorkflowActions.trigger_cart_recovery,
-        'description': 'Cart abandonment recovery with urgency',
+    "cart_abandon": {
+        "action": FOMOWorkflowActions.trigger_cart_recovery,
+        "description": "Cart abandonment recovery with urgency",
     },
-    'page_view': {
-        'action': FOMOWorkflowActions.trigger_scarcity_message,
-        'description': 'Show scarcity on product view',
+    "page_view": {
+        "action": FOMOWorkflowActions.trigger_scarcity_message,
+        "description": "Show scarcity on product view",
     },
-    'purchase': {
-        'action': FOMOWorkflowActions.trigger_social_proof,
-        'description': 'Display purchase in social proof feed',
+    "purchase": {
+        "action": FOMOWorkflowActions.trigger_social_proof,
+        "description": "Display purchase in social proof feed",
     },
-    'low_engagement': {
-        'action': FOMOWorkflowActions.trigger_countdown_urgency,
-        'description': 'Re-engage with countdown offer',
+    "low_engagement": {
+        "action": FOMOWorkflowActions.trigger_countdown_urgency,
+        "description": "Re-engage with countdown offer",
     },
-    'vip_access': {
-        'action': FOMOWorkflowActions.trigger_exclusivity,
-        'description': 'Exclusive offer for VIP segment',
+    "vip_access": {
+        "action": FOMOWorkflowActions.trigger_exclusivity,
+        "description": "Exclusive offer for VIP segment",
     },
 }

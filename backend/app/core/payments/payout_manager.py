@@ -14,12 +14,14 @@ Database model: Payout (needs to be added to payment_models)
 
 import logging
 import os
-import stripe
-from typing import Dict, Any, Optional, List
-from datetime import datetime, timedelta
-from enum import Enum
-from sqlalchemy.orm import Session
+from datetime import timedelta
 from decimal import Decimal
+from enum import Enum
+from typing import Any
+
+from sqlalchemy.orm import Session
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +35,7 @@ PAYOUT_SCHEDULE = os.getenv("PAYOUT_SCHEDULE", "weekly")  # daily, weekly, month
 
 class PayoutStatus(str, Enum):
     """Payout statuses."""
+
     PENDING = "pending"
     PROCESSING = "processing"
     PAID = "paid"
@@ -43,6 +46,7 @@ class PayoutStatus(str, Enum):
 
 class PayoutFrequency(str, Enum):
     """Payout frequencies."""
+
     DAILY = "daily"
     WEEKLY = "weekly"
     BIWEEKLY = "biweekly"
@@ -59,7 +63,7 @@ class PayoutManager:
         chargebacks: float = 0.0,
         platform_fees: bool = True,
         stripe_fees: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate net payout after all fees and deductions.
 
@@ -93,10 +97,9 @@ class PayoutManager:
             # Calculate Stripe fees
             stripe_fee = Decimal(0)
             if stripe_fees:
-                stripe_fee = (
-                    amount * Decimal(str(STRIPE_ACCOUNT_FEES_PERCENT / 100))
-                    + Decimal(str(STRIPE_ACCOUNT_FEES_FIXED))
-                )
+                stripe_fee = amount * Decimal(
+                    str(STRIPE_ACCOUNT_FEES_PERCENT / 100)
+                ) + Decimal(str(STRIPE_ACCOUNT_FEES_FIXED))
                 amount -= stripe_fee
 
             # Calculate platform fees
@@ -133,7 +136,7 @@ class PayoutManager:
             }
 
         except Exception as e:
-            logger.error(f"Error calculating payout: {str(e)}")
+            logger.exception("Error calculating payout")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -145,8 +148,8 @@ class PayoutManager:
         currency: str = "USD",
         frequency: str = "weekly",
         payout_method: str = "bank_transfer",
-        bank_account_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        bank_account_id: str | None = None,
+    ) -> dict[str, Any]:
         """
         Create a payout for a seller.
 
@@ -187,8 +190,8 @@ class PayoutManager:
             net_amount = payout_calc["net_payout"]
 
             # Create payout record
-            payout_id = f"payout_{seller_id}_{int(datetime.utcnow().timestamp())}"
-            now = datetime.utcnow()
+            payout_id = f"payout_{seller_id}_{int(utc_now().timestamp())}"
+            now = utc_now()
 
             # Determine scheduled date based on frequency
             if frequency == PayoutFrequency.DAILY:
@@ -219,15 +222,15 @@ class PayoutManager:
             }
 
         except Exception as e:
-            logger.error(f"Error creating payout: {str(e)}")
+            logger.exception("Error creating payout")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
     def process_payout(
         payout_id: str,
         stripe_connect_account: str,
-        bank_account_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        bank_account_id: str | None = None,
+    ) -> dict[str, Any]:
         """
         Process payout via Stripe Connect.
 
@@ -264,7 +267,7 @@ class PayoutManager:
             }
 
         except Exception as e:
-            logger.error(f"Error processing payout: {str(e)}")
+            logger.exception("Error processing payout")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -272,7 +275,7 @@ class PayoutManager:
         db: Session,
         seller_id: str,
         limit: int = 50,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get payout history for seller.
 
@@ -312,7 +315,7 @@ class PayoutManager:
             }
 
         except Exception as e:
-            logger.error(f"Error getting payout history: {str(e)}")
+            logger.exception("Error getting payout history")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -320,7 +323,7 @@ class PayoutManager:
         db: Session,
         frequency: str,
         dry_run: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Process all pending payouts for a frequency.
 
@@ -341,7 +344,9 @@ class PayoutManager:
             }
         """
         try:
-            logger.info(f"Batch processing payouts: frequency={frequency}, dry_run={dry_run}")
+            logger.info(
+                f"Batch processing payouts: frequency={frequency}, dry_run={dry_run}"
+            )
 
             # TODO: Query all sellers eligible for payout this frequency
             # TODO: Calculate net payout for each
@@ -359,14 +364,14 @@ class PayoutManager:
             }
 
         except Exception as e:
-            logger.error(f"Error batch processing payouts: {str(e)}")
+            logger.exception("Error batch processing payouts")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
     def estimate_next_payout(
         db: Session,
         seller_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Estimate next payout for a seller.
 
@@ -397,10 +402,10 @@ class PayoutManager:
                 "seller_id": seller_id,
                 "current_balance": 0.0,
                 "estimated_payout": 0.0,
-                "estimated_date": datetime.utcnow() + timedelta(days=7),
+                "estimated_date": utc_now() + timedelta(days=7),
                 "frequency": PAYOUT_SCHEDULE,
             }
 
         except Exception as e:
-            logger.error(f"Error estimating payout: {str(e)}")
+            logger.exception("Error estimating payout")
             return {"status": "error", "error": str(e)}

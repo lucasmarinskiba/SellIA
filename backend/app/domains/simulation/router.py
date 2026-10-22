@@ -7,22 +7,25 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.domains.simulation.models import SimulationScenario, SimulationRun, SimulationLeaderboard
+from app.domains.simulation.engine import SimulationEngine
+from app.domains.simulation.models import (
+    SimulationRun,
+    SimulationScenario,
+)
 from app.domains.simulation.schemas import (
-    SimulationScenarioCreate,
-    SimulationScenarioOut,
-    SimulationRunOut,
-    SimulationLeaderboardOut,
     QuickSimulationCreate,
     RunSimulationCreate,
+    SimulationLeaderboardOut,
+    SimulationRunOut,
+    SimulationScenarioCreate,
+    SimulationScenarioOut,
 )
-from app.domains.simulation.engine import SimulationEngine
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/simulations", tags=["simulations"])
 engine = SimulationEngine()
@@ -33,7 +36,11 @@ async def get_db():
         yield session
 
 
-@router.post("/scenarios", response_model=SimulationScenarioOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/scenarios",
+    response_model=SimulationScenarioOut,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_scenario(
     data: SimulationScenarioCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -173,7 +180,10 @@ async def quick_simulation(
             objective="close_sale",
             customer_persona=default_persona,
             agent_type=data.agent_type,
-            success_criteria={"min_score": 60, "required_actions": ["qualify", "close"]},
+            success_criteria={
+                "min_score": 60,
+                "required_actions": ["qualify", "close"],
+            },
         )
 
     run = await engine.run_simulation(

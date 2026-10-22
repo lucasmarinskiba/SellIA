@@ -1,16 +1,13 @@
 """FOMO Analytics Dashboard - Real-time performance visualization"""
 
-from datetime import datetime, timedelta
-from typing import Dict, List, Any
-from decimal import Decimal
-import statistics
+from typing import Any
 
 
 class AnalyticsDashboard:
     """Comprehensive analytics dashboard for FOMO campaigns"""
 
     @staticmethod
-    async def get_campaign_summary(campaign_id: str) -> Dict[str, Any]:
+    async def get_campaign_summary(campaign_id: str) -> dict[str, Any]:
         """Get high-level campaign summary"""
         return {
             "campaign_id": campaign_id,
@@ -33,11 +30,11 @@ class AnalyticsDashboard:
                 {"label": "Revenue", "value": "$20,460", "trend": "+15%"},
                 {"label": "Conversions", "value": "682", "trend": "+35%"},
                 {"label": "ROI", "value": "3.42x", "trend": "+42%"},
-            ]
+            ],
         }
 
     @staticmethod
-    async def get_daily_breakdown(campaign_id: str, days: int = 7) -> Dict[str, Any]:
+    async def get_daily_breakdown(campaign_id: str, days: int = 7) -> dict[str, Any]:
         """Get daily performance breakdown"""
         return {
             "campaign_id": campaign_id,
@@ -77,11 +74,11 @@ class AnalyticsDashboard:
                 "avg_daily_revenue": 6820.00,
                 "peak_day": "2026-08-26",
                 "best_metric": "conversions",
-            }
+            },
         }
 
     @staticmethod
-    async def get_channel_attribution(campaign_id: str) -> Dict[str, Any]:
+    async def get_channel_attribution(campaign_id: str) -> dict[str, Any]:
         """Get attribution by channel"""
         return {
             "campaign_id": campaign_id,
@@ -121,7 +118,7 @@ class AnalyticsDashboard:
         }
 
     @staticmethod
-    async def get_widget_performance(campaign_id: str) -> Dict[str, Any]:
+    async def get_widget_performance(campaign_id: str) -> dict[str, Any]:
         """Get performance breakdown by widget type"""
         return {
             "campaign_id": campaign_id,
@@ -168,7 +165,7 @@ class AnalyticsDashboard:
         }
 
     @staticmethod
-    async def get_ab_test_results(campaign_id: str) -> Dict[str, Any]:
+    async def get_ab_test_results(campaign_id: str) -> dict[str, Any]:
         """Get A/B test results"""
         return {
             "campaign_id": campaign_id,
@@ -210,12 +207,12 @@ class AnalyticsDashboard:
                     "winner": "variant_a",
                     "confidence": 0.87,
                     "lift": 0.149,
-                }
-            ]
+                },
+            ],
         }
 
     @staticmethod
-    async def get_customer_segments(campaign_id: str) -> Dict[str, Any]:
+    async def get_customer_segments(campaign_id: str) -> dict[str, Any]:
         """Get performance by customer segment"""
         return {
             "campaign_id": campaign_id,
@@ -258,11 +255,11 @@ class AnalyticsDashboard:
                 },
             ],
             "best_performing_segment": "Cart Abandoners",
-            "opportunity": "Scale cart recovery campaigns"
+            "opportunity": "Scale cart recovery campaigns",
         }
 
     @staticmethod
-    async def get_conversion_funnel(campaign_id: str) -> Dict[str, Any]:
+    async def get_conversion_funnel(campaign_id: str) -> dict[str, Any]:
         """Get conversion funnel analysis"""
         return {
             "campaign_id": campaign_id,
@@ -301,13 +298,13 @@ class AnalyticsDashboard:
             "biggest_drop": {
                 "stage": "Impressions to Clicks",
                 "percentage": 0.8397,
-                "recommendation": "Increase CTA visibility, test button color/text"
+                "recommendation": "Increase CTA visibility, test button color/text",
             },
             "conversion_rate_overall": 0.0151,
         }
 
     @staticmethod
-    async def get_real_time_metrics(campaign_id: str) -> Dict[str, Any]:
+    async def get_real_time_metrics(campaign_id: str) -> dict[str, Any]:
         """Get real-time metrics (last 60 minutes)"""
         return {
             "campaign_id": campaign_id,
@@ -327,13 +324,19 @@ class AnalyticsDashboard:
                 {"metric": "revenue", "trend": "up", "change": "+22%"},
             ],
             "alerts": [
-                {"severity": "info", "message": "Traffic spike detected - 25% above average"},
-                {"severity": "success", "message": "Conversion rate: 1.69% (goal: 1.5%) ✓"},
-            ]
+                {
+                    "severity": "info",
+                    "message": "Traffic spike detected - 25% above average",
+                },
+                {
+                    "severity": "success",
+                    "message": "Conversion rate: 1.69% (goal: 1.5%) ✓",
+                },
+            ],
         }
 
     @staticmethod
-    async def get_roi_projection(campaign_id: str) -> Dict[str, Any]:
+    async def get_roi_projection(campaign_id: str) -> dict[str, Any]:
         """Get ROI projections based on current performance"""
         current_revenue = 20460.00
         current_cost = 6000.00
@@ -359,7 +362,10 @@ class AnalyticsDashboard:
             "projection_90_days": {
                 "projected_revenue": daily_avg_revenue * 90,
                 "projected_cost": current_cost,
-                "projected_roi": ((daily_avg_revenue * 90 - current_cost) / current_cost) * 100,
+                "projected_roi": (
+                    (daily_avg_revenue * 90 - current_cost) / current_cost
+                )
+                * 100,
             },
             "growth_trajectory": "accelerating",
             "confidence": 0.89,
@@ -367,10 +373,8 @@ class AnalyticsDashboard:
 
     @staticmethod
     async def get_comparison_benchmarks(
-        campaign_id: str,
-        industry: str,
-        campaign_type: str
-    ) -> Dict[str, Any]:
+        campaign_id: str, industry: str, campaign_type: str
+    ) -> dict[str, Any]:
         """Compare performance against industry benchmarks"""
         benchmarks = {
             "ecommerce": {
@@ -383,7 +387,7 @@ class AnalyticsDashboard:
                     "avg_conversion_rate": 0.035,
                     "avg_roi": 5.2,
                     "avg_conversion_lift": 0.65,
-                }
+                },
             },
             "saas": {
                 "trial_expiry": {
@@ -391,7 +395,7 @@ class AnalyticsDashboard:
                     "avg_roi": 3.8,
                     "avg_conversion_lift": 0.35,
                 }
-            }
+            },
         }
 
         current_benchmarks = benchmarks.get(industry, {}).get(campaign_type, {})
@@ -416,5 +420,5 @@ class AnalyticsDashboard:
                 "You're outperforming benchmarks - maintain current strategy",
                 "Test higher discount levels to push lift beyond 0.35",
                 "Scale successful segments identified in channel attribution",
-            ]
+            ],
         }

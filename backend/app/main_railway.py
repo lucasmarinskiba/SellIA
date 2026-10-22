@@ -2,12 +2,14 @@
 Entry point for Railway deployment.
 Loads what's available; skips broken modules gracefully.
 """
-import os
+
 import logging
+import os
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
-from contextlib import asynccontextmanager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -22,11 +24,12 @@ async def lifespan(app: FastAPI):
         try:
             import redis.asyncio as redis
             from fastapi_limiter import FastAPILimiter
+
             r = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
             await FastAPILimiter.init(r)
             logger.info("Rate limiter initialized")
         except Exception as e:
-            logger.warning(f"Rate limiter skipped: {e}")
+            logger.warning(f"Rate limiter skipped: {e}", exc_info=True)
     yield
     logger.info("SellIA backend shutting down...")
 
@@ -59,8 +62,7 @@ async def ping():
 @app.get("/health")
 async def health():
     from sqlalchemy import text
-    from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.ext.asyncio import create_async_engine
 
     checks: dict = {"status": "ok"}
 
@@ -72,6 +74,7 @@ async def health():
                 await conn.execute(text("SELECT 1"))
             checks["database"] = "ok"
         except Exception as e:
+            logger.exception("health: error inesperado")
             checks["database"] = f"error: {str(e)[:80]}"
             checks["status"] = "degraded"
     else:
@@ -85,7 +88,11 @@ async def health():
 async def memory_test():
     """Test endpoint to verify memory routes are loaded"""
     logger.info("Memory test endpoint called")
-    return {"status": "ok", "message": "memory router working", "timestamp": str(__import__('datetime').datetime.utcnow())}
+    return {
+        "status": "ok",
+        "message": "memory router working",
+        "timestamp": str(__import__("datetime").utc_now()),
+    }
 
 
 # Load routers that work — skip any that fail
@@ -97,7 +104,7 @@ def try_include(router_path: str, prefix: str, tags: list):
         app.include_router(router, prefix=prefix, tags=tags)
         logger.info(f"Loaded: {prefix}")
     except Exception as e:
-        logger.warning(f"Skipped {prefix}: {e}")
+        logger.warning(f"Skipped {prefix}: {e}", exc_info=True)
 
 
 # Memory router - Phase 29
@@ -112,6 +119,8 @@ try_include("app.api.v1.businesses.router", "/api/v1/businesses", ["businesses"]
 try_include("app.domains.webhooks.router.router", "/api/v1", ["webhooks"])
 try_include("app.api.v1.conversations.router", "/api/v1/businesses", ["conversations"])
 try_include("app.api.v1.catalog.router", "/api/v1/catalog", ["catalog"])
-try_include("app.api.v1.subscriptions.router", "/api/v1/subscriptions", ["subscriptions"])
+try_include(
+    "app.api.v1.subscriptions.router", "/api/v1/subscriptions", ["subscriptions"]
+)
 try_include("app.api.v1.agents.router", "/api/v1/agents", ["agents"])
 try_include("app.api.v1.analytics.router", "/api/v1", ["analytics"])

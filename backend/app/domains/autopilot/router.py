@@ -1,31 +1,34 @@
 """Autopilot Engine API Router."""
 
-from typing import Any
+from datetime import UTC, datetime, timedelta
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func
-from datetime import datetime, timezone, timedelta
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.domains.autopilot.models import AutopilotConfig, AutopilotActionLog, AutopilotDailyReport, AutopilotActionStatus
+from app.domains.autopilot.models import (
+    AutopilotActionLog,
+    AutopilotActionStatus,
+    AutopilotDailyReport,
+)
+from app.domains.autopilot.overnight_story import OvernightStoryEngine
 from app.domains.autopilot.schemas import (
+    AutopilotActionApproveRequest,
+    AutopilotActionLogResponse,
+    AutopilotActionRejectRequest,
     AutopilotConfigResponse,
     AutopilotConfigUpdate,
-    AutopilotActionLogResponse,
-    AutopilotActionLogFilter,
-    AutopilotActionApproveRequest,
-    AutopilotActionRejectRequest,
     AutopilotDailyReportResponse,
-    AutopilotStatusResponse,
     AutopilotOverviewResponse,
+    AutopilotStatusResponse,
     OvernightReportResponse,
 )
 from app.domains.autopilot.service import AutopilotEngine, AutopilotReportService
-from app.domains.autopilot.overnight_story import OvernightStoryEngine
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/autopilot", tags=["Autopilot"])
 
@@ -34,11 +37,12 @@ router = APIRouter(prefix="/autopilot", tags=["Autopilot"])
 # Config
 # ---------------------------------------------------------------------------
 
+
 @router.get("/config/{business_id}", response_model=AutopilotConfigResponse)
 async def get_autopilot_config(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     engine = AutopilotEngine(db)
     config = await engine.get_or_create_config(business_id)
@@ -49,8 +53,8 @@ async def get_autopilot_config(
 async def update_autopilot_config(
     business_id: UUID,
     update: AutopilotConfigUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     engine = AutopilotEngine(db)
     config = await engine.get_or_create_config(business_id)
@@ -67,11 +71,12 @@ async def update_autopilot_config(
 # Status & Overview
 # ---------------------------------------------------------------------------
 
+
 @router.get("/status/{business_id}", response_model=AutopilotStatusResponse)
 async def get_autopilot_status(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     engine = AutopilotEngine(db)
     config = await engine.get_or_create_config(business_id)
@@ -79,8 +84,9 @@ async def get_autopilot_status(
     last_action = await engine.get_last_action(business_id)
 
     # Get today's revenue
-    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
     from sqlalchemy import func as sa_func
+
     revenue_result = await db.execute(
         select(sa_func.sum(AutopilotActionLog.revenue_impact)).where(
             AutopilotActionLog.business_id == business_id,
@@ -106,32 +112,38 @@ async def get_autopilot_status(
 @router.get("/overview/{business_id}", response_model=AutopilotOverviewResponse)
 async def get_autopilot_overview(
     business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     period: str = "last_24h",  # last_24h, last_7d
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
-    engine = AutopilotEngine(db)
+    AutopilotEngine(db)
     report_service = AutopilotReportService(db)
 
     latest_report = await report_service.get_latest_report(business_id)
 
     # Pending actions
     pending_result = await db.execute(
-        select(AutopilotActionLog).where(
+        select(AutopilotActionLog)
+        .where(
             AutopilotActionLog.business_id == business_id,
             AutopilotActionLog.status == AutopilotActionStatus.PENDING_APPROVAL,
-        ).order_by(desc(AutopilotActionLog.created_at)).limit(10)
+        )
+        .order_by(desc(AutopilotActionLog.created_at))
+        .limit(10)
     )
     pending_actions = pending_result.scalars().all()
 
     # Escalations (last 24h)
-    since = datetime.now(timezone.utc) - timedelta(hours=24)
+    since = datetime.now(UTC) - timedelta(hours=24)
     escalated_result = await db.execute(
-        select(AutopilotActionLog).where(
+        select(AutopilotActionLog)
+        .where(
             AutopilotActionLog.business_id == business_id,
             AutopilotActionLog.status == AutopilotActionStatus.ESCALATED,
             AutopilotActionLog.created_at >= since,
-        ).order_by(desc(AutopilotActionLog.created_at)).limit(10)
+        )
+        .order_by(desc(AutopilotActionLog.created_at))
+        .limit(10)
     )
     escalations = escalated_result.scalars().all()
 
@@ -142,14 +154,18 @@ async def get_autopilot_overview(
         "leads_contacted_today": latest_report.leads_contacted if latest_report else 0,
     }
 
-    message = latest_report.ai_summary if latest_report else "No hay reporte disponible aún."
+    message = (
+        latest_report.ai_summary if latest_report else "No hay reporte disponible aún."
+    )
 
     return AutopilotOverviewResponse(
         business_id=business_id,
         message=message,
         period=period,
         summary=summary,
-        pending_actions=[AutopilotActionLogResponse.model_validate(a) for a in pending_actions],
+        pending_actions=[
+            AutopilotActionLogResponse.model_validate(a) for a in pending_actions
+        ],
         escalations=[AutopilotActionLogResponse.model_validate(a) for a in escalations],
     )
 
@@ -158,16 +174,17 @@ async def get_autopilot_overview(
 # Audit Log
 # ---------------------------------------------------------------------------
 
+
 @router.get("/audit-log/{business_id}", response_model=list[AutopilotActionLogResponse])
 async def list_audit_logs(
     business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     status: AutopilotActionStatus | None = None,
     action_type: str | None = None,
     entity_type: str | None = None,
     limit: int = 50,
     offset: int = 0,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     query = select(AutopilotActionLog).where(
         AutopilotActionLog.business_id == business_id,
@@ -179,7 +196,9 @@ async def list_audit_logs(
     if entity_type:
         query = query.where(AutopilotActionLog.entity_type == entity_type)
 
-    query = query.order_by(desc(AutopilotActionLog.created_at)).offset(offset).limit(limit)
+    query = (
+        query.order_by(desc(AutopilotActionLog.created_at)).offset(offset).limit(limit)
+    )
     result = await db.execute(query)
     logs = result.scalars().all()
     return [AutopilotActionLogResponse.model_validate(log) for log in logs]
@@ -189,15 +208,18 @@ async def list_audit_logs(
 # Approve / Reject
 # ---------------------------------------------------------------------------
 
+
 @router.post("/approve/{action_id}", response_model=AutopilotActionLogResponse)
 async def approve_action(
     action_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     req: AutopilotActionApproveRequest | None = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     engine = AutopilotEngine(db)
-    log = await engine.approve_action(action_id, current_user.id, req.reason if req else None)
+    log = await engine.approve_action(
+        action_id, current_user.id, req.reason if req else None
+    )
     if not log:
         raise HTTPException(status_code=404, detail="Action not found or not pending")
     return AutopilotActionLogResponse.model_validate(log)
@@ -207,8 +229,8 @@ async def approve_action(
 async def reject_action(
     action_id: UUID,
     req: AutopilotActionRejectRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     engine = AutopilotEngine(db)
     log = await engine.reject_action(action_id, req.reason)
@@ -221,18 +243,19 @@ async def reject_action(
 # Pause / Resume
 # ---------------------------------------------------------------------------
 
+
 @router.post("/pause/{business_id}", response_model=AutopilotConfigResponse)
 async def pause_autopilot(
     business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     reason: str = "Paused by user",
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     engine = AutopilotEngine(db)
     config = await engine.get_or_create_config(business_id)
     config.is_paused = True
     config.paused_reason = reason
-    config.paused_at = datetime.now(timezone.utc)
+    config.paused_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(config)
     return AutopilotConfigResponse.model_validate(config)
@@ -241,8 +264,8 @@ async def pause_autopilot(
 @router.post("/resume/{business_id}", response_model=AutopilotConfigResponse)
 async def resume_autopilot(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     engine = AutopilotEngine(db)
     config = await engine.get_or_create_config(business_id)
@@ -258,17 +281,23 @@ async def resume_autopilot(
 # Daily Reports
 # ---------------------------------------------------------------------------
 
-@router.get("/daily-reports/{business_id}", response_model=list[AutopilotDailyReportResponse])
+
+@router.get(
+    "/daily-reports/{business_id}", response_model=list[AutopilotDailyReportResponse]
+)
 async def list_daily_reports(
     business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     limit: int = 30,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(
-        select(AutopilotDailyReport).where(
+        select(AutopilotDailyReport)
+        .where(
             AutopilotDailyReport.business_id == business_id,
-        ).order_by(desc(AutopilotDailyReport.report_date)).limit(limit)
+        )
+        .order_by(desc(AutopilotDailyReport.report_date))
+        .limit(limit)
     )
     reports = result.scalars().all()
     return [AutopilotDailyReportResponse.model_validate(r) for r in reports]
@@ -278,11 +307,12 @@ async def list_daily_reports(
 # Overnight Report (Mientras Dormías)
 # ---------------------------------------------------------------------------
 
+
 @router.get("/overnight-report/{business_id}", response_model=OvernightReportResponse)
 async def get_overnight_report(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     engine = OvernightStoryEngine(db)
     report = await engine.generate_overnight_report(

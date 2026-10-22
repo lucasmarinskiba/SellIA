@@ -6,9 +6,10 @@ Maneja fallos transitorios de navegador, red, y APIs de LLM.
 
 import asyncio
 import random
-from typing import Callable, TypeVar, Optional, List
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
+from typing import TypeVar
 
 from app.core.logger import get_logger
 
@@ -18,8 +19,8 @@ T = TypeVar("T")
 
 
 class CircuitState(Enum):
-    CLOSED = "closed"      # Normal operation
-    OPEN = "open"          # Failing, reject fast
+    CLOSED = "closed"  # Normal operation
+    OPEN = "open"  # Failing, reject fast
     HALF_OPEN = "half_open"  # Testing if recovered
 
 
@@ -31,7 +32,7 @@ class RetryConfig:
     exponential_base: float = 2.0
     jitter: bool = True
     retryable_exceptions: tuple = (Exception,)
-    on_retry: Optional[Callable] = None
+    on_retry: Callable | None = None
 
 
 @dataclass
@@ -44,7 +45,7 @@ class CircuitBreakerConfig:
 class RetryHandler:
     """Handler de reintentos con circuit breaker."""
 
-    def __init__(self, config: Optional[RetryConfig] = None):
+    def __init__(self, config: RetryConfig | None = None):
         self.config = config or RetryConfig()
 
     async def execute(
@@ -80,7 +81,7 @@ class RetryHandler:
 
     def _calculate_delay(self, attempt: int) -> float:
         """Calcula el delay con backoff exponencial y jitter."""
-        delay = self.config.base_delay * (self.config.exponential_base ** attempt)
+        delay = self.config.base_delay * (self.config.exponential_base**attempt)
         delay = min(delay, self.config.max_delay)
         if self.config.jitter:
             delay = delay * (0.5 + random.random() * 0.5)
@@ -90,13 +91,13 @@ class RetryHandler:
 class CircuitBreaker:
     """Circuit breaker para proteger contra fallos en cascada."""
 
-    def __init__(self, name: str, config: Optional[CircuitBreakerConfig] = None):
+    def __init__(self, name: str, config: CircuitBreakerConfig | None = None):
         self.name = name
         self.config = config or CircuitBreakerConfig()
         self.state = CircuitState.CLOSED
         self.failure_count = 0
         self.success_count = 0
-        self.last_failure_time: Optional[float] = None
+        self.last_failure_time: float | None = None
         self._lock = asyncio.Lock()
 
     async def call(self, func: Callable[..., T], *args, **kwargs) -> T:
@@ -117,12 +118,13 @@ class CircuitBreaker:
                 result = func(*args, **kwargs)
             await self._on_success()
             return result
-        except Exception as e:
+        except Exception:
             await self._on_failure()
             raise
 
     def _should_attempt_reset(self) -> bool:
         import time
+
         if self.last_failure_time is None:
             return True
         return time.time() - self.last_failure_time >= self.config.recovery_timeout
@@ -140,6 +142,7 @@ class CircuitBreaker:
 
     async def _on_failure(self):
         import time
+
         async with self._lock:
             self.failure_count += 1
             self.last_failure_time = time.time()
@@ -149,7 +152,9 @@ class CircuitBreaker:
                 logger.warning(f"Circuit {self.name}: OPEN (half-open failed)")
             elif self.failure_count >= self.config.failure_threshold:
                 self.state = CircuitState.OPEN
-                logger.warning(f"Circuit {self.name}: OPEN ({self.failure_count} failures)")
+                logger.warning(
+                    f"Circuit {self.name}: OPEN ({self.failure_count} failures)"
+                )
 
     def get_state(self) -> dict:
         return {
@@ -162,7 +167,6 @@ class CircuitBreaker:
 
 class CircuitBreakerOpen(Exception):
     """Excepción cuando el circuit breaker está abierto."""
-    pass
 
 
 # Circuit breakers por servicio

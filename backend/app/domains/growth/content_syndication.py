@@ -13,13 +13,13 @@ This is "vender sin vender" at scale — one idea, infinite distribution.
 """
 
 import uuid
-from typing import Optional, Any, Dict, List
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.agents.ai_reply import generate_raw_ai_response
-from app.domains.automations.models import GeneratedContent, ContentCalendar
 from app.core.logger import get_logger
+from app.domains.agents.ai_reply import generate_raw_ai_response
+from app.domains.automations.models import ContentCalendar, GeneratedContent
 
 logger = get_logger(__name__)
 
@@ -34,8 +34,8 @@ class ContentSyndicationEngine:
         self,
         business_id: uuid.UUID,
         source_content_id: uuid.UUID,
-        platforms: List[str],
-    ) -> Dict[str, Any]:
+        platforms: list[str],
+    ) -> dict[str, Any]:
         """Syndicate one content piece across multiple platforms."""
         # Get source content
         source = await self.db.get(GeneratedContent, source_content_id)
@@ -65,14 +65,16 @@ class ContentSyndicationEngine:
                     )
                     self.db.add(entry)
             except Exception as e:
-                logger.error(f"Failed to syndicate to {platform}: {e}")
+                logger.exception(f"Failed to syndicate to {platform}")
                 results[platform] = {"error": str(e)}
 
         await self.db.commit()
         return {
             "source_id": str(source_content_id),
             "platforms": results,
-            "platforms_scheduled": len([r for r in results.values() if "error" not in r]),
+            "platforms_scheduled": len(
+                [r for r in results.values() if "error" not in r]
+            ),
         }
 
     async def _adapt_for_platform(
@@ -97,7 +99,9 @@ class ContentSyndicationEngine:
 
         return await adapter(business_id, title, body)
 
-    async def _adapt_instagram(self, business_id: uuid.UUID, title: str, body: str) -> dict:
+    async def _adapt_instagram(
+        self, business_id: uuid.UUID, title: str, body: str
+    ) -> dict:
         """Adapt for Instagram: carousel script + caption + hashtags."""
         system_prompt = """Eres un experto en Instagram para negocios. Adaptas contenido a:
 1. Carousels de 5-7 slides (cada slide: título corto + 1-2 oraciones)
@@ -124,12 +128,15 @@ Responde en JSON:
                 temperature=0.75,
             )
             import json
+
             return json.loads(response or "{}")
-        except Exception as e:
-            logger.error(f"Instagram adaptation failed: {e}")
+        except Exception:
+            logger.exception("Instagram adaptation failed")
             return self._fallback_instagram(title, body)
 
-    async def _adapt_tiktok(self, business_id: uuid.UUID, title: str, body: str) -> dict:
+    async def _adapt_tiktok(
+        self, business_id: uuid.UUID, title: str, body: str
+    ) -> dict:
         """Adapt for TikTok: hook + script + on-screen text."""
         system_prompt = """Eres un creador de TikTok viral. Adaptas contenido a:
 1. Hook de 3 segundos (texto en pantalla)
@@ -159,12 +166,15 @@ Responde en JSON:
                 temperature=0.8,
             )
             import json
+
             return json.loads(response or "{}")
-        except Exception as e:
-            logger.error(f"TikTok adaptation failed: {e}")
+        except Exception:
+            logger.exception("TikTok adaptation failed")
             return self._fallback_tiktok(title, body)
 
-    async def _adapt_linkedin(self, business_id: uuid.UUID, title: str, body: str) -> dict:
+    async def _adapt_linkedin(
+        self, business_id: uuid.UUID, title: str, body: str
+    ) -> dict:
         """Adapt for LinkedIn: professional storytelling post."""
         system_prompt = """Eres un experto en LinkedIn personal branding. Adaptas contenido a posts que:
 1. Usan storytelling profesional
@@ -191,12 +201,15 @@ Responde en JSON:
                 temperature=0.7,
             )
             import json
+
             return json.loads(response or "{}")
-        except Exception as e:
-            logger.error(f"LinkedIn adaptation failed: {e}")
+        except Exception:
+            logger.exception("LinkedIn adaptation failed")
             return self._fallback_linkedin(title, body)
 
-    async def _adapt_whatsapp_status(self, business_id: uuid.UUID, title: str, body: str) -> dict:
+    async def _adapt_whatsapp_status(
+        self, business_id: uuid.UUID, title: str, body: str
+    ) -> dict:
         """Adapt for WhatsApp Status: short, punchy text."""
         system_prompt = """Eres un experto en WhatsApp Status para negocios. Creas textos de estado que:
 1. Son cortos (máx 3 líneas)
@@ -222,9 +235,10 @@ Responde en JSON:
                 temperature=0.75,
             )
             import json
+
             return json.loads(response or "{}")
-        except Exception as e:
-            logger.error(f"WhatsApp Status adaptation failed: {e}")
+        except Exception:
+            logger.exception("WhatsApp Status adaptation failed")
             return self._fallback_whatsapp_status(title, body)
 
     async def _adapt_email(self, business_id: uuid.UUID, title: str, body: str) -> dict:
@@ -257,9 +271,10 @@ Responde en JSON:
                 temperature=0.7,
             )
             import json
+
             return json.loads(response or "{}")
-        except Exception as e:
-            logger.error(f"Email adaptation failed: {e}")
+        except Exception:
+            logger.exception("Email adaptation failed")
             return self._fallback_email(title, body)
 
     # ========== Fallbacks ==========
@@ -269,7 +284,11 @@ Responde en JSON:
             "carousel_slides": [
                 {"slide": 1, "title": title, "text": "Descubre cómo..."},
                 {"slide": 2, "title": "El problema", "text": body[:100]},
-                {"slide": 3, "title": "La solución", "text": "Aquí va el tip principal"},
+                {
+                    "slide": 3,
+                    "title": "La solución",
+                    "text": "Aquí va el tip principal",
+                },
             ],
             "caption": f"{title}\n\n¿Te sirvió? Guardá este post para después 🔖",
             "hashtags": ["#emprendedores", "#negocios", "#marketing"],

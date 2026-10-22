@@ -4,10 +4,8 @@ Handles semantic storage and retrieval of conversation chunks and customer facts
 """
 
 import uuid
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timezone
 
-from sqlalchemy import select, delete, text, func
+from sqlalchemy import delete, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.embeddings import EmbeddingService
@@ -27,9 +25,9 @@ class MemoryEngine:
     async def store_message(
         self,
         conversation_id: uuid.UUID,
-        business_id: Optional[uuid.UUID],
-        user_id: Optional[uuid.UUID],
-        agent_id: Optional[uuid.UUID],
+        business_id: uuid.UUID | None,
+        user_id: uuid.UUID | None,
+        agent_id: uuid.UUID | None,
         role: str,
         content: str,
         chunk_index: int,
@@ -58,21 +56,25 @@ class MemoryEngine:
     async def retrieve_relevant(
         self,
         query: str,
-        conversation_id: Optional[uuid.UUID] = None,
-        business_id: Optional[uuid.UUID] = None,
-        customer_id: Optional[uuid.UUID] = None,
+        conversation_id: uuid.UUID | None = None,
+        business_id: uuid.UUID | None = None,
+        customer_id: uuid.UUID | None = None,
         k: int = 5,
-    ) -> List[ConversationMemoryChunk]:
+    ) -> list[ConversationMemoryChunk]:
         """Semantic search over conversation memory chunks."""
         try:
             query_vec = await EmbeddingService.embed_text(query)
         except NotImplementedError:
             # Fallback: return recent chunks filtered by criteria
-            stmt = select(ConversationMemoryChunk).order_by(
-                ConversationMemoryChunk.created_at.desc()
-            ).limit(k)
+            stmt = (
+                select(ConversationMemoryChunk)
+                .order_by(ConversationMemoryChunk.created_at.desc())
+                .limit(k)
+            )
             if conversation_id:
-                stmt = stmt.where(ConversationMemoryChunk.conversation_id == conversation_id)
+                stmt = stmt.where(
+                    ConversationMemoryChunk.conversation_id == conversation_id
+                )
             if business_id:
                 stmt = stmt.where(ConversationMemoryChunk.business_id == business_id)
             if customer_id:
@@ -82,14 +84,12 @@ class MemoryEngine:
 
         # Use cosine distance via raw text ordering
         distance_expr = text("embedding <=> :qvec").bindparams(qvec=str(query_vec))
-        stmt = (
-            select(ConversationMemoryChunk)
-            .order_by(distance_expr)
-            .limit(k)
-        )
+        stmt = select(ConversationMemoryChunk).order_by(distance_expr).limit(k)
 
         if conversation_id:
-            stmt = stmt.where(ConversationMemoryChunk.conversation_id == conversation_id)
+            stmt = stmt.where(
+                ConversationMemoryChunk.conversation_id == conversation_id
+            )
         if business_id:
             stmt = stmt.where(ConversationMemoryChunk.business_id == business_id)
         if customer_id:
@@ -101,7 +101,7 @@ class MemoryEngine:
     async def get_conversation_summary(
         self,
         conversation_id: uuid.UUID,
-    ) -> List[ConversationMemoryChunk]:
+    ) -> list[ConversationMemoryChunk]:
         """Return all chunks for a conversation ordered by chunk_index."""
         result = await self.db.execute(
             select(ConversationMemoryChunk)
@@ -121,7 +121,7 @@ class MemoryEngine:
         memory_type: str,
         content: str,
         confidence: float,
-        source_conversation_id: Optional[uuid.UUID] = None,
+        source_conversation_id: uuid.UUID | None = None,
     ) -> CustomerMemory:
         """Store an extracted customer fact with its embedding."""
         try:
@@ -146,7 +146,7 @@ class MemoryEngine:
     async def get_customer_profile(
         self,
         customer_id: uuid.UUID,
-    ) -> Dict[str, List[CustomerMemory]]:
+    ) -> dict[str, list[CustomerMemory]]:
         """Return all CustomerMemory records for a customer grouped by type."""
         result = await self.db.execute(
             select(CustomerMemory)
@@ -154,7 +154,7 @@ class MemoryEngine:
             .order_by(CustomerMemory.created_at.desc())
         )
         memories = result.scalars().all()
-        grouped: Dict[str, List[CustomerMemory]] = {}
+        grouped: dict[str, list[CustomerMemory]] = {}
         for mem in memories:
             grouped.setdefault(mem.memory_type, []).append(mem)
         return grouped
@@ -164,7 +164,7 @@ class MemoryEngine:
         query: str,
         customer_id: uuid.UUID,
         k: int = 5,
-    ) -> List[CustomerMemory]:
+    ) -> list[CustomerMemory]:
         """Semantic search over a customer's memories."""
         try:
             query_vec = await EmbeddingService.embed_text(query)
@@ -198,7 +198,7 @@ class MemoryEngine:
     async def extract_facts_from_conversation(
         self,
         conversation_id: uuid.UUID,
-    ) -> List[CustomerMemory]:
+    ) -> list[CustomerMemory]:
         """
         1. Get conversation messages from memory chunks.
         2. Build prompt and call LLM for fact extraction.
@@ -206,6 +206,7 @@ class MemoryEngine:
         4. Store each fact as CustomerMemory with embedding.
         """
         import json
+
         from app.domains.agents.ai_reply import generate_raw_ai_response
 
         chunks = await self.get_conversation_summary(conversation_id)
@@ -248,7 +249,7 @@ class MemoryEngine:
         except json.JSONDecodeError:
             return []
 
-        stored: List[CustomerMemory] = []
+        stored: list[CustomerMemory] = []
         for fact in facts:
             mem_type = fact.get("type", "preference")
             content = str(fact.get("content", "")).strip()

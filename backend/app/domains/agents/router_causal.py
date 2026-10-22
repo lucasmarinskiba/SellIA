@@ -3,28 +3,28 @@
 Endpoints for objection patterns, causal analysis, and pitch recommendations.
 """
 
+from typing import Annotated
 from uuid import UUID
-from typing import Optional, List
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.agents.causal_engine import CausalAnalyzer
-from app.domains.agents.models_causal import ObjectionPattern as ObjectionPatternModel
 from app.domains.agents.models_causal import CausalAnalysis as CausalAnalysisModel
+from app.domains.agents.models_causal import ObjectionPattern as ObjectionPatternModel
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/causal", tags=["causal"])
 
 
 @router.get("/patterns", status_code=status.HTTP_200_OK)
 async def list_objection_patterns(
-    business_id: Optional[UUID] = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    business_id: Annotated[UUID | None, Query()] = None,
 ):
     """List objection patterns for a business."""
     target_business_id = business_id or current_user.business_id
@@ -60,8 +60,8 @@ async def list_objection_patterns(
 @router.get("/analysis/{conversation_id}", status_code=status.HTTP_200_OK)
 async def get_causal_analysis(
     conversation_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get causal analysis for a specific conversation."""
     result = await db.execute(
@@ -89,9 +89,9 @@ async def get_causal_analysis(
 @router.post("/analyze/{conversation_id}", status_code=status.HTTP_201_CREATED)
 async def trigger_causal_analysis(
     conversation_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     deal_outcome: str = "lost",
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Trigger causal analysis for a conversation."""
     analyzer = CausalAnalyzer(db)
@@ -125,9 +125,9 @@ async def trigger_causal_analysis(
 
 @router.get("/recommendations", status_code=status.HTTP_200_OK)
 async def get_pitch_recommendations(
-    business_id: Optional[UUID] = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    business_id: Annotated[UUID | None, Query()] = None,
 ):
     """Get pitch recommendations based on causal analysis."""
     target_business_id = business_id or current_user.business_id

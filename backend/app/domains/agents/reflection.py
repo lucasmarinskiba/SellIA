@@ -4,13 +4,12 @@ Provides explicit reasoning traceability and post-conversation self-analysis
 to continuously improve agent behavior.
 """
 
-import uuid
 import json
-from typing import Dict, Any, Optional, List
-from datetime import datetime, timezone
+import uuid
+from typing import Any
 
 from pydantic import BaseModel, Field
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
@@ -25,15 +24,16 @@ logger = get_logger(__name__)
 # Pydantic Structured Output Models
 # ------------------------------------------------------------------
 
+
 class ThoughtStep(BaseModel):
     step_number: int
     thought: str
-    action: Optional[str] = None
-    observation: Optional[str] = None
+    action: str | None = None
+    observation: str | None = None
 
 
 class ThoughtProcess(BaseModel):
-    steps: List[ThoughtStep] = Field(default_factory=list)
+    steps: list[ThoughtStep] = Field(default_factory=list)
 
 
 class ReflectionResult(BaseModel):
@@ -48,6 +48,7 @@ class ReflectionResult(BaseModel):
 # Chain-of-Thought
 # ------------------------------------------------------------------
 
+
 class ChainOfThought:
     """Generates explicit reasoning steps for complex AI responses."""
 
@@ -55,9 +56,9 @@ class ChainOfThought:
     async def generate_thought_process(
         db: AsyncSession,
         query: str,
-        context: Dict[str, Any],
-        tools_used: List[str],
-    ) -> List[ThoughtStep]:
+        context: dict[str, Any],
+        tools_used: list[str],
+    ) -> list[ThoughtStep]:
         """Generate explicit reasoning steps for a given query.
 
         Steps:
@@ -105,16 +106,16 @@ class ChainOfThought:
             parsed = _parse_json_response(response, ThoughtProcess)
             return parsed.steps if parsed else []
         except Exception as e:
-            logger.warning(f"Chain-of-thought generation failed: {e}")
+            logger.warning(f"Chain-of-thought generation failed: {e}", exc_info=True)
             return []
 
     @staticmethod
     async def log_thought_process(
         db: AsyncSession,
         conversation_id: uuid.UUID,
-        message_id: Optional[uuid.UUID],
-        thought_steps: List[ThoughtStep],
-    ) -> Optional[ChainOfThoughtLog]:
+        message_id: uuid.UUID | None,
+        thought_steps: list[ThoughtStep],
+    ) -> ChainOfThoughtLog | None:
         """Persist a chain-of-thought to the database."""
         if not thought_steps:
             return None
@@ -127,13 +128,16 @@ class ChainOfThought:
         db.add(log)
         await db.commit()
         await db.refresh(log)
-        logger.info(f"Logged {len(thought_steps)} thought steps for conversation {conversation_id}")
+        logger.info(
+            f"Logged {len(thought_steps)} thought steps for conversation {conversation_id}"
+        )
         return log
 
 
 # ------------------------------------------------------------------
 # Self-Reflection
 # ------------------------------------------------------------------
+
 
 class SelfReflection:
     """Analyzes a completed conversation to extract learnings."""
@@ -142,7 +146,7 @@ class SelfReflection:
     async def reflect_on_conversation(
         db: AsyncSession,
         conversation_id: uuid.UUID,
-    ) -> Optional[ReflectionResult]:
+    ) -> ReflectionResult | None:
         """After conversation ends, analyze:
 
         1. "¿Qué hice bien?" — identify successful tactics
@@ -160,13 +164,13 @@ class SelfReflection:
             "Eres un experto en análisis de conversaciones de ventas. "
             "Realiza una auto-reflexión profunda sobre la conversación proporcionada. "
             "Devuelve SOLO un JSON válido con esta estructura exacta:\n"
-            '{\n'
+            "{\n"
             '  "what_went_well": "...",\n'
             '  "what_could_improve": "...",\n'
             '  "customer_insights": "...",\n'
             '  "future_recommendations": "...",\n'
             '  "score": 75\n'
-            '}\n\n'
+            "}\n\n"
             "Reglas:\n"
             "- what_went_well: tácticas exitosas que usaste.\n"
             "- what_could_improve: oportunidades perdidas y cómo mejorar.\n"
@@ -200,7 +204,7 @@ class SelfReflection:
             result = _parse_json_response(response, ReflectionResult)
             return result
         except Exception as e:
-            logger.warning(f"Self-reflection generation failed: {e}")
+            logger.warning(f"Self-reflection generation failed: {e}", exc_info=True)
             return None
 
     @staticmethod
@@ -223,7 +227,9 @@ class SelfReflection:
         db.add(record)
         await db.commit()
         await db.refresh(record)
-        logger.info(f"Saved reflection for conversation {conversation_id} (score={result.score})")
+        logger.info(
+            f"Saved reflection for conversation {conversation_id} (score={result.score})"
+        )
         return record
 
     # ------------------------------------------------------------------
@@ -234,7 +240,7 @@ class SelfReflection:
     async def _build_transcript(
         db: AsyncSession,
         conversation_id: uuid.UUID,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Build a text transcript from conversation messages."""
         result = await db.execute(
             select(Message)
@@ -258,8 +264,7 @@ class SelfReflection:
     ) -> uuid.UUID:
         """Resolve business_id from a conversation."""
         result = await db.execute(
-            select(Conversation.business_id)
-            .where(Conversation.id == conversation_id)
+            select(Conversation.business_id).where(Conversation.id == conversation_id)
         )
         business_id = result.scalar_one_or_none()
         return business_id or uuid.UUID("00000000-0000-0000-0000-000000000000")
@@ -269,7 +274,8 @@ class SelfReflection:
 # JSON parsing helper
 # ------------------------------------------------------------------
 
-def _parse_json_response(text: str, model_class) -> Optional[Any]:
+
+def _parse_json_response(text: str, model_class) -> Any | None:
     """Robustly parse a JSON response into a Pydantic model."""
     text = text.strip()
 
@@ -278,7 +284,7 @@ def _parse_json_response(text: str, model_class) -> Optional[Any]:
         data = json.loads(text)
         return model_class.model_validate(data)
     except Exception:
-        pass
+        logger.exception("_parse_json_response: error inesperado")
 
     # Try markdown code blocks
     if "```json" in text:
@@ -288,7 +294,7 @@ def _parse_json_response(text: str, model_class) -> Optional[Any]:
             data = json.loads(text[start:end].strip())
             return model_class.model_validate(data)
         except Exception:
-            pass
+            logger.exception("_parse_json_response: error inesperado")
 
     if "```" in text:
         try:
@@ -297,7 +303,7 @@ def _parse_json_response(text: str, model_class) -> Optional[Any]:
             data = json.loads(text[start:end].strip())
             return model_class.model_validate(data)
         except Exception:
-            pass
+            logger.exception("_parse_json_response: error inesperado")
 
     # Try JSON between braces
     try:
@@ -306,7 +312,7 @@ def _parse_json_response(text: str, model_class) -> Optional[Any]:
         data = json.loads(text[start:end])
         return model_class.model_validate(data)
     except Exception:
-        pass
+        logger.exception("_parse_json_response: error inesperado")
 
     logger.warning(f"Could not parse JSON response into {model_class.__name__}")
     return None

@@ -1,13 +1,13 @@
 """Phase 5B: Proximity tracking & offline conversion logging."""
 
 import logging
-from uuid import UUID, uuid4
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
+from typing import Annotated
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Body, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
@@ -19,15 +19,17 @@ router = APIRouter(prefix="/proximity", tags=["proximity"])
 
 class OfflineConversionLog(BaseModel):
     """Log offline visit/conversion."""
+
     location_id: UUID
     latitude: float
     longitude: float
     visit_type: str = "visit"  # visit, demo, pickup, service
-    notes: Optional[str] = None
+    notes: str | None = None
 
 
 class ProximityCheckRequest(BaseModel):
     """Check if user near any location."""
+
     latitude: float
     longitude: float
 
@@ -35,8 +37,8 @@ class ProximityCheckRequest(BaseModel):
 @router.post("/check-nearby")
 async def check_proximity(
     req: ProximityCheckRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Check if user near any business location (Haversine distance)."""
     return {
@@ -50,27 +52,23 @@ async def check_proximity(
 @router.post("/log-visit")
 async def log_offline_conversion(
     conversion: OfflineConversionLog,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Log location visit or offline conversion."""
     return {
         "status": "logged",
         "location_id": str(conversion.location_id),
         "visit_type": conversion.visit_type,
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
 
 @router.get("/nearby-users/{location_id}")
 async def get_nearby_users(
     location_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Get users near a location (for business owner)."""
-    return {
-        "location_id": str(location_id),
-        "nearby_users": [],
-        "total": 0
-    }
+    return {"location_id": str(location_id), "nearby_users": [], "total": 0}

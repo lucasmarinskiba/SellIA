@@ -9,17 +9,19 @@ Features:
 - Intent detection (what user wants)
 """
 
-from typing import Optional, List, Dict, Any
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from enum import Enum
-import json
-from collections import defaultdict
 import re
+from collections import defaultdict
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+from typing import Any, ClassVar
+
+from app.core.clock import utc_now
 
 
 class Intent(str, Enum):
     """User intent types"""
+
     BUYING = "buying"
     SELLING = "selling"
     INFORMATION = "information"
@@ -32,6 +34,7 @@ class Intent(str, Enum):
 
 class Sentiment(str, Enum):
     """User sentiment"""
+
     VERY_NEGATIVE = "very_negative"
     NEGATIVE = "negative"
     NEUTRAL = "neutral"
@@ -42,46 +45,87 @@ class Sentiment(str, Enum):
 @dataclass
 class ConversationTurn:
     """Single conversation exchange"""
+
     timestamp: datetime
     user_message: str
     bot_response: str
     user_sentiment: Sentiment
     detected_intent: Intent
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class UserProfile:
     """Persistent user profile"""
+
     user_id: str
     name: str
-    email: Optional[str] = None
-    industry: Optional[str] = None
-    preferences: Dict[str, Any] = field(default_factory=dict)
-    purchase_history: List[str] = field(default_factory=list)
+    email: str | None = None
+    industry: str | None = None
+    preferences: dict[str, Any] = field(default_factory=dict)
+    purchase_history: list[str] = field(default_factory=list)
     conversation_count: int = 0
-    last_interaction: Optional[datetime] = None
-    custom_traits: Dict[str, Any] = field(default_factory=dict)
+    last_interaction: datetime | None = None
+    custom_traits: dict[str, Any] = field(default_factory=dict)
 
 
 class SentimentAnalyzer:
     """Detect user sentiment from messages"""
 
-    POSITIVE_WORDS = {
-        "love", "great", "awesome", "fantastic", "amazing", "wonderful",
-        "excellent", "perfect", "brilliant", "thank", "thanks", "grateful",
-        "happy", "excited", "pleased", "satisfied", "recommend"
+    POSITIVE_WORDS: ClassVar[set] = {
+        "love",
+        "great",
+        "awesome",
+        "fantastic",
+        "amazing",
+        "wonderful",
+        "excellent",
+        "perfect",
+        "brilliant",
+        "thank",
+        "thanks",
+        "grateful",
+        "happy",
+        "excited",
+        "pleased",
+        "satisfied",
+        "recommend",
     }
 
-    NEGATIVE_WORDS = {
-        "hate", "terrible", "awful", "horrible", "bad", "worst", "useless",
-        "waste", "disappointed", "angry", "frustrated", "annoyed", "upset",
-        "broken", "problem", "issue", "bug", "error", "fail", "refund"
+    NEGATIVE_WORDS: ClassVar[set] = {
+        "hate",
+        "terrible",
+        "awful",
+        "horrible",
+        "bad",
+        "worst",
+        "useless",
+        "waste",
+        "disappointed",
+        "angry",
+        "frustrated",
+        "annoyed",
+        "upset",
+        "broken",
+        "problem",
+        "issue",
+        "bug",
+        "error",
+        "fail",
+        "refund",
     }
 
-    VERY_NEGATIVE_WORDS = {
-        "scam", "fraud", "criminal", "sue", "lawsuit", "cancel", "never",
-        "destroy", "worst", "unacceptable"
+    VERY_NEGATIVE_WORDS: ClassVar[set] = {
+        "scam",
+        "fraud",
+        "criminal",
+        "sue",
+        "lawsuit",
+        "cancel",
+        "never",
+        "destroy",
+        "worst",
+        "unacceptable",
     }
 
     @staticmethod
@@ -90,15 +134,18 @@ class SentimentAnalyzer:
         text_lower = text.lower()
 
         # Count sentiment words
-        very_negative_count = sum(1 for word in SentimentAnalyzer.VERY_NEGATIVE_WORDS
-                                  if word in text_lower)
-        negative_count = sum(1 for word in SentimentAnalyzer.NEGATIVE_WORDS
-                            if word in text_lower)
-        positive_count = sum(1 for word in SentimentAnalyzer.POSITIVE_WORDS
-                            if word in text_lower)
+        very_negative_count = sum(
+            1 for word in SentimentAnalyzer.VERY_NEGATIVE_WORDS if word in text_lower
+        )
+        negative_count = sum(
+            1 for word in SentimentAnalyzer.NEGATIVE_WORDS if word in text_lower
+        )
+        positive_count = sum(
+            1 for word in SentimentAnalyzer.POSITIVE_WORDS if word in text_lower
+        )
 
         # Exclamation marks indicate intensity
-        excitement = text.count('!') - text.count('?')
+        excitement = text.count("!") - text.count("?")
 
         # Determine sentiment
         if very_negative_count > 0:
@@ -118,34 +165,86 @@ class SentimentAnalyzer:
 class IntentDetector:
     """Detect user intent from message"""
 
-    BUYING_KEYWORDS = {
-        "buy", "purchase", "order", "get", "want", "need", "price",
-        "cost", "how much", "buy now", "interested", "available"
+    BUYING_KEYWORDS: ClassVar[set] = {
+        "buy",
+        "purchase",
+        "order",
+        "get",
+        "want",
+        "need",
+        "price",
+        "cost",
+        "how much",
+        "buy now",
+        "interested",
+        "available",
     }
 
-    SELLING_KEYWORDS = {
-        "sell", "sale", "discount", "offer", "deal", "sale price",
-        "selling", "want to sell", "selling price"
+    SELLING_KEYWORDS: ClassVar[set] = {
+        "sell",
+        "sale",
+        "discount",
+        "offer",
+        "deal",
+        "sale price",
+        "selling",
+        "want to sell",
+        "selling price",
     }
 
-    SUPPORT_KEYWORDS = {
-        "help", "support", "problem", "issue", "broken", "not working",
-        "error", "bug", "crash", "fix", "troubleshoot", "technical"
+    SUPPORT_KEYWORDS: ClassVar[set] = {
+        "help",
+        "support",
+        "problem",
+        "issue",
+        "broken",
+        "not working",
+        "error",
+        "bug",
+        "crash",
+        "fix",
+        "troubleshoot",
+        "technical",
     }
 
-    COMPLAINT_KEYWORDS = {
-        "complaint", "complain", "disappointed", "unsatisfied", "refund",
-        "return", "exchange", "wrong", "damaged", "missing"
+    COMPLAINT_KEYWORDS: ClassVar[set] = {
+        "complaint",
+        "complain",
+        "disappointed",
+        "unsatisfied",
+        "refund",
+        "return",
+        "exchange",
+        "wrong",
+        "damaged",
+        "missing",
     }
 
-    INFORMATION_KEYWORDS = {
-        "what", "how", "why", "when", "where", "explain", "tell me",
-        "information", "details", "describe", "specs"
+    INFORMATION_KEYWORDS: ClassVar[set] = {
+        "what",
+        "how",
+        "why",
+        "when",
+        "where",
+        "explain",
+        "tell me",
+        "information",
+        "details",
+        "describe",
+        "specs",
     }
 
-    NEGOTIATION_KEYWORDS = {
-        "discount", "lower", "cheaper", "negotiate", "deal", "offer",
-        "bulk", "wholesale", "volume", "minimum"
+    NEGOTIATION_KEYWORDS: ClassVar[set] = {
+        "discount",
+        "lower",
+        "cheaper",
+        "negotiate",
+        "deal",
+        "offer",
+        "bulk",
+        "wholesale",
+        "volume",
+        "minimum",
     }
 
     @staticmethod
@@ -155,18 +254,24 @@ class IntentDetector:
 
         # Count keyword matches
         scores = {
-            Intent.BUYING: sum(1 for kw in IntentDetector.BUYING_KEYWORDS
-                              if kw in text_lower),
-            Intent.SELLING: sum(1 for kw in IntentDetector.SELLING_KEYWORDS
-                               if kw in text_lower),
-            Intent.SUPPORT: sum(1 for kw in IntentDetector.SUPPORT_KEYWORDS
-                               if kw in text_lower),
-            Intent.COMPLAINT: sum(1 for kw in IntentDetector.COMPLAINT_KEYWORDS
-                                 if kw in text_lower),
-            Intent.INFORMATION: sum(1 for kw in IntentDetector.INFORMATION_KEYWORDS
-                                   if kw in text_lower),
-            Intent.NEGOTIATION: sum(1 for kw in IntentDetector.NEGOTIATION_KEYWORDS
-                                   if kw in text_lower),
+            Intent.BUYING: sum(
+                1 for kw in IntentDetector.BUYING_KEYWORDS if kw in text_lower
+            ),
+            Intent.SELLING: sum(
+                1 for kw in IntentDetector.SELLING_KEYWORDS if kw in text_lower
+            ),
+            Intent.SUPPORT: sum(
+                1 for kw in IntentDetector.SUPPORT_KEYWORDS if kw in text_lower
+            ),
+            Intent.COMPLAINT: sum(
+                1 for kw in IntentDetector.COMPLAINT_KEYWORDS if kw in text_lower
+            ),
+            Intent.INFORMATION: sum(
+                1 for kw in IntentDetector.INFORMATION_KEYWORDS if kw in text_lower
+            ),
+            Intent.NEGOTIATION: sum(
+                1 for kw in IntentDetector.NEGOTIATION_KEYWORDS if kw in text_lower
+            ),
         }
 
         # Return highest scoring intent
@@ -178,68 +283,74 @@ class ConversationMemory:
     """Manage conversation history for context"""
 
     def __init__(self, max_history: int = 10):
-        self.history: Dict[str, List[ConversationTurn]] = defaultdict(list)
+        self.history: dict[str, list[ConversationTurn]] = defaultdict(list)
         self.max_history = max_history
-        self.user_profiles: Dict[str, UserProfile] = {}
+        self.user_profiles: dict[str, UserProfile] = {}
 
     def add_turn(
         self,
         user_id: str,
         user_message: str,
         bot_response: str,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: dict[str, Any] | None = None,
     ) -> ConversationTurn:
         """Add conversation turn"""
         sentiment = SentimentAnalyzer.analyze(user_message)
         intent = IntentDetector.detect(user_message)
 
         turn = ConversationTurn(
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             user_message=user_message,
             bot_response=bot_response,
             user_sentiment=sentiment,
             detected_intent=intent,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         # Keep only recent history
         self.history[user_id].append(turn)
         if len(self.history[user_id]) > self.max_history:
-            self.history[user_id] = self.history[user_id][-self.max_history:]
+            self.history[user_id] = self.history[user_id][-self.max_history :]
 
         # Update user profile
         self._update_profile(user_id, sentiment, intent)
 
         return turn
 
-    def _update_profile(self, user_id: str, sentiment: Sentiment, intent: Intent) -> None:
+    def _update_profile(
+        self, user_id: str, sentiment: Sentiment, intent: Intent
+    ) -> None:
         """Update user profile based on interaction"""
         if user_id not in self.user_profiles:
             self.user_profiles[user_id] = UserProfile(user_id=user_id, name=user_id)
 
         profile = self.user_profiles[user_id]
         profile.conversation_count += 1
-        profile.last_interaction = datetime.utcnow()
+        profile.last_interaction = utc_now()
 
         # Track preferences
         if "sentiments" not in profile.preferences:
             profile.preferences["sentiments"] = {}
-        profile.preferences["sentiments"][sentiment.value] = \
+        profile.preferences["sentiments"][sentiment.value] = (
             profile.preferences["sentiments"].get(sentiment.value, 0) + 1
+        )
 
         if "intents" not in profile.preferences:
             profile.preferences["intents"] = {}
-        profile.preferences["intents"][intent.value] = \
+        profile.preferences["intents"][intent.value] = (
             profile.preferences["intents"].get(intent.value, 0) + 1
+        )
 
-    def get_history(self, user_id: str, limit: Optional[int] = None) -> List[ConversationTurn]:
+    def get_history(
+        self, user_id: str, limit: int | None = None
+    ) -> list[ConversationTurn]:
         """Get conversation history"""
         history = self.history[user_id]
         if limit:
             return history[-limit:]
         return history
 
-    def get_context_summary(self, user_id: str) -> Dict[str, Any]:
+    def get_context_summary(self, user_id: str) -> dict[str, Any]:
         """Get summary of recent context"""
         history = self.get_history(user_id, limit=5)
         if not history:
@@ -250,7 +361,7 @@ class ConversationMemory:
         recent_sentiment = history[-1].user_sentiment if history else Sentiment.NEUTRAL
 
         # Summarize topics
-        all_messages = ' '.join([turn.user_message for turn in history])
+        all_messages = " ".join([turn.user_message for turn in history])
 
         return {
             "last_intent": recent_intent.value,
@@ -265,18 +376,28 @@ class ConversationMemory:
                     "sentiment": turn.user_sentiment.value,
                 }
                 for turn in history[-3:]
-            ]
+            ],
         }
 
-    def _extract_topics(self, text: str) -> List[str]:
+    def _extract_topics(self, text: str) -> list[str]:
         """Extract main topics from text"""
         # Simple keyword extraction
         keywords = {}
-        words = re.findall(r'\b\w{4,}\b', text.lower())
+        words = re.findall(r"\b\w{4,}\b", text.lower())
 
         common_words = {
-            "this", "that", "with", "have", "from", "been", "their",
-            "which", "these", "would", "could", "should"
+            "this",
+            "that",
+            "with",
+            "have",
+            "from",
+            "been",
+            "their",
+            "which",
+            "these",
+            "would",
+            "could",
+            "should",
         }
 
         for word in words:
@@ -307,7 +428,7 @@ class ContextRetriever:
     def __init__(self, memory: ConversationMemory):
         self.memory = memory
 
-    def get_context(self, user_id: str, current_message: str) -> Dict[str, Any]:
+    def get_context(self, user_id: str, current_message: str) -> dict[str, Any]:
         """Get all relevant context for response generation"""
         profile = self.memory.get_user_profile(user_id)
         history = self.memory.get_history(user_id, limit=5)
@@ -338,7 +459,7 @@ class ContextRetriever:
             "topics_of_interest": self._extract_user_topics(profile),
             "response_guidance": self._generate_guidance(
                 current_intent, current_sentiment, profile
-            )
+            ),
         }
 
     def _get_primary_intent(self, profile: UserProfile) -> str:
@@ -355,16 +476,13 @@ class ContextRetriever:
             return "neutral"
         return max(sentiments, key=sentiments.get)
 
-    def _extract_user_topics(self, profile: UserProfile) -> List[str]:
+    def _extract_user_topics(self, profile: UserProfile) -> list[str]:
         """Extract user's topics of interest"""
         return profile.preferences.get("topics", [])
 
     def _generate_guidance(
-        self,
-        intent: Intent,
-        sentiment: Sentiment,
-        profile: UserProfile
-    ) -> Dict[str, Any]:
+        self, intent: Intent, sentiment: Sentiment, profile: UserProfile
+    ) -> dict[str, Any]:
         """Generate guidance for response generation"""
         guidance = {
             "tone": "friendly",
@@ -399,8 +517,8 @@ class ContextRetriever:
 
 
 # Singleton instances
-_memory_instance: Optional[ConversationMemory] = None
-_retriever_instance: Optional[ContextRetriever] = None
+_memory_instance: ConversationMemory | None = None
+_retriever_instance: ContextRetriever | None = None
 
 
 def get_conversation_memory() -> ConversationMemory:

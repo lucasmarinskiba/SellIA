@@ -1,22 +1,27 @@
 """API endpoints for offline-triggered re-engagement sequences."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import UUID
-from pydantic import BaseModel
-from typing import Optional, List
+import logging
 from enum import Enum
+from typing import Annotated
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, status
+from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.businesses.models import Business
+from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="", tags=["offline-sequences"])
 
 
 class OfflineTriggerType(str, Enum):
     """Trigger types for offline-based automations."""
+
     VISIT_WITHOUT_PURCHASE = "visit_without_purchase"
     DEMO_ATTENDED = "demo_attended"
     LONG_DWELL_TIME = "long_dwell_time"
@@ -28,6 +33,7 @@ class OfflineTriggerType(str, Enum):
 
 class VisitType(str, Enum):
     """Type of visit."""
+
     WALK_IN = "walk_in"
     QR_SCAN = "qr_scan"
     SCHEDULED_DEMO = "scheduled_demo"
@@ -39,6 +45,7 @@ class VisitType(str, Enum):
 
 class OfflineSequenceTemplate(BaseModel):
     """Email template triggered by offline visit."""
+
     name: str
     trigger_type: OfflineTriggerType
     delay_hours: int
@@ -50,19 +57,21 @@ class OfflineSequenceTemplate(BaseModel):
 
 class OfflineSequenceTriggerRequest(BaseModel):
     """Request to trigger post-visit sequence."""
+
     business_id: UUID
     location_id: UUID
     conversion_id: UUID
     visit_type: VisitType
-    dwell_minutes: Optional[int] = None
+    dwell_minutes: int | None = None
 
 
 class OfflineSequenceTriggerResponse(BaseModel):
     """Response from sequence trigger."""
+
     success: bool
     message: str
-    sequence_id: Optional[UUID] = None
-    next_action: Optional[str] = None
+    sequence_id: UUID | None = None
+    next_action: str | None = None
 
 
 # Pre-defined templates (10+ sequences)
@@ -74,7 +83,7 @@ OFFLINE_TEMPLATES = [
         subject="Thank you for visiting us!",
         body="We appreciated seeing you at our location. Here's 10% off your first purchase.",
         cta_text="Shop Now",
-        cta_url="/shop"
+        cta_url="/shop",
     ),
     OfflineSequenceTemplate(
         name="demo_follow_up",
@@ -83,7 +92,7 @@ OFFLINE_TEMPLATES = [
         subject="Your demo insights",
         body="Here's a personalized report from your demo with next steps.",
         cta_text="View Report",
-        cta_url="/reports"
+        cta_url="/reports",
     ),
     OfflineSequenceTemplate(
         name="extended_visit_offer",
@@ -92,7 +101,7 @@ OFFLINE_TEMPLATES = [
         subject="We noticed you spent time with us",
         body="Complete your purchase with free shipping for the next 48 hours.",
         cta_text="Complete Order",
-        cta_url="/checkout"
+        cta_url="/checkout",
     ),
     OfflineSequenceTemplate(
         name="qr_scan_reward",
@@ -101,7 +110,7 @@ OFFLINE_TEMPLATES = [
         subject="Exclusive QR code reward unlocked",
         body="You've earned bonus points. Use them now.",
         cta_text="Claim Bonus",
-        cta_url="/rewards"
+        cta_url="/rewards",
     ),
     OfflineSequenceTemplate(
         name="geofence_reminder",
@@ -110,7 +119,7 @@ OFFLINE_TEMPLATES = [
         subject="We're glad you visited nearby",
         body="Stop by again soon and get an exclusive offer.",
         cta_text="Reserve Time",
-        cta_url="/book"
+        cta_url="/book",
     ),
     OfflineSequenceTemplate(
         name="appointment_follow_up",
@@ -119,7 +128,7 @@ OFFLINE_TEMPLATES = [
         subject="Appointment recap",
         body="Here's what we discussed and your action items.",
         cta_text="View Summary",
-        cta_url="/appointments"
+        cta_url="/appointments",
     ),
     OfflineSequenceTemplate(
         name="high_traffic_upsell",
@@ -128,7 +137,7 @@ OFFLINE_TEMPLATES = [
         subject="Your visit inspired us",
         body="Based on what you explored, we recommend these products.",
         cta_text="See Recommendations",
-        cta_url="/recommendations"
+        cta_url="/recommendations",
     ),
 ]
 
@@ -140,50 +149,80 @@ OFFLINE_TEMPLATES = [
 )
 async def trigger_offline_sequence(
     request: OfflineSequenceTriggerRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> OfflineSequenceTriggerResponse:
     """Trigger post-visit sequence for offline conversion."""
     try:
         # Verify business ownership
         business = None
-        if hasattr(db, 'execute'):
+        if hasattr(db, "execute"):
             # AsyncSession
             from sqlalchemy import select
+
             stmt = select(Business).where(
-                Business.id == request.business_id,
-                Business.user_id == current_user.id
+                Business.id == request.business_id, Business.user_id == current_user.id
             )
             result = await db.execute(stmt)
             business = result.scalar_one_or_none()
         else:
             # Sync fallback
-            business = db.query(Business).filter(
-                Business.id == request.business_id,
-                Business.user_id == current_user.id
-            ).first()
+            business = (
+                db.query(Business)
+                .filter(
+                    Business.id == request.business_id,
+                    Business.user_id == current_user.id,
+                )
+                .first()
+            )
 
         if not business:
             return OfflineSequenceTriggerResponse(
-                success=False,
-                message="Business not found or not authorized"
+                success=False, message="Business not found or not authorized"
             )
 
         # Determine sequence template based on visit type and dwell time
         template = None
         if request.visit_type == VisitType.QR_SCAN:
-            template = next((t for t in OFFLINE_TEMPLATES if t.trigger_type == OfflineTriggerType.QR_SCAN), None)
+            template = next(
+                (
+                    t
+                    for t in OFFLINE_TEMPLATES
+                    if t.trigger_type == OfflineTriggerType.QR_SCAN
+                ),
+                None,
+            )
         elif request.visit_type == VisitType.SCHEDULED_DEMO:
-            template = next((t for t in OFFLINE_TEMPLATES if t.trigger_type == OfflineTriggerType.DEMO_ATTENDED), None)
+            template = next(
+                (
+                    t
+                    for t in OFFLINE_TEMPLATES
+                    if t.trigger_type == OfflineTriggerType.DEMO_ATTENDED
+                ),
+                None,
+            )
         elif request.dwell_minutes and request.dwell_minutes > 30:
-            template = next((t for t in OFFLINE_TEMPLATES if t.trigger_type == OfflineTriggerType.LONG_DWELL_TIME), None)
+            template = next(
+                (
+                    t
+                    for t in OFFLINE_TEMPLATES
+                    if t.trigger_type == OfflineTriggerType.LONG_DWELL_TIME
+                ),
+                None,
+            )
         else:
-            template = next((t for t in OFFLINE_TEMPLATES if t.trigger_type == OfflineTriggerType.VISIT_WITHOUT_PURCHASE), None)
+            template = next(
+                (
+                    t
+                    for t in OFFLINE_TEMPLATES
+                    if t.trigger_type == OfflineTriggerType.VISIT_WITHOUT_PURCHASE
+                ),
+                None,
+            )
 
         if not template:
             return OfflineSequenceTriggerResponse(
-                success=False,
-                message="No matching sequence template found"
+                success=False, message="No matching sequence template found"
             )
 
         # TODO: In production, enqueue email task with delay_hours
@@ -192,39 +231,36 @@ async def trigger_offline_sequence(
             success=True,
             message=f"Sequence '{template.name}' queued with {template.delay_hours}h delay",
             sequence_id=request.conversion_id,
-            next_action=f"Send {template.name} after {template.delay_hours} hours"
+            next_action=f"Send {template.name} after {template.delay_hours} hours",
         )
 
     except Exception as e:
+        logger.exception("trigger_offline_sequence: error inesperado")
         return OfflineSequenceTriggerResponse(
-            success=False,
-            message=f"Error triggering sequence: {str(e)}"
+            success=False, message=f"Error triggering sequence: {e!s}"
         )
 
 
 @router.get(
     "/offline-sequences/templates",
-    response_model=List[OfflineSequenceTemplate],
+    response_model=list[OfflineSequenceTemplate],
 )
 async def list_sequence_templates(
-    current_user: User = Depends(get_current_user),
-) -> List[OfflineSequenceTemplate]:
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> list[OfflineSequenceTemplate]:
     """List all available offline sequence templates."""
     return OFFLINE_TEMPLATES
 
 
 @router.get(
     "/offline-sequences/triggers",
-    response_model=List[dict],
+    response_model=list[dict],
 )
 async def list_trigger_types(
-    current_user: User = Depends(get_current_user),
-) -> List[dict]:
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> list[dict]:
     """List all offline trigger types."""
-    return [
-        {"type": t.value, "name": t.name}
-        for t in OfflineTriggerType
-    ]
+    return [{"type": t.value, "name": t.name} for t in OfflineTriggerType]
 
 
 @router.get(
@@ -232,7 +268,7 @@ async def list_trigger_types(
     response_model=dict,
 )
 async def get_visit_type_mapping(
-    current_user: User = Depends(get_current_user),
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> dict:
     """Map visit types to default sequences."""
     mapping = {
@@ -246,5 +282,5 @@ async def get_visit_type_mapping(
     }
     return {
         "mappings": mapping,
-        "templates": {t.name: t.trigger_type.value for t in OFFLINE_TEMPLATES}
+        "templates": {t.name: t.trigger_type.value for t in OFFLINE_TEMPLATES},
     }

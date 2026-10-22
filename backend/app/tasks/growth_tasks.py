@@ -11,15 +11,14 @@ These tasks work while the user sleeps to:
 - Optimize campaigns based on performance
 """
 
-import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 
 from celery import shared_task
-from sqlalchemy import select, func, desc
+from sqlalchemy import select
 
+from app.core.async_bridge import run_async
 from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
-from app.core.async_bridge import run_async
 
 logger = get_logger(__name__)
 
@@ -32,9 +31,12 @@ def inbound_content_generator():
 
 async def _inbound_content_generator():
     async with AsyncSessionLocal() as db:
-        from app.domains.growth.models import GrowthCampaign, GrowthCampaignStatus, GrowthCampaignType
+        from app.domains.growth.models import (
+            GrowthCampaign,
+            GrowthCampaignStatus,
+            GrowthCampaignType,
+        )
         from app.domains.growth.seo_pipeline import SEOPipeline
-        from app.domains.growth.lead_magnet_funnel import LeadMagnetEngine
 
         # Find active SEO campaigns
         result = await db.execute(
@@ -60,14 +62,16 @@ async def _inbound_content_generator():
                         campaign_id=campaign.id,
                     )
                     # Schedule for next week
-                    publish_at = datetime.now(timezone.utc) + timedelta(days=7)
+                    publish_at = datetime.now(UTC) + timedelta(days=7)
                     await pipeline.schedule_publication(content.id, publish_at, "blog")
                     campaign.content_published += 1
 
                 await db.commit()
                 logger.info(f"Generated SEO content for campaign {campaign.id}")
-            except Exception as e:
-                logger.error(f"Failed to generate content for campaign {campaign.id}: {e}")
+            except Exception:
+                logger.exception(
+                    f"Failed to generate content for campaign {campaign.id}"
+                )
 
 
 @shared_task(name="growth.lead_magnet_distributor")
@@ -78,17 +82,19 @@ def lead_magnet_distributor():
 
 async def _lead_magnet_distributor():
     async with AsyncSessionLocal() as db:
-        from app.domains.growth.models import InboundLead, NurturingStage, LeadMagnet
         from app.domains.growth.lead_magnet_funnel import LeadMagnetEngine
+        from app.domains.growth.models import InboundLead, NurturingStage
 
         # Find new leads with lead magnet source that haven't received it yet
         result = await db.execute(
-            select(InboundLead).where(
+            select(InboundLead)
+            .where(
                 InboundLead.source_type == "lead_magnet",
                 InboundLead.nurturing_stage == NurturingStage.NEW,
                 InboundLead.is_active == True,
                 InboundLead.conversation_id.isnot(None),
-            ).limit(50)
+            )
+            .limit(50)
         )
         leads = result.scalars().all()
 
@@ -105,8 +111,8 @@ async def _lead_magnet_distributor():
                     if result.get("status") == "delivered":
                         delivered += 1
                         lead.nurturing_stage = NurturingStage.AWARENESS
-            except Exception as e:
-                logger.error(f"Failed to deliver lead magnet to lead {lead.id}: {e}")
+            except Exception:
+                logger.exception(f"Failed to deliver lead magnet to lead {lead.id}")
 
         await db.commit()
         logger.info(f"Delivered {delivered} lead magnets")
@@ -121,16 +127,19 @@ def cold_lead_nurturer():
 async def _cold_lead_nurturer():
     async with AsyncSessionLocal() as db:
         from app.domains.growth.models import InboundLead, NurturingStage
-        from app.domains.growth.value_outreach import ValueFirstOutreach
         from app.domains.outreach.service import FatigueScoringService
 
         # Find cold leads
         result = await db.execute(
-            select(InboundLead).where(
-                InboundLead.nurturing_stage.in_([NurturingStage.NEW, NurturingStage.AWARENESS]),
+            select(InboundLead)
+            .where(
+                InboundLead.nurturing_stage.in_(
+                    [NurturingStage.NEW, NurturingStage.AWARENESS]
+                ),
                 InboundLead.is_active == True,
                 InboundLead.conversation_id.isnot(None),
-            ).limit(30)
+            )
+            .limit(30)
         )
         leads = result.scalars().all()
 
@@ -147,6 +156,7 @@ async def _cold_lead_nurturer():
 
                 # Send value bomb
                 from app.domains.channels.services import send_outbound_message
+
                 topics = ["productividad", "ventas", "marketing", "crecimiento"]
                 topic = topics[hash(str(lead.id)) % len(topics)]
 
@@ -162,8 +172,8 @@ async def _cold_lead_nurturer():
                     lead.nurturing_stage = NurturingStage.INTEREST
 
                 nurtured += 1
-            except Exception as e:
-                logger.error(f"Failed to nurture lead {lead.id}: {e}")
+            except Exception:
+                logger.exception(f"Failed to nurture lead {lead.id}")
 
         await db.commit()
         logger.info(f"Nurtured {nurtured} cold leads")
@@ -177,18 +187,20 @@ def social_proof_collector():
 
 async def _social_proof_collector():
     async with AsyncSessionLocal() as db:
-        from app.domains.orders.models import Order, OrderStatus
         from app.domains.growth.social_proof import SocialProofEngine
+        from app.domains.orders.models import Order, OrderStatus
 
-        three_days_ago = datetime.now(timezone.utc) - timedelta(days=3)
-        seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
+        three_days_ago = datetime.now(UTC) - timedelta(days=3)
+        seven_days_ago = datetime.now(UTC) - timedelta(days=7)
 
         result = await db.execute(
-            select(Order).where(
+            select(Order)
+            .where(
                 Order.status == OrderStatus.COMPLETED,
                 Order.updated_at >= seven_days_ago,
                 Order.updated_at <= three_days_ago,
-            ).limit(50)
+            )
+            .limit(50)
         )
         orders = result.scalars().all()
 
@@ -199,6 +211,7 @@ async def _social_proof_collector():
             try:
                 # Check if review already requested
                 from app.domains.growth.models import SocialProofItem
+
                 existing = await db.execute(
                     select(SocialProofItem).where(SocialProofItem.order_id == order.id)
                 )
@@ -213,8 +226,8 @@ async def _social_proof_collector():
                     delay_hours=0,
                 )
                 sent += 1
-            except Exception as e:
-                logger.error(f"Failed to request review for order {order.id}: {e}")
+            except Exception:
+                logger.exception(f"Failed to request review for order {order.id}")
 
         await db.commit()
         logger.info(f"Sent {sent} review requests")
@@ -228,14 +241,16 @@ def ugc_request_sender():
 
 async def _ugc_request_sender():
     async with AsyncSessionLocal() as db:
-        from app.domains.growth.ugc_collector import UGCCollector
         from app.domains.growth.models import UgcRequest, UgcRequestStatus
+        from app.domains.growth.ugc_collector import UGCCollector
 
         # Send pending UGC requests
         result = await db.execute(
-            select(UgcRequest).where(
+            select(UgcRequest)
+            .where(
                 UgcRequest.status == UgcRequestStatus.PENDING,
-            ).limit(30)
+            )
+            .limit(30)
         )
         requests = result.scalars().all()
 
@@ -247,8 +262,8 @@ async def _ugc_request_sender():
                 result = await engine.send_ugc_request(req.id)
                 if result.get("status") == "sent":
                     sent += 1
-            except Exception as e:
-                logger.error(f"Failed to send UGC request {req.id}: {e}")
+            except Exception:
+                logger.exception(f"Failed to send UGC request {req.id}")
 
         logger.info(f"Sent {sent} UGC requests")
 
@@ -261,8 +276,8 @@ def referral_loop_evaluator():
 
 async def _referral_loop_evaluator():
     async with AsyncSessionLocal() as db:
-        from app.domains.growth.viral_referral import ViralReferralEngine
         from app.domains.businesses.models import Business
+        from app.domains.growth.viral_referral import ViralReferralEngine
 
         result = await db.execute(select(Business.id))
         business_ids = [r[0] for r in result.all()]
@@ -279,9 +294,13 @@ async def _referral_loop_evaluator():
 
                 # If K > 1, log celebration
                 if metrics["exponential_growth"]:
-                    logger.info(f"🚀 Business {business_id} has achieved viral growth! K={metrics['k_factor']}")
-            except Exception as e:
-                logger.error(f"Failed to evaluate referrals for business {business_id}: {e}")
+                    logger.info(
+                        f"🚀 Business {business_id} has achieved viral growth! K={metrics['k_factor']}"
+                    )
+            except Exception:
+                logger.exception(
+                    f"Failed to evaluate referrals for business {business_id}"
+                )
 
 
 @shared_task(name="growth.community_engagement_scanner")
@@ -293,8 +312,8 @@ def community_engagement_scanner():
 async def _community_engagement_scanner():
     """Process pending comments from social platforms."""
     async with AsyncSessionLocal() as db:
-        from app.domains.growth.comment_responder import CommentResponder
         from app.domains.businesses.models import Business
+        from app.domains.growth.comment_responder import CommentResponder
 
         result = await db.execute(select(Business.id))
         business_ids = [r[0] for r in result.all()]
@@ -309,8 +328,8 @@ async def _community_engagement_scanner():
                     f"Business {business_id} comment analytics: "
                     f"{analytics['leads_from_comments']} leads from comments today"
                 )
-            except Exception as e:
-                logger.error(f"Comment scanner error for business {business_id}: {e}")
+            except Exception:
+                logger.exception(f"Comment scanner error for business {business_id}")
 
 
 @shared_task(name="growth.growth_campaign_optimizer")
@@ -321,8 +340,8 @@ def growth_campaign_optimizer():
 
 async def _growth_campaign_optimizer():
     async with AsyncSessionLocal() as db:
-        from app.domains.growth.models import GrowthCampaign, GrowthCampaignStatus
         from app.domains.growth.inbound_engine import InboundGrowthEngine
+        from app.domains.growth.models import GrowthCampaign, GrowthCampaignStatus
 
         result = await db.execute(
             select(GrowthCampaign).where(
@@ -352,5 +371,5 @@ async def _growth_campaign_optimizer():
                         f"🌟 High-performing campaign {campaign.id} "
                         f"(conversion: {conversion_rate}%) — consider scaling"
                     )
-            except Exception as e:
-                logger.error(f"Failed to optimize campaign {campaign.id}: {e}")
+            except Exception:
+                logger.exception(f"Failed to optimize campaign {campaign.id}")

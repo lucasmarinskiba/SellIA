@@ -5,12 +5,12 @@ completado, fallido, detenido, CAPTCHA detectado, etc.
 Incluye firma HMAC para verificación de integridad.
 """
 
-import hmac
-import hashlib
-import json
 import asyncio
-from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List
+import hashlib
+import hmac
+import json
+from datetime import UTC, datetime
+from typing import Any
 
 import aiohttp
 
@@ -37,14 +37,14 @@ class WebhookService:
         self,
         url: str,
         event: str,
-        payload: Dict[str, Any],
-        secret: Optional[str] = None,
+        payload: dict[str, Any],
+        secret: str | None = None,
         retry_count: int = 3,
-    ) -> tuple[bool, Optional[int], Optional[str]]:
+    ) -> tuple[bool, int | None, str | None]:
         """Envía un webhook con retry."""
         payload_data = {
             "event": event,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "data": payload,
         }
         body = json.dumps(payload_data, ensure_ascii=False, default=str)
@@ -52,7 +52,7 @@ class WebhookService:
         headers = {
             "Content-Type": "application/json",
             "X-Computer-Use-Event": event,
-            "X-Computer-Use-Timestamp": datetime.now(timezone.utc).isoformat(),
+            "X-Computer-Use-Timestamp": datetime.now(UTC).isoformat(),
             "User-Agent": "SellIA-Computer-Use/1.0",
         }
 
@@ -65,37 +65,48 @@ class WebhookService:
 
         for attempt in range(retry_count):
             try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(
+                async with (
+                    aiohttp.ClientSession() as session,
+                    session.post(
                         url,
                         data=body,
                         headers=headers,
                         timeout=self._delivery_timeout,
-                    ) as resp:
-                        last_status = resp.status
-                        if resp.status < 400:
-                            logger.info(f"Webhook delivered: {event} → {url} (HTTP {resp.status})")
-                            return True, resp.status, None
-                        else:
-                            resp_text = await resp.text()
-                            last_error = f"HTTP {resp.status}: {resp_text[:200]}"
-                            logger.warning(f"Webhook failed: {event} → {url} ({last_error})")
+                    ) as resp,
+                ):
+                    last_status = resp.status
+                    if resp.status < 400:
+                        logger.info(
+                            f"Webhook delivered: {event} → {url} (HTTP {resp.status})"
+                        )
+                        return True, resp.status, None
+                    else:
+                        resp_text = await resp.text()
+                        last_error = f"HTTP {resp.status}: {resp_text[:200]}"
+                        logger.warning(
+                            f"Webhook failed: {event} → {url} ({last_error})"
+                        )
             except Exception as e:
                 last_error = str(e)
-                logger.warning(f"Webhook delivery error (attempt {attempt + 1}): {e}")
+                logger.warning(
+                    f"Webhook delivery error (attempt {attempt + 1}): {e}",
+                    exc_info=True,
+                )
 
             if attempt < retry_count - 1:
-                await asyncio.sleep(2 ** attempt)  # Exponential backoff
+                await asyncio.sleep(2**attempt)  # Exponential backoff
 
-        logger.error(f"Webhook delivery failed after {retry_count} attempts: {event} → {url}")
+        logger.error(
+            f"Webhook delivery failed after {retry_count} attempts: {event} → {url}"
+        )
         return False, last_status, last_error
 
     async def notify_session_completed(
         self,
         webhook_url: str,
-        session_data: Dict[str, Any],
-        secret: Optional[str] = None,
-    ) -> tuple[bool, Optional[int], Optional[str]]:
+        session_data: dict[str, Any],
+        secret: str | None = None,
+    ) -> tuple[bool, int | None, str | None]:
         """Notifica que una sesión se completó."""
         return await self.send_webhook(
             url=webhook_url,
@@ -115,10 +126,10 @@ class WebhookService:
     async def notify_session_failed(
         self,
         webhook_url: str,
-        session_data: Dict[str, Any],
+        session_data: dict[str, Any],
         error_message: str,
-        secret: Optional[str] = None,
-    ) -> tuple[bool, Optional[int], Optional[str]]:
+        secret: str | None = None,
+    ) -> tuple[bool, int | None, str | None]:
         """Notifica que una sesión falló."""
         return await self.send_webhook(
             url=webhook_url,
@@ -139,8 +150,8 @@ class WebhookService:
         session_id: str,
         confidence: float,
         reason: str,
-        secret: Optional[str] = None,
-    ) -> tuple[bool, Optional[int], Optional[str]]:
+        secret: str | None = None,
+    ) -> tuple[bool, int | None, str | None]:
         """Notifica detección de CAPTCHA."""
         return await self.send_webhook(
             url=webhook_url,
@@ -158,9 +169,9 @@ class WebhookService:
         self,
         webhook_url: str,
         batch_id: str,
-        results: Dict[str, Any],
-        secret: Optional[str] = None,
-    ) -> tuple[bool, Optional[int], Optional[str]]:
+        results: dict[str, Any],
+        secret: str | None = None,
+    ) -> tuple[bool, int | None, str | None]:
         """Notifica completado de batch job."""
         return await self.send_webhook(
             url=webhook_url,

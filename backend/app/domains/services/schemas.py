@@ -1,88 +1,90 @@
 """Services Schemas"""
 
-from uuid import UUID
 from datetime import datetime
-from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, ConfigDict
+from typing import Any
+from uuid import UUID
 
+from pydantic import BaseModel, ConfigDict, Field
 
 # ========== Service Catalog Item Extra Data ==========
 
+
 class ServiceItemConfig(BaseModel):
-    modalities: List[str] = Field(default_factory=list)
-    solution_types: List[str] = Field(default_factory=list)
+    modalities: list[str] = Field(default_factory=list)
+    solution_types: list[str] = Field(default_factory=list)
     duration_minutes: int = 60
     buffer_minutes: int = 15
     requires_prep: bool = False
-    materials_needed: List[str] = Field(default_factory=list)
-    prerequisites: List[str] = Field(default_factory=list)
-    service_area_km: Optional[float] = None
+    materials_needed: list[str] = Field(default_factory=list)
+    prerequisites: list[str] = Field(default_factory=list)
+    service_area_km: float | None = None
     travel_included: bool = False
-    online_meeting_link: Optional[str] = None
+    online_meeting_link: str | None = None
     cancellation_policy_hours: int = 24
     reschedule_policy_hours: int = 12
 
 
 # ========== Service Delivery Schemas ==========
 
+
 class ServiceDeliveryCreate(BaseModel):
     order_id: UUID
-    catalog_item_id: Optional[UUID] = None
-    conversation_id: Optional[UUID] = None
-    scheduled_at: Optional[datetime] = None
-    modality: Optional[str] = None
-    solution_type: Optional[str] = None
-    location_address: Optional[Dict[str, Any]] = None
-    meeting_url: Optional[str] = None
-    estimated_duration_minutes: Optional[int] = None
+    catalog_item_id: UUID | None = None
+    conversation_id: UUID | None = None
+    scheduled_at: datetime | None = None
+    modality: str | None = None
+    solution_type: str | None = None
+    location_address: dict[str, Any] | None = None
+    meeting_url: str | None = None
+    estimated_duration_minutes: int | None = None
 
 
 class ServiceDeliveryUpdate(BaseModel):
-    scheduled_at: Optional[datetime] = None
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    cancelled_at: Optional[datetime] = None
-    modality: Optional[str] = None
-    solution_type: Optional[str] = None
-    status: Optional[str] = None
-    location_address: Optional[Dict[str, Any]] = None
-    meeting_url: Optional[str] = None
-    provider_notes: Optional[str] = None
-    client_feedback: Optional[str] = None
-    client_rating: Optional[int] = None
-    materials_used: Optional[List[Dict[str, Any]]] = None
-    diagnosis: Optional[Dict[str, Any]] = None
-    follow_up_required: Optional[bool] = None
-    follow_up_notes: Optional[str] = None
-    actual_duration_minutes: Optional[int] = None
-    is_active: Optional[bool] = None
+    scheduled_at: datetime | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    cancelled_at: datetime | None = None
+    modality: str | None = None
+    solution_type: str | None = None
+    status: str | None = None
+    location_address: dict[str, Any] | None = None
+    meeting_url: str | None = None
+    provider_notes: str | None = None
+    client_feedback: str | None = None
+    client_rating: int | None = None
+    materials_used: list[dict[str, Any]] | None = None
+    diagnosis: dict[str, Any] | None = None
+    follow_up_required: bool | None = None
+    follow_up_notes: str | None = None
+    actual_duration_minutes: int | None = None
+    is_active: bool | None = None
 
 
 class ServiceDeliveryResponse(BaseModel):
     id: UUID
     business_id: UUID
     order_id: UUID
-    catalog_item_id: Optional[UUID]
-    conversation_id: Optional[UUID]
-    scheduled_at: Optional[datetime]
-    started_at: Optional[datetime]
-    completed_at: Optional[datetime]
-    cancelled_at: Optional[datetime]
-    modality: Optional[str]
-    solution_type: Optional[str]
+    catalog_item_id: UUID | None
+    conversation_id: UUID | None
+    scheduled_at: datetime | None
+    started_at: datetime | None
+    completed_at: datetime | None
+    cancelled_at: datetime | None
+    modality: str | None
+    solution_type: str | None
     status: str
-    location_address: Dict[str, Any]
-    meeting_url: Optional[str]
-    provider_notes: Optional[str]
-    client_feedback: Optional[str]
-    client_rating: Optional[int]
-    materials_used: List[Dict[str, Any]]
-    diagnosis: Dict[str, Any]
+    location_address: dict[str, Any]
+    meeting_url: str | None
+    provider_notes: str | None
+    client_feedback: str | None
+    client_rating: int | None
+    materials_used: list[dict[str, Any]]
+    diagnosis: dict[str, Any]
     follow_up_required: bool
-    follow_up_notes: Optional[str]
-    reminders_sent: List[Dict[str, Any]]
-    estimated_duration_minutes: Optional[int]
-    actual_duration_minutes: Optional[int]
+    follow_up_notes: str | None
+    reminders_sent: list[dict[str, Any]]
+    estimated_duration_minutes: int | None
+    actual_duration_minutes: int | None
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -91,64 +93,65 @@ class ServiceDeliveryResponse(BaseModel):
 
 # ========== Appointment Schemas ==========
 
+
 class AppointmentCreate(BaseModel):
-    service_delivery_id: Optional[UUID] = None
-    order_id: Optional[UUID] = None
-    conversation_id: Optional[UUID] = None
-    client_name: Optional[str] = None
-    client_email: Optional[str] = None
-    client_phone: Optional[str] = None
+    service_delivery_id: UUID | None = None
+    order_id: UUID | None = None
+    conversation_id: UUID | None = None
+    client_name: str | None = None
+    client_email: str | None = None
+    client_phone: str | None = None
     start_time: datetime
     end_time: datetime
     timezone: str = "America/Argentina/Buenos_Aires"
-    modality: Optional[str] = None
-    solution_type: Optional[str] = None
-    service_name: Optional[str] = None
-    location_address: Optional[Dict[str, Any]] = None
-    meeting_url: Optional[str] = None
-    preparation_notes: Optional[str] = None
+    modality: str | None = None
+    solution_type: str | None = None
+    service_name: str | None = None
+    location_address: dict[str, Any] | None = None
+    meeting_url: str | None = None
+    preparation_notes: str | None = None
 
 
 class AppointmentUpdate(BaseModel):
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
-    timezone: Optional[str] = None
-    modality: Optional[str] = None
-    solution_type: Optional[str] = None
-    service_name: Optional[str] = None
-    location_address: Optional[Dict[str, Any]] = None
-    meeting_url: Optional[str] = None
-    status: Optional[str] = None
-    provider_notes: Optional[str] = None
-    preparation_notes: Optional[str] = None
-    is_active: Optional[bool] = None
+    start_time: datetime | None = None
+    end_time: datetime | None = None
+    timezone: str | None = None
+    modality: str | None = None
+    solution_type: str | None = None
+    service_name: str | None = None
+    location_address: dict[str, Any] | None = None
+    meeting_url: str | None = None
+    status: str | None = None
+    provider_notes: str | None = None
+    preparation_notes: str | None = None
+    is_active: bool | None = None
 
 
 class AppointmentResponse(BaseModel):
     id: UUID
     business_id: UUID
-    service_delivery_id: Optional[UUID]
-    order_id: Optional[UUID]
-    conversation_id: Optional[UUID]
-    client_name: Optional[str]
-    client_email: Optional[str]
-    client_phone: Optional[str]
+    service_delivery_id: UUID | None
+    order_id: UUID | None
+    conversation_id: UUID | None
+    client_name: str | None
+    client_email: str | None
+    client_phone: str | None
     start_time: datetime
     end_time: datetime
     timezone: str
-    modality: Optional[str]
-    solution_type: Optional[str]
-    service_name: Optional[str]
-    location_address: Dict[str, Any]
-    meeting_url: Optional[str]
+    modality: str | None
+    solution_type: str | None
+    service_name: str | None
+    location_address: dict[str, Any]
+    meeting_url: str | None
     status: str
-    reminder_sent_at: Optional[datetime]
-    confirmation_sent_at: Optional[datetime]
-    confirmation_received_at: Optional[datetime]
-    feedback_sent_at: Optional[datetime]
-    feedback_received_at: Optional[datetime]
-    provider_notes: Optional[str]
-    preparation_notes: Optional[str]
+    reminder_sent_at: datetime | None
+    confirmation_sent_at: datetime | None
+    confirmation_received_at: datetime | None
+    feedback_sent_at: datetime | None
+    feedback_received_at: datetime | None
+    provider_notes: str | None
+    preparation_notes: str | None
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -156,7 +159,7 @@ class AppointmentResponse(BaseModel):
 
 
 class AppointmentListResponse(BaseModel):
-    items: List[AppointmentResponse]
+    items: list[AppointmentResponse]
     total: int
 
 
@@ -168,10 +171,10 @@ class CalendarQuery(BaseModel):
 class AppointmentActionResponse(BaseModel):
     success: bool
     message: str
-    appointment: Optional[AppointmentResponse] = None
+    appointment: AppointmentResponse | None = None
 
 
 class ServiceDeliveryActionResponse(BaseModel):
     success: bool
     message: str
-    service_delivery: Optional[ServiceDeliveryResponse] = None
+    service_delivery: ServiceDeliveryResponse | None = None

@@ -12,8 +12,8 @@ the Railway image for them is not a trade worth making.
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Optional, Sequence
 
 Z_95 = 1.959963984540054
 
@@ -50,7 +50,10 @@ class Proportion:
         denom = 1 + z**2 / n
         center = (p + z**2 / (2 * n)) / denom
         margin = (z / denom) * math.sqrt(p * (1 - p) / n + z**2 / (4 * n**2))
-        return (round(max(0.0, center - margin) * 100, 1), round(min(1.0, center + margin) * 100, 1))
+        return (
+            round(max(0.0, center - margin) * 100, 1),
+            round(min(1.0, center + margin) * 100, 1),
+        )
 
     @property
     def confidence(self) -> str:
@@ -81,7 +84,7 @@ class Proportion:
         )
 
 
-def median(values: Sequence[float]) -> Optional[float]:
+def median(values: Sequence[float]) -> float | None:
     """Median, not mean: one customer answered three days late would drag an
     average past the point of being descriptive."""
     if not values:
@@ -93,13 +96,13 @@ def median(values: Sequence[float]) -> Optional[float]:
     return (ordered[mid - 1] + ordered[mid]) / 2
 
 
-def quartiles(values: Sequence[float]) -> tuple[Optional[float], Optional[float]]:
+def quartiles(values: Sequence[float]) -> tuple[float | None, float | None]:
     if len(values) < 4:
         return (None, None)
     ordered = sorted(values)
     mid = len(ordered) // 2
     lower = ordered[:mid]
-    upper = ordered[mid + 1:] if len(ordered) % 2 else ordered[mid:]
+    upper = ordered[mid + 1 :] if len(ordered) % 2 else ordered[mid:]
     return (median(lower), median(upper))
 
 
@@ -107,12 +110,20 @@ def describe_change(current: int, previous: int, unit: str) -> dict[str, object]
     """Week-over-week style comparison that refuses to dramatise small counts."""
     delta = current - previous
     if previous == 0 and current == 0:
-        return {"direction": "flat", "delta": 0, "percent": None,
-                "reading": f"Sin {unit} en ninguno de los dos períodos."}
+        return {
+            "direction": "flat",
+            "delta": 0,
+            "percent": None,
+            "reading": f"Sin {unit} en ninguno de los dos períodos.",
+        }
     if previous == 0:
-        return {"direction": "up", "delta": delta, "percent": None,
-                "reading": f"Pasaste de 0 a {current} {unit}: es el primer período con actividad, "
-                           f"todavía no hay con qué compararlo."}
+        return {
+            "direction": "up",
+            "delta": delta,
+            "percent": None,
+            "reading": f"Pasaste de 0 a {current} {unit}: es el primer período con actividad, "
+            f"todavía no hay con qué compararlo.",
+        }
     percent = round((current - previous) / previous * 100, 1)
     direction = "up" if delta > 0 else "down" if delta < 0 else "flat"
     if current + previous < MIN_TO_READ * 2:
@@ -123,4 +134,9 @@ def describe_change(current: int, previous: int, unit: str) -> dict[str, object]
     else:
         verb = "subió" if delta > 0 else "bajó" if delta < 0 else "quedó igual"
         reading = f"{verb} {abs(percent)}% ({current} vs {previous} {unit})."
-    return {"direction": direction, "delta": delta, "percent": percent, "reading": reading}
+    return {
+        "direction": direction,
+        "delta": delta,
+        "percent": percent,
+        "reading": reading,
+    }

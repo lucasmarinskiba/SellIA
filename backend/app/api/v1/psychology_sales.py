@@ -1,18 +1,22 @@
 """Phase 31 Psychology Sales API endpoints."""
 
-from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Depends
+import logging
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.domains.enterprise.psychology_sales import (
+    AssumptiveCloseEngine,
     DiscoveryQuestionsEngine,
     NeedCreationEngine,
-    UrgencyTriggerEngine,
     PsychologyObjectionHandler,
-    AssumptiveCloseEngine,
+    UrgencyTriggerEngine,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/psychology", tags=["psychology-sales"])
 
@@ -29,8 +33,8 @@ class DiscoveryQuestionRequest(BaseModel):
 
 
 class DiscoveryQuestionResponse(BaseModel):
-    questions: List[str]
-    psychology: List[str]
+    questions: list[str]
+    psychology: list[str]
     next_stage: str
 
 
@@ -43,12 +47,12 @@ class RecordResponseRequest(BaseModel):
 class RecordResponseResponse(BaseModel):
     recorded: bool
     urgency_level: int
-    pain_points: List[str]
+    pain_points: list[str]
 
 
 class NeedNarrativeRequest(BaseModel):
     deal_id: str
-    discovery_responses: List[str]
+    discovery_responses: list[str]
 
 
 class NeedNarrativeResponse(BaseModel):
@@ -64,7 +68,7 @@ class UrgencyTriggersRequest(BaseModel):
 
 
 class UrgencyTriggersResponse(BaseModel):
-    triggers: List[dict]
+    triggers: list[dict]
 
 
 class ObjectionRequest(BaseModel):
@@ -100,19 +104,23 @@ class CloseResponse(BaseModel):
 @router.post("/discovery-questions", response_model=DiscoveryQuestionResponse)
 def get_discovery_questions(
     request: DiscoveryQuestionRequest,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Get contextual discovery questions for prospect."""
 
     try:
-        from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+        from app.domains.crm.models import (
+            Deal,  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+        )
 
         deal = db.query(Deal).filter(Deal.id == request.deal_id).first()
         if not deal:
             raise HTTPException(status_code=404, detail="Deal not found")
 
         prospect = {
-            "company_name": deal.company_name if hasattr(deal, 'company_name') else "Company",
+            "company_name": (
+                deal.company_name if hasattr(deal, "company_name") else "Company"
+            ),
             "industry": getattr(deal, "industry", "technology"),
             "role": "decision_maker",
         }
@@ -126,19 +134,22 @@ def get_discovery_questions(
             next_stage=request.stage,
         )
     except Exception as e:
+        logger.exception("get_discovery_questions: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/record-response", response_model=RecordResponseResponse)
 def record_discovery_response(
     request: RecordResponseRequest,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Record prospect's response to discovery question."""
 
     try:
         engine = DiscoveryQuestionsEngine(db)
-        db_response = engine.record_response(request.deal_id, request.question, request.response)
+        db_response = engine.record_response(
+            request.deal_id, request.question, request.response
+        )
 
         return RecordResponseResponse(
             recorded=True,
@@ -146,19 +157,22 @@ def record_discovery_response(
             pain_points=db_response.pain_points or [],
         )
     except Exception as e:
+        logger.exception("record_discovery_response: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/create-need-narrative", response_model=NeedNarrativeResponse)
 def create_need_narrative(
     request: NeedNarrativeRequest,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Create need narrative from discovery responses."""
 
     try:
         engine = NeedCreationEngine(db)
-        result = engine.create_need_narrative(request.deal_id, request.discovery_responses)
+        result = engine.create_need_narrative(
+            request.deal_id, request.discovery_responses
+        )
 
         return NeedNarrativeResponse(
             narrative=result.narrative,
@@ -166,13 +180,14 @@ def create_need_narrative(
             urgency_level=result.urgency_level,
         )
     except Exception as e:
+        logger.exception("create_need_narrative: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/urgency-triggers", response_model=UrgencyTriggersResponse)
 def get_urgency_triggers(
     request: UrgencyTriggersRequest,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Get FOMO/urgency triggers for deal."""
 
@@ -184,13 +199,14 @@ def get_urgency_triggers(
 
         return UrgencyTriggersResponse(triggers=triggers)
     except Exception as e:
+        logger.exception("get_urgency_triggers: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/handle-objection", response_model=ObjectionResponse)
 def handle_objection(
     request: ObjectionRequest,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Get psychology-based objection response."""
 
@@ -206,13 +222,14 @@ def handle_objection(
             next_step="Ask them to think about impact",
         )
     except Exception as e:
+        logger.exception("handle_objection: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/close", response_model=CloseResponse)
 def get_close(
     request: CloseRequest,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Get assumptive close for current step."""
 
@@ -242,4 +259,5 @@ def get_close(
             is_positive_response=True,
         )
     except Exception as e:
+        logger.exception("get_close: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

@@ -4,14 +4,17 @@ Async service functions for scenario management and simulation orchestration.
 """
 
 import uuid
-from typing import Optional, List, Dict, Any
+from typing import Any
 
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func
 
 from app.core.logger import get_logger
-from app.domains.training.models import TrainingScenario, TrainingRun
-from app.domains.training.schemas import SimulationScenarioCreate, SimulationScenarioUpdate
+from app.domains.training.models import TrainingRun, TrainingScenario
+from app.domains.training.schemas import (
+    SimulationScenarioCreate,
+    SimulationScenarioUpdate,
+)
 from app.domains.training.simulator import SimulationEngine
 
 logger = get_logger(__name__)
@@ -19,7 +22,10 @@ logger = get_logger(__name__)
 
 # ===== Scenario CRUD =====
 
-async def create_scenario(db: AsyncSession, data: SimulationScenarioCreate) -> TrainingScenario:
+
+async def create_scenario(
+    db: AsyncSession, data: SimulationScenarioCreate
+) -> TrainingScenario:
     scenario = TrainingScenario(**data.model_dump())
     db.add(scenario)
     await db.commit()
@@ -31,8 +37,8 @@ async def create_scenario(db: AsyncSession, data: SimulationScenarioCreate) -> T
 async def list_scenarios(
     db: AsyncSession,
     business_id: uuid.UUID,
-    difficulty: Optional[str] = None,
-) -> List[TrainingScenario]:
+    difficulty: str | None = None,
+) -> list[TrainingScenario]:
     query = select(TrainingScenario).where(
         TrainingScenario.business_id == business_id,
         TrainingScenario.is_active == True,
@@ -44,7 +50,9 @@ async def list_scenarios(
     return result.scalars().all()
 
 
-async def get_scenario(db: AsyncSession, scenario_id: uuid.UUID) -> Optional[TrainingScenario]:
+async def get_scenario(
+    db: AsyncSession, scenario_id: uuid.UUID
+) -> TrainingScenario | None:
     result = await db.execute(
         select(TrainingScenario).where(TrainingScenario.id == scenario_id)
     )
@@ -53,7 +61,7 @@ async def get_scenario(db: AsyncSession, scenario_id: uuid.UUID) -> Optional[Tra
 
 async def update_scenario(
     db: AsyncSession, scenario_id: uuid.UUID, data: SimulationScenarioUpdate
-) -> Optional[TrainingScenario]:
+) -> TrainingScenario | None:
     scenario = await get_scenario(db, scenario_id)
     if not scenario:
         return None
@@ -75,10 +83,11 @@ async def delete_scenario(db: AsyncSession, scenario_id: uuid.UUID) -> bool:
 
 # ===== Simulation Runs =====
 
+
 async def start_simulation(
     db: AsyncSession,
     scenario_id: uuid.UUID,
-    agent_type: Optional[str] = None,
+    agent_type: str | None = None,
 ) -> TrainingRun:
     """Queue a simulation run as a Celery task and return the pending run record."""
     scenario = await get_scenario(db, scenario_id)
@@ -102,25 +111,28 @@ async def start_simulation(
     # Queue Celery task
     try:
         from app.tasks.celery_app import celery_app
+
         celery_app.send_task(
             "app.domains.training.tasks.run_simulation_task",
             args=[str(scenario_id), effective_agent_type, str(run.id)],
         )
         logger.info(f"Queued simulation task for run {run.id}, scenario {scenario_id}")
     except Exception as exc:
-        logger.error(f"Failed to queue simulation task: {exc}")
+        logger.exception("Failed to queue simulation task")
         run.status = "failed"
         run.feedback = f"Failed to queue task: {str(exc)[:200]}"
-        run.completed_at = __import__("datetime").datetime.now(__import__("datetime").timezone.utc)
+        run.completed_at = __import__("datetime").datetime.now(
+            __import__("datetime").timezone.utc
+        )
         await db.commit()
 
     return run
 
 
-async def get_simulation_results(db: AsyncSession, run_id: uuid.UUID) -> Optional[TrainingRun]:
-    result = await db.execute(
-        select(TrainingRun).where(TrainingRun.id == run_id)
-    )
+async def get_simulation_results(
+    db: AsyncSession, run_id: uuid.UUID
+) -> TrainingRun | None:
+    result = await db.execute(select(TrainingRun).where(TrainingRun.id == run_id))
     return result.scalar_one_or_none()
 
 
@@ -128,7 +140,7 @@ async def get_leaderboard(
     db: AsyncSession,
     business_id: uuid.UUID,
     limit: int = 20,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Return top simulations by score for a business."""
     result = await db.execute(
         select(TrainingRun, TrainingScenario)
@@ -144,26 +156,29 @@ async def get_leaderboard(
 
     entries = []
     for run, scenario in result.all():
-        entries.append({
-            "run_id": run.id,
-            "scenario_id": scenario.id,
-            "scenario_name": scenario.name,
-            "agent_type": scenario.agent_type,
-            "score": run.score,
-            "objective_achieved": run.objective_achieved,
-            "customer_satisfaction": run.customer_satisfaction,
-            "created_at": run.created_at,
-        })
+        entries.append(
+            {
+                "run_id": run.id,
+                "scenario_id": scenario.id,
+                "scenario_name": scenario.name,
+                "agent_type": scenario.agent_type,
+                "score": run.score,
+                "objective_achieved": run.objective_achieved,
+                "customer_satisfaction": run.customer_satisfaction,
+                "created_at": run.created_at,
+            }
+        )
     return entries
 
 
 # ===== Direct simulation execution (used by Celery task) =====
 
+
 async def execute_simulation(
     db: AsyncSession,
     scenario_id: uuid.UUID,
     agent_type: str,
-    run_id: Optional[uuid.UUID] = None,
+    run_id: uuid.UUID | None = None,
 ) -> TrainingRun:
     """Execute the simulation synchronously (intended for Celery workers)."""
     engine = SimulationEngine(db)

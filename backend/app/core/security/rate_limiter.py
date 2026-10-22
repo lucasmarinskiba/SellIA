@@ -6,12 +6,13 @@ Implements:
 - Login brute-force protection: 5 failed attempts -> 15 min ban
 """
 
-import redis.asyncio as redis
+import logging
 import time
-from datetime import datetime, timedelta
-from typing import Optional
-import hashlib
-from fastapi import Request, HTTPException, status
+
+import redis.asyncio as redis
+from fastapi import Request
+
+logger = logging.getLogger(__name__)
 
 
 class RateLimiter:
@@ -81,6 +82,7 @@ class RateLimiter:
             return result
         except Exception as e:
             # On Redis error, fail open (allow request) but log
+            logger.exception("check_rate_limit: error inesperado")
             return {
                 "allowed": True,
                 "current": 0,
@@ -158,7 +160,7 @@ class RateLimiter:
 
 
 # Global rate limiter instance
-_rate_limiter: Optional[RateLimiter] = None
+_rate_limiter: RateLimiter | None = None
 
 
 def get_rate_limiter(redis_client: redis.Redis) -> RateLimiter:

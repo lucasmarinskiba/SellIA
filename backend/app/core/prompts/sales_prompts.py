@@ -1,12 +1,13 @@
 """50 Sales Prompts — Discovery, qualification, proposal, negotiation, closing, account management."""
 
 from dataclasses import dataclass
-from typing import Dict, Any, List
 from enum import Enum
+from typing import Any
 
 
 class SalesStage(str, Enum):
     """Sales pipeline stages."""
+
     DISCOVERY = "Discovery"
     QUALIFICATION = "Qualification"
     PROPOSAL = "Proposal"
@@ -18,18 +19,19 @@ class SalesStage(str, Enum):
 @dataclass
 class SalesPromptTemplate:
     """Structure for a sales prompt."""
+
     id: str
     name: str
     stage: str
     business_context: str
     prompt_text: str
-    variables: List[str]
-    example_input: Dict[str, Any]
+    variables: list[str]
+    example_input: dict[str, Any]
     example_output: str
-    success_metrics: List[str]
-    industry_variations: Dict[str, str]
-    best_practices: List[str]
-    tags: List[str]
+    success_metrics: list[str]
+    industry_variations: dict[str, str]
+    best_practices: list[str]
+    tags: list[str]
 
 
 class SalesPrompts:
@@ -121,12 +123,33 @@ Taking notes:
 - {note_focus_1}
 - {note_focus_2}
 - {note_focus_3}""",
-            variables=["prospect_company", "prospect_industry", "prospect_role", "company_size",
-                      "current_solution", "suspected_challenge", "timeline", "objective_1", "objective_2",
-                      "objective_3", "topic", "workflow", "responsibility", "challenge", "problem",
-                      "business_metric", "business_impact", "solution_benefit", "desired_outcome",
-                      "rapport_question_1", "rapport_question_2", "rapport_question_3", "note_focus_1",
-                      "note_focus_2", "note_focus_3"],
+            variables=[
+                "prospect_company",
+                "prospect_industry",
+                "prospect_role",
+                "company_size",
+                "current_solution",
+                "suspected_challenge",
+                "timeline",
+                "objective_1",
+                "objective_2",
+                "objective_3",
+                "topic",
+                "workflow",
+                "responsibility",
+                "challenge",
+                "problem",
+                "business_metric",
+                "business_impact",
+                "solution_benefit",
+                "desired_outcome",
+                "rapport_question_1",
+                "rapport_question_2",
+                "rapport_question_3",
+                "note_focus_1",
+                "note_focus_2",
+                "note_focus_3",
+            ],
             example_input={
                 "prospect_company": "Acme Manufacturing",
                 "prospect_industry": "Manufacturing/SaaS B2B",
@@ -152,7 +175,7 @@ Taking notes:
                 "rapport_question_3": "What would make your job easier?",
                 "note_focus_1": "Decision makers involved",
                 "note_focus_2": "Budget authority",
-                "note_focus_3": "Urgency drivers"
+                "note_focus_3": "Urgency drivers",
             },
             example_output="""DISCOVERY CALL SCRIPT
 
@@ -212,12 +235,12 @@ CLOSE DISCOVERY:
                 "Prospect engagement: Speaking 60%+, asking follow-up questions",
                 "Next step clarity: Clear date for proposal or follow-up",
                 "Discovery efficiency: Complete in 20-30 minutes",
-                "Advancement rate: 60%+ move to next stage"
+                "Advancement rate: 60%+ move to next stage",
             ],
             industry_variations={
                 "SaaS": "Focus on workflow efficiency, integration needs, ROI payback period",
                 "Real Estate": "Focus on closing time, deal flow, market conditions",
-                "Services": "Focus on client retention, service quality, team capacity"
+                "Services": "Focus on client retention, service quality, team capacity",
             },
             best_practices=[
                 "Listen more than you talk — silence is your friend",
@@ -225,9 +248,15 @@ CLOSE DISCOVERY:
                 "Reflect back what you hear — validates their thinking",
                 "Note decision criteria early — understand how they'll evaluate",
                 "Don't pitch until they ask for it",
-                "Schedule next step before hanging up — avoid 'follow up' limbo"
+                "Schedule next step before hanging up — avoid 'follow up' limbo",
             ],
-            tags=["discovery", "qualification", "pain-points", "questioning", "sales-technique"]
+            tags=[
+                "discovery",
+                "qualification",
+                "pain-points",
+                "questioning",
+                "sales-technique",
+            ],
         )
 
     @staticmethod
@@ -349,20 +378,73 @@ USE THIS TO:
 - Create ROI calculation
 - Identify decision makers
 - Sequence objection handling""",
-            variables=["prospect_company", "target_department", "product_name", "primary_benefit",
-                      "secondary_benefits", "revenue_impact_1", "annual_cost_1", "revenue_impact_2",
-                      "annual_cost_2", "revenue_impact_3", "annual_cost_3", "efficiency_pain_1",
-                      "hours_per_week", "hourly_rate", "efficiency_pain_2", "time_waste", "frequency",
-                      "occurrences", "total_time_wasted", "efficiency_pain_3", "current_cost_vs_ideal",
-                      "error_percentage", "error_consequence", "compliance_issue", "quality_metric",
-                      "morale_issue", "team_impact", "retention_issue", "retention_cost", "burnout_issue",
-                      "team_metric", "pain_name", "pain_frequency", "pain_duration", "direct_cost",
-                      "indirect_cost", "total_impact", "stakeholder_count", "critical_pain_1",
-                      "critical_pain_2", "critical_pain_3", "important_pain_1", "important_pain_2",
-                      "nice_to_have_pain_1", "nice_to_have_pain_2", "current_workflow", "business_metric",
-                      "pain_1", "pain_2", "pain_3", "role_1", "role_1_pain", "role_2", "role_2_pain",
-                      "role_3", "role_3_pain", "dept_1", "dept_1_pain", "dept_2", "dept_2_pain",
-                      "our_advantage", "competitor_weakness", "$impact", "pain", "stakeholder"],
+            variables=[
+                "prospect_company",
+                "target_department",
+                "product_name",
+                "primary_benefit",
+                "secondary_benefits",
+                "revenue_impact_1",
+                "annual_cost_1",
+                "revenue_impact_2",
+                "annual_cost_2",
+                "revenue_impact_3",
+                "annual_cost_3",
+                "efficiency_pain_1",
+                "hours_per_week",
+                "hourly_rate",
+                "efficiency_pain_2",
+                "time_waste",
+                "frequency",
+                "occurrences",
+                "total_time_wasted",
+                "efficiency_pain_3",
+                "current_cost_vs_ideal",
+                "error_percentage",
+                "error_consequence",
+                "compliance_issue",
+                "quality_metric",
+                "morale_issue",
+                "team_impact",
+                "retention_issue",
+                "retention_cost",
+                "burnout_issue",
+                "team_metric",
+                "pain_name",
+                "pain_frequency",
+                "pain_duration",
+                "direct_cost",
+                "indirect_cost",
+                "total_impact",
+                "stakeholder_count",
+                "critical_pain_1",
+                "critical_pain_2",
+                "critical_pain_3",
+                "important_pain_1",
+                "important_pain_2",
+                "nice_to_have_pain_1",
+                "nice_to_have_pain_2",
+                "current_workflow",
+                "business_metric",
+                "pain_1",
+                "pain_2",
+                "pain_3",
+                "role_1",
+                "role_1_pain",
+                "role_2",
+                "role_2_pain",
+                "role_3",
+                "role_3_pain",
+                "dept_1",
+                "dept_1_pain",
+                "dept_2",
+                "dept_2_pain",
+                "our_advantage",
+                "competitor_weakness",
+                "$impact",
+                "pain",
+                "stakeholder",
+            ],
             example_input={
                 "prospect_company": "TechCorp HR",
                 "target_department": "Human Resources",
@@ -392,7 +474,7 @@ USE THIS TO:
                 "critical_pain_3": "Compliance risk and audit failures",
                 "pain_1": "turnover",
                 "pain_2": "time spent",
-                "pain_3": "compliance"
+                "pain_3": "compliance",
             },
             example_output="""TECKCORP HR PAIN ANALYSIS
 
@@ -483,21 +565,27 @@ within the first year. Want to see how that could work for TechCorp?"
                 "Stakeholder alignment: Multiple decision makers see relevant pain",
                 "Prioritization: Tier 1 pains are clear and compelling",
                 "Discovery quality: Prospect validates pains (strong agreement)",
-                "Urgency: Timeline associated with pain resolution"
+                "Urgency: Timeline associated with pain resolution",
             ],
             industry_variations={
                 "SaaS": "Efficiency, revenue impact, workflow speed",
                 "Real Estate": "Deal timeline, commission impact, market opportunity",
-                "Consulting": "Client outcomes, team capacity, service quality"
+                "Consulting": "Client outcomes, team capacity, service quality",
             },
             best_practices=[
                 "Quantify every pain if possible — $X/year > vague 'this is a problem'",
                 "Map to multiple stakeholders — different people care about different pains",
                 "Validate your pain hypothesis in discovery — don't assume",
                 "Prioritize ruthlessly — focus on top 3 pains, not 10",
-                "Use pains to sequence proposal, objection handling, and decision approval"
+                "Use pains to sequence proposal, objection handling, and decision approval",
             ],
-            tags=["pain-points", "discovery", "quantification", "stakeholder-alignment", "sales"]
+            tags=[
+                "pain-points",
+                "discovery",
+                "quantification",
+                "stakeholder-alignment",
+                "sales",
+            ],
         )
 
     # ==================== Additional Sales Prompts (8 more for Discovery = 10 total) ====================
@@ -633,13 +721,41 @@ Lead: Small startup
 - Total: 30 points → NOT QUALIFIED
 
 Action: Add to long-term nurture list, check back in 6 months""",
-            variables=["product_name", "target_market", "required_budget", "typical_deal_size",
-                      "budget_window", "budget_confirmation_method", "decision_maker_title",
-                      "approval_chain", "influencer_roles", "primary_need", "pain_severity",
-                      "impact_level", "eval_timeline", "decision_timeline", "implementation_timeline",
-                      "use_case_1", "use_case_2", "use_case_3", "size_1", "size_2", "size_3",
-                      "industry_1", "industry_2", "tool_1", "tool_2", "risk_1", "risk_2", "risk_area_1",
-                      "risk_3", "disqualifier_1", "disqualifier_2", "disqualifier_3", "pain point"],
+            variables=[
+                "product_name",
+                "target_market",
+                "required_budget",
+                "typical_deal_size",
+                "budget_window",
+                "budget_confirmation_method",
+                "decision_maker_title",
+                "approval_chain",
+                "influencer_roles",
+                "primary_need",
+                "pain_severity",
+                "impact_level",
+                "eval_timeline",
+                "decision_timeline",
+                "implementation_timeline",
+                "use_case_1",
+                "use_case_2",
+                "use_case_3",
+                "size_1",
+                "size_2",
+                "size_3",
+                "industry_1",
+                "industry_2",
+                "tool_1",
+                "tool_2",
+                "risk_1",
+                "risk_2",
+                "risk_area_1",
+                "risk_3",
+                "disqualifier_1",
+                "disqualifier_2",
+                "disqualifier_3",
+                "pain point",
+            ],
             example_input={
                 "product_name": "TaskFlow",
                 "target_market": "Mid-market SaaS (50-500 people)",
@@ -671,7 +787,7 @@ Action: Add to long-term nurture list, check back in 6 months""",
                 "risk_3": "Need API access to CRM",
                 "disqualifier_1": "Self-serve only, no implementation support",
                 "disqualifier_2": "On-premise deployment requirement",
-                "disqualifier_3": "Enterprise-only features at cost"
+                "disqualifier_3": "Enterprise-only features at cost",
             },
             example_output="""TASKFLOW QUALIFICATION SCORING
 
@@ -743,21 +859,27 @@ ACTION:
                 "Qualification accuracy: 80%+ of 'hot leads' close",
                 "Sales efficiency: Reduce time on non-qualified leads by 30%",
                 "Deal quality: Focus on high-value deals only",
-                "Win rate: Hot leads: 60%+, Qualified: 30%+, Not qualified: <5%"
+                "Win rate: Hot leads: 60%+, Qualified: 30%+, Not qualified: <5%",
             ],
             industry_variations={
                 "SaaS": "SaaS-specific budget cycles (Q4 budgets), procurement process",
                 "Real Estate": "Timeline driven by market, financing, investor approval",
-                "Services": "Project-based budgeting, scope confirmation"
+                "Services": "Project-based budgeting, scope confirmation",
             },
             best_practices=[
                 "Disqualify early — don't waste time on poor-fit deals",
                 "Qualification is about speed, not just accuracy",
                 "Update scores as you learn more — scores shift up/down",
                 "Disqualifiers are binary — one disqualifier = instant fail",
-                "Build scoring into your CRM for automation"
+                "Build scoring into your CRM for automation",
             ],
-            tags=["qualification", "scoring", "deal-assessment", "pipeline-management", "sales"]
+            tags=[
+                "qualification",
+                "scoring",
+                "deal-assessment",
+                "pipeline-management",
+                "sales",
+            ],
         )
 
     # ==================== Additional Qualification Prompts (8 more = 10 total) ====================
@@ -919,23 +1041,81 @@ Objection handling (prepare for):
 - {objection_1} → {response_1}
 - {objection_2} → {response_2}
 - {objection_3} → {response_3}""",
-            variables=["prospect_name", "prospect_company", "objective_1", "objective_2", "objective_3",
-                      "decision_criteria", "approved_budget", "decision_timeline", "stakeholder_focus",
-                      "challenge_summary", "solution_summary", "roi_summary", "investment", "payback",
-                      "challenge_1", "challenge_2", "challenge_3", "impact_statement", "solution_mechanism_1",
-                      "solution_mechanism_2", "why_it_works", "implementation_timeline", "support_model",
-                      "current_metric", "future_metric", "metric_1_impact", "current_metric_2",
-                      "future_metric_2", "metric_2_impact", "current_metric_3", "future_metric_3",
-                      "metric_3_impact", "total_impact", "roi_percentage", "payback_months",
-                      "case_study_company", "case_study_challenge", "case_study_results",
-                      "case_study_timeline", "week_1_duration", "week_2_duration", "week_3_duration",
-                      "support_person", "check_in_frequency", "hours", "support_level", "solution_price",
-                      "services_price", "total_y1", "annual_ongoing", "payment_terms", "included_features",
-                      "optional_features", "metric_30days", "metric_60days", "metric_90days",
-                      "review_cadence", "key_metrics", "training_detail", "adoption_strategy",
-                      "tool_name", "integration_detail", "scaling_detail", "approval_path", "start_date",
-                      "training_detail", "adoption_strategy", "objection_1", "response_1", "objection_2",
-                      "response_2", "objection_3", "response_3"],
+            variables=[
+                "prospect_name",
+                "prospect_company",
+                "objective_1",
+                "objective_2",
+                "objective_3",
+                "decision_criteria",
+                "approved_budget",
+                "decision_timeline",
+                "stakeholder_focus",
+                "challenge_summary",
+                "solution_summary",
+                "roi_summary",
+                "investment",
+                "payback",
+                "challenge_1",
+                "challenge_2",
+                "challenge_3",
+                "impact_statement",
+                "solution_mechanism_1",
+                "solution_mechanism_2",
+                "why_it_works",
+                "implementation_timeline",
+                "support_model",
+                "current_metric",
+                "future_metric",
+                "metric_1_impact",
+                "current_metric_2",
+                "future_metric_2",
+                "metric_2_impact",
+                "current_metric_3",
+                "future_metric_3",
+                "metric_3_impact",
+                "total_impact",
+                "roi_percentage",
+                "payback_months",
+                "case_study_company",
+                "case_study_challenge",
+                "case_study_results",
+                "case_study_timeline",
+                "week_1_duration",
+                "week_2_duration",
+                "week_3_duration",
+                "support_person",
+                "check_in_frequency",
+                "hours",
+                "support_level",
+                "solution_price",
+                "services_price",
+                "total_y1",
+                "annual_ongoing",
+                "payment_terms",
+                "included_features",
+                "optional_features",
+                "metric_30days",
+                "metric_60days",
+                "metric_90days",
+                "review_cadence",
+                "key_metrics",
+                "training_detail",
+                "adoption_strategy",
+                "tool_name",
+                "integration_detail",
+                "scaling_detail",
+                "approval_path",
+                "start_date",
+                "training_detail",
+                "adoption_strategy",
+                "objection_1",
+                "response_1",
+                "objection_2",
+                "response_2",
+                "objection_3",
+                "response_3",
+            ],
             example_input={
                 "prospect_name": "Sarah Chen",
                 "prospect_company": "Acme Corp",
@@ -973,7 +1153,7 @@ Objection handling (prepare for):
                 "objection_1": "Asana is industry standard",
                 "response_1": "Asana is great for enterprise. We're built for teams under 200. Faster to value, easier to use.",
                 "objection_2": "Can we do this in-house?",
-                "response_2": "Most teams underestimate implementation time. We get you to value in 4 weeks with dedicated support."
+                "response_2": "Most teams underestimate implementation time. We get you to value in 4 weeks with dedicated support.",
             },
             example_output="""ACME CORP PROPOSAL
 TaskFlow Project Management Solution
@@ -1210,12 +1390,12 @@ for that separately."
                 "Objection rate: <3 major objections (means proposal is clear)",
                 "Acceptance rate: 70%+ of proposals result in signed deals",
                 "Average deal size: Aligns with predicted budget",
-                "Time to signature: <2 weeks from proposal"
+                "Time to signature: <2 weeks from proposal",
             ],
             industry_variations={
                 "SaaS": "ROI-heavy, feature comparison, integration focus",
                 "Real Estate": "Market impact, financing details, timeline",
-                "Services": "Scope clarity, resource allocation, outcomes"
+                "Services": "Scope clarity, resource allocation, outcomes",
             },
             best_practices=[
                 "Personalize: Use prospect's actual numbers (don't use averages)",
@@ -1223,9 +1403,9 @@ for that separately."
                 "Build proof: Include relevant case studies",
                 "Make it visual: Dashboards, timelines, ROI charts > text",
                 "Address concerns proactively: Include risk mitigation section",
-                "Single CTA: One clear next step, not multiple options"
+                "Single CTA: One clear next step, not multiple options",
             ],
-            tags=["proposal", "roi", "value-prop", "closing", "sales"]
+            tags=["proposal", "roi", "value-prop", "closing", "sales"],
         )
 
     # ==================== REMAINING SALES PROMPTS ====================
@@ -1233,7 +1413,7 @@ for that separately."
     # Structure follows same pattern with detailed examples
 
     @staticmethod
-    def get_all_sales_prompts() -> Dict[str, SalesPromptTemplate]:
+    def get_all_sales_prompts() -> dict[str, SalesPromptTemplate]:
         """Return all 50 sales prompts indexed by ID."""
         return {
             "sales_001": SalesPrompts.discovery_question_generator(),

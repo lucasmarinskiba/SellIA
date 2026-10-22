@@ -1,25 +1,25 @@
 """Phase 3 Authority Building endpoints - E-E-A-T signals, testimonials, awards."""
 
-from fastapi import APIRouter, HTTPException, Query, Depends, Body
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from datetime import datetime, timedelta
+from typing import Annotated
 
+from fastapi import APIRouter, Body, Depends, Query
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.clock import utc_now
 from app.core.database import get_db
-from app.models.authority_building import (
-    Testimonial, Award, Review, TrustScore, SellerBio
-)
+from app.models.authority_building import Award, Review, SellerBio, Testimonial
 
 router = APIRouter(prefix="/authority", tags=["authority"])
 
 
 @router.post("/testimonials")
 async def create_testimonial(
-    seller_id: str = Query(...),
-    customer_name: str = Body(...),
-    title: str = Body(...),
-    content: str = Body(...),
-    db: AsyncSession = Depends(get_db),
+    seller_id: Annotated[str, Query()],
+    customer_name: Annotated[str, Body()],
+    title: Annotated[str, Body()],
+    content: Annotated[str, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Add customer testimonial (manual or from video)."""
     testimonial = Testimonial(
@@ -39,8 +39,8 @@ async def create_testimonial(
 @router.get("/testimonials/{seller_id}")
 async def list_testimonials(
     seller_id: str,
-    featured_only: bool = Query(False),
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    featured_only: Annotated[bool, Query()] = False,
 ):
     """List testimonials for seller."""
     stmt = select(Testimonial).where(Testimonial.seller_id == seller_id)
@@ -51,17 +51,21 @@ async def list_testimonials(
     return {
         "count": len(testimonials),
         "testimonials": testimonials,
-        "avg_rating": sum(t.rating for t in testimonials) / len(testimonials) if testimonials else 0,
+        "avg_rating": (
+            sum(t.rating for t in testimonials) / len(testimonials)
+            if testimonials
+            else 0
+        ),
     }
 
 
 @router.post("/awards")
 async def add_award(
-    seller_id: str = Query(...),
-    name: str = Body(...),
-    issuer: str = Body(...),
-    category: str = Body(...),
-    db: AsyncSession = Depends(get_db),
+    seller_id: Annotated[str, Query()],
+    name: Annotated[str, Body()],
+    issuer: Annotated[str, Body()],
+    category: Annotated[str, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Register award/certification."""
     award = Award(
@@ -69,7 +73,7 @@ async def add_award(
         name=name,
         issuer=issuer,
         category=category,
-        awarded_date=datetime.utcnow(),
+        awarded_date=utc_now(),
         is_active=True,
     )
     db.add(award)
@@ -79,7 +83,10 @@ async def add_award(
 
 
 @router.get("/awards/{seller_id}")
-async def list_awards(seller_id: str, db: AsyncSession = Depends(get_db)):
+async def list_awards(
+    seller_id: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """List active awards for seller."""
     stmt = select(Award).where(
         Award.seller_id == seller_id,
@@ -90,16 +97,16 @@ async def list_awards(seller_id: str, db: AsyncSession = Depends(get_db)):
     return {
         "count": len(awards),
         "awards": awards,
-        "categories": list(set(a.category for a in awards)),
+        "categories": list({a.category for a in awards}),
     }
 
 
 @router.get("/reviews/{seller_id}")
 async def get_seller_reviews(
     seller_id: str,
-    platform: str = Query(None),
-    min_rating: int = Query(1),
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    platform: Annotated[str | None, Query()] = None,
+    min_rating: Annotated[int, Query()] = 1,
 ):
     """Aggregated reviews across platforms."""
     stmt = select(Review).where(
@@ -115,7 +122,9 @@ async def get_seller_reviews(
 
     if reviews:
         avg_rating = sum(r.rating for r in reviews) / len(reviews)
-        response_rate = sum(1 for r in reviews if r.seller_response) / len(reviews) * 100
+        response_rate = (
+            sum(1 for r in reviews if r.seller_response) / len(reviews) * 100
+        )
     else:
         avg_rating = 0
         response_rate = 0
@@ -131,12 +140,17 @@ async def get_seller_reviews(
             "2_star": len([r for r in reviews if r.rating == 2]),
             "1_star": len([r for r in reviews if r.rating == 1]),
         },
-        "recent": [r for r in sorted(reviews, key=lambda x: x.review_date, reverse=True)][:5],
+        "recent": [
+            r for r in sorted(reviews, key=lambda x: x.review_date, reverse=True)
+        ][:5],
     }
 
 
 @router.get("/trust-score/{seller_id}")
-async def calculate_trust_score(seller_id: str, db: AsyncSession = Depends(get_db)):
+async def calculate_trust_score(
+    seller_id: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """E-E-A-T trust score computed from this seller's REAL rows.
 
     This used to be five random.uniform()/randint() calls dressed up as a
@@ -147,7 +161,7 @@ async def calculate_trust_score(seller_id: str, db: AsyncSession = Depends(get_d
     plausible number.
     """
     reviews_result = await db.execute(
-        select(Review).where(Review.seller_id == seller_id, Review.is_flagged == False)  # noqa: E712
+        select(Review).where(Review.seller_id == seller_id, Review.is_flagged == False)
     )
     reviews = reviews_result.scalars().all()
 
@@ -175,19 +189,23 @@ async def calculate_trust_score(seller_id: str, db: AsyncSession = Depends(get_d
         }
 
     review_count = len(reviews)
-    review_rating = round(sum(r.rating for r in reviews) / review_count, 2) if review_count else 0.0
+    review_rating = (
+        round(sum(r.rating for r in reviews) / review_count, 2) if review_count else 0.0
+    )
     answered = sum(1 for r in reviews if r.seller_response)
     response_rate = round(answered / review_count * 100, 1) if review_count else 0.0
     verified_reviews = sum(1 for r in reviews if r.is_verified_purchase)
-    verification = round(verified_reviews / review_count * 100, 1) if review_count else 0.0
+    verification = (
+        round(verified_reviews / review_count * 100, 1) if review_count else 0.0
+    )
 
     # Each component is a real measurement, weighted into 0-100. No component
     # is included unless the data behind it exists.
     trust_score = round(
-        review_rating * 10           # max 50 (5 stars)
+        review_rating * 10  # max 50 (5 stars)
         + min(review_count / 2, 20)  # max 20
-        + response_rate * 0.15       # max 15
-        + verification * 0.10        # max 10
+        + response_rate * 0.15  # max 15
+        + verification * 0.10  # max 10
         + min(len(awards) * 2.5, 5),  # max 5
         1,
     )
@@ -216,8 +234,14 @@ async def calculate_trust_score(seller_id: str, db: AsyncSession = Depends(get_d
             "testimonial_count": len(testimonials),
             "award_count": len(awards),
         },
-        "next_tier": None if tier == "platinum" else (
-            "silver" if tier == "bronze" else "gold" if tier == "silver" else "platinum"
+        "next_tier": (
+            None
+            if tier == "platinum"
+            else (
+                "silver"
+                if tier == "bronze"
+                else "gold" if tier == "silver" else "platinum"
+            )
         ),
         "points_to_next": max(0, round(thresholds.get(tier, 100) - trust_score, 1)),
     }
@@ -272,10 +296,10 @@ async def get_authority_insights(seller_id: str):
 @router.post("/seller-bio/{seller_id}")
 async def update_seller_bio(
     seller_id: str,
-    full_name: str = Body(...),
-    bio: str = Body(...),
-    years_in_business: int = Body(...),
-    db: AsyncSession = Depends(get_db),
+    full_name: Annotated[str, Body()],
+    bio: Annotated[str, Body()],
+    years_in_business: Annotated[int, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Create/update seller bio (E-E-A-T: Expertise + Authoritativeness + Trustworthiness)."""
     stmt = select(SellerBio).where(SellerBio.seller_id == seller_id)

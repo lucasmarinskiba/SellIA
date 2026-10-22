@@ -1,14 +1,15 @@
 """FOMO+SEO Integrated API."""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cache import cached
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.core.cache import cached
-from app.domains.fomo_seo.service import FOMOSEOCopyService, A_B_TestService
+from app.domains.fomo_seo.service import A_B_TestService, FOMOSEOCopyService
 from app.domains.users.models import User
 
 router = APIRouter(prefix="/{business_id}/fomo-seo", tags=["FOMO+SEO"])
@@ -17,18 +18,18 @@ router = APIRouter(prefix="/{business_id}/fomo-seo", tags=["FOMO+SEO"])
 @router.post("/copy/generate")
 async def generate_copy(
     business_id: UUID,
+    title: Annotated[str, Query(min_length=10, max_length=255)],
+    meta_description: Annotated[str, Query(min_length=50, max_length=160)],
+    short_description: Annotated[str, Query(min_length=50, max_length=500)],
+    long_description: Annotated[str, Query(min_length=100)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     product_id: UUID | None = None,
-    title: str = Query(..., min_length=10, max_length=255),
-    meta_description: str = Query(..., min_length=50, max_length=160),
-    short_description: str = Query(..., min_length=50, max_length=500),
-    long_description: str = Query(..., min_length=100),
-    call_to_action: str = Query(default="Buy Now"),
+    call_to_action: Annotated[str, Query()] = "Buy Now",
     urgency_trigger: str | None = None,
     social_proof: str | None = None,
     scarcity_message: str | None = None,
-    platform: str = Query(default="shopify"),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    platform: Annotated[str, Query()] = "shopify",
 ):
     """Generate FOMO+SEO optimized copy."""
     svc = FOMOSEOCopyService(db)
@@ -58,10 +59,10 @@ async def generate_copy(
 @cached(ttl_seconds=3600, key_prefix="fomo_copy")
 async def list_copy(
     business_id: UUID,
-    platform: str | None = Query(None),
-    status: str = Query(default="active"),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    platform: Annotated[str | None, Query()] = None,
+    status: Annotated[str, Query()] = "active",
 ):
     """List FOMO+SEO copy (cached 1h)."""
     svc = FOMOSEOCopyService(db)
@@ -85,12 +86,12 @@ async def list_copy(
 async def create_ab_test(
     business_id: UUID,
     copy_id: UUID,
-    variant_a_title: str = Query(..., max_length=255),
-    variant_b_title: str = Query(..., max_length=255),
-    variant_a_desc: str = Query(..., max_length=500),
-    variant_b_desc: str = Query(..., max_length=500),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    variant_a_title: Annotated[str, Query(max_length=255)],
+    variant_b_title: Annotated[str, Query(max_length=255)],
+    variant_a_desc: Annotated[str, Query(max_length=500)],
+    variant_b_desc: Annotated[str, Query(max_length=500)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create A/B test for copy variants."""
     svc = A_B_TestService(db)
@@ -114,8 +115,8 @@ async def create_ab_test(
 @cached(ttl_seconds=600, key_prefix="ab_tests")
 async def list_active_tests(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """List active A/B tests (cached 10min)."""
     svc = A_B_TestService(db)
@@ -138,14 +139,14 @@ async def list_active_tests(
 async def update_test_results(
     business_id: UUID,
     test_id: UUID,
-    variant_a_impressions: int = Query(..., ge=0),
-    variant_a_clicks: int = Query(..., ge=0),
-    variant_a_conversions: int = Query(..., ge=0),
-    variant_b_impressions: int = Query(..., ge=0),
-    variant_b_clicks: int = Query(..., ge=0),
-    variant_b_conversions: int = Query(..., ge=0),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    variant_a_impressions: Annotated[int, Query(ge=0)],
+    variant_a_clicks: Annotated[int, Query(ge=0)],
+    variant_a_conversions: Annotated[int, Query(ge=0)],
+    variant_b_impressions: Annotated[int, Query(ge=0)],
+    variant_b_clicks: Annotated[int, Query(ge=0)],
+    variant_b_conversions: Annotated[int, Query(ge=0)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Update A/B test results."""
     svc = A_B_TestService(db)

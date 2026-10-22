@@ -1,16 +1,20 @@
 """Service to fetch and store analytics from platforms."""
 
+from datetime import date, timedelta
 from uuid import UUID
-from datetime import date, datetime, timedelta
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
+from app.domains.seo_config.analytics_models import (
+    PublicationLinkMetrics,
+    PublicationLinkPerformanceSummary,
+)
 from app.domains.seo_config.models import PublicationLink
-from app.domains.seo_config.analytics_models import PublicationLinkMetrics, PublicationLinkPerformanceSummary
-from app.domains.seo_config.platform_analytics_mercadolibre import MercadoLibreAnalytics
-from app.domains.seo_config.platform_analytics_base import PlatformAnalyticsConnector
 from app.domains.seo_config.platform_algorithm_knowledge import canonical_platform
+from app.domains.seo_config.platform_analytics_base import PlatformAnalyticsConnector
+from app.domains.seo_config.platform_analytics_mercadolibre import MercadoLibreAnalytics
 
 logger = get_logger(__name__)
 
@@ -37,7 +41,9 @@ class PlatformAnalyticsService:
             return None
 
         try:
-            from app.domains.integrations.integration_models import IntegrationConnection
+            from app.domains.integrations.integration_models import (
+                IntegrationConnection,
+            )
 
             result = await self.db.execute(
                 select(IntegrationConnection).where(
@@ -63,8 +69,8 @@ class PlatformAnalyticsService:
 
             return connector
 
-        except Exception as e:
-            logger.error(f"Error getting analytics connector: {str(e)[:200]}")
+        except Exception:
+            logger.exception("Error getting analytics connector")
             return None
 
     async def fetch_and_store_metrics(
@@ -90,7 +96,9 @@ class PlatformAnalyticsService:
             return None
 
         try:
-            connector = await self.get_analytics_connector(link.platform_source, connection_id)
+            connector = await self.get_analytics_connector(
+                link.platform_source, connection_id
+            )
             if not connector:
                 logger.warning(f"No connector for {link.platform_source}")
                 return None
@@ -143,8 +151,8 @@ class PlatformAnalyticsService:
 
             return metrics
 
-        except Exception as e:
-            logger.error(f"Error fetching metrics for {link.id}: {str(e)[:200]}")
+        except Exception:
+            logger.exception(f"Error fetching metrics for {link.id}")
             return None
 
     async def compute_performance_summary(
@@ -175,8 +183,12 @@ class PlatformAnalyticsService:
             total_conversions = sum(m.conversions for m in metrics_list)
             total_revenue = sum(m.revenue for m in metrics_list)
 
-            avg_ctr = (total_clicks / total_impressions * 100) if total_impressions > 0 else 0
-            avg_conv_rate = (total_conversions / total_clicks * 100) if total_clicks > 0 else 0
+            avg_ctr = (
+                (total_clicks / total_impressions * 100) if total_impressions > 0 else 0
+            )
+            avg_conv_rate = (
+                (total_conversions / total_clicks * 100) if total_clicks > 0 else 0
+            )
 
             business_id = metrics_list[0].business_id
 
@@ -197,9 +209,11 @@ class PlatformAnalyticsService:
             await self.db.commit()
             await self.db.refresh(summary)
 
-            logger.info(f"Computed summary for {link_id}: {total_conversions} conversions")
+            logger.info(
+                f"Computed summary for {link_id}: {total_conversions} conversions"
+            )
             return summary
 
-        except Exception as e:
-            logger.error(f"Error computing summary: {str(e)[:200]}")
+        except Exception:
+            logger.exception("Error computing summary")
             return None

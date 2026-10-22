@@ -1,8 +1,9 @@
 """Brand Visual Agent Schemas"""
 
-from uuid import UUID
 from datetime import datetime
-from typing import Optional, Dict, Any, List
+from typing import Any
+from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict
 
 
@@ -13,15 +14,15 @@ class BrandKitJobBase(BaseModel):
 
 
 class BrandKitJobCreate(BrandKitJobBase):
-    style_preferences: Optional[Dict[str, Any]] = None
+    style_preferences: dict[str, Any] | None = None
 
 
 class BrandKitJobResponse(BrandKitJobBase):
     id: UUID
-    colors: Optional[List[Dict[str, Any]]] = None
-    fonts: Optional[List[Dict[str, Any]]] = None
-    logo_url: Optional[str] = None
-    assets: Optional[Dict[str, Any]] = None
+    colors: list[dict[str, Any]] | None = None
+    fonts: list[dict[str, Any]] | None = None
+    logo_url: str | None = None
+    assets: dict[str, Any] | None = None
     status: str = "pending"
     created_at: datetime
     updated_at: datetime
@@ -34,7 +35,7 @@ class BrandAssetBase(BaseModel):
     business_id: UUID
     asset_type: str
     file_url: str
-    config: Optional[Dict[str, Any]] = None
+    config: dict[str, Any] | None = None
 
 
 class BrandAssetResponse(BrandAssetBase):
@@ -48,4 +49,4 @@ class BrandKitGenerateRequest(BaseModel):
     business_id: UUID
     brand_name: str
     industry: str
-    style_preferences: Optional[Dict[str, Any]] = None
+    style_preferences: dict[str, Any] | None = None

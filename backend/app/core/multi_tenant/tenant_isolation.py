@@ -4,15 +4,13 @@ TenantIsolation: Row-level security, schema isolation, data boundaries.
 """
 
 import re
-from typing import Optional, List
-from datetime import datetime, timezone
 
-from sqlalchemy import text, and_, select
+from sqlalchemy import and_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
 
-from app.core.logger import get_logger
 from app.core.exceptions import AppException
+from app.core.logger import get_logger
+
 from .models import Tenant, TenantMember
 
 logger = get_logger(__name__)
@@ -30,7 +28,9 @@ _SAFE_SCHEMA_NAME = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]{0,62}$")
 
 def _assert_safe_schema_identifier(schema: str) -> str:
     if not _SAFE_SCHEMA_NAME.match(schema):
-        raise AppException(f"Invalid tenant schema identifier: {schema!r}", status_code=500)
+        raise AppException(
+            f"Invalid tenant schema identifier: {schema!r}", status_code=500
+        )
     return schema
 
 
@@ -45,7 +45,7 @@ class TenantContext:
         tenant_id: str,
         user_id: str,
         role: str = "member",
-        permissions: Optional[dict] = None,
+        permissions: dict | None = None,
     ):
         self.tenant_id = tenant_id
         self.user_id = user_id
@@ -98,7 +98,7 @@ class TenantIsolation:
 
         if not member:
             logger.warning(
-                f"Unauthorized tenant access attempt",
+                "Unauthorized tenant access attempt",
                 extra={
                     "tenant_id": str(tenant_id),
                     "user_id": str(user_id),
@@ -201,18 +201,14 @@ class TenantIsolation:
         schema = _assert_safe_schema_identifier(await self.get_tenant_schema(tenant_id))
 
         # Set schema for this connection
-        await self.db.execute(
-            text(f"SET search_path = {schema}, public")
-        )
+        await self.db.execute(text(f"SET search_path = {schema}, public"))
 
     async def create_tenant_schema(self, tenant_id: str) -> None:
         """
         Create isolated PostgreSQL schema for tenant.
         Run during tenant creation.
         """
-        tenant = await self.db.execute(
-            select(Tenant).where(Tenant.id == tenant_id)
-        )
+        tenant = await self.db.execute(select(Tenant).where(Tenant.id == tenant_id))
         tenant_obj = tenant.scalar_one_or_none()
 
         if not tenant_obj:
@@ -222,15 +218,11 @@ class TenantIsolation:
 
         try:
             # Create schema
-            await self.db.execute(
-                text(f"CREATE SCHEMA IF NOT EXISTS {schema}")
-            )
+            await self.db.execute(text(f"CREATE SCHEMA IF NOT EXISTS {schema}"))
 
             # Grant permissions to app user
             app_user = "postgres_app_user"  # Configure in .env
-            await self.db.execute(
-                text(f"GRANT USAGE ON SCHEMA {schema} TO {app_user}")
-            )
+            await self.db.execute(text(f"GRANT USAGE ON SCHEMA {schema} TO {app_user}"))
             await self.db.execute(
                 text(f"GRANT CREATE ON SCHEMA {schema} TO {app_user}")
             )
@@ -246,12 +238,12 @@ class TenantIsolation:
             await self.db.commit()
 
             logger.info(
-                f"Tenant schema created",
+                "Tenant schema created",
                 extra={"tenant_id": str(tenant_id), "schema": schema},
             )
 
-        except Exception as e:
-            logger.error(f"Failed to create tenant schema: {e}")
+        except Exception:
+            logger.exception("Failed to create tenant schema")
             raise AppException(
                 "Failed to create tenant schema",
                 status_code=500,
@@ -262,9 +254,7 @@ class TenantIsolation:
         Drop tenant schema (hard delete).
         CASCADE deletes all objects in schema.
         """
-        tenant = await self.db.execute(
-            select(Tenant).where(Tenant.id == tenant_id)
-        )
+        tenant = await self.db.execute(select(Tenant).where(Tenant.id == tenant_id))
         tenant_obj = tenant.scalar_one_or_none()
 
         if not tenant_obj:
@@ -273,18 +263,16 @@ class TenantIsolation:
         schema = _assert_safe_schema_identifier(tenant_obj.schema_name)
 
         try:
-            await self.db.execute(
-                text(f"DROP SCHEMA IF EXISTS {schema} CASCADE")
-            )
+            await self.db.execute(text(f"DROP SCHEMA IF EXISTS {schema} CASCADE"))
             await self.db.commit()
 
             logger.warning(
-                f"Tenant schema dropped",
+                "Tenant schema dropped",
                 extra={"tenant_id": str(tenant_id), "schema": schema},
             )
 
-        except Exception as e:
-            logger.error(f"Failed to drop tenant schema: {e}")
+        except Exception:
+            logger.exception("Failed to drop tenant schema")
             raise AppException(
                 "Failed to drop tenant schema",
                 status_code=500,
@@ -354,6 +342,7 @@ class TenantIsolationMiddleware:
 
         except AppException as e:
             from fastapi.responses import JSONResponse
+
             return JSONResponse(
                 status_code=e.status_code,
                 content={"detail": e.message},
@@ -362,7 +351,7 @@ class TenantIsolationMiddleware:
         return await call_next(request)
 
 
-def extract_tenant_from_request(request) -> Optional[str]:
+def extract_tenant_from_request(request) -> str | None:
     """
     Extract tenant_id from request:
     1. Path parameter: /api/tenants/{tenant_id}/...

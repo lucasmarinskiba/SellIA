@@ -1,18 +1,19 @@
 """Market API — Endpoints for market detection & agent management."""
 
-from fastapi import APIRouter, HTTPException, Body
-from pydantic import BaseModel
-from typing import Optional, Dict, Any
-from datetime import datetime
 import logging
+from typing import Any
 
-from app.core.market import (
-    MarketDetector,
-    AgentLoader,
-    MarketRulesEngine,
-    ContinuousLearner,
-)
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+
 from app.core.brain.brain_orchestrator_v3 import BrainOrchestratorV3
+from app.core.clock import utc_now
+from app.core.market import (
+    AgentLoader,
+    ContinuousLearner,
+    MarketDetector,
+    MarketRulesEngine,
+)
 
 router = APIRouter(prefix="/api/v1/market", tags=["market"])
 logger = logging.getLogger(__name__)
@@ -23,7 +24,7 @@ learner = ContinuousLearner()
 
 class DetectMarketRequest(BaseModel):
     user_input: str
-    company_data: Optional[Dict[str, Any]] = None
+    company_data: dict[str, Any] | None = None
 
 
 class DetectMarketResponse(BaseModel):
@@ -51,31 +52,37 @@ async def detect_market(request: DetectMarketRequest) -> DetectMarketResponse:
             keywords=profile.keywords,
         )
     except Exception as e:
-        logger.error(f"Market detection failed: {e}")
+        logger.exception("Market detection failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/agents")
-async def get_available_agents(market: Optional[str] = None) -> Dict[str, Any]:
+async def get_available_agents(market: str | None = None) -> dict[str, Any]:
     """Get available agents for market."""
     if market:
         from app.core.market import Industry
+
         try:
             ind = Industry[market.upper()]
             agents = AgentLoader._recommend_agents(ind, None)
-            return {"market": market, "agents": AgentLoader.load_agents_for_market(
-                type('MarketProfile', (), {'recommended_agents': agents})()
-            )}
+            return {
+                "market": market,
+                "agents": AgentLoader.load_agents_for_market(
+                    type("MarketProfile", (), {"recommended_agents": agents})()
+                ),
+            }
         except Exception as e:
+            logger.exception("get_available_agents: error inesperado")
             raise HTTPException(status_code=400, detail=f"Invalid market: {e}")
     return {"agents": AgentLoader.get_loaded_agents()}
 
 
 @router.get("/rules/{market}")
-async def get_market_rules(market: str) -> Dict[str, Any]:
+async def get_market_rules(market: str) -> dict[str, Any]:
     """Get rules for market."""
     try:
         from app.core.market import Industry
+
         ind = Industry[market.upper()]
         rules_file = MarketDetector._get_rules_file(ind)
         rules = MarketRulesEngine.load_rules(market, rules_file)
@@ -87,33 +94,34 @@ async def get_market_rules(market: str) -> Dict[str, Any]:
             "payment": MarketRulesEngine.get_payment_rules(rules),
         }
     except Exception as e:
+        logger.exception("get_market_rules: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/sync")
-async def sync_external_systems() -> Dict[str, Any]:
+async def sync_external_systems() -> dict[str, Any]:
     """Manually trigger sync from external systems."""
     try:
         result = orchestrator.sync_external_systems()
         return {
             "status": "success",
             "synced": result["new_agents"],
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
     except Exception as e:
-        logger.error(f"Sync failed: {e}")
+        logger.exception("Sync failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/status")
-async def get_market_status() -> Dict[str, Any]:
+async def get_market_status() -> dict[str, Any]:
     """Get market system status."""
     try:
         return {
             "orchestrator": orchestrator.get_orchestrator_status(),
             "learner": learner.get_learning_status(),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
     except Exception as e:
-        logger.error(f"Status check failed: {e}")
+        logger.exception("Status check failed")
         raise HTTPException(status_code=500, detail=str(e))

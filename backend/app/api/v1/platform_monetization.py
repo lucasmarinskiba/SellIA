@@ -1,17 +1,20 @@
 """Phase 32 Platform Monetization API (8 endpoints)."""
 
-from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Depends
+import logging
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.domains.enterprise.platform_monetization import (
-    UserSegmentationEngine,
-    UpgradeTriggerEngine,
-    ABTestOrchestrator,
     ConversionAnalytics,
+    UpgradeTriggerEngine,
+    UserSegmentationEngine,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/monetization", tags=["monetization"])
 
@@ -24,7 +27,7 @@ class SegmentResponse(BaseModel):
     user_id: str
     segment: str
     propensity_score: int
-    reasoning: List[str]
+    reasoning: list[str]
 
 
 class TriggerResponse(BaseModel):
@@ -39,11 +42,14 @@ class TriggerResponse(BaseModel):
 class ConversionRequest(BaseModel):
     trigger_id: str
     event_type: str
-    revenue: Optional[float] = None
+    revenue: float | None = None
 
 
 @router.post("/segment/{user_id}", response_model=SegmentResponse)
-def classify_user_segment(user_id: str, db: Session = Depends(get_db)):
+def classify_user_segment(
+    user_id: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Classify user into segment + propensity score."""
     try:
         user_data = {
@@ -67,14 +73,17 @@ def classify_user_segment(user_id: str, db: Session = Depends(get_db)):
             reasoning=classification.reasoning,
         )
     except Exception as e:
+        logger.exception("classify_user_segment: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/trigger/{user_id}", response_model=TriggerResponse)
-def get_upgrade_trigger(user_id: str, db: Session = Depends(get_db)):
+def get_upgrade_trigger(
+    user_id: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Get optimal upgrade trigger for user."""
     try:
-        from app.domains.enterprise.platform_monetization import UserSegment
 
         # Mock: classify user first
         user_data = {
@@ -88,7 +97,9 @@ def get_upgrade_trigger(user_id: str, db: Session = Depends(get_db)):
         classification = segmentation.classify_user(user_id, user_data)
 
         trigger_engine = UpgradeTriggerEngine(db)
-        trigger = trigger_engine.get_optimal_trigger(user_id, classification.segment, classification.propensity_score)
+        trigger = trigger_engine.get_optimal_trigger(
+            user_id, classification.segment, classification.propensity_score
+        )
 
         return TriggerResponse(
             user_id=trigger["user_id"],
@@ -99,22 +110,33 @@ def get_upgrade_trigger(user_id: str, db: Session = Depends(get_db)):
             expected_conversion=trigger["expected_conversion"],
         )
     except Exception as e:
+        logger.exception("get_upgrade_trigger: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/send-trigger/{user_id}")
-def send_upgrade_trigger(user_id: str, db: Session = Depends(get_db)):
+def send_upgrade_trigger(
+    user_id: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Send trigger via email + in-app + push."""
     try:
         trigger_engine = UpgradeTriggerEngine(db)
-        result = trigger_engine.send_trigger(user_id, {"urgency_message": "Premium unlocked"})
+        result = trigger_engine.send_trigger(
+            user_id, {"urgency_message": "Premium unlocked"}
+        )
         return result
     except Exception as e:
+        logger.exception("send_upgrade_trigger: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/track-conversion/{trigger_id}")
-def track_conversion(trigger_id: str, request: ConversionRequest, db: Session = Depends(get_db)):
+def track_conversion(
+    trigger_id: str,
+    request: ConversionRequest,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Track conversion event (clicked, subscribed, etc)."""
     try:
         return {
@@ -124,26 +146,48 @@ def track_conversion(trigger_id: str, request: ConversionRequest, db: Session = 
             "timestamp": "2027-05-12T10:30:00Z",
         }
     except Exception as e:
+        logger.exception("track_conversion: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/ab-tests")
-def list_active_tests(db: Session = Depends(get_db)):
+def list_active_tests(
+    db: Annotated[Session, Depends(get_db)],
+):
     """List active A/B tests + results."""
     try:
         return {
             "active_tests": [
-                {"test_name": "urgency_v1", "element_type": "urgency", "variants": 3, "conversions": 1250},
-                {"test_name": "offer_discount_v1", "element_type": "offer", "variants": 3, "conversions": 980},
-                {"test_name": "cta_text_v1", "element_type": "cta", "variants": 5, "conversions": 1120},
+                {
+                    "test_name": "urgency_v1",
+                    "element_type": "urgency",
+                    "variants": 3,
+                    "conversions": 1250,
+                },
+                {
+                    "test_name": "offer_discount_v1",
+                    "element_type": "offer",
+                    "variants": 3,
+                    "conversions": 980,
+                },
+                {
+                    "test_name": "cta_text_v1",
+                    "element_type": "cta",
+                    "variants": 5,
+                    "conversions": 1120,
+                },
             ]
         }
     except Exception as e:
+        logger.exception("list_active_tests: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/funnel/{segment}")
-def get_conversion_funnel(segment: str, db: Session = Depends(get_db)):
+def get_conversion_funnel(
+    segment: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Get conversion funnel for segment."""
     try:
         from app.domains.enterprise.platform_monetization import UserSegment
@@ -154,23 +198,31 @@ def get_conversion_funnel(segment: str, db: Session = Depends(get_db)):
 
         return {"segment": segment, "funnel": funnel}
     except Exception as e:
+        logger.exception("get_conversion_funnel: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/revenue-forecast")
-def forecast_revenue(db: Session = Depends(get_db)):
+def forecast_revenue(
+    db: Annotated[Session, Depends(get_db)],
+):
     """Forecast monthly revenue based on current metrics."""
     try:
         analytics = ConversionAnalytics(db)
-        forecast = analytics.forecast_revenue(free_users=100000, avg_conversion_rate=0.35, arpu=5000)
+        forecast = analytics.forecast_revenue(
+            free_users=100000, avg_conversion_rate=0.35, arpu=5000
+        )
 
         return forecast
     except Exception as e:
+        logger.exception("forecast_revenue: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/segment-profitability")
-def get_segment_profitability(db: Session = Depends(get_db)):
+def get_segment_profitability(
+    db: Annotated[Session, Depends(get_db)],
+):
     """Rank segments by profitability."""
     try:
         return {
@@ -183,4 +235,5 @@ def get_segment_profitability(db: Session = Depends(get_db)):
             ]
         }
     except Exception as e:
+        logger.exception("get_segment_profitability: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

@@ -4,19 +4,18 @@ Automatically calculates lead scores based on conversation activity,
 behavior, intent signals, and recency.
 """
 
+import logging
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Dict, Any
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.crm.models import LeadScore, LeadActivity
 from app.domains.channels.models import Conversation, Message
-from app.domains.crm.models import LeadStage
-from app.domains.subscriptions.models import UserAPIKey
-from app.core.encryption import decrypt_value
+from app.domains.crm.models import LeadActivity, LeadScore
 
+logger = logging.getLogger(__name__)
 
 # Score rules
 SCORE_RULES = {
@@ -64,7 +63,9 @@ class LeadScoringEngine:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def calculate_score(self, conversation_id: uuid.UUID, business_id: uuid.UUID) -> LeadScore:
+    async def calculate_score(
+        self, conversation_id: uuid.UUID, business_id: uuid.UUID
+    ) -> LeadScore:
         """Calculate or recalculate lead score for a conversation."""
         # Get or create lead score record
         result = await self.db.execute(
@@ -101,13 +102,16 @@ class LeadScoringEngine:
 
         # Get all messages
         result = await self.db.execute(
-            select(Message).where(Message.conversation_id == conversation_id)
+            select(Message)
+            .where(Message.conversation_id == conversation_id)
             .order_by(Message.created_at)
         )
         messages = result.scalars().all()
 
         # Calculate engagement score
-        lead_score.engagement_score = await self._calc_engagement(messages, conversation)
+        lead_score.engagement_score = await self._calc_engagement(
+            messages, conversation
+        )
 
         # Calculate intent score
         lead_score.intent_score = await self._calc_intent(messages, conversation)
@@ -122,13 +126,17 @@ class LeadScoringEngine:
         lead_score.recency_score = await self._calc_recency(messages, conversation)
 
         # Total
-        lead_score.total_score = max(0, min(100,
-            lead_score.engagement_score +
-            lead_score.intent_score +
-            lead_score.demographic_score +
-            lead_score.behavioral_score +
-            lead_score.recency_score
-        ))
+        lead_score.total_score = max(
+            0,
+            min(
+                100,
+                lead_score.engagement_score
+                + lead_score.intent_score
+                + lead_score.demographic_score
+                + lead_score.behavioral_score
+                + lead_score.recency_score,
+            ),
+        )
 
         # Classification
         if lead_score.total_score >= CLASSIFICATION_THRESHOLDS["hot"]:
@@ -138,7 +146,7 @@ class LeadScoringEngine:
         else:
             lead_score.classification = "cold"
 
-        lead_score.last_calculated_at = datetime.now(timezone.utc)
+        lead_score.last_calculated_at = datetime.now(UTC)
         await self.db.commit()
         await self.db.refresh(lead_score)
 
@@ -169,6 +177,7 @@ class LeadScoringEngine:
 
             try:
                 from app.core.events import emit_lead_score_changed
+
                 await emit_lead_score_changed(
                     business_id=str(business_id),
                     conversation_id=str(conversation_id),
@@ -178,7 +187,9 @@ class LeadScoringEngine:
                     new_classification=lead_score.classification,
                 )
             except Exception as e:
+                logger.exception("calculate_score: error inesperado")
                 from app.core.logger import get_logger
+
                 get_logger(__name__).error(f"Event emit error: {e}")
 
         return lead_score
@@ -208,6 +219,7 @@ class LeadScoringEngine:
 
         # Multiple messages same day
         from collections import defaultdict
+
         by_day = defaultdict(int)
         for m in messages:
             day = m.created_at.strftime("%Y-%m-%d")
@@ -224,12 +236,55 @@ class LeadScoringEngine:
             return score
 
         intent_keywords = {
-            "price_inquiry": ["precio", "cuanto cuesta", "valor", "costo", "tarifa", "presupuesto", "quote"],
-            "availability_inquiry": ["disponible", "hay stock", "cuando", "horario", "turno", "cita"],
-            "appointment_request": ["agendar", "reservar", "demo", "reunion", "llamada", "consulta"],
-            "demo_request": ["demo", "prueba", "test", "muestra", "gratis", "free trial"],
-            "product_inquiry": ["producto", "servicio", "que ofrecen", "que hacen", "como funciona"],
-            "complaint": ["reclamo", "queja", "malo", "peor", "estafa", "problema", "devolucion"],
+            "price_inquiry": [
+                "precio",
+                "cuanto cuesta",
+                "valor",
+                "costo",
+                "tarifa",
+                "presupuesto",
+                "quote",
+            ],
+            "availability_inquiry": [
+                "disponible",
+                "hay stock",
+                "cuando",
+                "horario",
+                "turno",
+                "cita",
+            ],
+            "appointment_request": [
+                "agendar",
+                "reservar",
+                "demo",
+                "reunion",
+                "llamada",
+                "consulta",
+            ],
+            "demo_request": [
+                "demo",
+                "prueba",
+                "test",
+                "muestra",
+                "gratis",
+                "free trial",
+            ],
+            "product_inquiry": [
+                "producto",
+                "servicio",
+                "que ofrecen",
+                "que hacen",
+                "como funciona",
+            ],
+            "complaint": [
+                "reclamo",
+                "queja",
+                "malo",
+                "peor",
+                "estafa",
+                "problema",
+                "devolucion",
+            ],
         }
 
         for m in messages:
@@ -275,7 +330,7 @@ class LeadScoringEngine:
         if not messages:
             return score
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         last_message = max(m.created_at for m in messages if m.created_at)
 
         days_since_last = (now - last_message).days
@@ -306,12 +361,13 @@ class LeadScoringEngine:
         demographic: int,
         behavioral: int,
         recency: int,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Generate an AI expert commentary explaining the score change."""
+        from langchain_core.messages import HumanMessage, SystemMessage
+
+        from app.domains.agents.llm_provider import generate_with_fallback
         from app.domains.agents.prompts import compose_system_prompt
         from app.domains.businesses.models import Business
-        from app.domains.agents.llm_provider import generate_with_fallback
-        from langchain_core.messages import SystemMessage, HumanMessage
 
         # Get business info
         result = await self.db.execute(
@@ -332,7 +388,7 @@ class LeadScoringEngine:
         )
 
         # Override system prompt for scoring commentary
-        system_prompt = f"""You are a Lead Scoring Analyst AI. You analyze sales lead behavior and explain score changes in clear, actionable language.
+        system_prompt = """You are a Lead Scoring Analyst AI. You analyze sales lead behavior and explain score changes in clear, actionable language.
 
 YOUR STYLE:
 - Concise, insightful, no fluff. One or two sentences max.
@@ -360,15 +416,25 @@ Breakdown:
 Write a brief commentary (1-2 sentences) explaining this score change to the sales team."""
 
         try:
-            messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
+            messages = [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=user_prompt),
+            ]
             response = await generate_with_fallback(
-                self.db, business_id, messages, model="llama3.1", temperature=0.5, max_tokens=200,
+                self.db,
+                business_id,
+                messages,
+                model="llama3.1",
+                temperature=0.5,
+                max_tokens=200,
             )
             if not response:
                 return None
             return response.content.strip()
         except Exception as e:
+            logger.exception("_generate_commentary: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Commentary generation error: {e}")
             return None
 
@@ -379,7 +445,7 @@ Write a brief commentary (1-2 sentences) explaining this score change to the sal
         activity_type: str,
         points: int = 0,
         description: str = "",
-        meta_data: Optional[Dict[str, Any]] = None,
+        meta_data: dict[str, Any] | None = None,
     ) -> LeadActivity:
         """Record a lead activity and trigger score recalculation."""
         activity = LeadActivity(

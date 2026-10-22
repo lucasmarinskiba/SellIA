@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from decimal import Decimal
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -20,10 +20,12 @@ router = APIRouter(prefix="/{business_id}/cashflow", tags=["Cash Flow"])
 @router.post("/forecast", response_model=CashFlowForecastOut)
 async def forecast_cashflow(
     business_id: UUID,
-    body: CashFlowRequest = CashFlowRequest(),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    body: CashFlowRequest | None = None,
 ):
+    if body is None:
+        body = CashFlowRequest()
     try:
         cf = await CashFlowService(db).forecast(
             business_id,

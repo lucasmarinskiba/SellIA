@@ -1,10 +1,9 @@
 """Phase 24: Adaptive Backend Architecture - personalizes responses per user."""
 
-from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional
-from datetime import datetime
-from enum import Enum
 import logging
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -45,17 +44,19 @@ class AdaptiveResponse:
     content_type: str
     urgency_level: str
     recommended_next_action: str
-    metrics: Dict[str, Any] = field(default_factory=dict)
+    metrics: dict[str, Any] = field(default_factory=dict)
 
 
 class AdaptiveEngine:
     """Backend that adapts responses based on user profile"""
 
     def __init__(self):
-        self.user_profiles: Dict[str, UserContext] = {}
+        self.user_profiles: dict[str, UserContext] = {}
         self.segment_configs = self._build_segment_configs()
 
-    def analyze_user(self, user_id: str, business_metrics: Dict[str, Any]) -> UserContext:
+    def analyze_user(
+        self, user_id: str, business_metrics: dict[str, Any]
+    ) -> UserContext:
         """Analyze user and determine segment + needs"""
 
         days_active = business_metrics.get("days_in_business", 0)
@@ -94,14 +95,15 @@ class AdaptiveEngine:
             primary_need = UserNeed.LEAD_GENERATION
 
         # Calculate engagement
-        engagement_score = min(1.0, (deals * 0.3 + leads * 0.1) / 10 + (0.5 if last_activity_hours < 24 else 0))
+        engagement_score = min(
+            1.0,
+            (deals * 0.3 + leads * 0.1) / 10 + (0.5 if last_activity_hours < 24 else 0),
+        )
 
         # Determine urgency
         if segment == UserSegment.ULTRA_EARLY:
             urgency = "critical"
-        elif segment == UserSegment.DORMANT:
-            urgency = "high"
-        elif days_active < 14 and deals == 0:
+        elif segment == UserSegment.DORMANT or days_active < 14 and deals == 0:
             urgency = "high"
         elif segment == UserSegment.EARLY:
             urgency = "medium"
@@ -114,11 +116,13 @@ class AdaptiveEngine:
             primary_need=primary_need,
             engagement_score=engagement_score,
             urgency=urgency,
-            preferred_content_type=self._detect_content_preference(segment)
+            preferred_content_type=self._detect_content_preference(segment),
         )
 
         self.user_profiles[user_id] = context
-        logger.info(f"User analyzed: {user_id} - Segment: {segment.value}, Need: {primary_need.value}")
+        logger.info(
+            f"User analyzed: {user_id} - Segment: {segment.value}, Need: {primary_need.value}"
+        )
 
         return context
 
@@ -134,49 +138,49 @@ class AdaptiveEngine:
         }
         return preferences.get(segment, "text")
 
-    def _build_segment_configs(self) -> Dict[str, Dict[str, Any]]:
+    def _build_segment_configs(self) -> dict[str, dict[str, Any]]:
         """Build configs for each segment"""
         return {
             UserSegment.ULTRA_EARLY.value: {
                 "features": ["onboarding", "first_lead_gen", "quick_demo"],
                 "messaging": "action-oriented",
                 "frequency": "daily",
-                "complexity": "low"
+                "complexity": "low",
             },
             UserSegment.EARLY.value: {
                 "features": ["lead_gen", "conversion_tips", "pricing_guide"],
                 "messaging": "encouraging",
                 "frequency": "daily",
-                "complexity": "medium"
+                "complexity": "medium",
             },
             UserSegment.ACTIVE.value: {
                 "features": ["analytics", "ab_testing", "optimization"],
                 "messaging": "data-driven",
                 "frequency": "3x/week",
-                "complexity": "high"
+                "complexity": "high",
             },
             UserSegment.CONVERTER.value: {
                 "features": ["scaling", "team_building", "expansion"],
                 "messaging": "strategic",
                 "frequency": "weekly",
-                "complexity": "high"
+                "complexity": "high",
             },
             UserSegment.POWER_USER.value: {
                 "features": ["enterprise", "integrations", "automation"],
                 "messaging": "partnership",
                 "frequency": "as-needed",
-                "complexity": "very-high"
+                "complexity": "very-high",
             },
             UserSegment.DORMANT.value: {
                 "features": ["re_engagement", "updates", "success_stories"],
                 "messaging": "motivational",
                 "frequency": "weekly",
-                "complexity": "low"
-            }
+                "complexity": "low",
+            },
         }
 
     def adapt_endpoint_response(
-        self, user_id: str, endpoint_name: str, base_response: Dict[str, Any]
+        self, user_id: str, endpoint_name: str, base_response: dict[str, Any]
     ) -> AdaptiveResponse:
         """Adapt endpoint response based on user context"""
 
@@ -186,14 +190,14 @@ class AdaptiveEngine:
                 personalized=False,
                 content_type="text",
                 urgency_level="medium",
-                recommended_next_action="Complete profile"
+                recommended_next_action="Complete profile",
             )
 
         context = self.user_profiles[user_id]
-        config = self.segment_configs.get(context.segment.value, {})
+        self.segment_configs.get(context.segment.value, {})
 
         # Adapt content based on segment
-        adapted = self._adapt_by_segment(context, endpoint_name, base_response)
+        self._adapt_by_segment(context, endpoint_name, base_response)
 
         return AdaptiveResponse(
             endpoint_name=endpoint_name,
@@ -204,13 +208,13 @@ class AdaptiveEngine:
             metrics={
                 "segment": context.segment.value,
                 "engagement_score": context.engagement_score,
-                "primary_need": context.primary_need.value
-            }
+                "primary_need": context.primary_need.value,
+            },
         )
 
     def _adapt_by_segment(
-        self, context: UserContext, endpoint: str, response: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, context: UserContext, endpoint: str, response: dict[str, Any]
+    ) -> dict[str, Any]:
         """Adapt response content by user segment"""
 
         if context.segment == UserSegment.ULTRA_EARLY:
@@ -222,16 +226,12 @@ class AdaptiveEngine:
         else:
             return response
 
-    def _simplify_for_beginner(self, response: Dict[str, Any]) -> Dict[str, Any]:
+    def _simplify_for_beginner(self, response: dict[str, Any]) -> dict[str, Any]:
         """Simplify response for beginners"""
         # Remove advanced metrics, focus on actions
-        return {
-            **response,
-            "simplified": True,
-            "focus": "action_items"
-        }
+        return {**response, "simplified": True, "focus": "action_items"}
 
-    def _enrich_for_power_user(self, response: Dict[str, Any]) -> Dict[str, Any]:
+    def _enrich_for_power_user(self, response: dict[str, Any]) -> dict[str, Any]:
         """Enrich response for power users"""
         # Add advanced analytics, API details
         return {
@@ -239,22 +239,25 @@ class AdaptiveEngine:
             "advanced": True,
             "api_available": True,
             "webhooks": True,
-            "batch_operations": True
+            "batch_operations": True,
         }
 
-    def _motivate_dormant_user(self, response: Dict[str, Any]) -> Dict[str, Any]:
+    def _motivate_dormant_user(self, response: dict[str, Any]) -> dict[str, Any]:
         """Add motivation for dormant users"""
         return {
             **response,
             "re_engagement_message": "We've improved! Check out new features.",
-            "incentive": "comeback_bonus"
+            "incentive": "comeback_bonus",
         }
 
     def _get_recommended_action(self, context: UserContext) -> str:
         """Get recommended next action for user"""
 
         recommendations = {
-            (UserSegment.ULTRA_EARLY, UserNeed.LEAD_GENERATION): "Start your first campaign now",
+            (
+                UserSegment.ULTRA_EARLY,
+                UserNeed.LEAD_GENERATION,
+            ): "Start your first campaign now",
             (UserSegment.EARLY, UserNeed.LEAD_GENERATION): "Generate 10 leads today",
             (UserSegment.EARLY, UserNeed.CONVERSION): "Follow up with your leads",
             (UserSegment.ACTIVE, UserNeed.CONVERSION): "Close your first deal",
@@ -264,11 +267,10 @@ class AdaptiveEngine:
         }
 
         return recommendations.get(
-            (context.segment, context.primary_need),
-            "Continue with your goals"
+            (context.segment, context.primary_need), "Continue with your goals"
         )
 
-    def get_personalization_summary(self, user_id: str) -> Dict[str, Any]:
+    def get_personalization_summary(self, user_id: str) -> dict[str, Any]:
         """Get full personalization summary"""
 
         if user_id not in self.user_profiles:
@@ -286,5 +288,5 @@ class AdaptiveEngine:
             "recommended_features": config.get("features", []),
             "messaging_style": config.get("messaging", ""),
             "content_frequency": config.get("frequency", ""),
-            "recommended_action": self._get_recommended_action(context)
+            "recommended_action": self._get_recommended_action(context),
         }

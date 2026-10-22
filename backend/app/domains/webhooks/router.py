@@ -3,7 +3,7 @@ Webhook Router
 """
 
 import uuid
-from typing import Annotated, List
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,13 +11,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.domains.users.models import User
-
 from app.domains.webhooks import service as webhook_service
 from app.domains.webhooks.schemas import (
-    WebhookSubscriptionCreate,
-    WebhookSubscriptionUpdate,
-    WebhookSubscriptionResponse,
     WebhookDeliveryResponse,
+    WebhookSubscriptionCreate,
+    WebhookSubscriptionResponse,
+    WebhookSubscriptionUpdate,
 )
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
@@ -25,7 +24,12 @@ router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
 # ========== Subscriptions ==========
 
-@router.post("/subscriptions", response_model=WebhookSubscriptionResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/subscriptions",
+    response_model=WebhookSubscriptionResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_subscription(
     data: WebhookSubscriptionCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -43,7 +47,7 @@ async def create_subscription(
     return sub
 
 
-@router.get("/subscriptions", response_model=List[WebhookSubscriptionResponse])
+@router.get("/subscriptions", response_model=list[WebhookSubscriptionResponse])
 async def list_subscriptions(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
@@ -52,7 +56,9 @@ async def list_subscriptions(
     return await webhook_service.list_subscriptions(db, current_user.id)
 
 
-@router.get("/subscriptions/{subscription_id}", response_model=WebhookSubscriptionResponse)
+@router.get(
+    "/subscriptions/{subscription_id}", response_model=WebhookSubscriptionResponse
+)
 async def get_subscription(
     subscription_id: uuid.UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -61,11 +67,15 @@ async def get_subscription(
     """Get a specific webhook subscription."""
     sub = await webhook_service.get_subscription(db, subscription_id, current_user.id)
     if not sub:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subscription not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Subscription not found"
+        )
     return sub
 
 
-@router.patch("/subscriptions/{subscription_id}", response_model=WebhookSubscriptionResponse)
+@router.patch(
+    "/subscriptions/{subscription_id}", response_model=WebhookSubscriptionResponse
+)
 async def update_subscription(
     subscription_id: uuid.UUID,
     data: WebhookSubscriptionUpdate,
@@ -74,35 +84,49 @@ async def update_subscription(
 ):
     """Update a webhook subscription."""
     updates = data.model_dump(exclude_unset=True)
-    sub = await webhook_service.update_subscription(db, subscription_id, current_user.id, **updates)
+    sub = await webhook_service.update_subscription(
+        db, subscription_id, current_user.id, **updates
+    )
     if not sub:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subscription not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Subscription not found"
+        )
     return sub
 
 
-@router.delete("/subscriptions/{subscription_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/subscriptions/{subscription_id}", status_code=status.HTTP_204_NO_CONTENT
+)
 async def delete_subscription(
     subscription_id: uuid.UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Delete a webhook subscription."""
-    deleted = await webhook_service.delete_subscription(db, subscription_id, current_user.id)
+    deleted = await webhook_service.delete_subscription(
+        db, subscription_id, current_user.id
+    )
     if not deleted:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subscription not found")
-    return None
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Subscription not found"
+        )
 
 
 # ========== Deliveries ==========
 
-@router.get("/deliveries/{subscription_id}", response_model=List[WebhookDeliveryResponse])
+
+@router.get(
+    "/deliveries/{subscription_id}", response_model=list[WebhookDeliveryResponse]
+)
 async def list_deliveries(
     subscription_id: uuid.UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """List webhook deliveries for a subscription."""
-    deliveries = await webhook_service.list_deliveries(db, subscription_id, current_user.id)
+    deliveries = await webhook_service.list_deliveries(
+        db, subscription_id, current_user.id
+    )
     return deliveries
 
 
@@ -115,12 +139,18 @@ async def retry_delivery(
     """Manually retry a failed webhook delivery."""
     delivery = await webhook_service.get_delivery(db, delivery_id)
     if not delivery:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Delivery not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Delivery not found"
+        )
 
     # Verify ownership through subscription
-    sub = await webhook_service.get_subscription(db, delivery.subscription_id, current_user.id)
+    sub = await webhook_service.get_subscription(
+        db, delivery.subscription_id, current_user.id
+    )
     if not sub:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
+        )
 
     delivery = await webhook_service.retry_delivery(db, delivery)
     return delivery

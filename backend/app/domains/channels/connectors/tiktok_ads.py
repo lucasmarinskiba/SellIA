@@ -4,17 +4,21 @@ Captures leads from TikTok Lead Ads and manages TikTok Shop orders.
 Docs: https://ads.tiktok.com/marketing_api/docs
 """
 
-import hmac
 import hashlib
+import hmac
+import logging
 from typing import Any
 
 from app.domains.channels.connectors.base import BaseChannelConnector
-from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.models import ChannelPlatform
+from app.domains.channels.schemas import WebhookPayload
+
+logger = logging.getLogger(__name__)
 
 
 class TikTokAdsConnector(BaseChannelConnector):
     """Conector para TikTok Lead Ads y TikTok Shop."""
+
     platform = "tiktok_ads"
     BASE_URL = "https://business-api.tiktok.com/open_api/v1.3"
 
@@ -26,13 +30,15 @@ class TikTokAdsConnector(BaseChannelConnector):
         self.advertiser_id = credentials.get("advertiser_id")
         self.webhook_secret = credentials.get("webhook_secret")
 
-    async def send_message(self, recipient_id: str, content: str, content_type: str = "text") -> dict[str, Any]:
+    async def send_message(
+        self, recipient_id: str, content: str, content_type: str = "text"
+    ) -> dict[str, Any]:
         """TikTok no tiene mensajería directa B2C vía API; log para tracking."""
         return {"status": "logged", "note": "TikTok Ads no soporta mensajería directa"}
 
     async def parse_webhook(self, raw_payload: dict[str, Any]) -> WebhookPayload:
         """Parse TikTok Lead Ads webhook payload.
-        
+
         TikTok sends lead data via webhook:
         {
             "lead_id": "...",
@@ -70,8 +76,8 @@ class TikTokAdsConnector(BaseChannelConnector):
         city = lead_data.get("city", "")
         state = lead_data.get("state", "")
         country = lead_data.get("country", "")
-        zip_code = lead_data.get("zip_code", "")
-        street_address = lead_data.get("street_address", "")
+        lead_data.get("zip_code", "")
+        lead_data.get("street_address", "")
         company = lead_data.get("company", "")
 
         content_parts = ["Nuevo lead desde TikTok Ads"]
@@ -123,6 +129,7 @@ class TikTokAdsConnector(BaseChannelConnector):
             ).hexdigest()
             return hmac.compare_digest(digest, signature_header)
         except Exception:
+            logger.exception("verify_webhook: error inesperado")
             return False
 
     async def validate_credentials(self) -> bool:
@@ -130,16 +137,24 @@ class TikTokAdsConnector(BaseChannelConnector):
             return False
         try:
             import httpx
+
             url = f"{self.BASE_URL}/advertiser/info/"
             headers = {"Access-Token": self.access_token}
-            params = {"advertiser_ids": f"[{self.advertiser_id}]"} if self.advertiser_id else {}
+            params = (
+                {"advertiser_ids": f"[{self.advertiser_id}]"}
+                if self.advertiser_id
+                else {}
+            )
             async with httpx.AsyncClient() as client:
                 response = await client.get(url, headers=headers, params=params)
                 return response.status_code == 200
         except Exception:
+            logger.exception("validate_credentials: error inesperado")
             return False
 
-    async def update_campaign_budget(self, campaign_id: str, new_budget_aed: float) -> None:
+    async def update_campaign_budget(
+        self, campaign_id: str, new_budget_aed: float
+    ) -> None:
         """Update campaign daily budget via TikTok Ads API.
 
         Args:
@@ -149,8 +164,8 @@ class TikTokAdsConnector(BaseChannelConnector):
         Raises:
             Exception if API call fails
         """
+
         import httpx
-        import json
 
         url = f"{self.BASE_URL}/campaign/update/"
         headers = {"Access-Token": self.access_token}
@@ -163,4 +178,6 @@ class TikTokAdsConnector(BaseChannelConnector):
         async with httpx.AsyncClient() as client:
             response = await client.post(url, headers=headers, json=payload)
             if response.status_code != 200:
-                raise Exception(f"TikTok Ads API error: {response.status_code} {response.text}")
+                raise RuntimeError(
+                    f"TikTok Ads API error: {response.status_code} {response.text}"
+                )

@@ -1,22 +1,23 @@
 """Fase F: AI Competitor FOMO Monitor — API routes"""
 
-from typing import Dict, Optional, Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Body, Query
+from fastapi import APIRouter, Body, Depends, Query
 
 from app.core.deps import get_current_user
 from app.domains.fomo.ai_competitor_monitor_agent import (
     AICompetitorMonitorAgent,
     fetch_competitor_page,
 )
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/fomo/ai/competitor", tags=["fomo-ai-competitor"])
 
 
 @router.post("/extract-offer")
 async def extract_competitor_offer(
-    raw_text: str = Body(..., embed=True),
-    current_user=Depends(get_current_user),
+    raw_text: Annotated[str, Body(embed=True)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Extract price/discount signals from raw competitor page text"""
     return AICompetitorMonitorAgent.extract_competitor_offer(raw_text)
@@ -24,9 +25,9 @@ async def extract_competitor_offer(
 
 @router.post("/detect-change")
 async def detect_price_change(
-    current: Dict[str, Any] = Body(...),
-    previous: Optional[Dict[str, Any]] = Body(None),
-    current_user=Depends(get_current_user),
+    current: Annotated[dict[str, Any], Body()],
+    current_user: Annotated[User, Depends(get_current_user)],
+    previous: Annotated[dict[str, Any] | None, Body()] = None,
 ):
     """Compare a new extraction snapshot against the last known one"""
     return AICompetitorMonitorAgent.detect_price_change(current, previous)
@@ -34,11 +35,11 @@ async def detect_price_change(
 
 @router.get("/competitive-message")
 async def generate_competitive_message(
-    our_price: float = Query(...),
-    competitor_price: float = Query(...),
-    our_product_name: str = Query(...),
-    competitor_name: str = Query("la competencia"),
-    current_user=Depends(get_current_user),
+    our_price: Annotated[float, Query()],
+    competitor_price: Annotated[float, Query()],
+    our_product_name: Annotated[str, Query()],
+    current_user: Annotated[User, Depends(get_current_user)],
+    competitor_name: Annotated[str, Query()] = "la competencia",
 ):
     """Generate a deterministic 'better than the competition' comparison message"""
     return AICompetitorMonitorAgent.generate_competitive_message(
@@ -48,13 +49,13 @@ async def generate_competitive_message(
 
 @router.post("/monitor-cycle")
 async def full_monitor_cycle(
-    raw_text: str = Body(...),
-    competitor_name: str = Query(...),
-    previous_snapshot: Optional[Dict[str, Any]] = Body(None),
-    our_price: Optional[float] = Query(None),
-    our_product_name: Optional[str] = Query(None),
-    our_recommended_discount_percent: Optional[float] = Query(None),
-    current_user=Depends(get_current_user),
+    raw_text: Annotated[str, Body()],
+    competitor_name: Annotated[str, Query()],
+    current_user: Annotated[User, Depends(get_current_user)],
+    previous_snapshot: Annotated[dict[str, Any] | None, Body()] = None,
+    our_price: Annotated[float | None, Query()] = None,
+    our_product_name: Annotated[str | None, Query()] = None,
+    our_recommended_discount_percent: Annotated[float | None, Query()] = None,
 ):
     """Full pipeline: extract -> detect change -> alert -> competitive messaging"""
     return AICompetitorMonitorAgent.full_monitor_cycle(
@@ -69,12 +70,14 @@ async def full_monitor_cycle(
 
 @router.post("/fetch-and-monitor")
 async def fetch_and_monitor(
-    url: str = Query(..., description="A URL the user explicitly configured to monitor"),
-    competitor_name: str = Query(...),
-    previous_snapshot: Optional[Dict[str, Any]] = Body(None),
-    our_price: Optional[float] = Query(None),
-    our_product_name: Optional[str] = Query(None),
-    current_user=Depends(get_current_user),
+    url: Annotated[
+        str, Query(description="A URL the user explicitly configured to monitor")
+    ],
+    competitor_name: Annotated[str, Query()],
+    current_user: Annotated[User, Depends(get_current_user)],
+    previous_snapshot: Annotated[dict[str, Any] | None, Body()] = None,
+    our_price: Annotated[float | None, Query()] = None,
+    our_product_name: Annotated[str | None, Query()] = None,
 ):
     """Fetch a single configured competitor URL and run the full monitor cycle on it"""
     raw_text = await fetch_competitor_page(url)

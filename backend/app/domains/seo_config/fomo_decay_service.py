@@ -1,14 +1,16 @@
 """FOMO decay detection + smart rotation."""
 
+from datetime import timedelta
 from uuid import UUID
-from datetime import datetime, timedelta
-from sqlalchemy import select, func, desc
+
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import utc_now
 from app.core.logger import get_logger
-from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO
-from app.domains.seo_config.fomo_models import FOMADecayLog
 from app.domains.seo_config.analytics_models import PublicationLinkMetrics
+from app.domains.seo_config.fomo_models import FOMADecayLog
+from app.domains.seo_config.models import PublicationLink
 
 logger = get_logger(__name__)
 
@@ -35,13 +37,12 @@ class FOMADecayService:
         Returns:
             Decay info if detected, None otherwise
         """
-        today = datetime.utcnow().date()
+        today = utc_now().date()
         week_ago = today - timedelta(days=lookback_days)
 
         # Get current metrics (last 2 days avg)
         result = await self.db.execute(
-            select(func.avg(PublicationLinkMetrics.ctr).label("avg_ctr"))
-            .where(
+            select(func.avg(PublicationLinkMetrics.ctr).label("avg_ctr")).where(
                 PublicationLinkMetrics.link_id == link_id,
                 PublicationLinkMetrics.metric_date >= today - timedelta(days=2),
             )
@@ -50,8 +51,7 @@ class FOMADecayService:
 
         # Get baseline (7 days before)
         result = await self.db.execute(
-            select(func.avg(PublicationLinkMetrics.ctr).label("avg_ctr"))
-            .where(
+            select(func.avg(PublicationLinkMetrics.ctr).label("avg_ctr")).where(
                 PublicationLinkMetrics.link_id == link_id,
                 PublicationLinkMetrics.metric_date >= week_ago - timedelta(days=7),
                 PublicationLinkMetrics.metric_date < week_ago,
@@ -73,7 +73,7 @@ class FOMADecayService:
             "baseline_ctr": float(baseline_ctr),
             "current_ctr": float(current_ctr),
             "decay_percentage": float(decay_pct),
-            "detected_at": datetime.utcnow().isoformat(),
+            "detected_at": utc_now().isoformat(),
         }
 
     async def log_decay_and_regenerate(
@@ -124,8 +124,7 @@ class FOMADecayService:
         """Get all links for business with detected decay."""
         # Get all active links
         result = await self.db.execute(
-            select(PublicationLink)
-            .where(
+            select(PublicationLink).where(
                 PublicationLink.business_id == business_id,
                 PublicationLink.seo_enabled == True,
             )
@@ -139,14 +138,16 @@ class FOMADecayService:
                 decay_threshold_pct=decay_threshold_pct,
             )
             if decay_info:
-                decayed.append({
-                    "link": {
-                        "id": str(link.id),
-                        "url": link.url,
-                        "title": link.title,
-                        "platform": link.platform_source,
-                    },
-                    **decay_info,
-                })
+                decayed.append(
+                    {
+                        "link": {
+                            "id": str(link.id),
+                            "url": link.url,
+                            "title": link.title,
+                            "platform": link.platform_source,
+                        },
+                        **decay_info,
+                    }
+                )
 
         return decayed

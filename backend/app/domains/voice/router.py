@@ -1,27 +1,28 @@
 """Voice Agent API Router"""
 
+from datetime import UTC
+from typing import Annotated
 from uuid import UUID
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.domains.users.models import User
 from app.domains.voice.models import VoiceCall, VoiceConfig
 from app.domains.voice.schemas import (
+    CallSegmentResponse,
+    SpeechRequest,
+    TranscriptionResponse,
     VoiceCallCreate,
     VoiceCallResponse,
     VoiceCallUpdate,
-    VoiceConfigResponse,
     VoiceConfigCreate,
+    VoiceConfigResponse,
     VoiceConfigUpdate,
-    SpeechRequest,
-    TranscriptionResponse,
-    CallSegmentResponse,
 )
 from app.domains.voice.service import VoiceService
 
@@ -30,11 +31,14 @@ router = APIRouter(prefix="/voice", tags=["voice"])
 
 # ========== Calls ==========
 
-@router.post("/calls", response_model=VoiceCallResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/calls", response_model=VoiceCallResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_call(
     data: VoiceCallCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = VoiceService(db)
     call = await service.create_call(
@@ -48,10 +52,10 @@ async def create_call(
 
 @router.get("/calls", response_model=list[VoiceCallResponse])
 async def list_calls(
-    business_id: UUID = Query(...),
-    status: Optional[str] = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    status: Annotated[str | None, Query()] = None,
 ):
     query = select(VoiceCall).where(VoiceCall.business_id == business_id)
     if status:
@@ -64,8 +68,8 @@ async def list_calls(
 @router.get("/calls/{call_id}", response_model=VoiceCallResponse)
 async def get_call(
     call_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await db.execute(select(VoiceCall).where(VoiceCall.id == call_id))
     call = result.scalar_one_or_none()
@@ -77,9 +81,9 @@ async def get_call(
 @router.post("/calls/{call_id}/transcribe", response_model=TranscriptionResponse)
 async def transcribe_call_audio(
     call_id: UUID,
-    audio: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    audio: Annotated[UploadFile, File(...)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = VoiceService(db)
     result = await db.execute(select(VoiceCall).where(VoiceCall.id == call_id))
@@ -99,8 +103,8 @@ async def transcribe_call_audio(
 async def generate_call_speech(
     call_id: UUID,
     req: SpeechRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = VoiceService(db)
     result = await db.execute(select(VoiceCall).where(VoiceCall.id == call_id))
@@ -116,9 +120,9 @@ async def generate_call_speech(
 @router.post("/calls/{call_id}/process-segment", response_model=CallSegmentResponse)
 async def process_call_segment(
     call_id: UUID,
-    audio: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    audio: Annotated[UploadFile, File(...)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = VoiceService(db)
     audio_bytes = await audio.read()
@@ -133,8 +137,8 @@ async def process_call_segment(
 async def update_call(
     call_id: UUID,
     data: VoiceCallUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await db.execute(select(VoiceCall).where(VoiceCall.id == call_id))
     call = result.scalar_one_or_none()
@@ -151,9 +155,9 @@ async def update_call(
 @router.post("/calls/{call_id}/end", response_model=VoiceCallResponse)
 async def end_call(
     call_id: UUID,
-    outcome: Optional[str] = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    outcome: Annotated[str | None, Query()] = None,
 ):
     service = VoiceService(db)
     try:
@@ -165,24 +169,31 @@ async def end_call(
 
 # ========== Config ==========
 
+
 @router.get("/config", response_model=VoiceConfigResponse)
 async def get_voice_config(
-    business_id: UUID = Query(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
-    result = await db.execute(select(VoiceConfig).where(VoiceConfig.business_id == business_id))
+    result = await db.execute(
+        select(VoiceConfig).where(VoiceConfig.business_id == business_id)
+    )
     config = result.scalar_one_or_none()
     if not config:
-        raise HTTPException(status_code=404, detail="Configuración de voz no encontrada")
+        raise HTTPException(
+            status_code=404, detail="Configuración de voz no encontrada"
+        )
     return config
 
 
-@router.post("/config", response_model=VoiceConfigResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/config", response_model=VoiceConfigResponse, status_code=status.HTTP_201_CREATED
+)
 async def upsert_voice_config(
     data: VoiceConfigCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = VoiceService(db)
     config = await service.upsert_config(data.model_dump())
@@ -193,18 +204,21 @@ async def upsert_voice_config(
 async def update_voice_config(
     config_id: UUID,
     data: VoiceConfigUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await db.execute(select(VoiceConfig).where(VoiceConfig.id == config_id))
     config = result.scalar_one_or_none()
     if not config:
-        raise HTTPException(status_code=404, detail="Configuración de voz no encontrada")
+        raise HTTPException(
+            status_code=404, detail="Configuración de voz no encontrada"
+        )
 
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(config, field, value)
-    from datetime import datetime, timezone
-    config.updated_at = datetime.now(timezone.utc)
+    from datetime import datetime
+
+    config.updated_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(config)
     return config
@@ -212,9 +226,10 @@ async def update_voice_config(
 
 # ========== Webhooks ==========
 
+
 @router.post("/webhook/twilio")
 async def twilio_webhook(
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Twilio webhook placeholder — implement call status & media URL handling."""
     return {"status": "received", "provider": "twilio"}

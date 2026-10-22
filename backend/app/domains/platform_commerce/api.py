@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -20,12 +20,12 @@ router = APIRouter(prefix="/platform-commerce", tags=["Platform Commerce"])
 
 
 class SettingsIn(BaseModel):
-    commission_percent: Optional[float] = Field(None, ge=0, le=100)
-    fixed_fee_per_order: Optional[float] = Field(None, ge=0)
-    cogs_percent: Optional[float] = Field(None, ge=0, le=100)
-    monthly_fixed_cost: Optional[float] = Field(None, ge=0)
-    monthly_ad_spend: Optional[float] = Field(None, ge=0)
-    currency: Optional[str] = Field(None, max_length=3)
+    commission_percent: float | None = Field(None, ge=0, le=100)
+    fixed_fee_per_order: float | None = Field(None, ge=0)
+    cogs_percent: float | None = Field(None, ge=0, le=100)
+    monthly_fixed_cost: float | None = Field(None, ge=0)
+    monthly_ad_spend: float | None = Field(None, ge=0)
+    currency: str | None = Field(None, max_length=3)
 
 
 async def _business_ids(db: AsyncSession, user: User) -> list[Any]:
@@ -36,9 +36,9 @@ async def _business_ids(db: AsyncSession, user: User) -> list[Any]:
 
 @router.get("/overview")
 async def overview(
-    days: int = Query(30, ge=1, le=365),
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ) -> dict[str, Any]:
     """Everything the multi-platform screen needs: what each connected platform
     can really do, what it sold, and the consolidated position."""
@@ -50,21 +50,35 @@ async def overview(
     connections: dict[str, dict[str, Any]] = {}
     if business_ids:
         result = await db.execute(
-            select(ChannelConnection).where(ChannelConnection.business_id.in_(business_ids))
+            select(ChannelConnection).where(
+                ChannelConnection.business_id.in_(business_ids)
+            )
         )
         for channel in result.scalars().all():
-            platform = channel.platform.value if hasattr(channel.platform, "value") else str(channel.platform)
+            platform = (
+                channel.platform.value
+                if hasattr(channel.platform, "value")
+                else str(channel.platform)
+            )
             connections[platform] = {
                 "connected": bool(channel.is_active),
-                "status": channel.status.value if hasattr(channel.status, "value") else str(channel.status),
+                "status": (
+                    channel.status.value
+                    if hasattr(channel.status, "value")
+                    else str(channel.status)
+                ),
                 "status_message": channel.status_message,
-                "last_sync_at": channel.last_sync_at.isoformat() if channel.last_sync_at else None,
+                "last_sync_at": (
+                    channel.last_sync_at.isoformat() if channel.last_sync_at else None
+                ),
             }
 
     settings_rows: dict[str, PlatformSettings] = {}
     if business_ids:
         settings_result = await db.execute(
-            select(PlatformSettings).where(PlatformSettings.business_id.in_(business_ids))
+            select(PlatformSettings).where(
+                PlatformSettings.business_id.in_(business_ids)
+            )
         )
         settings_rows = {s.platform: s for s in settings_result.scalars().all()}
 
@@ -72,19 +86,45 @@ async def overview(
     for row in economics["platforms"]:
         platform = row["platform"]
         config = settings_rows.get(platform)
-        platforms.append({
-            **row,
-            "connection": connections.get(platform),
-            "capabilities": capabilities.describe(platform),
-            "actions": selling.actions_for(platform),
-            "settings": {
-                "commission_percent": float(config.commission_percent) if config and config.commission_percent is not None else None,
-                "fixed_fee_per_order": float(config.fixed_fee_per_order) if config and config.fixed_fee_per_order is not None else None,
-                "cogs_percent": float(config.cogs_percent) if config and config.cogs_percent is not None else None,
-                "monthly_fixed_cost": float(config.monthly_fixed_cost) if config and config.monthly_fixed_cost is not None else None,
-                "monthly_ad_spend": float(config.monthly_ad_spend) if config and config.monthly_ad_spend is not None else None,
-            } if config else None,
-        })
+        platforms.append(
+            {
+                **row,
+                "connection": connections.get(platform),
+                "capabilities": capabilities.describe(platform),
+                "actions": selling.actions_for(platform),
+                "settings": (
+                    {
+                        "commission_percent": (
+                            float(config.commission_percent)
+                            if config and config.commission_percent is not None
+                            else None
+                        ),
+                        "fixed_fee_per_order": (
+                            float(config.fixed_fee_per_order)
+                            if config and config.fixed_fee_per_order is not None
+                            else None
+                        ),
+                        "cogs_percent": (
+                            float(config.cogs_percent)
+                            if config and config.cogs_percent is not None
+                            else None
+                        ),
+                        "monthly_fixed_cost": (
+                            float(config.monthly_fixed_cost)
+                            if config and config.monthly_fixed_cost is not None
+                            else None
+                        ),
+                        "monthly_ad_spend": (
+                            float(config.monthly_ad_spend)
+                            if config and config.monthly_ad_spend is not None
+                            else None
+                        ),
+                    }
+                    if config
+                    else None
+                ),
+            }
+        )
 
     return {
         "period_days": days,
@@ -99,8 +139,8 @@ async def overview(
 async def update_settings(
     platform: str,
     payload: SettingsIn,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """Declare this platform's real economics. Only the seller knows these:
     a commission rate assumed from a public rate card would be wrong for most
@@ -129,8 +169,8 @@ async def update_settings(
 
 @router.post("/sync")
 async def sync_orders(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """Pull real orders from every connected platform that can report them."""
     business_ids = await _business_ids(db, user)
@@ -145,8 +185,8 @@ async def sync_orders(
 @router.get("/{platform}/pending-questions")
 async def pending_questions(
     platform: str,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """Buyers on this platform still waiting for an answer, with their real
     question -- shown before the AI is allowed to reply to them."""
@@ -160,8 +200,8 @@ async def pending_questions(
 async def run_action(
     platform: str,
     action_key: str,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """Run a real selling action on this platform."""
     business_ids = await _business_ids(db, user)

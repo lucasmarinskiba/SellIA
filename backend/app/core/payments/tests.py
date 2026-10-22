@@ -6,11 +6,23 @@ Run:
     pytest app/core/payments/tests.py -v --cov=app/core/payments
 """
 
+from datetime import timedelta
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from datetime import datetime, timedelta
-from decimal import Decimal
-import json
+from billing_history import BillingHistoryManager
+from compliance import ComplianceChecker
+from crypto_processor import (
+    CryptoProcessor,
+)
+from invoice_generator import InvoiceGenerator
+from mercadopago_processor import (
+    MercadoPagoProcessor,
+)
+from payment_reconciliation import (
+    PaymentReconciler,
+)
+from payout_manager import PayoutManager
 
 # Import all payment modules
 from stripe_processor import (
@@ -18,26 +30,11 @@ from stripe_processor import (
     StripeWebhookHandler,
     WebhookEventType,
 )
-from mercadopago_processor import (
-    MercadoPagoProcessor,
-    MercadoPagoWebhookHandler,
-    CurrencyCode,
-)
-from crypto_processor import (
-    CryptoProcessor,
-    Blockchain,
-)
-from payment_reconciliation import (
-    PaymentReconciler,
-    FulfillmentOrchestrator,
-)
-from billing_history import BillingHistoryManager
-from invoice_generator import InvoiceGenerator
-from payout_manager import PayoutManager
-from compliance import ComplianceChecker, PciDssCompliance
 
+from app.core.clock import utc_now
 
 # ============= STRIPE TESTS =============
+
 
 class TestStripeProcessor:
     """Stripe payment processor tests."""
@@ -48,7 +45,7 @@ class TestStripeProcessor:
             mock_create.return_value = {
                 "id": "cs_test_123",
                 "url": "https://checkout.stripe.com/pay/cs_test_123",
-                "expires_at": int((datetime.utcnow() + timedelta(hours=24)).timestamp()),
+                "expires_at": int((utc_now() + timedelta(hours=24)).timestamp()),
             }
 
             result = StripeProcessor.create_checkout_session(
@@ -134,6 +131,7 @@ class TestStripeProcessor:
 
 # ============= MERCADOPAGO TESTS =============
 
+
 class TestMercadoPagoProcessor:
     """MercadoPago payment processor tests."""
 
@@ -145,16 +143,14 @@ class TestMercadoPagoProcessor:
                 json=lambda: {
                     "id": "pref_123",
                     "init_point": "https://www.mercadopago.com.ar/checkout/pay/pref_123",
-                }
+                },
             )
 
             result = MercadoPagoProcessor.create_checkout_preference(
                 external_reference="order_123",
                 customer_email="test@example.com",
                 customer_name="Test Customer",
-                items=[
-                    {"name": "Product", "qty": 1, "unit_price": 99.99}
-                ],
+                items=[{"name": "Product", "qty": 1, "unit_price": 99.99}],
             )
 
             assert result["status"] == "preference_created"
@@ -172,8 +168,8 @@ class TestMercadoPagoProcessor:
                     "currency_id": "USD",
                     "payer": {"email": "test@example.com"},
                     "installments": 1,
-                    "date_created": datetime.utcnow().isoformat(),
-                }
+                    "date_created": utc_now().isoformat(),
+                },
             )
 
             result = MercadoPagoProcessor.get_payment_info("pay_123")
@@ -190,7 +186,7 @@ class TestMercadoPagoProcessor:
                     "id": "ref_123",
                     "amount": 99.99,
                     "status": "approved",
-                }
+                },
             )
 
             result = MercadoPagoProcessor.refund_payment(
@@ -202,6 +198,7 @@ class TestMercadoPagoProcessor:
 
 
 # ============= CRYPTO TESTS =============
+
 
 class TestCryptoProcessor:
     """Crypto payment processor tests."""
@@ -222,8 +219,7 @@ class TestCryptoProcessor:
         """Test getting exchange rate."""
         with patch("requests.get") as mock_get:
             mock_get.return_value = Mock(
-                status_code=200,
-                json=lambda: {"usdt": {"usd": 1.00}}
+                status_code=200, json=lambda: {"usdt": {"usd": 1.00}}
             )
 
             result = CryptoProcessor.get_exchange_rate()
@@ -233,6 +229,7 @@ class TestCryptoProcessor:
 
 
 # ============= RECONCILIATION TESTS =============
+
 
 class TestPaymentReconciler:
     """Payment reconciliation tests."""
@@ -256,6 +253,7 @@ class TestPaymentReconciler:
 
 # ============= BILLING HISTORY TESTS =============
 
+
 class TestBillingHistoryManager:
     """Billing history manager tests."""
 
@@ -278,6 +276,7 @@ class TestBillingHistoryManager:
 
 # ============= INVOICE TESTS =============
 
+
 class TestInvoiceGenerator:
     """Invoice generator tests."""
 
@@ -287,9 +286,7 @@ class TestInvoiceGenerator:
             order_id="order_123",
             customer_name="Test Customer",
             customer_email="test@example.com",
-            items=[
-                {"name": "Product", "qty": 1, "unit_price": 99.99}
-            ],
+            items=[{"name": "Product", "qty": 1, "unit_price": 99.99}],
             amount_total=99.99,
             tax_rate=0.10,
         )
@@ -302,6 +299,7 @@ class TestInvoiceGenerator:
 
 
 # ============= PAYOUT TESTS =============
+
 
 class TestPayoutManager:
     """Payout manager tests."""
@@ -325,6 +323,7 @@ class TestPayoutManager:
 
 
 # ============= COMPLIANCE TESTS =============
+
 
 class TestComplianceChecker:
     """Compliance checker tests."""
@@ -372,6 +371,7 @@ class TestComplianceChecker:
 
 
 # ============= FIXTURES =============
+
 
 @pytest.fixture
 def mock_db():

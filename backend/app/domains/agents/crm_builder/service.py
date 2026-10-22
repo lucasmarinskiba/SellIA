@@ -5,28 +5,41 @@ como archivos de texto, los comprime en ZIP y guarda en storage.
 """
 
 import os
+import tempfile
 import uuid
 import zipfile
-import tempfile
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional, List, Dict, Any
 
-from sqlalchemy import select, desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.agents.crm_builder.models import CRMBuildJob, CRMModule, CRMBuildStatus
+from app.domains.agents.crm_builder.models import CRMBuildJob, CRMBuildStatus, CRMModule
 from app.domains.agents.crm_builder.schemas import CRMBuildJobCreate, CRMModuleCreate
 
 logger = get_logger(__name__)
 
-STORAGE_DIR = Path(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))) / "storage" / "exports"
+STORAGE_DIR = (
+    Path(
+        os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+        )
+    )
+    / "storage"
+    / "exports"
+)
 STORAGE_DIR.mkdir(parents=True, exist_ok=True)
 
 ALL_CRM_MODULES = [
-    "contacts", "deals", "pipeline", "tasks", "calendar", "reservations", "automations",
-    "dashboard", "landing",
+    "contacts",
+    "deals",
+    "pipeline",
+    "tasks",
+    "calendar",
+    "reservations",
+    "automations",
+    "dashboard",
+    "landing",
 ]
 
 
@@ -48,20 +61,26 @@ class CRMBuilderService:
         await self.db.refresh(job)
 
         for mod in data.modules:
-            self.db.add(CRMModule(
-                job_id=job.id,
-                module_name=mod.module_name,
-                config=mod.config,
-            ))
+            self.db.add(
+                CRMModule(
+                    job_id=job.id,
+                    module_name=mod.module_name,
+                    config=mod.config,
+                )
+            )
         await self.db.commit()
         await self.db.refresh(job)
         return job
 
-    async def get_job(self, job_id: uuid.UUID) -> Optional[CRMBuildJob]:
-        result = await self.db.execute(select(CRMBuildJob).where(CRMBuildJob.id == job_id))
+    async def get_job(self, job_id: uuid.UUID) -> CRMBuildJob | None:
+        result = await self.db.execute(
+            select(CRMBuildJob).where(CRMBuildJob.id == job_id)
+        )
         return result.scalar_one_or_none()
 
-    async def list_jobs(self, business_id: uuid.UUID, limit: int = 100, offset: int = 0) -> List[CRMBuildJob]:
+    async def list_jobs(
+        self, business_id: uuid.UUID, limit: int = 100, offset: int = 0
+    ) -> list[CRMBuildJob]:
         result = await self.db.execute(
             select(CRMBuildJob)
             .where(CRMBuildJob.business_id == business_id)
@@ -71,7 +90,7 @@ class CRMBuilderService:
         )
         return result.scalars().all()
 
-    async def update_job(self, job_id: uuid.UUID, **kwargs) -> Optional[CRMBuildJob]:
+    async def update_job(self, job_id: uuid.UUID, **kwargs) -> CRMBuildJob | None:
         job = await self.get_job(job_id)
         if not job:
             return None
@@ -87,13 +106,15 @@ class CRMBuilderService:
     async def generate_crm(
         self,
         business_id: uuid.UUID,
-        modules_list: List[CRMModuleCreate],
+        modules_list: list[CRMModuleCreate],
     ) -> CRMBuildJob:
-        job = await self.create_job(CRMBuildJobCreate(
-            business_id=business_id,
-            crm_name="SellCRM",
-            modules=modules_list,
-        ))
+        job = await self.create_job(
+            CRMBuildJobCreate(
+                business_id=business_id,
+                crm_name="SellCRM",
+                modules=modules_list,
+            )
+        )
         await self.update_job(job.id, status=CRMBuildStatus.GENERATING)
 
         try:
@@ -104,13 +125,15 @@ class CRMBuilderService:
                 status=CRMBuildStatus.COMPLETED,
                 code_url=relative_url,
             )
-        except Exception as e:
-            logger.exception(f"CRMBuilder generation failed for job {job.id}: {e}")
+        except Exception:
+            logger.exception(f"CRMBuilder generation failed for job {job.id}")
             await self.update_job(job.id, status=CRMBuildStatus.FAILED)
 
         return await self.get_job(job.id)
 
-    def _generate_code_zip(self, job: CRMBuildJob, modules_list: List[CRMModuleCreate]) -> Path:
+    def _generate_code_zip(
+        self, job: CRMBuildJob, modules_list: list[CRMModuleCreate]
+    ) -> Path:
         tmpdir = tempfile.mkdtemp(prefix=f"crm_build_{job.id}_")
         crm_slug = "sellcrm"
         active_modules = {m.module_name for m in modules_list}
@@ -120,38 +143,102 @@ class CRMBuilderService:
         # === FRONTEND (Next.js) ===
         fe_dir = Path(tmpdir) / f"{crm_slug}-frontend"
         self._write_file(fe_dir / "package.json", self._frontend_package_json(crm_slug))
-        self._write_file(fe_dir / "tailwind.config.js", self._frontend_tailwind_config())
-        self._write_file(fe_dir / "src" / "app" / "layout.tsx", self._frontend_root_layout())
-        self._write_file(fe_dir / "src" / "app" / "page.tsx", self._frontend_landing_page())
-        self._write_file(fe_dir / "src" / "app" / "dashboard" / "page.tsx", self._frontend_dashboard_page(active_modules))
-        self._write_file(fe_dir / "src" / "app" / "contacts" / "page.tsx", self._frontend_contacts_page())
-        self._write_file(fe_dir / "src" / "app" / "deals" / "page.tsx", self._frontend_deals_page())
-        self._write_file(fe_dir / "src" / "app" / "tasks" / "page.tsx", self._frontend_tasks_page())
-        self._write_file(fe_dir / "src" / "app" / "calendar" / "page.tsx", self._frontend_calendar_page())
-        self._write_file(fe_dir / "src" / "app" / "reservations" / "page.tsx", self._frontend_reservations_page())
-        self._write_file(fe_dir / "src" / "app" / "automations" / "page.tsx", self._frontend_automations_page())
-        self._write_file(fe_dir / "src" / "components" / "Layout.tsx", self._frontend_layout_component())
-        self._write_file(fe_dir / "src" / "components" / "KanbanBoard.tsx", self._frontend_kanban_component())
-        self._write_file(fe_dir / "src" / "components" / "LeadForm.tsx", self._frontend_lead_form())
+        self._write_file(
+            fe_dir / "tailwind.config.js", self._frontend_tailwind_config()
+        )
+        self._write_file(
+            fe_dir / "src" / "app" / "layout.tsx", self._frontend_root_layout()
+        )
+        self._write_file(
+            fe_dir / "src" / "app" / "page.tsx", self._frontend_landing_page()
+        )
+        self._write_file(
+            fe_dir / "src" / "app" / "dashboard" / "page.tsx",
+            self._frontend_dashboard_page(active_modules),
+        )
+        self._write_file(
+            fe_dir / "src" / "app" / "contacts" / "page.tsx",
+            self._frontend_contacts_page(),
+        )
+        self._write_file(
+            fe_dir / "src" / "app" / "deals" / "page.tsx", self._frontend_deals_page()
+        )
+        self._write_file(
+            fe_dir / "src" / "app" / "tasks" / "page.tsx", self._frontend_tasks_page()
+        )
+        self._write_file(
+            fe_dir / "src" / "app" / "calendar" / "page.tsx",
+            self._frontend_calendar_page(),
+        )
+        self._write_file(
+            fe_dir / "src" / "app" / "reservations" / "page.tsx",
+            self._frontend_reservations_page(),
+        )
+        self._write_file(
+            fe_dir / "src" / "app" / "automations" / "page.tsx",
+            self._frontend_automations_page(),
+        )
+        self._write_file(
+            fe_dir / "src" / "components" / "Layout.tsx",
+            self._frontend_layout_component(),
+        )
+        self._write_file(
+            fe_dir / "src" / "components" / "KanbanBoard.tsx",
+            self._frontend_kanban_component(),
+        )
+        self._write_file(
+            fe_dir / "src" / "components" / "LeadForm.tsx", self._frontend_lead_form()
+        )
         self._write_file(fe_dir / "src" / "lib" / "api.ts", self._frontend_api_client())
 
         # === BACKEND (FastAPI) ===
         be_dir = Path(tmpdir) / f"{crm_slug}-backend"
         self._write_file(be_dir / "app" / "main.py", self._backend_main_py())
-        self._write_file(be_dir / "app" / "core" / "database.py", self._backend_database_py())
-        self._write_file(be_dir / "app" / "core" / "security.py", self._backend_security_py())
-        self._write_file(be_dir / "app" / "models" / "contact.py", self._backend_contact_model())
-        self._write_file(be_dir / "app" / "models" / "deal.py", self._backend_deal_model())
-        self._write_file(be_dir / "app" / "models" / "task.py", self._backend_task_model())
-        self._write_file(be_dir / "app" / "models" / "reservation.py", self._backend_reservation_model())
-        self._write_file(be_dir / "app" / "schemas" / "contact.py", self._backend_contact_schema())
-        self._write_file(be_dir / "app" / "schemas" / "deal.py", self._backend_deal_schema())
-        self._write_file(be_dir / "app" / "routers" / "contacts.py", self._backend_contacts_router())
-        self._write_file(be_dir / "app" / "routers" / "deals.py", self._backend_deals_router())
-        self._write_file(be_dir / "app" / "routers" / "tasks.py", self._backend_tasks_router())
-        self._write_file(be_dir / "app" / "routers" / "calendar.py", self._backend_calendar_router())
-        self._write_file(be_dir / "app" / "routers" / "reservations.py", self._backend_reservations_router())
-        self._write_file(be_dir / "app" / "routers" / "automations.py", self._backend_automations_router())
+        self._write_file(
+            be_dir / "app" / "core" / "database.py", self._backend_database_py()
+        )
+        self._write_file(
+            be_dir / "app" / "core" / "security.py", self._backend_security_py()
+        )
+        self._write_file(
+            be_dir / "app" / "models" / "contact.py", self._backend_contact_model()
+        )
+        self._write_file(
+            be_dir / "app" / "models" / "deal.py", self._backend_deal_model()
+        )
+        self._write_file(
+            be_dir / "app" / "models" / "task.py", self._backend_task_model()
+        )
+        self._write_file(
+            be_dir / "app" / "models" / "reservation.py",
+            self._backend_reservation_model(),
+        )
+        self._write_file(
+            be_dir / "app" / "schemas" / "contact.py", self._backend_contact_schema()
+        )
+        self._write_file(
+            be_dir / "app" / "schemas" / "deal.py", self._backend_deal_schema()
+        )
+        self._write_file(
+            be_dir / "app" / "routers" / "contacts.py", self._backend_contacts_router()
+        )
+        self._write_file(
+            be_dir / "app" / "routers" / "deals.py", self._backend_deals_router()
+        )
+        self._write_file(
+            be_dir / "app" / "routers" / "tasks.py", self._backend_tasks_router()
+        )
+        self._write_file(
+            be_dir / "app" / "routers" / "calendar.py", self._backend_calendar_router()
+        )
+        self._write_file(
+            be_dir / "app" / "routers" / "reservations.py",
+            self._backend_reservations_router(),
+        )
+        self._write_file(
+            be_dir / "app" / "routers" / "automations.py",
+            self._backend_automations_router(),
+        )
         self._write_file(be_dir / "alembic" / "env.py", self._backend_alembic_env())
         self._write_file(be_dir / "docker-compose.yml", self._backend_docker_compose())
         self._write_file(be_dir / "requirements.txt", self._backend_requirements())
@@ -168,6 +255,7 @@ class CRMBuilderService:
                     zf.write(file_path, arcname)
 
         import shutil
+
         shutil.rmtree(tmpdir, ignore_errors=True)
 
         return zip_path
@@ -179,7 +267,7 @@ class CRMBuilderService:
     # ---------- Frontend Templates ----------
 
     def _frontend_package_json(self, crm_slug: str) -> str:
-        return f'''{{
+        return f"""{{
   "name": "{crm_slug}-frontend",
   "version": "0.1.0",
   "private": true,
@@ -203,19 +291,19 @@ class CRMBuilderService:
     "autoprefixer": "^10.4.0"
   }}
 }}
-'''
+"""
 
     def _frontend_tailwind_config(self) -> str:
-        return '''/** @type {import('tailwindcss').Config} */
+        return """/** @type {import('tailwindcss').Config} */
 module.exports = {
   content: ['./src/**/*.{js,ts,jsx,tsx,mdx}'],
   theme: { extend: {} },
   plugins: [],
 }
-'''
+"""
 
     def _frontend_root_layout(self) -> str:
-        return '''export const metadata = {
+        return """export const metadata = {
   title: 'SellCRM',
 }
 
@@ -226,10 +314,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   )
 }
-'''
+"""
 
     def _frontend_landing_page(self) -> str:
-        return '''"use client";
+        return """"use client";
 import LeadForm from "@/components/LeadForm";
 
 export default function Landing() {
@@ -245,22 +333,28 @@ export default function Landing() {
     </main>
   );
 }
-'''
+"""
 
     def _frontend_dashboard_page(self, active_modules: set) -> str:
         cards = []
         if "contacts" in active_modules:
-            cards.append('        <KpiCard title="Contactos" value="1,240" trend="+5%" />')
+            cards.append(
+                '        <KpiCard title="Contactos" value="1,240" trend="+5%" />'
+            )
         if "deals" in active_modules:
-            cards.append('        <KpiCard title="Deals abiertos" value="$340K" trend="+12%" />')
+            cards.append(
+                '        <KpiCard title="Deals abiertos" value="$340K" trend="+12%" />'
+            )
         if "tasks" in active_modules:
             cards.append('        <KpiCard title="Tareas hoy" value="18" trend="-2" />')
         if "reservations" in active_modules:
             cards.append('        <KpiCard title="Reservas" value="42" trend="+8%" />')
         if not cards:
-            cards.append('        <KpiCard title="Bienvenido" value="SellCRM" trend="Vamos" />')
+            cards.append(
+                '        <KpiCard title="Bienvenido" value="SellCRM" trend="Vamos" />'
+            )
         cards_str = "\n".join(cards)
-        return f'''"use client";
+        return f""""use client";
 import Layout from "@/components/Layout";
 
 function KpiCard({{ title, value, trend }}: {{ title: string; value: string; trend: string }}) {{
@@ -293,10 +387,10 @@ export default function Dashboard() {{
     </Layout>
   );
 }}
-'''
+"""
 
     def _frontend_contacts_page(self) -> str:
-        return '''"use client";
+        return """"use client";
 import Layout from "@/components/Layout";
 
 export default function Contacts() {
@@ -319,10 +413,10 @@ export default function Contacts() {
     </Layout>
   );
 }
-'''
+"""
 
     def _frontend_deals_page(self) -> str:
-        return '''"use client";
+        return """"use client";
 import Layout from "@/components/Layout";
 import KanbanBoard from "@/components/KanbanBoard";
 
@@ -336,10 +430,10 @@ export default function Deals() {
     </Layout>
   );
 }
-'''
+"""
 
     def _frontend_tasks_page(self) -> str:
-        return '''"use client";
+        return """"use client";
 import Layout from "@/components/Layout";
 
 export default function Tasks() {
@@ -366,10 +460,10 @@ export default function Tasks() {
     </Layout>
   );
 }
-'''
+"""
 
     def _frontend_calendar_page(self) -> str:
-        return '''"use client";
+        return """"use client";
 import Layout from "@/components/Layout";
 
 export default function CalendarPage() {
@@ -393,10 +487,10 @@ export default function CalendarPage() {
     </Layout>
   );
 }
-'''
+"""
 
     def _frontend_reservations_page(self) -> str:
-        return '''"use client";
+        return """"use client";
 import Layout from "@/components/Layout";
 
 export default function Reservations() {
@@ -416,10 +510,10 @@ export default function Reservations() {
     </Layout>
   );
 }
-'''
+"""
 
     def _frontend_automations_page(self) -> str:
-        return '''"use client";
+        return """"use client";
 import Layout from "@/components/Layout";
 
 export default function Automations() {
@@ -443,10 +537,10 @@ export default function Automations() {
     </Layout>
   );
 }
-'''
+"""
 
     def _frontend_layout_component(self) -> str:
-        return '''"use client";
+        return """"use client";
 import Link from "next/link";
 
 const nav = [
@@ -476,10 +570,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
-'''
+"""
 
     def _frontend_kanban_component(self) -> str:
-        return '''"use client";
+        return """"use client";
 
 const columns = ["Nuevo", "Calificado", "Propuesta", "Negociación", "Cerrado"];
 const deals = [
@@ -510,10 +604,10 @@ export default function KanbanBoard() {
     </div>
   );
 }
-'''
+"""
 
     def _frontend_lead_form(self) -> str:
-        return '''"use client";
+        return """"use client";
 import { useState } from "react";
 
 export default function LeadForm() {
@@ -532,10 +626,10 @@ export default function LeadForm() {
     </form>
   );
 }
-'''
+"""
 
     def _frontend_api_client(self) -> str:
-        return '''const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        return """const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export async function apiFetch(path: string, options?: RequestInit) {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -545,12 +639,12 @@ export async function apiFetch(path: string, options?: RequestInit) {
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
-'''
+"""
 
     # ---------- Backend Templates ----------
 
     def _backend_main_py(self) -> str:
-        return '''from fastapi import FastAPI
+        return """from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import contacts, deals, tasks, calendar, reservations, automations
 
@@ -574,10 +668,10 @@ app.include_router(automations.router, prefix="/automations", tags=["automations
 @app.get("/health")
 async def health():
     return {"status": "ok"}
-'''
+"""
 
     def _backend_database_py(self) -> str:
-        return '''from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+        return """from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base
 
 DATABASE_URL = "postgresql+asyncpg://user:password@db:5432/crm"
@@ -591,10 +685,10 @@ async def get_db():
             yield session
         finally:
             await session.close()
-'''
+"""
 
     def _backend_security_py(self) -> str:
-        return '''from datetime import datetime, timedelta
+        return """from datetime import datetime, timedelta
 from passlib.context import CryptContext
 from jose import jwt
 
@@ -615,13 +709,13 @@ def get_password_hash(password: str) -> str:
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    expire = utc_now() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-'''
+"""
 
     def _backend_contact_model(self) -> str:
-        return '''import uuid
+        return """import uuid
 from sqlalchemy import Column, String, DateTime, Text
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from app.core.database import Base
@@ -638,10 +732,10 @@ class Contact(Base):
     tags = Column(JSONB, default=list, nullable=False)
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-'''
+"""
 
     def _backend_deal_model(self) -> str:
-        return '''import uuid
+        return """import uuid
 from sqlalchemy import Column, String, DateTime, Integer, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from app.core.database import Base
@@ -658,10 +752,10 @@ class Deal(Base):
     value = Column(Integer, default=0, nullable=False)
     currency = Column(String(10), default="USD", nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-'''
+"""
 
     def _backend_task_model(self) -> str:
-        return '''import uuid
+        return """import uuid
 from sqlalchemy import Column, String, DateTime, Boolean, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from app.core.database import Base
@@ -678,10 +772,10 @@ class Task(Base):
     due_date = Column(DateTime(timezone=True), nullable=True)
     is_done = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-'''
+"""
 
     def _backend_reservation_model(self) -> str:
-        return '''import uuid
+        return """import uuid
 from sqlalchemy import Column, String, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from app.core.database import Base
@@ -698,10 +792,10 @@ class Reservation(Base):
     status = Column(String(20), default="confirmed", nullable=False)
     notes = Column(String(1000), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-'''
+"""
 
     def _backend_contact_schema(self) -> str:
-        return '''from pydantic import BaseModel, ConfigDict
+        return """from pydantic import BaseModel, ConfigDict
 from uuid import UUID
 from datetime import datetime
 from typing import Optional, List
@@ -731,10 +825,10 @@ class ContactResponse(ContactBase):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
-'''
+"""
 
     def _backend_deal_schema(self) -> str:
-        return '''from pydantic import BaseModel, ConfigDict
+        return """from pydantic import BaseModel, ConfigDict
 from uuid import UUID
 from datetime import datetime
 from typing import Optional
@@ -757,10 +851,10 @@ class DealResponse(DealBase):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
-'''
+"""
 
     def _backend_contacts_router(self) -> str:
-        return '''from fastapi import APIRouter, Depends, HTTPException
+        return """from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.database import get_db
@@ -819,10 +913,10 @@ async def delete_contact(contact_id: str, db: AsyncSession = Depends(get_db)):
     await db.delete(contact)
     await db.commit()
     return {"message": "Eliminado"}
-'''
+"""
 
     def _backend_deals_router(self) -> str:
-        return '''from fastapi import APIRouter, Depends, HTTPException
+        return """from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from app.core.database import get_db
@@ -855,10 +949,10 @@ async def pipeline_summary(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Deal.stage, func.count(Deal.id), func.sum(Deal.value)).group_by(Deal.stage))
     rows = result.all()
     return [{"stage": r[0], "count": r[1], "value": r[2] or 0} for r in rows]
-'''
+"""
 
     def _backend_tasks_router(self) -> str:
-        return '''from fastapi import APIRouter, Depends
+        return """from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.database import get_db
@@ -884,10 +978,10 @@ async def create_task(title: str, assignee: str | None = None, due_date: str | N
     await db.commit()
     await db.refresh(task)
     return task
-'''
+"""
 
     def _backend_calendar_router(self) -> str:
-        return '''from fastapi import APIRouter, Depends
+        return """from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.database import get_db
@@ -900,10 +994,10 @@ router = APIRouter()
 async def list_events(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Reservation).order_by(Reservation.start_at))
     return result.scalars().all()
-'''
+"""
 
     def _backend_reservations_router(self) -> str:
-        return '''from fastapi import APIRouter, Depends, HTTPException
+        return """from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.database import get_db
@@ -927,10 +1021,10 @@ async def create_reservation(contact_id: str, start_at: str, end_at: str, db: As
     await db.commit()
     await db.refresh(r)
     return r
-'''
+"""
 
     def _backend_automations_router(self) -> str:
-        return '''from fastapi import APIRouter
+        return """from fastapi import APIRouter
 
 router = APIRouter()
 
@@ -946,10 +1040,10 @@ async def list_workflows():
 @router.post("/workflows/{wf_id}/trigger")
 async def trigger_workflow(wf_id: str, payload: dict):
     return {"workflow_id": wf_id, "triggered": True, "payload": payload}
-'''
+"""
 
     def _backend_alembic_env(self) -> str:
-        return '''from logging.config import fileConfig
+        return """from logging.config import fileConfig
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
@@ -992,10 +1086,10 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
-'''
+"""
 
     def _backend_docker_compose(self) -> str:
-        return '''version: "3.9"
+        return """version: "3.9"
 services:
   db:
     image: postgres:16-alpine
@@ -1026,10 +1120,10 @@ services:
 
 volumes:
   pgdata:
-'''
+"""
 
     def _backend_requirements(self) -> str:
-        return '''fastapi==0.111.0
+        return """fastapi==0.111.0
 uvicorn[standard]==0.30.0
 sqlalchemy[asyncio]==2.0.30
 asyncpg==0.29.0
@@ -1039,20 +1133,20 @@ pydantic-settings==2.2.0
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.9
-'''
+"""
 
     def _backend_dockerfile(self) -> str:
-        return '''FROM python:3.11-slim
+        return """FROM python:3.11-slim
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-'''
+"""
 
     def _backend_readme(self, active_modules: set) -> str:
         modules_md = "\n".join(f"- {m}" for m in sorted(active_modules))
-        return f'''# SellCRM
+        return f"""# SellCRM
 
 Sistema CRM completo generado por SellIA.
 
@@ -1068,11 +1162,11 @@ docker-compose up --build
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:8000
 - API docs: http://localhost:8000/docs
-'''
+"""
 
     # ========== Download ==========
 
-    async def get_crm_code(self, job_id: uuid.UUID) -> Optional[Path]:
+    async def get_crm_code(self, job_id: uuid.UUID) -> Path | None:
         job = await self.get_job(job_id)
         if not job or not job.code_url:
             return None

@@ -27,8 +27,8 @@ from typing import Any
 import httpx
 
 from app.domains.channels.connectors.base import BaseChannelConnector
-from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.models import ChannelPlatform
+from app.domains.channels.schemas import WebhookPayload
 
 _TOKEN_URL = "https://api-sec-vlc.hotmart.com/security/oauth/token"
 _SALES_API = "https://developers.hotmart.com/payments/api/v1"
@@ -37,7 +37,11 @@ _SALES_API = "https://developers.hotmart.com/payments/api/v1"
 _PAID_STATUSES = {"APPROVED", "COMPLETE", "COMPLETED"}
 _CANCELLED_STATUSES = {"CANCELLED", "CANCELED"}
 _REFUND_EVENTS = {"PURCHASE_REFUNDED", "PURCHASE_CHARGEBACK", "PURCHASE_PROTEST"}
-_CANCEL_EVENTS = {"PURCHASE_CANCELED", "PURCHASE_CANCELLED", "SUBSCRIPTION_CANCELLATION"}
+_CANCEL_EVENTS = {
+    "PURCHASE_CANCELED",
+    "PURCHASE_CANCELLED",
+    "SUBSCRIPTION_CANCELLATION",
+}
 _ABANDONED_EVENTS = {"PURCHASE_OUT_OF_SHOPPING_CART"}
 
 _EVENT_LABELS = {
@@ -60,6 +64,7 @@ _EVENT_LABELS = {
 
 class HotmartConnector(BaseChannelConnector):
     """Conector para Hotmart webhooks (compras, suscripciones, área de miembros)."""
+
     platform = "hotmart"
 
     def __init__(self, credentials: dict[str, Any], settings: dict[str, Any]):
@@ -71,7 +76,9 @@ class HotmartConnector(BaseChannelConnector):
         self._access_token: str | None = None
         self._token_expires_at: float = 0.0
 
-    async def send_message(self, recipient_id: str, content: str, content_type: str = "text") -> dict[str, Any]:
+    async def send_message(
+        self, recipient_id: str, content: str, content_type: str = "text"
+    ) -> dict[str, Any]:
         """Hotmart doesn't have a native messaging channel."""
         return {"status": "logged", "note": "Hotmart no soporta mensajería directa"}
 
@@ -96,7 +103,9 @@ class HotmartConnector(BaseChannelConnector):
             self._token_expires_at = time.time() + data.get("expires_in", 3600) - 60
             return self._access_token
 
-    async def list_sales(self, start_date: str | None = None, end_date: str | None = None) -> list[dict[str, Any]]:
+    async def list_sales(
+        self, start_date: str | None = None, end_date: str | None = None
+    ) -> list[dict[str, Any]]:
         """Pull real de historial de ventas (Hotmart Payments API)."""
         token = await self._get_access_token()
         params: dict[str, Any] = {}
@@ -115,7 +124,9 @@ class HotmartConnector(BaseChannelConnector):
             response.raise_for_status()
             return response.json().get("items", [])
 
-    async def list_subscribers(self, subscriber_status: str | None = None) -> list[dict[str, Any]]:
+    async def list_subscribers(
+        self, subscriber_status: str | None = None
+    ) -> list[dict[str, Any]]:
         """Pull real de suscriptores activos (Hotmart Payments API)."""
         token = await self._get_access_token()
         params: dict[str, Any] = {}
@@ -155,14 +166,18 @@ class HotmartConnector(BaseChannelConnector):
 
         if event in _ABANDONED_EVENTS:
             content_type = "abandoned_cart"
-        elif event in _REFUND_EVENTS or event in _CANCEL_EVENTS:
-            content_type = "order"
-        elif event.startswith("PURCHASE") or event.startswith("SUBSCRIPTION"):
+        elif (
+            event in _REFUND_EVENTS
+            or event in _CANCEL_EVENTS
+            or event.startswith(("PURCHASE", "SUBSCRIPTION"))
+        ):
             content_type = "order"
         else:
             content_type = "system"
 
-        buyer_name = buyer.get("name", "") or (subscription.get("subscriber", {}) or {}).get("name", "")
+        buyer_name = buyer.get("name", "") or (
+            subscription.get("subscriber", {}) or {}
+        ).get("name", "")
 
         return WebhookPayload(
             platform=ChannelPlatform.HOTMART,

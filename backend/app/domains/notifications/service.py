@@ -4,16 +4,19 @@ Sends real notifications to business owners via WhatsApp, Email, Push, In-App.
 """
 
 import uuid
-from datetime import datetime, timezone
-from typing import Optional, Any
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import select, desc
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.notifications.models import NotificationDelivery, NotificationChannel, NotificationPriority, NotificationStatus
-from app.domains.users.models import User
-from app.domains.businesses.models import Business
 from app.core.logger import get_logger
+from app.domains.businesses.models import Business
+from app.domains.notifications.models import (
+    NotificationDelivery,
+    NotificationPriority,
+    NotificationStatus,
+)
 
 logger = get_logger(__name__)
 
@@ -63,11 +66,11 @@ class NotificationService:
             try:
                 await self._send_via_channel(delivery)
                 delivery.status = NotificationStatus.SENT
-                delivery.sent_at = datetime.now(timezone.utc)
+                delivery.sent_at = datetime.now(UTC)
             except Exception as e:
                 delivery.status = NotificationStatus.FAILED
                 delivery.error_message = str(e)
-                logger.error(f"Failed to send {delivery.channel} notification: {e}")
+                logger.exception(f"Failed to send {delivery.channel} notification")
 
         await self.db.commit()
         return deliveries
@@ -111,7 +114,9 @@ class NotificationService:
     async def _send_in_app(self, delivery: NotificationDelivery) -> None:
         """Send in-app notification (via WebSocket)."""
         # In production, emit WebSocket event
-        logger.info(f"[IN_APP] To user {delivery.user_id}: {delivery.notification_type}")
+        logger.info(
+            f"[IN_APP] To user {delivery.user_id}: {delivery.notification_type}"
+        )
 
 
 class BriefingDeliveryService:
@@ -121,10 +126,12 @@ class BriefingDeliveryService:
         self.db = db
         self.notification = NotificationService(db)
 
-    async def deliver_daily_briefing(self, business_id: uuid.UUID) -> Optional[dict[str, Any]]:
+    async def deliver_daily_briefing(
+        self, business_id: uuid.UUID
+    ) -> dict[str, Any] | None:
         """Generate and deliver daily briefing."""
-        from app.domains.orchestration.director import SellIADirector
         from app.domains.autopilot.service import AutopilotReportService
+        from app.domains.orchestration.director import SellIADirector
 
         # Get business owner
         biz_result = await self.db.execute(
@@ -136,14 +143,16 @@ class BriefingDeliveryService:
 
         # Generate briefing
         director = SellIADirector(self.db)
-        briefing = await director.run_daily_briefing(business_id)
+        await director.run_daily_briefing(business_id)
 
         # Get autopilot report
         report_service = AutopilotReportService(self.db)
         report = await report_service.get_latest_report(business_id)
 
         # Build messages
-        summary = report.ai_summary if report else "No hay actividad automática reciente."
+        summary = (
+            report.ai_summary if report else "No hay actividad automática reciente."
+        )
 
         whatsapp_message = f"📊 Briefing SellIA\n\n{summary}\n\nAcciones hoy: {report.leads_contacted if report else 0} leads, {report.deals_closed if report else 0} deals cerrados."
 
@@ -200,7 +209,11 @@ class HandoffAlertService:
 
         # Determine priority
         priority = "critical" if urgency == "critical" else "high"
-        channels = ["whatsapp", "push", "email", "in_app"] if urgency == "critical" else ["email", "in_app"]
+        channels = (
+            ["whatsapp", "push", "email", "in_app"]
+            if urgency == "critical"
+            else ["email", "in_app"]
+        )
 
         message_short = f"🚨 Handoff urgente: {reason[:200]}"
         message = f"""

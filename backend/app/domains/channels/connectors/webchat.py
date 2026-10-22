@@ -1,14 +1,16 @@
 """Web Chat Widget Connector."""
 
+from datetime import UTC, datetime
 from typing import Any
-from datetime import datetime, timezone
+
 from app.domains.channels.connectors.base import BaseChannelConnector
-from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.models import ChannelPlatform
+from app.domains.channels.schemas import WebhookPayload
 
 
 class WebChatConnector(BaseChannelConnector):
     """Conector para el widget de chat web embebido en sitios del usuario."""
+
     platform = "webchat"
 
     def __init__(self, credentials: dict[str, Any], settings: dict[str, Any]):
@@ -16,7 +18,9 @@ class WebChatConnector(BaseChannelConnector):
         self.widget_id = credentials.get("widget_id")
         self.allowed_domains = settings.get("allowed_domains", [])
 
-    async def send_message(self, recipient_id: str, content: str, content_type: str = "text") -> dict[str, Any]:
+    async def send_message(
+        self, recipient_id: str, content: str, content_type: str = "text"
+    ) -> dict[str, Any]:
         """En WebChat, el mensaje se envía via websocket/SSE al frontend.
         Este método retorna el payload para ser entregado por el backend."""
         return {
@@ -25,7 +29,7 @@ class WebChatConnector(BaseChannelConnector):
             "recipient_id": recipient_id,
             "content": content,
             "content_type": content_type,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     async def parse_webhook(self, raw_payload: dict[str, Any]) -> WebhookPayload:

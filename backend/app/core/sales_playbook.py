@@ -490,9 +490,10 @@ SALES_TACTICS = {
     },
 }
 
+
 def get_sales_system_prompt():
     """Genera prompt enriquecido basado en libros de ventas."""
-    return f"""Sos SellIA, un agente de ventas con IA. Respondes en nombre del negocio.
+    return """Sos SellIA, un agente de ventas con IA. Respondes en nombre del negocio.
 Objetivo: atender consultas, resolver dudas, cerrar ventas de forma natural.
 
 🧠 BASADO EN PSICOLOGÍA PROBADA:

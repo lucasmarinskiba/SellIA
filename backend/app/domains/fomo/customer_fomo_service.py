@@ -1,15 +1,19 @@
 """Customer FOMO Campaign Service - Core business logic"""
 
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
-from decimal import Decimal
 import json
 import uuid
+from decimal import Decimal
+from typing import Any
 
+from app.core.clock import utc_now
 from app.domains.fomo.customer_fomo_models import (
-    CampaignType, WidgetType, AutomationType,
-    CustomerFOMOCampaignConfig, CustomerFOMOWidgetConfig,
-    CustomerFOMOAutomationConfig, FOMOCampaignTemplate
+    AutomationType,
+    CampaignType,
+    CustomerFOMOAutomationConfig,
+    CustomerFOMOCampaignConfig,
+    CustomerFOMOWidgetConfig,
+    FOMOCampaignTemplate,
+    WidgetType,
 )
 
 
@@ -30,7 +34,7 @@ class CustomerFOMOTemplates:
                     "high_traffic": "{count}+ visitantes - ¡Muy popular!",
                     "flash_sale": "{count} comprando EN ESTE MOMENTO",
                 },
-                color_scheme={"primary": "#FF6B6B", "secondary": "#FFE66D"}
+                color_scheme={"primary": "#FF6B6B", "secondary": "#FFE66D"},
             ),
             widgets=[
                 CustomerFOMOWidgetConfig(
@@ -125,7 +129,7 @@ class CustomerFOMOTemplates:
                     "low": "¡ÚLTIMO! Solo {count} quedan - apúrate",
                     "critical": "¡AGOTÁNDOSE! 1 de {total}",
                 },
-                color_scheme={"primary": "#FF6B6B", "secondary": "#FFE66D"}
+                color_scheme={"primary": "#FF6B6B", "secondary": "#FFE66D"},
             ),
             widgets=[
                 CustomerFOMOWidgetConfig(
@@ -166,7 +170,7 @@ class CustomerFOMOTemplates:
                         "email_1": "Olvidaste tu carrito - Completa tu compra ahora",
                         "email_2": "2 personas más compraron esto - Último inventario",
                         "email_3": "Descuento extra 10% - Solo para ti",
-                    }
+                    },
                 ),
             ],
             expected_conversion_lift=0.42,
@@ -196,7 +200,7 @@ class CustomerFOMOTemplates:
                 CustomerFOMOWidgetConfig(
                     widget_type=WidgetType.COUNTDOWN,
                     position="top-center",
-                )
+                ),
             ],
             automations=[
                 CustomerFOMOAutomationConfig(
@@ -218,8 +222,8 @@ class CustomerFOMOCampaignService:
         user_id: str,
         business_id: str,
         template_type: str,
-        custom_config: Optional[Dict] = None,
-    ) -> Dict[str, Any]:
+        custom_config: dict | None = None,
+    ) -> dict[str, Any]:
         """Create FOMO campaign from template"""
         templates = {
             "live_visitor": CustomerFOMOTemplates.get_live_visitor_count_template(),
@@ -251,7 +255,7 @@ class CustomerFOMOCampaignService:
             "expected_conversion_lift": f"{template.expected_conversion_lift * 100:.0f}%",
             "setup_time_minutes": template.setup_time_minutes,
             "status": "draft",
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": utc_now().isoformat(),
         }
 
     @staticmethod
@@ -273,12 +277,12 @@ class CustomerFOMOCampaignService:
         return script.strip()
 
     @staticmethod
-    async def activate_campaign(campaign_id: str) -> Dict[str, Any]:
+    async def activate_campaign(campaign_id: str) -> dict[str, Any]:
         """Activate campaign and start tracking"""
         return {
             "campaign_id": campaign_id,
             "status": "active",
-            "activated_at": datetime.utcnow().isoformat(),
+            "activated_at": utc_now().isoformat(),
             "tracking_enabled": True,
             "widgets_active": 3,
             "automations_active": 2,
@@ -286,7 +290,7 @@ class CustomerFOMOCampaignService:
         }
 
     @staticmethod
-    async def get_campaign_performance(campaign_id: str) -> Dict[str, Any]:
+    async def get_campaign_performance(campaign_id: str) -> dict[str, Any]:
         """Get real-time performance metrics"""
         return {
             "campaign_id": campaign_id,
@@ -300,9 +304,24 @@ class CustomerFOMOCampaignService:
             "conversion_lift": 0.35,
             "roi": 3.42,
             "daily_breakdown": [
-                {"date": "2026-08-27", "impressions": 5140, "conversions": 142, "revenue": 4271.50},
-                {"date": "2026-08-28", "impressions": 5210, "conversions": 150, "revenue": 4515.00},
-                {"date": "2026-08-29", "impressions": 5070, "conversions": 135, "revenue": 4054.00},
+                {
+                    "date": "2026-08-27",
+                    "impressions": 5140,
+                    "conversions": 142,
+                    "revenue": 4271.50,
+                },
+                {
+                    "date": "2026-08-28",
+                    "impressions": 5210,
+                    "conversions": 150,
+                    "revenue": 4515.00,
+                },
+                {
+                    "date": "2026-08-29",
+                    "impressions": 5070,
+                    "conversions": 135,
+                    "revenue": 4054.00,
+                },
             ],
         }
 
@@ -310,21 +329,56 @@ class CustomerFOMOCampaignService:
     async def create_automation_sequence(
         campaign_id: str,
         automation_type: str,
-        channels: List[str],
-        messages: Dict[str, str],
-    ) -> Dict[str, Any]:
+        channels: list[str],
+        messages: dict[str, str],
+    ) -> dict[str, Any]:
         """Create multi-step automation sequence"""
         sequences = {
             "cart_abandonment": [
-                {"step": 1, "delay_minutes": 5, "channel": "email", "message_key": "email_1"},
-                {"step": 2, "delay_minutes": 120, "channel": "email", "message_key": "email_2"},
-                {"step": 3, "delay_minutes": 1440, "channel": "sms", "message_key": "sms_1"},
+                {
+                    "step": 1,
+                    "delay_minutes": 5,
+                    "channel": "email",
+                    "message_key": "email_1",
+                },
+                {
+                    "step": 2,
+                    "delay_minutes": 120,
+                    "channel": "email",
+                    "message_key": "email_2",
+                },
+                {
+                    "step": 3,
+                    "delay_minutes": 1440,
+                    "channel": "sms",
+                    "message_key": "sms_1",
+                },
             ],
             "flash_sale": [
-                {"step": 1, "delay_minutes": 0, "channel": "email", "message_key": "launch"},
-                {"step": 2, "delay_minutes": 240, "channel": "sms", "message_key": "reminder_4h"},
-                {"step": 3, "delay_minutes": 1380, "channel": "sms", "message_key": "final_1h"},
-                {"step": 4, "delay_minutes": 1410, "channel": "email", "message_key": "last_30min"},
+                {
+                    "step": 1,
+                    "delay_minutes": 0,
+                    "channel": "email",
+                    "message_key": "launch",
+                },
+                {
+                    "step": 2,
+                    "delay_minutes": 240,
+                    "channel": "sms",
+                    "message_key": "reminder_4h",
+                },
+                {
+                    "step": 3,
+                    "delay_minutes": 1380,
+                    "channel": "sms",
+                    "message_key": "final_1h",
+                },
+                {
+                    "step": 4,
+                    "delay_minutes": 1410,
+                    "channel": "email",
+                    "message_key": "last_30min",
+                },
             ],
         }
 
@@ -342,7 +396,7 @@ class CustomerFOMOCampaignService:
         }
 
     @staticmethod
-    async def get_widget_embedding_guide(widget_type: str) -> Dict[str, Any]:
+    async def get_widget_embedding_guide(widget_type: str) -> dict[str, Any]:
         """Get instructions for embedding widget"""
         guides = {
             "visitor_counter": {
@@ -379,9 +433,13 @@ class CustomerFOMOCampaignService:
         revenue: float,
         cost: float,
         baseline_conversion: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate campaign ROI and lift"""
-        lift = (revenue - (baseline_conversion * 100)) / (baseline_conversion * 100) if baseline_conversion > 0 else 0
+        lift = (
+            (revenue - (baseline_conversion * 100)) / (baseline_conversion * 100)
+            if baseline_conversion > 0
+            else 0
+        )
         roi = ((revenue - cost) / cost * 100) if cost > 0 else 0
 
         return {
@@ -396,7 +454,7 @@ class CustomerFOMOCampaignService:
         }
 
     @staticmethod
-    async def get_competitor_benchmarks(industry: str) -> Dict[str, Any]:
+    async def get_competitor_benchmarks(industry: str) -> dict[str, Any]:
         """Get benchmarks for industry"""
         benchmarks = {
             "ecommerce": {
@@ -427,10 +485,12 @@ class CustomerFOMOCampaignService:
         if format == "csv":
             return "date,impressions,clicks,conversions,revenue,roi\n2026-08-27,5140,950,142,4271.50,3.42"
         elif format == "json":
-            return json.dumps({
-                "campaign_id": campaign_id,
-                "export_date": datetime.utcnow().isoformat(),
-                "data": []
-            })
+            return json.dumps(
+                {
+                    "campaign_id": campaign_id,
+                    "export_date": utc_now().isoformat(),
+                    "data": [],
+                }
+            )
         else:
             return ""

@@ -5,17 +5,15 @@ Dopamine-driven: podiums, streak flames, near-overtake messaging.
 """
 
 import uuid
-from typing import List, Optional, Dict, Any
-from decimal import Decimal
+from typing import Any
 
-from sqlalchemy import select, func, desc, over
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.gamification.models import UserGamificationProfile
-from app.domains.users.models import User
-from app.domains.security.models import BusinessUserRole
 from app.domains.businesses.models import Business
-
+from app.domains.gamification.models import UserGamificationProfile
+from app.domains.security.models import BusinessUserRole
+from app.domains.users.models import User
 
 # Valid metrics for ranking
 VALID_METRICS = {
@@ -53,9 +51,7 @@ class LeaderboardService:
     ) -> bool:
         """Check if user has access to the business."""
         # Superuser bypass
-        result = await self.db.execute(
-            select(User).where(User.id == user_id)
-        )
+        result = await self.db.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
         if user and user.is_superuser:
             return True
@@ -78,10 +74,7 @@ class LeaderboardService:
                 Business.user_id == user_id,
             )
         )
-        if result.scalar_one_or_none():
-            return True
-
-        return False
+        return bool(result.scalar_one_or_none())
 
     async def get_leaderboard(
         self,
@@ -89,7 +82,7 @@ class LeaderboardService:
         metric: str = DEFAULT_METRIC,
         period: str = "all_time",
         limit: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get ranked leaderboard for a business."""
         if metric not in VALID_METRICS:
             metric = DEFAULT_METRIC
@@ -105,9 +98,15 @@ class LeaderboardService:
                 UserGamificationProfile.level.label("level"),
                 UserGamificationProfile.total_xp.label("total_xp"),
                 UserGamificationProfile.total_sales_closed.label("total_sales_closed"),
-                UserGamificationProfile.total_revenue_generated.label("total_revenue_generated"),
-                UserGamificationProfile.total_referrals_generated.label("total_referrals_generated"),
-                UserGamificationProfile.current_login_streak.label("current_login_streak"),
+                UserGamificationProfile.total_revenue_generated.label(
+                    "total_revenue_generated"
+                ),
+                UserGamificationProfile.total_referrals_generated.label(
+                    "total_referrals_generated"
+                ),
+                UserGamificationProfile.current_login_streak.label(
+                    "current_login_streak"
+                ),
                 UserGamificationProfile.total_achievements.label("total_achievements"),
             )
             .select_from(BusinessUserRole)
@@ -131,19 +130,21 @@ class LeaderboardService:
 
         leaderboard = []
         for rank, row in enumerate(rows, start=1):
-            leaderboard.append({
-                "rank": rank,
-                "user_id": str(row.user_id),
-                "full_name": row.full_name or "Sin nombre",
-                "email": row.email or "",
-                "level": row.level or 1,
-                "total_xp": row.total_xp or 0,
-                "total_sales_closed": row.total_sales_closed or 0,
-                "total_revenue_generated": float(row.total_revenue_generated or 0),
-                "total_referrals_generated": row.total_referrals_generated or 0,
-                "current_login_streak": row.current_login_streak or 0,
-                "total_achievements": row.total_achievements or 0,
-            })
+            leaderboard.append(
+                {
+                    "rank": rank,
+                    "user_id": str(row.user_id),
+                    "full_name": row.full_name or "Sin nombre",
+                    "email": row.email or "",
+                    "level": row.level or 1,
+                    "total_xp": row.total_xp or 0,
+                    "total_sales_closed": row.total_sales_closed or 0,
+                    "total_revenue_generated": float(row.total_revenue_generated or 0),
+                    "total_referrals_generated": row.total_referrals_generated or 0,
+                    "current_login_streak": row.current_login_streak or 0,
+                    "total_achievements": row.total_achievements or 0,
+                }
+            )
 
         return leaderboard
 
@@ -152,7 +153,7 @@ class LeaderboardService:
         business_id: uuid.UUID,
         user_id: uuid.UUID,
         metric: str = DEFAULT_METRIC,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get a specific user's rank and stats."""
         if metric not in VALID_METRICS:
             metric = DEFAULT_METRIC
@@ -168,9 +169,15 @@ class LeaderboardService:
                 UserGamificationProfile.level.label("level"),
                 UserGamificationProfile.total_xp.label("total_xp"),
                 UserGamificationProfile.total_sales_closed.label("total_sales_closed"),
-                UserGamificationProfile.total_revenue_generated.label("total_revenue_generated"),
-                UserGamificationProfile.total_referrals_generated.label("total_referrals_generated"),
-                UserGamificationProfile.current_login_streak.label("current_login_streak"),
+                UserGamificationProfile.total_revenue_generated.label(
+                    "total_revenue_generated"
+                ),
+                UserGamificationProfile.total_referrals_generated.label(
+                    "total_referrals_generated"
+                ),
+                UserGamificationProfile.current_login_streak.label(
+                    "current_login_streak"
+                ),
                 UserGamificationProfile.total_achievements.label("total_achievements"),
             )
             .select_from(BusinessUserRole)
@@ -230,7 +237,7 @@ class LeaderboardService:
         user_id: uuid.UUID,
         metric: str = DEFAULT_METRIC,
         radius: int = 2,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get users ranked near the current user (±radius positions)."""
         if metric not in VALID_METRICS:
             metric = DEFAULT_METRIC
@@ -245,9 +252,15 @@ class LeaderboardService:
                 UserGamificationProfile.level.label("level"),
                 UserGamificationProfile.total_xp.label("total_xp"),
                 UserGamificationProfile.total_sales_closed.label("total_sales_closed"),
-                UserGamificationProfile.total_revenue_generated.label("total_revenue_generated"),
-                UserGamificationProfile.total_referrals_generated.label("total_referrals_generated"),
-                UserGamificationProfile.current_login_streak.label("current_login_streak"),
+                UserGamificationProfile.total_revenue_generated.label(
+                    "total_revenue_generated"
+                ),
+                UserGamificationProfile.total_referrals_generated.label(
+                    "total_referrals_generated"
+                ),
+                UserGamificationProfile.current_login_streak.label(
+                    "current_login_streak"
+                ),
                 UserGamificationProfile.total_achievements.label("total_achievements"),
             )
             .select_from(BusinessUserRole)
@@ -283,19 +296,21 @@ class LeaderboardService:
 
         nearby = []
         for offset, row in enumerate(nearby_rows, start=start):
-            nearby.append({
-                "rank": offset + 1,
-                "user_id": str(row.user_id),
-                "full_name": row.full_name or "Sin nombre",
-                "email": row.email or "",
-                "level": row.level or 1,
-                "total_xp": row.total_xp or 0,
-                "total_sales_closed": row.total_sales_closed or 0,
-                "total_revenue_generated": float(row.total_revenue_generated or 0),
-                "total_referrals_generated": row.total_referrals_generated or 0,
-                "current_login_streak": row.current_login_streak or 0,
-                "total_achievements": row.total_achievements or 0,
-            })
+            nearby.append(
+                {
+                    "rank": offset + 1,
+                    "user_id": str(row.user_id),
+                    "full_name": row.full_name or "Sin nombre",
+                    "email": row.email or "",
+                    "level": row.level or 1,
+                    "total_xp": row.total_xp or 0,
+                    "total_sales_closed": row.total_sales_closed or 0,
+                    "total_revenue_generated": float(row.total_revenue_generated or 0),
+                    "total_referrals_generated": row.total_referrals_generated or 0,
+                    "current_login_streak": row.current_login_streak or 0,
+                    "total_achievements": row.total_achievements or 0,
+                }
+            )
 
         return {
             "user_rank": user_index + 1,
@@ -306,7 +321,7 @@ class LeaderboardService:
     async def get_team_stats(
         self,
         business_id: uuid.UUID,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Aggregate stats for the whole business team."""
         # Count active members
         count_stmt = (
@@ -324,9 +339,15 @@ class LeaderboardService:
         # Aggregate gamification stats
         agg_stmt = (
             select(
-                func.coalesce(func.sum(UserGamificationProfile.total_sales_closed), 0).label("total_sales"),
-                func.coalesce(func.sum(UserGamificationProfile.total_revenue_generated), 0).label("total_revenue"),
-                func.coalesce(func.avg(UserGamificationProfile.current_login_streak), 0).label("avg_streak"),
+                func.coalesce(
+                    func.sum(UserGamificationProfile.total_sales_closed), 0
+                ).label("total_sales"),
+                func.coalesce(
+                    func.sum(UserGamificationProfile.total_revenue_generated), 0
+                ).label("total_revenue"),
+                func.coalesce(
+                    func.avg(UserGamificationProfile.current_login_streak), 0
+                ).label("avg_streak"),
             )
             .select_from(BusinessUserRole)
             .join(User, BusinessUserRole.user_id == User.id)

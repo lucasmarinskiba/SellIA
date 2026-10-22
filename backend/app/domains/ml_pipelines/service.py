@@ -1,10 +1,15 @@
 """Phase 2: ML Pipeline Service - Predictive Models."""
-from typing import Optional
+
 from uuid import UUID
-from datetime import datetime, timezone, timedelta
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import select
-from app.domains.ml_pipelines.models import LeadScoringModel, ChurnPredictionModel, CLVModel, ChannelRoutingModel
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.domains.ml_pipelines.models import (
+    ChurnPredictionModel,
+    CLVModel,
+    LeadScoringModel,
+)
 
 
 class MLPipelineService:
@@ -49,7 +54,9 @@ class MLPipelineService:
         )
 
         # Confidence (0-1) based on data richness
-        data_points = sum([1 for x in [email_opens, phone_calls, website_visits] if x > 0])
+        data_points = sum(
+            [1 for x in [email_opens, phone_calls, website_visits] if x > 0]
+        )
         confidence = min(0.5 + (data_points * 0.15), 1.0)
 
         # Tier classification
@@ -125,7 +132,7 @@ class MLPipelineService:
         total_lifetime_value: float,
         purchase_frequency_per_month: float,
         support_tickets: int,
-        nps_score: Optional[int] = None,
+        nps_score: int | None = None,
     ) -> ChurnPredictionModel:
         """Predict churn probability."""
         # Churn risk factors (simplified)
@@ -223,8 +230,14 @@ class MLPipelineService:
     ) -> CLVModel:
         """Calculate Customer Lifetime Value."""
         avg_order_value = total_spent / total_orders if total_orders > 0 else 0
-        purchase_frequency = total_orders / (customer_lifespan_days / 30) if customer_lifespan_days > 0 else 0
-        repeat_rate = min((total_orders - 1) / total_orders if total_orders > 1 else 0, 1.0)
+        purchase_frequency = (
+            total_orders / (customer_lifespan_days / 30)
+            if customer_lifespan_days > 0
+            else 0
+        )
+        repeat_rate = min(
+            (total_orders - 1) / total_orders if total_orders > 1 else 0, 1.0
+        )
 
         # CLV formula: AOV × Purchase Frequency × Customer Lifespan (36 months)
         predicted_clv_12m = avg_order_value * purchase_frequency * 12
@@ -249,7 +262,8 @@ class MLPipelineService:
         # Save or update
         result = await db.execute(
             select(CLVModel).where(
-                (CLVModel.business_id == business_id) & (CLVModel.customer_id == customer_id)
+                (CLVModel.business_id == business_id)
+                & (CLVModel.customer_id == customer_id)
             )
         )
         clv_model = result.scalar()
@@ -268,7 +282,9 @@ class MLPipelineService:
                 total_spent=total_spent,
                 total_orders=total_orders,
                 avg_order_value=avg_order_value,
-                purchase_frequency_days=365 / purchase_frequency if purchase_frequency > 0 else 0,
+                purchase_frequency_days=(
+                    365 / purchase_frequency if purchase_frequency > 0 else 0
+                ),
                 customer_lifespan_days=customer_lifespan_days,
                 repeat_rate=repeat_rate,
                 predicted_clv_12m=predicted_clv_12m,

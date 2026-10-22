@@ -3,10 +3,12 @@ Analytics & Monitoring API v1 — Phase 5
 Real-time dashboards, conversion funnels, A/B testing, anomaly detection
 """
 
-from fastapi import APIRouter, HTTPException, Query
-from typing import Optional, Dict, Any, List
-from datetime import datetime, timedelta
-import json
+from datetime import timedelta
+from typing import Any
+
+from fastapi import APIRouter, Query
+
+from app.core.clock import utc_now
 
 router = APIRouter(tags=["analytics"])
 
@@ -16,21 +18,21 @@ SITE_URL = "https://sellia-brain.vercel.app"
 @router.post("/track-event")
 async def track_event(
     event_name: str,
-    user_id: Optional[str] = None,
-    page: Optional[str] = None,
-    properties: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+    user_id: str | None = None,
+    page: str | None = None,
+    properties: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """
     Track user event for analytics
     Events: page_view, click, scroll, form_submit, purchase_intent
     """
     return {
         "status": "tracked",
-        "event_id": f"evt_{datetime.utcnow().timestamp()}",
+        "event_id": f"evt_{utc_now().timestamp()}",
         "event": event_name,
         "user_id": user_id or "anonymous",
         "page": page,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
         "metadata": {
             "tracked_properties": len(properties or {}),
             "data_warehouse": "clickhouse-ready",
@@ -40,9 +42,11 @@ async def track_event(
 
 @router.get("/funnel/conversion")
 async def get_conversion_funnel(
-    funnel_name: str = Query("default", description="Funnel: default|premium|testimonials"),
+    funnel_name: str = Query(
+        "default", description="Funnel: default|premium|testimonials"
+    ),
     days: int = Query(7, ge=1, le=90),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get conversion funnel data
     Funnels: landing → signup → trial → paid
@@ -151,13 +155,15 @@ async def get_conversion_funnel(
         "@type": "Dataset",
         "name": funnel["name"],
         "description": f"Conversion funnel data for last {days} days",
-        "dateModified": datetime.utcnow().isoformat(),
+        "dateModified": utc_now().isoformat(),
         "funnel": funnel_name,
         "time_period_days": days,
         "stages": funnel["stages"],
         "summary": {
             "total_entries": funnel["stages"][0]["value"] if funnel["stages"] else 0,
-            "total_conversions": funnel["stages"][-1]["value"] if funnel["stages"] else 0,
+            "total_conversions": (
+                funnel["stages"][-1]["value"] if funnel["stages"] else 0
+            ),
             "overall_conversion_rate": (
                 (funnel["stages"][-1]["value"] / funnel["stages"][0]["value"] * 100)
                 if funnel["stages"]
@@ -168,13 +174,13 @@ async def get_conversion_funnel(
 
 
 @router.get("/ab-test/active")
-async def get_active_ab_tests() -> Dict[str, Any]:
+async def get_active_ab_tests() -> dict[str, Any]:
     """Get all active A/B tests and their performance"""
     return {
         "@context": "https://schema.org",
         "@type": "Dataset",
         "name": "Active A/B Tests",
-        "dateModified": datetime.utcnow().isoformat(),
+        "dateModified": utc_now().isoformat(),
         "tests": [
             {
                 "id": "test-cta-color",
@@ -236,28 +242,28 @@ async def create_ab_test(
     control_url: str,
     variant_url: str,
     traffic_split: int = 50,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Create new A/B test"""
     return {
         "status": "created",
-        "test_id": f"test_{datetime.utcnow().timestamp()}",
+        "test_id": f"test_{utc_now().timestamp()}",
         "name": test_name,
         "control": control_url,
         "variant": variant_url,
         "traffic_split_percent": traffic_split,
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": utc_now().isoformat(),
         "expected_duration_days": 14,
     }
 
 
 @router.get("/anomalies/seo")
-async def detect_seo_anomalies() -> Dict[str, Any]:
+async def detect_seo_anomalies() -> dict[str, Any]:
     """Detect SEO anomalies in traffic, rankings, indexing"""
     return {
         "@context": "https://schema.org",
         "@type": "Dataset",
         "name": "SEO Anomaly Detection",
-        "dateModified": datetime.utcnow().isoformat(),
+        "dateModified": utc_now().isoformat(),
         "anomalies": [
             {
                 "type": "indexing_drop",
@@ -266,7 +272,7 @@ async def detect_seo_anomalies() -> Dict[str, Any]:
                 "description": "2 URLs lost Google index status in last 24h",
                 "affected_urls": ["/api/endpoint-1", "/old-page"],
                 "recommended_action": "Check robots.txt, resubmit sitemap",
-                "timestamp": (datetime.utcnow() - timedelta(hours=3)).isoformat(),
+                "timestamp": (utc_now() - timedelta(hours=3)).isoformat(),
             },
             {
                 "type": "traffic_spike",
@@ -275,7 +281,7 @@ async def detect_seo_anomalies() -> Dict[str, Any]:
                 "description": "Traffic surge from 'sales automation' keywords",
                 "data": {"current": 1245, "previous": 860, "lift_percent": 45},
                 "recommended_action": "Analyze keyword rankings, update content",
-                "timestamp": (datetime.utcnow() - timedelta(hours=1)).isoformat(),
+                "timestamp": (utc_now() - timedelta(hours=1)).isoformat(),
             },
             {
                 "type": "ranking_movement",
@@ -291,7 +297,7 @@ async def detect_seo_anomalies() -> Dict[str, Any]:
                     },
                 ],
                 "recommended_action": "Content update, backlink building",
-                "timestamp": (datetime.utcnow() - timedelta(hours=6)).isoformat(),
+                "timestamp": (utc_now() - timedelta(hours=6)).isoformat(),
             },
         ],
         "summary": {
@@ -304,13 +310,13 @@ async def detect_seo_anomalies() -> Dict[str, Any]:
 
 
 @router.get("/performance/core-web-vitals")
-async def get_core_web_vitals() -> Dict[str, Any]:
+async def get_core_web_vitals() -> dict[str, Any]:
     """Get Core Web Vitals metrics"""
     return {
         "@context": "https://schema.org",
         "@type": "Dataset",
         "name": "Core Web Vitals",
-        "dateModified": datetime.utcnow().isoformat(),
+        "dateModified": utc_now().isoformat(),
         "metrics": {
             "LCP": {
                 "name": "Largest Contentful Paint",
@@ -335,14 +341,14 @@ async def get_core_web_vitals() -> Dict[str, Any]:
             },
         },
         "overall_status": "good",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     }
 
 
 @router.get("/personalization/user-segment")
 async def get_user_segment(
     user_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get ML personalization score for user
     Uses Phase 4 embeddings to score content affinity
@@ -380,13 +386,13 @@ async def get_user_segment(
 
 
 @router.get("/dashboard/seo-metrics")
-async def get_seo_dashboard() -> Dict[str, Any]:
+async def get_seo_dashboard() -> dict[str, Any]:
     """Real-time SEO metrics dashboard"""
     return {
         "@context": "https://schema.org",
         "@type": "Dataset",
         "name": "SEO Metrics Dashboard",
-        "dateModified": datetime.utcnow().isoformat(),
+        "dateModified": utc_now().isoformat(),
         "metrics": {
             "organic_traffic": {
                 "value": 2847,
@@ -442,13 +448,13 @@ async def get_seo_dashboard() -> Dict[str, Any]:
 
 
 @router.get("/dashboard/marketing-metrics")
-async def get_marketing_dashboard() -> Dict[str, Any]:
+async def get_marketing_dashboard() -> dict[str, Any]:
     """Real-time marketing & conversion dashboard"""
     return {
         "@context": "https://schema.org",
         "@type": "Dataset",
         "name": "Marketing Metrics Dashboard",
-        "dateModified": datetime.utcnow().isoformat(),
+        "dateModified": utc_now().isoformat(),
         "metrics": {
             "total_visits": {
                 "value": 15234,

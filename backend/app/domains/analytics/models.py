@@ -1,9 +1,21 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Integer, Float, Numeric, Text, Enum as SQLEnum, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB, INET
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+)
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import INET, JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -22,7 +34,12 @@ class AnalyticsEvent(Base):
     __tablename__ = "analytics_events"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    website_id = Column(UUID(as_uuid=True), ForeignKey("websites.id", ondelete="CASCADE"), nullable=False, index=True)
+    website_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("websites.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     event_type = Column(SQLEnum(EventType), nullable=False, index=True)
     event_name = Column(String(255), nullable=True)
@@ -43,13 +60,15 @@ class AnalyticsEvent(Base):
     duration_ms = Column(Integer, nullable=True)
     scroll_depth = Column(Float, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True
+    )
 
     website = relationship("Website", foreign_keys=[website_id])
 
     __table_args__ = (
-        Index('idx_analytics_website_date', 'website_id', 'created_at'),
-        Index('idx_analytics_event_date', 'event_type', 'created_at'),
+        Index("idx_analytics_website_date", "website_id", "created_at"),
+        Index("idx_analytics_event_date", "event_type", "created_at"),
     )
 
 
@@ -57,7 +76,12 @@ class Conversion(Base):
     __tablename__ = "conversions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    website_id = Column(UUID(as_uuid=True), ForeignKey("websites.id", ondelete="CASCADE"), nullable=False, index=True)
+    website_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("websites.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     conversion_type = Column(String(100), nullable=False)
     conversion_value = Column(Float, nullable=True)
@@ -69,13 +93,13 @@ class Conversion(Base):
 
     event_metadata = Column("metadata", JSONB, default=dict, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True
+    )
 
     website = relationship("Website", foreign_keys=[website_id])
 
-    __table_args__ = (
-        Index('idx_conversion_website_date', 'website_id', 'created_at'),
-    )
+    __table_args__ = (Index("idx_conversion_website_date", "website_id", "created_at"),)
 
 
 # ============================================================
@@ -87,11 +111,17 @@ class Conversion(Base):
 # 1:1 (each schema has model_config = ConfigDict(from_attributes=True)).
 # ============================================================
 
+
 class FunnelMetric(Base):
     __tablename__ = "funnel_metrics"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     period = Column(String(50), nullable=False)
     period_type = Column(String(20), nullable=False, default="monthly")
@@ -110,10 +140,12 @@ class FunnelMetric(Base):
     revenue_total = Column(Numeric(14, 2), default=0, nullable=False)
     avg_order_value = Column(Numeric(14, 2), default=0, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True
+    )
 
     __table_args__ = (
-        Index('idx_funnel_metrics_business_created', 'business_id', 'created_at'),
+        Index("idx_funnel_metrics_business_created", "business_id", "created_at"),
     )
 
 
@@ -121,7 +153,12 @@ class CohortMetric(Base):
     __tablename__ = "cohort_metrics"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     cohort_month = Column(String(7), nullable=False)  # "YYYY-MM"
     cohort_size = Column(Integer, default=0, nullable=False)
@@ -130,10 +167,12 @@ class CohortMetric(Base):
     revenue = Column(Numeric(14, 2), default=0, nullable=False)
     retention_rate = Column(Numeric(6, 4), default=0, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True
+    )
 
     __table_args__ = (
-        Index('idx_cohort_metrics_business_month', 'business_id', 'cohort_month'),
+        Index("idx_cohort_metrics_business_month", "business_id", "cohort_month"),
     )
 
 
@@ -141,8 +180,18 @@ class ChurnPrediction(Base):
     __tablename__ = "bi_churn_predictions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    conversation_id = Column(UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    conversation_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("conversations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     risk_level = Column(String(20), nullable=False, default="low")  # low/medium/high
     churn_probability = Column(Numeric(6, 4), default=0, nullable=False)
@@ -152,15 +201,27 @@ class ChurnPrediction(Base):
     model_version = Column(String(50), nullable=False, default="v1")
     is_active = Column(Boolean, default=True, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True
+    )
 
 
 class LtvPrediction(Base):
     __tablename__ = "ltv_predictions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    conversation_id = Column(UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    conversation_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("conversations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     predicted_ltv = Column(Numeric(14, 2), default=0, nullable=False)
     predicted_orders = Column(Integer, default=0, nullable=False)
@@ -170,17 +231,26 @@ class LtvPrediction(Base):
     model_version = Column(String(50), nullable=False, default="v1")
     is_active = Column(Boolean, default=True, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True
+    )
 
 
 class InsightAlert(Base):
     __tablename__ = "insight_alerts"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     insight_type = Column(String(50), nullable=False)
-    severity = Column(String(20), nullable=False, default="info")  # info/warning/critical
+    severity = Column(
+        String(20), nullable=False, default="info"
+    )  # info/warning/critical
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     metric_name = Column(String(100), nullable=True)
@@ -190,8 +260,10 @@ class InsightAlert(Base):
     action_result = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True
+    )
 
     __table_args__ = (
-        Index('idx_insight_alerts_business_active', 'business_id', 'is_active'),
+        Index("idx_insight_alerts_business_active", "business_id", "is_active"),
     )

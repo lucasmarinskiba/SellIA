@@ -3,21 +3,20 @@
 Chequea si un toggle está enabled y dentro de límite antes de ejecutar endpoints.
 """
 
-import json
+import logging
+from collections.abc import Callable
 from uuid import UUID
-from datetime import datetime, timezone
-from typing import Callable, Optional, Dict, List
 
-from fastapi import Request, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import HTTPException, Request
 from sqlalchemy import select
 
 from app.core.database import get_db
 from app.domains.automations.models import AutomationToggle
 
+logger = logging.getLogger(__name__)
 
 # Mapeo de rutas → toggle_key que requireren
-PROTECTED_ROUTES: Dict[str, str] = {
+PROTECTED_ROUTES: dict[str, str] = {
     "/api/v1/computer_use": "feature:computer_use",
     "/api/v1/sales_agents/lead_score": "agent:lead_scorer",
     "/api/v1/sales_agents/negotiate": "agent:negotiation",
@@ -33,7 +32,7 @@ PROTECTED_ROUTES: Dict[str, str] = {
 }
 
 
-def _map_request_to_toggle(request_path: str) -> Optional[str]:
+def _map_request_to_toggle(request_path: str) -> str | None:
     """Mapea request path → toggle_key requerido. Retorna None si no requiere check."""
     for protected_prefix, toggle_key in PROTECTED_ROUTES.items():
         if request_path.startswith(protected_prefix):
@@ -41,7 +40,7 @@ def _map_request_to_toggle(request_path: str) -> Optional[str]:
     return None
 
 
-def _extract_business_id(request: Request) -> Optional[UUID]:
+def _extract_business_id(request: Request) -> UUID | None:
     """Extrae business_id del request (query param o header)."""
     # Try query param first
     business_id_str = request.query_params.get("business_id")
@@ -66,7 +65,7 @@ def _extract_business_id(request: Request) -> Optional[UUID]:
             # Better approach: use a Depends(get_business_id) in each endpoint
             pass
         except Exception:
-            pass
+            logger.exception("_extract_business_id: error inesperado")
 
     return None
 
@@ -118,12 +117,13 @@ async def toggle_enforcement_middleware(request: Request, call_next: Callable) -
             )
 
         # Validar que no haya alcanzado límite
-        if toggle and toggle.monthly_limit:
-            if toggle.current_month_usage >= toggle.monthly_limit:
-                raise HTTPException(
-                    status_code=429,
-                    detail=f"Límite mensual alcanzado: {toggle.monthly_limit} usos. Intenta el próximo mes.",
-                )
+        if (
+            toggle and toggle.monthly_limit
+        ) and toggle.current_month_usage >= toggle.monthly_limit:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Límite mensual alcanzado: {toggle.monthly_limit} usos. Intenta el próximo mes.",
+            )
 
         # Ejecutar endpoint
         response = await call_next(request)
@@ -136,6 +136,7 @@ async def toggle_enforcement_middleware(request: Request, call_next: Callable) -
             # Check if usage reached/exceeded limit and send notification
             if toggle.current_month_usage >= toggle.monthly_limit:
                 from app.domains.automations.tasks import send_toggle_notification
+
                 try:
                     await send_toggle_notification(
                         db=db_session,
@@ -145,6 +146,7 @@ async def toggle_enforcement_middleware(request: Request, call_next: Callable) -
                         toggle_name=toggle.display_name,
                     )
                 except Exception as e:
+                    logger.exception("toggle_enforcement_middleware: error inesperado")
                     print(f"[toggle_enforcement] Error sending notification: {e}")
 
         return response
@@ -153,5 +155,6 @@ async def toggle_enforcement_middleware(request: Request, call_next: Callable) -
         raise
     except Exception as e:
         # Log pero no bloquear
+        logger.exception("toggle_enforcement_middleware: error inesperado")
         print(f"[toggle_enforcement] Error: {e}")
         return await call_next(request)

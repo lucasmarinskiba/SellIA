@@ -1,19 +1,24 @@
 """Acquisition Orchestrator API: X9→X10→X12→X11 funnel automation."""
-from fastapi import APIRouter, Depends, Body
+
+from typing import Annotated
+
+from fastapi import APIRouter, Body, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import get_db
 from app.domains.acquisition_orchestrator.service import AcquisitionOrchestrator
 
-
-router = APIRouter(prefix="/api/v1/acquisition-orchestrator", tags=["acquisition-orchestrator"])
+router = APIRouter(
+    prefix="/api/v1/acquisition-orchestrator", tags=["acquisition-orchestrator"]
+)
 
 
 @router.post("/run-full-sequence")
 async def run_full_acquisition_sequence(
-    user_data: dict = Body(...),
-    engagement_data: dict = Body(...),
-    company_data: dict = Body(...),
-    db: AsyncSession = Depends(get_db),
+    user_data: Annotated[dict, Body()],
+    engagement_data: Annotated[dict, Body()],
+    company_data: Annotated[dict, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Execute complete X9→X10→X12→X11 acquisition funnel."""
     return await AcquisitionOrchestrator.run_full_acquisition_sequence(

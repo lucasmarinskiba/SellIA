@@ -5,9 +5,9 @@ Fase 1+2+3 convergence: integra knowledge + Computer Use + dashboards.
 """
 
 import logging
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
-import asyncio
+from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class MultiPlatformOrchestrator:
 
     # ========== FASE 1: INVENTORY SYNC ==========
 
-    async def sync_inventory_realtime(self) -> Dict[str, Any]:
+    async def sync_inventory_realtime(self) -> dict[str, Any]:
         """
         Sincroniza stock DB → todas plataformas.
 
@@ -39,7 +39,9 @@ class MultiPlatformOrchestrator:
 
         logger.info("Starting real-time inventory sync")
 
-        master_inventory = await self.db.query("SELECT sku, quantity FROM inventory WHERE enabled = true")
+        master_inventory = await self.db.query(
+            "SELECT sku, quantity FROM inventory WHERE enabled = true"
+        )
 
         results = {
             "total_skus": len(master_inventory),
@@ -71,10 +73,12 @@ class MultiPlatformOrchestrator:
 
                     if update_result["status"] == "success":
                         results["synced"] += 1
-                        results["platforms"].setdefault(platform, []).append({
-                            "sku": sku,
-                            "updated": master_qty,
-                        })
+                        results["platforms"].setdefault(platform, []).append(
+                            {
+                                "sku": sku,
+                                "updated": master_qty,
+                            }
+                        )
                         # Actualizar DB listing
                         await self.db.execute(
                             "UPDATE listings SET current_qty = %s, last_sync = NOW() WHERE platform = %s AND platform_listing_id = %s",
@@ -82,14 +86,18 @@ class MultiPlatformOrchestrator:
                         )
                     else:
                         results["failed"] += 1
-                        logger.error(f"Failed to sync {sku} on {platform}: {update_result.get('error')}")
+                        logger.error(
+                            f"Failed to sync {sku} on {platform}: {update_result.get('error')}"
+                        )
 
-        logger.info(f"Inventory sync complete: {results['synced']} synced, {results['failed']} failed")
+        logger.info(
+            f"Inventory sync complete: {results['synced']} synced, {results['failed']} failed"
+        )
         return results
 
     async def _update_platform_stock(
         self, platform: str, listing_id: str, quantity: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Computer Use actualiza stock en plataforma.
 
@@ -99,34 +107,67 @@ class MultiPlatformOrchestrator:
         if platform == "mercadolibre":
             # Navigate to ML listing editor
             actions = [
-                {"type": "navigate", "params": {"url": f"https://www.mercadolibre.com.ar/mip/items/{listing_id}"}},
-                {"type": "click", "params": {"selector": "button[aria-label='Editar']"}},
-                {"type": "fill_form", "params": {"fields": {"input[name='quantity']": str(quantity)}}},
+                {
+                    "type": "navigate",
+                    "params": {
+                        "url": f"https://www.mercadolibre.com.ar/mip/items/{listing_id}"
+                    },
+                },
+                {
+                    "type": "click",
+                    "params": {"selector": "button[aria-label='Editar']"},
+                },
+                {
+                    "type": "fill_form",
+                    "params": {"fields": {"input[name='quantity']": str(quantity)}},
+                },
                 {"type": "click", "params": {"selector": "button:has-text('Guardar')"}},
-                {"type": "screenshot", "params": {"filename": f"ml_sync_{listing_id}.png"}},
+                {
+                    "type": "screenshot",
+                    "params": {"filename": f"ml_sync_{listing_id}.png"},
+                },
             ]
             result = await self.browser_agent.execute_workflow(
                 f"sync_ml_{listing_id}", actions
             )
-            return {"status": "success" if result.get("completed") == len(actions) else "failed", "error": result.get("error")}
+            return {
+                "status": (
+                    "success" if result.get("completed") == len(actions) else "failed"
+                ),
+                "error": result.get("error"),
+            }
 
         elif platform == "shopify":
             actions = [
-                {"type": "navigate", "params": {"url": f"https://admin.shopify.com/products/{listing_id}"}},
-                {"type": "fill_form", "params": {"fields": {"input[placeholder*='Quantity']": str(quantity)}}},
+                {
+                    "type": "navigate",
+                    "params": {
+                        "url": f"https://admin.shopify.com/products/{listing_id}"
+                    },
+                },
+                {
+                    "type": "fill_form",
+                    "params": {
+                        "fields": {"input[placeholder*='Quantity']": str(quantity)}
+                    },
+                },
                 {"type": "click", "params": {"selector": "button:has-text('Save')"}},
             ]
             result = await self.browser_agent.execute_workflow(
                 f"sync_shopify_{listing_id}", actions
             )
-            return {"status": "success" if result.get("completed") == len(actions) else "failed"}
+            return {
+                "status": (
+                    "success" if result.get("completed") == len(actions) else "failed"
+                )
+            }
 
         # Agregar más plataformas según sea necesario
         return {"status": "error", "error": f"Platform {platform} not supported"}
 
     # ========== FASE 2: INFLUENCER TRACKING ==========
 
-    async def track_influencer_sales(self) -> Dict[str, Any]:
+    async def track_influencer_sales(self) -> dict[str, Any]:
         """
         Monitorea ventas por influencer + calcula comisiones automáticamente.
         """
@@ -137,7 +178,12 @@ class MultiPlatformOrchestrator:
             "SELECT id, name, promo_code, commission_rate FROM influencers WHERE active = true"
         )
 
-        results = {"tracked": 0, "total_revenue": 0, "commissions_owed": 0, "influencers": []}
+        results = {
+            "tracked": 0,
+            "total_revenue": 0,
+            "commissions_owed": 0,
+            "influencers": [],
+        }
 
         for influencer in influencers:
             infl_id = influencer["id"]
@@ -159,13 +205,15 @@ class MultiPlatformOrchestrator:
                 results["total_revenue"] += total_revenue
                 results["commissions_owed"] += commission_owed
 
-                results["influencers"].append({
-                    "influencer_id": infl_id,
-                    "name": influencer["name"],
-                    "sales_24h": count,
-                    "revenue_24h": total_revenue,
-                    "commission_owed": commission_owed,
-                })
+                results["influencers"].append(
+                    {
+                        "influencer_id": infl_id,
+                        "name": influencer["name"],
+                        "sales_24h": count,
+                        "revenue_24h": total_revenue,
+                        "commission_owed": commission_owed,
+                    }
+                )
 
                 # Auto-trigger payout si commission_owed > threshold
                 if commission_owed > 100:
@@ -183,7 +231,7 @@ class MultiPlatformOrchestrator:
 
     # ========== FASE 2: ANALYTICS EXTRACTION ==========
 
-    async def extract_platform_analytics(self) -> Dict[str, Any]:
+    async def extract_platform_analytics(self) -> dict[str, Any]:
         """
         Computer Use extrae dashboards analytics reales de cada plataforma.
 
@@ -193,14 +241,14 @@ class MultiPlatformOrchestrator:
         logger.info("Extracting platform analytics")
 
         platforms = ["mercadolibre", "amazon", "tiktok_shop", "ebay", "shopify"]
-        results = {"platforms": {}, "timestamp": datetime.utcnow().isoformat()}
+        results = {"platforms": {}, "timestamp": utc_now().isoformat()}
 
         for platform in platforms:
             try:
                 analytics = await self._extract_platform_metrics(platform)
                 results["platforms"][platform] = analytics
             except Exception as e:
-                logger.error(f"Failed to extract {platform} analytics: {str(e)}")
+                logger.exception(f"Failed to extract {platform} analytics")
                 results["platforms"][platform] = {"error": str(e)}
 
         # Guardar en cache (1 hora)
@@ -212,27 +260,38 @@ class MultiPlatformOrchestrator:
 
         return results
 
-    async def _extract_platform_metrics(self, platform: str) -> Dict[str, Any]:
+    async def _extract_platform_metrics(self, platform: str) -> dict[str, Any]:
         """
         Extrae métricas específicas por plataforma.
         """
 
         if platform == "mercadolibre":
             actions = [
-                {"type": "navigate", "params": {"url": "https://www.mercadolibre.com.ar/myaccount/seller-center"}},
+                {
+                    "type": "navigate",
+                    "params": {
+                        "url": "https://www.mercadolibre.com.ar/myaccount/seller-center"
+                    },
+                },
                 {"type": "screenshot", "params": {"filename": "ml_dashboard.png"}},
                 {"type": "ocr", "params": {"selector": "div.metrics"}},
             ]
 
         elif platform == "amazon":
             actions = [
-                {"type": "navigate", "params": {"url": "https://sellercentral.amazon.com/dashboard"}},
+                {
+                    "type": "navigate",
+                    "params": {"url": "https://sellercentral.amazon.com/dashboard"},
+                },
                 {"type": "screenshot", "params": {"filename": "amz_dashboard.png"}},
             ]
 
         elif platform == "tiktok_shop":
             actions = [
-                {"type": "navigate", "params": {"url": "https://seller.tiktok.com/dashboard"}},
+                {
+                    "type": "navigate",
+                    "params": {"url": "https://seller.tiktok.com/dashboard"},
+                },
                 {"type": "screenshot", "params": {"filename": "tt_dashboard.png"}},
             ]
 
@@ -246,13 +305,13 @@ class MultiPlatformOrchestrator:
         # Parsear OCR result (simplificado)
         return {
             "platform": platform,
-            "extracted_at": datetime.utcnow().isoformat(),
+            "extracted_at": utc_now().isoformat(),
             "status": "success" if result.get("completed") > 0 else "failed",
         }
 
     # ========== FASE 2: SENTIMENT ANALYSIS ==========
 
-    async def analyze_reviews_sentiment(self) -> Dict[str, Any]:
+    async def analyze_reviews_sentiment(self) -> dict[str, Any]:
         """
         Extrae reviews → OpenAI sentiment analysis → alertas automáticas.
         """
@@ -286,13 +345,16 @@ class MultiPlatformOrchestrator:
 
             # Si negativo + menciona alternativas = churn signal
             if sentiment == "negative" and any(
-                word in review["text"].lower() for word in ["otro", "competencia", "mejor", "no recomiendo"]
+                word in review["text"].lower()
+                for word in ["otro", "competencia", "mejor", "no recomiendo"]
             ):
-                results["churn_signals"].append({
-                    "review_id": review["id"],
-                    "platform": review["platform"],
-                    "signal": "Mentions alternatives",
-                })
+                results["churn_signals"].append(
+                    {
+                        "review_id": review["id"],
+                        "platform": review["platform"],
+                        "signal": "Mentions alternatives",
+                    }
+                )
 
             results["analyzed"] += 1
 
@@ -309,9 +371,15 @@ class MultiPlatformOrchestrator:
     async def _classify_sentiment(self, text: str) -> str:
         """Clasifica sentimiento (simple heurística, o integrar OpenAI)."""
         text_lower = text.lower()
-        if any(word in text_lower for word in ["excelente", "perfecto", "recomiendo", "muy bueno"]):
+        if any(
+            word in text_lower
+            for word in ["excelente", "perfecto", "recomiendo", "muy bueno"]
+        ):
             return "positive"
-        elif any(word in text_lower for word in ["malo", "pésimo", "no recomiendo", "decepción"]):
+        elif any(
+            word in text_lower
+            for word in ["malo", "pésimo", "no recomiendo", "decepción"]
+        ):
             return "negative"
         else:
             return "neutral"
@@ -323,7 +391,7 @@ class MultiPlatformOrchestrator:
 
     # ========== DASHBOARD REPORTING ==========
 
-    async def get_unified_dashboard(self) -> Dict[str, Any]:
+    async def get_unified_dashboard(self) -> dict[str, Any]:
         """
         Dashboard unificado: inventory, analytics, influencers, sentiment.
         """
@@ -342,7 +410,7 @@ class MultiPlatformOrchestrator:
         )
 
         return {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "inventory": {
                 "total_skus": inventory[0]["total_skus"] if inventory else 0,
                 "total_stock": inventory[0]["total_stock"] if inventory else 0,
@@ -352,8 +420,14 @@ class MultiPlatformOrchestrator:
                 "revenue_24h": sales_24h[0]["revenue"] if sales_24h else 0,
             },
             "sentiment": {
-                "positive": next((r["count"] for r in reviews if r["sentiment"] == "positive"), 0),
-                "neutral": next((r["count"] for r in reviews if r["sentiment"] == "neutral"), 0),
-                "negative": next((r["count"] for r in reviews if r["sentiment"] == "negative"), 0),
+                "positive": next(
+                    (r["count"] for r in reviews if r["sentiment"] == "positive"), 0
+                ),
+                "neutral": next(
+                    (r["count"] for r in reviews if r["sentiment"] == "neutral"), 0
+                ),
+                "negative": next(
+                    (r["count"] for r in reviews if r["sentiment"] == "negative"), 0
+                ),
             },
         }

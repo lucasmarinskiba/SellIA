@@ -7,11 +7,10 @@ Double Revenue Layer:
 Revenue Model: Freemium → usage-triggered upgrade → network effects → viral growth
 """
 
-from typing import List, Dict, Optional, Any, Tuple
 from dataclasses import dataclass
-from datetime import datetime, timedelta
 from enum import Enum
-import json
+from typing import Any
+
 from anthropic import Anthropic
 
 client_anthropic = Anthropic()
@@ -19,6 +18,7 @@ client_anthropic = Anthropic()
 
 class UserSegment(Enum):
     """User segments for targeted FOOM."""
+
     FREEMIUM_ACTIVE = "freemium_active"  # Using daily, high engagement
     FREEMIUM_STALE = "freemium_stale"  # Inactive 7+ days
     TRIAL_ENDING = "trial_ending"  # Trial expires in <7 days
@@ -29,6 +29,7 @@ class UserSegment(Enum):
 @dataclass
 class PlatformFOOMTrigger:
     """FOOM trigger for acquiring paying users."""
+
     user_segment: UserSegment
     trigger_type: str
     urgency_message: str
@@ -43,7 +44,9 @@ class PlatformMonetizationFOOM:
     def __init__(self, db):
         self.db = db
 
-    def get_upgrade_trigger(self, user_id: str, user_data: Dict[str, Any]) -> Optional[PlatformFOOMTrigger]:
+    def get_upgrade_trigger(
+        self, user_id: str, user_data: dict[str, Any]
+    ) -> PlatformFOOMTrigger | None:
         """Identify optimal upgrade trigger for user."""
         segment = self._classify_user_segment(user_data)
 
@@ -60,7 +63,7 @@ class PlatformMonetizationFOOM:
 
         return None
 
-    def _classify_user_segment(self, user_data: Dict[str, Any]) -> UserSegment:
+    def _classify_user_segment(self, user_data: dict[str, Any]) -> UserSegment:
         """Classify user into segment."""
         days_since_login = user_data.get("days_since_login", 0)
         login_count_7d = user_data.get("login_count_7d", 0)
@@ -85,9 +88,11 @@ class PlatformMonetizationFOOM:
 
         return UserSegment.FREEMIUM_ACTIVE
 
-    def _trigger_power_user_upsell(self, user_data: Dict[str, Any]) -> PlatformFOOMTrigger:
+    def _trigger_power_user_upsell(
+        self, user_data: dict[str, Any]
+    ) -> PlatformFOOMTrigger:
         """Upsell power users to premium tier."""
-        features_used = user_data.get("features_used", [])
+        user_data.get("features_used", [])
         feature_limit_hits = user_data.get("feature_limit_hits_7d", 0)
 
         return PlatformFOOMTrigger(
@@ -99,7 +104,9 @@ class PlatformMonetizationFOOM:
             expected_conversion=0.35,
         )
 
-    def _trigger_reengagement_with_offer(self, user_data: Dict[str, Any]) -> PlatformFOOMTrigger:
+    def _trigger_reengagement_with_offer(
+        self, user_data: dict[str, Any]
+    ) -> PlatformFOOMTrigger:
         """Re-engage stale users with time-limited offer."""
         days_inactive = user_data.get("days_since_login", 0)
 
@@ -112,7 +119,9 @@ class PlatformMonetizationFOOM:
             expected_conversion=0.22,
         )
 
-    def _trigger_trial_conversion(self, user_data: Dict[str, Any]) -> PlatformFOOMTrigger:
+    def _trigger_trial_conversion(
+        self, user_data: dict[str, Any]
+    ) -> PlatformFOOMTrigger:
         """Convert ending trials to paid."""
         days_left = user_data.get("days_until_trial_end", 0)
         features_used = len(user_data.get("features_used", []))
@@ -126,7 +135,9 @@ class PlatformMonetizationFOOM:
             expected_conversion=0.45,
         )
 
-    def _trigger_premium_tier_upgrade(self, user_data: Dict[str, Any]) -> PlatformFOOMTrigger:
+    def _trigger_premium_tier_upgrade(
+        self, user_data: dict[str, Any]
+    ) -> PlatformFOOMTrigger:
         """Upgrade premium to enterprise tier."""
         team_size = user_data.get("team_size", 1)
         calls_used = user_data.get("api_calls_month", 0)
@@ -140,9 +151,11 @@ class PlatformMonetizationFOOM:
             expected_conversion=0.28,
         )
 
-    def _trigger_retention_upgrade(self, user_data: Dict[str, Any]) -> PlatformFOOMTrigger:
+    def _trigger_retention_upgrade(
+        self, user_data: dict[str, Any]
+    ) -> PlatformFOOMTrigger:
         """Prevent churn by upgrading at-risk paid users."""
-        churn_risk = user_data.get("churn_risk", 0)
+        user_data.get("churn_risk", 0)
 
         return PlatformFOOMTrigger(
             user_segment=UserSegment.AT_RISK_PAID,
@@ -160,37 +173,34 @@ class UserFOOMEnablement:
     def __init__(self, db):
         self.db = db
 
-    def generate_user_foom_strategy(self, user_id: str, product_data: Dict[str, Any]) -> Dict[str, Any]:
+    def generate_user_foom_strategy(
+        self, user_id: str, product_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Generate complete FOOM selling strategy for user's product."""
         strategy = {
             "product_name": product_data.get("product_name"),
             "industry": product_data.get("industry"),
             "avg_deal_size": product_data.get("avg_deal_size", 5000),
-
             # 1. Scarcity levers
             "scarcity": self._generate_scarcity_levers(product_data),
-
             # 2. Social proof generators
             "social_proof": self._generate_social_proof_template(product_data),
-
             # 3. Urgency messaging
             "urgency_templates": self._generate_urgency_messages(product_data),
-
             # 4. FOOM content calendar
             "content_calendar": self._generate_foom_content_calendar(product_data),
-
             # 5. Landing page FOOM elements
             "landing_page_foom": self._generate_landing_page_foom(product_data),
-
             # 6. Email sequence with FOOM
             "email_sequence": self._generate_foom_email_sequence(product_data),
-
             # 7. Social media FOOM posts
             "social_posts": self._generate_social_foom_posts(product_data),
         }
         return strategy
 
-    def _generate_scarcity_levers(self, product_data: Dict[str, Any]) -> List[Dict[str, str]]:
+    def _generate_scarcity_levers(
+        self, product_data: dict[str, Any]
+    ) -> list[dict[str, str]]:
         """Generate real scarcity mechanisms."""
         return [
             {
@@ -219,7 +229,9 @@ class UserFOOMEnablement:
             },
         ]
 
-    def _generate_social_proof_template(self, product_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _generate_social_proof_template(
+        self, product_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Generate social proof data structure."""
         return {
             "customer_count": f"Join {product_data.get('customer_count', 500)}+ customers",
@@ -240,7 +252,7 @@ class UserFOOMEnablement:
             ],
         }
 
-    def _generate_urgency_messages(self, product_data: Dict[str, Any]) -> List[str]:
+    def _generate_urgency_messages(self, product_data: dict[str, Any]) -> list[str]:
         """Generate urgency messaging templates."""
         return [
             "Price increases next week—lock in current rate",
@@ -252,7 +264,9 @@ class UserFOOMEnablement:
             "Next cohort starts {date}—don't miss it",
         ]
 
-    def _generate_foom_content_calendar(self, product_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _generate_foom_content_calendar(
+        self, product_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Generate 4-week FOOM content calendar."""
         return {
             "week_1": {
@@ -267,15 +281,24 @@ class UserFOOMEnablement:
                 "theme": "Solution + FOOM",
                 "posts": [
                     {"day": "Monday", "content": "Solution overview (no pitch yet)"},
-                    {"day": "Wednesday", "content": "X people joined this week (social proof)"},
-                    {"day": "Friday", "content": "Price increase announcement (urgency)"},
+                    {
+                        "day": "Wednesday",
+                        "content": "X people joined this week (social proof)",
+                    },
+                    {
+                        "day": "Friday",
+                        "content": "Price increase announcement (urgency)",
+                    },
                 ],
             },
             "week_3": {
                 "theme": "Scarcity + Urgency",
                 "posts": [
                     {"day": "Monday", "content": "Limited spots remaining (scarcity)"},
-                    {"day": "Wednesday", "content": "FOMO post: competitors winning (loss aversion)"},
+                    {
+                        "day": "Wednesday",
+                        "content": "FOMO post: competitors winning (loss aversion)",
+                    },
                     {"day": "Friday", "content": "Last chance post (urgency)"},
                 ],
             },
@@ -289,7 +312,9 @@ class UserFOOMEnablement:
             },
         }
 
-    def _generate_landing_page_foom(self, product_data: Dict[str, Any]) -> Dict[str, str]:
+    def _generate_landing_page_foom(
+        self, product_data: dict[str, Any]
+    ) -> dict[str, str]:
         """Generate landing page FOOM elements."""
         return {
             "hero_headline": f"Join 500+ companies using {product_data.get('product_name')}—before pricing increases",
@@ -302,7 +327,9 @@ class UserFOOMEnablement:
             "fomo_section": "What you'll be able to do after joining",
         }
 
-    def _generate_foom_email_sequence(self, product_data: Dict[str, Any]) -> List[Dict[str, str]]:
+    def _generate_foom_email_sequence(
+        self, product_data: dict[str, Any]
+    ) -> list[dict[str, str]]:
         """Generate 5-email FOOM sequence."""
         return [
             {
@@ -337,7 +364,9 @@ class UserFOOMEnablement:
             },
         ]
 
-    def _generate_social_foom_posts(self, product_data: Dict[str, Any]) -> List[Dict[str, str]]:
+    def _generate_social_foom_posts(
+        self, product_data: dict[str, Any]
+    ) -> list[dict[str, str]]:
         """Generate 10 viral-ready social media posts."""
         return [
             {
@@ -374,30 +403,38 @@ class FOMOPerformanceOptimizer:
     def __init__(self, db):
         self.db = db
 
-    def optimize_foom_strategy(self, user_id: str, ab_test_results: Dict[str, Any]) -> Dict[str, Any]:
+    def optimize_foom_strategy(
+        self, user_id: str, ab_test_results: dict[str, Any]
+    ) -> dict[str, Any]:
         """Recommend optimized FOOM strategy based on A/B tests."""
         best_performers = self._identify_top_performers(ab_test_results)
         optimization_recommendations = self._generate_recommendations(best_performers)
 
         return {
-            "current_conversion_rate": ab_test_results.get("current_conversion_rate", 0.15),
+            "current_conversion_rate": ab_test_results.get(
+                "current_conversion_rate", 0.15
+            ),
             "optimized_conversion_rate": self._estimate_optimized_rate(best_performers),
             "top_performing_elements": best_performers,
             "recommendations": optimization_recommendations,
-            "expected_revenue_lift": self._calculate_revenue_lift(ab_test_results, best_performers),
+            "expected_revenue_lift": self._calculate_revenue_lift(
+                ab_test_results, best_performers
+            ),
         }
 
-    def _identify_top_performers(self, ab_test_results: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _identify_top_performers(
+        self, ab_test_results: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Identify highest-converting FOOM elements."""
         all_variants = ab_test_results.get("variants", [])
         sorted_variants = sorted(
-            all_variants,
-            key=lambda v: v.get("conversion_rate", 0),
-            reverse=True
+            all_variants, key=lambda v: v.get("conversion_rate", 0), reverse=True
         )
         return sorted_variants[:5]  # Top 5
 
-    def _generate_recommendations(self, best_performers: List[Dict[str, Any]]) -> List[str]:
+    def _generate_recommendations(
+        self, best_performers: list[dict[str, Any]]
+    ) -> list[str]:
         """Generate optimization recommendations."""
         recommendations = []
 
@@ -406,22 +443,32 @@ class FOMOPerformanceOptimizer:
             conversion = performer.get("conversion_rate", 0)
 
             if element_type == "urgency_message":
-                recommendations.append(f"Use '{performer.get('variant')}' in all urgency messaging (+{(conversion - 0.15)*100:.0f}% lift)")
+                recommendations.append(
+                    f"Use '{performer.get('variant')}' in all urgency messaging (+{(conversion - 0.15)*100:.0f}% lift)"
+                )
             elif element_type == "social_proof":
-                recommendations.append(f"Amplify {performer.get('variant')} across landing page (+{(conversion - 0.15)*100:.0f}% lift)")
+                recommendations.append(
+                    f"Amplify {performer.get('variant')} across landing page (+{(conversion - 0.15)*100:.0f}% lift)"
+                )
             elif element_type == "offer":
-                recommendations.append(f"Lead with '{performer.get('variant')}' offer in email sequence (+{(conversion - 0.15)*100:.0f}% lift)")
+                recommendations.append(
+                    f"Lead with '{performer.get('variant')}' offer in email sequence (+{(conversion - 0.15)*100:.0f}% lift)"
+                )
 
         return recommendations
 
-    def _estimate_optimized_rate(self, best_performers: List[Dict[str, Any]]) -> float:
+    def _estimate_optimized_rate(self, best_performers: list[dict[str, Any]]) -> float:
         """Estimate conversion rate after optimization."""
         if not best_performers:
             return 0.15
-        avg_top_5_rate = sum(v.get("conversion_rate", 0) for v in best_performers) / len(best_performers)
+        avg_top_5_rate = sum(
+            v.get("conversion_rate", 0) for v in best_performers
+        ) / len(best_performers)
         return min(0.45, avg_top_5_rate)  # Cap at 45%
 
-    def _calculate_revenue_lift(self, ab_test_results: Dict[str, Any], best_performers: List[Dict[str, Any]]) -> Dict[str, float]:
+    def _calculate_revenue_lift(
+        self, ab_test_results: dict[str, Any], best_performers: list[dict[str, Any]]
+    ) -> dict[str, float]:
         """Calculate revenue impact of optimizations."""
         current_rate = ab_test_results.get("current_conversion_rate", 0.15)
         optimized_rate = self._estimate_optimized_rate(best_performers)
@@ -446,7 +493,9 @@ class NetworkEffectFOOM:
     def __init__(self, db):
         self.db = db
 
-    def generate_referral_foom(self, user_id: str, user_metrics: Dict[str, Any]) -> Dict[str, Any]:
+    def generate_referral_foom(
+        self, user_id: str, user_metrics: dict[str, Any]
+    ) -> dict[str, Any]:
         """Generate FOOM-based referral program mechanics."""
         return {
             "referral_incentive": "Refer a friend → both get 1 month free Premium",
@@ -460,7 +509,9 @@ class NetworkEffectFOOM:
             "network_effect_message": "Join 500+ growing companies. Your network is using this.",
         }
 
-    def calculate_lifetime_value_with_network(self, user_metrics: Dict[str, Any]) -> Dict[str, float]:
+    def calculate_lifetime_value_with_network(
+        self, user_metrics: dict[str, Any]
+    ) -> dict[str, float]:
         """Calculate LTV including network effects."""
         base_ltv = user_metrics.get("base_ltv", 1000)
         referral_rate = user_metrics.get("referral_rate", 0.15)

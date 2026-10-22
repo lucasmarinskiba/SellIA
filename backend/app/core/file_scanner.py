@@ -3,21 +3,25 @@ Sistema de escaneo de archivos subidos por usuarios.
 Integra ClamAV para detección de malware y validaciones de seguridad adicionales.
 """
 
-import io
-import os
 import hashlib
+import io
 import mimetypes
+import os
 from pathlib import Path
-from typing import BinaryIO
 
 try:
     import clamd
+
     CLAMD_AVAILABLE = True
 except ImportError:
     clamd = None  # type: ignore
     CLAMD_AVAILABLE = False
 
-from fastapi import UploadFile, HTTPException, status
+import logging
+
+from fastapi import UploadFile
+
+logger = logging.getLogger(__name__)
 
 # Configuración
 CLAMAV_HOST = os.getenv("CLAMAV_HOST", "clamav")
@@ -38,8 +42,16 @@ ALLOWED_MIME_TYPES = {
 }
 
 ALLOWED_EXTENSIONS = {
-    ".jpg", ".jpeg", ".png", ".webp", ".gif",
-    ".pdf", ".txt", ".csv", ".xlsx", ".docx",
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".webp",
+    ".gif",
+    ".pdf",
+    ".txt",
+    ".csv",
+    ".xlsx",
+    ".docx",
 }
 
 # Firmas mágicas de archivos peligrosos (bloqueo estricto)
@@ -57,11 +69,49 @@ DANGEROUS_SIGNATURES = [
 
 # Extensiones peligrosas (bloqueo inmediato)
 DANGEROUS_EXTENSIONS = {
-    ".exe", ".dll", ".bat", ".cmd", ".sh", ".php", ".jsp", ".asp", ".aspx",
-    ".py", ".rb", ".pl", ".jar", ".war", ".ear", ".zip", ".rar", ".7z",
-    ".tar", ".gz", ".bz2", ".xz", ".iso", ".img", ".msi", ".deb", ".rpm",
-    ".apk", ".ipa", ".dmg", ".pkg", ".app", ".scr", ".pif", ".com",
-    ".vbs", ".js", ".jse", ".wsf", ".wsh", ".hta", ".cpl", ".inf",
+    ".exe",
+    ".dll",
+    ".bat",
+    ".cmd",
+    ".sh",
+    ".php",
+    ".jsp",
+    ".asp",
+    ".aspx",
+    ".py",
+    ".rb",
+    ".pl",
+    ".jar",
+    ".war",
+    ".ear",
+    ".zip",
+    ".rar",
+    ".7z",
+    ".tar",
+    ".gz",
+    ".bz2",
+    ".xz",
+    ".iso",
+    ".img",
+    ".msi",
+    ".deb",
+    ".rpm",
+    ".apk",
+    ".ipa",
+    ".dmg",
+    ".pkg",
+    ".app",
+    ".scr",
+    ".pif",
+    ".com",
+    ".vbs",
+    ".js",
+    ".jse",
+    ".wsf",
+    ".wsh",
+    ".hta",
+    ".cpl",
+    ".inf",
 }
 
 
@@ -78,12 +128,17 @@ class FileScanner:
     def __init__(self):
         self._clamd = None
 
-    def _get_clamd(self) -> "clamd.ClamdNetworkSocket | None" if CLAMD_AVAILABLE else "None":
+    def _get_clamd(
+        self,
+    ) -> "clamd.ClamdNetworkSocket | None" if CLAMD_AVAILABLE else "None":
         """Obtiene o crea la conexión a ClamAV."""
         if self._clamd is None:
             if not CLAMD_AVAILABLE:
                 import logging
-                logging.getLogger("security").warning("ClamAV no disponible: módulo clamd no instalado")
+
+                logging.getLogger("security").warning(
+                    "ClamAV no disponible: módulo clamd no instalado"
+                )
                 self._clamd = None
             else:
                 try:
@@ -91,7 +146,9 @@ class FileScanner:
                     self._clamd.ping()
                 except Exception as e:
                     # Si ClamAV no está disponible, loguear warning pero no fallar
+                    logger.exception("_get_clamd: error inesperado")
                     import logging
+
                     logging.getLogger("security").warning(f"ClamAV no disponible: {e}")
                     self._clamd = None
         return self._clamd
@@ -114,10 +171,15 @@ class FileScanner:
         if ext in DANGEROUS_EXTENSIONS:
             return False, f"Extensión bloqueada por seguridad: {ext}"
         if ext not in ALLOWED_EXTENSIONS:
-            return False, f"Extensión no permitida: {ext}. Permitidas: {', '.join(ALLOWED_EXTENSIONS)}"
+            return (
+                False,
+                f"Extensión no permitida: {ext}. Permitidas: {', '.join(ALLOWED_EXTENSIONS)}",
+            )
         return True, ""
 
-    def _validate_mime_type(self, content_type: str | None, filename: str) -> tuple[bool, str]:
+    def _validate_mime_type(
+        self, content_type: str | None, filename: str
+    ) -> tuple[bool, str]:
         """Valida que el MIME type esté permitido."""
         if not content_type:
             return False, "Content-Type no proporcionado"
@@ -134,16 +196,22 @@ class FileScanner:
 
         return True, ""
 
-    def _validate_content_mismatch(self, content: bytes, declared_mime: str, filename: str) -> tuple[bool, str]:
+    def _validate_content_mismatch(
+        self, content: bytes, declared_mime: str, filename: str
+    ) -> tuple[bool, str]:
         """Valida que el contenido real coincida con el MIME declarado (magic bytes)."""
         try:
             import magic
+
             detected = magic.from_buffer(content, mime=True)
             if detected and detected not in ALLOWED_MIME_TYPES:
                 # Verificar si el tipo detectado es consistente con la extensión
                 guessed, _ = mimetypes.guess_type(filename)
                 if detected != guessed:
-                    return False, f"Tipo de archivo real ({detected}) no coincide con el declarado ({declared_mime})"
+                    return (
+                        False,
+                        f"Tipo de archivo real ({detected}) no coincide con el declarado ({declared_mime})",
+                    )
         except ImportError:
             pass  # python-magic no disponible, saltar validación
         return True, ""
@@ -189,9 +257,10 @@ class FileScanner:
                 details={"scanner": "ClamAV", "status": "OK"},
             )
         except Exception as e:
+            logger.exception("_scan_with_clamav: error inesperado")
             return ScanResult(
                 clean=False,
-                message=f"Error al escanear con ClamAV: {str(e)}",
+                message=f"Error al escanear con ClamAV: {e!s}",
                 details={"error": str(e)},
             )
 
@@ -224,7 +293,9 @@ class FileScanner:
         # Validar firma peligrosa
         dangerous, msg = self._has_dangerous_signature(content)
         if dangerous:
-            return ScanResult(clean=False, message=msg, details={"signature_match": True})
+            return ScanResult(
+                clean=False, message=msg, details={"signature_match": True}
+            )
 
         # Validar contenido vs MIME declarado
         valid, msg = self._validate_content_mismatch(

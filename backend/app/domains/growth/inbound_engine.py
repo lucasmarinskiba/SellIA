@@ -5,20 +5,23 @@ and UGC collection into a unified "vender sin vender" pipeline.
 """
 
 import uuid
-from datetime import datetime, timezone
-from typing import Optional, Any, List
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.events import event_bus
+from app.core.logger import get_logger
 from app.domains.growth.models import (
-    GrowthCampaign, GrowthCampaignType, GrowthCampaignStatus,
-    InboundLead, InboundLeadSource, NurturingStage,
-    LeadMagnet,
+    GrowthCampaign,
+    GrowthCampaignStatus,
+    GrowthCampaignType,
+    InboundLead,
+    InboundLeadSource,
+    NurturingStage,
 )
 from app.domains.outreach.service import FatigueScoringService
-from app.core.logger import get_logger
-from app.core.events import event_bus
 
 logger = get_logger(__name__)
 
@@ -38,9 +41,9 @@ class InboundGrowthEngine:
         name: str,
         campaign_type: GrowthCampaignType,
         description: str = "",
-        config: dict = None,
+        config: dict | None = None,
         target_audience: str = "",
-        content_pillars: list = None,
+        content_pillars: list | None = None,
         tone_of_voice: str = "educational",
     ) -> GrowthCampaign:
         """Create a new organic growth campaign."""
@@ -58,7 +61,9 @@ class InboundGrowthEngine:
         self.db.add(campaign)
         await self.db.commit()
         await self.db.refresh(campaign)
-        logger.info(f"Created growth campaign {campaign.id} ({campaign_type}) for business {business_id}")
+        logger.info(
+            f"Created growth campaign {campaign.id} ({campaign_type}) for business {business_id}"
+        )
         return campaign
 
     async def activate_campaign(self, campaign_id: uuid.UUID) -> GrowthCampaign:
@@ -67,7 +72,7 @@ class InboundGrowthEngine:
         if not campaign:
             raise ValueError(f"Campaign {campaign_id} not found")
         campaign.status = GrowthCampaignStatus.ACTIVE
-        campaign.started_at = datetime.now(timezone.utc)
+        campaign.started_at = datetime.now(UTC)
         await self.db.commit()
         await self.db.refresh(campaign)
         logger.info(f"Activated growth campaign {campaign_id}")
@@ -106,7 +111,9 @@ class InboundGrowthEngine:
         )
         converted_leads = converted_result.scalar() or 0
 
-        conversion_rate = (converted_leads / total_leads * 100) if total_leads > 0 else 0
+        conversion_rate = (
+            (converted_leads / total_leads * 100) if total_leads > 0 else 0
+        )
 
         # Update campaign metrics
         campaign.leads_generated = total_leads
@@ -116,11 +123,17 @@ class InboundGrowthEngine:
 
         recommendations = []
         if conversion_rate < 5:
-            recommendations.append("Conversion rate is low. Consider improving lead magnet quality or nurturing sequence.")
+            recommendations.append(
+                "Conversion rate is low. Consider improving lead magnet quality or nurturing sequence."
+            )
         if total_leads < 10:
-            recommendations.append("Low lead volume. Increase content distribution frequency or expand to new platforms.")
+            recommendations.append(
+                "Low lead volume. Increase content distribution frequency or expand to new platforms."
+            )
         if campaign.campaign_type == GrowthCampaignType.REFERRAL_VIRAL:
-            recommendations.append("Track viral coefficient weekly. Target K > 1.0 for exponential growth.")
+            recommendations.append(
+                "Track viral coefficient weekly. Target K > 1.0 for exponential growth."
+            )
 
         return {
             "campaign_id": str(campaign_id),
@@ -140,7 +153,7 @@ class InboundGrowthEngine:
         business_id: uuid.UUID,
         campaign_type: GrowthCampaignType = None,
         status: GrowthCampaignStatus = None,
-    ) -> List[GrowthCampaign]:
+    ) -> list[GrowthCampaign]:
         """List campaigns with optional filters."""
         query = select(GrowthCampaign).where(
             GrowthCampaign.business_id == business_id,
@@ -157,7 +170,7 @@ class InboundGrowthEngine:
     async def get_dashboard_metrics(self, business_id: uuid.UUID) -> dict[str, Any]:
         """Get unified organic growth dashboard metrics."""
         # Leads this week
-        week_ago = datetime.now(timezone.utc) - __import__('datetime').timedelta(days=7)
+        week_ago = datetime.now(UTC) - __import__("datetime").timedelta(days=7)
         leads_week_result = await self.db.execute(
             select(func.count(InboundLead.id)).where(
                 InboundLead.business_id == business_id,
@@ -196,16 +209,24 @@ class InboundGrowthEngine:
         # Lead sources breakdown
         sources_result = await self.db.execute(
             select(InboundLead.source_type, func.count(InboundLead.id))
-            .where(InboundLead.business_id == business_id, InboundLead.is_active == True)
+            .where(
+                InboundLead.business_id == business_id, InboundLead.is_active == True
+            )
             .group_by(InboundLead.source_type)
         )
-        sources_breakdown = {source.value: count for source, count in sources_result.all()}
+        sources_breakdown = {
+            source.value: count for source, count in sources_result.all()
+        }
 
         return {
             "leads_this_week": leads_this_week,
             "total_organic_leads": total_organic_leads,
             "total_conversions": total_conversions,
-            "conversion_rate": round((total_conversions / total_organic_leads * 100), 2) if total_organic_leads > 0 else 0,
+            "conversion_rate": (
+                round((total_conversions / total_organic_leads * 100), 2)
+                if total_organic_leads > 0
+                else 0
+            ),
             "active_campaigns": active_campaigns,
             "sources_breakdown": sources_breakdown,
             "period": "last_7_days",
@@ -217,10 +238,10 @@ class InboundGrowthEngine:
         self,
         business_id: uuid.UUID,
         source_type: InboundLeadSource,
-        conversation_id: uuid.UUID = None,
-        campaign_id: uuid.UUID = None,
-        lead_magnet_id: uuid.UUID = None,
-        contact_info: dict = None,
+        conversation_id: uuid.UUID | None = None,
+        campaign_id: uuid.UUID | None = None,
+        lead_magnet_id: uuid.UUID | None = None,
+        contact_info: dict | None = None,
         source_detail: str = "",
     ) -> InboundLead:
         """Capture a new organic inbound lead."""
@@ -239,14 +260,19 @@ class InboundGrowthEngine:
         await self.db.refresh(lead)
 
         # Emit event
-        await event_bus.emit("inbound.lead_captured", {
-            "business_id": str(business_id),
-            "lead_id": str(lead.id),
-            "source_type": source_type.value,
-            "conversation_id": str(conversation_id) if conversation_id else None,
-        })
+        await event_bus.emit(
+            "inbound.lead_captured",
+            {
+                "business_id": str(business_id),
+                "lead_id": str(lead.id),
+                "source_type": source_type.value,
+                "conversation_id": str(conversation_id) if conversation_id else None,
+            },
+        )
 
-        logger.info(f"Captured inbound lead {lead.id} from {source_type.value} for business {business_id}")
+        logger.info(
+            f"Captured inbound lead {lead.id} from {source_type.value} for business {business_id}"
+        )
         return lead
 
     async def update_lead_stage(
@@ -263,10 +289,13 @@ class InboundGrowthEngine:
         old_stage = lead.nurturing_stage
         lead.nurturing_stage = new_stage
         lead.engagement_score += engagement_delta
-        lead.last_touch_at = datetime.now(timezone.utc)
+        lead.last_touch_at = datetime.now(UTC)
 
-        if new_stage == NurturingStage.CONVERTED and old_stage != NurturingStage.CONVERTED:
-            lead.converted_at = datetime.now(timezone.utc)
+        if (
+            new_stage == NurturingStage.CONVERTED
+            and old_stage != NurturingStage.CONVERTED
+        ):
+            lead.converted_at = datetime.now(UTC)
 
         await self.db.commit()
         await self.db.refresh(lead)
@@ -278,7 +307,7 @@ class InboundGrowthEngine:
         stage: NurturingStage = None,
         source_type: InboundLeadSource = None,
         limit: int = 50,
-    ) -> List[InboundLead]:
+    ) -> list[InboundLead]:
         """List inbound leads with filters."""
         query = select(InboundLead).where(
             InboundLead.business_id == business_id,
@@ -298,7 +327,7 @@ class InboundGrowthEngine:
         self,
         business_id: uuid.UUID,
         content_id: uuid.UUID,
-        platforms: List[str],
+        platforms: list[str],
     ) -> dict[str, Any]:
         """Distribute generated content across platforms."""
         from app.domains.automations.models import ContentCalendar
@@ -310,24 +339,26 @@ class InboundGrowthEngine:
                 content_id=content_id,
                 platform=platform,
                 status="scheduled",
-                scheduled_at=datetime.now(timezone.utc),
+                scheduled_at=datetime.now(UTC),
             )
             self.db.add(entry)
             results.append({"platform": platform, "status": "scheduled"})
 
         await self.db.commit()
-        logger.info(f"Distributed content {content_id} to {len(platforms)} platforms for business {business_id}")
+        logger.info(
+            f"Distributed content {content_id} to {len(platforms)} platforms for business {business_id}"
+        )
         return {"content_id": str(content_id), "platforms": results}
 
     # ========== Helpers ==========
 
-    async def _get_campaign(self, campaign_id: uuid.UUID) -> Optional[GrowthCampaign]:
+    async def _get_campaign(self, campaign_id: uuid.UUID) -> GrowthCampaign | None:
         result = await self.db.execute(
             select(GrowthCampaign).where(GrowthCampaign.id == campaign_id)
         )
         return result.scalar_one_or_none()
 
-    async def _get_lead(self, lead_id: uuid.UUID) -> Optional[InboundLead]:
+    async def _get_lead(self, lead_id: uuid.UUID) -> InboundLead | None:
         result = await self.db.execute(
             select(InboundLead).where(InboundLead.id == lead_id)
         )

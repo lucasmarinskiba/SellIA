@@ -1,12 +1,16 @@
 """Phase X7: Perception Engineering Agent Service."""
-from datetime import datetime, timezone
-from typing import List, Optional, Dict
+
 from uuid import UUID
+
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+
 from app.domains.perception_engineering.models import (
-    ProductPerception, PerceptionShiftCampaign, ValuePerceptionOptimizer,
-    PerceptionNarrative, PerceptionDimension, PerceptionShiftTechnique
+    PerceptionDimension,
+    PerceptionNarrative,
+    PerceptionShiftCampaign,
+    PerceptionShiftTechnique,
+    ProductPerception,
+    ValuePerceptionOptimizer,
 )
 
 
@@ -18,7 +22,7 @@ class PerceptionEngineeringAgent:
         db: AsyncSession,
         business_id: UUID,
         product_id: UUID,
-        current_perception: Dict[str, float],
+        current_perception: dict[str, float],
     ) -> ProductPerception:
         """Analyze gap between current and desired perception."""
         perception = ProductPerception(
@@ -52,7 +56,9 @@ class PerceptionEngineeringAgent:
 
         # Select best technique based on gap
         gap = target_score - current_score
-        technique = PerceptionEngineeringAgent._select_best_technique(target_dimension, gap)
+        technique = PerceptionEngineeringAgent._select_best_technique(
+            target_dimension, gap
+        )
 
         # Generate messaging
         headline, narrative, social_proof, call_to_action = (
@@ -73,8 +79,12 @@ class PerceptionEngineeringAgent:
             social_proof=social_proof,
             call_to_action=call_to_action,
             target_audience_segment=customer_segment,
-            cognitive_bias_leveraged=PerceptionEngineeringAgent._get_cognitive_bias(technique),
-            emotional_trigger=PerceptionEngineeringAgent._get_emotional_trigger(target_dimension),
+            cognitive_bias_leveraged=PerceptionEngineeringAgent._get_cognitive_bias(
+                technique
+            ),
+            emotional_trigger=PerceptionEngineeringAgent._get_emotional_trigger(
+                target_dimension
+            ),
         )
         db.add(campaign)
         await db.commit()
@@ -82,7 +92,9 @@ class PerceptionEngineeringAgent:
         return campaign
 
     @staticmethod
-    def _select_best_technique(dimension: PerceptionDimension, gap: float) -> PerceptionShiftTechnique:
+    def _select_best_technique(
+        dimension: PerceptionDimension, gap: float
+    ) -> PerceptionShiftTechnique:
         """AI selects best psychological technique based on target dimension."""
         technique_map = {
             PerceptionDimension.QUALITY: PerceptionShiftTechnique.AUTHORITY,
@@ -110,31 +122,31 @@ class PerceptionEngineeringAgent:
                 "Award-Winning Quality Recognized by Experts",
                 "Our product has been certified by 3 international quality standards...",
                 "Trusted by 50,000+ professionals",
-                "Upgrade your standards now"
+                "Upgrade your standards now",
             ),
             (PerceptionDimension.VALUE, PerceptionShiftTechnique.ANCHORING): (
                 "Premium Value at a Fair Price",
                 f"While competitors charge 2-3x more for similar features, we deliver the same quality at {gap*100:.0f}% better value...",
                 "Saves customers $5,000+ annually",
-                "Get premium quality affordably"
+                "Get premium quality affordably",
             ),
             (PerceptionDimension.TRUST, PerceptionShiftTechnique.SOCIAL_PROOF): (
                 "Trusted by Industry Leaders",
                 "Join 100,000+ satisfied customers who rely on us daily for their most critical needs...",
                 "4.9/5 stars from 10,000+ verified reviews",
-                "Join the trusted majority"
+                "Join the trusted majority",
             ),
             (PerceptionDimension.EXCLUSIVITY, PerceptionShiftTechnique.SCARCITY): (
                 "Exclusive Access - Limited Availability",
                 "This premium offering is reserved for committed customers who demand excellence...",
                 "Only available to 1,000 select members",
-                "Claim your exclusive access"
+                "Claim your exclusive access",
             ),
             (PerceptionDimension.EMOTIONAL, PerceptionShiftTechnique.STORYTELLING): (
                 "Transform Your Life - Join Those Who Did",
                 "Real customers share how this changed their lives: improved confidence, freedom, success...",
                 "See transformation stories from real users",
-                "Start your transformation today"
+                "Start your transformation today",
             ),
         }
 
@@ -142,7 +154,7 @@ class PerceptionEngineeringAgent:
             f"Perception Shift: {dimension.value}",
             f"Strategic repositioning to increase {dimension.value} perception...",
             "Join others in discovering true value",
-            "Experience the difference"
+            "Experience the difference",
         )
 
         return messaging_templates.get((dimension, technique), default_msg)
@@ -182,12 +194,14 @@ class PerceptionEngineeringAgent:
         product_id: UUID,
         base_price: float,
         current_perceived_value: float,
-        competitor_prices: List[float],
+        competitor_prices: list[float],
     ) -> ValuePerceptionOptimizer:
         """Optimize how much value customers perceive in the product."""
 
         # Calculate anchoring high price
-        anchoring_high = max(competitor_prices) * 1.3 if competitor_prices else base_price * 2
+        anchoring_high = (
+            max(competitor_prices) * 1.3 if competitor_prices else base_price * 2
+        )
 
         # Value gap analysis
         value_gap = current_perceived_value - base_price
@@ -211,9 +225,15 @@ class PerceptionEngineeringAgent:
 
         # Calculate optimization
         bundled_value_increase = 500  # Arbitrary bundled value
-        optimizer.optimized_perception = current_perceived_value + bundled_value_increase
-        optimizer.recommended_price = base_price * (optimizer.optimized_perception / current_perceived_value)
-        optimizer.expected_conversion_increase = min(0.4, value_gap * 0.1)  # 40% max increase
+        optimizer.optimized_perception = (
+            current_perceived_value + bundled_value_increase
+        )
+        optimizer.recommended_price = base_price * (
+            optimizer.optimized_perception / current_perceived_value
+        )
+        optimizer.expected_conversion_increase = min(
+            0.4, value_gap * 0.1
+        )  # 40% max increase
 
         db.add(optimizer)
         await db.commit()
@@ -240,7 +260,7 @@ class PerceptionEngineeringAgent:
                 "95% customer satisfaction rate",
                 "Used by 50,000+ professionals",
                 "Endorsed by industry experts",
-                "Proven ROI: 3:1 return within 6 months"
+                "Proven ROI: 3:1 return within 6 months",
             ],
             emotional_appeal="aspiration",
             call_to_identity=f"Be someone who demands excellence and gets {product_name}",
@@ -265,16 +285,16 @@ class PerceptionEngineeringAgent:
         narrative.narrative_variants = [
             {
                 "segment": "luxury_buyers",
-                "narrative": f"Exclusively designed for discerning professionals who demand the finest."
+                "narrative": "Exclusively designed for discerning professionals who demand the finest.",
             },
             {
                 "segment": "budget_conscious",
-                "narrative": f"Premium quality at prices that make sense. Finally."
+                "narrative": "Premium quality at prices that make sense. Finally.",
             },
             {
                 "segment": "early_adopters",
-                "narrative": f"The innovation leaders are already here. Are you next?"
-            }
+                "narrative": "The innovation leaders are already here. Are you next?",
+            },
         ]
 
         db.add(narrative)
@@ -287,7 +307,7 @@ class PerceptionEngineeringAgent:
         current_perception: float,
         technique: PerceptionShiftTechnique,
         campaign_budget: float,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Predict sales impact of perception shift campaign."""
 
         # Base conversion lift from perception shift
@@ -306,11 +326,23 @@ class PerceptionEngineeringAgent:
         budget_multiplier = min(1.5, 1.0 + (campaign_budget / 10000))
 
         total_conversion_lift = base_lift * budget_multiplier
-        revenue_impact = total_conversion_lift * 0.8  # Assume 80% of conversion lift = revenue
+        revenue_impact = (
+            total_conversion_lift * 0.8
+        )  # Assume 80% of conversion lift = revenue
 
         return {
             "conversion_lift_percent": round(total_conversion_lift * 100, 1),
             "revenue_impact_percent": round(revenue_impact * 100, 1),
-            "perception_increase": round((current_perception + (10 - current_perception) * total_conversion_lift), 1),
-            "roi_estimate": round(revenue_impact / (campaign_budget / 10000), 1) if campaign_budget > 0 else 0,
+            "perception_increase": round(
+                (
+                    current_perception
+                    + (10 - current_perception) * total_conversion_lift
+                ),
+                1,
+            ),
+            "roi_estimate": (
+                round(revenue_impact / (campaign_budget / 10000), 1)
+                if campaign_budget > 0
+                else 0
+            ),
         }

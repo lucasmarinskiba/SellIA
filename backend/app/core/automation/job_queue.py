@@ -17,12 +17,14 @@ Priority levels:
 - 10: Analytics (lowest)
 """
 
-import logging
 import asyncio
-from typing import Optional, Dict, List, Any
-from heapq import heappush, heappop
+import logging
 from collections import defaultdict
 from datetime import datetime
+from heapq import heappop, heappush
+from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -31,12 +33,12 @@ class JobQueue:
     """Priority queue con deduplication y rate limiting."""
 
     def __init__(self, max_concurrent_per_platform: int = 3):
-        self.queue: List[tuple] = []  # Min heap: (priority, sequence, job)
+        self.queue: list[tuple] = []  # Min heap: (priority, sequence, job)
         self.sequence = 0  # Tie-breaker para FIFO en misma prioridad
         self.seen_jobs: set = set()  # Para deduplicación
-        self.dead_letter_queue: List[Any] = []
-        self.active_jobs: Dict[str, Any] = {}  # job_id → Job
-        self.platform_active_count: Dict[str, int] = defaultdict(int)
+        self.dead_letter_queue: list[Any] = []
+        self.active_jobs: dict[str, Any] = {}  # job_id → Job
+        self.platform_active_count: dict[str, int] = defaultdict(int)
         self.max_concurrent_per_platform = max_concurrent_per_platform
         self.lock = asyncio.Lock()
 
@@ -63,7 +65,7 @@ class JobQueue:
             logger.debug(f"Job enqueued: {job.id} (priority: {job.priority.value})")
             return True
 
-    async def dequeue(self) -> Optional[Any]:
+    async def dequeue(self) -> Any | None:
         """Obtiene próximo job respetando rate limits."""
         async with self.lock:
             while self.queue:
@@ -74,7 +76,10 @@ class JobQueue:
                 platform = job.payload.get("platform", "default")
 
                 # Check if we can process this platform
-                if self.platform_active_count[platform] >= self.max_concurrent_per_platform:
+                if (
+                    self.platform_active_count[platform]
+                    >= self.max_concurrent_per_platform
+                ):
                     logger.debug(
                         f"Rate limit reached for {platform}. "
                         f"Job {job.id} re-queued."
@@ -104,20 +109,22 @@ class JobQueue:
     async def mark_dead_letter(self, job: Any, reason: str) -> None:
         """Mueve job a dead letter queue (sin salida)."""
         async with self.lock:
-            self.dead_letter_queue.append({
-                "job_id": job.id,
-                "job_type": job.job_type.value,
-                "reason": reason,
-                "timestamp": datetime.utcnow().isoformat(),
-                "payload": job.payload,
-            })
+            self.dead_letter_queue.append(
+                {
+                    "job_id": job.id,
+                    "job_type": job.job_type.value,
+                    "reason": reason,
+                    "timestamp": utc_now().isoformat(),
+                    "payload": job.payload,
+                }
+            )
             logger.warning(f"Job moved to DLQ: {job.id} ({reason})")
 
     def size(self) -> int:
         """Cantidad de jobs en queue."""
         return len(self.queue)
 
-    async def get_stats(self) -> Dict[str, Any]:
+    async def get_stats(self) -> dict[str, Any]:
         """Estadísticas de la queue."""
         async with self.lock:
             return {
@@ -127,7 +134,7 @@ class JobQueue:
                 "platform_active_count": dict(self.platform_active_count),
             }
 
-    async def get_dead_letters(self, limit: int = 100) -> List[Dict[str, Any]]:
+    async def get_dead_letters(self, limit: int = 100) -> list[dict[str, Any]]:
         """Obtiene jobs del dead letter queue."""
         async with self.lock:
             return self.dead_letter_queue[-limit:]
@@ -146,11 +153,12 @@ class JobQueue:
     async def clear_dead_letters_older_than(self, hours: int = 24) -> int:
         """Limpia DLQ old entries."""
         async with self.lock:
-            cutoff_time = datetime.utcnow().timestamp() - (hours * 3600)
+            cutoff_time = utc_now().timestamp() - (hours * 3600)
             original_count = len(self.dead_letter_queue)
 
             self.dead_letter_queue = [
-                dlq for dlq in self.dead_letter_queue
+                dlq
+                for dlq in self.dead_letter_queue
                 if datetime.fromisoformat(dlq["timestamp"]).timestamp() > cutoff_time
             ]
 
@@ -164,14 +172,14 @@ class BatchJobQueue(JobQueue):
 
     def __init__(self, max_concurrent_per_platform: int = 3):
         super().__init__(max_concurrent_per_platform)
-        self.batch_groups: Dict[str, List[Any]] = {}  # batch_key → List[Job]
-        self.batch_config: Dict[str, Dict[str, int]] = {
+        self.batch_groups: dict[str, list[Any]] = {}  # batch_key → List[Job]
+        self.batch_config: dict[str, dict[str, int]] = {
             "email": {"max_batch": 10, "timeout_seconds": 30},
             "post_product": {"max_batch": 5, "timeout_seconds": 60},
             "sync_inventory": {"max_batch": 20, "timeout_seconds": 45},
         }
 
-    async def enqueue_batch(self, jobs: List[Any], batch_key: str) -> int:
+    async def enqueue_batch(self, jobs: list[Any], batch_key: str) -> int:
         """
         Agrupa jobs similares para procesamiento batch.
 
@@ -215,14 +223,19 @@ class BatchJobQueue(JobQueue):
         logger.info(f"Batch enqueued: {batch_key} with {len(jobs)} jobs")
 
     @staticmethod
-    def _create_batch_job(batch_key: str, jobs: List[Any]) -> Any:
+    def _create_batch_job(batch_key: str, jobs: list[Any]) -> Any:
         """Crea un job batch a partir de múltiples jobs."""
-        from automation_engine import Job, Priority, JobType, JobStatus
         import uuid
+
+        from automation_engine import Job, JobStatus, JobType, Priority
 
         batch_job = Job(
             id=str(uuid.uuid4()),
-            job_type=JobType[batch_key.upper()] if batch_key.upper() in JobType.__members__ else JobType.POST_PRODUCT,
+            job_type=(
+                JobType[batch_key.upper()]
+                if batch_key.upper() in JobType.__members__
+                else JobType.POST_PRODUCT
+            ),
             priority=Priority.NORMAL,
             payload={
                 "batch_key": batch_key,
@@ -233,7 +246,7 @@ class BatchJobQueue(JobQueue):
         )
         return batch_job
 
-    async def flush_batches(self) -> Dict[str, int]:
+    async def flush_batches(self) -> dict[str, int]:
         """Enqueue todas los batch groups pendientes."""
         async with self.lock:
             flushed = {}

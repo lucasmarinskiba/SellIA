@@ -4,20 +4,18 @@ Phase 4: Embeddings layer for content similarity, recommendations
 Uses pgvector for vector storage (requires PostgreSQL extension)
 """
 
-from fastapi import APIRouter, HTTPException, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text, select
-from typing import Optional, Dict, Any, List
-import json
 import hashlib
 from datetime import datetime
+from typing import Any
+
+from fastapi import APIRouter, HTTPException, Query
 
 router = APIRouter(tags=["embeddings"])
 
 SITE_URL = "https://sellia-brain.vercel.app"
 
 
-def get_mock_embedding(text: str) -> List[float]:
+def get_mock_embedding(text: str) -> list[float]:
     """
     Generate deterministic mock embedding (768 dimensions)
     Production: Replace with Ollama, OpenAI, or HuggingFace call
@@ -44,9 +42,9 @@ def get_mock_embedding(text: str) -> List[float]:
 async def embed_content(
     content_id: str,
     text: str,
-    title: Optional[str] = None,
-    url: Optional[str] = None,
-) -> Dict[str, Any]:
+    title: str | None = None,
+    url: str | None = None,
+) -> dict[str, Any]:
     """
     Embed content and store in pgvector
 
@@ -89,7 +87,7 @@ async def get_similar_content(
     content_id: str = Query(..., description="Reference content ID"),
     limit: int = Query(5, ge=1, le=10, description="Number of results"),
     threshold: float = Query(0.7, ge=0.0, le=1.0, description="Similarity threshold"),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Find semantically similar content using vector similarity
     Uses cosine distance in pgvector (production)
@@ -104,10 +102,22 @@ async def get_similar_content(
     related_map = {
         "brain": [
             {"id": "faq", "title": "Frequently Asked Questions", "similarity": 0.92},
-            {"id": "testimonials", "title": "Customer Success Stories", "similarity": 0.88},
-            {"id": "landing-features", "title": "Key Features Overview", "similarity": 0.85},
+            {
+                "id": "testimonials",
+                "title": "Customer Success Stories",
+                "similarity": 0.88,
+            },
+            {
+                "id": "landing-features",
+                "title": "Key Features Overview",
+                "similarity": 0.85,
+            },
             {"id": "pricing", "title": "Pricing Plans", "similarity": 0.76},
-            {"id": "integration-guide", "title": "Integration Guide", "similarity": 0.72},
+            {
+                "id": "integration-guide",
+                "title": "Integration Guide",
+                "similarity": 0.72,
+            },
         ],
         "landing-cta": [
             {"id": "testimonials", "title": "Customer Reviews", "similarity": 0.89},
@@ -116,7 +126,11 @@ async def get_similar_content(
         ],
         "testimonials": [
             {"id": "brain", "title": "Dashboard Overview", "similarity": 0.88},
-            {"id": "case-studies", "title": "Detailed Case Studies", "similarity": 0.87},
+            {
+                "id": "case-studies",
+                "title": "Detailed Case Studies",
+                "similarity": 0.87,
+            },
             {"id": "landing-cta", "title": "Free Trial CTA", "similarity": 0.82},
         ],
     }
@@ -151,10 +165,12 @@ async def get_similar_content(
 
 @router.get("/recommendations")
 async def get_recommendations(
-    user_context: str = Query("browsing", description="User context: browsing|signup|converting"),
-    current_page: Optional[str] = Query(None, description="Current page ID"),
+    user_context: str = Query(
+        "browsing", description="User context: browsing|signup|converting"
+    ),
+    current_page: str | None = Query(None, description="Current page ID"),
     limit: int = Query(3, ge=1, le=5),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get personalized content recommendations based on user context + current page
 
@@ -166,27 +182,59 @@ async def get_recommendations(
 
     recommendations_map = {
         "browsing": [
-            {"id": "landing-features", "title": "Core Features", "reason": "You're exploring"},
-            {"id": "faq", "title": "Common Questions", "reason": "Answers to what you need"},
-            {"id": "blog-automation", "title": "Sales Automation Guide", "reason": "Deep dive content"},
+            {
+                "id": "landing-features",
+                "title": "Core Features",
+                "reason": "You're exploring",
+            },
+            {
+                "id": "faq",
+                "title": "Common Questions",
+                "reason": "Answers to what you need",
+            },
+            {
+                "id": "blog-automation",
+                "title": "Sales Automation Guide",
+                "reason": "Deep dive content",
+            },
         ],
         "signup": [
-            {"id": "testimonials", "title": "See What Others Built", "reason": "Social proof"},
+            {
+                "id": "testimonials",
+                "title": "See What Others Built",
+                "reason": "Social proof",
+            },
             {"id": "pricing", "title": "Simple Pricing", "reason": "Transparent costs"},
             {"id": "brain-demo", "title": "Live Demo", "reason": "Try it now"},
         ],
         "converting": [
-            {"id": "case-study-saas", "title": "SaaS Case Study", "reason": "Real ROI numbers"},
-            {"id": "integration-guide", "title": "Integration Steps", "reason": "Get started quickly"},
-            {"id": "support-docs", "title": "Support & Docs", "reason": "Post-signup resources"},
+            {
+                "id": "case-study-saas",
+                "title": "SaaS Case Study",
+                "reason": "Real ROI numbers",
+            },
+            {
+                "id": "integration-guide",
+                "title": "Integration Steps",
+                "reason": "Get started quickly",
+            },
+            {
+                "id": "support-docs",
+                "title": "Support & Docs",
+                "reason": "Post-signup resources",
+            },
         ],
     }
 
-    base_recommendations = recommendations_map.get(user_context, recommendations_map["browsing"])
+    base_recommendations = recommendations_map.get(
+        user_context, recommendations_map["browsing"]
+    )
 
     # Filter out current page if specified
     if current_page:
-        base_recommendations = [r for r in base_recommendations if r["id"] != current_page]
+        base_recommendations = [
+            r for r in base_recommendations if r["id"] != current_page
+        ]
 
     results = base_recommendations[:limit]
 
@@ -216,8 +264,11 @@ async def get_recommendations(
 
 @router.get("/content-cluster")
 async def get_content_cluster(
-    cluster_topic: str = Query("sales-automation", description="Topic cluster: sales-automation|ai-features|pricing"),
-) -> Dict[str, Any]:
+    cluster_topic: str = Query(
+        "sales-automation",
+        description="Topic cluster: sales-automation|ai-features|pricing",
+    ),
+) -> dict[str, Any]:
     """
     Get all content related to a topic cluster
     Useful for: internal linking, topic authority, content gaps
@@ -228,21 +279,33 @@ async def get_content_cluster(
             "title": "Sales Automation Hub",
             "description": "Resources about automating B2B sales",
             "content": [
-                "brain", "landing-features", "faq", "blog-automation", "case-studies"
+                "brain",
+                "landing-features",
+                "faq",
+                "blog-automation",
+                "case-studies",
             ],
         },
         "ai-features": {
             "title": "AI Features",
             "description": "How SellIA's AI works",
             "content": [
-                "brain-ai", "neural-network", "llm-integration", "blog-ml", "technical-docs"
+                "brain-ai",
+                "neural-network",
+                "llm-integration",
+                "blog-ml",
+                "technical-docs",
             ],
         },
         "pricing": {
             "title": "Pricing & Plans",
             "description": "Pricing and ROI calculations",
             "content": [
-                "pricing", "pricing-faq", "roi-calculator", "case-studies", "testimonials"
+                "pricing",
+                "pricing-faq",
+                "roi-calculator",
+                "case-studies",
+                "testimonials",
             ],
         },
     }
@@ -272,8 +335,8 @@ async def get_content_cluster(
 
 @router.post("/bulk-embed")
 async def bulk_embed_content(
-    content_list: List[Dict[str, str]] = None,
-) -> Dict[str, Any]:
+    content_list: list[dict[str, str]] | None = None,
+) -> dict[str, Any]:
     """
     Batch embed multiple content items
     Useful for: initial indexing, content migration, bulk updates
@@ -284,7 +347,10 @@ async def bulk_embed_content(
 
     if not content_list:
         content_list = [
-            {"id": "brain", "text": "SellIA Brain command center dashboard for sales agents"},
+            {
+                "id": "brain",
+                "text": "SellIA Brain command center dashboard for sales agents",
+            },
             {"id": "landing", "text": "AI sales agent platform for B2B automation"},
             {"id": "testimonials", "text": "Customer success stories and reviews"},
         ]
@@ -292,11 +358,13 @@ async def bulk_embed_content(
     embeddings_created = []
     for item in content_list:
         embedding = get_mock_embedding(item.get("text", ""))
-        embeddings_created.append({
-            "id": item["id"],
-            "dimensions": len(embedding),
-            "status": "created",
-        })
+        embeddings_created.append(
+            {
+                "id": item["id"],
+                "dimensions": len(embedding),
+                "status": "created",
+            }
+        )
 
     return {
         "@context": "https://schema.org",
@@ -314,7 +382,7 @@ async def bulk_embed_content(
 
 
 @router.get("/embedding-stats")
-async def get_embedding_stats() -> Dict[str, Any]:
+async def get_embedding_stats() -> dict[str, Any]:
     """
     Get statistics about embedded content
     Production: Query pgvector tables

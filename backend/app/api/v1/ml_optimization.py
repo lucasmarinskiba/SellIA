@@ -3,9 +3,12 @@ ML Optimization & Automation API v1 — Phase 6
 Predictive analytics, content optimization, automated improvements, revenue attribution
 """
 
-from fastapi import APIRouter, HTTPException, Query
-from typing import Optional, Dict, Any, List
-from datetime import datetime, timedelta
+from datetime import timedelta
+from typing import Any
+
+from fastapi import APIRouter, Query
+
+from app.core.clock import utc_now
 
 router = APIRouter(tags=["ml-optimization"])
 
@@ -15,7 +18,7 @@ SITE_URL = "https://sellia-brain.vercel.app"
 @router.get("/predictions/traffic")
 async def predict_organic_traffic(
     days_ahead: int = Query(30, ge=7, le=90),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Predict organic traffic using time-series ML model"""
     return {
         "@context": "https://schema.org",
@@ -26,7 +29,7 @@ async def predict_organic_traffic(
         "forecast_days": days_ahead,
         "predictions": [
             {
-                "date": (datetime.utcnow() + timedelta(days=i)).isoformat(),
+                "date": (utc_now() + timedelta(days=i)).isoformat(),
                 "predicted_traffic": 2847 + (i * 12) + (i % 7) * 15,
                 "confidence_interval": {
                     "lower": 2500 + (i * 10),
@@ -45,15 +48,15 @@ async def predict_organic_traffic(
 
 @router.get("/recommendations/content")
 async def get_content_recommendations(
-    page_id: Optional[str] = None,
-) -> Dict[str, Any]:
+    page_id: str | None = None,
+) -> dict[str, Any]:
     """Get ML content optimization recommendations"""
     return {
         "@context": "https://schema.org",
         "@type": "Dataset",
         "name": "Content Optimization Recommendations",
         "page": page_id or "all",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
         "recommendations": [
             {
                 "id": "rec-word-count",
@@ -70,7 +73,11 @@ async def get_content_recommendations(
                 "category": "keyword-targeting",
                 "priority": "high",
                 "title": "Target 'B2B sales automation' LSI keywords",
-                "keywords": ["sales process automation", "pipeline automation", "workflow automation"],
+                "keywords": [
+                    "sales process automation",
+                    "pipeline automation",
+                    "workflow automation",
+                ],
                 "current_coverage": 2,
                 "target_coverage": 5,
                 "expected_impact": {"rankings": "+2-3 positions", "ctr": "+8%"},
@@ -106,12 +113,12 @@ async def get_content_recommendations(
 @router.post("/optimize/page")
 async def optimize_page(
     page_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Run ML optimization on specific page"""
     return {
         "status": "optimization_queued",
         "page_id": page_id,
-        "optimization_id": f"opt_{datetime.utcnow().timestamp()}",
+        "optimization_id": f"opt_{utc_now().timestamp()}",
         "estimated_duration_minutes": 15,
         "recommendations_generated": 8,
         "next_steps": [
@@ -124,7 +131,7 @@ async def optimize_page(
 
 
 @router.get("/predictions/rankings")
-async def predict_keyword_rankings() -> Dict[str, Any]:
+async def predict_keyword_rankings() -> dict[str, Any]:
     """Predict future keyword rankings"""
     return {
         "@context": "https://schema.org",
@@ -167,7 +174,7 @@ async def predict_keyword_rankings() -> Dict[str, Any]:
 
 
 @router.get("/revenue-attribution")
-async def get_revenue_attribution() -> Dict[str, Any]:
+async def get_revenue_attribution() -> dict[str, Any]:
     """Calculate revenue contribution by channel/page"""
     return {
         "@context": "https://schema.org",
@@ -218,8 +225,10 @@ async def get_revenue_attribution() -> Dict[str, Any]:
 
 @router.post("/automated-improvement")
 async def trigger_automated_improvement(
-    improvement_type: str = Query("content", description="Type: content|technical|linking"),
-) -> Dict[str, Any]:
+    improvement_type: str = Query(
+        "content", description="Type: content|technical|linking"
+    ),
+) -> dict[str, Any]:
     """Trigger automated SEO improvement"""
     improvements = {
         "content": {
@@ -256,36 +265,36 @@ async def trigger_automated_improvement(
     return {
         "status": "improvement_scheduled",
         "improvement_type": improvement_type,
-        "improvement_id": f"imp_{datetime.utcnow().timestamp()}",
+        "improvement_id": f"imp_{utc_now().timestamp()}",
         "details": improvement,
-        "start_time": datetime.utcnow().isoformat(),
+        "start_time": utc_now().isoformat(),
         "estimated_completion_hours": 24,
     }
 
 
 @router.get("/continuous-learning")
-async def get_learning_status() -> Dict[str, Any]:
+async def get_learning_status() -> dict[str, Any]:
     """Get continuous ML learning status"""
     return {
         "@context": "https://schema.org",
         "@type": "Dataset",
         "name": "ML Continuous Learning Status",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
         "model_updates": {
             "traffic_model": {
-                "last_trained": (datetime.utcnow() - timedelta(hours=2)).isoformat(),
+                "last_trained": (utc_now() - timedelta(hours=2)).isoformat(),
                 "accuracy": 0.94,
                 "data_points": 2847,
                 "training_time_minutes": 8,
             },
             "ranking_model": {
-                "last_trained": (datetime.utcnow() - timedelta(hours=4)).isoformat(),
+                "last_trained": (utc_now() - timedelta(hours=4)).isoformat(),
                 "accuracy": 0.87,
                 "data_points": 1247,
                 "training_time_minutes": 12,
             },
             "content_model": {
-                "last_trained": (datetime.utcnow() - timedelta(hours=6)).isoformat(),
+                "last_trained": (utc_now() - timedelta(hours=6)).isoformat(),
                 "accuracy": 0.91,
                 "data_points": 3456,
                 "training_time_minutes": 15,
@@ -293,7 +302,7 @@ async def get_learning_status() -> Dict[str, Any]:
         },
         "learning_schedule": {
             "frequency": "daily",
-            "next_update": (datetime.utcnow() + timedelta(hours=18)).isoformat(),
+            "next_update": (utc_now() + timedelta(hours=18)).isoformat(),
             "models_training": 3,
         },
         "feature_importance": {
@@ -315,13 +324,13 @@ async def get_learning_status() -> Dict[str, Any]:
 
 
 @router.get("/optimization-roadmap")
-async def get_optimization_roadmap() -> Dict[str, Any]:
+async def get_optimization_roadmap() -> dict[str, Any]:
     """Get AI-generated SEO roadmap for next 90 days"""
     return {
         "@context": "https://schema.org",
         "@type": "Dataset",
         "name": "90-Day SEO Optimization Roadmap",
-        "generated_at": datetime.utcnow().isoformat(),
+        "generated_at": utc_now().isoformat(),
         "roadmap": [
             {
                 "week": "1-2",

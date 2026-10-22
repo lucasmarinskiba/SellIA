@@ -3,18 +3,17 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
-from sqlalchemy import and_, desc, select
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
 from app.domains.seo_optimization.models import (
+    ContentOptimization,
+    MetaOptimization,
     OptimizationTask,
     TitleOptimization,
-    MetaOptimization,
-    ContentOptimization,
 )
 
 logger = get_logger(__name__)
@@ -32,7 +31,7 @@ class TitleOptimizationService:
         page_url: str,
         current_title: str,
         keyword_target: str,
-        modifiers: Optional[list[str]] = None,
+        modifiers: list[str] | None = None,
     ) -> TitleOptimization:
         """Generate title tag variants."""
         modifiers = modifiers or ["2024", "Guide", "Best"]
@@ -108,8 +107,12 @@ class MetaOptimizationService:
     ) -> MetaOptimization:
         """Generate meta description variants."""
         # Max 160 chars
-        variant_a = f"Discover everything about {keyword_target}. Expert guide with tips & best practices. {call_to_action}."[:160]
-        variant_b = f"Get the complete {keyword_target} guide. Proven strategies for success. Start free trial today. {call_to_action}."[:160]
+        variant_a = f"Discover everything about {keyword_target}. Expert guide with tips & best practices. {call_to_action}."[
+            :160
+        ]
+        variant_b = f"Get the complete {keyword_target} guide. Proven strategies for success. Start free trial today. {call_to_action}."[
+            :160
+        ]
 
         # Project CTR
         base_ctr = 2.0
@@ -158,7 +161,11 @@ class ContentOptimizationService:
             recommendations["add_internal_links"] = 2
 
         # Word count recommendations
-        recommended_wc = max(2000, current_word_count * 1.3) if current_word_count < 2000 else current_word_count
+        recommended_wc = (
+            max(2000, current_word_count * 1.3)
+            if current_word_count < 2000
+            else current_word_count
+        )
 
         optimization = ContentOptimization(
             business_id=business_id,
@@ -189,8 +196,8 @@ class OptimizationTaskService:
         page_url: str,
         task_type: str,
         priority: str,
-        proposed_title: Optional[str] = None,
-        proposed_meta: Optional[str] = None,
+        proposed_title: str | None = None,
+        proposed_meta: str | None = None,
         estimated_impact: str = "medium",
         impact_pct: float = 0.0,
     ) -> OptimizationTask:
@@ -225,7 +232,7 @@ class OptimizationTaskService:
             raise ValueError(f"Task {task_id} not found")
 
         task.status = "in_progress"
-        task.applied_at = datetime.now(timezone.utc)
+        task.applied_at = datetime.now(UTC)
         task.applied_by = applied_by
         task.applied = True
         await self.db.commit()
@@ -253,15 +260,17 @@ class OptimizationTaskService:
         task.rank_improvement = pre_rank - post_rank  # positive = better
         task.traffic_change_pct = traffic_change
         task.status = "completed"
-        task.executed_at = datetime.now(timezone.utc)
+        task.executed_at = datetime.now(UTC)
         await self.db.commit()
-        logger.info(f"Task results tracked: rank improvement={task.rank_improvement}, traffic={traffic_change}%")
+        logger.info(
+            f"Task results tracked: rank improvement={task.rank_improvement}, traffic={traffic_change}%"
+        )
         return task
 
     async def list_pending_tasks(
         self,
         business_id: uuid.UUID,
-        priority: Optional[str] = None,
+        priority: str | None = None,
     ) -> list[OptimizationTask]:
         """List pending optimization tasks."""
         query = select(OptimizationTask).where(
@@ -278,19 +287,27 @@ class OptimizationTaskService:
     async def impact_dashboard(self, business_id: uuid.UUID) -> dict:
         """Get optimization impact dashboard."""
         tasks = (
-            await self.db.execute(
-                select(OptimizationTask).where(
-                    and_(
-                        OptimizationTask.business_id == business_id,
-                        OptimizationTask.status == "completed",
+            (
+                await self.db.execute(
+                    select(OptimizationTask).where(
+                        and_(
+                            OptimizationTask.business_id == business_id,
+                            OptimizationTask.status == "completed",
+                        )
                     )
                 )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         total_tasks = len(tasks)
-        total_rank_improvement = sum(t.rank_improvement for t in tasks if t.rank_improvement)
-        avg_traffic_lift = sum(t.traffic_change_pct for t in tasks) / total_tasks if tasks else 0
+        total_rank_improvement = sum(
+            t.rank_improvement for t in tasks if t.rank_improvement
+        )
+        avg_traffic_lift = (
+            sum(t.traffic_change_pct for t in tasks) / total_tasks if tasks else 0
+        )
 
         return {
             "completed_tasks": total_tasks,

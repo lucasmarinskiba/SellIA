@@ -5,15 +5,18 @@ Decide cuándo + dónde + qué publicar basado en analytics.
 
 import logging
 import uuid
-from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
 
 class PublishingStrategy(str, Enum):
     """Estrategias de publicación."""
+
     DAILY = "daily"  # 1 post/día
     TWICE_DAILY = "twice_daily"  # 2 posts/día
     AGGRESSIVE = "aggressive"  # 3-4 posts/día
@@ -42,10 +45,10 @@ class ScheduledPost:
         self.strategy = strategy
         self.priority = priority
         self.status = "scheduled"  # scheduled, publishing, published, failed
-        self.created_at = datetime.utcnow()
-        self.published_at: Optional[datetime] = None
+        self.created_at = utc_now()
+        self.published_at: datetime | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "post_id": self.post_id,
             "platform": self.platform,
@@ -56,7 +59,9 @@ class ScheduledPost:
             "priority": self.priority,
             "status": self.status,
             "created_at": self.created_at.isoformat(),
-            "published_at": self.published_at.isoformat() if self.published_at else None,
+            "published_at": (
+                self.published_at.isoformat() if self.published_at else None
+            ),
         }
 
 
@@ -65,7 +70,7 @@ class PublishScheduler:
 
     def __init__(self):
         self.logger = logger
-        self.scheduled_posts: Dict[str, ScheduledPost] = {}
+        self.scheduled_posts: dict[str, ScheduledPost] = {}
 
     async def schedule_post(
         self,
@@ -73,7 +78,7 @@ class PublishScheduler:
         caption: str,
         image_url: str,
         strategy: PublishingStrategy,
-        custom_time: Optional[datetime] = None,
+        custom_time: datetime | None = None,
     ) -> ScheduledPost:
         """Programa post para publicar."""
         try:
@@ -84,7 +89,9 @@ class PublishScheduler:
                 scheduled_time = custom_time
 
             # Crear post
-            post_id = f"post_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
+            post_id = (
+                f"post_{utc_now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
+            )
 
             post = ScheduledPost(
                 post_id=post_id,
@@ -97,7 +104,9 @@ class PublishScheduler:
 
             self.scheduled_posts[post_id] = post
 
-            self.logger.info(f"Post scheduled: {post_id} at {scheduled_time.isoformat()}")
+            self.logger.info(
+                f"Post scheduled: {post_id} at {scheduled_time.isoformat()}"
+            )
 
             return post
 
@@ -111,7 +120,7 @@ class PublishScheduler:
         strategy: PublishingStrategy,
     ) -> datetime:
         """Obtiene próxima hora de publicación."""
-        now = datetime.utcnow()
+        now = utc_now()
 
         # Peak times por platform
         if platform == "tiktok":
@@ -153,14 +162,16 @@ class PublishScheduler:
         """Calcula mejor hora para publicar."""
         return await self.get_next_publishing_time(platform, strategy)
 
-    async def get_publishing_queue(self, limit: int = 10) -> List[ScheduledPost]:
+    async def get_publishing_queue(self, limit: int = 10) -> list[ScheduledPost]:
         """Obtiene posts próximos a publicar."""
-        now = datetime.utcnow()
+        now = utc_now()
 
         # Filtrar posts scheduled y ordenar por tiempo
         pending = [
-            post for post in self.scheduled_posts.values()
-            if post.status == "scheduled" and post.scheduled_time <= now + timedelta(hours=1)
+            post
+            for post in self.scheduled_posts.values()
+            if post.status == "scheduled"
+            and post.scheduled_time <= now + timedelta(hours=1)
         ]
 
         pending.sort(key=lambda p: p.scheduled_time)
@@ -182,12 +193,12 @@ class PublishScheduler:
         post.status = status
 
         if status == "published":
-            post.published_at = datetime.utcnow()
+            post.published_at = utc_now()
             self.logger.info(f"Post published: {post_id}")
 
         return True
 
-    def get_posting_frequency_recommendation(self, platform: str) -> Dict[str, Any]:
+    def get_posting_frequency_recommendation(self, platform: str) -> dict[str, Any]:
         """Recomienda frecuencia óptima de posting."""
         recommendations = {
             "tiktok": {

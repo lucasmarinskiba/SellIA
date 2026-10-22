@@ -8,8 +8,8 @@ fire the service-paid automation. One function, used by both paths.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,14 +27,17 @@ ALLOWED_TRANSITIONS: dict[str, list[str]] = {
         OrderStatus.CANCELLED.value,
         OrderStatus.REFUNDED.value,
     ],
-    OrderStatus.SHIPPED.value: [OrderStatus.DELIVERED.value, OrderStatus.REFUNDED.value],
+    OrderStatus.SHIPPED.value: [
+        OrderStatus.DELIVERED.value,
+        OrderStatus.REFUNDED.value,
+    ],
     OrderStatus.DELIVERED.value: [OrderStatus.REFUNDED.value],
     OrderStatus.CANCELLED.value: [],
     OrderStatus.REFUNDED.value: [],
 }
 
 
-def parse_status(raw: Any) -> Optional[OrderStatus]:
+def parse_status(raw: Any) -> OrderStatus | None:
     if isinstance(raw, OrderStatus):
         return raw
     if not raw:
@@ -48,7 +51,7 @@ def parse_status(raw: Any) -> Optional[OrderStatus]:
 
 def status_updates(order: Order, new_status: OrderStatus) -> dict[str, Any]:
     """The side fields a status change implies. No DB writes here."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     updates: dict[str, Any] = {"status": new_status}
 
     if new_status == OrderStatus.PAID:
@@ -88,7 +91,9 @@ def apply_status(
     if new_status.value == current:
         return {"changed": False, "reason": "La orden ya está en ese estado"}
 
-    if enforce_transitions and new_status.value not in ALLOWED_TRANSITIONS.get(current, []):
+    if enforce_transitions and new_status.value not in ALLOWED_TRANSITIONS.get(
+        current, []
+    ):
         return {
             "changed": False,
             "reason": f"No se puede pasar de '{current}' a '{new_status.value}'",
@@ -101,7 +106,8 @@ def apply_status(
     return {
         "changed": True,
         "updates": {k: str(v) for k, v in updates.items()},
-        "fires_service_paid": new_status == OrderStatus.PAID and _sells_a_service(order),
+        "fires_service_paid": new_status == OrderStatus.PAID
+        and _sells_a_service(order),
     }
 
 
@@ -145,6 +151,9 @@ async def fire_service_paid(db: AsyncSession, payload: dict[str, Any]) -> None:
                 "total_amount": payload["total_amount"],
             },
         )
-    except Exception as e:  # noqa: BLE001 - the payment stands even if the automation does not
-        logger.error(f"service_paid trigger failed for order {payload['order_id']}: {e}")
+    # - the payment stands even if the automation does not
+    except Exception as e:  # noqa: BLE001
+        logger.error(
+            f"service_paid trigger failed for order {payload['order_id']}: {e}"
+        )
         await db.rollback()

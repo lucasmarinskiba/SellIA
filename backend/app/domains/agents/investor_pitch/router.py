@@ -1,23 +1,23 @@
 import os
+from typing import Annotated
 from uuid import UUID
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import FileResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.agents.investor_pitch.service import InvestorPitchService
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/investor-pitch", tags=["investor-pitch"])
 
 
 @router.post("/decks", status_code=status.HTTP_201_CREATED)
 async def generate_deck(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = InvestorPitchService(db)
     try:
@@ -38,10 +38,10 @@ async def generate_deck(
 
 @router.get("/decks")
 async def list_decks(
-    limit: int = Query(50, ge=1, le=200),
-    offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ):
     service = InvestorPitchService(db)
     result = await service.list_decks(
@@ -68,8 +68,8 @@ async def list_decks(
 @router.get("/decks/{deck_id}")
 async def get_deck(
     deck_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = InvestorPitchService(db)
     data = await service.get_deck_with_slides(deck_id, current_user.business_id)
@@ -103,8 +103,8 @@ async def get_deck(
 @router.get("/decks/{deck_id}/html")
 async def get_html(
     deck_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = InvestorPitchService(db)
     deck = await service.get_deck(deck_id, current_user.business_id)
@@ -114,14 +114,16 @@ async def get_html(
     if not os.path.exists(deck.html_url):
         raise HTTPException(status_code=404, detail="HTML file missing")
 
-    return FileResponse(deck.html_url, media_type="text/html", filename=f"deck_{deck_id}.html")
+    return FileResponse(
+        deck.html_url, media_type="text/html", filename=f"deck_{deck_id}.html"
+    )
 
 
 @router.get("/decks/{deck_id}/pdf")
 async def get_pdf(
     deck_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = InvestorPitchService(db)
     deck = await service.get_deck(deck_id, current_user.business_id)
@@ -136,4 +138,6 @@ async def get_pdf(
     else:
         pdf_path = deck.pdf_url
 
-    return FileResponse(pdf_path, media_type="application/pdf", filename=f"deck_{deck_id}.pdf")
+    return FileResponse(
+        pdf_path, media_type="application/pdf", filename=f"deck_{deck_id}.pdf"
+    )

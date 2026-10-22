@@ -18,7 +18,9 @@ class PlatformListingSyncConnector(ABC):
         self.credentials = credentials
 
     @abstractmethod
-    async def update_listing_title(self, external_id: str, title: str) -> dict[str, Any]:
+    async def update_listing_title(
+        self, external_id: str, title: str
+    ) -> dict[str, Any]:
         """Update listing title on platform.
 
         Args:
@@ -28,10 +30,11 @@ class PlatformListingSyncConnector(ABC):
         Returns:
             Response dict with status, optional error_message
         """
-        pass
 
     @abstractmethod
-    async def update_listing_description(self, external_id: str, description: str) -> dict[str, Any]:
+    async def update_listing_description(
+        self, external_id: str, description: str
+    ) -> dict[str, Any]:
         """Update listing description/body on platform.
 
         Args:
@@ -41,12 +44,10 @@ class PlatformListingSyncConnector(ABC):
         Returns:
             Response dict with status, optional error_message
         """
-        pass
 
     @abstractmethod
     async def validate_credentials(self) -> bool:
         """Verify credentials are valid."""
-        pass
 
     @abstractmethod
     async def extract_listing_id(self, url: str) -> str | None:
@@ -58,4 +59,3 @@ class PlatformListingSyncConnector(ABC):
         Returns:
             Listing ID or None if can't extract
         """
-        pass

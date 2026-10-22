@@ -16,7 +16,7 @@ class LocationQRGenerator:
     def generate_checkin_qr(
         location_id: UUID,
         business_id: UUID | None = None,
-        qr_type: str = "visitor_checkin"  # visitor_checkin, staff_checkin, feedback
+        qr_type: str = "visitor_checkin",  # visitor_checkin, staff_checkin, feedback
     ) -> dict:
         """Generate QR code data for location check-in.
 
@@ -41,13 +41,12 @@ class LocationQRGenerator:
             "qr_type": qr_type,
             "location_id": str(location_id),
             "url_safe": True,
-            "encoding": "UTF-8"
+            "encoding": "UTF-8",
         }
 
     @staticmethod
     def generate_location_qr_batch(
-        location_id: UUID,
-        qr_types: list[str] = None
+        location_id: UUID, qr_types: list[str] = None
     ) -> dict:
         """Generate multiple QR codes for one location.
 
@@ -65,7 +64,7 @@ class LocationQRGenerator:
         return {
             "location_id": str(location_id),
             "qr_codes": qr_codes,
-            "print_ready": True  # Can be printed as physical posters
+            "print_ready": True,  # Can be printed as physical posters
         }
 
     @staticmethod
@@ -87,11 +86,17 @@ class LocationQRGenerator:
             location_id = UUID(params["location"])
             business_id = UUID(params["business"]) if "business" in params else None
         except (KeyError, ValueError):
-            return {"valid": False, "error": "QR needs a valid location (and business, when present) id"}
+            return {
+                "valid": False,
+                "error": "QR needs a valid location (and business, when present) id",
+            }
 
         qr_type = params.get("type", "visitor_checkin")
         if qr_type not in VALID_QR_TYPES:
-            return {"valid": False, "error": f"QR type must be one of: {list(VALID_QR_TYPES)}"}
+            return {
+                "valid": False,
+                "error": f"QR type must be one of: {list(VALID_QR_TYPES)}",
+            }
 
         return {
             "valid": True,

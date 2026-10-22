@@ -11,6 +11,7 @@ directly set the referenced transaction's status to APPROVED -- a
 complete payment-confirmation bypass, no signature, no auth, no
 business-ownership check on the transaction being "confirmed".
 """
+
 import hashlib
 import hmac
 

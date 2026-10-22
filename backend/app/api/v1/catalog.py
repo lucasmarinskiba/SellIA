@@ -1,16 +1,24 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+import logging
+from typing import Annotated, Any
 from uuid import UUID
-from typing import Any
 
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.cache import cached, invalidate_cache_pattern
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.core.cache import cached, invalidate_cache_pattern
-from app.domains.users.models import User
 from app.domains.businesses.models import Business
 from app.domains.catalogs.models import CatalogItem
-from app.domains.catalogs.schemas import CatalogItemCreate, CatalogItemUpdate, CatalogItemResponse
+from app.domains.catalogs.schemas import (
+    CatalogItemCreate,
+    CatalogItemResponse,
+    CatalogItemUpdate,
+)
+from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -31,12 +39,16 @@ async def _get_business_for_user(
     return business
 
 
-@router.post("/{business_id}/items", response_model=CatalogItemResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{business_id}/items",
+    response_model=CatalogItemResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_catalog_item(
     business_id: UUID,
     item_in: CatalogItemCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
 
@@ -64,13 +76,14 @@ async def create_catalog_item(
 @router.post("/{business_id}/catalog/sync-push")
 async def sync_catalog_push(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Push local catalog items to all connected external platforms."""
     await _get_business_for_user(business_id, current_user, db)
 
     from app.domains.catalogs.sync_service import CatalogSyncService
+
     sync_service = CatalogSyncService(db)
     results = await sync_service.push_all(business_id)
     await invalidate_cache_pattern(f"catalog:*:{business_id}:*")
@@ -92,13 +105,14 @@ async def sync_catalog_push(
 @router.post("/{business_id}/catalog/sync-pull")
 async def sync_catalog_pull(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Pull products from all connected external platforms into local catalog."""
     await _get_business_for_user(business_id, current_user, db)
 
     from app.domains.catalogs.sync_service import CatalogSyncService
+
     sync_service = CatalogSyncService(db)
     results = await sync_service.pull_all(business_id)
     await invalidate_cache_pattern(f"catalog:*:{business_id}:*")
@@ -121,8 +135,8 @@ async def sync_catalog_pull(
 @router.get("/{business_id}/items", response_model=list[CatalogItemResponse])
 async def list_catalog_items(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
     result = await db.execute(
@@ -139,8 +153,8 @@ async def list_catalog_items(
 async def get_catalog_item(
     business_id: UUID,
     item_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
     result = await db.execute(
@@ -160,8 +174,8 @@ async def update_catalog_item(
     business_id: UUID,
     item_id: UUID,
     item_in: CatalogItemUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
     result = await db.execute(
@@ -191,8 +205,8 @@ async def update_catalog_item(
 async def delete_catalog_item(
     business_id: UUID,
     item_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
     result = await db.execute(
@@ -208,13 +222,12 @@ async def delete_catalog_item(
     item.is_active = False
     await db.commit()
     await invalidate_cache_pattern(f"catalog:*:{business_id}:*")
-    return None
 
 
 @router.post("/debug/add-listing-columns", tags=["debug"])
 async def debug_add_listing_columns(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Temporary: force-apply the catalog_items schema patch (category,
     source_platform, external_id + the dedup unique constraint) immediately.
@@ -225,30 +238,55 @@ async def debug_add_listing_columns(
     (backend/app/api/v1/businesses.py). Call once after deploy.
     """
     if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
+        raise HTTPException(
+            status_code=403, detail="Requiere permisos de administrador"
+        )
     from sqlalchemy import text
+
     try:
-        await db.execute(text("ALTER TABLE catalog_items ADD COLUMN IF NOT EXISTS category VARCHAR(120)"))
-        await db.execute(text("ALTER TABLE catalog_items ADD COLUMN IF NOT EXISTS source_platform VARCHAR(50)"))
-        await db.execute(text("ALTER TABLE catalog_items ADD COLUMN IF NOT EXISTS external_id VARCHAR(255)"))
-        await db.execute(text("ALTER TABLE catalog_items ADD COLUMN IF NOT EXISTS listing_url VARCHAR(1024)"))
-        await db.execute(text(
-            "ALTER TABLE catalog_items ADD CONSTRAINT uq_catalog_item_external "
-            "UNIQUE (business_id, source_platform, external_id)"
-        ))
+        await db.execute(
+            text(
+                "ALTER TABLE catalog_items ADD COLUMN IF NOT EXISTS category VARCHAR(120)"
+            )
+        )
+        await db.execute(
+            text(
+                "ALTER TABLE catalog_items ADD COLUMN IF NOT EXISTS source_platform VARCHAR(50)"
+            )
+        )
+        await db.execute(
+            text(
+                "ALTER TABLE catalog_items ADD COLUMN IF NOT EXISTS external_id VARCHAR(255)"
+            )
+        )
+        await db.execute(
+            text(
+                "ALTER TABLE catalog_items ADD COLUMN IF NOT EXISTS listing_url VARCHAR(1024)"
+            )
+        )
+        await db.execute(
+            text(
+                "ALTER TABLE catalog_items ADD CONSTRAINT uq_catalog_item_external "
+                "UNIQUE (business_id, source_platform, external_id)"
+            )
+        )
         await db.commit()
         return {"status": "ok"}
     except Exception as e:
+        logger.exception("debug_add_listing_columns: error inesperado")
         await db.rollback()
         return {"status": "error", "error": str(e)}
 
 
-@router.post("/{business_id}/items/{item_id}/enhance-description", response_model=CatalogItemResponse)
+@router.post(
+    "/{business_id}/items/{item_id}/enhance-description",
+    response_model=CatalogItemResponse,
+)
 async def enhance_catalog_description(
     business_id: UUID,
     item_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Use AI to enhance a catalog item's description for better sales conversion."""
     await _get_business_for_user(business_id, current_user, db)
@@ -295,13 +333,19 @@ Responde SOLO con la descripción mejorada, sin explicaciones."""
     )
 
     if not enhanced:
-        raise HTTPException(status_code=500, detail="No se pudo generar la descripción mejorada")
+        raise HTTPException(
+            status_code=500, detail="No se pudo generar la descripción mejorada"
+        )
 
     original_description = item.description
     item.description = enhanced.strip()
     if not item.extra_data:
         item.extra_data = {}
-    item.extra_data["description_enhanced_at"] = __import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat()
+    item.extra_data["description_enhanced_at"] = (
+        __import__("datetime")
+        .datetime.now(__import__("datetime").timezone.utc)
+        .isoformat()
+    )
     item.extra_data["original_description"] = original_description
     await db.commit()
     await db.refresh(item)
@@ -309,12 +353,14 @@ Responde SOLO con la descripción mejorada, sin explicaciones."""
     return item
 
 
-@router.post("/{business_id}/items/{item_id}/seo-optimize", response_model=CatalogItemResponse)
+@router.post(
+    "/{business_id}/items/{item_id}/seo-optimize", response_model=CatalogItemResponse
+)
 async def seo_optimize_catalog_item(
     business_id: UUID,
     item_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Generate real per-item SEO: an optimized title, a meta description,
     and a schema.org Product/Service JSON-LD block. The only SEO that
@@ -341,8 +387,8 @@ async def seo_optimize_catalog_item(
     platform_hint = (
         f"El título debe seguir las convenciones de búsqueda de {item.source_platform} "
         f"(no un <title> de sitio web genérico)."
-        if item.source_platform else
-        "No está publicado en ninguna plataforma externa todavía -- generá un título para SEO de sitio web propio."
+        if item.source_platform
+        else "No está publicado en ninguna plataforma externa todavía -- generá un título para SEO de sitio web propio."
     )
 
     system_prompt = """Sos un especialista en SEO de e-commerce. Respondé SOLO con un objeto JSON
@@ -365,8 +411,12 @@ DESCRIPCIÓN: {item.description or 'sin descripción'}
     import json as _json
 
     raw = await generate_raw_ai_response(
-        db=db, business_id=business_id, system_prompt=system_prompt,
-        user_prompt=user_prompt, max_tokens=200, temperature=0.4,
+        db=db,
+        business_id=business_id,
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
+        max_tokens=200,
+        temperature=0.4,
     )
     if not raw:
         raise HTTPException(status_code=500, detail="No se pudo generar el SEO")
@@ -376,6 +426,7 @@ DESCRIPCIÓN: {item.description or 'sin descripción'}
         title = str(parsed.get("title", item.name))[:70]
         meta_description = str(parsed.get("meta_description", ""))[:170]
     except Exception:
+        logger.exception("seo_optimize_catalog_item: error inesperado")
         title, meta_description = item.name, (item.description or "")[:160]
 
     schema_type = "Service" if item_type == "service" else "Product"
@@ -390,7 +441,11 @@ DESCRIPCIÓN: {item.description or 'sin descripción'}
             "@type": "Offer",
             "price": str(item.price),
             "priceCurrency": item.currency,
-            "availability": "https://schema.org/InStock" if item.is_available else "https://schema.org/OutOfStock",
+            "availability": (
+                "https://schema.org/InStock"
+                if item.is_available
+                else "https://schema.org/OutOfStock"
+            ),
         }
     else:
         schema_json["offers"] = {
@@ -405,7 +460,9 @@ DESCRIPCIÓN: {item.description or 'sin descripción'}
         "title": title,
         "meta_description": meta_description,
         "schema_json": schema_json,
-        "generated_at": __import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat(),
+        "generated_at": __import__("datetime")
+        .datetime.now(__import__("datetime").timezone.utc)
+        .isoformat(),
     }
     await db.commit()
     await db.refresh(item)
@@ -413,12 +470,14 @@ DESCRIPCIÓN: {item.description or 'sin descripción'}
     return item
 
 
-@router.post("/{business_id}/items/{item_id}/fomo-generate", response_model=CatalogItemResponse)
+@router.post(
+    "/{business_id}/items/{item_id}/fomo-generate", response_model=CatalogItemResponse
+)
 async def fomo_generate_catalog_item(
     business_id: UUID,
     item_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Generate urgency/value copy for one listing, grounded only in real
     data (price, real stock if any, availability). This codebase already
@@ -456,7 +515,11 @@ Reglas CRÍTICAS:
 - headline: máximo 90 caracteres, en español, directo.
 - Respondé SOLO el JSON, sin markdown ni explicaciones."""
 
-    stock_line = f"STOCK REAL: {item.stock} unidades" if item.stock is not None else "STOCK: no aplica / sin dato real"
+    stock_line = (
+        f"STOCK REAL: {item.stock} unidades"
+        if item.stock is not None
+        else "STOCK: no aplica / sin dato real"
+    )
     user_prompt = f"""NOMBRE: {item.name}
 TIPO: {item.type.value if hasattr(item.type, 'value') else item.type}
 PRECIO: {item.currency} {item.price}
@@ -467,16 +530,23 @@ DISPONIBLE: {'sí' if item.is_available else 'no'}
     import json as _json
 
     raw = await generate_raw_ai_response(
-        db=db, business_id=business_id, system_prompt=system_prompt,
-        user_prompt=user_prompt, max_tokens=100, temperature=0.6,
+        db=db,
+        business_id=business_id,
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
+        max_tokens=100,
+        temperature=0.6,
     )
     if not raw:
-        raise HTTPException(status_code=500, detail="No se pudo generar el copy de FOMO")
+        raise HTTPException(
+            status_code=500, detail="No se pudo generar el copy de FOMO"
+        )
 
     try:
         parsed = _json.loads(raw.strip())
         headline = str(parsed.get("headline", ""))[:120]
     except Exception:
+        logger.exception("fomo_generate_catalog_item: error inesperado")
         headline = raw.strip()[:120]
 
     if not item.extra_data:
@@ -484,7 +554,9 @@ DISPONIBLE: {'sí' if item.is_available else 'no'}
     item.extra_data["fomo"] = {
         "headline": headline,
         "angle": angle,
-        "generated_at": __import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat(),
+        "generated_at": __import__("datetime")
+        .datetime.now(__import__("datetime").timezone.utc)
+        .isoformat(),
     }
     await db.commit()
     await db.refresh(item)

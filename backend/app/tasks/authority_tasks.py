@@ -12,10 +12,9 @@ refreshes the action list, and sends nothing to anyone.
 
 from __future__ import annotations
 
-
+from app.core.async_bridge import run_async
 from app.core.logger import get_logger
 from app.tasks.celery_app import celery_app
-from app.core.async_bridge import run_async
 
 logger = get_logger(__name__)
 
@@ -34,7 +33,9 @@ async def _measure_all() -> dict[str, int]:
         # endless series of identical zeros and no insight.
         result = await db.execute(
             select(User).where(
-                User.id.in_(select(Business.user_id).where(Business.user_id.isnot(None)))
+                User.id.in_(
+                    select(Business.user_id).where(Business.user_id.isnot(None))
+                )
             )
         )
         users = list(result.scalars().all())
@@ -44,7 +45,8 @@ async def _measure_all() -> dict[str, int]:
             async with AsyncSessionLocal() as db:
                 await capture_snapshot(db, user, force=True)
             measured += 1
-        except Exception as e:  # noqa: BLE001 -- one account must not stop the sweep
+        # one account must not stop the sweep
+        except Exception as e:  # noqa: BLE001
             logger.warning("authority weekly: %s failed: %s", user.id, str(e)[:200])
             failed += 1
 

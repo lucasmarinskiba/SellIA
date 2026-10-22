@@ -5,17 +5,21 @@ Integrates with MessageIntelligenceService for sentiment analysis.
 """
 
 import uuid
-from datetime import datetime, timezone
-from typing import Optional, Any, List
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.growth.models import SocialProofItem, SocialProofType, SocialProofStatus
-from app.domains.intelligence.service import MessageIntelligenceService
-from app.domains.agents.ai_reply import generate_raw_ai_response
-from app.core.logger import get_logger
 from app.core.events import event_bus
+from app.core.logger import get_logger
+from app.domains.agents.ai_reply import generate_raw_ai_response
+from app.domains.growth.models import (
+    SocialProofItem,
+    SocialProofStatus,
+    SocialProofType,
+)
+from app.domains.intelligence.service import MessageIntelligenceService
 
 logger = get_logger(__name__)
 
@@ -42,7 +46,9 @@ class SocialProofEngine:
         existing = await self.db.execute(
             select(SocialProofItem).where(
                 SocialProofItem.order_id == order_id,
-                SocialProofItem.item_type.in_([SocialProofType.REVIEW, SocialProofType.RATING]),
+                SocialProofItem.item_type.in_(
+                    [SocialProofType.REVIEW, SocialProofType.RATING]
+                ),
             )
         )
         if existing.scalar_one_or_none():
@@ -54,6 +60,7 @@ class SocialProofEngine:
         # Send message (immediate or scheduled)
         if delay_hours <= 0:
             from app.domains.channels.services import send_outbound_message
+
             try:
                 await send_outbound_message(
                     self.db,
@@ -62,13 +69,17 @@ class SocialProofEngine:
                     content_type="text",
                 )
             except Exception as e:
-                logger.error(f"Failed to send review request: {e}")
+                logger.exception("Failed to send review request")
                 return {"status": "error", "reason": str(e)}
 
-        logger.info(f"Sent review request for order {order_id} to conversation {conversation_id}")
+        logger.info(
+            f"Sent review request for order {order_id} to conversation {conversation_id}"
+        )
         return {"status": "sent", "channel": channel, "delay_hours": delay_hours}
 
-    async def _generate_review_request(self, business_id: uuid.UUID, channel: str) -> str:
+    async def _generate_review_request(
+        self, business_id: uuid.UUID, channel: str
+    ) -> str:
         """Generate a personalized review request message."""
         system_prompt = """Eres un experto en solicitud de reviews. Escribes mensajes que:
 1. Suenan genuinos y personales
@@ -93,16 +104,19 @@ El mensaje debe:
 Ejemplo: "¡Hola! Espero que estés disfrutando [producto]. Me ayudaría MUCHO si me contás cómo fue tu experiencia. Simplemente respondé con ⭐ (1-5) y una frase. ¡Gracias de corazón!"""
 
         try:
-            return await generate_raw_ai_response(
-                db=self.db,
-                business_id=business_id,
-                system_prompt=system_prompt,
-                user_prompt=user_prompt,
-                max_tokens=400,
-                temperature=0.7,
-            ) or "¡Hola! Espero que estés disfrutando tu compra. Me ayudaría MUCHO si me contás cómo fue tu experiencia. Simplemente respondé con ⭐ (1-5) y una frase. ¡Gracias de corazón!"
-        except Exception as e:
-            logger.error(f"Failed to generate review request: {e}")
+            return (
+                await generate_raw_ai_response(
+                    db=self.db,
+                    business_id=business_id,
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    max_tokens=400,
+                    temperature=0.7,
+                )
+                or "¡Hola! Espero que estés disfrutando tu compra. Me ayudaría MUCHO si me contás cómo fue tu experiencia. Simplemente respondé con ⭐ (1-5) y una frase. ¡Gracias de corazón!"
+            )
+        except Exception:
+            logger.exception("Failed to generate review request")
             return "¡Hola! Espero que estés disfrutando tu compra. Me ayudaría MUCHO si me contás cómo fue tu experiencia. Simplemente respondé con ⭐ (1-5) y una frase. ¡Gracias de corazón!"
 
     async def collect_testimonial(
@@ -110,16 +124,20 @@ Ejemplo: "¡Hola! Espero que estés disfrutando [producto]. Me ayudaría MUCHO s
         business_id: uuid.UUID,
         conversation_id: uuid.UUID,
         content: str,
-        order_id: uuid.UUID = None,
-        customer_name: str = None,
-        media_urls: List[str] = None,
+        order_id: uuid.UUID | None = None,
+        customer_name: str | None = None,
+        media_urls: list[str] | None = None,
     ) -> SocialProofItem:
         """Collect and analyze a customer testimonial/review."""
         # Analyze sentiment
         sentiment_score = await self._analyze_sentiment(content)
 
         # Auto-approve if highly positive
-        status = SocialProofStatus.AUTO_APPROVED if sentiment_score > 0.7 else SocialProofStatus.PENDING
+        status = (
+            SocialProofStatus.AUTO_APPROVED
+            if sentiment_score > 0.7
+            else SocialProofStatus.PENDING
+        )
 
         # Generate AI summary
         ai_summary = await self._generate_summary(business_id, content)
@@ -145,28 +163,76 @@ Ejemplo: "¡Hola! Espero que estés disfrutando [producto]. Me ayudaría MUCHO s
         await self.db.refresh(item)
 
         # Emit event
-        await event_bus.emit("social_proof.collected", {
-            "business_id": str(business_id),
-            "item_id": str(item.id),
-            "type": "testimonial",
-            "sentiment_score": float(sentiment_score),
-            "auto_approved": status == SocialProofStatus.AUTO_APPROVED,
-        })
-
-        if status == SocialProofStatus.AUTO_APPROVED:
-            await event_bus.emit("social_proof.approved", {
+        await event_bus.emit(
+            "social_proof.collected",
+            {
                 "business_id": str(business_id),
                 "item_id": str(item.id),
-            })
+                "type": "testimonial",
+                "sentiment_score": float(sentiment_score),
+                "auto_approved": status == SocialProofStatus.AUTO_APPROVED,
+            },
+        )
 
-        logger.info(f"Collected social proof item {item.id} (sentiment: {sentiment_score})")
+        if status == SocialProofStatus.AUTO_APPROVED:
+            await event_bus.emit(
+                "social_proof.approved",
+                {
+                    "business_id": str(business_id),
+                    "item_id": str(item.id),
+                },
+            )
+
+        logger.info(
+            f"Collected social proof item {item.id} (sentiment: {sentiment_score})"
+        )
         return item
 
     async def _analyze_sentiment(self, content: str) -> float:
         """Analyze sentiment of a review/testimonial."""
         # Simple heuristic: count positive vs negative words
-        positive_words = ["excelente", "genial", "increíble", "fantástico", "amazing", "great", "love", "perfecto", "recomiendo", "mejor", "buenísimo", "súper", "encantado", "satisfecho", "feliz", "gracias", "maravilloso", "outstanding", "awesome"]
-        negative_words = ["malo", "horrible", "terrible", "peor", "decepcionado", "problema", "error", "falla", "lento", "caro", "fraude", "estafa", "malo", "defectuoso", "worst", "hate", "disappointed", "bad", "poor"]
+        positive_words = [
+            "excelente",
+            "genial",
+            "increíble",
+            "fantástico",
+            "amazing",
+            "great",
+            "love",
+            "perfecto",
+            "recomiendo",
+            "mejor",
+            "buenísimo",
+            "súper",
+            "encantado",
+            "satisfecho",
+            "feliz",
+            "gracias",
+            "maravilloso",
+            "outstanding",
+            "awesome",
+        ]
+        negative_words = [
+            "malo",
+            "horrible",
+            "terrible",
+            "peor",
+            "decepcionado",
+            "problema",
+            "error",
+            "falla",
+            "lento",
+            "caro",
+            "fraude",
+            "estafa",
+            "malo",
+            "defectuoso",
+            "worst",
+            "hate",
+            "disappointed",
+            "bad",
+            "poor",
+        ]
 
         content_lower = content.lower()
         pos_count = sum(1 for word in positive_words if word in content_lower)
@@ -180,18 +246,22 @@ Ejemplo: "¡Hola! Espero que estés disfrutando [producto]. Me ayudaría MUCHO s
     async def _generate_summary(self, business_id: uuid.UUID, content: str) -> str:
         """Generate AI summary of testimonial."""
         try:
-            return await generate_raw_ai_response(
-                db=self.db,
-                business_id=business_id,
-                system_prompt="Resume testimonios en 1-2 oraciones capturando el beneficio principal.",
-                user_prompt=f"Resume este testimonio: {content[:500]}",
-                max_tokens=150,
-                temperature=0.5,
-            ) or ""
+            return (
+                await generate_raw_ai_response(
+                    db=self.db,
+                    business_id=business_id,
+                    system_prompt="Resume testimonios en 1-2 oraciones capturando el beneficio principal.",
+                    user_prompt=f"Resume este testimonio: {content[:500]}",
+                    max_tokens=150,
+                    temperature=0.5,
+                )
+                or ""
+            )
         except Exception:
+            logger.exception("_generate_summary: error inesperado")
             return ""
 
-    async def _extract_quotes(self, business_id: uuid.UUID, content: str) -> List[str]:
+    async def _extract_quotes(self, business_id: uuid.UUID, content: str) -> list[str]:
         """Extract powerful quotes from testimonial."""
         try:
             response = await generate_raw_ai_response(
@@ -203,14 +273,18 @@ Ejemplo: "¡Hola! Espero que estés disfrutando [producto]. Me ayudaría MUCHO s
                 temperature=0.5,
             )
             import json
+
             parsed = json.loads(response or "{}")
             return parsed.get("quotes", [])
         except Exception:
+            logger.exception("_extract_quotes: error inesperado")
             return []
 
     # ========== Moderation ==========
 
-    async def approve_item(self, item_id: uuid.UUID, approved_by: uuid.UUID = None) -> SocialProofItem:
+    async def approve_item(
+        self, item_id: uuid.UUID, approved_by: uuid.UUID | None = None
+    ) -> SocialProofItem:
         """Manually approve a social proof item."""
         item = await self.db.get(SocialProofItem, item_id)
         if not item:
@@ -218,18 +292,23 @@ Ejemplo: "¡Hola! Espero que estés disfrutando [producto]. Me ayudaría MUCHO s
 
         item.status = SocialProofStatus.APPROVED
         item.approved_by = approved_by
-        item.approved_at = datetime.now(timezone.utc)
+        item.approved_at = datetime.now(UTC)
         await self.db.commit()
         await self.db.refresh(item)
 
-        await event_bus.emit("social_proof.approved", {
-            "business_id": str(item.business_id),
-            "item_id": str(item_id),
-        })
+        await event_bus.emit(
+            "social_proof.approved",
+            {
+                "business_id": str(item.business_id),
+                "item_id": str(item_id),
+            },
+        )
 
         return item
 
-    async def reject_item(self, item_id: uuid.UUID, reason: str = "") -> SocialProofItem:
+    async def reject_item(
+        self, item_id: uuid.UUID, reason: str = ""
+    ) -> SocialProofItem:
         """Reject a social proof item."""
         item = await self.db.get(SocialProofItem, item_id)
         if not item:
@@ -248,12 +327,14 @@ Ejemplo: "¡Hola! Espero que estés disfrutando [producto]. Me ayudaría MUCHO s
         business_id: uuid.UUID,
         item_type: SocialProofType = None,
         count: int = 10,
-        min_rating: int = None,
-    ) -> List[SocialProofItem]:
+        min_rating: int | None = None,
+    ) -> list[SocialProofItem]:
         """Get approved social proof items for display."""
         query = select(SocialProofItem).where(
             SocialProofItem.business_id == business_id,
-            SocialProofItem.status.in_([SocialProofStatus.APPROVED, SocialProofStatus.AUTO_APPROVED]),
+            SocialProofItem.status.in_(
+                [SocialProofStatus.APPROVED, SocialProofStatus.AUTO_APPROVED]
+            ),
             SocialProofItem.is_active == True,
         )
         if item_type:
@@ -271,28 +352,36 @@ Ejemplo: "¡Hola! Espero que estés disfrutando [producto]. Me ayudaría MUCHO s
         item_type: SocialProofType = SocialProofType.TESTIMONIAL,
     ) -> str:
         """Add relevant social proof to a sales message."""
-        items = await self.get_social_proof_wall(business_id, item_type=item_type, count=1)
+        items = await self.get_social_proof_wall(
+            business_id, item_type=item_type, count=1
+        )
         if not items:
             return message
 
         item = items[0]
         item.usage_count += 1
-        item.last_used_at = datetime.now(timezone.utc)
+        item.last_used_at = datetime.now(UTC)
         await self.db.commit()
 
         # Format testimonial snippet
-        testimonial_snippet = f'"{item.content[:120]}..." — {item.customer_name or "Cliente feliz"}'
+        testimonial_snippet = (
+            f'"{item.content[:120]}..." — {item.customer_name or "Cliente feliz"}'
+        )
         social_proof_block = f"\n\n💬 {testimonial_snippet}\n"
 
         return message + social_proof_block
 
-    async def get_moderation_queue(self, business_id: uuid.UUID) -> List[SocialProofItem]:
+    async def get_moderation_queue(
+        self, business_id: uuid.UUID
+    ) -> list[SocialProofItem]:
         """Get pending social proof items for moderation."""
         result = await self.db.execute(
-            select(SocialProofItem).where(
+            select(SocialProofItem)
+            .where(
                 SocialProofItem.business_id == business_id,
                 SocialProofItem.status == SocialProofStatus.PENDING,
-            ).order_by(desc(SocialProofItem.created_at))
+            )
+            .order_by(desc(SocialProofItem.created_at))
         )
         return list(result.scalars().all())
 
@@ -308,7 +397,9 @@ Ejemplo: "¡Hola! Espero que estés disfrutando [producto]. Me ayudaría MUCHO s
         approved_result = await self.db.execute(
             select(func.count(SocialProofItem.id)).where(
                 SocialProofItem.business_id == business_id,
-                SocialProofItem.status.in_([SocialProofStatus.APPROVED, SocialProofStatus.AUTO_APPROVED]),
+                SocialProofItem.status.in_(
+                    [SocialProofStatus.APPROVED, SocialProofStatus.AUTO_APPROVED]
+                ),
             )
         )
         approved = approved_result.scalar() or 0

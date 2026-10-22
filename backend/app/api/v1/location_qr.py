@@ -40,8 +40,8 @@ async def get_location_qr_codes(
             "usage": {
                 "visitor_checkin": "Customers scan to check in",
                 "feedback": "Customers scan to submit NPS feedback",
-                "staff_checkin": "Staff scans to start shift"
-            }
+                "staff_checkin": "Staff scans to start shift",
+            },
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -57,7 +57,9 @@ async def get_single_qr(
     """Generate single QR code by type."""
     await require_location_access(db, location_id, current_user)
     if qr_type not in VALID_QR_TYPES:
-        raise HTTPException(status_code=400, detail=f"QR type must be one of: {list(VALID_QR_TYPES)}")
+        raise HTTPException(
+            status_code=400, detail=f"QR type must be one of: {list(VALID_QR_TYPES)}"
+        )
 
     try:
         return LocationQRGenerator.generate_checkin_qr(location_id, None, qr_type)

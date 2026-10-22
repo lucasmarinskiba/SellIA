@@ -12,13 +12,13 @@ from app.domains.forecasting.backtest import RollingOriginBacktester
 from app.domains.forecasting.models import default_model_pool
 from app.domains.forecasting.models.base import DEFAULT_QUANTILES
 from app.domains.forecasting.models.ensemble import EnsembleForecaster
+from app.domains.forecasting.models.ml import GBMForecaster
 from app.domains.forecasting.models.statistical import (
     CrostonForecaster,
     HoltWintersForecaster,
     SeasonalNaiveForecaster,
     ThetaForecaster,
 )
-from app.domains.forecasting.models.ml import GBMForecaster
 from app.domains.forecasting.types import BacktestReport, ForecastResult, TimeSeries
 
 logger = get_logger(__name__)
@@ -39,7 +39,10 @@ def _optional_ctor(name: str):
             ETSStatsmodelsForecaster,
             SarimaForecaster,
         )
-        return {"ets_sm": ETSStatsmodelsForecaster, "sarima": SarimaForecaster}.get(name)
+
+        return {"ets_sm": ETSStatsmodelsForecaster, "sarima": SarimaForecaster}.get(
+            name
+        )
     except Exception:  # noqa: BLE001
         return None
 
@@ -70,7 +73,7 @@ class ForecastPipeline:
         horizon: int = 28,
         quantiles: tuple[float, ...] = DEFAULT_QUANTILES,
         n_folds: int = 4,
-        profile: str = "full",   # "full" | "fast"
+        profile: str = "full",  # "full" | "fast"
     ):
         self.horizon = horizon
         self.quantiles = tuple(sorted(set(quantiles) | {0.5}))
@@ -85,15 +88,23 @@ class ForecastPipeline:
             freq=ts.index.freq or freq,
         )
 
-    def _future_exog(self, ts: TimeSeries, future_index: pd.DatetimeIndex) -> pd.DataFrame | None:
+    def _future_exog(
+        self, ts: TimeSeries, future_index: pd.DatetimeIndex
+    ) -> pd.DataFrame | None:
         if ts.exog is None or ts.exog.empty:
             return None
         tail = ts.exog.tail(min(28, len(ts.exog)))
         return pd.DataFrame(
             {
-                "price": float(tail["price"].replace(0, np.nan).ffill().bfill().iloc[-1]) if "price" in tail else 0.0,
+                "price": (
+                    float(tail["price"].replace(0, np.nan).ffill().bfill().iloc[-1])
+                    if "price" in tail
+                    else 0.0
+                ),
                 "promo": float(tail["promo"].mean()) if "promo" in tail else 0.0,
-                "ad_spend": float(tail["ad_spend"].mean()) if "ad_spend" in tail else 0.0,
+                "ad_spend": (
+                    float(tail["ad_spend"].mean()) if "ad_spend" in tail else 0.0
+                ),
             },
             index=future_index,
         )
@@ -121,7 +132,8 @@ class ForecastPipeline:
             if ctor:
                 try:
                     members.append(ctor())
-                except Exception:  # noqa: BLE001
+                except Exception:
+                    logger.exception("run: error ignorado")
                     continue
         if not members:
             members = [SeasonalNaiveForecaster(), ThetaForecaster()]
@@ -132,7 +144,10 @@ class ForecastPipeline:
 
         future_index = self._future_index(ts)
         forecast = ensemble.predict(
-            self.horizon, future_index, self._future_exog(ts, future_index), self.quantiles
+            self.horizon,
+            future_index,
+            self._future_exog(ts, future_index),
+            self.quantiles,
         ).clip_nonnegative()
         forecast.diagnostics.setdefault("backtest", report.summary())
         forecast.diagnostics["ensemble_weights"] = report.weights

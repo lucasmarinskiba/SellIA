@@ -4,19 +4,21 @@ Used by workflow engine, chatbot rules, and any other system component
 that needs to generate AI responses with expert voice composition.
 """
 
+import logging
 import uuid
-from typing import Dict, Any, Optional
+from typing import Any
 
-from sqlalchemy import select, func
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
-
+from app.core.logger import get_logger
 from app.domains.agents.models import AgentPersonality
 from app.domains.agents.prompts import compose_system_prompt, get_system_prompt
-from app.domains.channels.models import Conversation, Message
 from app.domains.businesses.models import Business
-from app.core.logger import get_logger
+from app.domains.channels.models import Conversation, Message
+
+logger = logging.getLogger(__name__)
 
 
 def _is_persistent(instance: Any) -> bool:
@@ -56,10 +58,10 @@ async def generate_ai_response(
     personality_slug: str,
     business_id: uuid.UUID,
     custom_prompt: str = "",
-    voice_slug: Optional[str] = None,
+    voice_slug: str | None = None,
     max_tokens: int = 1500,
-    force_stage: Optional[str] = None,
-) -> Optional[str]:
+    force_stage: str | None = None,
+) -> str | None:
     """
     Generate an AI response for a conversation using a personality + optional expert voice.
 
@@ -96,6 +98,7 @@ async def generate_ai_response(
     business_context = {}
     try:
         from app.domains.agents.context_builder import BusinessContextBuilder
+
         ctx_builder = BusinessContextBuilder(db)
         business_context = await ctx_builder.build_system_prompt_context(
             business_id=business_id,
@@ -107,6 +110,7 @@ async def generate_ai_response(
         else:
             business_context.pop("voice_personality_slug", None)
     except Exception as e:
+        logger.exception("generate_ai_response: error inesperado")
         get_logger(__name__).error(f"Context builder error: {e}")
         await _rollback(db)
 
@@ -119,8 +123,8 @@ async def generate_ai_response(
     detected_stage = None
     business_type = None
     try:
-        from app.domains.agents.funnel_stage_detector import detect_funnel_stage
         from app.domains.agents.funnel_ab_bridge import get_stage_voice_slug
+        from app.domains.agents.funnel_stage_detector import detect_funnel_stage
 
         business_result = await db.execute(
             select(Business.type).where(Business.id == business_id)
@@ -134,19 +138,25 @@ async def generate_ai_response(
             detected_stage = None
             if force_stage:
                 from app.core.prompts.funnel_specialists import FunnelStage
+
                 try:
                     detected_stage = FunnelStage(force_stage)
                 except ValueError:
                     detected_stage = None
             if detected_stage is None:
-                detected_stage = await detect_funnel_stage(db, business_id, conversation)
+                detected_stage = await detect_funnel_stage(
+                    db, business_id, conversation
+                )
             if not voice_slug:
                 # Picks the primary recommended voice for this stage, or A/B
                 # tests between the top 2 when the stage has multiple
                 # candidates (see funnel_ab_bridge.py).
-                ab_voice_slug, _, _ = await get_stage_voice_slug(db, detected_stage, conversation)
+                ab_voice_slug, _, _ = await get_stage_voice_slug(
+                    db, detected_stage, conversation
+                )
                 voice_slug = ab_voice_slug or None
     except Exception as e:
+        logger.exception("generate_ai_response: error inesperado")
         get_logger(__name__).warning(f"Funnel stage detection failed: {e}")
         await _rollback(db)
 
@@ -183,7 +193,9 @@ async def generate_ai_response(
                 db, experiment.id, conversation_id
             )
             system_prompt = (
-                experiment.variant_a_prompt if variant == "a" else experiment.variant_b_prompt
+                experiment.variant_a_prompt
+                if variant == "a"
+                else experiment.variant_b_prompt
             )
 
             # Remember the assignment so a later conversion (deal won/lost)
@@ -208,14 +220,15 @@ async def generate_ai_response(
                     db.add(conversation)
                     await db.commit()
     except Exception as e:
+        logger.exception("generate_ai_response: error inesperado")
         get_logger(__name__).warning(f"A/B test lookup failed: {e}")
         await _rollback(db)
 
     # Inject CustomerMemory profile into the prompt
     customer_profile = ""
     try:
-        from app.domains.memory.service import MemoryEngine
         from app.domains.memory.models import ConversationMemoryChunk
+        from app.domains.memory.service import MemoryEngine
 
         engine = MemoryEngine(db)
         cust_result = await db.execute(
@@ -227,6 +240,7 @@ async def generate_ai_response(
         if customer_id:
             customer_profile = await engine.get_customer_profile_summary(customer_id)
     except Exception as e:
+        logger.exception("generate_ai_response: error inesperado")
         get_logger(__name__).warning(f"Failed to load customer profile: {e}")
         await _rollback(db)
 
@@ -242,6 +256,7 @@ async def generate_ai_response(
             funnel_prompt = get_adapted_prompt(detected_stage, business_type)
             system_prompt += f"\n\n{funnel_prompt}"
         except Exception as e:
+            logger.exception("generate_ai_response: error inesperado")
             get_logger(__name__).warning(f"Funnel stage layering failed: {e}")
 
     if custom_prompt:
@@ -252,9 +267,10 @@ async def generate_ai_response(
 
     # Get recent conversation history
     result = await db.execute(
-        select(Message).where(
-            Message.conversation_id == conversation_id
-        ).order_by(Message.created_at.desc()).limit(10)
+        select(Message)
+        .where(Message.conversation_id == conversation_id)
+        .order_by(Message.created_at.desc())
+        .limit(10)
     )
     recent_msgs = [
         {"id": m.id, "content": m.content, "direction": m.direction.value}
@@ -284,6 +300,7 @@ async def generate_ai_response(
             )
             system_prompt = ToneAdapter.adapt_tone(system_prompt, emotion)
         except Exception as e:
+            logger.exception("generate_ai_response: error inesperado")
             get_logger(__name__).warning(f"Emotion detection failed: {e}")
             await _rollback(db)
 
@@ -341,6 +358,7 @@ async def generate_ai_response(
                 )
                 return reply
         except Exception as e:
+            logger.exception("generate_ai_response: error inesperado")
             get_logger(__name__).warning(f"Negotiation engine failed: {e}")
             await _rollback(db)
 
@@ -355,6 +373,7 @@ async def generate_ai_response(
     # Generate using fallback provider (OpenAI -> Anthropic)
     try:
         from app.domains.agents.llm_provider import generate_with_fallback
+
         response = await generate_with_fallback(
             db=db,
             business_id=business_id,
@@ -365,6 +384,7 @@ async def generate_ai_response(
         )
         result = response.content if response else None
     except Exception as e:
+        logger.exception("generate_ai_response: error inesperado")
         get_logger(__name__).error(f"LLM invocation failed: {e}")
         result = None
 
@@ -383,6 +403,7 @@ async def generate_ai_response(
                 mem_engine = MemoryEngine(db)
                 await mem_engine.extract_facts_from_conversation(conversation_id)
         except Exception as e:
+            logger.exception("generate_ai_response: error inesperado")
             get_logger(__name__).warning(f"Failed to trigger fact extraction: {e}")
             await _rollback(db)
 
@@ -401,6 +422,7 @@ async def generate_ai_response(
             if custom_prompt:
                 # Heuristic: extract tool names from custom_prompt
                 import re
+
                 tools_used = re.findall(r"\[([^\]]+)\]", custom_prompt)
 
             thought_steps = await ChainOfThought.generate_thought_process(
@@ -423,6 +445,7 @@ async def generate_ai_response(
                     thought_steps=thought_steps,
                 )
         except Exception as e:
+            logger.exception("generate_ai_response: error inesperado")
             get_logger(__name__).warning(f"Chain-of-thought logging failed: {e}")
             await _rollback(db)
 
@@ -436,7 +459,7 @@ async def generate_raw_ai_response(
     user_prompt: str,
     max_tokens: int = 1500,
     temperature: float = 0.7,
-) -> Optional[str]:
+) -> str | None:
     """Generate a raw AI response without requiring a conversation.
 
     Useful for background tasks, notifications, and analytics where
@@ -444,6 +467,7 @@ async def generate_raw_ai_response(
     """
     try:
         from app.domains.agents.llm_provider import generate_with_fallback
+
         response = await generate_with_fallback(
             db=db,
             business_id=business_id,
@@ -457,5 +481,6 @@ async def generate_raw_ai_response(
         )
         return response.content if response else None
     except Exception as e:
+        logger.exception("generate_raw_ai_response: error inesperado")
         get_logger(__name__).error(f"Raw LLM invocation failed: {e}")
         return None

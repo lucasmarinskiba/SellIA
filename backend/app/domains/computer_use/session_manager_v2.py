@@ -8,52 +8,59 @@ import asyncio
 import base64
 import os
 import time
-from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List
+from datetime import UTC, datetime
+from typing import Any, Optional
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
+from app.core.fileio import write_file
 from app.core.logger import get_logger
-from app.domains.computer_use.browser_service import BrowserService
-from app.domains.computer_use.vision_agent import VisionAgent
-from app.domains.computer_use.models import ComputerUseSession, ComputerUseStep, ComputerUseMessage
-from app.domains.computer_use.schemas import ComputerUseAction
-from app.domains.computer_use.ws_manager import ws_manager
-from app.domains.computer_use.services.browser_pool import get_browser_pool, BrowserPoolManager
-from app.domains.computer_use.services.action_validator import ActionValidator
-from app.domains.computer_use.services.retry_handler import RetryHandler, get_circuit_breaker
-from app.domains.computer_use.services.captcha_detector import CaptchaDetector
-from app.domains.computer_use.services.screenshot_compare import ScreenshotComparator
-from app.domains.computer_use.services.webhook_service import WebhookService
-from app.domains.computer_use.services.credential_manager import CredentialManager
-from app.domains.computer_use.services.sellia_brain_service import (
-    get_brain_service,
-    ActionContext,
-    SalesStage,
-    Platform,
-)
-from app.domains.computer_use.skills import (
-    AutopilotPolicy,
-    AutopilotMode,
-    build_skill_brief,
-)
 from app.core.metrics import (
-    COMPUTER_USE_SESSIONS_CREATED,
+    COMPUTER_USE_ACTIVE_SESSIONS,
+    COMPUTER_USE_SESSION_DURATION,
     COMPUTER_USE_SESSIONS_COMPLETED,
+    COMPUTER_USE_SESSIONS_CREATED,
     COMPUTER_USE_SESSIONS_FAILED,
     COMPUTER_USE_SESSIONS_STOPPED,
-    COMPUTER_USE_STEPS_TOTAL,
     COMPUTER_USE_STEP_DURATION,
-    COMPUTER_USE_SESSION_DURATION,
-    COMPUTER_USE_ACTIVE_SESSIONS,
+    COMPUTER_USE_STEPS_TOTAL,
 )
+from app.domains.computer_use.browser_service import BrowserService
+from app.domains.computer_use.models import (
+    ComputerUseMessage,
+    ComputerUseSession,
+    ComputerUseStep,
+)
+from app.domains.computer_use.schemas import ComputerUseAction
+from app.domains.computer_use.services.action_validator import ActionValidator
+from app.domains.computer_use.services.captcha_detector import CaptchaDetector
+from app.domains.computer_use.services.credential_manager import CredentialManager
+from app.domains.computer_use.services.retry_handler import (
+    RetryHandler,
+    get_circuit_breaker,
+)
+from app.domains.computer_use.services.screenshot_compare import ScreenshotComparator
+from app.domains.computer_use.services.sellia_brain_service import (
+    ActionContext,
+    Platform,
+    SalesStage,
+    get_brain_service,
+)
+from app.domains.computer_use.services.webhook_service import WebhookService
+from app.domains.computer_use.skills import (
+    AutopilotMode,
+    AutopilotPolicy,
+    build_skill_brief,
+)
+from app.domains.computer_use.vision_agent import VisionAgent
+from app.domains.computer_use.ws_manager import ws_manager
 
 logger = get_logger(__name__)
 settings = get_settings()
 
-_active_sessions: Dict[str, "ComputerUseSessionManagerV2"] = {}
+_active_sessions: dict[str, "ComputerUseSessionManagerV2"] = {}
 
 
 def get_session_manager(session_id: str) -> Optional["ComputerUseSessionManagerV2"]:
@@ -72,14 +79,14 @@ class ComputerUseSessionManagerV2:
         session_id: UUID,
         db: AsyncSession,
         task: str,
-        start_url: Optional[str] = None,
-        api_key: Optional[str] = None,
+        start_url: str | None = None,
+        api_key: str | None = None,
         provider: str = "openai",
         browser_type: str = "chromium",
-        profile: Optional[dict] = None,
-        proxy: Optional[dict] = None,
-        webhooks: Optional[list] = None,
-        user_id: Optional[UUID] = None,
+        profile: dict | None = None,
+        proxy: dict | None = None,
+        webhooks: list | None = None,
+        user_id: UUID | None = None,
         mode: str = "supervised",
     ):
         self.session_id = str(session_id)
@@ -98,7 +105,7 @@ class ComputerUseSessionManagerV2:
         except ValueError:
             self.mode = AutopilotMode.SUPERVISED
         self.policy = AutopilotPolicy(self.mode)
-        self._skill_brief: Optional[str] = None  # cacheado en el primer paso
+        self._skill_brief: str | None = None  # cacheado en el primer paso
 
         # Services
         self.browser = BrowserService()
@@ -108,21 +115,25 @@ class ComputerUseSessionManagerV2:
         self.captcha_detector = CaptchaDetector()
         self.comparator = ScreenshotComparator()
         self.webhook_service = WebhookService()
-        self.credential_manager = CredentialManager(db_session=db, user_id=str(user_id) if user_id else None)
+        self.credential_manager = CredentialManager(
+            db_session=db, user_id=str(user_id) if user_id else None
+        )
         self.brain_service = get_brain_service()
 
         self.status = "pending"
         self.current_step = 0
         self.max_steps = settings.COMPUTER_USE_MAX_STEPS
-        self.history: List[Dict[str, Any]] = []
-        self.user_chat_queue: List[str] = []
-        self._previous_screenshot: Optional[bytes] = None
+        self.history: list[dict[str, Any]] = []
+        self.user_chat_queue: list[str] = []
+        self._previous_screenshot: bytes | None = None
 
         self._pause_event = asyncio.Event()
         self._pause_event.set()
         self._stop_event = asyncio.Event()
 
-        self._screenshots_dir = os.path.join(os.getcwd(), "storage", "screenshots", self.session_id)
+        self._screenshots_dir = os.path.join(
+            os.getcwd(), "storage", "screenshots", self.session_id
+        )
         os.makedirs(self._screenshots_dir, exist_ok=True)
         self._cleanup_done = False
         self._session_start_time = None
@@ -132,7 +143,9 @@ class ComputerUseSessionManagerV2:
         try:
             await ws_manager.send_message(self.session_id, message)
         except Exception as e:
-            logger.warning(f"WS send failed for session {self.session_id}: {e}")
+            logger.warning(
+                f"WS send failed for session {self.session_id}: {e}", exc_info=True
+            )
 
     async def start(self) -> None:
         self._session_start_time = time.time()
@@ -142,23 +155,36 @@ class ComputerUseSessionManagerV2:
             _active_sessions[self.session_id] = self
 
             try:
-                self._provider_name = getattr(self.vision.provider, "provider_name", "unknown")
+                self._provider_name = getattr(
+                    self.vision.provider, "provider_name", "unknown"
+                )
             except Exception:
-                pass
+                logger.exception("start: error inesperado")
 
             COMPUTER_USE_SESSIONS_CREATED.labels(provider=self._provider_name).inc()
             COMPUTER_USE_ACTIVE_SESSIONS.inc()
             await self._update_session_status("running")
 
-            await self._send_ws({
-                "type": "status",
-                "data": {"status": "running", "message": "Sesión iniciada", "step": 0, "total_steps": self.max_steps},
-            })
+            await self._send_ws(
+                {
+                    "type": "status",
+                    "data": {
+                        "status": "running",
+                        "message": "Sesión iniciada",
+                        "step": 0,
+                        "total_steps": self.max_steps,
+                    },
+                }
+            )
 
             if self.start_url:
-                nav_result = await self.retry_handler.execute(self.browser.navigate, self.start_url)
+                nav_result = await self.retry_handler.execute(
+                    self.browser.navigate, self.start_url
+                )
                 if not nav_result.get("success"):
-                    await self._fail(f"No se pudo navegar a {self.start_url}: {nav_result.get('error')}")
+                    await self._fail(
+                        f"No se pudo navegar a {self.start_url}: {nav_result.get('error')}"
+                    )
                     return
 
                 # Auto-login con Credential Manager si hay credenciales guardadas
@@ -167,12 +193,19 @@ class ComputerUseSessionManagerV2:
                         self.browser.page, self.start_url
                     )
                     if login_result.get("success"):
-                        await self._send_ws({
-                            "type": "message",
-                            "data": {"role": "system", "content": f"✅ Auto-login exitoso en {self.start_url}"},
-                        })
+                        await self._send_ws(
+                            {
+                                "type": "message",
+                                "data": {
+                                    "role": "system",
+                                    "content": f"✅ Auto-login exitoso en {self.start_url}",
+                                },
+                            }
+                        )
                 except Exception as e:
-                    logger.warning(f"Auto-login failed for {self.start_url}: {e}")
+                    logger.warning(
+                        f"Auto-login failed for {self.start_url}: {e}", exc_info=True
+                    )
 
             await self._run_loop()
 
@@ -190,15 +223,29 @@ class ComputerUseSessionManagerV2:
                     return
 
                 if not self._pause_event.is_set():
-                    await self._send_ws({
-                        "type": "status",
-                        "data": {"status": "paused", "message": "Sesión pausada", "step": self.current_step, "total_steps": self.max_steps},
-                    })
+                    await self._send_ws(
+                        {
+                            "type": "status",
+                            "data": {
+                                "status": "paused",
+                                "message": "Sesión pausada",
+                                "step": self.current_step,
+                                "total_steps": self.max_steps,
+                            },
+                        }
+                    )
                     await self._pause_event.wait()
-                    await self._send_ws({
-                        "type": "status",
-                        "data": {"status": "running", "message": "Sesión reanudada", "step": self.current_step, "total_steps": self.max_steps},
-                    })
+                    await self._send_ws(
+                        {
+                            "type": "status",
+                            "data": {
+                                "status": "running",
+                                "message": "Sesión reanudada",
+                                "step": self.current_step,
+                                "total_steps": self.max_steps,
+                            },
+                        }
+                    )
                     if self._stop_event.is_set():
                         await self._stop()
                         return
@@ -208,45 +255,79 @@ class ComputerUseSessionManagerV2:
 
                 # Screenshot with retry
                 try:
-                    screenshot_bytes = await self.retry_handler.execute(self.browser.screenshot)
+                    screenshot_bytes = await self.retry_handler.execute(
+                        self.browser.screenshot
+                    )
                 except Exception as e:
+                    logger.exception("_run_loop: error inesperado")
                     await self._fail(f"Screenshot error: {e}")
                     return
 
                 # Save screenshot
-                screenshot_path = os.path.join(self._screenshots_dir, f"step_{self.current_step}.jpg")
-                with open(screenshot_path, "wb") as f:
-                    f.write(screenshot_bytes)
-                relative_path = f"screenshots/{self.session_id}/step_{self.current_step}.jpg"
+                screenshot_path = os.path.join(
+                    self._screenshots_dir, f"step_{self.current_step}.jpg"
+                )
+                await asyncio.to_thread(
+                    write_file, screenshot_path, "wb", data=screenshot_bytes
+                )
+                relative_path = (
+                    f"screenshots/{self.session_id}/step_{self.current_step}.jpg"
+                )
 
                 # Detect stale state
                 if self._previous_screenshot:
-                    comp = self.comparator.compare(self._previous_screenshot, screenshot_bytes)
+                    comp = self.comparator.compare(
+                        self._previous_screenshot, screenshot_bytes
+                    )
                     if not comp.changed and self.current_step > 1:
-                        logger.info(f"Session {self.session_id}: stale state detected at step {self.current_step}")
-                        await self._send_ws({
-                            "type": "status",
-                            "data": {"status": "running", "message": f"⚠️ Estado sin cambios (similitud: {comp.similarity:.1%})", "step": self.current_step, "total_steps": self.max_steps},
-                        })
+                        logger.info(
+                            f"Session {self.session_id}: stale state detected at step {self.current_step}"
+                        )
+                        await self._send_ws(
+                            {
+                                "type": "status",
+                                "data": {
+                                    "status": "running",
+                                    "message": f"⚠️ Estado sin cambios (similitud: {comp.similarity:.1%})",
+                                    "step": self.current_step,
+                                    "total_steps": self.max_steps,
+                                },
+                            }
+                        )
                 self._previous_screenshot = screenshot_bytes
 
                 # CAPTCHA detection
                 try:
-                    is_captcha, confidence, reason = await self.captcha_detector.detect_from_page(self.browser._page)
+                    is_captcha, confidence, reason = (
+                        await self.captcha_detector.detect_from_page(self.browser._page)
+                    )
                     if is_captcha:
-                        await self._send_ws({
-                            "type": "status",
-                            "data": {"status": "paused", "message": self.captcha_detector.get_user_message(confidence), "step": self.current_step, "total_steps": self.max_steps},
-                        })
+                        await self._send_ws(
+                            {
+                                "type": "status",
+                                "data": {
+                                    "status": "paused",
+                                    "message": self.captcha_detector.get_user_message(
+                                        confidence
+                                    ),
+                                    "step": self.current_step,
+                                    "total_steps": self.max_steps,
+                                },
+                            }
+                        )
                         await self.pause()
                         # Notify webhooks
                         for wh in self.webhooks:
                             await self.webhook_service.notify_captcha_detected(
-                                wh["url"], self.session_id, confidence, reason, wh.get("secret")
+                                wh["url"],
+                                self.session_id,
+                                confidence,
+                                reason,
+                                wh.get("secret"),
                             )
                         await self._pause_event.wait()
                 except Exception as e:
-                    logger.warning(f"CAPTCHA detection error: {e}")
+                    logger.warning(f"CAPTCHA detection error: {e}", exc_info=True)
 
                 page_info = await self.browser.get_page_info()
 
@@ -256,7 +337,8 @@ class ComputerUseSessionManagerV2:
                     if elements:
                         lines = [
                             f"- [{e['role']}] \"{e['label']}\" @ ({e['x']},{e['y']})"
-                            for e in elements if e.get("label")
+                            for e in elements
+                            if e.get("label")
                         ]
                         if lines:
                             page_info["elements_text"] = (
@@ -264,35 +346,45 @@ class ComputerUseSessionManagerV2:
                                 + "\n".join(lines[:40])
                             )
                 except Exception as e:
-                    logger.debug(f"interactive elements snapshot skipped: {e}")
+                    logger.debug(
+                        f"interactive elements snapshot skipped: {e}", exc_info=True
+                    )
 
                 # Expert sales-agent knowledge → richer, on-domain decisions.
                 try:
                     if self._skill_brief is None:
-                        self._skill_brief = build_skill_brief(self.task, page_info.get("url"))
+                        self._skill_brief = build_skill_brief(
+                            self.task, page_info.get("url")
+                        )
                     if self._skill_brief:
                         page_info["skill_brief"] = self._skill_brief
                 except Exception as e:
-                    logger.debug(f"skill brief skipped: {e}")
+                    logger.debug(f"skill brief skipped: {e}", exc_info=True)
 
                 # Send screenshot
-                await self._send_ws({
-                    "type": "screenshot",
-                    "data": {
-                        "image_base64": base64.b64encode(screenshot_bytes).decode("utf-8"),
-                        "step": self.current_step,
-                        "url": page_info.get("url", ""),
-                    },
-                })
+                await self._send_ws(
+                    {
+                        "type": "screenshot",
+                        "data": {
+                            "image_base64": base64.b64encode(screenshot_bytes).decode(
+                                "utf-8"
+                            ),
+                            "step": self.current_step,
+                            "url": page_info.get("url", ""),
+                        },
+                    }
+                )
 
                 # User chat
                 user_message = None
                 if self.user_chat_queue:
                     user_message = self.user_chat_queue.pop(0)
-                    await self._send_ws({
-                        "type": "chat",
-                        "data": {"role": "user", "content": user_message},
-                    })
+                    await self._send_ws(
+                        {
+                            "type": "chat",
+                            "data": {"role": "user", "content": user_message},
+                        }
+                    )
                     await self._save_message("user", user_message)
 
                 # Vision agent with circuit breaker
@@ -307,6 +399,7 @@ class ComputerUseSessionManagerV2:
                         page_info=page_info,
                     )
                 except Exception as e:
+                    logger.exception("_run_loop: error inesperado")
                     await self._fail(f"Vision agent error: {e}")
                     return
 
@@ -316,37 +409,52 @@ class ComputerUseSessionManagerV2:
                 )
                 if not is_valid:
                     logger.warning(f"Invalid action blocked: {error_msg}")
-                    await self._send_ws({
-                        "type": "error",
-                        "data": {"message": f"Acción bloqueada: {error_msg}"},
-                    })
+                    await self._send_ws(
+                        {
+                            "type": "error",
+                            "data": {"message": f"Acción bloqueada: {error_msg}"},
+                        }
+                    )
                     # Try to recover with a safe action
-                    action = ComputerUseAction(action_type="screenshot", params={}, reason=f"Acción anterior bloqueada: {error_msg}")
+                    action = ComputerUseAction(
+                        action_type="screenshot",
+                        params={},
+                        reason=f"Acción anterior bloqueada: {error_msg}",
+                    )
 
                 # Autopilot / supervised governance: gate risky actions.
                 if action.action_type not in ("done", "error", "screenshot"):
-                    decision = self.policy.evaluate(action.action_type, action.params, action.reason)
+                    decision = self.policy.evaluate(
+                        action.action_type, action.params, action.reason
+                    )
                     if decision.require_confirmation:
-                        await self._send_ws({
-                            "type": "confirmation_required",
-                            "data": {
-                                "step": self.current_step,
-                                "risk": decision.risk.value,
-                                "reason": decision.reason,
-                                "action_type": action.action_type,
-                                "params": action.params,
-                                "mode": self.mode.value,
-                                "message": f"⚠️ {decision.reason} Aprueba (reanudar) o detén la sesión.",
-                            },
-                        })
+                        await self._send_ws(
+                            {
+                                "type": "confirmation_required",
+                                "data": {
+                                    "step": self.current_step,
+                                    "risk": decision.risk.value,
+                                    "reason": decision.reason,
+                                    "action_type": action.action_type,
+                                    "params": action.params,
+                                    "mode": self.mode.value,
+                                    "message": f"⚠️ {decision.reason} Aprueba (reanudar) o detén la sesión.",
+                                },
+                            }
+                        )
                         for wh in self.webhooks:
                             try:
                                 await self.webhook_service.notify_captcha_detected(
-                                    wh["url"], self.session_id,
-                                    1.0, f"confirmation_required: {decision.reason}", wh.get("secret"),
+                                    wh["url"],
+                                    self.session_id,
+                                    1.0,
+                                    f"confirmation_required: {decision.reason}",
+                                    wh.get("secret"),
                                 )
                             except Exception as e:
-                                logger.debug(f"confirm webhook skipped: {e}")
+                                logger.debug(
+                                    f"confirm webhook skipped: {e}", exc_info=True
+                                )
                         await self.pause()
                         await self._pause_event.wait()  # resume = aprobación humana
                         if self._stop_event.is_set():
@@ -354,21 +462,28 @@ class ComputerUseSessionManagerV2:
                             return
                     elif decision.risk.value in ("high", "critical"):
                         # Autopilot ejecuta pero deja rastro de auditoría.
-                        await self._send_ws({
-                            "type": "message",
-                            "data": {"role": "system", "content": f"🤖 [auto] {decision.reason}"},
-                        })
+                        await self._send_ws(
+                            {
+                                "type": "message",
+                                "data": {
+                                    "role": "system",
+                                    "content": f"🤖 [auto] {decision.reason}",
+                                },
+                            }
+                        )
 
                 # Send action
-                await self._send_ws({
-                    "type": "action",
-                    "data": {
-                        "action_type": action.action_type,
-                        "params": action.params,
-                        "reason": action.reason,
-                        "step": self.current_step,
-                    },
-                })
+                await self._send_ws(
+                    {
+                        "type": "action",
+                        "data": {
+                            "action_type": action.action_type,
+                            "params": action.params,
+                            "reason": action.reason,
+                            "step": self.current_step,
+                        },
+                    }
+                )
 
                 # Save step
                 await self._save_step(
@@ -380,19 +495,24 @@ class ComputerUseSessionManagerV2:
 
                 # Execute action with retry
                 try:
-                    execution_result = await self.retry_handler.execute(self._execute_action, action)
+                    execution_result = await self.retry_handler.execute(
+                        self._execute_action, action
+                    )
                 except Exception as e:
+                    logger.exception("_run_loop: error inesperado")
                     execution_result = f"Error tras reintentos: {e}"
 
                 await self._update_step_result(self.current_step, execution_result)
 
-                self.history.append({
-                    "step_number": self.current_step,
-                    "action_type": action.action_type,
-                    "params": action.params,
-                    "reason": action.reason,
-                    "result": execution_result,
-                })
+                self.history.append(
+                    {
+                        "step_number": self.current_step,
+                        "action_type": action.action_type,
+                        "params": action.params,
+                        "reason": action.reason,
+                        "result": execution_result,
+                    }
+                )
 
                 if action.action_type == "done":
                     summary = action.params.get("summary", "")
@@ -411,7 +531,9 @@ class ComputerUseSessionManagerV2:
                 await asyncio.sleep(1.0)
 
             summary = await self.vision.generate_summary(self.history)
-            await self._complete(f"{summary}\n\n(Límite de {self.max_steps} pasos alcanzado)")
+            await self._complete(
+                f"{summary}\n\n(Límite de {self.max_steps} pasos alcanzado)"
+            )
 
         except asyncio.CancelledError:
             logger.info(f"Session {self.session_id} cancelled")
@@ -434,7 +556,9 @@ class ComputerUseSessionManagerV2:
             elif action.action_type == "type":
                 result = await self.browser.type(params["text"])
             elif action.action_type == "scroll":
-                result = await self.browser.scroll(params.get("direction", "down"), params.get("amount", 500))
+                result = await self.browser.scroll(
+                    params.get("direction", "down"), params.get("amount", 500)
+                )
             elif action.action_type == "navigate":
                 result = await self.browser.navigate(params["url"])
             elif action.action_type == "wait":
@@ -445,21 +569,34 @@ class ComputerUseSessionManagerV2:
             elif action.action_type == "click_selector":
                 result = await self.browser.click_selector(params["selector"])
             elif action.action_type == "click_text":
-                result = await self.browser.click_text(params["text"], params.get("exact", False))
+                result = await self.browser.click_text(
+                    params["text"], params.get("exact", False)
+                )
             elif action.action_type == "fill":
                 result = await self.browser.fill(params["selector"], params["value"])
             elif action.action_type == "wait_for_selector":
-                result = await self.browser.wait_for_selector(params["selector"], params.get("timeout_ms"))
-            elif action.action_type == "screenshot":
-                result = {"success": True}
-            elif action.action_type in ("done", "error"):
+                result = await self.browser.wait_for_selector(
+                    params["selector"], params.get("timeout_ms")
+                )
+            elif action.action_type == "screenshot" or action.action_type in (
+                "done",
+                "error",
+            ):
                 result = {"success": True}
             else:
-                result = {"success": False, "error": f"Acción no soportada: {action.action_type}"}
+                result = {
+                    "success": False,
+                    "error": f"Acción no soportada: {action.action_type}",
+                }
         except Exception as e:
+            logger.exception("_execute_action: error inesperado")
             result = {"success": False, "error": str(e)}
 
-        return "success" if result.get("success") else result.get("error", "Error desconocido")
+        return (
+            "success"
+            if result.get("success")
+            else result.get("error", "Error desconocido")
+        )
 
     async def pause(self) -> None:
         if self.status == "running":
@@ -486,11 +623,20 @@ class ComputerUseSessionManagerV2:
         await self._update_session_status("stopped")
         COMPUTER_USE_SESSIONS_STOPPED.inc()
         if self._session_start_time:
-            COMPUTER_USE_SESSION_DURATION.observe(time.time() - self._session_start_time)
-        await self._send_ws({
-            "type": "status",
-            "data": {"status": "stopped", "message": "Sesión detenida", "step": self.current_step, "total_steps": self.max_steps},
-        })
+            COMPUTER_USE_SESSION_DURATION.observe(
+                time.time() - self._session_start_time
+            )
+        await self._send_ws(
+            {
+                "type": "status",
+                "data": {
+                    "status": "stopped",
+                    "message": "Sesión detenida",
+                    "step": self.current_step,
+                    "total_steps": self.max_steps,
+                },
+            }
+        )
 
     async def _complete(self, summary: str) -> None:
         self.status = "completed"
@@ -498,31 +644,54 @@ class ComputerUseSessionManagerV2:
         await self._update_session_status("completed", result_data={"summary": summary})
         COMPUTER_USE_SESSIONS_COMPLETED.labels(provider=self._provider_name).inc()
         if self._session_start_time:
-            COMPUTER_USE_SESSION_DURATION.observe(time.time() - self._session_start_time)
-        await self._send_ws({
-            "type": "completed",
-            "data": {"result": summary, "total_steps": self.current_step},
-        })
+            COMPUTER_USE_SESSION_DURATION.observe(
+                time.time() - self._session_start_time
+            )
+        await self._send_ws(
+            {
+                "type": "completed",
+                "data": {"result": summary, "total_steps": self.current_step},
+            }
+        )
         # Notify webhooks
-        session_data = {"id": self.session_id, "total_steps": self.current_step, "task_description": self.task, "result_data": {"summary": summary}}
+        session_data = {
+            "id": self.session_id,
+            "total_steps": self.current_step,
+            "task_description": self.task,
+            "result_data": {"summary": summary},
+        }
         for wh in self.webhooks:
-            await self.webhook_service.notify_session_completed(wh["url"], session_data, wh.get("secret"))
+            await self.webhook_service.notify_session_completed(
+                wh["url"], session_data, wh.get("secret")
+            )
 
     async def _fail(self, error_message: str) -> None:
         self.status = "failed"
         await self._cleanup()
         await self._update_session_status("failed", error_message=error_message)
-        COMPUTER_USE_SESSIONS_FAILED.labels(provider=self._provider_name, reason=error_message[:50]).inc()
+        COMPUTER_USE_SESSIONS_FAILED.labels(
+            provider=self._provider_name, reason=error_message[:50]
+        ).inc()
         if self._session_start_time:
-            COMPUTER_USE_SESSION_DURATION.observe(time.time() - self._session_start_time)
-        await self._send_ws({
-            "type": "error",
-            "data": {"message": error_message},
-        })
+            COMPUTER_USE_SESSION_DURATION.observe(
+                time.time() - self._session_start_time
+            )
+        await self._send_ws(
+            {
+                "type": "error",
+                "data": {"message": error_message},
+            }
+        )
         # Notify webhooks
-        session_data = {"id": self.session_id, "total_steps": self.current_step, "task_description": self.task}
+        session_data = {
+            "id": self.session_id,
+            "total_steps": self.current_step,
+            "task_description": self.task,
+        }
         for wh in self.webhooks:
-            await self.webhook_service.notify_session_failed(wh["url"], session_data, error_message, wh.get("secret"))
+            await self.webhook_service.notify_session_failed(
+                wh["url"], session_data, error_message, wh.get("secret")
+            )
 
     async def _cleanup(self) -> None:
         if self._cleanup_done:
@@ -533,22 +702,32 @@ class ComputerUseSessionManagerV2:
         try:
             await self.browser.stop()
         except Exception as e:
-            logger.warning(f"Browser cleanup error: {e}")
+            logger.warning(f"Browser cleanup error: {e}", exc_info=True)
 
     async def send_chat_message(self, message: str) -> None:
         self.user_chat_queue.append(message)
-        await self._send_ws({
-            "type": "chat",
-            "data": {"role": "user", "content": message},
-        })
+        await self._send_ws(
+            {
+                "type": "chat",
+                "data": {"role": "user", "content": message},
+            }
+        )
         await self._save_message("user", message)
 
     # DB helpers
-    async def _update_session_status(self, status: str, result_data: Optional[Dict] = None, error_message: Optional[str] = None) -> None:
+    async def _update_session_status(
+        self,
+        status: str,
+        result_data: dict | None = None,
+        error_message: str | None = None,
+    ) -> None:
         try:
             from sqlalchemy import select
+
             result = await self.db.execute(
-                select(ComputerUseSession).where(ComputerUseSession.id == UUID(self.session_id))
+                select(ComputerUseSession).where(
+                    ComputerUseSession.id == UUID(self.session_id)
+                )
             )
             session = result.scalar_one_or_none()
             if session:
@@ -559,18 +738,21 @@ class ComputerUseSessionManagerV2:
                 if error_message:
                     session.error_message = error_message
                 if status in ("completed", "failed", "stopped"):
-                    session.completed_at = datetime.now(timezone.utc)
+                    session.completed_at = datetime.now(UTC)
                 if status == "running" and not session.started_at:
-                    session.started_at = datetime.now(timezone.utc)
+                    session.started_at = datetime.now(UTC)
                 await self.db.commit()
-        except Exception as e:
-            logger.error(f"DB update error: {e}")
+        except Exception:
+            logger.exception("DB update error")
 
-    async def _update_session_progress(self, current_url: Optional[str]) -> None:
+    async def _update_session_progress(self, current_url: str | None) -> None:
         try:
             from sqlalchemy import select
+
             result = await self.db.execute(
-                select(ComputerUseSession).where(ComputerUseSession.id == UUID(self.session_id))
+                select(ComputerUseSession).where(
+                    ComputerUseSession.id == UUID(self.session_id)
+                )
             )
             session = result.scalar_one_or_none()
             if session:
@@ -578,10 +760,16 @@ class ComputerUseSessionManagerV2:
                 if current_url:
                     session.current_url = current_url
                 await self.db.commit()
-        except Exception as e:
-            logger.error(f"DB progress update error: {e}")
+        except Exception:
+            logger.exception("DB progress update error")
 
-    async def _save_step(self, step_number: int, screenshot_path: str, action: ComputerUseAction, page_url: Optional[str]) -> None:
+    async def _save_step(
+        self,
+        step_number: int,
+        screenshot_path: str,
+        action: ComputerUseAction,
+        page_url: str | None,
+    ) -> None:
         try:
             step = ComputerUseStep(
                 session_id=UUID(self.session_id),
@@ -591,17 +779,20 @@ class ComputerUseSessionManagerV2:
                 llm_response=action.reason,
                 action_type=action.action_type,
                 action_params=action.params,
-                executed_at=datetime.now(timezone.utc),
+                executed_at=datetime.now(UTC),
             )
             self.db.add(step)
             await self.db.commit()
-        except Exception as e:
-            logger.error(f"DB save step error: {e}")
+        except Exception:
+            logger.exception("DB save step error")
             await self.db.rollback()
 
-    async def _update_step_result(self, step_number: int, execution_result: str) -> None:
+    async def _update_step_result(
+        self, step_number: int, execution_result: str
+    ) -> None:
         try:
             from sqlalchemy import select
+
             result = await self.db.execute(
                 select(ComputerUseStep).where(
                     ComputerUseStep.session_id == UUID(self.session_id),
@@ -613,8 +804,8 @@ class ComputerUseSessionManagerV2:
                 step.execution_result = execution_result
                 step.execution_ms = 0
                 await self.db.commit()
-        except Exception as e:
-            logger.error(f"DB update step error: {e}")
+        except Exception:
+            logger.exception("DB update step error")
 
     async def _save_message(self, role: str, content: str) -> None:
         try:
@@ -625,15 +816,15 @@ class ComputerUseSessionManagerV2:
             )
             self.db.add(msg)
             await self.db.commit()
-        except Exception as e:
-            logger.error(f"DB save message error: {e}")
+        except Exception:
+            logger.exception("DB save message error")
             await self.db.rollback()
 
     async def _enrich_vision_prompt_with_brain_strategy(
         self,
         base_prompt: str,
-        customer_profile: Optional[dict] = None,
-        conversation_history: Optional[list] = None,
+        customer_profile: dict | None = None,
+        conversation_history: list | None = None,
     ) -> str:
         """
         Enriquece el prompt del vision agent con estrategia del Brain.
@@ -687,8 +878,8 @@ Template guidance:
 
             return enriched_prompt
 
-        except Exception as e:
-            logger.error(f"Error enriching prompt with brain strategy: {e}")
+        except Exception:
+            logger.exception("Error enriching prompt with brain strategy")
             return base_prompt
 
     def _detect_platform_from_context(self) -> Platform:
@@ -713,24 +904,41 @@ Template guidance:
 
         return Platform.WEBSITE
 
-    def _detect_sales_stage(self, conversation_history: List[Dict[str, Any]]) -> SalesStage:
+    def _detect_sales_stage(
+        self, conversation_history: list[dict[str, Any]]
+    ) -> SalesStage:
         """Detecta etapa de venta basada en conversación."""
         if len(conversation_history) == 0:
             return SalesStage.AWARENESS
 
         # Analizar últimos mensajes para detectar etapa
-        last_messages = conversation_history[-3:] if len(conversation_history) >= 3 else conversation_history
+        last_messages = (
+            conversation_history[-3:]
+            if len(conversation_history) >= 3
+            else conversation_history
+        )
 
-        message_text = " ".join([msg.get("content", "").lower() for msg in last_messages])
+        message_text = " ".join(
+            [msg.get("content", "").lower() for msg in last_messages]
+        )
 
         # Señales de cierre
-        if any(word in message_text for word in ["precio", "cuánto", "costo", "descuento", "oferta"]):
+        if any(
+            word in message_text
+            for word in ["precio", "cuánto", "costo", "descuento", "oferta"]
+        ):
             return SalesStage.DECISION
 
-        if any(word in message_text for word in ["cuándo", "entregar", "envío", "shipping", "entrega"]):
+        if any(
+            word in message_text
+            for word in ["cuándo", "entregar", "envío", "shipping", "entrega"]
+        ):
             return SalesStage.NEGOTIATION
 
-        if any(word in message_text for word in ["confirmar", "listo", "acuerdo", "confirmed", "ready"]):
+        if any(
+            word in message_text
+            for word in ["confirmar", "listo", "acuerdo", "confirmed", "ready"]
+        ):
             return SalesStage.CLOSURE
 
         # Por defecto consideration

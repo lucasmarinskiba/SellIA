@@ -1,14 +1,13 @@
 """Predictive FOMO scoring using Claude AI."""
 
 from uuid import UUID
-from datetime import datetime
-from sqlalchemy import select, func
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-import json
 
 from app.core.logger import get_logger
-from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO
 from app.domains.seo_config.analytics_models import PublicationLinkMetrics
+from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO
 
 logger = get_logger(__name__)
 
@@ -102,14 +101,22 @@ class FOMAPredictor:
         )
         fomo_obj = fomo.scalar_one_or_none()
         if not fomo_obj:
-            return {"probability": 0.5, "confidence": 0.0, "reasoning": "FOMO not found"}
+            return {
+                "probability": 0.5,
+                "confidence": 0.0,
+                "reasoning": "FOMO not found",
+            }
 
         link = await self.db.execute(
             select(PublicationLink).where(PublicationLink.id == link_id)
         )
         link_obj = link.scalar_one_or_none()
         if not link_obj:
-            return {"probability": 0.5, "confidence": 0.0, "reasoning": "Link not found"}
+            return {
+                "probability": 0.5,
+                "confidence": 0.0,
+                "reasoning": "Link not found",
+            }
 
         # Get avg CTR for this platform/trigger combo
         result = await self.db.execute(
@@ -181,6 +188,10 @@ class FOMAPredictor:
 
         return {
             "credibility_score": float(max(0.0, credibility)),
-            "rating": "trustworthy" if credibility >= 75 else "borderline" if credibility >= 50 else "suspicious",
+            "rating": (
+                "trustworthy"
+                if credibility >= 75
+                else "borderline" if credibility >= 50 else "suspicious"
+            ),
             "red_flags": flags,
         }

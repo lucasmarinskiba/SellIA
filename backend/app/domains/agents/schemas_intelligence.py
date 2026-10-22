@@ -1,58 +1,60 @@
 """Intelligence Engine Schemas"""
 
-from uuid import UUID
 from datetime import datetime
-from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, ConfigDict
+from typing import Any
+from uuid import UUID
 
+from pydantic import BaseModel, ConfigDict, Field
 
 # ========== Emotion Schemas ==========
+
 
 class EmotionResult(BaseModel):
     emotion: str = "neutral"
     intensity: float = 0.0
-    triggers: List[str] = Field(default_factory=list)
+    triggers: list[str] = Field(default_factory=list)
 
 
 class EmotionDetectRequest(BaseModel):
     message: str
-    conversation_id: Optional[UUID] = None
-    message_id: Optional[UUID] = None
+    conversation_id: UUID | None = None
+    message_id: UUID | None = None
 
 
 class EmotionDetectResponse(EmotionResult):
-    id: Optional[UUID] = None
-    conversation_id: Optional[UUID] = None
-    message_id: Optional[UUID] = None
-    detected_at: Optional[datetime] = None
+    id: UUID | None = None
+    conversation_id: UUID | None = None
+    message_id: UUID | None = None
+    detected_at: datetime | None = None
 
 
 class EmotionTimelineItem(BaseModel):
     emotion: str
     intensity: float
-    triggers: List[str]
+    triggers: list[str]
     detected_at: datetime
 
 
 class EmotionTimelineResponse(BaseModel):
     conversation_id: UUID
-    timeline: List[EmotionTimelineItem]
+    timeline: list[EmotionTimelineItem]
 
 
 # ========== Negotiation Schemas ==========
+
 
 class NegotiationStartRequest(BaseModel):
     conversation_id: UUID
     business_id: UUID
     customer_id: UUID
-    product_id: Optional[UUID] = None
+    product_id: UUID | None = None
     original_price: float = Field(..., gt=0)
-    max_discount_percent: Optional[float] = Field(15.0, ge=0, le=100)
+    max_discount_percent: float | None = Field(15.0, ge=0, le=100)
 
 
 class NegotiationResponse(BaseModel):
     accepted: bool
-    counter_offer: Optional[float] = None
+    counter_offer: float | None = None
     discount_percent: float = 0.0
     round: int
     status: str
@@ -70,13 +72,13 @@ class NegotiationStateResponse(BaseModel):
     conversation_id: UUID
     business_id: UUID
     customer_id: UUID
-    product_id: Optional[UUID] = None
+    product_id: UUID | None = None
     original_price: float
     current_offer: float
     minimum_acceptable: float
     max_discount_percent: float
     round: int
-    concessions_made: List[Dict[str, Any]] = Field(default_factory=list)
+    concessions_made: list[dict[str, Any]] = Field(default_factory=list)
     status: str
     expires_at: datetime
     created_at: datetime

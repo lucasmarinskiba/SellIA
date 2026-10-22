@@ -11,16 +11,17 @@ P1: TODOS los datos persisten en PostgreSQL real via SQLAlchemy ORM.
 Ver: backend/app/core/database/payment_models.py
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Header
-from pydantic import BaseModel
-from typing import Optional, Dict, List, Any
-from datetime import datetime
 import logging
 import uuid
 
-from app.core.database import AsyncSessionLocal
-from app.core.database.payment_models import Product as ProductModel, Order as OrderModel
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 from sqlalchemy import select
+
+from app.core.clock import utc_now
+from app.core.database import AsyncSessionLocal
+from app.core.database.payment_models import Order as OrderModel
+from app.core.database.payment_models import Product as ProductModel
 
 router = APIRouter(prefix="/api/v1/ecommerce", tags=["ecommerce"])
 logger = logging.getLogger(__name__)
@@ -28,19 +29,21 @@ logger = logging.getLogger(__name__)
 
 class Product(BaseModel):
     """Producto en catálogo."""
-    id: Optional[str] = None
+
+    id: str | None = None
     name: str
     description: str
     price_usd: float
     stock_qty: int
     sku: str
     category: str
-    images: List[str] = []
-    tags: List[str] = []
+    images: list[str] = []
+    tags: list[str] = []
 
 
 class CartItem(BaseModel):
     """Item en carrito."""
+
     product_id: str
     qty: int
     price_snapshot: float
@@ -48,13 +51,16 @@ class CartItem(BaseModel):
 
 class OrderRequest(BaseModel):
     """Request para crear orden."""
-    items: List[CartItem]
+
+    items: list[CartItem]
     payment_method: str
     discount_pct: float = 0.0
 
 
 @router.get("/products", tags=["catalog"])
-async def list_products(category: Optional[str] = None, tag: Optional[str] = None, limit: int = 50):
+async def list_products(
+    category: str | None = None, tag: str | None = None, limit: int = 50
+):
     """Lista productos con filtros opcionales desde DB."""
     try:
         async with AsyncSessionLocal() as db:
@@ -86,12 +92,9 @@ async def list_products(category: Optional[str] = None, tag: Optional[str] = Non
                 for p in products[:limit]
             ]
 
-            return {
-                "total": len(products),
-                "products": products_list
-            }
+            return {"total": len(products), "products": products_list}
     except Exception as e:
-        logger.error(f"Error listando productos: {str(e)}")
+        logger.exception("Error listando productos")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -117,12 +120,14 @@ async def get_product(product_id: str):
                 "category": product.category,
                 "images": product.images or [],
                 "tags": product.tags or [],
-                "created_at": product.created_at.isoformat() if product.created_at else None,
+                "created_at": (
+                    product.created_at.isoformat() if product.created_at else None
+                ),
             }
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error obteniendo producto: {str(e)}")
+        logger.exception("Error obteniendo producto")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -162,7 +167,7 @@ async def create_product(product: Product):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creando producto: {str(e)}")
+        logger.exception("Error creando producto")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -181,12 +186,13 @@ async def checkout(order_req: OrderRequest, user_id: str):
                 product = result.scalars().first()
 
                 if not product:
-                    raise HTTPException(status_code=404, detail=f"Product {item.product_id} not found")
+                    raise HTTPException(
+                        status_code=404, detail=f"Product {item.product_id} not found"
+                    )
 
                 if product.stock_qty < item.qty:
                     raise HTTPException(
-                        status_code=400,
-                        detail=f"Insufficient stock: {product.name}"
+                        status_code=400, detail=f"Insufficient stock: {product.name}"
                     )
 
             # Calcular totales
@@ -195,7 +201,9 @@ async def checkout(order_req: OrderRequest, user_id: str):
             total = subtotal - discount_amount
 
             # Crear orden
-            order_id = f"ORD-{datetime.utcnow().strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
+            order_id = (
+                f"ORD-{utc_now().strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
+            )
             db_order = OrderModel(
                 id=order_id,
                 customer_email="",  # TODO: Obtener de context
@@ -229,13 +237,13 @@ async def checkout(order_req: OrderRequest, user_id: str):
                 "order_id": order_id,
                 "total": total,
                 "payment_method": order_req.payment_method,
-                "next": "Integration with Stripe checkout"
+                "next": "Integration with Stripe checkout",
             }
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error en checkout: {str(e)}")
+        logger.exception("Error en checkout")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -256,13 +264,15 @@ async def get_orders(user_id: str):
                         "id": o.id,
                         "status": o.status,
                         "amount": o.amount,
-                        "created_at": o.created_at.isoformat() if o.created_at else None,
+                        "created_at": (
+                            o.created_at.isoformat() if o.created_at else None
+                        ),
                     }
                     for o in orders
-                ]
+                ],
             }
     except Exception as e:
-        logger.error(f"Error obteniendo órdenes: {str(e)}")
+        logger.exception("Error obteniendo órdenes")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -283,13 +293,15 @@ async def get_order_details(order_id: str):
                     "id": order.id,
                     "status": order.status,
                     "amount": order.amount,
-                    "created_at": order.created_at.isoformat() if order.created_at else None,
+                    "created_at": (
+                        order.created_at.isoformat() if order.created_at else None
+                    ),
                 },
                 "invoice_url": f"/invoices/{order_id}.pdf",
-                "tracking": {"status": "pending", "eta": None}
+                "tracking": {"status": "pending", "eta": None},
             }
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error obteniendo orden: {str(e)}")
+        logger.exception("Error obteniendo orden")
         raise HTTPException(status_code=500, detail=str(e))

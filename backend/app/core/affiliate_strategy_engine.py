@@ -15,15 +15,16 @@ Status: 500L strategic optimizer
 """
 
 import logging
-from typing import Dict, List, Any, Optional, Tuple
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 class StrategyPhase(Enum):
     """Strategy execution phases."""
+
     RESEARCH = "research"
     FOUNDATION = "foundation"
     GROWTH = "growth"
@@ -49,7 +50,7 @@ class AffiliateStrategyEngine:
             "low": 1.2,
         }
 
-    def rank_niches(self, niches: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def rank_niches(self, niches: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Rank niches by profitability potential."""
         ranked = []
 
@@ -62,25 +63,28 @@ class AffiliateStrategyEngine:
 
             # Score = commission * demand * competition_resistance * conversion
             score = (
-                commission *
-                self.demand_multipliers.get(demand, 1.0) *
-                self.competition_multipliers.get(competition, 0.9) *
-                conversion_rate * 100
+                commission
+                * self.demand_multipliers.get(demand, 1.0)
+                * self.competition_multipliers.get(competition, 0.9)
+                * conversion_rate
+                * 100
             )
 
-            ranked.append({
-                "niche": niche.get("name", "unknown"),
-                "commission_pct": niche.get("commission_pct", "0%"),
-                "demand_level": demand,
-                "competition": competition,
-                "conversion_rate": niche.get("conversion_rate", "0%"),
-                "profitability_score": round(score, 4),
-                "top_categories": niche.get("recommended_niches", [])[:2],
-            })
+            ranked.append(
+                {
+                    "niche": niche.get("name", "unknown"),
+                    "commission_pct": niche.get("commission_pct", "0%"),
+                    "demand_level": demand,
+                    "competition": competition,
+                    "conversion_rate": niche.get("conversion_rate", "0%"),
+                    "profitability_score": round(score, 4),
+                    "top_categories": niche.get("recommended_niches", [])[:2],
+                }
+            )
 
         return sorted(ranked, key=lambda x: x["profitability_score"], reverse=True)
 
-    def rank_products(self, products: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def rank_products(self, products: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Rank products by profitability."""
         ranked = []
 
@@ -91,26 +95,24 @@ class AffiliateStrategyEngine:
             competition = product.get("competition", 50)  # 0-100 scale
 
             # Revenue potential = price * commission% * demand * (1 - competition_factor)
-            score = (
-                price *
-                (commission_pct / 100) *
-                demand *
-                (1 - (competition / 200))
-            )
+            score = price * (commission_pct / 100) * demand * (1 - (competition / 200))
 
-            ranked.append({
-                "product": product.get("name", "unknown"),
-                "price": f"${price:.2f}",
-                "commission_pct": f"{commission_pct:.1f}%",
-                "demand": demand,
-                "competition": competition,
-                "profitability_score": round(score, 2),
-            })
+            ranked.append(
+                {
+                    "product": product.get("name", "unknown"),
+                    "price": f"${price:.2f}",
+                    "commission_pct": f"{commission_pct:.1f}%",
+                    "demand": demand,
+                    "competition": competition,
+                    "profitability_score": round(score, 2),
+                }
+            )
 
         return sorted(ranked, key=lambda x: x["profitability_score"], reverse=True)
 
-    def select_channels(self, niche: str, budget: float = 0,
-                       timeline: str = "3_months") -> List[Dict[str, Any]]:
+    def select_channels(
+        self, niche: str, budget: float = 0, timeline: str = "3_months"
+    ) -> list[dict[str, Any]]:
         """Recommend channels based on niche and resources."""
         # Channel recommendations by niche and timeline
         channel_matrix = {
@@ -138,7 +140,11 @@ class AffiliateStrategyEngine:
         elif budget == 0:
             resource_level = "beginner"
 
-        timeline_key = "fast" if timeline == "1_month" else "medium" if timeline == "3_months" else "long"
+        timeline_key = (
+            "fast"
+            if timeline == "1_month"
+            else "medium" if timeline == "3_months" else "long"
+        )
 
         channels = channel_matrix.get(resource_level, {}).get(timeline_key, [])
 
@@ -152,7 +158,9 @@ class AffiliateStrategyEngine:
             for channel in channels
         ]
 
-    def create_content_strategy(self, niche: str, channels: List[str]) -> Dict[str, Any]:
+    def create_content_strategy(
+        self, niche: str, channels: list[str]
+    ) -> dict[str, Any]:
         """Create content strategy for niche."""
         content_pillars = {
             "education": {
@@ -220,7 +228,7 @@ class AffiliateStrategyEngine:
             ],
         }
 
-    def create_promotion_calendar(self, month: int, year: int) -> Dict[str, Any]:
+    def create_promotion_calendar(self, month: int, year: int) -> dict[str, Any]:
         """Create promotion calendar for the month."""
         seasonal_focus = {
             1: "New Year, New Goals, Productivity",
@@ -250,14 +258,24 @@ class AffiliateStrategyEngine:
         # Create week-by-week plan
         weeks = []
         for week in range(1, 5):
-            weeks.append({
-                "week": week,
-                "focus": seasonal_focus.get(month, "General Promotion"),
-                "themes": [
-                    day_of_week_strategy.get(day, "General Content")
-                    for day in ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-                ],
-            })
+            weeks.append(
+                {
+                    "week": week,
+                    "focus": seasonal_focus.get(month, "General Promotion"),
+                    "themes": [
+                        day_of_week_strategy.get(day, "General Content")
+                        for day in [
+                            "Monday",
+                            "Tuesday",
+                            "Wednesday",
+                            "Thursday",
+                            "Friday",
+                            "Saturday",
+                            "Sunday",
+                        ]
+                    ],
+                }
+            )
 
         return {
             "month": datetime(year, month, 1).strftime("%B %Y"),
@@ -266,111 +284,124 @@ class AffiliateStrategyEngine:
                 {
                     "event": "Flash Sale Week",
                     "week": "First Week",
-                    "tactics": ["Email campaign", "Social media push", "Influencer mentions"],
-                    "target_roi": "3x"
+                    "tactics": [
+                        "Email campaign",
+                        "Social media push",
+                        "Influencer mentions",
+                    ],
+                    "target_roi": "3x",
                 },
                 {
                     "event": "Product Spotlight",
                     "week": "Second Week",
                     "tactics": ["Deep-dive review", "Case studies", "Testimonials"],
-                    "target_roi": "2x"
+                    "target_roi": "2x",
                 },
                 {
                     "event": "Community Challenge",
                     "week": "Third Week",
                     "tactics": ["Group engagement", "Shared goals", "Leaderboards"],
-                    "target_roi": "2.5x"
+                    "target_roi": "2.5x",
                 },
                 {
                     "event": "Month-End Surge",
                     "week": "Fourth Week",
                     "tactics": ["Limited time offers", "Bonus bundles", "Last call"],
-                    "target_roi": "4x"
+                    "target_roi": "4x",
                 },
             ],
             "weekly_themes": weeks,
         }
 
-    def create_scaling_playbook(self, current_monthly_income: float,
-                               target_monthly_income: float) -> Dict[str, Any]:
+    def create_scaling_playbook(
+        self, current_monthly_income: float, target_monthly_income: float
+    ) -> dict[str, Any]:
         """Create playbook for scaling affiliate income."""
         growth_phases = []
 
         # Phase 1: Foundation (0-3 months)
-        growth_phases.append({
-            "phase": "Phase 1: Foundation (0-3 months)",
-            "goals": [
-                f"Build email list to 500 subscribers",
-                f"Create 10-15 piece of core content",
-                f"Get first 10 affiliate sales",
-                f"Establish affiliate relationships",
-            ],
-            "focus": "Quality over quantity, build foundation",
-            "expected_income": current_monthly_income,
-            "tactics": [
-                "Launch blog with SEO-optimized posts",
-                "Build email list (lead magnet)",
-                "Create YouTube channel (1-2 videos/week)",
-                "Join affiliate networks",
-            ],
-        })
+        growth_phases.append(
+            {
+                "phase": "Phase 1: Foundation (0-3 months)",
+                "goals": [
+                    "Build email list to 500 subscribers",
+                    "Create 10-15 piece of core content",
+                    "Get first 10 affiliate sales",
+                    "Establish affiliate relationships",
+                ],
+                "focus": "Quality over quantity, build foundation",
+                "expected_income": current_monthly_income,
+                "tactics": [
+                    "Launch blog with SEO-optimized posts",
+                    "Build email list (lead magnet)",
+                    "Create YouTube channel (1-2 videos/week)",
+                    "Join affiliate networks",
+                ],
+            }
+        )
 
         # Phase 2: Growth (3-6 months)
-        growth_phases.append({
-            "phase": "Phase 2: Growth (3-6 months)",
-            "goals": [
-                f"Grow email list to 2000 subscribers",
-                f"Launch email affiliate campaigns (3x/month)",
-                f"Get 50 monthly affiliate sales",
-                f"3 ranking blog posts on Google",
-            ],
-            "focus": "Consistency and optimization",
-            "expected_income": current_monthly_income * 2,
-            "tactics": [
-                "Content diversification (blog, video, email)",
-                "Start paid ads testing ($500/month)",
-                "Launch podcast or webinar series",
-                "Build community (Discord/Facebook Group)",
-            ],
-        })
+        growth_phases.append(
+            {
+                "phase": "Phase 2: Growth (3-6 months)",
+                "goals": [
+                    "Grow email list to 2000 subscribers",
+                    "Launch email affiliate campaigns (3x/month)",
+                    "Get 50 monthly affiliate sales",
+                    "3 ranking blog posts on Google",
+                ],
+                "focus": "Consistency and optimization",
+                "expected_income": current_monthly_income * 2,
+                "tactics": [
+                    "Content diversification (blog, video, email)",
+                    "Start paid ads testing ($500/month)",
+                    "Launch podcast or webinar series",
+                    "Build community (Discord/Facebook Group)",
+                ],
+            }
+        )
 
         # Phase 3: Scale (6-12 months)
-        growth_phases.append({
-            "phase": "Phase 3: Scale (6-12 months)",
-            "goals": [
-                f"Grow email list to 5000+ subscribers",
-                f"200+ monthly affiliate sales",
-                f"5+ ranking blog posts (page 1 Google)",
-                f"Multiple income streams active",
-            ],
-            "focus": "Systematization and leverage",
-            "expected_income": current_monthly_income * 5,
-            "tactics": [
-                "Double paid ad spend to $1000+/month",
-                "Hire VA for content/email management",
-                "Launch affiliate partnerships",
-                "Create signature product/service",
-            ],
-        })
+        growth_phases.append(
+            {
+                "phase": "Phase 3: Scale (6-12 months)",
+                "goals": [
+                    "Grow email list to 5000+ subscribers",
+                    "200+ monthly affiliate sales",
+                    "5+ ranking blog posts (page 1 Google)",
+                    "Multiple income streams active",
+                ],
+                "focus": "Systematization and leverage",
+                "expected_income": current_monthly_income * 5,
+                "tactics": [
+                    "Double paid ad spend to $1000+/month",
+                    "Hire VA for content/email management",
+                    "Launch affiliate partnerships",
+                    "Create signature product/service",
+                ],
+            }
+        )
 
         # Phase 4: Optimize (12+ months)
-        growth_phases.append({
-            "phase": "Phase 4: Optimize (12+ months)",
-            "goals": [
-                f"10000+ email subscribers",
-                f"500+ monthly sales",
-                f"Top 3 ranking for target keywords",
-                f"Consistent ${target_monthly_income:,}/month",
-            ],
-            "focus": "Efficiency and network effects",
-            "expected_income": target_monthly_income,
-            "tactics": [
-                "Affiliate network expansion",
-                "Joint venture partnerships",
-                "Authority building (speaking, podcasts)",
-                "Team building and automation",
-            ],
-        })
+        growth_phases.append(
+            {
+                "phase": "Phase 4: Optimize (12+ months)",
+                "goals": [
+                    "10000+ email subscribers",
+                    "500+ monthly sales",
+                    "Top 3 ranking for target keywords",
+                    f"Consistent ${target_monthly_income:,}/month",
+                ],
+                "focus": "Efficiency and network effects",
+                "expected_income": target_monthly_income,
+                "tactics": [
+                    "Affiliate network expansion",
+                    "Joint venture partnerships",
+                    "Authority building (speaking, podcasts)",
+                    "Team building and automation",
+                ],
+            }
+        )
 
         return {
             "from": f"${current_monthly_income:,}/month",
@@ -386,7 +417,7 @@ class AffiliateStrategyEngine:
             ],
         }
 
-    def identify_pivot_triggers(self, days_testing: int = 30) -> Dict[str, Any]:
+    def identify_pivot_triggers(self, days_testing: int = 30) -> dict[str, Any]:
         """Identify when to pivot strategy."""
         return {
             "testing_period": f"{days_testing} days",
@@ -394,27 +425,27 @@ class AffiliateStrategyEngine:
                 "traffic": {
                     "trigger": "Getting < 50 visits/day after 30 days",
                     "action": "Pivot to higher-traffic channel",
-                    "example": "Blog not ranking → switch to social media + paid ads"
+                    "example": "Blog not ranking → switch to social media + paid ads",
                 },
                 "conversion": {
                     "trigger": "Conversion rate < 0.5% after 30 days",
                     "action": "Revise offer/messaging or choose better product",
-                    "example": "Offer not converting → test different product/angle"
+                    "example": "Offer not converting → test different product/angle",
                 },
                 "roi": {
                     "trigger": "Negative ROI after 30 days of paid ads",
                     "action": "Pause, optimize landing page, then re-test",
-                    "example": "Ad spend $500 but only $300 in commission → optimize or pause"
+                    "example": "Ad spend $500 but only $300 in commission → optimize or pause",
                 },
                 "engagement": {
                     "trigger": "Email open rate < 20% consistently",
                     "action": "Test new subject lines or pivot to different segment",
-                    "example": "Newsletter failing → test new angles/timing"
+                    "example": "Newsletter failing → test new angles/timing",
                 },
                 "competition": {
                     "trigger": "High competition making success difficult",
                     "action": "Find adjacent niche or build unique angle",
-                    "example": "VPN market saturated → focus on specific use case"
+                    "example": "VPN market saturated → focus on specific use case",
                 },
             },
             "decision_matrix": {
@@ -433,13 +464,16 @@ class AffiliateStrategyEngine:
             },
         }
 
-    def generate_full_strategy(self, niche: str, budget: float = 0,
-                              target_income: float = 5000) -> Dict[str, Any]:
+    def generate_full_strategy(
+        self, niche: str, budget: float = 0, target_income: float = 5000
+    ) -> dict[str, Any]:
         """Generate complete affiliate strategy."""
         channels = self.select_channels(niche, budget, "3_months")
         channel_names = [c["channel"] for c in channels]
         content_strategy = self.create_content_strategy(niche, channel_names)
-        promotion_calendar = self.create_promotion_calendar(datetime.now().month, datetime.now().year)
+        promotion_calendar = self.create_promotion_calendar(
+            datetime.now().month, datetime.now().year
+        )
         scaling_playbook = self.create_scaling_playbook(0, target_income)
         pivot_triggers = self.identify_pivot_triggers()
 
@@ -469,6 +503,7 @@ class AffiliateStrategyEngine:
 # FACTORY FUNCTIONS
 # ============================================================================
 
+
 def create_strategy_engine() -> AffiliateStrategyEngine:
     """Factory to create strategy engine."""
     return AffiliateStrategyEngine()
@@ -481,9 +516,7 @@ if __name__ == "__main__":
 
     # Example: Full strategy for niche
     strategy = engine.generate_full_strategy(
-        niche="AI Productivity Tools",
-        budget=500,
-        target_income=5000
+        niche="AI Productivity Tools", budget=500, target_income=5000
     )
 
     print("=== COMPLETE AFFILIATE STRATEGY ===")

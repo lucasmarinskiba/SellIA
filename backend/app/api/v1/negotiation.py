@@ -3,17 +3,17 @@ Phase 8: Advanced Negotiation Engine
 Dynamic pricing, contract optimization, strategy selection
 """
 
-from fastapi import APIRouter, HTTPException, Query, Depends
-from typing import Optional, Dict, Any, List
-from datetime import datetime
 import logging
+from typing import Any
 
+from fastapi import APIRouter, HTTPException, Query
+
+from app.core.clock import utc_now
 from app.domains.agents.negotiation_engine import (
-    NegotiationEngine,
     CompanySize,
-    NegotiationStrategy,
+    NegotiationEngine,
 )
-from app.domains.crm.crm_adapter import CRMAdapterFactory, CRMType
+from app.domains.crm.crm_adapter import CRMAdapterFactory
 
 router = APIRouter(tags=["negotiation"])
 negotiation_engine = NegotiationEngine()
@@ -25,10 +25,12 @@ logger = logging.getLogger(__name__)
 async def calculate_dynamic_pricing(
     intent_score: float = Query(..., ge=0.0, le=1.0, description="Lead intent 0-1"),
     company_size: str = Query("smb", description="startup|smb|mid_market|enterprise"),
-    prospect_budget: Optional[float] = Query(None, description="Prospect budget in USD"),
+    prospect_budget: float | None = Query(None, description="Prospect budget in USD"),
     expansion_potential: float = Query(0.5, ge=0.0, le=1.0),
-    competitor_price: Optional[float] = Query(None, description="Competitor price for comparison"),
-) -> Dict[str, Any]:
+    competitor_price: float | None = Query(
+        None, description="Competitor price for comparison"
+    ),
+) -> dict[str, Any]:
     """
     Calculate optimal pricing based on intent, company size, budget, expansion.
 
@@ -57,7 +59,7 @@ async def calculate_dynamic_pricing(
     return {
         "status": "success",
         "pricing": pricing,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
         "@context": "https://schema.org",
         "@type": "PriceSpecification",
     }
@@ -67,7 +69,7 @@ async def calculate_dynamic_pricing(
 async def generate_pricing_tiers(
     final_price: float = Query(..., description="Final negotiated price"),
     company_size: str = Query("smb", description="startup|smb|mid_market|enterprise"),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Generate 3-tier pricing options (Standard, Professional, Enterprise).
     Each tier includes features, support level, implementation timeline.
@@ -96,7 +98,7 @@ async def generate_pricing_tiers(
             }
             for tier in tiers
         ],
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     }
 
 
@@ -105,8 +107,8 @@ async def optimize_contract_terms(
     industry: str = Query(..., description="Industry (saas, enterprise, finance, etc)"),
     company_size: str = Query("smb"),
     annual_price: float = Query(...),
-    preferred_duration_months: Optional[int] = Query(None),
-) -> Dict[str, Any]:
+    preferred_duration_months: int | None = Query(None),
+) -> dict[str, Any]:
     """
     Optimize contract terms for industry and company size.
 
@@ -149,7 +151,7 @@ async def optimize_contract_terms(
             "training_hours_included": terms.training_hours_included,
             "legal_review_needed": terms.legal_review_needed,
         },
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     }
 
 
@@ -159,7 +161,7 @@ async def select_negotiation_strategy(
     company_size: str = Query("smb"),
     expansion_potential: float = Query(0.5, ge=0.0, le=1.0),
     previous_objections: int = Query(0, ge=0),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Select optimal negotiation strategy based on deal profile.
 
@@ -189,14 +191,14 @@ async def select_negotiation_strategy(
         "status": "success",
         "strategy": strategy.value,
         "playbook": playbook,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     }
 
 
 @router.get("/negotiate/discount-authority")
 async def get_discount_authority(
     company_size: str = Query("smb"),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get discount authority matrix for a company size.
     Shows max allowed discounts and escalation thresholds.
@@ -218,7 +220,7 @@ async def get_discount_authority(
             "expansion_potential_multiplier": authority.expansion_potential_multiplier,
             "legal_review_threshold_percent": authority.legal_review_threshold * 100,
         },
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     }
 
 
@@ -229,11 +231,11 @@ async def get_discount_authority(
 
 @router.get("/crm/leads")
 async def get_crm_leads(
-    min_lead_score: Optional[int] = Query(None, ge=0, le=100),
-    stage: Optional[str] = Query(None),
-    industry: Optional[str] = Query(None),
-    min_company_size: Optional[int] = Query(None),
-) -> Dict[str, Any]:
+    min_lead_score: int | None = Query(None, ge=0, le=100),
+    stage: str | None = Query(None),
+    industry: str | None = Query(None),
+    min_company_size: int | None = Query(None),
+) -> dict[str, Any]:
     """
     Fetch leads from CRM with optional filtering.
 
@@ -258,16 +260,16 @@ async def get_crm_leads(
             "status": "success",
             "lead_count": len(leads),
             "leads": [lead.dict() for lead in leads],
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
     except Exception as e:
         logger.exception("CRM lead fetch failed")
-        raise HTTPException(status_code=500, detail=f"CRM error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"CRM error: {e!s}")
 
 
 @router.get("/crm/lead/{lead_id}")
-async def get_crm_lead(lead_id: str) -> Dict[str, Any]:
+async def get_crm_lead(lead_id: str) -> dict[str, Any]:
     """Fetch single lead from CRM."""
     try:
         crm = await CRMAdapterFactory.get_default_adapter()
@@ -279,20 +281,20 @@ async def get_crm_lead(lead_id: str) -> Dict[str, Any]:
         return {
             "status": "success",
             "lead": lead.dict(),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
     except HTTPException:
         raise
     except Exception as e:
         logger.exception(f"CRM lead fetch failed: {lead_id}")
-        raise HTTPException(status_code=500, detail=f"CRM error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"CRM error: {e!s}")
 
 
 @router.post("/crm/lead/{lead_id}/route-with-negotiation")
 async def route_lead_with_negotiation(
     lead_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Comprehensive flow: Fetch lead from CRM → Calculate pricing → Select strategy.
     Single endpoint for end-to-end negotiation setup.
@@ -334,9 +336,11 @@ async def route_lead_with_negotiation(
         pricing = await negotiation_engine.calculate_dynamic_pricing(
             intent_score=intent_score,
             company_size=company_size,
-            prospect_budget=float(lead.budget.split("-")[1].replace("k", "000"))
-            if lead.budget
-            else None,
+            prospect_budget=(
+                float(lead.budget.split("-")[1].replace("k", "000"))
+                if lead.budget
+                else None
+            ),
             expansion_potential=expansion_potential,
         )
 
@@ -403,11 +407,11 @@ async def route_lead_with_negotiation(
                 },
                 "playbook": playbook,
             },
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
     except HTTPException:
         raise
     except Exception as e:
         logger.exception(f"Route with negotiation failed: {lead_id}")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {e!s}")

@@ -12,17 +12,20 @@ Flujo:
 """
 
 import logging
-import httpx
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
+from datetime import timedelta
 from enum import Enum
-import json
+from typing import Any
+
+import httpx
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
 
 class OrderStatus(Enum):
     """Estados de orden en Mercado Libre."""
+
     UNSHIPPED = "unshipped"
     SHIPPED = "shipped"
     CANCELLED = "cancelled"
@@ -31,6 +34,7 @@ class OrderStatus(Enum):
 
 class MessageType(Enum):
     """Tipos de mensaje."""
+
     BUYER_QUESTION = "buyer_question"
     ORDER_STATUS = "order_status"
     COMPLAINT = "complaint"
@@ -46,7 +50,7 @@ class MercadoLibreAutomationEnhanced:
         self,
         seller_id: str,
         access_token: str,
-        refresh_token: Optional[str] = None,
+        refresh_token: str | None = None,
         email_service=None,
         sms_service=None,
     ):
@@ -60,7 +64,7 @@ class MercadoLibreAutomationEnhanced:
 
     # ========== ORDER SYNC ==========
 
-    async def sync_orders(self, limit: int = 50) -> Dict[str, Any]:
+    async def sync_orders(self, limit: int = 50) -> dict[str, Any]:
         """
         Sincroniza órdenes desde Mercado Libre.
 
@@ -75,7 +79,7 @@ class MercadoLibreAutomationEnhanced:
 
             if not orders:
                 logger.info("No new orders")
-                self.last_sync = datetime.utcnow()
+                self.last_sync = utc_now()
                 return {"status": "success", "orders_synced": 0}
 
             processed = []
@@ -89,10 +93,10 @@ class MercadoLibreAutomationEnhanced:
                     else:
                         failed.append(result)
                 except Exception as e:
-                    logger.error(f"Error processing order {order.get('id')}: {str(e)}")
+                    logger.exception(f"Error processing order {order.get('id')}")
                     failed.append({"order_id": order.get("id"), "error": str(e)})
 
-            self.last_sync = datetime.utcnow()
+            self.last_sync = utc_now()
 
             return {
                 "status": "success",
@@ -103,10 +107,10 @@ class MercadoLibreAutomationEnhanced:
             }
 
         except Exception as e:
-            logger.error(f"Order sync failed: {str(e)}")
+            logger.exception("Order sync failed")
             return {"status": "error", "error": str(e)}
 
-    async def _fetch_new_orders(self, limit: int = 50) -> List[Dict[str, Any]]:
+    async def _fetch_new_orders(self, limit: int = 50) -> list[dict[str, Any]]:
         """Obtiene órdenes sin procesar."""
 
         try:
@@ -127,11 +131,11 @@ class MercadoLibreAutomationEnhanced:
 
             return data.get("results", [])
 
-        except Exception as e:
-            logger.error(f"Failed to fetch orders: {str(e)}")
+        except Exception:
+            logger.exception("Failed to fetch orders")
             return []
 
-    async def _process_order(self, order: Dict[str, Any]) -> Dict[str, Any]:
+    async def _process_order(self, order: dict[str, Any]) -> dict[str, Any]:
         """Procesa una orden individualmente."""
 
         order_id = order.get("id")
@@ -141,7 +145,11 @@ class MercadoLibreAutomationEnhanced:
             # Obtener detalles
             order_details = await self._fetch_order_details(order_id)
             if not order_details:
-                return {"status": "error", "order_id": order_id, "error": "Failed to fetch details"}
+                return {
+                    "status": "error",
+                    "order_id": order_id,
+                    "error": "Failed to fetch details",
+                }
 
             # Confirmar compra
             await self._confirm_purchase(order_id)
@@ -165,10 +173,10 @@ class MercadoLibreAutomationEnhanced:
             }
 
         except Exception as e:
-            logger.error(f"Error processing order {order_id}: {str(e)}")
+            logger.exception(f"Error processing order {order_id}")
             return {"status": "error", "order_id": order_id, "error": str(e)}
 
-    async def _fetch_order_details(self, order_id: str) -> Optional[Dict[str, Any]]:
+    async def _fetch_order_details(self, order_id: str) -> dict[str, Any] | None:
         """Obtiene detalles completos de orden."""
 
         try:
@@ -180,8 +188,8 @@ class MercadoLibreAutomationEnhanced:
             response.raise_for_status()
             return response.json()
 
-        except Exception as e:
-            logger.error(f"Failed to fetch order details {order_id}: {str(e)}")
+        except Exception:
+            logger.exception(f"Failed to fetch order details {order_id}")
             return None
 
     async def _confirm_purchase(self, order_id: str) -> bool:
@@ -198,13 +206,13 @@ class MercadoLibreAutomationEnhanced:
             logger.info(f"Order {order_id} confirmed")
             return True
 
-        except Exception as e:
-            logger.error(f"Failed to confirm order {order_id}: {str(e)}")
+        except Exception:
+            logger.exception(f"Failed to confirm order {order_id}")
             return False
 
     # ========== MESSAGE HANDLING ==========
 
-    async def sync_messages(self) -> Dict[str, Any]:
+    async def sync_messages(self) -> dict[str, Any]:
         """Sincroniza y responde mensajes automáticamente."""
 
         logger.info(f"Syncing messages for seller {self.seller_id}")
@@ -237,10 +245,10 @@ class MercadoLibreAutomationEnhanced:
             return {"status": "success", "messages_processed": processed}
 
         except Exception as e:
-            logger.error(f"Message sync failed: {str(e)}")
+            logger.exception("Message sync failed")
             return {"status": "error", "error": str(e)}
 
-    async def _fetch_unread_messages(self) -> List[Dict[str, Any]]:
+    async def _fetch_unread_messages(self) -> list[dict[str, Any]]:
         """Obtiene mensajes sin leer."""
 
         try:
@@ -253,8 +261,8 @@ class MercadoLibreAutomationEnhanced:
             response.raise_for_status()
             return response.json().get("messages", [])
 
-        except Exception as e:
-            logger.error(f"Failed to fetch messages: {str(e)}")
+        except Exception:
+            logger.exception("Failed to fetch messages")
             return []
 
     def _classify_message_type(self, text: str) -> MessageType:
@@ -271,7 +279,7 @@ class MercadoLibreAutomationEnhanced:
 
         return MessageType.ORDER_STATUS
 
-    def _generate_auto_response(self, question: str) -> Optional[str]:
+    def _generate_auto_response(self, question: str) -> str | None:
         """Genera respuesta automática para preguntas frecuentes."""
 
         responses = {
@@ -280,13 +288,11 @@ class MercadoLibreAutomationEnhanced:
             "tiempo de envío": "Envío estándar: 3-7 días hábiles. Tenemos opción express en algunas zonas.",
             "costo envío": "El costo de envío aparece al confirmar tu compra. Varía según tu ubicación.",
             "envío gratis": "Ofrecemos envío gratis en compras mayores a $500. Revisa las condiciones.",
-
             # Producto
             "especificaciones": "¿Qué específicamente deseas saber del producto? Estoy aquí para ayudarte.",
             "disponibilidad": "El producto está en stock. ¿Deseas comprarlo ahora?",
             "color": "Tenemos disponibles varios colores. ¿Cuál te interesa?",
             "garantía": "Todos nuestros productos vienen con garantía de 12 meses.",
-
             # Pago
             "métodos de pago": "Aceptamos tarjeta de crédito, débito, billetera virtual y efectivo contra entrega.",
             "promoción": "Tenemos promociones especiales. Verificaré las actuales para ti.",
@@ -312,8 +318,8 @@ class MercadoLibreAutomationEnhanced:
             logger.info(f"Message sent to thread {thread_id}")
             return True
 
-        except Exception as e:
-            logger.error(f"Failed to send message: {str(e)}")
+        except Exception:
+            logger.exception("Failed to send message")
             return False
 
     async def _mark_message_read(self, message_id: str) -> bool:
@@ -329,13 +335,13 @@ class MercadoLibreAutomationEnhanced:
             response.raise_for_status()
             return True
 
-        except Exception as e:
-            logger.error(f"Failed to mark message read: {str(e)}")
+        except Exception:
+            logger.exception("Failed to mark message read")
             return False
 
     # ========== INVENTORY SYNC ==========
 
-    async def sync_inventory(self) -> Dict[str, Any]:
+    async def sync_inventory(self) -> dict[str, Any]:
         """
         Sincroniza inventario bidireccional:
         - Local → ML: actualiza stock en Mercado Libre
@@ -349,7 +355,7 @@ class MercadoLibreAutomationEnhanced:
             local_inventory = {}  # {product_id: quantity}
 
             # TODO: Obtener inventario de ML
-            ml_inventory = await self._fetch_inventory()
+            await self._fetch_inventory()
 
             # Comparar y actualizar donde sea necesario
             # ...
@@ -357,10 +363,10 @@ class MercadoLibreAutomationEnhanced:
             return {"status": "success", "items_synced": len(local_inventory)}
 
         except Exception as e:
-            logger.error(f"Inventory sync failed: {str(e)}")
+            logger.exception("Inventory sync failed")
             return {"status": "error", "error": str(e)}
 
-    async def _fetch_inventory(self) -> Dict[str, int]:
+    async def _fetch_inventory(self) -> dict[str, int]:
         """Obtiene inventario actual de ML."""
 
         try:
@@ -379,15 +385,15 @@ class MercadoLibreAutomationEnhanced:
 
             return inventory
 
-        except Exception as e:
-            logger.error(f"Failed to fetch inventory: {str(e)}")
+        except Exception:
+            logger.exception("Failed to fetch inventory")
             return {}
 
     async def update_product_price(
         self,
         product_id: str,
         new_price: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Actualiza precio de producto en ML."""
 
         try:
@@ -400,10 +406,14 @@ class MercadoLibreAutomationEnhanced:
             response.raise_for_status()
             logger.info(f"Product {product_id} price updated to ${new_price:.2f}")
 
-            return {"status": "success", "product_id": product_id, "new_price": new_price}
+            return {
+                "status": "success",
+                "product_id": product_id,
+                "new_price": new_price,
+            }
 
         except Exception as e:
-            logger.error(f"Failed to update price: {str(e)}")
+            logger.exception("Failed to update price")
             return {"status": "error", "error": str(e)}
 
     # ========== SHIPPING LABEL GENERATION ==========
@@ -411,14 +421,14 @@ class MercadoLibreAutomationEnhanced:
     async def _generate_shipping_label(
         self,
         order_id: str,
-        order_details: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        order_details: dict[str, Any],
+    ) -> dict[str, Any]:
         """Genera etiqueta de envío automáticamente."""
 
         try:
             # Extraer info
-            buyer = order_details.get("buyer", {})
-            shipping = order_details.get("shipping", {})
+            order_details.get("buyer", {})
+            order_details.get("shipping", {})
 
             # Generar label
             response = await self.http_client.post(
@@ -446,7 +456,7 @@ class MercadoLibreAutomationEnhanced:
             }
 
         except Exception as e:
-            logger.error(f"Failed to generate shipping label: {str(e)}")
+            logger.exception("Failed to generate shipping label")
             return {"status": "error", "error": str(e)}
 
     # ========== TRACKING UPDATE ==========
@@ -456,7 +466,7 @@ class MercadoLibreAutomationEnhanced:
         order_id: str,
         tracking_number: str,
         status: str,  # in_transit, delivered, etc
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Actualiza tracking en Mercado Libre."""
 
         try:
@@ -469,15 +479,15 @@ class MercadoLibreAutomationEnhanced:
             response.raise_for_status()
             logger.info(f"Tracking updated for {order_id}: {status}")
 
-            return {"status": "success", "order_id": order_id, "status": status}
+            return {"order_id": order_id, "status": status}
 
         except Exception as e:
-            logger.error(f"Failed to update tracking: {str(e)}")
+            logger.exception("Failed to update tracking")
             return {"status": "error", "error": str(e)}
 
     # ========== REVIEW MANAGEMENT ==========
 
-    async def sync_reviews(self) -> Dict[str, Any]:
+    async def sync_reviews(self) -> dict[str, Any]:
         """Sincroniza reseñas y responde automáticamente."""
 
         try:
@@ -501,10 +511,10 @@ class MercadoLibreAutomationEnhanced:
             return {"status": "success", "reviews_processed": processed}
 
         except Exception as e:
-            logger.error(f"Review sync failed: {str(e)}")
+            logger.exception("Review sync failed")
             return {"status": "error", "error": str(e)}
 
-    async def _fetch_pending_reviews(self) -> List[Dict[str, Any]]:
+    async def _fetch_pending_reviews(self) -> list[dict[str, Any]]:
         """Obtiene reseñas pendientes de respuesta."""
 
         try:
@@ -517,8 +527,8 @@ class MercadoLibreAutomationEnhanced:
             response.raise_for_status()
             return response.json().get("reviews", [])
 
-        except Exception as e:
-            logger.error(f"Failed to fetch reviews: {str(e)}")
+        except Exception:
+            logger.exception("Failed to fetch reviews")
             return []
 
     def _generate_review_response(self, rating: int, text: str) -> str:
@@ -545,13 +555,13 @@ class MercadoLibreAutomationEnhanced:
             logger.info(f"Replying to review {review_id}")
             return True
 
-        except Exception as e:
-            logger.error(f"Failed to reply to review: {str(e)}")
+        except Exception:
+            logger.exception("Failed to reply to review")
             return False
 
     # ========== CUSTOMER NOTIFICATIONS ==========
 
-    async def _send_order_confirmation(self, order_details: Dict[str, Any]) -> None:
+    async def _send_order_confirmation(self, order_details: dict[str, Any]) -> None:
         """Envía confirmación de orden al customer."""
 
         try:
@@ -574,8 +584,8 @@ class MercadoLibreAutomationEnhanced:
                     order_id=order_details.get("id"),
                 )
 
-        except Exception as e:
-            logger.error(f"Failed to send order confirmation: {str(e)}")
+        except Exception:
+            logger.exception("Failed to send order confirmation")
 
     # ========== TOKEN REFRESH ==========
 
@@ -591,10 +601,10 @@ class MercadoLibreAutomationEnhanced:
             logger.info("Access token refreshed")
             return True
 
-        except Exception as e:
-            logger.error(f"Failed to refresh token: {str(e)}")
+        except Exception:
+            logger.exception("Failed to refresh token")
             return False
 
-    async def _respond_buyer_questions(self, order_id: str) -> Dict[str, Any]:
+    async def _respond_buyer_questions(self, order_id: str) -> dict[str, Any]:
         """Placeholder para responder preguntas del buyer."""
         return {"status": "success", "messages_responded": 0}

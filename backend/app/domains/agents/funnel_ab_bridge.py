@@ -17,14 +17,13 @@ context + funnel tactics layering. Only the voice choice is what's tested.
 """
 
 import uuid
-from typing import Optional, Tuple
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logger import get_logger
+from app.core.prompts.funnel_specialists import FunnelStage, get_recommended_voice_slugs
 from app.domains.agents.ab_service import ABTestEngine
 from app.domains.channels.models import Conversation
-from app.core.prompts.funnel_specialists import FunnelStage, get_recommended_voice_slugs
-from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -65,7 +64,9 @@ async def _get_or_create_stage_experiment(db: AsyncSession, stage: FunnelStage):
         min_samples=_MIN_SAMPLES,
     )
     experiment = await ABTestEngine.start_experiment(db, experiment.id)
-    logger.info(f"Auto-created funnel voice experiment for stage '{stage.value}': {slugs[0]} vs {slugs[1]}")
+    logger.info(
+        f"Auto-created funnel voice experiment for stage '{stage.value}': {slugs[0]} vs {slugs[1]}"
+    )
     return experiment
 
 
@@ -73,7 +74,7 @@ async def get_stage_voice_slug(
     db: AsyncSession,
     stage: FunnelStage,
     conversation: Conversation,
-) -> Tuple[Optional[str], Optional[uuid.UUID], Optional[str]]:
+) -> tuple[str | None, uuid.UUID | None, str | None]:
     """Pick the voice slug to use for this stage, running an A/B test when
     the stage has multiple recommended voices.
 
@@ -89,8 +90,14 @@ async def get_stage_voice_slug(
         if not experiment:
             return fallback, None, None
 
-        variant = ABTestEngine.get_variant_for_conversation(db, experiment.id, conversation.id)
-        voice_slug = experiment.variant_a_prompt if variant == "a" else experiment.variant_b_prompt
+        variant = ABTestEngine.get_variant_for_conversation(
+            db, experiment.id, conversation.id
+        )
+        voice_slug = (
+            experiment.variant_a_prompt
+            if variant == "a"
+            else experiment.variant_b_prompt
+        )
 
         # Remember the assignment on the conversation so a later conversion
         # event can be attributed back to this experiment/variant.
@@ -109,7 +116,10 @@ async def get_stage_voice_slug(
         return voice_slug, experiment.id, variant
 
     except Exception as e:
-        logger.warning(f"Funnel A/B voice selection failed for stage '{stage.value}': {e}")
+        logger.warning(
+            f"Funnel A/B voice selection failed for stage '{stage.value}': {e}",
+            exc_info=True,
+        )
         return fallback, None, None
 
 
@@ -138,7 +148,7 @@ async def record_stage_conversion(db: AsyncSession, conversation: Conversation) 
         await ABTestEngine.check_auto_promote(db, experiment_id)
 
     except Exception as e:
-        logger.warning(f"Failed to record funnel A/B conversion: {e}")
+        logger.warning(f"Failed to record funnel A/B conversion: {e}", exc_info=True)
 
 
 __all__ = ["get_stage_voice_slug", "record_stage_conversion"]

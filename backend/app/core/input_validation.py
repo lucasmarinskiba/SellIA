@@ -13,14 +13,14 @@ import path keeps working unchanged.
 """
 
 import re
-from typing import Any, Dict, Optional
+from typing import Any, ClassVar
 
 
 class InputValidator:
     """Valida y sanitiza inputs. Rechaza ruido, quarantines dudoso."""
 
     # Reglas de validación
-    RULES = {
+    RULES: ClassVar[dict] = {
         "product_name": {
             "min_length": 3,
             "max_length": 200,
@@ -48,7 +48,9 @@ class InputValidator:
     }
 
     @classmethod
-    def validate(cls, field_name: str, value: Any) -> tuple[bool, Optional[str], Optional[str]]:
+    def validate(
+        cls, field_name: str, value: Any
+    ) -> tuple[bool, str | None, str | None]:
         """
         Valida field.
 
@@ -67,18 +69,19 @@ class InputValidator:
             return True, None, None  # No rules = accept
 
         # Verificar min/max length
-        if "min_length" in rules:
-            if len(str(value)) < rules["min_length"]:
-                return False, f"{field_name} too short (min {rules['min_length']})", "reject"
+        if "min_length" in rules and len(str(value)) < rules["min_length"]:
+            return (
+                False,
+                f"{field_name} too short (min {rules['min_length']})",
+                "reject",
+            )
 
-        if "max_length" in rules:
-            if len(str(value)) > rules["max_length"]:
-                return False, f"{field_name} too long (max {rules['max_length']})", "reject"
+        if "max_length" in rules and len(str(value)) > rules["max_length"]:
+            return False, f"{field_name} too long (max {rules['max_length']})", "reject"
 
         # Verificar patrón regex
-        if "pattern" in rules:
-            if not re.match(rules["pattern"], str(value)):
-                return False, f"{field_name} format invalid", "reject"
+        if "pattern" in rules and not re.match(rules["pattern"], str(value)):
+            return False, f"{field_name} format invalid", "reject"
 
         # Verificar reject patterns (spam)
         if "reject_patterns" in rules:
@@ -91,16 +94,26 @@ class InputValidator:
             try:
                 val = float(value)
                 if "min_value" in rules and val < rules["min_value"]:
-                    return False, f"{field_name} must be >= {rules['min_value']}", "reject"
+                    return (
+                        False,
+                        f"{field_name} must be >= {rules['min_value']}",
+                        "reject",
+                    )
                 if "max_value" in rules and val > rules["max_value"]:
-                    return False, f"{field_name} must be <= {rules['max_value']}", "reject"
+                    return (
+                        False,
+                        f"{field_name} must be <= {rules['max_value']}",
+                        "reject",
+                    )
             except ValueError:
                 return False, f"{field_name} must be a number", "reject"
 
         return True, None, None
 
     @classmethod
-    def validate_batch(cls, data: Dict[str, Any], fields_to_check: list[str]) -> Dict[str, Any]:
+    def validate_batch(
+        cls, data: dict[str, Any], fields_to_check: list[str]
+    ) -> dict[str, Any]:
         """
         Valida múltiples fields.
 

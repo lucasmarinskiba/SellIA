@@ -17,21 +17,20 @@ Instagram Graph API:
 Rate Limit: 500 requests/hour per token
 """
 
-import logging
 import hashlib
 import hmac
-import httpx
-import uuid
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
+import logging
 from enum import Enum
-import json
+from typing import Any
+
+import httpx
 
 logger = logging.getLogger(__name__)
 
 
 class InstagramCheckoutStatus(Enum):
     """Instagram checkout order statuses."""
+
     CHECKOUT_STARTED = "CHECKOUT_STARTED"
     PAYMENT_PENDING = "PAYMENT_PENDING"
     PAYMENT_CONFIRMED = "PAYMENT_CONFIRMED"
@@ -87,18 +86,19 @@ class InstagramShopAutomation:
             bool: True if signature is valid
         """
         try:
-            expected_signature = "sha256=" + hmac.new(
-                self.webhook_verify_token.encode(),
-                payload_body,
-                hashlib.sha256
-            ).hexdigest()
+            expected_signature = (
+                "sha256="
+                + hmac.new(
+                    self.webhook_verify_token.encode(), payload_body, hashlib.sha256
+                ).hexdigest()
+            )
 
             return hmac.compare_digest(signature, expected_signature)
-        except Exception as e:
-            logger.error(f"Webhook signature verification error: {e}")
+        except Exception:
+            logger.exception("Webhook signature verification error")
             return False
 
-    async def handle_webhook(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def handle_webhook(self, payload: dict[str, Any]) -> dict[str, Any]:
         """
         Process incoming Instagram webhook.
 
@@ -140,10 +140,10 @@ class InstagramShopAutomation:
             return {"status": "success"}
 
         except Exception as e:
-            logger.error(f"Webhook processing error: {e}")
+            logger.exception("Webhook processing error")
             return {"status": "error", "message": str(e)}
 
-    async def _handle_order_update(self, order_data: Dict[str, Any]) -> None:
+    async def _handle_order_update(self, order_data: dict[str, Any]) -> None:
         """Handle order status change."""
         order_id = order_data.get("id")
         status = order_data.get("status")
@@ -154,14 +154,14 @@ class InstagramShopAutomation:
             # Trigger fulfillment workflow
             await self.confirm_order(order_id)
 
-    async def _handle_product_update(self, product_data: Dict[str, Any]) -> None:
+    async def _handle_product_update(self, product_data: dict[str, Any]) -> None:
         """Handle product changes."""
         product_id = product_data.get("id")
         logger.info(f"Product update: {product_id}")
 
     # ========== ORDER MANAGEMENT ==========
 
-    async def get_order_details(self, order_id: str) -> Optional[Dict[str, Any]]:
+    async def get_order_details(self, order_id: str) -> dict[str, Any] | None:
         """
         Fetch order details from Instagram.
 
@@ -230,7 +230,7 @@ class InstagramShopAutomation:
         self,
         order_id: str,
         status: InstagramCheckoutStatus,
-        tracking_info: Optional[Dict[str, str]] = None,
+        tracking_info: dict[str, str] | None = None,
     ) -> bool:
         """
         Update order status and tracking.
@@ -270,8 +270,8 @@ class InstagramShopAutomation:
 
     async def sync_products_to_instagram(
         self,
-        products: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        products: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """
         Sync local products to Instagram Shop.
 
@@ -313,10 +313,10 @@ class InstagramShopAutomation:
             }
 
         except Exception as e:
-            logger.error(f"Error syncing products to Instagram: {e}")
+            logger.exception("Error syncing products to Instagram")
             return {"status": "error", "message": str(e)}
 
-    async def _find_product_by_sku(self, sku: str) -> Optional[Dict[str, Any]]:
+    async def _find_product_by_sku(self, sku: str) -> dict[str, Any] | None:
         """Find product in Instagram catalog by SKU."""
         try:
             url = f"{self.IG_GRAPH_API}/{self.account_id}/shop_products"
@@ -339,7 +339,7 @@ class InstagramShopAutomation:
             logger.error(f"Error finding product by SKU {sku}: {e}")
             return None
 
-    async def _create_instagram_product(self, product: Dict[str, Any]) -> bool:
+    async def _create_instagram_product(self, product: dict[str, Any]) -> bool:
         """Create product in Instagram Shop."""
         try:
             url = f"{self.IG_GRAPH_API}/{self.account_id}/shop_products"
@@ -366,7 +366,7 @@ class InstagramShopAutomation:
     async def _update_instagram_product(
         self,
         product_id: str,
-        product: Dict[str, Any],
+        product: dict[str, Any],
     ) -> bool:
         """Update product in Instagram Shop."""
         try:
@@ -390,7 +390,7 @@ class InstagramShopAutomation:
 
     # ========== ANALYTICS & INSIGHTS ==========
 
-    async def get_shop_analytics(self) -> Optional[Dict[str, Any]]:
+    async def get_shop_analytics(self) -> dict[str, Any] | None:
         """
         Fetch Instagram Shop analytics.
 
@@ -422,7 +422,7 @@ class InstagramShopAutomation:
             logger.error(f"Error fetching analytics: {e}")
             return None
 
-    async def get_order_analytics(self, date_range_days: int = 30) -> Dict[str, Any]:
+    async def get_order_analytics(self, date_range_days: int = 30) -> dict[str, Any]:
         """Get order analytics for recent period."""
         # Implementation: Query DB for order metrics
         logger.info(f"Fetching order analytics for last {date_range_days} days")
@@ -438,8 +438,8 @@ class InstagramShopAutomation:
     async def create_checkout_link(
         self,
         product_id: str,
-        customer_email: Optional[str] = None,
-    ) -> Optional[str]:
+        customer_email: str | None = None,
+    ) -> str | None:
         """
         Generate direct checkout link for Instagram product.
 
@@ -464,8 +464,8 @@ class InstagramShopAutomation:
             logger.info(f"Generated checkout link: {checkout_url}")
             return checkout_url
 
-        except Exception as e:
-            logger.error(f"Error creating checkout link: {e}")
+        except Exception:
+            logger.exception("Error creating checkout link")
             return None
 
     # ========== SHIPPING & FULFILLMENT ==========
@@ -475,7 +475,7 @@ class InstagramShopAutomation:
         order_id: str,
         carrier: str,
         tracking_number: str,
-        estimated_delivery: Optional[str] = None,
+        estimated_delivery: str | None = None,
     ) -> bool:
         """
         Update order tracking information.
@@ -506,8 +506,8 @@ class InstagramShopAutomation:
                 tracking_info,
             )
 
-        except Exception as e:
-            logger.error(f"Error updating tracking: {e}")
+        except Exception:
+            logger.exception("Error updating tracking")
             return False
 
     # ========== MESSAGE INTEGRATION ==========

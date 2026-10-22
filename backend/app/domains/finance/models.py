@@ -1,10 +1,20 @@
 """Finance Models — Sales Invoices, Payment Reminders, AR Snapshots, Tax Config."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Integer, Numeric, Boolean, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 from app.core.encrypted_types import EncryptedString
@@ -14,12 +24,28 @@ class SalesInvoice(Base):
     __tablename__ = "sales_invoices"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    order_id = Column(UUID(as_uuid=True), ForeignKey("orders.id", ondelete="SET NULL"), nullable=True, index=True)
-    conversation_id = Column(UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="SET NULL"), nullable=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    order_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("orders.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    conversation_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("conversations.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     invoice_number = Column(String(100), nullable=False, unique=True, index=True)
-    status = Column(String(50), default="draft", nullable=False)  # draft, sent, paid, overdue, cancelled
+    status = Column(
+        String(50), default="draft", nullable=False
+    )  # draft, sent, paid, overdue, cancelled
     amount = Column(Numeric(14, 2), nullable=False)
     tax_amount = Column(Numeric(14, 2), default=0, nullable=False)
     total_amount = Column(Numeric(14, 2), nullable=False)
@@ -36,8 +62,12 @@ class SalesInvoice(Base):
     items = Column(JSONB, default=list, nullable=False)
     extra_data = Column(JSONB, default=dict, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
     __table_args__ = (
         Index("ix_sales_invoices_business_status", "business_id", "status"),
@@ -48,13 +78,35 @@ class PaymentReminder(Base):
     __tablename__ = "payment_reminders"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    order_id = Column(UUID(as_uuid=True), ForeignKey("orders.id", ondelete="CASCADE"), nullable=False, index=True)
-    invoice_id = Column(UUID(as_uuid=True), ForeignKey("sales_invoices.id", ondelete="SET NULL"), nullable=True)
-    conversation_id = Column(UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="SET NULL"), nullable=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    order_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("orders.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    invoice_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("sales_invoices.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    conversation_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("conversations.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
-    reminder_level = Column(Integer, default=1, nullable=False)  # 1=gentle, 2=firm, 3=final_notice
-    status = Column(String(50), default="pending", nullable=False)  # pending, sent, responded, escalated
+    reminder_level = Column(
+        Integer, default=1, nullable=False
+    )  # 1=gentle, 2=firm, 3=final_notice
+    status = Column(
+        String(50), default="pending", nullable=False
+    )  # pending, sent, responded, escalated
     scheduled_at = Column(DateTime(timezone=True), nullable=False)
     sent_at = Column(DateTime(timezone=True), nullable=True)
     message_content = Column(Text, nullable=True)
@@ -62,8 +114,12 @@ class PaymentReminder(Base):
     channel_platform = Column(String(50), default="whatsapp", nullable=False)
     response_received = Column(Boolean, default=False, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
     __table_args__ = (
         Index("ix_payment_reminders_business_status", "business_id", "status"),
@@ -74,7 +130,12 @@ class AccountsReceivableSnapshot(Base):
     __tablename__ = "accounts_receivable_snapshots"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     snapshot_date = Column(DateTime(timezone=True), nullable=False)
     total_outstanding = Column(Numeric(14, 2), default=0, nullable=False)
@@ -84,7 +145,7 @@ class AccountsReceivableSnapshot(Base):
 
     customer_breakdown = Column(JSONB, default=list, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("ix_ar_snapshots_business_date", "business_id", "snapshot_date"),
@@ -95,7 +156,12 @@ class TaxConfig(Base):
     __tablename__ = "tax_configs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     country_code = Column(String(2), default="AR", nullable=False)
     tax_name = Column(String(100), default="IVA", nullable=False)
@@ -104,15 +170,25 @@ class TaxConfig(Base):
     is_tax_exempt = Column(Boolean, default=False, nullable=False)
 
     extra_data = Column(JSONB, default=dict, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
 
 class FinanceAutopilotConfig(Base):
     __tablename__ = "finance_autopilot_configs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
 
     is_active = Column(Boolean, default=False, nullable=False)
     is_paused = Column(Boolean, default=False, nullable=False)
@@ -126,5 +202,9 @@ class FinanceAutopilotConfig(Base):
     dunning_channel = Column(String(50), default="whatsapp", nullable=False)
     max_dunning_level = Column(Integer, default=4, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )

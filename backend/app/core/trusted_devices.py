@@ -9,21 +9,23 @@ Gestiona dispositivos de confianza del usuario.
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional, List
+from datetime import UTC, datetime, timedelta
 
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
 
-from app.domains.security.models import TrustedDevice
 from app.core.logger import get_logger
+from app.domains.security.models import TrustedDevice
 
 logger = get_logger(__name__)
 
 
-def get_device_fingerprint(ip: str, user_agent: Optional[str], accept_lang: Optional[str]) -> str:
+def get_device_fingerprint(
+    ip: str, user_agent: str | None, accept_lang: str | None
+) -> str:
     """Genera un fingerprint del dispositivo."""
     import hashlib
+
     raw = f"{ip}:{user_agent or ''}:{accept_lang or ''}"
     return hashlib.sha256(raw.encode()).hexdigest()[:32]
 
@@ -32,7 +34,7 @@ async def get_trusted_device(
     db: AsyncSession,
     user_id: uuid.UUID,
     fingerprint: str,
-) -> Optional[TrustedDevice]:
+) -> TrustedDevice | None:
     """Obtiene un dispositivo de confianza por fingerprint."""
     result = await db.execute(
         select(TrustedDevice).where(
@@ -47,8 +49,8 @@ async def record_device_login(
     db: AsyncSession,
     user_id: uuid.UUID,
     ip: str,
-    user_agent: Optional[str],
-    country: Optional[str],
+    user_agent: str | None,
+    country: str | None,
 ) -> tuple[TrustedDevice, bool]:
     """
     Registra un login desde un dispositivo.
@@ -61,7 +63,7 @@ async def record_device_login(
     is_new = False
 
     if device:
-        device.last_seen_at = datetime.now(timezone.utc)
+        device.last_seen_at = datetime.now(UTC)
         device.ip_address = ip
         await db.commit()
     else:
@@ -84,7 +86,9 @@ async def record_device_login(
     return device, is_new
 
 
-async def trust_device(db: AsyncSession, device_id: uuid.UUID, user_id: uuid.UUID) -> Optional[TrustedDevice]:
+async def trust_device(
+    db: AsyncSession, device_id: uuid.UUID, user_id: uuid.UUID
+) -> TrustedDevice | None:
     """Marca un dispositivo como de confianza.
 
     `user_id` is required and filtered on -- this used to look up the
@@ -96,7 +100,9 @@ async def trust_device(db: AsyncSession, device_id: uuid.UUID, user_id: uuid.UUI
     specific device_id it was handed.
     """
     result = await db.execute(
-        select(TrustedDevice).where(TrustedDevice.id == device_id, TrustedDevice.user_id == user_id)
+        select(TrustedDevice).where(
+            TrustedDevice.id == device_id, TrustedDevice.user_id == user_id
+        )
     )
     device = result.scalar_one_or_none()
     if device:
@@ -107,10 +113,14 @@ async def trust_device(db: AsyncSession, device_id: uuid.UUID, user_id: uuid.UUI
     return device
 
 
-async def block_device(db: AsyncSession, device_id: uuid.UUID, user_id: uuid.UUID) -> Optional[TrustedDevice]:
+async def block_device(
+    db: AsyncSession, device_id: uuid.UUID, user_id: uuid.UUID
+) -> TrustedDevice | None:
     """Bloquea un dispositivo. See trust_device's docstring -- same IDOR fix."""
     result = await db.execute(
-        select(TrustedDevice).where(TrustedDevice.id == device_id, TrustedDevice.user_id == user_id)
+        select(TrustedDevice).where(
+            TrustedDevice.id == device_id, TrustedDevice.user_id == user_id
+        )
     )
     device = result.scalar_one_or_none()
     if device:
@@ -121,16 +131,21 @@ async def block_device(db: AsyncSession, device_id: uuid.UUID, user_id: uuid.UUI
     return device
 
 
-async def list_user_devices(db: AsyncSession, user_id: uuid.UUID) -> List[TrustedDevice]:
+async def list_user_devices(
+    db: AsyncSession, user_id: uuid.UUID
+) -> list[TrustedDevice]:
     """Lista todos los dispositivos de un usuario."""
     result = await db.execute(
-        select(TrustedDevice).where(TrustedDevice.user_id == user_id)
+        select(TrustedDevice)
+        .where(TrustedDevice.user_id == user_id)
         .order_by(desc(TrustedDevice.last_seen_at))
     )
     return list(result.scalars().all())
 
 
-async def is_device_trusted(db: AsyncSession, user_id: uuid.UUID, fingerprint: str) -> bool:
+async def is_device_trusted(
+    db: AsyncSession, user_id: uuid.UUID, fingerprint: str
+) -> bool:
     """Verifica si un dispositivo es de confianza."""
     device = await get_trusted_device(db, user_id, fingerprint)
     if not device:
@@ -141,16 +156,18 @@ async def is_device_trusted(db: AsyncSession, user_id: uuid.UUID, fingerprint: s
         # Check if still within remember period
         if device.remember_days:
             expiry = device.first_seen_at + timedelta(days=device.remember_days)
-            if datetime.now(timezone.utc) > expiry:
+            if datetime.now(UTC) > expiry:
                 device.is_trusted = False
                 return False
         return True
     return False
 
 
-async def check_suspicious_device_activity(db: AsyncSession, user_id: uuid.UUID) -> bool:
+async def check_suspicious_device_activity(
+    db: AsyncSession, user_id: uuid.UUID
+) -> bool:
     """Detecta si hay más de 5 dispositivos nuevos en 24h."""
-    since = datetime.now(timezone.utc) - timedelta(hours=24)
+    since = datetime.now(UTC) - timedelta(hours=24)
     result = await db.execute(
         select(TrustedDevice).where(
             TrustedDevice.user_id == user_id,
@@ -162,7 +179,7 @@ async def check_suspicious_device_activity(db: AsyncSession, user_id: uuid.UUID)
     return len(new_devices) > 5
 
 
-def _parse_device_name(ua: Optional[str]) -> str:
+def _parse_device_name(ua: str | None) -> str:
     if not ua:
         return "Unknown"
     if "iPhone" in ua:
@@ -178,7 +195,7 @@ def _parse_device_name(ua: Optional[str]) -> str:
     return "Unknown Device"
 
 
-def _parse_os(ua: Optional[str]) -> str:
+def _parse_os(ua: str | None) -> str:
     if not ua:
         return "Unknown"
     if "Windows" in ua:
@@ -194,7 +211,7 @@ def _parse_os(ua: Optional[str]) -> str:
     return "Unknown"
 
 
-def _parse_browser(ua: Optional[str]) -> str:
+def _parse_browser(ua: str | None) -> str:
     if not ua:
         return "Unknown"
     if "Chrome" in ua and "Edg" not in ua:

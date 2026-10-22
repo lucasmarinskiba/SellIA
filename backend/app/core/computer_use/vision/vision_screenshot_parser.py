@@ -10,19 +10,20 @@ Responsibilities:
 Comprehensive page understanding.
 """
 
-import logging
+import asyncio
 import base64
 import json
-import asyncio
-from typing import Dict, List, Any, Optional, Tuple
+import logging
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 class ViewportSize(Enum):
     """Tamaño de viewport detectado."""
+
     MOBILE = "mobile"  # < 600px
     TABLET = "tablet"  # 600-1000px
     DESKTOP = "desktop"  # >= 1000px
@@ -31,8 +32,9 @@ class ViewportSize(Enum):
 @dataclass
 class ImageContent:
     """Información de imagen detectada."""
-    url: Optional[str] = None
-    alt_text: Optional[str] = None
+
+    url: str | None = None
+    alt_text: str | None = None
     x: int = 0
     y: int = 0
     width: int = 0
@@ -44,6 +46,7 @@ class ImageContent:
 @dataclass
 class Heading:
     """Encabezado (H1-H6)."""
+
     level: int  # 1-6
     text: str
     x: int
@@ -55,8 +58,9 @@ class Heading:
 @dataclass
 class PageMetadata:
     """Metadata extraído de página."""
+
     title: str
-    description: Optional[str] = None
+    description: str | None = None
     lang: str = "es"
     charset: str = "utf-8"
     viewport_size_type: ViewportSize = ViewportSize.DESKTOP
@@ -67,10 +71,11 @@ class PageMetadata:
 @dataclass
 class PageStructure:
     """Estructura completa de página."""
+
     metadata: PageMetadata
-    headings: List[Heading]
-    images: List[ImageContent]
-    text_hierarchy: List[Dict[str, Any]]
+    headings: list[Heading]
+    images: list[ImageContent]
+    text_hierarchy: list[dict[str, Any]]
     all_text: str
     unique_text_regions: int
     element_count: int
@@ -88,9 +93,7 @@ class VisionScreenshotParser:
         self.anthropic = anthropic_client
 
     async def parse_complete_page(
-        self,
-        screenshot_bytes: bytes,
-        url: Optional[str] = None
+        self, screenshot_bytes: bytes, url: str | None = None
     ) -> PageStructure:
         """Parsea completamente una página."""
         if not self.anthropic:
@@ -181,10 +184,7 @@ Responde SOLO en JSON:
             logger.error(f"Page parsing failed: {e}")
             raise
 
-    async def extract_all_text(
-        self,
-        screenshot_bytes: bytes
-    ) -> str:
+    async def extract_all_text(self, screenshot_bytes: bytes) -> str:
         """Extrae todo el texto de la página."""
         logger.info("Extracting all text")
 
@@ -231,14 +231,13 @@ Responde SOLO el texto concatenado (no JSON)."""
 
             return response.content[0].text
 
-        except Exception as e:
-            logger.error(f"Text extraction failed: {e}")
+        except Exception:
+            logger.exception("Text extraction failed")
             return ""
 
     async def identify_all_ui_elements(
-        self,
-        screenshot_bytes: bytes
-    ) -> Dict[str, List[Dict[str, Any]]]:
+        self, screenshot_bytes: bytes
+    ) -> dict[str, list[dict[str, Any]]]:
         """Identifica TODOS los elementos UI."""
         logger.info("Identifying all UI elements")
 
@@ -313,15 +312,13 @@ Responde SOLO en JSON:
             response_text = response.content[0].text
             return json.loads(response_text)
 
-        except Exception as e:
-            logger.error(f"UI element identification failed: {e}")
+        except Exception:
+            logger.exception("UI element identification failed")
             return {}
 
     async def detect_viewport_size(
-        self,
-        screenshot_bytes: bytes,
-        actual_width: Optional[int] = None
-    ) -> Tuple[ViewportSize, bool]:
+        self, screenshot_bytes: bytes, actual_width: int | None = None
+    ) -> tuple[ViewportSize, bool]:
         """Detecta tamaño de viewport y si es responsive.
 
         Returns:
@@ -388,18 +385,17 @@ Responde SOLO: {"viewport_size": "mobile|tablet|desktop", "is_responsive": true|
             }
 
             return (
-                size_map.get(data.get("viewport_size", "desktop"), ViewportSize.DESKTOP),
-                data.get("is_responsive", False)
+                size_map.get(
+                    data.get("viewport_size", "desktop"), ViewportSize.DESKTOP
+                ),
+                data.get("is_responsive", False),
             )
 
-        except Exception as e:
-            logger.error(f"Viewport detection failed: {e}")
+        except Exception:
+            logger.exception("Viewport detection failed")
             return ViewportSize.DESKTOP, False
 
-    async def identify_images(
-        self,
-        screenshot_bytes: bytes
-    ) -> List[ImageContent]:
+    async def identify_images(self, screenshot_bytes: bytes) -> list[ImageContent]:
         """Identifica todas las imágenes en la página."""
         logger.info("Identifying images")
 
@@ -454,22 +450,24 @@ Responde SOLO en JSON:
 
             images = []
             for img_data in data.get("images", []):
-                images.append(ImageContent(
-                    alt_text=img_data.get("alt_text"),
-                    content_type=img_data.get("content_type", "unknown"),
-                    x=img_data.get("x", 0),
-                    y=img_data.get("y", 0),
-                    width=img_data.get("width", 0),
-                    height=img_data.get("height", 0),
-                ))
+                images.append(
+                    ImageContent(
+                        alt_text=img_data.get("alt_text"),
+                        content_type=img_data.get("content_type", "unknown"),
+                        x=img_data.get("x", 0),
+                        y=img_data.get("y", 0),
+                        width=img_data.get("width", 0),
+                        height=img_data.get("height", 0),
+                    )
+                )
 
             return images
 
-        except Exception as e:
-            logger.error(f"Image identification failed: {e}")
+        except Exception:
+            logger.exception("Image identification failed")
             return []
 
-    def _parse_page_structure(self, data: Dict[str, Any]) -> PageStructure:
+    def _parse_page_structure(self, data: dict[str, Any]) -> PageStructure:
         """Parsea la estructura de página."""
         metadata_data = data.get("metadata", {})
         viewport_str = metadata_data.get("viewport_size_type", "desktop").lower()
@@ -539,31 +537,33 @@ Responde SOLO en JSON:
             f"DESCRIPTION: {structure.metadata.description or 'N/A'}",
             f"VIEWPORT: {structure.metadata.viewport_size_type.value}",
             f"RESPONSIVE: {structure.metadata.is_responsive}",
-            f"",
+            "",
             f"HEADINGS ({len(structure.headings)}):",
         ]
 
         for h in structure.headings[:5]:
             lines.append(f"  H{h.level}: {h.text}")
 
-        lines.extend([
-            f"",
-            f"ELEMENTS:",
-            f"  Total: {structure.element_count}",
-            f"  Buttons: {structure.button_count}",
-            f"  Links: {structure.link_count}",
-            f"  Forms: {structure.form_count}",
-            f"  Tables: {structure.table_count}",
-            f"  Lists: {structure.list_count}",
-            f"  Images: {len(structure.images)}",
-            f"",
-            f"IMAGES:",
-        ])
+        lines.extend(
+            [
+                "",
+                "ELEMENTS:",
+                f"  Total: {structure.element_count}",
+                f"  Buttons: {structure.button_count}",
+                f"  Links: {structure.link_count}",
+                f"  Forms: {structure.form_count}",
+                f"  Tables: {structure.table_count}",
+                f"  Lists: {structure.list_count}",
+                f"  Images: {len(structure.images)}",
+                "",
+                "IMAGES:",
+            ]
+        )
 
         for img in structure.images[:5]:
             lines.append(f"  - {img.alt_text or 'no alt'} ({img.content_type})")
 
-        lines.append(f"")
+        lines.append("")
         lines.append(f"TEXT ({len(structure.all_text)} chars):")
         lines.append(structure.all_text[:300])
 

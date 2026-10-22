@@ -1,16 +1,19 @@
 """Phase 29 Voice Sales API endpoints."""
 
-from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Depends
+import logging
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.domains.enterprise.voice_sales import (
-    VoiceCallManager,
-    PlaybookExtractor,
     PlaybookRecommender,
+    VoiceCallManager,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/voice", tags=["voice-sales"])
 
@@ -80,7 +83,7 @@ class CallMetricsResponse(BaseModel):
 @router.post("/initiate-call", response_model=InitiateCallResponse)
 def initiate_call(
     request: InitiateCallRequest,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Initiate AI voice call with prospect."""
 
@@ -96,13 +99,14 @@ def initiate_call(
             script=result.script,
         )
     except Exception as e:
+        logger.exception("initiate_call: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/call/input", response_model=CallInputResponse)
 def handle_call_input(
     request: CallInputRequest,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Send voice input to AI call handler."""
 
@@ -115,13 +119,14 @@ def handle_call_input(
             call_id=request.call_id,
         )
     except Exception as e:
+        logger.exception("handle_call_input: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/call/end", response_model=EndCallResponse)
 def end_call(
     request: EndCallRequest,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """End voice call, analyze outcome."""
 
@@ -139,13 +144,14 @@ def end_call(
             meeting_booked=result.get("meeting_booked", False),
         )
     except Exception as e:
+        logger.exception("end_call: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/playbooks/recommend/{deal_id}", response_model=Optional[PlaybookResponse])
+@router.get("/playbooks/recommend/{deal_id}", response_model=PlaybookResponse | None)
 def recommend_playbook(
     deal_id: str,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Get recommended playbook for deal."""
 
@@ -166,30 +172,34 @@ def recommend_playbook(
             confidence=recommendation.confidence,
         )
     except Exception as e:
+        logger.exception("recommend_playbook: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/metrics", response_model=CallMetricsResponse)
 def get_voice_metrics(
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Get voice call metrics."""
 
     try:
         from sqlalchemy import func
+
         from app.models.voice_sales import VoiceCall, VoiceCallMetrics
 
         # Get metrics
         total_calls = db.query(VoiceCall).count()
 
-        booked_calls = db.query(VoiceCall).filter(
-            VoiceCall.outcome == "meeting_booked"
-        ).count()
+        booked_calls = (
+            db.query(VoiceCall).filter(VoiceCall.outcome == "meeting_booked").count()
+        )
         booking_rate = booked_calls / total_calls if total_calls > 0 else 0
 
         avg_duration = db.query(func.avg(VoiceCall.duration_seconds)).scalar() or 0
 
-        avg_objections = db.query(func.avg(VoiceCallMetrics.objections_handled)).scalar() or 0
+        avg_objections = (
+            db.query(func.avg(VoiceCallMetrics.objections_handled)).scalar() or 0
+        )
 
         return CallMetricsResponse(
             total_calls=total_calls,
@@ -198,4 +208,5 @@ def get_voice_metrics(
             average_objections_handled=avg_objections,
         )
     except Exception as e:
+        logger.exception("get_voice_metrics: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

@@ -4,17 +4,16 @@ Chargeback Protection Engine
 Detecta disputas de pago, guarda evidencia de uso, y bloquea cuentas temporalmente.
 """
 
-import uuid
 import json
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Dict, Any
+import uuid
+from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logger import get_logger
 from app.domains.security.models import ChargebackAlert
 from app.domains.subscriptions.integrity import generate_usage_report
-from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -26,7 +25,7 @@ async def record_chargeback(
     transaction_id: str,
     amount: float,
     currency: str,
-    reason: Optional[str] = None,
+    reason: str | None = None,
 ) -> ChargebackAlert:
     """Registra un chargeback y genera evidencia."""
     # Generate usage evidence
@@ -58,9 +57,11 @@ async def record_chargeback(
 async def get_chargeback_evidence(
     db: AsyncSession,
     alert_id: uuid.UUID,
-) -> Optional[Dict[str, Any]]:
+) -> dict[str, Any] | None:
     """Obtiene la evidencia de un chargeback."""
-    result = await db.execute(select(ChargebackAlert).where(ChargebackAlert.id == alert_id))
+    result = await db.execute(
+        select(ChargebackAlert).where(ChargebackAlert.id == alert_id)
+    )
     alert = result.scalar_one_or_none()
     if not alert or not alert.evidence_json:
         return None

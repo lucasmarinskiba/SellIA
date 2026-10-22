@@ -3,20 +3,26 @@ Competitive Intelligence Models
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Column, DateTime, ForeignKey, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 
 
 class CompetitiveBattlecard(Base):
     """Stores competitive battlecards per user."""
+
     __tablename__ = "competitive_battlecards"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     competitor_name = Column(String(255), nullable=False)
     competitor_url = Column(String(500), nullable=True)
@@ -31,16 +37,26 @@ class CompetitiveBattlecard(Base):
     market_share_estimate = Column(String(50), nullable=True)
     notes = Column(Text, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
 
 class CompetitiveMonitor(Base):
     """24/7 competitor monitoring tracker."""
+
     __tablename__ = "competitive_monitors"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     competitor_name = Column(String(200), nullable=False)
     competitor_url = Column(Text, nullable=False)
@@ -49,5 +65,9 @@ class CompetitiveMonitor(Base):
     last_snapshot = Column(JSONB, default=dict)
     status = Column(String(20), default="active")
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )

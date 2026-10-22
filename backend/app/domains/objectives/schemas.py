@@ -1,15 +1,16 @@
 """Objectives & KPIs Pydantic Schemas."""
 
-from pydantic import BaseModel, Field, ConfigDict
-from uuid import UUID
 from datetime import datetime
-from typing import Optional, Any
+from typing import Any
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class DepartmentBase(BaseModel):
     name: str = Field(..., max_length=100)
     slug: str = Field(..., max_length=50)
-    description: Optional[str] = None
+    description: str | None = None
     color: str = "#3B82F6"
     icon: str = "briefcase"
 
@@ -22,7 +23,7 @@ class DepartmentResponse(DepartmentBase):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
     business_id: UUID
-    head_agent_personality_id: Optional[UUID] = None
+    head_agent_personality_id: UUID | None = None
     config: dict[str, Any]
     is_active: bool
     created_at: datetime
@@ -30,7 +31,7 @@ class DepartmentResponse(DepartmentBase):
 
 class BusinessObjectiveBase(BaseModel):
     name: str = Field(..., max_length=200)
-    description: Optional[str] = None
+    description: str | None = None
     period: str = "monthly"
     target_value: float
     unit: str = "ARS"
@@ -38,9 +39,9 @@ class BusinessObjectiveBase(BaseModel):
     end_date: datetime
     alert_threshold_percent: float = 80.0
     alert_channels: list[str] = []
-    department_id: Optional[UUID] = None
-    linked_workflow_id: Optional[UUID] = None
-    linked_channel_platform: Optional[str] = None
+    department_id: UUID | None = None
+    linked_workflow_id: UUID | None = None
+    linked_channel_platform: str | None = None
 
 
 class BusinessObjectiveCreate(BusinessObjectiveBase):
@@ -61,16 +62,16 @@ class BusinessObjectiveResponse(BusinessObjectiveBase):
 class KPIBase(BaseModel):
     name: str = Field(..., max_length=200)
     slug: str = Field(..., max_length=50)
-    description: Optional[str] = None
+    description: str | None = None
     metric_type: str
     data_source: str
     data_source_filter: dict[str, Any] = {}
     aggregation: str = "sum"
-    target_value: Optional[float] = None
+    target_value: float | None = None
     unit: str = "count"
     period: str = "monthly"
-    department_id: Optional[UUID] = None
-    objective_id: Optional[UUID] = None
+    department_id: UUID | None = None
+    objective_id: UUID | None = None
 
 
 class KPICreate(KPIBase):
@@ -82,7 +83,7 @@ class KPIResponse(KPIBase):
     id: UUID
     business_id: UUID
     current_value: float
-    period_start: Optional[datetime] = None
-    period_end: Optional[datetime] = None
+    period_start: datetime | None = None
+    period_end: datetime | None = None
     is_active: bool
     created_at: datetime

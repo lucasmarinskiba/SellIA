@@ -4,10 +4,18 @@ Predictive deal scoring and alert system for sales conversations.
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Integer, Boolean, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 
@@ -27,18 +35,20 @@ class DealScore(Base):
     business_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     customer_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     score = Column(Integer, nullable=False, default=0)  # 0-100
-    category = Column(String(20), nullable=False, default="cold")  # cold, warm, hot, ready
+    category = Column(
+        String(20), nullable=False, default="cold"
+    )  # cold, warm, hot, ready
     factors = Column(JSONB, default=dict, nullable=False)  # breakdown of factors
     recommendation = Column(Text, nullable=True)
     previous_score = Column(Integer, nullable=True)
     score_change = Column(Integer, nullable=True)
     calculated_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     created_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
 
@@ -62,5 +72,5 @@ class DealAlert(Base):
     is_read = Column(Boolean, default=False, nullable=False)
     created_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )

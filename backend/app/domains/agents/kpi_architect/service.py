@@ -1,19 +1,18 @@
-import uuid
 import json
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timezone
+import uuid
+from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.agents.kpi_architect.models import KPIDashboard, KPIWidget
-from app.domains.businesses.models import Business
 from app.domains.agents.ai_reply import generate_raw_ai_response
+from app.domains.agents.kpi_architect.models import KPIDashboard, KPIWidget
 from app.domains.agents.prompts.business_context_adapter import (
-    get_agent_prompt_context,
     format_business_context_for_prompt,
+    get_agent_prompt_context,
 )
+from app.domains.businesses.models import Business
 
 logger = get_logger(__name__)
 
@@ -68,10 +67,12 @@ class KPIArchitectService:
         ]
         await self.db.commit()
 
-        logger.info(f"KPI dashboard {dashboard.id} generated with {len(widgets)} widgets")
+        logger.info(
+            f"KPI dashboard {dashboard.id} generated with {len(widgets)} widgets"
+        )
         return dashboard
 
-    async def _suggest_kpis(self, business: Business) -> List[Dict[str, Any]]:
+    async def _suggest_kpis(self, business: Business) -> list[dict[str, Any]]:
         ctx = await get_agent_prompt_context(self.db, business.id)
         context_block = format_business_context_for_prompt(ctx)
 
@@ -103,7 +104,7 @@ class KPIArchitectService:
                 data = json.loads(json_str.strip())
                 return data.get("kpis", data if isinstance(data, list) else [])
             except Exception as e:
-                logger.warning(f"Failed to parse KPI JSON: {e}")
+                logger.warning(f"Failed to parse KPI JSON: {e}", exc_info=True)
 
         defaults = [
             {
@@ -111,35 +112,53 @@ class KPIArchitectService:
                 "widget_type": "metric",
                 "data_source": "subscriptions",
                 "config": {"format": "currency", "prefix": "$"},
-                "alerts": [{"condition": "lt", "value": 5000, "message": "MRR bajo objetivo"}],
+                "alerts": [
+                    {"condition": "lt", "value": 5000, "message": "MRR bajo objetivo"}
+                ],
             },
             {
                 "title": "Clientes Activos",
                 "widget_type": "metric",
                 "data_source": "users",
                 "config": {"format": "number"},
-                "alerts": [{"condition": "lt", "value": 50, "message": "Pocos clientes activos"}],
+                "alerts": [
+                    {
+                        "condition": "lt",
+                        "value": 50,
+                        "message": "Pocos clientes activos",
+                    }
+                ],
             },
             {
                 "title": "Tasa de Conversión",
                 "widget_type": "chart",
                 "data_source": "analytics",
                 "config": {"chart_type": "line", "period": "30d"},
-                "alerts": [{"condition": "lt", "value": 0.02, "message": "Conversión baja"}],
+                "alerts": [
+                    {"condition": "lt", "value": 0.02, "message": "Conversión baja"}
+                ],
             },
             {
                 "title": "CAC vs LTV",
                 "widget_type": "chart",
                 "data_source": "analytics",
                 "config": {"chart_type": "bar", "period": "90d"},
-                "alerts": [{"condition": "gt", "value": 0.33, "message": "CAC alto respecto a LTV"}],
+                "alerts": [
+                    {
+                        "condition": "gt",
+                        "value": 0.33,
+                        "message": "CAC alto respecto a LTV",
+                    }
+                ],
             },
             {
                 "title": "Churn Rate",
                 "widget_type": "metric",
                 "data_source": "subscriptions",
                 "config": {"format": "percentage"},
-                "alerts": [{"condition": "gt", "value": 0.05, "message": "Churn elevado"}],
+                "alerts": [
+                    {"condition": "gt", "value": 0.05, "message": "Churn elevado"}
+                ],
             },
             {
                 "title": "NPS",
@@ -151,7 +170,9 @@ class KPIArchitectService:
         ]
         return defaults
 
-    async def get_dashboard_data(self, dashboard_id: uuid.UUID, business_id: uuid.UUID) -> Dict[str, Any]:
+    async def get_dashboard_data(
+        self, dashboard_id: uuid.UUID, business_id: uuid.UUID
+    ) -> dict[str, Any]:
         dashboard = await self.db.get(KPIDashboard, dashboard_id)
         if not dashboard or dashboard.business_id != business_id:
             raise ValueError("Dashboard not found")
@@ -164,12 +185,14 @@ class KPIArchitectService:
         data = []
         for widget in widgets:
             widget_data = await self._query_widget_data(widget, business_id)
-            data.append({
-                "widget_id": str(widget.id),
-                "title": widget.title,
-                "widget_type": widget.widget_type,
-                "data": widget_data,
-            })
+            data.append(
+                {
+                    "widget_id": str(widget.id),
+                    "title": widget.title,
+                    "widget_type": widget.widget_type,
+                    "data": widget_data,
+                }
+            )
 
         return {
             "dashboard_id": str(dashboard.id),
@@ -178,7 +201,9 @@ class KPIArchitectService:
             "widgets": data,
         }
 
-    async def _query_widget_data(self, widget: KPIWidget, business_id: uuid.UUID) -> Any:
+    async def _query_widget_data(
+        self, widget: KPIWidget, business_id: uuid.UUID
+    ) -> Any:
         if widget.data_source == "subscriptions":
             return {"value": 142, "change": 12.5, "trend": "up"}
         elif widget.data_source == "users":
@@ -193,7 +218,9 @@ class KPIArchitectService:
         else:
             return {"value": 0}
 
-    async def check_alerts(self, dashboard_id: uuid.UUID, business_id: uuid.UUID) -> List[Dict[str, Any]]:
+    async def check_alerts(
+        self, dashboard_id: uuid.UUID, business_id: uuid.UUID
+    ) -> list[dict[str, Any]]:
         dashboard = await self.db.get(KPIDashboard, dashboard_id)
         if not dashboard or dashboard.business_id != business_id:
             raise ValueError("Dashboard not found")
@@ -211,37 +238,51 @@ class KPIArchitectService:
                 triggered = False
                 condition = alert.get("condition")
                 threshold = alert.get("value")
-                if condition == "gt" and value > threshold:
-                    triggered = True
-                elif condition == "lt" and value < threshold:
-                    triggered = True
-                elif condition == "eq" and value == threshold:
+                if (
+                    condition == "gt"
+                    and value > threshold
+                    or condition == "lt"
+                    and value < threshold
+                    or condition == "eq"
+                    and value == threshold
+                ):
                     triggered = True
                 if triggered:
-                    alerts.append({
-                        "widget_id": str(widget.id),
-                        "widget_title": widget.title,
-                        "message": alert.get("message", "Alerta activada"),
-                        "current_value": value,
-                        "threshold": threshold,
-                        "severity": alert.get("severity", "warning"),
-                    })
+                    alerts.append(
+                        {
+                            "widget_id": str(widget.id),
+                            "widget_title": widget.title,
+                            "message": alert.get("message", "Alerta activada"),
+                            "current_value": value,
+                            "threshold": threshold,
+                            "severity": alert.get("severity", "warning"),
+                        }
+                    )
         return alerts
 
-    async def list_dashboards(self, business_id: uuid.UUID, limit: int = 50, offset: int = 0) -> Dict[str, Any]:
+    async def list_dashboards(
+        self, business_id: uuid.UUID, limit: int = 50, offset: int = 0
+    ) -> dict[str, Any]:
         result = await self.db.execute(
             select(KPIDashboard).where(KPIDashboard.business_id == business_id)
         )
         dashboards = result.scalars().all()
-        return {"total": len(dashboards), "dashboards": dashboards[offset:offset + limit]}
+        return {
+            "total": len(dashboards),
+            "dashboards": dashboards[offset : offset + limit],
+        }
 
-    async def get_dashboard(self, dashboard_id: uuid.UUID, business_id: uuid.UUID) -> Optional[KPIDashboard]:
+    async def get_dashboard(
+        self, dashboard_id: uuid.UUID, business_id: uuid.UUID
+    ) -> KPIDashboard | None:
         dashboard = await self.db.get(KPIDashboard, dashboard_id)
         if not dashboard or dashboard.business_id != business_id:
             return None
         return dashboard
 
-    async def get_dashboard_config(self, dashboard_id: uuid.UUID, business_id: uuid.UUID) -> Optional[Dict[str, Any]]:
+    async def get_dashboard_config(
+        self, dashboard_id: uuid.UUID, business_id: uuid.UUID
+    ) -> dict[str, Any] | None:
         dashboard = await self.get_dashboard(dashboard_id, business_id)
         if not dashboard:
             return None

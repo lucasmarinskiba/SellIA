@@ -1,14 +1,16 @@
 """Base class for all specialized sales agents."""
 
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any, List
 from datetime import datetime
 from enum import Enum
+from typing import Any, ClassVar
+
 from pydantic import BaseModel
 
 
 class AgentType(str, Enum):
     """Agent specialization types."""
+
     DISCOVERY = "discovery"
     QUALIFICATION = "qualification"
     PROPOSAL = "proposal"
@@ -20,18 +22,19 @@ class AgentType(str, Enum):
 
 class AgentContext(BaseModel):
     """Unified context passed between agents."""
+
     lead_id: str
-    company: Optional[str] = None
-    contact_name: Optional[str] = None
-    decision_makers: List[str] = []
+    company: str | None = None
+    contact_name: str | None = None
+    decision_makers: list[str] = []
     intent_score: float = 0.0
-    budget: Optional[str] = None
-    timeline: Optional[str] = None
-    source: Optional[str] = None
+    budget: str | None = None
+    timeline: str | None = None
+    source: str | None = None
     current_stage: str = "lead_source"
 
     # Interaction history
-    interaction_history: List[Dict[str, Any]] = []
+    interaction_history: list[dict[str, Any]] = []
 
     # Predictive signals
     close_probability: float = 0.0
@@ -40,18 +43,18 @@ class AgentContext(BaseModel):
     expansion_potential: float = 0.0
 
     # Competitive context
-    main_competitor: Optional[str] = None
-    differentiation_points: List[str] = []
-    their_last_offer: Optional[str] = None
+    main_competitor: str | None = None
+    differentiation_points: list[str] = []
+    their_last_offer: str | None = None
 
     # Agent metadata
-    assigned_agent: Optional[str] = None
-    agent_history: List[Dict[str, Any]] = []
+    assigned_agent: str | None = None
+    agent_history: list[dict[str, Any]] = []
     created_at: datetime = None
     updated_at: datetime = None
 
     class Config:
-        json_schema_extra = {
+        json_schema_extra: ClassVar[dict] = {
             "example": {
                 "lead_id": "lead_123",
                 "company": "TechCorp Inc",
@@ -59,18 +62,19 @@ class AgentContext(BaseModel):
                 "intent_score": 0.92,
                 "budget": "$50k-$100k",
                 "timeline": "Q4 2026",
-                "current_stage": "discovery"
+                "current_stage": "discovery",
             }
         }
 
 
 class AgentDecision(BaseModel):
     """Decision output from an agent."""
-    next_agent: Optional[AgentType] = None
+
+    next_agent: AgentType | None = None
     action: str  # e.g., "send_email", "schedule_call", "escalate_to_human"
     confidence: float  # 0.0-1.0
     reasoning: str
-    data: Dict[str, Any] = {}
+    data: dict[str, Any] = {}
     should_escalate: bool = False
 
 
@@ -92,16 +96,14 @@ class SalesAgent(ABC):
         Determine if this agent should handle this lead.
         Returns True if agent is suitable for current context.
         """
-        pass
 
     @abstractmethod
     async def execute(self, context: AgentContext) -> AgentDecision:
         """
         Execute agent logic and return decision + next action.
         """
-        pass
 
-    async def get_metrics(self) -> Dict[str, Any]:
+    async def get_metrics(self) -> dict[str, Any]:
         """Return agent performance metrics."""
         return {
             "name": self.name,

@@ -7,11 +7,16 @@ the models smooth multi-scale seasonality.
 
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 import pandas as pd
 
+logger = logging.getLogger(__name__)
+
 try:  # optional
     import holidays as _holidays_pkg
+
     _HAS_HOLIDAYS = True
 except Exception:  # noqa: BLE001
     _holidays_pkg = None
@@ -20,7 +25,17 @@ except Exception:  # noqa: BLE001
 
 # Fallback: (month, day) fixed public holidays for a few LatAm countries.
 _FALLBACK_FIXED = {
-    "AR": [(1, 1), (3, 24), (4, 2), (5, 1), (5, 25), (6, 20), (7, 9), (12, 8), (12, 25)],
+    "AR": [
+        (1, 1),
+        (3, 24),
+        (4, 2),
+        (5, 1),
+        (5, 25),
+        (6, 20),
+        (7, 9),
+        (12, 8),
+        (12, 25),
+    ],
     "MX": [(1, 1), (2, 5), (3, 21), (5, 1), (9, 16), (11, 20), (12, 25)],
     "CL": [(1, 1), (5, 1), (5, 21), (9, 18), (9, 19), (12, 25)],
     "CO": [(1, 1), (5, 1), (7, 20), (8, 7), (12, 25)],
@@ -29,8 +44,17 @@ _FALLBACK_FIXED = {
 }
 
 # Commercial "demand spike" days worth their own flag.
-_COMMERCIAL = [(11, 27), (11, 28), (11, 29), (11, 30), (12, 1),  # Black Friday / Cyber Monday window
-               (2, 14), (5, 10), (12, 24), (12, 31)]
+_COMMERCIAL = [
+    (11, 27),
+    (11, 28),
+    (11, 29),
+    (11, 30),
+    (12, 1),  # Black Friday / Cyber Monday window
+    (2, 14),
+    (5, 10),
+    (12, 24),
+    (12, 31),
+]
 
 
 def _holiday_set(country: str, years: list[int]) -> set:
@@ -38,8 +62,8 @@ def _holiday_set(country: str, years: list[int]) -> set:
     if _HAS_HOLIDAYS:
         try:
             return set(_holidays_pkg.country_holidays(country, years=years).keys())
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception:
+            logger.exception("_holiday_set: error ignorado")
     fixed = _FALLBACK_FIXED.get(country, _FALLBACK_FIXED["AR"])
     out = set()
     for y in years:
@@ -51,7 +75,9 @@ def _holiday_set(country: str, years: list[int]) -> set:
     return out
 
 
-def calendar_frame(index: pd.DatetimeIndex, country: str = "AR", grain: str = "daily") -> pd.DataFrame:
+def calendar_frame(
+    index: pd.DatetimeIndex, country: str = "AR", grain: str = "daily"
+) -> pd.DataFrame:
     idx = pd.DatetimeIndex(index)
     years = sorted({d.year for d in idx} | {d.year + 1 for d in idx})
     hol = _holiday_set(country, years)

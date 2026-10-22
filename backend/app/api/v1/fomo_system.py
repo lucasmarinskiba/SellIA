@@ -12,23 +12,27 @@ Routes:
 - POST /foom/competitor-intel - Get competitive data
 """
 
-from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Depends
+import logging
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.domains.enterprise.fomo_system import (
+    AuthoritySignalsEngine,
+    CompetitiveIntelligenceTracker,
+    CostOfDelayCalculator,
+    FOOMContentGenerator,
+    LossAversionEngine,
+    MicroCommitmentSequence,
+    RealTimeFOMODashboard,
     ScarcityEngine,
     SocialProofEngine,
-    CostOfDelayCalculator,
-    LossAversionEngine,
-    AuthoritySignalsEngine,
-    MicroCommitmentSequence,
-    FOOMContentGenerator,
-    CompetitiveIntelligenceTracker,
-    RealTimeFOMODashboard,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/foom", tags=["foom-system"])
 
@@ -40,14 +44,14 @@ router = APIRouter(prefix="/api/v1/foom", tags=["foom-system"])
 
 class TriggersRequest(BaseModel):
     deal_id: str
-    include_channels: Optional[List[str]] = None  # ["in_app", "social", "personal"]
+    include_channels: list[str] | None = None  # ["in_app", "social", "personal"]
 
 
 class TriggersResponse(BaseModel):
     deal_id: str
     foom_level: str  # LOW, MEDIUM, HIGH, CRITICAL
     foom_score: int  # 1-10
-    triggers: List[dict]
+    triggers: list[dict]
 
 
 class CostOfDelayRequest(BaseModel):
@@ -112,7 +116,10 @@ class CompetitorIntelResponse(BaseModel):
 
 
 @router.get("/deal/{deal_id}")
-def get_deal_foom_status(deal_id: str, db: Session = Depends(get_db)):
+def get_deal_foom_status(
+    deal_id: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Get real-time FOOM status for a deal."""
     try:
         dashboard = RealTimeFOMODashboard(db)
@@ -123,25 +130,34 @@ def get_deal_foom_status(deal_id: str, db: Session = Depends(get_db)):
 
         return foom_status
     except Exception as e:
+        logger.exception("get_deal_foom_status: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/platform")
-def get_platform_foom_metrics(db: Session = Depends(get_db)):
+def get_platform_foom_metrics(
+    db: Annotated[Session, Depends(get_db)],
+):
     """Get FOOM metrics for SellIA platform itself."""
     try:
         dashboard = RealTimeFOMODashboard(db)
         metrics = dashboard.get_platform_foom_metrics()
         return metrics
     except Exception as e:
+        logger.exception("get_platform_foom_metrics: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/triggers", response_model=TriggersResponse)
-def generate_all_triggers(request: TriggersRequest, db: Session = Depends(get_db)):
+def generate_all_triggers(
+    request: TriggersRequest,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Generate all FOOM triggers for deal."""
     try:
-        from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+        from app.domains.crm.models import (
+            Deal,  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+        )
 
         deal = db.query(Deal).filter(Deal.id == request.deal_id).first()
         if not deal:
@@ -158,20 +174,27 @@ def generate_all_triggers(request: TriggersRequest, db: Session = Depends(get_db
         # Generate all triggers
         scarcity = ScarcityEngine(db).generate_scarcity_triggers(deal_dict)
         social_proof = SocialProofEngine(db).generate_social_proof_triggers(deal_dict)
-        loss_aversion = LossAversionEngine(db).generate_loss_aversion_triggers(deal_dict)
+        loss_aversion = LossAversionEngine(db).generate_loss_aversion_triggers(
+            deal_dict
+        )
         authority = AuthoritySignalsEngine(db).generate_authority_triggers(deal_dict)
 
         all_triggers = scarcity + social_proof + loss_aversion + authority
 
         # Filter by channels if requested
         if request.include_channels:
-            all_triggers = [t for t in all_triggers if t.channel in request.include_channels]
+            all_triggers = [
+                t for t in all_triggers if t.channel in request.include_channels
+            ]
 
-        max_urgency = max([t.urgency_level for t in all_triggers]) if all_triggers else 0
-        foom_level = "CRITICAL" if max_urgency >= 9 else \
-                     "HIGH" if max_urgency >= 7 else \
-                     "MEDIUM" if max_urgency >= 5 else \
-                     "LOW"
+        max_urgency = (
+            max([t.urgency_level for t in all_triggers]) if all_triggers else 0
+        )
+        foom_level = (
+            "CRITICAL"
+            if max_urgency >= 9
+            else "HIGH" if max_urgency >= 7 else "MEDIUM" if max_urgency >= 5 else "LOW"
+        )
 
         return TriggersResponse(
             deal_id=request.deal_id,
@@ -191,11 +214,15 @@ def generate_all_triggers(request: TriggersRequest, db: Session = Depends(get_db
             ],
         )
     except Exception as e:
+        logger.exception("generate_all_triggers: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/cost-of-delay", response_model=CostOfDelayResponse)
-def calculate_cost_of_delay(request: CostOfDelayRequest, db: Session = Depends(get_db)):
+def calculate_cost_of_delay(
+    request: CostOfDelayRequest,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Calculate cost of delaying decision."""
     try:
         calculator = CostOfDelayCalculator(db)
@@ -208,11 +235,15 @@ def calculate_cost_of_delay(request: CostOfDelayRequest, db: Session = Depends(g
             urgency_message=cost["urgency_message"],
         )
     except Exception as e:
+        logger.exception("calculate_cost_of_delay: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/social-post", response_model=SocialPostResponse)
-def generate_social_post(request: SocialPostRequest, db: Session = Depends(get_db)):
+def generate_social_post(
+    request: SocialPostRequest,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Generate shareable social media post."""
     try:
         dashboard = RealTimeFOMODashboard(db)
@@ -255,11 +286,15 @@ def generate_social_post(request: SocialPostRequest, db: Session = Depends(get_d
 
         return SocialPostResponse(post=post, platform="social")
     except Exception as e:
+        logger.exception("generate_social_post: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/email-subject", response_model=EmailSubjectResponse)
-def generate_email_subject(request: EmailSubjectRequest, db: Session = Depends(get_db)):
+def generate_email_subject(
+    request: EmailSubjectRequest,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Generate high-open-rate email subject."""
     try:
         dashboard = RealTimeFOMODashboard(db)
@@ -295,11 +330,15 @@ def generate_email_subject(request: EmailSubjectRequest, db: Session = Depends(g
 
         return EmailSubjectResponse(subject=subject, expected_open_rate=0.35)
     except Exception as e:
+        logger.exception("generate_email_subject: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/video-script", response_model=VideoScriptResponse)
-def generate_video_script(request: VideoScriptRequest, db: Session = Depends(get_db)):
+def generate_video_script(
+    request: VideoScriptRequest,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Generate short-form video script."""
     try:
         dashboard = RealTimeFOMODashboard(db)
@@ -332,13 +371,19 @@ def generate_video_script(request: VideoScriptRequest, db: Session = Depends(get
 
         script = generator.generate_video_script(trigger, request.duration_seconds)
 
-        return VideoScriptResponse(script=script, duration_seconds=request.duration_seconds)
+        return VideoScriptResponse(
+            script=script, duration_seconds=request.duration_seconds
+        )
     except Exception as e:
+        logger.exception("generate_video_script: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/micro-commitments/{step}")
-def get_micro_commitment(step: int, db: Session = Depends(get_db)):
+def get_micro_commitment(
+    step: int,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Get next micro-commitment in 7-step sequence."""
     try:
         if step < 1 or step > 7:
@@ -355,18 +400,24 @@ def get_micro_commitment(step: int, db: Session = Depends(get_db)):
             "if_objection": commitment["ifno"],
         }
     except Exception as e:
+        logger.exception("get_micro_commitment: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/competitor-intel", response_model=CompetitorIntelResponse)
-def get_competitor_intelligence(request: CompetitorIntelRequest, db: Session = Depends(get_db)):
+def get_competitor_intelligence(
+    request: CompetitorIntelRequest,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Get competitive intelligence."""
     try:
         tracker = CompetitiveIntelligenceTracker(db)
 
         competitor_wins = tracker.get_competitor_wins(request.industry, request.days)
         adoption_rate = tracker.get_industry_adoption_rate("solution", request.industry)
-        market_share_trends = tracker.get_market_share_trends("your_company", request.industry)
+        market_share_trends = tracker.get_market_share_trends(
+            "your_company", request.industry
+        )
 
         return CompetitorIntelResponse(
             competitor_wins=competitor_wins,
@@ -374,4 +425,5 @@ def get_competitor_intelligence(request: CompetitorIntelRequest, db: Session = D
             market_share_at_risk=market_share_trends.get("at_risk_percent", 0),
         )
     except Exception as e:
+        logger.exception("get_competitor_intelligence: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

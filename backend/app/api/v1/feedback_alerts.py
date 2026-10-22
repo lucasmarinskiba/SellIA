@@ -32,7 +32,10 @@ from app.core.business_access import (
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.domains.feedback.feedback_alert_models import AlertStatus, NPSAlert
-from app.domains.feedback.feedback_alert_service import FeedbackAlertService, NPSDashboardService
+from app.domains.feedback.feedback_alert_service import (
+    FeedbackAlertService,
+    NPSDashboardService,
+)
 from app.domains.locations.checkin_models import LocationFeedback
 from app.domains.users.models import User
 
@@ -76,7 +79,9 @@ async def evaluate_feedback(
     # this location. Without this check a member of business A could pin an alert to business B's feedback.
     feedback = await db.get(LocationFeedback, request.feedback_id)
     if feedback is None or feedback.location_id != request.location_id:
-        raise HTTPException(status_code=404, detail="Feedback no encontrado en esta sucursal")
+        raise HTTPException(
+            status_code=404, detail="Feedback no encontrado en esta sucursal"
+        )
 
     try:
         return await db.run_sync(
@@ -91,7 +96,7 @@ async def evaluate_feedback(
                 visitor_email=request.visitor_email,
                 visitor_phone=request.visitor_phone,
                 visitor_name=request.visitor_name,
-                db=sync_db
+                db=sync_db,
             )
         )
     except Exception as e:
@@ -111,9 +116,7 @@ async def acknowledge_alert(
     try:
         return await db.run_sync(
             lambda sync_db: FeedbackAlertService.acknowledge_alert(
-                alert_id=alert_id,
-                manager_id=current_user.id,
-                db=sync_db
+                alert_id=alert_id, manager_id=current_user.id, db=sync_db
             )
         )
     except Exception as e:
@@ -132,7 +135,9 @@ async def escalate_alert(
     alert = await _get_alert(db, alert_id)
     await require_business_access(db, alert.business_id, current_user, manage=True)
     if not await is_business_participant(db, alert.business_id, assigned_to_staff_id):
-        raise HTTPException(status_code=400, detail="La persona asignada no pertenece a este negocio")
+        raise HTTPException(
+            status_code=400, detail="La persona asignada no pertenece a este negocio"
+        )
 
     try:
         return await db.run_sync(
@@ -140,7 +145,7 @@ async def escalate_alert(
                 alert_id=alert_id,
                 assigned_to_staff_id=assigned_to_staff_id,
                 resolution_plan=resolution_plan,
-                db=sync_db
+                db=sync_db,
             )
         )
     except Exception as e:
@@ -158,15 +163,16 @@ async def resolve_alert(
     alert = await _get_alert(db, alert_id)
     # Whoever the alert was escalated to can close it; otherwise it takes a manager.
     await require_business_access(
-        db, alert.business_id, current_user, manage=alert.assigned_to_staff_id != current_user.id
+        db,
+        alert.business_id,
+        current_user,
+        manage=alert.assigned_to_staff_id != current_user.id,
     )
 
     try:
         return await db.run_sync(
             lambda sync_db: FeedbackAlertService.resolve_alert(
-                alert_id=alert_id,
-                resolution_notes=resolution_notes,
-                db=sync_db
+                alert_id=alert_id, resolution_notes=resolution_notes, db=sync_db
             )
         )
     except Exception as e:
@@ -187,10 +193,7 @@ async def get_location_alerts(
     try:
         return await db.run_sync(
             lambda sync_db: FeedbackAlertService.get_location_alerts(
-                location_id=location_id,
-                status_filter=status,
-                days=days,
-                db=sync_db
+                location_id=location_id, status_filter=status, days=days, db=sync_db
             )
         )
     except Exception as e:
@@ -210,9 +213,7 @@ async def update_nps_metrics(
     try:
         return await db.run_sync(
             lambda sync_db: NPSDashboardService.update_nps_metrics(
-                location_id=location_id,
-                business_id=business_id,
-                db=sync_db
+                location_id=location_id, business_id=business_id, db=sync_db
             )
         )
     except Exception as e:
@@ -232,9 +233,7 @@ async def get_nps_dashboard(
     try:
         return await db.run_sync(
             lambda sync_db: NPSDashboardService.get_nps_dashboard(
-                location_id=location_id,
-                days=days,
-                db=sync_db
+                location_id=location_id, days=days, db=sync_db
             )
         )
     except Exception as e:
@@ -255,10 +254,7 @@ async def calculate_sentiment_trend(
     try:
         return await db.run_sync(
             lambda sync_db: NPSDashboardService.calculate_sentiment_trend(
-                location_id=location_id,
-                date=date,
-                db=sync_db,
-                business_id=business_id
+                location_id=location_id, date=date, db=sync_db, business_id=business_id
             )
         )
     except Exception as e:
@@ -275,12 +271,18 @@ async def get_staff_assigned_alerts(
     scope = await staff_scope(db, staff_id, current_user)
 
     try:
+
         def _load(sync_db: Session) -> list:
-            return sync_db.query(NPSAlert).filter(
-                NPSAlert.assigned_to_staff_id == staff_id,
-                NPSAlert.business_id.in_(scope),
-                NPSAlert.status.in_([AlertStatus.ESCALATED, AlertStatus.ACTIVE])
-            ).order_by(NPSAlert.created_at.desc()).all()
+            return (
+                sync_db.query(NPSAlert)
+                .filter(
+                    NPSAlert.assigned_to_staff_id == staff_id,
+                    NPSAlert.business_id.in_(scope),
+                    NPSAlert.status.in_([AlertStatus.ESCALATED, AlertStatus.ACTIVE]),
+                )
+                .order_by(NPSAlert.created_at.desc())
+                .all()
+            )
 
         alerts = await db.run_sync(_load)
 
@@ -302,7 +304,7 @@ async def get_staff_assigned_alerts(
         return {
             "staff_id": str(staff_id),
             "assigned_alerts": len(alert_list),
-            "alerts": alert_list
+            "alerts": alert_list,
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

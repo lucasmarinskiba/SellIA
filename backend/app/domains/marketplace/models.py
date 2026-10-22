@@ -5,31 +5,47 @@ Users can discover, purchase and manage digital goods, services,
 apps, templates, and integrations to grow their business.
 """
 
-import uuid
 import enum
-from datetime import datetime, timezone
+import uuid
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Enum, Integer, Numeric, Boolean
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 
 
 class MarketplaceCategory(str, enum.Enum):
-    TEMPLATE = "template"           # Website templates, email templates
-    APP = "app"                     # Third-party app integrations
-    SERVICE = "service"             # Done-for-you services
+    TEMPLATE = "template"  # Website templates, email templates
+    APP = "app"  # Third-party app integrations
+    SERVICE = "service"  # Done-for-you services
     DIGITAL_PRODUCT = "digital_product"  # E-books, courses, presets
-    PROGRAM = "program"             # Software/plugins
-    BUNDLE = "bundle"               # Bundled offerings
+    PROGRAM = "program"  # Software/plugins
+    BUNDLE = "bundle"  # Bundled offerings
 
 
 class MarketplaceItem(Base):
     """An item available for purchase in the marketplace."""
+
     __tablename__ = "marketplace_items"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    vendor_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    vendor_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     name = Column(String(255), nullable=False)
     slug = Column(String(255), nullable=False, unique=True, index=True)
@@ -40,7 +56,9 @@ class MarketplaceItem(Base):
 
     # Pricing
     price_usd = Column(Numeric(10, 2), nullable=False)
-    compare_price_usd = Column(Numeric(10, 2), nullable=True)  # Original price for discounts
+    compare_price_usd = Column(
+        Numeric(10, 2), nullable=True
+    )  # Original price for discounts
     currency = Column(String(3), default="USD", nullable=False)
 
     # Media
@@ -70,23 +88,42 @@ class MarketplaceItem(Base):
     is_featured = Column(Boolean, default=False, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
 
 class MarketplacePurchase(Base):
     """A purchase transaction in the marketplace."""
+
     __tablename__ = "marketplace_purchases"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    buyer_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    item_id = Column(UUID(as_uuid=True), ForeignKey("marketplace_items.id", ondelete="CASCADE"), nullable=False, index=True)
+    buyer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    item_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("marketplace_items.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     price_paid = Column(Numeric(10, 2), nullable=False)
-    status = Column(String(20), default="completed", nullable=False)  # pending | completed | refunded | disputed
+    status = Column(
+        String(20), default="completed", nullable=False
+    )  # pending | completed | refunded | disputed
 
     # Delivery
-    delivery_data = Column(JSONB, default=dict, nullable=False)  # download_links, api_keys, access_tokens
+    delivery_data = Column(
+        JSONB, default=dict, nullable=False
+    )  # download_links, api_keys, access_tokens
     delivered_at = Column(DateTime(timezone=True), nullable=True)
 
     # Review
@@ -94,4 +131,4 @@ class MarketplacePurchase(Base):
     review_text = Column(Text, nullable=True)
     reviewed_at = Column(DateTime(timezone=True), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))

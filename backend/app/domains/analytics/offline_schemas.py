@@ -1,60 +1,63 @@
 """Pydantic schemas for offline conversion API."""
 
-from pydantic import BaseModel, Field
-from uuid import UUID
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional
+from uuid import UUID
 
-from app.domains.analytics.offline_models import VisitType, DemographicSource
+from pydantic import BaseModel, Field
+
+from app.domains.analytics.offline_models import DemographicSource, VisitType
 
 
 class OfflineConversionCreate(BaseModel):
     """Create offline conversion record."""
+
     location_id: UUID
     visit_type: VisitType = VisitType.WALK_IN
-    visitor_phone: Optional[str] = None
-    visitor_email: Optional[str] = None
-    visitor_name: Optional[str] = None
-    visitor_latitude: Optional[float] = None
-    visitor_longitude: Optional[float] = None
-    visitor_ip_address: Optional[str] = None
-    demographic_source: Optional[DemographicSource] = None
+    visitor_phone: str | None = None
+    visitor_email: str | None = None
+    visitor_name: str | None = None
+    visitor_latitude: float | None = None
+    visitor_longitude: float | None = None
+    visitor_ip_address: str | None = None
+    demographic_source: DemographicSource | None = None
     confidence_score: float = Field(default=0.5, ge=0, le=1)
-    conversation_id: Optional[UUID] = None
+    conversation_id: UUID | None = None
     purchased: bool = False
-    purchase_amount: Optional[Decimal] = None
+    purchase_amount: Decimal | None = None
     contact_collected: bool = False
-    staff_notes: Optional[str] = None
+    staff_notes: str | None = None
 
 
 class OfflineConversionUpdate(BaseModel):
     """End visit or update conversion details."""
-    exit_time: Optional[datetime] = None
-    purchased: Optional[bool] = None
-    purchase_amount: Optional[Decimal] = None
-    staff_notes: Optional[str] = None
+
+    exit_time: datetime | None = None
+    purchased: bool | None = None
+    purchase_amount: Decimal | None = None
+    staff_notes: str | None = None
 
 
 class OfflineConversionResponse(BaseModel):
     """Offline conversion response."""
+
     id: UUID
     business_id: UUID
-    location_id: Optional[UUID]
+    location_id: UUID | None
     visit_type: VisitType
-    visitor_phone: Optional[str]
-    visitor_email: Optional[str]
-    visitor_name: Optional[str]
-    visitor_latitude: Optional[float]
-    visitor_longitude: Optional[float]
-    demographic_source: Optional[DemographicSource]
+    visitor_phone: str | None
+    visitor_email: str | None
+    visitor_name: str | None
+    visitor_latitude: float | None
+    visitor_longitude: float | None
+    demographic_source: DemographicSource | None
     confidence_score: float
     entry_time: datetime
-    exit_time: Optional[datetime]
-    dwell_minutes: Optional[int]
+    exit_time: datetime | None
+    dwell_minutes: int | None
     purchased: bool
-    purchase_amount: Optional[Decimal]
-    staff_notes: Optional[str]
+    purchase_amount: Decimal | None
+    staff_notes: str | None
     created_at: datetime
 
     class Config:
@@ -63,19 +66,21 @@ class OfflineConversionResponse(BaseModel):
 
 class ProximityEventCreate(BaseModel):
     """Log proximity trigger event."""
+
     location_id: UUID
     conversation_id: UUID
     user_latitude: float
     user_longitude: float
     distance_km: float
     trigger_name: str
-    visitor_phone: Optional[str] = None
-    visitor_email: Optional[str] = None
-    automation_id: Optional[UUID] = None
+    visitor_phone: str | None = None
+    visitor_email: str | None = None
+    automation_id: UUID | None = None
 
 
 class ProximityEventResponse(BaseModel):
     """Proximity event response."""
+
     id: UUID
     business_id: UUID
     location_id: UUID
@@ -85,7 +90,7 @@ class ProximityEventResponse(BaseModel):
     distance_km: float
     trigger_name: str
     automation_triggered: bool
-    automation_executed_at: Optional[datetime]
+    automation_executed_at: datetime | None
     created_at: datetime
 
     class Config:
@@ -94,6 +99,7 @@ class ProximityEventResponse(BaseModel):
 
 class LocationVisitMetricsResponse(BaseModel):
     """Daily metrics for a location."""
+
     location_id: UUID
     metric_date: str
     total_visits: int
@@ -113,6 +119,7 @@ class LocationVisitMetricsResponse(BaseModel):
 
 class FootTrafficHeatmapResponse(BaseModel):
     """Hourly foot traffic heatmap."""
+
     location_id: UUID
     period_days: int
     hourly_heatmap: dict  # {"09": 5, "10": 8, ...}
@@ -120,6 +127,7 @@ class FootTrafficHeatmapResponse(BaseModel):
 
 class ConversionFunnelResponse(BaseModel):
     """Online→Offline→Purchase funnel metrics."""
+
     period_days: int
     total_visits: int
     visits_linked_to_online: int
@@ -131,6 +139,7 @@ class ConversionFunnelResponse(BaseModel):
 
 class ProximityEffectivenessResponse(BaseModel):
     """Effectiveness metrics for a proximity trigger."""
+
     trigger_name: str
     period_days: int
     total_proximity_events: int

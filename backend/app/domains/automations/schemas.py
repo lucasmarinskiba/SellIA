@@ -1,20 +1,21 @@
 """Automations Schemas"""
 
-from uuid import UUID
 from datetime import datetime
-from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, ConfigDict
+from typing import Any
+from uuid import UUID
 
+from pydantic import BaseModel, ConfigDict, Field
 
 # ========== Workflow Schemas ==========
 
+
 class WorkflowBase(BaseModel):
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     trigger_type: str
-    trigger_config: Dict[str, Any] = Field(default_factory=dict)
-    actions: List[Dict[str, Any]] = Field(default_factory=list)
-    visual_data: Optional[Dict[str, Any]] = None
+    trigger_config: dict[str, Any] = Field(default_factory=dict)
+    actions: list[dict[str, Any]] = Field(default_factory=list)
+    visual_data: dict[str, Any] | None = None
     status: str = "draft"
 
 
@@ -23,14 +24,14 @@ class WorkflowCreate(WorkflowBase):
 
 
 class WorkflowUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    trigger_type: Optional[str] = None
-    trigger_config: Optional[Dict[str, Any]] = None
-    actions: Optional[List[Dict[str, Any]]] = None
-    visual_data: Optional[Dict[str, Any]] = None
-    status: Optional[str] = None
-    is_active: Optional[bool] = None
+    name: str | None = None
+    description: str | None = None
+    trigger_type: str | None = None
+    trigger_config: dict[str, Any] | None = None
+    actions: list[dict[str, Any]] | None = None
+    visual_data: dict[str, Any] | None = None
+    status: str | None = None
+    is_active: bool | None = None
 
 
 class WorkflowResponse(WorkflowBase):
@@ -47,23 +48,24 @@ class WorkflowResponse(WorkflowBase):
 
 # ========== Workflow Variant Schemas ==========
 
+
 class WorkflowVariantBase(BaseModel):
     variant_name: str
     traffic_split: int = 50
-    actions: List[Dict[str, Any]] = Field(default_factory=list)
+    actions: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class WorkflowVariantCreate(WorkflowVariantBase):
     is_control: bool = False
-    is_active: Optional[bool] = True
+    is_active: bool | None = True
 
 
 class WorkflowVariantUpdate(BaseModel):
-    variant_name: Optional[str] = None
-    traffic_split: Optional[int] = None
-    actions: Optional[List[Dict[str, Any]]] = None
-    is_active: Optional[bool] = None
-    is_control: Optional[bool] = None
+    variant_name: str | None = None
+    traffic_split: int | None = None
+    actions: list[dict[str, Any]] | None = None
+    is_active: bool | None = None
+    is_control: bool | None = None
 
 
 class WorkflowVariantResponse(WorkflowVariantBase):
@@ -85,18 +87,19 @@ class WorkflowABTestResult(BaseModel):
     total_executions: int
     total_conversions: int
     overall_conversion_rate: float
-    variants: List[Dict[str, Any]] = Field(default_factory=list)
+    variants: list[dict[str, Any]] = Field(default_factory=list)
 
 
 # ========== Email Template Schemas ==========
 
+
 class EmailTemplateBase(BaseModel):
     name: str
     subject: str
-    body_html: Optional[str] = None
+    body_html: str | None = None
     body_text: str
-    variables: List[str] = Field(default_factory=list)
-    category: Optional[str] = None
+    variables: list[str] = Field(default_factory=list)
+    category: str | None = None
 
 
 class EmailTemplateCreate(EmailTemplateBase):
@@ -104,13 +107,13 @@ class EmailTemplateCreate(EmailTemplateBase):
 
 
 class EmailTemplateUpdate(BaseModel):
-    name: Optional[str] = None
-    subject: Optional[str] = None
-    body_html: Optional[str] = None
-    body_text: Optional[str] = None
-    variables: Optional[List[str]] = None
-    category: Optional[str] = None
-    is_active: Optional[bool] = None
+    name: str | None = None
+    subject: str | None = None
+    body_html: str | None = None
+    body_text: str | None = None
+    variables: list[str] | None = None
+    category: str | None = None
+    is_active: bool | None = None
 
 
 class EmailTemplateResponse(EmailTemplateBase):
@@ -125,15 +128,16 @@ class EmailTemplateResponse(EmailTemplateBase):
 
 # ========== Email Sequence Schemas ==========
 
+
 class SequenceStepBase(BaseModel):
     step_order: int
     delay_hours: int = 0
     delay_minutes: int = 0
-    template_id: Optional[UUID] = None
-    subject_override: Optional[str] = None
-    body_override: Optional[str] = None
-    condition: Optional[str] = None
-    extra_data: Dict[str, Any] = Field(default_factory=dict)
+    template_id: UUID | None = None
+    subject_override: str | None = None
+    body_override: str | None = None
+    condition: str | None = None
+    extra_data: dict[str, Any] = Field(default_factory=dict)
 
 
 class SequenceStepCreate(SequenceStepBase):
@@ -151,15 +155,15 @@ class SequenceStepResponse(SequenceStepBase):
 
 class EmailSequenceBase(BaseModel):
     name: str
-    description: Optional[str] = None
-    category: Optional[str] = None
+    description: str | None = None
+    category: str | None = None
     status: str = "draft"
-    trigger_type: Optional[str] = None
+    trigger_type: str | None = None
 
 
 class EmailSequenceCreate(EmailSequenceBase):
     business_id: UUID
-    steps: List[SequenceStepCreate] = Field(default_factory=list)
+    steps: list[SequenceStepCreate] = Field(default_factory=list)
 
 
 class EmailSequenceResponse(EmailSequenceBase):
@@ -171,21 +175,22 @@ class EmailSequenceResponse(EmailSequenceBase):
     clicks_count: int
     created_at: datetime
     updated_at: datetime
-    steps: List[SequenceStepResponse] = Field(default_factory=list)
+    steps: list[SequenceStepResponse] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class EmailSequenceUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    category: Optional[str] = None
-    status: Optional[str] = None
-    trigger_type: Optional[str] = None
-    is_active: Optional[bool] = None
+    name: str | None = None
+    description: str | None = None
+    category: str | None = None
+    status: str | None = None
+    trigger_type: str | None = None
+    is_active: bool | None = None
 
 
 # ========== Sequence Subscription Schemas ==========
+
 
 class SequenceSubscriptionBase(BaseModel):
     sequence_id: UUID
@@ -198,7 +203,7 @@ class SequenceSubscriptionResponse(SequenceSubscriptionBase):
     id: UUID
     business_id: UUID
     started_at: datetime
-    last_sent_at: Optional[datetime] = None
+    last_sent_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -207,13 +212,14 @@ class SequenceSubscriptionResponse(SequenceSubscriptionBase):
 
 # ========== Sequence Email Log Schemas ==========
 
+
 class SequenceEmailLogBase(BaseModel):
     subscription_id: UUID
     sequence_id: UUID
     step_id: UUID
     conversation_id: UUID
     recipient_email: str
-    subject: Optional[str] = None
+    subject: str | None = None
     status: str = "pending"
 
 
@@ -221,15 +227,16 @@ class SequenceEmailLogResponse(SequenceEmailLogBase):
     id: UUID
     business_id: UUID
     tracking_token: str
-    sent_at: Optional[datetime] = None
-    opened_at: Optional[datetime] = None
-    clicked_at: Optional[datetime] = None
+    sent_at: datetime | None = None
+    opened_at: datetime | None = None
+    clicked_at: datetime | None = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
 
 # ========== Sequence Analytics Schemas ==========
+
 
 class SequenceAnalytics(BaseModel):
     sequence_id: UUID
@@ -239,19 +246,20 @@ class SequenceAnalytics(BaseModel):
     total_clicks: int
     open_rate: float
     click_rate: float
-    sent_trend: List[Dict[str, Any]] = Field(default_factory=list)
+    sent_trend: list[dict[str, Any]] = Field(default_factory=list)
 
 
 # ========== Chatbot Rule Schemas ==========
 
+
 class ChatbotRuleBase(BaseModel):
     name: str
     intent: str
-    keywords: List[str] = Field(default_factory=list)
+    keywords: list[str] = Field(default_factory=list)
     response_template: str
     response_type: str = "text"
     priority: int = 0
-    channel_filter: List[str] = Field(default_factory=list)
+    channel_filter: list[str] = Field(default_factory=list)
     requires_human: bool = False
 
 
@@ -260,15 +268,15 @@ class ChatbotRuleCreate(ChatbotRuleBase):
 
 
 class ChatbotRuleUpdate(BaseModel):
-    name: Optional[str] = None
-    intent: Optional[str] = None
-    keywords: Optional[List[str]] = None
-    response_template: Optional[str] = None
-    response_type: Optional[str] = None
-    priority: Optional[int] = None
-    channel_filter: Optional[List[str]] = None
-    requires_human: Optional[bool] = None
-    is_active: Optional[bool] = None
+    name: str | None = None
+    intent: str | None = None
+    keywords: list[str] | None = None
+    response_template: str | None = None
+    response_type: str | None = None
+    priority: int | None = None
+    channel_filter: list[str] | None = None
+    requires_human: bool | None = None
+    is_active: bool | None = None
 
 
 class ChatbotRuleResponse(ChatbotRuleBase):
@@ -284,43 +292,44 @@ class ChatbotRuleResponse(ChatbotRuleBase):
 
 # ========== Content Generation Schemas ==========
 
+
 class GeneratedContentBase(BaseModel):
     content_type: str
     agent_slug: str
     status: str = "pending"
-    prompt: Optional[str] = None
-    negative_prompt: Optional[str] = None
-    generation_config: Dict[str, Any] = Field(default_factory=dict)
-    source_url: Optional[str] = None
-    thumbnail_url: Optional[str] = None
-    text_content: Optional[str] = None
-    variations: List[Dict[str, Any]] = Field(default_factory=list)
-    platform: Optional[str] = None
-    purpose: Optional[str] = None
-    performance_data: Dict[str, Any] = Field(default_factory=dict)
+    prompt: str | None = None
+    negative_prompt: str | None = None
+    generation_config: dict[str, Any] = Field(default_factory=dict)
+    source_url: str | None = None
+    thumbnail_url: str | None = None
+    text_content: str | None = None
+    variations: list[dict[str, Any]] = Field(default_factory=list)
+    platform: str | None = None
+    purpose: str | None = None
+    performance_data: dict[str, Any] = Field(default_factory=dict)
     approval_status: str = "pending"
-    feedback_notes: Optional[str] = None
+    feedback_notes: str | None = None
     generation_cost: int = 0
-    ai_model_used: Optional[str] = None
+    ai_model_used: str | None = None
 
 
 class GeneratedContentCreate(BaseModel):
-    catalog_item_id: Optional[UUID] = None
+    catalog_item_id: UUID | None = None
     content_type: str
     agent_slug: str
-    prompt: Optional[str] = None
-    generation_config: Dict[str, Any] = Field(default_factory=dict)
-    platform: Optional[str] = None
-    purpose: Optional[str] = None
+    prompt: str | None = None
+    generation_config: dict[str, Any] = Field(default_factory=dict)
+    platform: str | None = None
+    purpose: str | None = None
 
 
 class GeneratedContentResponse(GeneratedContentBase):
     id: UUID
     business_id: UUID
-    catalog_item_id: Optional[UUID] = None
-    workflow_execution_id: Optional[UUID] = None
-    reviewed_by: Optional[UUID] = None
-    reviewed_at: Optional[datetime] = None
+    catalog_item_id: UUID | None = None
+    workflow_execution_id: UUID | None = None
+    reviewed_by: UUID | None = None
+    reviewed_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -333,42 +342,42 @@ class ContentCalendarBase(BaseModel):
     status: str = "scheduled"
     platform: str
     content_format: str
-    caption: Optional[str] = None
-    hashtags: List[str] = Field(default_factory=list)
-    alt_text: Optional[str] = None
-    media_urls: List[str] = Field(default_factory=list)
-    cta_text: Optional[str] = None
-    link_in_bio: Optional[str] = None
+    caption: str | None = None
+    hashtags: list[str] = Field(default_factory=list)
+    alt_text: str | None = None
+    media_urls: list[str] = Field(default_factory=list)
+    cta_text: str | None = None
+    link_in_bio: str | None = None
     auto_publish: bool = False
     requires_approval: bool = True
-    extra_data: Dict[str, Any] = Field(default_factory=dict)
+    extra_data: dict[str, Any] = Field(default_factory=dict)
 
 
 class ContentCalendarCreate(ContentCalendarBase):
-    generated_content_id: Optional[UUID] = None
-    catalog_item_id: Optional[UUID] = None
-    channel_connection_id: Optional[UUID] = None
-    workflow_id: Optional[UUID] = None
+    generated_content_id: UUID | None = None
+    catalog_item_id: UUID | None = None
+    channel_connection_id: UUID | None = None
+    workflow_id: UUID | None = None
 
 
 class ContentCalendarResponse(ContentCalendarBase):
     id: UUID
     business_id: UUID
-    generated_content_id: Optional[UUID] = None
-    catalog_item_id: Optional[UUID] = None
-    channel_connection_id: Optional[UUID] = None
-    published_at: Optional[datetime] = None
-    published_by: Optional[UUID] = None
-    external_post_id: Optional[str] = None
-    external_url: Optional[str] = None
+    generated_content_id: UUID | None = None
+    catalog_item_id: UUID | None = None
+    channel_connection_id: UUID | None = None
+    published_at: datetime | None = None
+    published_by: UUID | None = None
+    external_post_id: str | None = None
+    external_url: str | None = None
     reach: int = 0
     impressions: int = 0
     engagement: int = 0
     clicks: int = 0
     conversions: int = 0
     revenue: int = 0
-    approved_by: Optional[UUID] = None
-    approved_at: Optional[datetime] = None
+    approved_by: UUID | None = None
+    approved_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -376,52 +385,53 @@ class ContentCalendarResponse(ContentCalendarBase):
 
 
 class ContentGenerationRequest(BaseModel):
-    catalog_item_id: Optional[UUID] = None
+    catalog_item_id: UUID | None = None
     content_type: str  # image, video, copy, carousel, thumbnail
-    agent_slug: Optional[str] = None
-    platform: Optional[str] = None
-    purpose: Optional[str] = None
-    prompt_override: Optional[str] = None
-    generation_config: Dict[str, Any] = Field(default_factory=dict)
+    agent_slug: str | None = None
+    platform: str | None = None
+    purpose: str | None = None
+    prompt_override: str | None = None
+    generation_config: dict[str, Any] = Field(default_factory=dict)
 
 
 class ContentGenerationResponse(BaseModel):
-    task_id: Optional[str] = None
-    content_id: Optional[UUID] = None
+    task_id: str | None = None
+    content_id: UUID | None = None
     status: str
     message: str
-    prompt: Optional[str] = None
-    preview: Optional[str] = None
+    prompt: str | None = None
+    preview: str | None = None
 
 
 # ========== Automation Toggles Schemas ==========
+
 
 class AutomationToggleBase(BaseModel):
     toggle_key: str
     category: str  # "agent" | "automation" | "feature" | "integration"
     display_name: str
-    description: Optional[str] = None
-    icon: Optional[str] = None
+    description: str | None = None
+    icon: str | None = None
 
 
 class AutomationToggleCreate(AutomationToggleBase):
     is_enabled: bool = True
-    monthly_limit: Optional[int] = None
+    monthly_limit: int | None = None
 
 
 class AutomationToggleUpdate(BaseModel):
-    is_enabled: Optional[bool] = None
-    monthly_limit: Optional[int] = None
+    is_enabled: bool | None = None
+    monthly_limit: int | None = None
 
 
 class AutomationToggleResponse(AutomationToggleBase):
     id: UUID
     business_id: UUID
     is_enabled: bool
-    monthly_limit: Optional[int]
+    monthly_limit: int | None
     current_month_usage: int
-    enabled_at: Optional[datetime]
-    disabled_at: Optional[datetime]
+    enabled_at: datetime | None
+    disabled_at: datetime | None
     created_at: datetime
     updated_at: datetime
 
@@ -432,12 +442,12 @@ class ToggleAuditLogResponse(BaseModel):
     id: UUID
     toggle_id: UUID
     action: str
-    old_value: Optional[Dict[str, Any]]
-    new_value: Optional[Dict[str, Any]]
-    changed_by_email: Optional[str]
-    reason: Optional[str]
-    leads_affected: Optional[int]
-    estimated_impact_pct: Optional[int]
+    old_value: dict[str, Any] | None
+    new_value: dict[str, Any] | None
+    changed_by_email: str | None
+    reason: str | None
+    leads_affected: int | None
+    estimated_impact_pct: int | None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -451,20 +461,21 @@ class ToggleDashboardStats(BaseModel):
 
 
 class ToggleDashboardResponse(BaseModel):
-    by_category: List[ToggleDashboardStats]
+    by_category: list[ToggleDashboardStats]
     timestamp: datetime
 
 
 # ========== Toggle Schedule Schemas ==========
+
 
 class ToggleScheduleBase(BaseModel):
     toggle_id: UUID
     start_time: datetime
     timezone: str = "UTC"
     recurring: bool = False
-    recurrence_rule: Optional[str] = None
+    recurrence_rule: str | None = None
     action: str  # "enable" | "disable"
-    reason: Optional[str] = None
+    reason: str | None = None
 
 
 class ToggleScheduleCreate(ToggleScheduleBase):
@@ -472,24 +483,24 @@ class ToggleScheduleCreate(ToggleScheduleBase):
 
 
 class ToggleScheduleUpdate(BaseModel):
-    start_time: Optional[datetime] = None
-    timezone: Optional[str] = None
-    recurring: Optional[bool] = None
-    recurrence_rule: Optional[str] = None
-    action: Optional[str] = None
-    reason: Optional[str] = None
-    is_active: Optional[bool] = None
+    start_time: datetime | None = None
+    timezone: str | None = None
+    recurring: bool | None = None
+    recurrence_rule: str | None = None
+    action: str | None = None
+    reason: str | None = None
+    is_active: bool | None = None
 
 
 class ToggleScheduleResponse(ToggleScheduleBase):
     id: UUID
     business_id: UUID
     is_active: bool
-    last_executed_at: Optional[datetime]
-    next_execution_at: Optional[datetime]
+    last_executed_at: datetime | None
+    next_execution_at: datetime | None
     execution_count: int
     failed_count: int
-    last_error: Optional[str]
+    last_error: str | None
     created_at: datetime
     updated_at: datetime
 
@@ -498,16 +509,17 @@ class ToggleScheduleResponse(ToggleScheduleBase):
 
 # ========== Toggle Notification Schemas ==========
 
+
 class ToggleNotificationRuleBase(BaseModel):
     toggle_id: UUID
     event_type: str  # "enabled" | "disabled" | "usage_limit_reached" | "usage_threshold" | "schedule_executed"
-    usage_threshold_pct: Optional[int] = None
+    usage_threshold_pct: int | None = None
     notify_via_email: bool = True
     notify_via_webhook: bool = False
     notify_via_inapp: bool = True
-    email_recipients: List[str] = Field(default_factory=list)
-    webhook_url: Optional[str] = None
-    webhook_secret: Optional[str] = None
+    email_recipients: list[str] = Field(default_factory=list)
+    webhook_url: str | None = None
+    webhook_secret: str | None = None
 
 
 class ToggleNotificationRuleCreate(ToggleNotificationRuleBase):
@@ -515,15 +527,15 @@ class ToggleNotificationRuleCreate(ToggleNotificationRuleBase):
 
 
 class ToggleNotificationRuleUpdate(BaseModel):
-    event_type: Optional[str] = None
-    usage_threshold_pct: Optional[int] = None
-    notify_via_email: Optional[bool] = None
-    notify_via_webhook: Optional[bool] = None
-    notify_via_inapp: Optional[bool] = None
-    email_recipients: Optional[List[str]] = None
-    webhook_url: Optional[str] = None
-    webhook_secret: Optional[str] = None
-    is_active: Optional[bool] = None
+    event_type: str | None = None
+    usage_threshold_pct: int | None = None
+    notify_via_email: bool | None = None
+    notify_via_webhook: bool | None = None
+    notify_via_inapp: bool | None = None
+    email_recipients: list[str] | None = None
+    webhook_url: str | None = None
+    webhook_secret: str | None = None
+    is_active: bool | None = None
 
 
 class ToggleNotificationRuleResponse(ToggleNotificationRuleBase):
@@ -541,9 +553,9 @@ class ToggleNotificationLogResponse(BaseModel):
     toggle_id: UUID
     rule_id: UUID
     event_type: str
-    channels_sent: List[str]
+    channels_sent: list[str]
     status: str
-    error_message: Optional[str]
+    error_message: str | None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

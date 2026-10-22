@@ -1,6 +1,7 @@
 """Feedback loop: Conversion data → X9 profile improvements."""
-from datetime import datetime, timezone
+
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.domains.user_intelligence.models import UserRiskProfile
 
 
@@ -36,17 +37,23 @@ class FeedbackLoopAgent:
                 profile.decision_velocity = min(profile.decision_velocity + 0.5, 10.0)
             elif which_touch_converted == 2:
                 # Demo invite worked → strong engagement signal
-                profile.social_proof_sensitivity = min(profile.social_proof_sensitivity + 0.5, 10.0)
+                profile.social_proof_sensitivity = min(
+                    profile.social_proof_sensitivity + 0.5, 10.0
+                )
             elif which_touch_converted == 3:
                 # Objection handling worked → skeptic/analyst personality
                 pass  # No change needed
             elif which_touch_converted == 4:
                 # Final urgency push worked → impulse_buyer signal
-                profile.scarcity_responsiveness = min(profile.scarcity_responsiveness + 1.0, 10.0)
+                profile.scarcity_responsiveness = min(
+                    profile.scarcity_responsiveness + 1.0, 10.0
+                )
 
             # Track attribution
             if conversion_attributed_to == "scarcity_fomo":
-                profile.scarcity_responsiveness = min(profile.scarcity_responsiveness + 1.0, 10.0)
+                profile.scarcity_responsiveness = min(
+                    profile.scarcity_responsiveness + 1.0, 10.0
+                )
             elif conversion_attributed_to == "personality_targeting":
                 # This personality type responded well — reinforce it
                 profile.estimated_conversion_probability = min(
@@ -98,9 +105,13 @@ class FeedbackLoopAgent:
             "performance_vs_benchmark": f"{vs_benchmark * 100:+.1f}%",
             "sample_size": num_attempts,
             "recommendation": (
-                "Increase targeting" if vs_benchmark > 0.1
-                else "Reduce targeting" if vs_benchmark < -0.1
-                else "Maintain current approach"
+                "Increase targeting"
+                if vs_benchmark > 0.1
+                else (
+                    "Reduce targeting"
+                    if vs_benchmark < -0.1
+                    else "Maintain current approach"
+                )
             ),
         }
 

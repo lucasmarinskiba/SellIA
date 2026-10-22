@@ -3,18 +3,18 @@
 Endpoints for viewing and triggering self-reflections and chain-of-thought logs.
 """
 
+from typing import Annotated
 from uuid import UUID
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.domains.agents.reflection import SelfReflection, ChainOfThought
 from app.domains.agents.models_reflection import AgentReflection, ChainOfThoughtLog
+from app.domains.agents.reflection import SelfReflection
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/reflections", tags=["reflection"])
 
@@ -22,8 +22,8 @@ router = APIRouter(prefix="/reflections", tags=["reflection"])
 @router.get("/{conversation_id}", status_code=status.HTTP_200_OK)
 async def get_reflection(
     conversation_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get the self-reflection for a conversation."""
     result = await db.execute(
@@ -50,9 +50,9 @@ async def get_reflection(
 @router.post("/{conversation_id}/generate", status_code=status.HTTP_201_CREATED)
 async def generate_reflection(
     conversation_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     agent_type: str = "sellia",
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Trigger self-reflection generation for a conversation."""
     result = await SelfReflection.reflect_on_conversation(db, conversation_id)
@@ -84,8 +84,8 @@ async def generate_reflection(
 @router.get("/thoughts/{conversation_id}", status_code=status.HTTP_200_OK)
 async def get_thought_logs(
     conversation_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get chain-of-thought logs for a conversation."""
     result = await db.execute(

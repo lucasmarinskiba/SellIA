@@ -1,30 +1,47 @@
 """FOMO Intelligence API: registro + inteligencia de las 4 estrategias FOMO."""
-from fastapi import APIRouter, Depends, Body, HTTPException
+
+from typing import Annotated
+
+from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import get_db
 from app.domains.fomo_intelligence.service import FOMOIntelligenceService
-
 
 router = APIRouter(prefix="/api/v1/fomo-intelligence", tags=["fomo-intelligence"])
 
 
 @router.post("/register-strategy")
 async def register_strategy_application(
-    business_id: str = Body(...),
-    strategy_type: str = Body(..., description="escasez_real | prueba_social | exclusividad | transparencia"),
-    target_type: str = Body(...),
-    target_id: str = Body(...),
-    real_data_source: str = Body(..., description="De dónde sale el dato real, ej: inventory_count"),
-    data_snapshot: dict = Body(..., description="El dato real capturado en este momento"),
-    channel: str | None = Body(None),
-    personality_target: str | None = Body(None),
-    db: AsyncSession = Depends(get_db),
+    business_id: Annotated[str, Body()],
+    strategy_type: Annotated[
+        str,
+        Body(description="escasez_real | prueba_social | exclusividad | transparencia"),
+    ],
+    target_type: Annotated[str, Body()],
+    target_id: Annotated[str, Body()],
+    real_data_source: Annotated[
+        str, Body(description="De dónde sale el dato real, ej: inventory_count")
+    ],
+    data_snapshot: Annotated[
+        dict, Body(description="El dato real capturado en este momento")
+    ],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    channel: Annotated[str | None, Body()] = None,
+    personality_target: Annotated[str | None, Body()] = None,
 ) -> dict:
     """Registra un uso real de una de las 4 estrategias FOMO. Rechaza datos incompletos."""
     try:
         application = await FOMOIntelligenceService.register_strategy_application(
-            db, business_id, strategy_type, target_type, target_id,
-            real_data_source, data_snapshot, channel, personality_target,
+            db,
+            business_id,
+            strategy_type,
+            target_type,
+            target_id,
+            real_data_source,
+            data_snapshot,
+            channel,
+            personality_target,
         )
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
@@ -40,17 +57,23 @@ async def register_strategy_application(
 
 @router.post("/record-outcome")
 async def record_outcome(
-    application_id: str = Body(...),
-    impressions: int = Body(...),
-    clicks: int = Body(...),
-    conversions: int = Body(...),
-    revenue: float = Body(0.0),
-    perceived_as_genuine: bool | None = Body(None),
-    db: AsyncSession = Depends(get_db),
+    application_id: Annotated[str, Body()],
+    impressions: Annotated[int, Body()],
+    clicks: Annotated[int, Body()],
+    conversions: Annotated[int, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    revenue: Annotated[float, Body()] = 0.0,
+    perceived_as_genuine: Annotated[bool | None, Body()] = None,
 ) -> dict:
     """Registra el resultado medido de una aplicación de estrategia."""
     outcome = await FOMOIntelligenceService.record_outcome(
-        db, application_id, impressions, clicks, conversions, revenue, perceived_as_genuine
+        db,
+        application_id,
+        impressions,
+        clicks,
+        conversions,
+        revenue,
+        perceived_as_genuine,
     )
     return {
         "outcome_id": outcome.id,
@@ -61,7 +84,9 @@ async def record_outcome(
 
 
 @router.get("/intelligence-report")
-async def get_intelligence_report(db: AsyncSession = Depends(get_db)) -> dict:
+async def get_intelligence_report(
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict:
     """Agrega todas las applications/outcomes y devuelve inteligencia por estrategia+personalidad."""
     return await FOMOIntelligenceService.generate_intelligence_report(db)
 
@@ -69,14 +94,16 @@ async def get_intelligence_report(db: AsyncSession = Depends(get_db)) -> dict:
 @router.get("/recommend-strategy/{personality_type}")
 async def recommend_strategy(
     personality_type: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Recomienda cuál de las 4 estrategias usar para una personalidad dada."""
     return await FOMOIntelligenceService.recommend_strategy(db, personality_type)
 
 
 @router.get("/transparency-dashboard")
-async def get_transparency_dashboard(db: AsyncSession = Depends(get_db)) -> dict:
+async def get_transparency_dashboard(
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict:
     """Métricas reales del sistema, listas para usarse como contenido de la estrategia Transparencia."""
     return await FOMOIntelligenceService.get_transparency_dashboard(db)
 
@@ -108,7 +135,11 @@ async def list_strategies() -> dict:
                 "id": "transparencia",
                 "name": "Transparencia",
                 "description": "Muestra resultados y logros reales de tu comunidad para despertar interés genuino.",
-                "requires_fields": ["metric_name", "metric_value", "verification_source"],
+                "requires_fields": [
+                    "metric_name",
+                    "metric_value",
+                    "verification_source",
+                ],
             },
         ]
     }

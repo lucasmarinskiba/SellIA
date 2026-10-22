@@ -1,21 +1,23 @@
 """Customer FOMO Routes - User-facing API endpoints"""
 
-from fastapi import APIRouter, Depends, Query, Body
-from typing import List, Optional, Dict, Any
-from decimal import Decimal
+from typing import Annotated, Any
+
+from fastapi import APIRouter, Body, Depends, Query
 
 from app.core.deps import get_current_user
 from app.domains.fomo.customer_fomo_service import (
     CustomerFOMOCampaignService,
-    CustomerFOMOTemplates,
 )
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/fomo/customer", tags=["customer-fomo"])
 
 
 # Campaign Management
 @router.get("/templates")
-async def list_campaign_templates(current_user = Depends(get_current_user)):
+async def list_campaign_templates(
+    current_user: Annotated[User, Depends(get_current_user)],
+):
     """List all FOMO campaign templates"""
     return {
         "templates": [
@@ -74,10 +76,10 @@ async def list_campaign_templates(current_user = Depends(get_current_user)):
 
 @router.post("/campaigns/from-template")
 async def create_campaign_from_template(
-    template_type: str = Query(..., description="Template ID"),
-    business_id: str = Query(...),
-    custom_config: Optional[Dict[str, Any]] = Body(None),
-    current_user = Depends(get_current_user),
+    template_type: Annotated[str, Query(description="Template ID")],
+    business_id: Annotated[str, Query()],
+    current_user: Annotated[User, Depends(get_current_user)],
+    custom_config: Annotated[dict[str, Any] | None, Body()] = None,
 ):
     """Create FOMO campaign from template"""
     campaign = await CustomerFOMOCampaignService.create_campaign_from_template(
@@ -92,7 +94,7 @@ async def create_campaign_from_template(
 @router.post("/campaigns/{campaign_id}/activate")
 async def activate_campaign(
     campaign_id: str,
-    current_user = Depends(get_current_user),
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Activate FOMO campaign"""
     result = await CustomerFOMOCampaignService.activate_campaign(campaign_id)
@@ -102,7 +104,7 @@ async def activate_campaign(
 @router.get("/campaigns/{campaign_id}/performance")
 async def get_campaign_performance(
     campaign_id: str,
-    current_user = Depends(get_current_user),
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get real-time campaign performance"""
     return await CustomerFOMOCampaignService.get_campaign_performance(campaign_id)
@@ -111,12 +113,14 @@ async def get_campaign_performance(
 # Widget Management
 @router.post("/widgets/generate-embed")
 async def generate_widget_embed_code(
-    campaign_id: str = Query(...),
-    widget_type: str = Query(...),
-    current_user = Depends(get_current_user),
+    campaign_id: Annotated[str, Query()],
+    widget_type: Annotated[str, Query()],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Generate embed code for widget"""
-    embed_code = await CustomerFOMOCampaignService.generate_embed_code(campaign_id, widget_type)
+    embed_code = await CustomerFOMOCampaignService.generate_embed_code(
+        campaign_id, widget_type
+    )
     return {
         "campaign_id": campaign_id,
         "widget_type": widget_type,
@@ -129,7 +133,7 @@ async def generate_widget_embed_code(
 @router.get("/widgets/{widget_type}/guide")
 async def get_widget_embedding_guide(
     widget_type: str,
-    current_user = Depends(get_current_user),
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get embedding guide for widget"""
     guide = await CustomerFOMOCampaignService.get_widget_embedding_guide(widget_type)
@@ -147,11 +151,11 @@ async def get_widget_embedding_guide(
 # Automations
 @router.post("/automations/create-sequence")
 async def create_automation_sequence(
-    campaign_id: str = Query(...),
-    automation_type: str = Query(...),
-    channels: List[str] = Query(...),
-    messages: Dict[str, str] = Body(...),
-    current_user = Depends(get_current_user),
+    campaign_id: Annotated[str, Query()],
+    automation_type: Annotated[str, Query()],
+    channels: Annotated[list[str], Query()],
+    messages: Annotated[dict[str, str], Body()],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create multi-step automation sequence"""
     sequence = await CustomerFOMOCampaignService.create_automation_sequence(
@@ -167,10 +171,10 @@ async def create_automation_sequence(
 @router.get("/campaigns/{campaign_id}/roi")
 async def calculate_campaign_roi(
     campaign_id: str,
-    revenue: float = Query(...),
-    cost: float = Query(...),
-    baseline_conversion: float = Query(default=0.025),
-    current_user = Depends(get_current_user),
+    revenue: Annotated[float, Query()],
+    cost: Annotated[float, Query()],
+    current_user: Annotated[User, Depends(get_current_user)],
+    baseline_conversion: Annotated[float, Query()] = 0.025,
 ):
     """Calculate campaign ROI and metrics"""
     roi = await CustomerFOMOCampaignService.calculate_roi(
@@ -185,8 +189,8 @@ async def calculate_campaign_roi(
 @router.get("/campaigns/{campaign_id}/export")
 async def export_campaign_analytics(
     campaign_id: str,
-    format: str = Query("json", regex="^(csv|json)$"),
-    current_user = Depends(get_current_user),
+    current_user: Annotated[User, Depends(get_current_user)],
+    format: Annotated[str, Query(regex="^(csv|json)$")] = "json",
 ):
     """Export campaign analytics data"""
     data = await CustomerFOMOCampaignService.export_analytics(campaign_id, format)
@@ -198,13 +202,14 @@ async def export_campaign_analytics(
         }
     else:
         import json
+
         return json.loads(data)
 
 
 @router.get("/benchmarks")
 async def get_industry_benchmarks(
-    industry: str = Query("ecommerce"),
-    current_user = Depends(get_current_user),
+    current_user: Annotated[User, Depends(get_current_user)],
+    industry: Annotated[str, Query()] = "ecommerce",
 ):
     """Get industry benchmarks for FOMO campaigns"""
     benchmarks = await CustomerFOMOCampaignService.get_competitor_benchmarks(industry)
@@ -212,9 +217,12 @@ async def get_industry_benchmarks(
         "industry": industry,
         "benchmarks": benchmarks,
         "your_potential": {
-            "potential_conversion_rate": benchmarks["avg_conversion_rate"] * (1 + benchmarks["fomo_lift_potential"]),
-            "potential_ctr": benchmarks["avg_ctr"] * (1 + benchmarks["fomo_lift_potential"] * 0.5),
-            "potential_cart_recovery": benchmarks["avg_cart_recovery_rate"] * (1 + benchmarks["fomo_lift_potential"]),
+            "potential_conversion_rate": benchmarks["avg_conversion_rate"]
+            * (1 + benchmarks["fomo_lift_potential"]),
+            "potential_ctr": benchmarks["avg_ctr"]
+            * (1 + benchmarks["fomo_lift_potential"] * 0.5),
+            "potential_cart_recovery": benchmarks["avg_cart_recovery_rate"]
+            * (1 + benchmarks["fomo_lift_potential"]),
         },
     }
 
@@ -222,8 +230,8 @@ async def get_industry_benchmarks(
 # Dashboard
 @router.get("/dashboard/summary")
 async def get_customer_fomo_dashboard(
-    business_id: str = Query(...),
-    current_user = Depends(get_current_user),
+    business_id: Annotated[str, Query()],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get FOMO dashboard summary"""
     return {
@@ -267,7 +275,9 @@ async def get_customer_fomo_dashboard(
 
 
 @router.get("/quick-start")
-async def get_quick_start_guide(current_user = Depends(get_current_user)):
+async def get_quick_start_guide(
+    current_user: Annotated[User, Depends(get_current_user)],
+):
     """Get quick start guide for FOMO"""
     return {
         "steps": [
@@ -320,7 +330,9 @@ async def get_quick_start_guide(current_user = Depends(get_current_user)):
 
 
 @router.get("/case-studies")
-async def get_fomo_success_stories(current_user = Depends(get_current_user)):
+async def get_fomo_success_stories(
+    current_user: Annotated[User, Depends(get_current_user)],
+):
     """Get case studies of successful FOMO campaigns"""
     return {
         "case_studies": [

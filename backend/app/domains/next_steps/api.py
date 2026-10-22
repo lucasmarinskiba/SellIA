@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,8 +18,8 @@ router = APIRouter(prefix="/next-steps", tags=["Next steps"])
 
 @router.get("")
 async def next_steps(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """The prioritised actions for this account, each with the number behind it.
 
@@ -33,9 +33,9 @@ async def next_steps(
 
 @router.get("/ranking")
 async def business_ranking(
-    days: int = Query(90, ge=7, le=365),
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    days: Annotated[int, Query(ge=7, le=365)] = 90,
 ) -> dict[str, Any]:
     """Which products, customers and platforms are carrying this business.
 
@@ -47,9 +47,9 @@ async def business_ranking(
 
 @router.get("/queue")
 async def attention_queue(
-    limit: int = Query(25, ge=1, le=100),
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    limit: Annotated[int, Query(ge=1, le=100)] = 25,
 ) -> dict[str, Any]:
     """Open conversations in the order worth answering, with the reason for each."""
     return await ranking.attention_queue(db, user, limit=limit)

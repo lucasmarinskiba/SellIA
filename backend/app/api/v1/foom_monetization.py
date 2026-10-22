@@ -1,17 +1,21 @@
 """FOOM Monetization API - Convert free users to paid + Enable user FOOM selling."""
 
-from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Depends
+import logging
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.domains.enterprise.foom_monetization import (
-    PlatformMonetizationFOOM,
-    UserFOOMEnablement,
     FOMOPerformanceOptimizer,
     NetworkEffectFOOM,
+    PlatformMonetizationFOOM,
+    UserFOOMEnablement,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/foom-monetization", tags=["foom-monetization"])
 
@@ -23,7 +27,7 @@ router = APIRouter(prefix="/api/v1/foom-monetization", tags=["foom-monetization"
 
 class UpgradeTriggerRequest(BaseModel):
     user_id: str
-    segment: Optional[str] = None
+    segment: str | None = None
 
 
 class UpgradeTriggerResponse(BaseModel):
@@ -44,17 +48,17 @@ class UserFOOMStrategyRequest(BaseModel):
 
 class UserFOOMStrategyResponse(BaseModel):
     product_name: str
-    scarcity: List[dict]
+    scarcity: list[dict]
     social_proof: dict
-    urgency_templates: List[str]
+    urgency_templates: list[str]
     landing_page_foom: dict
-    email_sequence: List[dict]
-    social_posts: List[dict]
+    email_sequence: list[dict]
+    social_posts: list[dict]
 
 
 class ABTestRequest(BaseModel):
     user_id: str
-    variants: List[dict]
+    variants: list[dict]
     monthly_visitors: int
     avg_deal_size: float
 
@@ -62,7 +66,7 @@ class ABTestRequest(BaseModel):
 class OptimizationResponse(BaseModel):
     current_conversion_rate: float
     optimized_conversion_rate: float
-    recommendations: List[str]
+    recommendations: list[str]
     revenue_lift: dict
 
 
@@ -72,7 +76,10 @@ class OptimizationResponse(BaseModel):
 
 
 @router.post("/upgrade-trigger/{user_id}", response_model=UpgradeTriggerResponse)
-def get_upgrade_trigger(user_id: str, db: Session = Depends(get_db)):
+def get_upgrade_trigger(
+    user_id: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Get optimal upgrade trigger for user."""
     try:
         # Mock user data
@@ -101,11 +108,15 @@ def get_upgrade_trigger(user_id: str, db: Session = Depends(get_db)):
             expected_conversion=trigger.expected_conversion,
         )
     except Exception as e:
+        logger.exception("get_upgrade_trigger: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/user-foom-strategy", response_model=UserFOOMStrategyResponse)
-def generate_user_foom_strategy(request: UserFOOMStrategyRequest, db: Session = Depends(get_db)):
+def generate_user_foom_strategy(
+    request: UserFOOMStrategyRequest,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Generate complete FOOM selling strategy for user's product."""
     try:
         product_data = {
@@ -129,11 +140,15 @@ def generate_user_foom_strategy(request: UserFOOMStrategyRequest, db: Session = 
             social_posts=strategy["social_posts"],
         )
     except Exception as e:
+        logger.exception("generate_user_foom_strategy: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/optimize-foom", response_model=OptimizationResponse)
-def optimize_foom_strategy(request: ABTestRequest, db: Session = Depends(get_db)):
+def optimize_foom_strategy(
+    request: ABTestRequest,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Get optimized FOOM strategy based on A/B tests."""
     try:
         ab_test_results = {
@@ -144,7 +159,9 @@ def optimize_foom_strategy(request: ABTestRequest, db: Session = Depends(get_db)
         }
 
         optimizer = FOMOPerformanceOptimizer(db)
-        optimization = optimizer.optimize_foom_strategy(request.user_id, ab_test_results)
+        optimization = optimizer.optimize_foom_strategy(
+            request.user_id, ab_test_results
+        )
 
         return OptimizationResponse(
             current_conversion_rate=optimization["current_conversion_rate"],
@@ -153,11 +170,15 @@ def optimize_foom_strategy(request: ABTestRequest, db: Session = Depends(get_db)
             revenue_lift=optimization["expected_revenue_lift"],
         )
     except Exception as e:
+        logger.exception("optimize_foom_strategy: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/referral-program/{user_id}")
-def get_referral_foom(user_id: str, db: Session = Depends(get_db)):
+def get_referral_foom(
+    user_id: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Get FOOM-based referral program strategy."""
     try:
         user_metrics = {
@@ -167,11 +188,14 @@ def get_referral_foom(user_id: str, db: Session = Depends(get_db)):
 
         network_foom = NetworkEffectFOOM(db)
         referral_strategy = network_foom.generate_referral_foom(user_id, user_metrics)
-        ltv_with_network = network_foom.calculate_lifetime_value_with_network(user_metrics)
+        ltv_with_network = network_foom.calculate_lifetime_value_with_network(
+            user_metrics
+        )
 
         return {
             "referral_program": referral_strategy,
             "lifetime_value": ltv_with_network,
         }
     except Exception as e:
+        logger.exception("get_referral_foom: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

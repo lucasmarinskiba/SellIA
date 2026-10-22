@@ -22,9 +22,8 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import Enum
-from typing import Dict, List, Optional
 
 
 class AssetClass(str, Enum):
@@ -52,9 +51,9 @@ class AnalysisStyle(str, Enum):
     MULTI_TIMEFRAME = "multi_timeframe"
     RELATIVE_VALUATION = "relative_valuation"
     RISK_MANAGEMENT = "risk_management"
-    INCOME_APPROACH = "income_approach"        # inmobiliario (cap rate / NOI)
+    INCOME_APPROACH = "income_approach"  # inmobiliario (cap rate / NOI)
     COMPARABLE_APPROACH = "comparable_approach"  # inmobiliario (comps)
-    COST_APPROACH = "cost_approach"            # inmobiliario (costo de reposición)
+    COST_APPROACH = "cost_approach"  # inmobiliario (costo de reposición)
 
 
 class RiskRating(str, Enum):
@@ -72,30 +71,48 @@ class ProposalStatus(str, Enum):
 
 
 # Estilos de análisis válidos por clase de activo (introspección + validación).
-ANALYSIS_BY_ASSET: Dict[AssetClass, List[AnalysisStyle]] = {
+ANALYSIS_BY_ASSET: dict[AssetClass, list[AnalysisStyle]] = {
     AssetClass.CRYPTO: [
-        AnalysisStyle.TECHNICAL, AnalysisStyle.ON_CHAIN, AnalysisStyle.SENTIMENT,
-        AnalysisStyle.MACRO, AnalysisStyle.MULTI_TIMEFRAME, AnalysisStyle.RISK_MANAGEMENT,
+        AnalysisStyle.TECHNICAL,
+        AnalysisStyle.ON_CHAIN,
+        AnalysisStyle.SENTIMENT,
+        AnalysisStyle.MACRO,
+        AnalysisStyle.MULTI_TIMEFRAME,
+        AnalysisStyle.RISK_MANAGEMENT,
     ],
     AssetClass.EQUITY: [
-        AnalysisStyle.FUNDAMENTAL, AnalysisStyle.TECHNICAL, AnalysisStyle.RELATIVE_VALUATION,
-        AnalysisStyle.QUANTITATIVE, AnalysisStyle.SENTIMENT, AnalysisStyle.MACRO,
+        AnalysisStyle.FUNDAMENTAL,
+        AnalysisStyle.TECHNICAL,
+        AnalysisStyle.RELATIVE_VALUATION,
+        AnalysisStyle.QUANTITATIVE,
+        AnalysisStyle.SENTIMENT,
+        AnalysisStyle.MACRO,
         AnalysisStyle.RISK_MANAGEMENT,
     ],
     AssetClass.FOREX: [
-        AnalysisStyle.TECHNICAL, AnalysisStyle.MACRO, AnalysisStyle.MULTI_TIMEFRAME,
-        AnalysisStyle.SENTIMENT, AnalysisStyle.RISK_MANAGEMENT,
+        AnalysisStyle.TECHNICAL,
+        AnalysisStyle.MACRO,
+        AnalysisStyle.MULTI_TIMEFRAME,
+        AnalysisStyle.SENTIMENT,
+        AnalysisStyle.RISK_MANAGEMENT,
     ],
     AssetClass.COMMODITY: [
-        AnalysisStyle.MACRO, AnalysisStyle.TECHNICAL, AnalysisStyle.FUNDAMENTAL,
+        AnalysisStyle.MACRO,
+        AnalysisStyle.TECHNICAL,
+        AnalysisStyle.FUNDAMENTAL,
         AnalysisStyle.RISK_MANAGEMENT,
     ],
     AssetClass.BOND: [
-        AnalysisStyle.MACRO, AnalysisStyle.FUNDAMENTAL, AnalysisStyle.RISK_MANAGEMENT,
+        AnalysisStyle.MACRO,
+        AnalysisStyle.FUNDAMENTAL,
+        AnalysisStyle.RISK_MANAGEMENT,
     ],
     AssetClass.REAL_ESTATE: [
-        AnalysisStyle.INCOME_APPROACH, AnalysisStyle.COMPARABLE_APPROACH,
-        AnalysisStyle.COST_APPROACH, AnalysisStyle.MACRO, AnalysisStyle.RISK_MANAGEMENT,
+        AnalysisStyle.INCOME_APPROACH,
+        AnalysisStyle.COMPARABLE_APPROACH,
+        AnalysisStyle.COST_APPROACH,
+        AnalysisStyle.MACRO,
+        AnalysisStyle.RISK_MANAGEMENT,
     ],
 }
 
@@ -107,7 +124,7 @@ DEFAULT_PROPOSAL_TTL_SEC = 300
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 @dataclass
@@ -117,34 +134,38 @@ class TradeProposal:
     NO es una orden. Requiere aprobación humana y ejecución por el usuario.
     """
 
-    asset: str                       # ej. "BTC/USDT", "AAPL", "EUR/USD", "Depto Palermo"
+    asset: str  # ej. "BTC/USDT", "AAPL", "EUR/USD", "Depto Palermo"
     asset_class: AssetClass
     side: TradeSide
     rationale: str
-    analysis_styles: List[AnalysisStyle]
+    analysis_styles: list[AnalysisStyle]
     risk: RiskRating
-    confidence: float                # 0.0–1.0
-    market: str = ""                 # plataforma/mercado (ej. "Binance", "NYSE")
-    suggested_allocation_pct: Optional[float] = None  # % del capital sugerido
-    stop_loss: Optional[str] = None
-    take_profit: Optional[str] = None
+    confidence: float  # 0.0–1.0
+    market: str = ""  # plataforma/mercado (ej. "Binance", "NYSE")
+    suggested_allocation_pct: float | None = None  # % del capital sugerido
+    stop_loss: str | None = None
+    take_profit: str | None = None
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     status: ProposalStatus = ProposalStatus.PENDING
     created_at: datetime = field(default_factory=_now)
     ttl_sec: int = DEFAULT_PROPOSAL_TTL_SEC
-    decided_at: Optional[datetime] = None
+    decided_at: datetime | None = None
     # Invariante de seguridad: el agente jamás ejecuta; el usuario ejecuta.
     requires_human_execution: bool = True
 
     def __post_init__(self) -> None:
         self.confidence = max(0.0, min(1.0, float(self.confidence)))
         if self.suggested_allocation_pct is not None:
-            self.suggested_allocation_pct = max(0.0, min(100.0, float(self.suggested_allocation_pct)))
+            self.suggested_allocation_pct = max(
+                0.0, min(100.0, float(self.suggested_allocation_pct))
+            )
         valid = ANALYSIS_BY_ASSET.get(self.asset_class, [])
         if valid:
-            self.analysis_styles = [s for s in self.analysis_styles if s in valid] or list(valid[:1])
+            self.analysis_styles = [
+                s for s in self.analysis_styles if s in valid
+            ] or list(valid[:1])
 
-    def is_expired(self, now: Optional[datetime] = None) -> bool:
+    def is_expired(self, now: datetime | None = None) -> bool:
         now = now or _now()
         return (now - self.created_at) > timedelta(seconds=self.ttl_sec)
 
@@ -190,7 +211,7 @@ class TradeProposal:
         }
 
     @classmethod
-    def from_state(cls, d: dict) -> "TradeProposal":
+    def from_state(cls, d: dict) -> TradeProposal:
         """Reconstruye una propuesta desde su estado persistido."""
         p = cls(
             asset=d["asset"],
@@ -239,12 +260,12 @@ class UserPresenceGate:
 
     def __init__(self, window_sec: int = DEFAULT_PRESENCE_WINDOW_SEC):
         self.window_sec = window_sec
-        self._last_heartbeat: Optional[datetime] = None
+        self._last_heartbeat: datetime | None = None
 
-    def heartbeat(self, now: Optional[datetime] = None) -> None:
+    def heartbeat(self, now: datetime | None = None) -> None:
         self._last_heartbeat = now or _now()
 
-    def is_active(self, now: Optional[datetime] = None) -> bool:
+    def is_active(self, now: datetime | None = None) -> bool:
         if self._last_heartbeat is None:
             return False
         now = now or _now()
@@ -262,11 +283,11 @@ class CopyTradeReviewQueue:
       * Las propuestas expiran por TTL.
     """
 
-    def __init__(self, presence: Optional[UserPresenceGate] = None):
+    def __init__(self, presence: UserPresenceGate | None = None):
         self.presence = presence or UserPresenceGate()
-        self._proposals: Dict[str, TradeProposal] = {}
+        self._proposals: dict[str, TradeProposal] = {}
 
-    def submit(self, proposal: TradeProposal, now: Optional[datetime] = None) -> dict:
+    def submit(self, proposal: TradeProposal, now: datetime | None = None) -> dict:
         """Encola una propuesta. Requiere usuario activo."""
         if not self.presence.is_active(now):
             return {
@@ -276,25 +297,32 @@ class CopyTradeReviewQueue:
         self._proposals[proposal.id] = proposal
         return {"accepted": True, "proposal": proposal.to_dict()}
 
-    def _expire_stale(self, now: Optional[datetime] = None) -> None:
+    def _expire_stale(self, now: datetime | None = None) -> None:
         now = now or _now()
         for p in self._proposals.values():
             if p.status == ProposalStatus.PENDING and p.is_expired(now):
                 p.status = ProposalStatus.EXPIRED
                 p.decided_at = now
 
-    def pending(self, now: Optional[datetime] = None) -> List[dict]:
+    def pending(self, now: datetime | None = None) -> list[dict]:
         self._expire_stale(now)
         if not self.presence.is_active(now):
             return []
-        return [p.to_dict() for p in self._proposals.values() if p.status == ProposalStatus.PENDING]
+        return [
+            p.to_dict()
+            for p in self._proposals.values()
+            if p.status == ProposalStatus.PENDING
+        ]
 
-    def approve(self, proposal_id: str, now: Optional[datetime] = None) -> dict:
+    def approve(self, proposal_id: str, now: datetime | None = None) -> dict:
         p = self._proposals.get(proposal_id)
         if p is None:
             return {"ok": False, "reason": "Propuesta no encontrada."}
         if not self.presence.is_active(now):
-            return {"ok": False, "reason": "Usuario inactivo: no se puede aprobar sin presencia."}
+            return {
+                "ok": False,
+                "reason": "Usuario inactivo: no se puede aprobar sin presencia.",
+            }
         if p.is_expired(now):
             p.status = ProposalStatus.EXPIRED
             return {"ok": False, "reason": "Propuesta expirada; el mercado se movió."}
@@ -305,7 +333,7 @@ class CopyTradeReviewQueue:
         # Importante: NO se ejecuta la orden. Se devuelve el handoff al usuario.
         return {"ok": True, "status": p.status.value, "handoff": p.execution_handoff()}
 
-    def reject(self, proposal_id: str, now: Optional[datetime] = None) -> dict:
+    def reject(self, proposal_id: str, now: datetime | None = None) -> dict:
         p = self._proposals.get(proposal_id)
         if p is None:
             return {"ok": False, "reason": "Propuesta no encontrada."}
@@ -315,6 +343,6 @@ class CopyTradeReviewQueue:
         p.decided_at = now or _now()
         return {"ok": True, "status": p.status.value}
 
-    def get(self, proposal_id: str) -> Optional[dict]:
+    def get(self, proposal_id: str) -> dict | None:
         p = self._proposals.get(proposal_id)
         return p.to_dict() if p else None

@@ -4,7 +4,8 @@ Procesa pagos, crea checkout sessions, maneja webhooks.
 """
 
 import logging
-from typing import Optional, Dict, Any, Tuple
+from typing import Any
+
 import stripe
 
 logger = logging.getLogger(__name__)
@@ -25,8 +26,8 @@ class StripeConnector:
         amount_cents: int,
         success_url: str,
         cancel_url: str,
-        customer_name: Optional[str] = None,
-    ) -> Tuple[bool, Optional[str]]:
+        customer_name: str | None = None,
+    ) -> tuple[bool, str | None]:
         """
         Crea sesión de checkout.
 
@@ -58,15 +59,17 @@ class StripeConnector:
 
             checkout_url = session.url
 
-            logger.info(f"Checkout session created: {session.id} | ${amount_cents / 100}")
+            logger.info(
+                f"Checkout session created: {session.id} | ${amount_cents / 100}"
+            )
 
             return True, checkout_url
 
         except stripe.error.StripeError as e:
             logger.error(f"Stripe error: {e}")
             return False, None
-        except Exception as e:
-            logger.error(f"Error creating checkout: {e}")
+        except Exception:
+            logger.exception("Error creating checkout")
             return False, None
 
     async def create_payment_intent(
@@ -74,8 +77,8 @@ class StripeConnector:
         amount_cents: int,
         currency: str = "usd",
         description: str = "",
-        customer_email: Optional[str] = None,
-    ) -> Tuple[bool, Optional[str]]:
+        customer_email: str | None = None,
+    ) -> tuple[bool, str | None]:
         """
         Crea payment intent (más flexible que checkout).
 
@@ -98,11 +101,11 @@ class StripeConnector:
         except stripe.error.StripeError as e:
             logger.error(f"Stripe error: {e}")
             return False, None
-        except Exception as e:
-            logger.error(f"Error creating intent: {e}")
+        except Exception:
+            logger.exception("Error creating intent")
             return False, None
 
-    async def get_payment_status(self, session_id: str) -> Dict[str, Any]:
+    async def get_payment_status(self, session_id: str) -> dict[str, Any]:
         """Obtiene status de sesión."""
         try:
             session = stripe.checkout.Session.retrieve(session_id)
@@ -115,15 +118,15 @@ class StripeConnector:
                 "payment_intent": session.payment_intent,
             }
 
-        except Exception as e:
-            logger.error(f"Error getting payment status: {e}")
+        except Exception:
+            logger.exception("Error getting payment status")
             return {}
 
     async def create_refund(
         self,
         payment_intent_id: str,
         reason: str = "requested_by_customer",
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """Crea refund."""
         try:
             refund = stripe.Refund.create(
@@ -138,8 +141,8 @@ class StripeConnector:
         except stripe.error.StripeError as e:
             logger.error(f"Stripe error: {e}")
             return False, None
-        except Exception as e:
-            logger.error(f"Error creating refund: {e}")
+        except Exception:
+            logger.exception("Error creating refund")
             return False, None
 
 

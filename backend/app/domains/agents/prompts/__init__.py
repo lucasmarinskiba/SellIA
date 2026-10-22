@@ -4,15 +4,14 @@ Loads agent prompts from category files in the categories/ directory.
 Each category file exports an AGENTS dict: {slug: prompt_text}.
 """
 
-import os
 import importlib.util
+import os
 from pathlib import Path
-from typing import Dict
 
 
-def _load_category_prompts() -> Dict[str, str]:
+def _load_category_prompts() -> dict[str, str]:
     """Dynamically load all agent prompts from category files."""
-    prompts: Dict[str, str] = {}
+    prompts: dict[str, str] = {}
     categories_dir = Path(__file__).parent / "categories"
 
     if not categories_dir.exists():
@@ -45,15 +44,24 @@ def _load_category_prompts() -> Dict[str, str]:
     return prompts
 
 
-AGENT_PROMPTS: Dict[str, str] = _load_category_prompts()
+AGENT_PROMPTS: dict[str, str] = _load_category_prompts()
 
 
 # Re-export composer for convenience
 from app.domains.agents.prompts.composer import compose_system_prompt
 
+__all__ = [
+    "Path",
+    "compose_system_prompt",
+    "importlib",
+    "os",
+]
+
 
 def get_system_prompt(
-    slug: str, business_context: dict = None, custom_instructions: str = None
+    slug: str,
+    business_context: dict | None = None,
+    custom_instructions: str | None = None,
 ) -> str:
     """Build the complete system prompt for an agent.
 
@@ -72,7 +80,9 @@ def get_system_prompt(
         if business_context.get("description"):
             ctx_parts.append(f"Description: {business_context['description']}")
         if business_context.get("catalog_summary"):
-            ctx_parts.append(f"Products/Services: {business_context['catalog_summary']}")
+            ctx_parts.append(
+                f"Products/Services: {business_context['catalog_summary']}"
+            )
         if ctx_parts:
             context_block = "\n\nBUSINESS CONTEXT:\n" + "\n".join(ctx_parts)
 

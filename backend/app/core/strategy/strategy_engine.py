@@ -1,17 +1,20 @@
 """Strategy Learning Engine — Core learner + evaluator + adapter."""
 
-from dataclasses import dataclass, field
-from enum import Enum
-from typing import Optional, Dict, Any, List, Tuple
-from datetime import datetime, timedelta
 import logging
-import json
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+from typing import Any
+
+from app.core.clock import utc_now
+from app.core.strategy.business_analyzer import BusinessProfile
 
 logger = logging.getLogger(__name__)
 
 
 class StrategyCategory(str, Enum):
     """Strategy classification categories."""
+
     BLUE_OCEAN = "blue_ocean"
     RETENTION = "retention"
     ACQUISITION = "acquisition"
@@ -24,6 +27,7 @@ class StrategyCategory(str, Enum):
 @dataclass
 class StrategyScore:
     """Strategy effectiveness score."""
+
     strategy_id: str
     strategy_name: str
     conversion_rate: float = 0.0  # % of leads converted
@@ -36,7 +40,7 @@ class StrategyScore:
     roi: float = 0.0  # Return on investment
     nps_score: float = 0.0  # Net Promoter Score
     confidence: float = 0.0  # Confidence in measurements (0-1)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
     notes: str = ""
 
     def overall_score(self) -> float:
@@ -59,12 +63,12 @@ class StrategyScore:
         nps_norm = (self.nps_score + 100) / 200  # NPS -100 to 100 → 0 to 1
 
         weighted_score = (
-            weights["conversion_rate"] * conversion_norm +
-            weights["ltv"] * ltv_norm +
-            weights["cac"] * cac_norm +
-            weights["roi"] * roi_norm +
-            weights["retention"] * retention_norm +
-            weights["nps"] * nps_norm
+            weights["conversion_rate"] * conversion_norm
+            + weights["ltv"] * ltv_norm
+            + weights["cac"] * cac_norm
+            + weights["roi"] * roi_norm
+            + weights["retention"] * retention_norm
+            + weights["nps"] * nps_norm
         )
 
         return min(max(weighted_score * 100, 0), 100)
@@ -73,27 +77,29 @@ class StrategyScore:
 @dataclass
 class RecommendedStrategy:
     """Recommended strategy with confidence and reasoning."""
+
     strategy_id: str
     strategy_name: str
     category: StrategyCategory
     confidence: float  # 0-1
     priority: int  # 1 = highest priority
     reasoning: str
-    key_actions: List[str]
-    expected_outcomes: Dict[str, Any]
-    constraints: List[str]
+    key_actions: list[str]
+    expected_outcomes: dict[str, Any]
+    constraints: list[str]
     timeline_weeks: int
-    required_resources: Dict[str, str]
-    risks: List[str]
+    required_resources: dict[str, str]
+    risks: list[str]
 
 
 @dataclass
 class AdaptedStrategy:
     """Strategy adapted to market changes."""
+
     original_strategy_id: str
     adapted_strategy_id: str
     market_shift: str
-    changes: List[str]
+    changes: list[str]
     new_timeline: int
     risk_level: str  # low, medium, high
 
@@ -104,16 +110,16 @@ class StrategyLearner:
     def __init__(self, memory_days: int = 90):
         """Initialize strategy learner with historical memory window."""
         self.memory_days = memory_days
-        self.strategy_history: List[StrategyScore] = []
-        self.market_observations: List[Dict[str, Any]] = []
-        self.adaptations: List[AdaptedStrategy] = []
+        self.strategy_history: list[StrategyScore] = []
+        self.market_observations: list[dict[str, Any]] = []
+        self.adaptations: list[AdaptedStrategy] = []
 
     def learn_best_strategy(
         self,
         business_profile: "BusinessProfile",
-        market_data: Dict[str, Any],
-        sales_history: List[Dict[str, Any]],
-    ) -> List[RecommendedStrategy]:
+        market_data: dict[str, Any],
+        sales_history: list[dict[str, Any]],
+    ) -> list[RecommendedStrategy]:
         """
         Observe market + sales results → recommend optimal strategies.
 
@@ -156,7 +162,7 @@ class StrategyLearner:
     def evaluate_strategy(
         self,
         strategy_id: str,
-        kpi_results: Dict[str, float],
+        kpi_results: dict[str, float],
     ) -> StrategyScore:
         """
         Score strategy effectiveness (conversion, LTV, CAC, retention, margin).
@@ -194,7 +200,7 @@ class StrategyLearner:
         self,
         current_strategy_id: str,
         market_shift: str,
-        new_market_data: Dict[str, Any],
+        new_market_data: dict[str, Any],
     ) -> AdaptedStrategy:
         """
         Market changed → modify current strategy dynamically.
@@ -232,7 +238,9 @@ class StrategyLearner:
 
     # Private helper methods
 
-    def _analyze_sales_history(self, sales_history: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _analyze_sales_history(
+        self, sales_history: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Analyze historical sales data to understand what works."""
         if not sales_history:
             return {
@@ -249,9 +257,13 @@ class StrategyLearner:
         total_conversions = sum(h.get("conversions", 0) for h in sales_history)
         conversion_rate = total_conversions / total_leads if total_leads > 0 else 0.0
 
-        avg_deal_size = sum(h.get("deal_size", 0) for h in sales_history) / len(sales_history)
+        avg_deal_size = sum(h.get("deal_size", 0) for h in sales_history) / len(
+            sales_history
+        )
         avg_ltv = sum(h.get("ltv", 0) for h in sales_history) / len(sales_history)
-        churn_rate = sum(h.get("churn_rate", 0) for h in sales_history) / len(sales_history)
+        churn_rate = sum(h.get("churn_rate", 0) for h in sales_history) / len(
+            sales_history
+        )
 
         # Identify success factors
         success_factors = [
@@ -272,9 +284,9 @@ class StrategyLearner:
 
     def _identify_market_gaps(
         self,
-        market_data: Dict[str, Any],
+        market_data: dict[str, Any],
         business_profile: "BusinessProfile",
-    ) -> List[str]:
+    ) -> list[str]:
         """Identify unmet market needs."""
         gaps = []
 
@@ -292,9 +304,9 @@ class StrategyLearner:
 
     def _analyze_competitive_position(
         self,
-        market_data: Dict[str, Any],
+        market_data: dict[str, Any],
         business_profile: "BusinessProfile",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Evaluate competitive advantages and weaknesses."""
         return {
             "strengths": business_profile.competitive_advantages or [],
@@ -307,11 +319,11 @@ class StrategyLearner:
     def _generate_recommendations(
         self,
         business_profile: "BusinessProfile",
-        market_data: Dict[str, Any],
-        current_performance: Dict[str, Any],
-        market_gaps: List[str],
-        competitive_analysis: Dict[str, Any],
-    ) -> List[RecommendedStrategy]:
+        market_data: dict[str, Any],
+        current_performance: dict[str, Any],
+        market_gaps: list[str],
+        competitive_analysis: dict[str, Any],
+    ) -> list[RecommendedStrategy]:
         """Generate strategy recommendations based on analysis."""
         recommendations = []
 
@@ -321,7 +333,9 @@ class StrategyLearner:
 
         # 2. Acquisition recommendation
         if current_performance["conversion_rate"] < 0.3:
-            recommendations.append(self._recommend_acquisition_strategy(business_profile))
+            recommendations.append(
+                self._recommend_acquisition_strategy(business_profile)
+            )
 
         # 3. Retention recommendation
         if current_performance["churn_rate"] > 0.15:
@@ -337,7 +351,9 @@ class StrategyLearner:
 
         return recommendations
 
-    def _recommend_blue_ocean(self, business_profile: "BusinessProfile") -> RecommendedStrategy:
+    def _recommend_blue_ocean(
+        self, business_profile: "BusinessProfile"
+    ) -> RecommendedStrategy:
         """Recommend Blue Ocean strategy."""
         return RecommendedStrategy(
             strategy_id="blue_ocean_01",
@@ -373,7 +389,9 @@ class StrategyLearner:
             ],
         )
 
-    def _recommend_acquisition_strategy(self, business_profile: "BusinessProfile") -> RecommendedStrategy:
+    def _recommend_acquisition_strategy(
+        self, business_profile: "BusinessProfile"
+    ) -> RecommendedStrategy:
         """Recommend customer acquisition strategy."""
         return RecommendedStrategy(
             strategy_id="acquisition_01",
@@ -401,7 +419,9 @@ class StrategyLearner:
             risks=["CAC may increase with scaling"],
         )
 
-    def _recommend_retention_strategy(self, business_profile: "BusinessProfile") -> RecommendedStrategy:
+    def _recommend_retention_strategy(
+        self, business_profile: "BusinessProfile"
+    ) -> RecommendedStrategy:
         """Recommend retention strategy."""
         return RecommendedStrategy(
             strategy_id="retention_01",
@@ -430,7 +450,9 @@ class StrategyLearner:
             risks=["May take time to show results"],
         )
 
-    def _recommend_pricing_strategy(self, business_profile: "BusinessProfile") -> RecommendedStrategy:
+    def _recommend_pricing_strategy(
+        self, business_profile: "BusinessProfile"
+    ) -> RecommendedStrategy:
         """Recommend pricing optimization strategy."""
         return RecommendedStrategy(
             strategy_id="pricing_01",
@@ -458,7 +480,9 @@ class StrategyLearner:
             risks=["Customer backlash", "Reduced volume"],
         )
 
-    def _recommend_growth_strategy(self, business_profile: "BusinessProfile") -> RecommendedStrategy:
+    def _recommend_growth_strategy(
+        self, business_profile: "BusinessProfile"
+    ) -> RecommendedStrategy:
         """Recommend growth strategy."""
         return RecommendedStrategy(
             strategy_id="growth_01",
@@ -489,8 +513,8 @@ class StrategyLearner:
     def _analyze_market_shift_impact(
         self,
         market_shift: str,
-        new_market_data: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        new_market_data: dict[str, Any],
+    ) -> dict[str, Any]:
         """Analyze impact of market changes."""
         return {
             "shift_description": market_shift,
@@ -500,7 +524,7 @@ class StrategyLearner:
             "opportunities": new_market_data.get("opportunities", []),
         }
 
-    def _determine_strategy_adaptations(self, impact: Dict[str, Any]) -> List[str]:
+    def _determine_strategy_adaptations(self, impact: dict[str, Any]) -> list[str]:
         """Determine what strategy changes are needed."""
         changes = []
 
@@ -515,11 +539,11 @@ class StrategyLearner:
 
         return changes or ["Review and adjust current approach"]
 
-    def _calculate_adaptation_timeline(self, changes: List[str]) -> int:
+    def _calculate_adaptation_timeline(self, changes: list[str]) -> int:
         """Calculate weeks needed for adaptation."""
         return min(4 + len(changes) * 2, 12)  # 4-12 weeks
 
-    def _assess_adaptation_risk(self, changes: List[str]) -> str:
+    def _assess_adaptation_risk(self, changes: list[str]) -> str:
         """Assess risk level of adaptation."""
         if len(changes) > 3:
             return "high"

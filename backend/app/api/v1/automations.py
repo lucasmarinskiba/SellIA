@@ -1,63 +1,99 @@
 """Automations API Router"""
 
+import logging
+from datetime import UTC, datetime
+from typing import Annotated
 from uuid import UUID
-from datetime import datetime, timezone
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import Integer, and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func, Integer, cast, and_
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
-from app.domains.users.models import User
 from app.domains.automations.models import (
-    Workflow, EmailTemplate, EmailSequence, SequenceStep, ChatbotRule,
-    SequenceSubscription, SequenceEmailLog, WorkflowVariant,
-    GeneratedContent, ContentCalendar,
-    AutomationToggle, ToggleAuditLog,
+    AutomationToggle,
+    ChatbotRule,
+    ContentCalendar,
+    EmailSequence,
+    EmailTemplate,
+    GeneratedContent,
+    SequenceEmailLog,
+    SequenceStep,
+    SequenceSubscription,
+    ToggleAuditLog,
+    Workflow,
+    WorkflowVariant,
 )
-from app.domains.subscriptions.models import Subscription
 from app.domains.automations.schemas import (
-    WorkflowCreate, WorkflowUpdate, WorkflowResponse,
-    EmailTemplateCreate, EmailTemplateUpdate, EmailTemplateResponse,
-    EmailSequenceCreate, EmailSequenceResponse, EmailSequenceUpdate,
+    AutomationToggleCreate,
+    AutomationToggleResponse,
+    AutomationToggleUpdate,
+    ChatbotRuleCreate,
+    ChatbotRuleResponse,
+    ChatbotRuleUpdate,
+    ContentCalendarCreate,
+    ContentCalendarResponse,
+    ContentGenerationRequest,
+    ContentGenerationResponse,
+    EmailSequenceCreate,
+    EmailSequenceResponse,
+    EmailSequenceUpdate,
+    EmailTemplateCreate,
+    EmailTemplateResponse,
+    EmailTemplateUpdate,
+    GeneratedContentResponse,
     SequenceAnalytics,
-    ChatbotRuleCreate, ChatbotRuleUpdate, ChatbotRuleResponse,
-    WorkflowVariantCreate, WorkflowVariantUpdate, WorkflowVariantResponse,
-    WorkflowABTestResult,
-    GeneratedContentResponse, ContentCalendarResponse, ContentCalendarCreate,
-    ContentGenerationRequest, ContentGenerationResponse,
-    AutomationToggleCreate, AutomationToggleUpdate, AutomationToggleResponse,
-    ToggleAuditLogResponse, ToggleDashboardResponse,
+    ToggleAuditLogResponse,
+    ToggleDashboardResponse,
+    ToggleNotificationLogResponse,
+    ToggleNotificationRuleCreate,
+    ToggleNotificationRuleResponse,
+    ToggleScheduleCreate,
+    ToggleScheduleResponse,
+    WorkflowCreate,
+    WorkflowResponse,
+    WorkflowUpdate,
+    WorkflowVariantCreate,
+    WorkflowVariantResponse,
+    WorkflowVariantUpdate,
 )
 from app.domains.automations.seed import seed_automations
+from app.domains.subscriptions.models import Subscription
+from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
 # ========== Workflows ==========
 
+
 @router.get("/workflows", response_model=list[WorkflowResponse])
 async def list_workflows(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
-        select(Workflow).where(
+        select(Workflow)
+        .where(
             Workflow.business_id == business_id,
             Workflow.is_active == True,
-        ).order_by(desc(Workflow.created_at))
+        )
+        .order_by(desc(Workflow.created_at))
     )
     return result.scalars().all()
 
 
-@router.post("/workflows", response_model=WorkflowResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/workflows", response_model=WorkflowResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_workflow(
     data: WorkflowCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     wf = Workflow(**data.model_dump())
     db.add(wf)
@@ -70,8 +106,8 @@ async def create_workflow(
 async def update_workflow(
     workflow_id: UUID,
     data: WorkflowUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(select(Workflow).where(Workflow.id == workflow_id))
     wf = result.scalar_one_or_none()
@@ -87,8 +123,8 @@ async def update_workflow(
 @router.delete("/workflows/{workflow_id}")
 async def delete_workflow(
     workflow_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(select(Workflow).where(Workflow.id == workflow_id))
     wf = result.scalar_one_or_none()
@@ -101,12 +137,13 @@ async def delete_workflow(
 
 # ========== Email Templates ==========
 
+
 @router.get("/email-templates", response_model=list[EmailTemplateResponse])
 async def list_templates(
     business_id: UUID,
-    category: Optional[str] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    category: str | None = None,
 ):
     query = select(EmailTemplate).where(
         EmailTemplate.business_id == business_id,
@@ -118,11 +155,15 @@ async def list_templates(
     return result.scalars().all()
 
 
-@router.post("/email-templates", response_model=EmailTemplateResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/email-templates",
+    response_model=EmailTemplateResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_template(
     data: EmailTemplateCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     tmpl = EmailTemplate(**data.model_dump())
     db.add(tmpl)
@@ -135,10 +176,12 @@ async def create_template(
 async def update_template(
     template_id: UUID,
     data: EmailTemplateUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
-    result = await db.execute(select(EmailTemplate).where(EmailTemplate.id == template_id))
+    result = await db.execute(
+        select(EmailTemplate).where(EmailTemplate.id == template_id)
+    )
     tmpl = result.scalar_one_or_none()
     if not tmpl:
         raise HTTPException(status_code=404, detail="Template no encontrado")
@@ -152,10 +195,12 @@ async def update_template(
 @router.delete("/email-templates/{template_id}")
 async def delete_template(
     template_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
-    result = await db.execute(select(EmailTemplate).where(EmailTemplate.id == template_id))
+    result = await db.execute(
+        select(EmailTemplate).where(EmailTemplate.id == template_id)
+    )
     tmpl = result.scalar_one_or_none()
     if not tmpl:
         raise HTTPException(status_code=404, detail="Template no encontrado")
@@ -166,26 +211,33 @@ async def delete_template(
 
 # ========== Email Sequences ==========
 
+
 @router.get("/email-sequences", response_model=list[EmailSequenceResponse])
 async def list_sequences(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
-        select(EmailSequence).where(
+        select(EmailSequence)
+        .where(
             EmailSequence.business_id == business_id,
             EmailSequence.is_active == True,
-        ).order_by(desc(EmailSequence.created_at))
+        )
+        .order_by(desc(EmailSequence.created_at))
     )
     return result.scalars().all()
 
 
-@router.post("/email-sequences", response_model=EmailSequenceResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/email-sequences",
+    response_model=EmailSequenceResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_sequence(
     data: EmailSequenceCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     seq_data = data.model_dump(exclude={"steps"})
     seq = EmailSequence(**seq_data)
@@ -204,8 +256,8 @@ async def create_sequence(
 @router.get("/email-sequences/{sequence_id}", response_model=EmailSequenceResponse)
 async def get_sequence(
     sequence_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(EmailSequence).where(EmailSequence.id == sequence_id)
@@ -220,10 +272,12 @@ async def get_sequence(
 async def update_sequence(
     sequence_id: UUID,
     data: EmailSequenceUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
-    result = await db.execute(select(EmailSequence).where(EmailSequence.id == sequence_id))
+    result = await db.execute(
+        select(EmailSequence).where(EmailSequence.id == sequence_id)
+    )
     seq = result.scalar_one_or_none()
     if not seq:
         raise HTTPException(status_code=404, detail="Secuencia no encontrada")
@@ -234,11 +288,13 @@ async def update_sequence(
     return seq
 
 
-@router.get("/email-sequences/{sequence_id}/analytics", response_model=SequenceAnalytics)
+@router.get(
+    "/email-sequences/{sequence_id}/analytics", response_model=SequenceAnalytics
+)
 async def get_sequence_analytics(
     sequence_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(EmailSequence).where(EmailSequence.id == sequence_id)
@@ -249,29 +305,36 @@ async def get_sequence_analytics(
 
     # Total subscribers
     sub_result = await db.execute(
-        select(func.count(SequenceSubscription.id))
-        .where(SequenceSubscription.sequence_id == sequence_id)
+        select(func.count(SequenceSubscription.id)).where(
+            SequenceSubscription.sequence_id == sequence_id
+        )
     )
     total_subscribers = sub_result.scalar() or 0
 
     # Total sent
     sent_result = await db.execute(
-        select(func.count(SequenceEmailLog.id))
-        .where(SequenceEmailLog.sequence_id == sequence_id, SequenceEmailLog.status == "sent")
+        select(func.count(SequenceEmailLog.id)).where(
+            SequenceEmailLog.sequence_id == sequence_id,
+            SequenceEmailLog.status == "sent",
+        )
     )
     total_sent = sent_result.scalar() or 0
 
     # Total opens
     open_result = await db.execute(
-        select(func.count(SequenceEmailLog.id))
-        .where(SequenceEmailLog.sequence_id == sequence_id, SequenceEmailLog.opened_at != None)
+        select(func.count(SequenceEmailLog.id)).where(
+            SequenceEmailLog.sequence_id == sequence_id,
+            SequenceEmailLog.opened_at != None,
+        )
     )
     total_opens = open_result.scalar() or 0
 
     # Total clicks
     click_result = await db.execute(
-        select(func.count(SequenceEmailLog.id))
-        .where(SequenceEmailLog.sequence_id == sequence_id, SequenceEmailLog.clicked_at != None)
+        select(func.count(SequenceEmailLog.id)).where(
+            SequenceEmailLog.sequence_id == sequence_id,
+            SequenceEmailLog.clicked_at != None,
+        )
     )
     total_clicks = click_result.scalar() or 0
 
@@ -281,14 +344,14 @@ async def get_sequence_analytics(
     # Sent trend by day
     trend_result = await db.execute(
         select(func.date(SequenceEmailLog.sent_at), func.count(SequenceEmailLog.id))
-        .where(SequenceEmailLog.sequence_id == sequence_id, SequenceEmailLog.sent_at != None)
+        .where(
+            SequenceEmailLog.sequence_id == sequence_id,
+            SequenceEmailLog.sent_at != None,
+        )
         .group_by(func.date(SequenceEmailLog.sent_at))
         .order_by(func.date(SequenceEmailLog.sent_at))
     )
-    sent_trend = [
-        {"date": str(row[0]), "count": row[1]}
-        for row in trend_result.all()
-    ]
+    sent_trend = [{"date": str(row[0]), "count": row[1]} for row in trend_result.all()]
 
     return SequenceAnalytics(
         sequence_id=sequence_id,
@@ -305,10 +368,12 @@ async def get_sequence_analytics(
 @router.delete("/email-sequences/{sequence_id}")
 async def delete_sequence(
     sequence_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
-    result = await db.execute(select(EmailSequence).where(EmailSequence.id == sequence_id))
+    result = await db.execute(
+        select(EmailSequence).where(EmailSequence.id == sequence_id)
+    )
     seq = result.scalar_one_or_none()
     if not seq:
         raise HTTPException(status_code=404, detail="Secuencia no encontrada")
@@ -319,12 +384,13 @@ async def delete_sequence(
 
 # ========== Chatbot Rules ==========
 
+
 @router.get("/chatbot-rules", response_model=list[ChatbotRuleResponse])
 async def list_rules(
     business_id: UUID,
-    intent: Optional[str] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    intent: str | None = None,
 ):
     query = select(ChatbotRule).where(
         ChatbotRule.business_id == business_id,
@@ -336,11 +402,15 @@ async def list_rules(
     return result.scalars().all()
 
 
-@router.post("/chatbot-rules", response_model=ChatbotRuleResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/chatbot-rules",
+    response_model=ChatbotRuleResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_rule(
     data: ChatbotRuleCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     rule = ChatbotRule(**data.model_dump())
     db.add(rule)
@@ -353,8 +423,8 @@ async def create_rule(
 async def update_rule(
     rule_id: UUID,
     data: ChatbotRuleUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(select(ChatbotRule).where(ChatbotRule.id == rule_id))
     rule = result.scalar_one_or_none()
@@ -370,8 +440,8 @@ async def update_rule(
 @router.delete("/chatbot-rules/{rule_id}")
 async def delete_rule(
     rule_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(select(ChatbotRule).where(ChatbotRule.id == rule_id))
     rule = result.scalar_one_or_none()
@@ -384,12 +454,13 @@ async def delete_rule(
 
 # ========== Execute Workflow ==========
 
+
 @router.post("/workflows/{workflow_id}/execute")
 async def execute_workflow(
     workflow_id: UUID,
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Manually trigger a workflow execution."""
     from app.domains.automations.engine import WorkflowEngine
@@ -419,31 +490,38 @@ async def execute_workflow(
 
 # ========== Seed Pre-built Automations ==========
 
+
 @router.post("/seed", status_code=status.HTTP_201_CREATED)
 async def seed_business_automations(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Seed pre-built workflows, templates, sequences and chatbot rules for a business."""
     try:
         await seed_automations(db, business_id)
         return {"message": "Automatizaciones predefinidas creadas correctamente"}
     except Exception:
+        logger.exception("seed_business_automations: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).exception("Error seeding automations")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-
 # ========== Workflow Variants (A/B Testing) ==========
 
-@router.post("/workflows/{workflow_id}/variants", response_model=WorkflowVariantResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/workflows/{workflow_id}/variants",
+    response_model=WorkflowVariantResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_workflow_variant(
     workflow_id: UUID,
     data: WorkflowVariantCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Create a new variant for A/B testing a workflow."""
     workflow = await db.get(Workflow, workflow_id)
@@ -465,11 +543,13 @@ async def create_workflow_variant(
     return variant
 
 
-@router.get("/workflows/{workflow_id}/variants", response_model=list[WorkflowVariantResponse])
+@router.get(
+    "/workflows/{workflow_id}/variants", response_model=list[WorkflowVariantResponse]
+)
 async def list_workflow_variants(
     workflow_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """List all variants for a workflow."""
     result = await db.execute(
@@ -480,13 +560,16 @@ async def list_workflow_variants(
     return result.scalars().all()
 
 
-@router.patch("/workflows/{workflow_id}/variants/{variant_id}", response_model=WorkflowVariantResponse)
+@router.patch(
+    "/workflows/{workflow_id}/variants/{variant_id}",
+    response_model=WorkflowVariantResponse,
+)
 async def update_workflow_variant(
     workflow_id: UUID,
     variant_id: UUID,
     data: WorkflowVariantUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Update a variant's traffic split, actions, or active status."""
     variant = await db.get(WorkflowVariant, variant_id)
@@ -502,12 +585,15 @@ async def update_workflow_variant(
     return variant
 
 
-@router.delete("/workflows/{workflow_id}/variants/{variant_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/workflows/{workflow_id}/variants/{variant_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
 async def delete_workflow_variant(
     workflow_id: UUID,
     variant_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Delete a variant. Cannot delete the control variant if other variants exist."""
     variant = await db.get(WorkflowVariant, variant_id)
@@ -518,22 +604,24 @@ async def delete_workflow_variant(
         others = await db.execute(
             select(func.count(WorkflowVariant.id)).where(
                 WorkflowVariant.workflow_id == workflow_id,
-                WorkflowVariant.id != variant_id
+                WorkflowVariant.id != variant_id,
             )
         )
         if others.scalar() > 0:
-            raise HTTPException(status_code=400, detail="No se puede eliminar la variante control mientras existan otras variantes")
+            raise HTTPException(
+                status_code=400,
+                detail="No se puede eliminar la variante control mientras existan otras variantes",
+            )
 
     await db.delete(variant)
     await db.commit()
-    return None
 
 
 @router.get("/workflows/{workflow_id}/ab-test-results")
 async def get_ab_test_results(
     workflow_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Compare variant performance: executions, conversions, and rates."""
     workflow = await db.get(Workflow, workflow_id)
@@ -560,17 +648,19 @@ async def get_ab_test_results(
         rate = (convs / execs * 100) if execs > 0 else 0.0
         share = (execs / total_exec * 100) if total_exec > 0 else 0.0
 
-        variant_stats.append({
-            "id": str(v.id),
-            "variant_name": v.variant_name,
-            "is_control": v.is_control,
-            "traffic_split": v.traffic_split,
-            "execution_count": execs,
-            "conversion_count": convs,
-            "conversion_rate": round(rate, 2),
-            "traffic_share": round(share, 2),
-            "is_active": v.is_active,
-        })
+        variant_stats.append(
+            {
+                "id": str(v.id),
+                "variant_name": v.variant_name,
+                "is_control": v.is_control,
+                "traffic_split": v.traffic_split,
+                "execution_count": execs,
+                "conversion_count": convs,
+                "conversion_rate": round(rate, 2),
+                "traffic_share": round(share, 2),
+                "is_active": v.is_active,
+            }
+        )
 
         if execs >= 10 and rate > best_rate:
             best_rate = rate
@@ -585,27 +675,29 @@ async def get_ab_test_results(
         "recommendation": (
             f"La variante '{winner}' tiene la mejor tasa de conversión ({round(best_rate, 2)}%). "
             f"Considera aumentar su tráfico al 100%."
-            if winner else "Se necesitan al menos 10 ejecuciones por variante para determinar un ganador."
+            if winner
+            else "Se necesitan al menos 10 ejecuciones por variante para determinar un ganador."
         ),
     }
 
 
 # ========== AI Content Generation ==========
 
+
 @router.post("/content/generate", response_model=ContentGenerationResponse)
 async def generate_content(
     data: ContentGenerationRequest,
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Genera contenido con IA (imagen, video, copy, carousel, thumbnail)."""
     from app.tasks.content_tasks import (
-        generate_product_images_task,
-        generate_video_clips_task,
-        generate_product_copy_task,
         generate_carousel_task,
+        generate_product_copy_task,
+        generate_product_images_task,
         generate_thumbnail_task,
+        generate_video_clips_task,
     )
 
     task_dispatch = {
@@ -620,7 +712,7 @@ async def generate_content(
     if not task_func:
         raise HTTPException(
             status_code=400,
-            detail=f"Tipo de contenido no soportado: {data.content_type}. Usa: {list(task_dispatch.keys())}"
+            detail=f"Tipo de contenido no soportado: {data.content_type}. Usa: {list(task_dispatch.keys())}",
         )
 
     # Enqueue Celery task
@@ -631,12 +723,11 @@ async def generate_content(
     if data.catalog_item_id:
         kwargs["catalog_item_id"] = str(data.catalog_item_id)
 
-    if data.content_type in ["image", "video", "copy"]:
-        if not data.catalog_item_id:
-            raise HTTPException(
-                status_code=400,
-                detail=f"catalog_item_id es requerido para content_type='{data.content_type}'"
-            )
+    if data.content_type in ["image", "video", "copy"] and not data.catalog_item_id:
+        raise HTTPException(
+            status_code=400,
+            detail=f"catalog_item_id es requerido para content_type='{data.content_type}'",
+        )
 
     if data.content_type == "thumbnail":
         kwargs["video_title"] = data.prompt_override or "Video"
@@ -659,16 +750,18 @@ async def generate_content(
 @router.get("/content", response_model=list[GeneratedContentResponse])
 async def list_generated_content(
     business_id: UUID,
-    content_type: Optional[str] = None,
-    status: Optional[str] = None,
-    agent_slug: Optional[str] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    content_type: str | None = None,
+    status: str | None = None,
+    agent_slug: str | None = None,
 ):
     """Lista contenido generado por IA para un negocio."""
-    query = select(GeneratedContent).where(
-        GeneratedContent.business_id == business_id
-    ).order_by(desc(GeneratedContent.created_at))
+    query = (
+        select(GeneratedContent)
+        .where(GeneratedContent.business_id == business_id)
+        .order_by(desc(GeneratedContent.created_at))
+    )
 
     if content_type:
         query = query.where(GeneratedContent.content_type == content_type)
@@ -684,8 +777,8 @@ async def list_generated_content(
 @router.get("/content/{content_id}", response_model=GeneratedContentResponse)
 async def get_generated_content(
     content_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Obtiene un contenido generado específico."""
     result = await db.execute(
@@ -700,8 +793,8 @@ async def get_generated_content(
 @router.patch("/content/{content_id}/approve")
 async def approve_content(
     content_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Aprueba contenido generado para publicación."""
     result = await db.execute(
@@ -713,7 +806,7 @@ async def approve_content(
 
     content.approval_status = "approved"
     content.reviewed_by = current_user.id
-    content.reviewed_at = datetime.now(timezone.utc)
+    content.reviewed_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(content)
 
@@ -723,9 +816,9 @@ async def approve_content(
 @router.patch("/content/{content_id}/reject")
 async def reject_content(
     content_id: UUID,
-    feedback: Optional[str] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    feedback: str | None = None,
 ):
     """Rechaza contenido generado con feedback."""
     result = await db.execute(
@@ -737,7 +830,7 @@ async def reject_content(
 
     content.approval_status = "rejected"
     content.reviewed_by = current_user.id
-    content.reviewed_at = datetime.now(timezone.utc)
+    content.reviewed_at = datetime.now(UTC)
     if feedback:
         content.feedback_notes = feedback
     await db.commit()
@@ -748,18 +841,21 @@ async def reject_content(
 
 # ========== Content Calendar ==========
 
+
 @router.get("/calendar", response_model=list[ContentCalendarResponse])
 async def list_calendar(
     business_id: UUID,
-    platform: Optional[str] = None,
-    status: Optional[str] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    platform: str | None = None,
+    status: str | None = None,
 ):
     """Lista publicaciones programadas en el calendario de contenido."""
-    query = select(ContentCalendar).where(
-        ContentCalendar.business_id == business_id
-    ).order_by(desc(ContentCalendar.scheduled_at))
+    query = (
+        select(ContentCalendar)
+        .where(ContentCalendar.business_id == business_id)
+        .order_by(desc(ContentCalendar.scheduled_at))
+    )
 
     if platform:
         query = query.where(ContentCalendar.platform == platform)
@@ -770,12 +866,16 @@ async def list_calendar(
     return result.scalars().all()
 
 
-@router.post("/calendar", response_model=ContentCalendarResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/calendar",
+    response_model=ContentCalendarResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_calendar_entry(
     data: ContentCalendarCreate,
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Crea una entrada en el calendario de contenido."""
     entry = ContentCalendar(business_id=business_id, **data.model_dump())
@@ -789,8 +889,8 @@ async def create_calendar_entry(
 async def update_calendar_entry(
     entry_id: UUID,
     data: ContentCalendarCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Actualiza una entrada del calendario."""
     result = await db.execute(
@@ -811,8 +911,8 @@ async def update_calendar_entry(
 @router.delete("/calendar/{entry_id}")
 async def delete_calendar_entry(
     entry_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Elimina una entrada del calendario."""
     result = await db.execute(
@@ -830,8 +930,8 @@ async def delete_calendar_entry(
 @router.post("/calendar/{entry_id}/publish")
 async def publish_calendar_entry(
     entry_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Publica manualmente una entrada del calendario."""
     result = await db.execute(
@@ -843,7 +943,7 @@ async def publish_calendar_entry(
 
     # TODO: Integrar con APIs de plataforma
     entry.status = "published"
-    entry.published_at = datetime.now(timezone.utc)
+    entry.published_at = datetime.now(UTC)
     entry.published_by = current_user.id
     await db.commit()
 
@@ -852,15 +952,17 @@ async def publish_calendar_entry(
 
 # ========== Content Tools & Pricing ==========
 
+
 @router.get("/content/tools")
 async def list_content_tools(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Lista herramientas de IA de contenido disponibles según el plan del negocio."""
     from app.integrations.content_generation.plan_tools import (
-        get_tools_for_plan, TOOL_REGISTRY, get_plan_comparison
+        TOOL_REGISTRY,
+        get_tools_for_plan,
     )
     from app.integrations.content_generation.router import ContentGenerationRouter
 
@@ -881,16 +983,18 @@ async def list_content_tools(
             continue
         provider = router.providers.get(tool.provider_module)
         is_ready = provider.is_available if provider else False
-        tools.append({
-            "slug": slug,
-            "name": tool.name,
-            "category": tool.category,
-            "description": tool.description,
-            "cost_tier": tool.cost_tier,
-            "min_plan": tool.min_plan,
-            "is_ready": is_ready,
-            "fallback_tool": tool.fallback_tool,
-        })
+        tools.append(
+            {
+                "slug": slug,
+                "name": tool.name,
+                "category": tool.category,
+                "description": tool.description,
+                "cost_tier": tool.cost_tier,
+                "min_plan": tool.min_plan,
+                "is_ready": is_ready,
+                "fallback_tool": tool.fallback_tool,
+            }
+        )
 
     return {
         "plan": plan_tier,
@@ -903,12 +1007,14 @@ async def list_content_tools(
 async def get_tool_detail(
     tool_slug: str,
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Obtiene detalle de una herramienta específica."""
     from app.integrations.content_generation.plan_tools import (
-        TOOL_REGISTRY, get_plan_upgrade_message, is_tool_allowed
+        TOOL_REGISTRY,
+        get_plan_upgrade_message,
+        is_tool_allowed,
     )
     from app.integrations.content_generation.router import ContentGenerationRouter
 
@@ -937,15 +1043,19 @@ async def get_tool_detail(
         "is_ready": provider.is_available if provider else False,
         "pricing": pricing,
         "fallback_tool": tool.fallback_tool,
-        "upgrade_message": get_plan_upgrade_message(tool_slug, plan_tier) if not is_tool_allowed(tool_slug, plan_tier) else None,
+        "upgrade_message": (
+            get_plan_upgrade_message(tool_slug, plan_tier)
+            if not is_tool_allowed(tool_slug, plan_tier)
+            else None
+        ),
     }
 
 
 @router.get("/content/pricing")
 async def get_content_pricing(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Tabla de precios de herramientas de contenido según plan."""
     from app.integrations.content_generation.plan_tools import get_plan_comparison
@@ -971,8 +1081,8 @@ async def get_content_pricing(
 @router.get("/content/usage")
 async def get_content_usage(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Reporte de uso mensual de generación de contenido."""
     from app.integrations.content_generation.budget import BudgetController
@@ -982,7 +1092,8 @@ async def get_content_usage(
 
     # Obtener stats de DB
     from datetime import timedelta
-    month_ago = datetime.now(timezone.utc) - timedelta(days=30)
+
+    month_ago = datetime.now(UTC) - timedelta(days=30)
 
     result = await db.execute(
         select(GeneratedContent).where(
@@ -999,7 +1110,9 @@ async def get_content_usage(
     total_cost = 0
     for c in contents:
         by_type[c.content_type] = by_type.get(c.content_type, 0) + 1
-        by_tool[c.ai_model_used or "unknown"] = by_tool.get(c.ai_model_used or "unknown", 0) + 1
+        by_tool[c.ai_model_used or "unknown"] = (
+            by_tool.get(c.ai_model_used or "unknown", 0) + 1
+        )
         total_cost += (c.generation_cost or 0) / 100
 
     return {
@@ -1015,15 +1128,17 @@ async def get_content_usage(
 
 # ========== Automation Toggles ==========
 
-@router.get("/toggles/business/{business_id}", response_model=list[AutomationToggleResponse])
+
+@router.get(
+    "/toggles/business/{business_id}", response_model=list[AutomationToggleResponse]
+)
 async def list_toggles_by_business(
     business_id: UUID,
-    category: Optional[str] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    category: str | None = None,
 ):
     """Lista todos los toggles del negocio, opcionalmente filtrados por categoría."""
-    from sqlalchemy import and_
 
     query = select(AutomationToggle).where(AutomationToggle.business_id == business_id)
     if category:
@@ -1034,16 +1149,19 @@ async def list_toggles_by_business(
     return result.scalars().all()
 
 
-@router.get("/toggles/business/{business_id}/search", response_model=list[AutomationToggleResponse])
+@router.get(
+    "/toggles/business/{business_id}/search",
+    response_model=list[AutomationToggleResponse],
+)
 async def search_toggles_advanced(
     business_id: UUID,
-    categories: Optional[str] = None,
-    usage_min: Optional[int] = None,
-    usage_max: Optional[int] = None,
-    enabled_only: Optional[bool] = None,
-    modified_after: Optional[datetime] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    categories: str | None = None,
+    usage_min: int | None = None,
+    usage_max: int | None = None,
+    enabled_only: bool | None = None,
+    modified_after: datetime | None = None,
 ):
     """Filtrado avanzado de toggles por categoría, uso, estado y fecha."""
     query = select(AutomationToggle).where(AutomationToggle.business_id == business_id)
@@ -1072,12 +1190,16 @@ async def search_toggles_advanced(
     return result.scalars().all()
 
 
-@router.post("/toggles/business/{business_id}", response_model=AutomationToggleResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/toggles/business/{business_id}",
+    response_model=AutomationToggleResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_toggle(
     business_id: UUID,
     data: AutomationToggleCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Crear un nuevo toggle (admin solo)."""
     toggle = AutomationToggle(
@@ -1094,11 +1216,13 @@ async def create_toggle(
 @router.get("/toggles/{toggle_id}", response_model=AutomationToggleResponse)
 async def get_toggle(
     toggle_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Obtener un toggle específico."""
-    result = await db.execute(select(AutomationToggle).where(AutomationToggle.id == toggle_id))
+    result = await db.execute(
+        select(AutomationToggle).where(AutomationToggle.id == toggle_id)
+    )
     toggle = result.scalar_one_or_none()
     if not toggle:
         raise HTTPException(status_code=404, detail="Toggle no encontrado")
@@ -1109,12 +1233,14 @@ async def get_toggle(
 async def update_toggle(
     toggle_id: UUID,
     data: AutomationToggleUpdate,
-    reason: Optional[str] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    reason: str | None = None,
 ):
     """Cambiar ON/OFF o límites de un toggle."""
-    result = await db.execute(select(AutomationToggle).where(AutomationToggle.id == toggle_id))
+    result = await db.execute(
+        select(AutomationToggle).where(AutomationToggle.id == toggle_id)
+    )
     toggle = result.scalar_one_or_none()
     if not toggle:
         raise HTTPException(status_code=404, detail="Toggle no encontrado")
@@ -1128,20 +1254,26 @@ async def update_toggle(
     # Actualizar
     if data.is_enabled is not None:
         toggle.is_enabled = data.is_enabled
-        toggle.enabled_at = datetime.now(timezone.utc) if data.is_enabled else toggle.enabled_at
-        toggle.disabled_at = datetime.now(timezone.utc) if not data.is_enabled else toggle.disabled_at
+        toggle.enabled_at = datetime.now(UTC) if data.is_enabled else toggle.enabled_at
+        toggle.disabled_at = (
+            datetime.now(UTC) if not data.is_enabled else toggle.disabled_at
+        )
 
     if data.monthly_limit is not None:
         toggle.monthly_limit = data.monthly_limit
 
-    toggle.updated_at = datetime.now(timezone.utc)
+    toggle.updated_at = datetime.now(UTC)
     toggle.changed_by = current_user.id
 
     # Crear audit log
     audit = ToggleAuditLog(
         business_id=toggle.business_id,
         toggle_id=toggle.id,
-        action="enabled" if data.is_enabled is True else "disabled" if data.is_enabled is False else "limit_changed",
+        action=(
+            "enabled"
+            if data.is_enabled is True
+            else "disabled" if data.is_enabled is False else "limit_changed"
+        ),
         old_value=old_state,
         new_value=data.model_dump(exclude_unset=True),
         changed_by_user_id=current_user.id,
@@ -1172,8 +1304,8 @@ async def update_toggle(
 @router.get("/toggles/{toggle_id}/audit", response_model=list[ToggleAuditLogResponse])
 async def get_toggle_audit_history(
     toggle_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Historial completo de cambios del toggle."""
     result = await db.execute(
@@ -1187,18 +1319,19 @@ async def get_toggle_audit_history(
 @router.post("/toggles/{toggle_id}/reset-usage")
 async def reset_toggle_usage(
     toggle_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Reset del contador de uso mensual."""
-    result = await db.execute(select(AutomationToggle).where(AutomationToggle.id == toggle_id))
+    result = await db.execute(
+        select(AutomationToggle).where(AutomationToggle.id == toggle_id)
+    )
     toggle = result.scalar_one_or_none()
     if not toggle:
         raise HTTPException(status_code=404, detail="Toggle no encontrado")
 
     toggle.current_month_usage = 0
-    from datetime import date
-    toggle.last_reset_date = datetime.now(timezone.utc)
+    toggle.last_reset_date = datetime.now(UTC)
     await db.commit()
 
     return {"ok": True, "message": "Contador reseteado"}
@@ -1207,43 +1340,46 @@ async def reset_toggle_usage(
 @router.get("/toggles/dashboard/{business_id}", response_model=ToggleDashboardResponse)
 async def get_toggles_dashboard(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Dashboard consolidado de toggles por categoría."""
     result = await db.execute(
         select(
             AutomationToggle.category,
             func.count().label("total"),
-            func.sum(func.cast(AutomationToggle.is_enabled, type_=Integer)).label("enabled"),
+            func.sum(func.cast(AutomationToggle.is_enabled, type_=Integer)).label(
+                "enabled"
+            ),
             func.sum(AutomationToggle.current_month_usage).label("usage"),
         )
         .where(AutomationToggle.business_id == business_id)
         .group_by(AutomationToggle.category)
     )
 
-    from sqlalchemy import Integer, cast
     rows = result.all()
     by_category = []
     for row in rows:
-        by_category.append({
-            "category": str(row[0]),
-            "total": row[1] or 0,
-            "enabled": row[2] or 0,
-            "usage": row[3] or 0,
-        })
+        by_category.append(
+            {
+                "category": str(row[0]),
+                "total": row[1] or 0,
+                "enabled": row[2] or 0,
+                "usage": row[3] or 0,
+            }
+        )
 
     return ToggleDashboardResponse(
         by_category=by_category,
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
     )
 
 
 @router.post("/toggles/seed/{business_id}", status_code=status.HTTP_201_CREATED)
 async def seed_toggles_endpoint(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Crear los toggles por defecto para un negocio nuevo."""
     from app.domains.automations.seed_toggles import seed_toggles_for_business
@@ -1256,25 +1392,33 @@ async def seed_toggles_endpoint(
             "toggles_created": 12,
         }
     except Exception as e:
+        logger.exception("seed_toggles_endpoint: error inesperado")
         raise HTTPException(
             status_code=400,
-            detail=f"Error al seed toggles: {str(e)}",
+            detail=f"Error al seed toggles: {e!s}",
         )
 
 
 # ========== Toggle Schedules (Tier 3) ==========
 
-@router.post("/toggles/{toggle_id}/schedule", response_model=ToggleScheduleResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/toggles/{toggle_id}/schedule",
+    response_model=ToggleScheduleResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_toggle_schedule(
     toggle_id: UUID,
     schedule_in: ToggleScheduleCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Create schedule for toggle to turn on/off at specific time."""
     from app.domains.automations.models import ToggleSchedule
 
-    toggle_result = await db.execute(select(AutomationToggle).where(AutomationToggle.id == toggle_id))
+    toggle_result = await db.execute(
+        select(AutomationToggle).where(AutomationToggle.id == toggle_id)
+    )
     toggle = toggle_result.scalar_one_or_none()
     if not toggle:
         raise HTTPException(status_code=404, detail="Toggle not found")
@@ -1297,34 +1441,45 @@ async def create_toggle_schedule(
     return schedule
 
 
-@router.get("/toggles/{toggle_id}/schedules", response_model=list[ToggleScheduleResponse])
+@router.get(
+    "/toggles/{toggle_id}/schedules", response_model=list[ToggleScheduleResponse]
+)
 async def list_toggle_schedules(
     toggle_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """List all schedules for toggle."""
     from app.domains.automations.models import ToggleSchedule
 
     result = await db.execute(
-        select(ToggleSchedule).where(ToggleSchedule.toggle_id == toggle_id).order_by(ToggleSchedule.next_execution_at)
+        select(ToggleSchedule)
+        .where(ToggleSchedule.toggle_id == toggle_id)
+        .order_by(ToggleSchedule.next_execution_at)
     )
     return result.scalars().all()
 
 
 # ========== Toggle Notifications (Tier 3) ==========
 
-@router.post("/toggles/{toggle_id}/notification-rule", response_model=ToggleNotificationRuleResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/toggles/{toggle_id}/notification-rule",
+    response_model=ToggleNotificationRuleResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_notification_rule(
     toggle_id: UUID,
     rule_in: ToggleNotificationRuleCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Create notification rule for toggle event."""
     from app.domains.automations.models import ToggleNotificationRule
 
-    toggle_result = await db.execute(select(AutomationToggle).where(AutomationToggle.id == toggle_id))
+    toggle_result = await db.execute(
+        select(AutomationToggle).where(AutomationToggle.id == toggle_id)
+    )
     toggle = toggle_result.scalar_one_or_none()
     if not toggle:
         raise HTTPException(status_code=404, detail="Toggle not found")
@@ -1348,17 +1503,22 @@ async def create_notification_rule(
     return rule
 
 
-@router.get("/toggles/{toggle_id}/notification-rules", response_model=list[ToggleNotificationRuleResponse])
+@router.get(
+    "/toggles/{toggle_id}/notification-rules",
+    response_model=list[ToggleNotificationRuleResponse],
+)
 async def list_notification_rules(
     toggle_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """List all notification rules for toggle."""
     from app.domains.automations.models import ToggleNotificationRule
 
     result = await db.execute(
-        select(ToggleNotificationRule).where(ToggleNotificationRule.toggle_id == toggle_id)
+        select(ToggleNotificationRule).where(
+            ToggleNotificationRule.toggle_id == toggle_id
+        )
     )
     return result.scalars().all()
 
@@ -1366,13 +1526,15 @@ async def list_notification_rules(
 @router.delete("/notification-rule/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_notification_rule(
     rule_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Delete notification rule."""
     from app.domains.automations.models import ToggleNotificationRule
 
-    result = await db.execute(select(ToggleNotificationRule).where(ToggleNotificationRule.id == rule_id))
+    result = await db.execute(
+        select(ToggleNotificationRule).where(ToggleNotificationRule.id == rule_id)
+    )
     rule = result.scalar_one_or_none()
     if not rule:
         raise HTTPException(status_code=404, detail="Rule not found")
@@ -1381,12 +1543,15 @@ async def delete_notification_rule(
     await db.commit()
 
 
-@router.get("/toggles/{toggle_id}/notification-logs", response_model=list[ToggleNotificationLogResponse])
+@router.get(
+    "/toggles/{toggle_id}/notification-logs",
+    response_model=list[ToggleNotificationLogResponse],
+)
 async def list_notification_logs(
     toggle_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
     limit: int = 50,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
 ):
     """List notification send logs for toggle."""
     from app.domains.automations.models import ToggleNotificationLog

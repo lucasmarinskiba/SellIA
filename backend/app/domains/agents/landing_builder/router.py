@@ -9,13 +9,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.agents.landing_builder import service as landing_service
 from app.domains.agents.landing_builder.schemas import (
+    LandingPageCodeOut,
     LandingPageJobCreate,
     LandingPageJobOut,
-    LandingPageCodeOut,
 )
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/landing-builder", tags=["landing-builder"])
 
@@ -25,7 +25,9 @@ async def get_db():
         yield session
 
 
-@router.post("/generate", response_model=LandingPageJobOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/generate", response_model=LandingPageJobOut, status_code=status.HTTP_201_CREATED
+)
 async def start_generation(
     data: LandingPageJobCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -33,7 +35,9 @@ async def start_generation(
 ):
     """Genera una landing page con variantes A/B para un producto."""
     from sqlalchemy import select
+
     from app.domains.businesses.models import Business
+
     result = await db.execute(
         select(Business).where(Business.user_id == current_user.id).limit(1)
     )
@@ -57,7 +61,9 @@ async def list_jobs(
 ):
     """Lista los jobs de landing page del negocio."""
     from sqlalchemy import select
+
     from app.domains.businesses.models import Business
+
     result = await db.execute(
         select(Business).where(Business.user_id == current_user.id).limit(1)
     )

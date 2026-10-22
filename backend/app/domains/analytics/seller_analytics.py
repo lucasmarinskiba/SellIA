@@ -1,9 +1,11 @@
 """Phase 14: Real-time analytics and seller dashboard."""
 
-from dataclasses import dataclass, field
-from typing import Dict, Any, List
-from datetime import datetime, timedelta
 import logging
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +24,7 @@ class SellerMetrics:
     churn_rate: float = 0.0
     expansion_rate: float = 0.0
     customer_satisfaction: float = 0.0
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
 
 @dataclass
@@ -39,13 +41,13 @@ class ChannelPerformance:
 class DashboardData:
     seller_id: str
     current_metrics: SellerMetrics
-    period_metrics: Dict[str, SellerMetrics]
-    channel_performance: List[ChannelPerformance]
-    daily_trend: List[Dict[str, Any]]
-    top_products: List[Dict[str, Any]]
-    top_customers: List[Dict[str, Any]]
-    revenue_forecast: Dict[str, float]
-    alerts: List[Dict[str, str]]
+    period_metrics: dict[str, SellerMetrics]
+    channel_performance: list[ChannelPerformance]
+    daily_trend: list[dict[str, Any]]
+    top_products: list[dict[str, Any]]
+    top_customers: list[dict[str, Any]]
+    revenue_forecast: dict[str, float]
+    alerts: list[dict[str, str]]
 
 
 class SellerAnalyticsEngine:
@@ -67,12 +69,12 @@ class SellerAnalyticsEngine:
             sales_cycle_days=14.3,
             churn_rate=0.08,
             expansion_rate=0.25,
-            customer_satisfaction=4.6
+            customer_satisfaction=4.6,
         )
 
         return metrics
 
-    def get_channel_performance(self, seller_id: str) -> List[ChannelPerformance]:
+    def get_channel_performance(self, seller_id: str) -> list[ChannelPerformance]:
         """Rank channels by performance"""
 
         channels = [
@@ -82,7 +84,7 @@ class SellerAnalyticsEngine:
                 conversion_rate=0.68,
                 cost_per_lead=15.0,
                 roi=2.8,
-                rank=1
+                rank=1,
             ),
             ChannelPerformance(
                 channel="instagram",
@@ -90,7 +92,7 @@ class SellerAnalyticsEngine:
                 conversion_rate=0.55,
                 cost_per_lead=8.0,
                 roi=2.1,
-                rank=2
+                rank=2,
             ),
             ChannelPerformance(
                 channel="whatsapp",
@@ -98,7 +100,7 @@ class SellerAnalyticsEngine:
                 conversion_rate=0.72,
                 cost_per_lead=0.0,
                 roi=3.2,
-                rank=1
+                rank=1,
             ),
             ChannelPerformance(
                 channel="email",
@@ -106,7 +108,7 @@ class SellerAnalyticsEngine:
                 conversion_rate=0.50,
                 cost_per_lead=2.0,
                 roi=1.5,
-                rank=4
+                rank=4,
             ),
             ChannelPerformance(
                 channel="linkedin",
@@ -114,7 +116,7 @@ class SellerAnalyticsEngine:
                 conversion_rate=0.65,
                 cost_per_lead=25.0,
                 roi=1.3,
-                rank=5
+                rank=5,
             ),
         ]
 
@@ -131,10 +133,10 @@ class SellerAnalyticsEngine:
 
         daily_trend = [
             {
-                "date": (datetime.utcnow() - timedelta(days=i)).strftime("%Y-%m-%d"),
+                "date": (utc_now() - timedelta(days=i)).strftime("%Y-%m-%d"),
                 "leads": 45 + (i * 2),
                 "deals": 8 + (i // 2),
-                "revenue": 12500 + (i * 500)
+                "revenue": 12500 + (i * 500),
             }
             for i in range(7)
         ]
@@ -142,11 +144,7 @@ class SellerAnalyticsEngine:
         dashboard = DashboardData(
             seller_id=seller_id,
             current_metrics=current,
-            period_metrics={
-                "daily": current,
-                "weekly": weekly,
-                "monthly": monthly
-            },
+            period_metrics={"daily": current, "weekly": weekly, "monthly": monthly},
             channel_performance=channels,
             daily_trend=daily_trend,
             top_products=[
@@ -163,13 +161,13 @@ class SellerAnalyticsEngine:
                 "7_days": 87500,
                 "30_days": 375000,
                 "90_days": 1125000,
-                "annual": 4500000
+                "annual": 4500000,
             },
             alerts=[
                 {"type": "warning", "message": "Conversion rate down 5% this week"},
                 {"type": "info", "message": "WhatsApp channel performing best"},
                 {"type": "success", "message": "Revenue up 12% vs last month"},
-            ]
+            ],
         )
 
         return dashboard

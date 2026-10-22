@@ -1,30 +1,32 @@
 """CRM Builder API Router"""
 
+from typing import Annotated
 from uuid import UUID
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
-from app.domains.users.models import User
-from app.domains.agents.crm_builder.service import CRMBuilderService
 from app.domains.agents.crm_builder.schemas import (
     CRMBuildJobCreate,
-    CRMBuildJobResponse,
     CRMBuildJobDetailResponse,
+    CRMBuildJobResponse,
 )
+from app.domains.agents.crm_builder.service import CRMBuilderService
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/crm-builder", tags=["crm-builder"])
 
 
-@router.post("/generate", response_model=CRMBuildJobResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/generate", response_model=CRMBuildJobResponse, status_code=status.HTTP_201_CREATED
+)
 async def generate_crm(
     data: CRMBuildJobCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Inicia la generación de un sistema CRM completo."""
     svc = CRMBuilderService(db)
@@ -37,11 +39,11 @@ async def generate_crm(
 
 @router.get("/jobs", response_model=list[CRMBuildJobResponse])
 async def list_jobs(
-    business_id: UUID = Query(...),
-    limit: int = Query(100, ge=1, le=500),
-    offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ):
     svc = CRMBuilderService(db)
     return await svc.list_jobs(business_id, limit, offset)
@@ -50,15 +52,17 @@ async def list_jobs(
 @router.get("/jobs/{job_id}", response_model=CRMBuildJobDetailResponse)
 async def get_job(
     job_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     svc = CRMBuilderService(db)
     job = await svc.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Trabajo no encontrado")
     from sqlalchemy import select
+
     from app.domains.agents.crm_builder.models import CRMModule
+
     result = await db.execute(select(CRMModule).where(CRMModule.job_id == job_id))
     modules = result.scalars().all()
     base = {
@@ -77,8 +81,8 @@ async def get_job(
 @router.get("/jobs/{job_id}/download")
 async def download_zip(
     job_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     svc = CRMBuilderService(db)
     path = await svc.get_crm_code(job_id)

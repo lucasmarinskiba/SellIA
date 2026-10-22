@@ -1,12 +1,21 @@
 """Fraud detection models — order + account fraud scoring."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from decimal import Decimal
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Decimal, Enum as SQLEnum, Index, Boolean, Float
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Decimal,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+)
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -14,6 +23,7 @@ from app.core.database import Base
 
 class FraudRiskLevel(str, Enum):
     """Fraud risk assessment."""
+
     LOW = "low"  # 0-15% risk
     MEDIUM = "medium"  # 16-50% risk
     HIGH = "high"  # 51-80% risk
@@ -22,6 +32,7 @@ class FraudRiskLevel(str, Enum):
 
 class FraudReason(str, Enum):
     """Primary fraud indicator."""
+
     VELOCITY_ABUSE = "velocity_abuse"  # Too many orders in short time
     IMPOSSIBLE_LOCATION = "impossible_location"  # Travel distance impossible
     NEW_ACCOUNT = "new_account"  # Brand new account
@@ -37,11 +48,23 @@ class FraudReason(str, Enum):
 
 class OrderFraudScore(Base):
     """Per-order fraud risk assessment."""
+
     __tablename__ = "order_fraud_scores"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    order_id = Column(String(255), ForeignKey("orders.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    order_id = Column(
+        String(255),
+        ForeignKey("orders.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
     # No ForeignKey: there is no `customers` table. The id is supplied by the caller (a user, lead or
     # contact), so it stays a plain indexed UUID instead of a constraint that can never be created.
     customer_id = Column(UUID(as_uuid=True), nullable=False, index=True)
@@ -76,25 +99,36 @@ class OrderFraudScore(Base):
     is_confirmed_fraud = Column(Boolean, default=False)
     is_confirmed_legitimate = Column(Boolean, default=False)
     dispute_reported = Column(Boolean, default=False)
-    resolution_date = Column(DateTime(timezone.utc), nullable=True)
+    resolution_date = Column(DateTime(UTC), nullable=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc), index=True)
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC), index=True)
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     customer = relationship("Customer", foreign_keys=[customer_id])
 
     __table_args__ = (
         Index("idx_business_level", "business_id", "fraud_risk_level"),
-        Index("idx_unresolved", "business_id", "is_confirmed_fraud", "is_confirmed_legitimate"),
+        Index(
+            "idx_unresolved",
+            "business_id",
+            "is_confirmed_fraud",
+            "is_confirmed_legitimate",
+        ),
     )
 
 
 class AccountFraudScore(Base):
     """Per-customer account fraud risk."""
+
     __tablename__ = "account_fraud_scores"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     # No ForeignKey: there is no `customers` table. The id is supplied by the caller (a user, lead or
     # contact), so it stays a plain indexed UUID instead of a constraint that can never be created.
     customer_id = Column(UUID(as_uuid=True), nullable=False, unique=True, index=True)
@@ -127,8 +161,8 @@ class AccountFraudScore(Base):
     account_suspended = Column(Boolean, default=False)
     suspension_reason = Column(String(255), nullable=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC), index=True)
 
     customer = relationship("Customer", foreign_keys=[customer_id])
 
@@ -140,10 +174,16 @@ class AccountFraudScore(Base):
 
 class FraudBlacklist(Base):
     """Blacklisted entities (email, IP, card, phone)."""
+
     __tablename__ = "fraud_blacklist"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Entity
     entity_type = Column(String(20), nullable=False)  # email, ip, card_token, phone
@@ -156,8 +196,8 @@ class FraudBlacklist(Base):
 
     # Status
     is_active = Column(Boolean, default=True)
-    listed_date = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    expires_at = Column(DateTime(timezone.utc), nullable=True)  # Temporary blacklists
+    listed_date = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    expires_at = Column(DateTime(UTC), nullable=True)  # Temporary blacklists
 
     notes = Column(String(500), nullable=True)
 
@@ -169,10 +209,16 @@ class FraudBlacklist(Base):
 
 class FraudMetrics(Base):
     """Aggregate fraud detection metrics."""
+
     __tablename__ = "fraud_metrics"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, unique=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
 
     # Date
     date = Column(String(10), nullable=False)  # YYYY-MM-DD
@@ -203,10 +249,8 @@ class FraudMetrics(Base):
     manual_reviews_pending = Column(Integer, default=0)
     manual_review_resolution_rate = Column(Decimal(5, 2), default=0)  # % resolved
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     business = relationship("Business", foreign_keys=[business_id])
 
-    __table_args__ = (
-        Index("idx_business_date", "business_id", "date"),
-    )
+    __table_args__ = (Index("idx_business_date", "business_id", "date"),)

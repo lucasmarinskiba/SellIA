@@ -1,9 +1,9 @@
 """Phase 12: Product/service diagnostics and competitive analysis."""
 
-from dataclasses import dataclass, field
-from typing import List, Dict, Any
-from enum import Enum
 import logging
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -43,13 +43,13 @@ class Diagnosis:
     visibility_score: float  # 0-1
     positioning_score: float  # 0-1
 
-    strengths: List[str] = field(default_factory=list)
-    weaknesses: List[str] = field(default_factory=list)
-    opportunities: List[str] = field(default_factory=list)
-    threats: List[str] = field(default_factory=list)
+    strengths: list[str] = field(default_factory=list)
+    weaknesses: list[str] = field(default_factory=list)
+    opportunities: list[str] = field(default_factory=list)
+    threats: list[str] = field(default_factory=list)
 
-    improvements: List[Improvement] = field(default_factory=list)
-    recommended_actions: List[str] = field(default_factory=list)
+    improvements: list[Improvement] = field(default_factory=list)
+    recommended_actions: list[str] = field(default_factory=list)
 
     estimated_revenue_impact_30days: str = "moderate"
     estimated_revenue_impact_90days: str = "significant"
@@ -58,7 +58,9 @@ class Diagnosis:
 class ServiceDiagnostician:
     """Diagnose product-market fit and service quality"""
 
-    def diagnose(self, business_description: str, business_model: str = "") -> Diagnosis:
+    def diagnose(
+        self, business_description: str, business_model: str = ""
+    ) -> Diagnosis:
         """Analyze product-market fit"""
 
         # Mock analysis - en producción scrapeamos reviews, competencia, etc
@@ -71,38 +73,33 @@ class ServiceDiagnostician:
             marketing_quality_score=0.4,
             visibility_score=0.3,
             positioning_score=0.5,
-
             strengths=[
                 "Producto con buena reputación",
                 "Precio competitivo",
                 "Atención al cliente responsiva",
-                "Experiencia probada en el mercado"
+                "Experiencia probada en el mercado",
             ],
-
             weaknesses=[
                 "Visibilidad muy baja en Internet",
                 "No aparece en Google Maps",
                 "Comunicación confusa/genérica",
                 "Público objetivo mal definido",
                 "No tiene presencia en redes sociales",
-                "Website desactualizado o inexistente"
+                "Website desactualizado o inexistente",
             ],
-
             opportunities=[
                 "Expandir a nuevos canales de venta",
                 "Mejorar presencia online",
                 "Crear comunidad de clientes",
                 "Ofrecer servicios complementarios",
-                "Automatizar follow-ups"
+                "Automatizar follow-ups",
             ],
-
             threats=[
                 "Competencia agresiva en redes",
                 "Cambios en algoritmos de búsqueda",
                 "Nuevos competidores mejor posicionados",
-                "Cambios en preferencias de clientes"
+                "Cambios en preferencias de clientes",
             ],
-
             improvements=[
                 Improvement(
                     issue="No apareces en Google Maps",
@@ -111,7 +108,7 @@ class ServiceDiagnostician:
                     effort_level="low",
                     time_to_fix_days=3,
                     expected_lead_increase_percent=40,
-                    priority=Severity.CRITICAL
+                    priority=Severity.CRITICAL,
                 ),
                 Improvement(
                     issue="Website desactualizado o no existe",
@@ -120,7 +117,7 @@ class ServiceDiagnostician:
                     effort_level="medium",
                     time_to_fix_days=14,
                     expected_lead_increase_percent=30,
-                    priority=Severity.HIGH
+                    priority=Severity.HIGH,
                 ),
                 Improvement(
                     issue="Copy genérico/confuso",
@@ -129,7 +126,7 @@ class ServiceDiagnostician:
                     effort_level="low",
                     time_to_fix_days=2,
                     expected_lead_increase_percent=25,
-                    priority=Severity.HIGH
+                    priority=Severity.HIGH,
                 ),
                 Improvement(
                     issue="No tienes presencia en redes",
@@ -138,7 +135,7 @@ class ServiceDiagnostician:
                     effort_level="low",
                     time_to_fix_days=1,
                     expected_lead_increase_percent=15,
-                    priority=Severity.MEDIUM
+                    priority=Severity.MEDIUM,
                 ),
                 Improvement(
                     issue="No recopilas reviews",
@@ -147,20 +144,18 @@ class ServiceDiagnostician:
                     effort_level="low",
                     time_to_fix_days=1,
                     expected_lead_increase_percent=20,
-                    priority=Severity.MEDIUM
-                )
+                    priority=Severity.MEDIUM,
+                ),
             ],
-
             recommended_actions=[
                 "Semana 1: Crear/Optimizar perfil Google Maps + WhatsApp Business",
                 "Semana 2: Reescribir copy + crear landing page básica",
                 "Semana 3: Setup Instagram + content calendar",
                 "Semana 4: Implementar auto-follow-up con agentes IA",
-                "Mes 2: Expandir a otros canales relevantes (LinkedIn, TikTok, etc)"
+                "Mes 2: Expandir a otros canales relevantes (LinkedIn, TikTok, etc)",
             ],
-
             estimated_revenue_impact_30days="moderate",
-            estimated_revenue_impact_90days="significant"
+            estimated_revenue_impact_90days="significant",
         )
 
         logger.info(f"Diagnosis complete. PMF Score: {pmf_score}")
@@ -170,7 +165,7 @@ class ServiceDiagnostician:
 class CompetitiveAnalyzer:
     """Analyze competitive landscape"""
 
-    def analyze(self, business_name: str, industry: str = "") -> Dict[str, Any]:
+    def analyze(self, business_name: str, industry: str = "") -> dict[str, Any]:
         """Analyze competitors"""
 
         # Mock competitive analysis
@@ -184,7 +179,7 @@ class CompetitiveAnalyzer:
                 "Proceso más rápido",
                 "Precio más competitivo",
                 "Mejor presencia online",
-                "Más opciones de personalización"
+                "Más opciones de personalización",
             ],
             "competitor_pricing_avg": 1200,
             "your_pricing_position": "average",
@@ -193,8 +188,8 @@ class CompetitiveAnalyzer:
                 "Falta servicio 24/7",
                 "No ofrecen garantía extendida",
                 "Mala atención al cliente",
-                "Presencia online débil"
+                "Presencia online débil",
             ],
             "market_size": "estimated 10,000+ potential customers in area",
-            "growth_rate": "moderate (5-10% annually)"
+            "growth_rate": "moderate (5-10% annually)",
         }

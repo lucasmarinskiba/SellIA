@@ -20,21 +20,22 @@ App Installation:
 - Scopes: chat:write, commands, app_mentions, im:history
 """
 
-import logging
-import hmac
 import hashlib
-import httpx
-import uuid
-import json
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
+import hmac
+import logging
 from enum import Enum
+from typing import Any
+
+import httpx
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
 
 class SlackCommandType(Enum):
     """Slack slash commands."""
+
     STATUS = "status"
     ANALYTICS = "analytics"
     ORDERS = "orders"
@@ -45,6 +46,7 @@ class SlackCommandType(Enum):
 
 class SlackAlertLevel(Enum):
     """Alert severity levels."""
+
     INFO = "info"
     WARNING = "warning"
     ERROR = "error"
@@ -62,7 +64,7 @@ class SlackAutomation:
         team_id: str,
         bot_token: str,
         signing_secret: str,
-        webhook_url: Optional[str] = None,
+        webhook_url: str | None = None,
     ):
         """
         Initialize Slack automation.
@@ -107,22 +109,25 @@ class SlackAutomation:
             except ValueError:
                 return False
 
-            if abs(datetime.utcnow().timestamp() - req_timestamp) > 300:
+            if abs(utc_now().timestamp() - req_timestamp) > 300:
                 logger.warning("Slack request timestamp too old")
                 return False
 
             # Verify signature
             sig_basestring = f"v0:{timestamp}:{body.decode()}"
-            expected_signature = "v0=" + hmac.new(
-                self.signing_secret.encode(),
-                sig_basestring.encode(),
-                hashlib.sha256
-            ).hexdigest()
+            expected_signature = (
+                "v0="
+                + hmac.new(
+                    self.signing_secret.encode(),
+                    sig_basestring.encode(),
+                    hashlib.sha256,
+                ).hexdigest()
+            )
 
             return hmac.compare_digest(signature, expected_signature)
 
-        except Exception as e:
-            logger.error(f"Signature verification error: {e}")
+        except Exception:
+            logger.exception("Signature verification error")
             return False
 
     # ========== COMMAND HANDLING ==========
@@ -133,7 +138,7 @@ class SlackAutomation:
         user_id: str,
         channel_id: str,
         text: str = "",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Handle slash command from Slack.
 
@@ -165,14 +170,14 @@ class SlackAutomation:
                 return {"text": f"Unknown command: /{command}"}
 
         except Exception as e:
-            logger.error(f"Error handling command: {e}")
-            return {"text": f"Error processing command: {str(e)}"}
+            logger.exception("Error handling command")
+            return {"text": f"Error processing command: {e!s}"}
 
     async def _handle_status_command(
         self,
         user_id: str,
         channel_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Handle /status command."""
         logger.info(f"Processing /status command for {user_id}")
 
@@ -203,7 +208,7 @@ class SlackAutomation:
         self,
         user_id: str,
         channel_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Handle /analytics command."""
         logger.info(f"Processing /analytics command for {user_id}")
 
@@ -244,7 +249,7 @@ class SlackAutomation:
         self,
         user_id: str,
         channel_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Handle /orders command."""
         logger.info(f"Processing /orders command for {user_id}")
 
@@ -273,7 +278,7 @@ class SlackAutomation:
         user_id: str,
         channel_id: str,
         text: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Handle /travel-mode command."""
         logger.info(f"Processing /travel-mode command for {user_id}")
 
@@ -295,7 +300,7 @@ class SlackAutomation:
         self,
         user_id: str,
         channel_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Handle /settings command."""
         logger.info(f"Processing /settings command for {user_id}")
 
@@ -330,7 +335,7 @@ class SlackAutomation:
 
         return response
 
-    def _get_help_text(self) -> Dict[str, Any]:
+    def _get_help_text(self) -> dict[str, Any]:
         """Return help/usage information."""
         return {
             "text": "Available Commands",
@@ -361,7 +366,7 @@ class SlackAutomation:
         title: str,
         message: str,
         level: SlackAlertLevel = SlackAlertLevel.INFO,
-        data: Optional[Dict[str, Any]] = None,
+        data: dict[str, Any] | None = None,
     ) -> bool:
         """
         Send alert message to channel.
@@ -401,14 +406,18 @@ class SlackAutomation:
             if data:
                 fields = []
                 for key, value in data.items():
-                    fields.append({
-                        "type": "mrkdwn",
-                        "text": f"*{key}*\n{value}",
-                    })
-                blocks.append({
-                    "type": "section",
-                    "fields": fields,
-                })
+                    fields.append(
+                        {
+                            "type": "mrkdwn",
+                            "text": f"*{key}*\n{value}",
+                        }
+                    )
+                blocks.append(
+                    {
+                        "type": "section",
+                        "fields": fields,
+                    }
+                )
 
             payload = {
                 "channel": channel_id,
@@ -422,14 +431,14 @@ class SlackAutomation:
 
             return await self._send_api_message(payload)
 
-        except Exception as e:
-            logger.error(f"Error sending alert: {e}")
+        except Exception:
+            logger.exception("Error sending alert")
             return False
 
     async def send_order_alert(
         self,
         channel_id: str,
-        order_data: Dict[str, Any],
+        order_data: dict[str, Any],
     ) -> bool:
         """
         Send order notification.
@@ -450,12 +459,12 @@ class SlackAutomation:
                 data={
                     "Amount": f"${order_data.get('amount', 0):.2f}",
                     "Email": order_data.get("customer_email"),
-                    "Time": datetime.utcnow().isoformat(),
+                    "Time": utc_now().isoformat(),
                 },
             )
 
-        except Exception as e:
-            logger.error(f"Error sending order alert: {e}")
+        except Exception:
+            logger.exception("Error sending order alert")
             return False
 
     async def send_payment_confirmation(
@@ -488,7 +497,7 @@ class SlackAutomation:
             data={"Tracking": tracking_number},
         )
 
-    async def _send_api_message(self, payload: Dict[str, Any]) -> bool:
+    async def _send_api_message(self, payload: dict[str, Any]) -> bool:
         """Send message via Slack API."""
         try:
             url = f"{self.SLACK_API}/chat.postMessage"
@@ -514,7 +523,7 @@ class SlackAutomation:
 
     # ========== APP INSTALLATION & OAUTH ==========
 
-    async def handle_oauth_callback(self, code: str) -> Optional[Dict[str, Any]]:
+    async def handle_oauth_callback(self, code: str) -> dict[str, Any] | None:
         """
         Handle OAuth callback after app installation.
 
@@ -557,7 +566,7 @@ class SlackAutomation:
 
     # ========== USER/CHANNEL MANAGEMENT ==========
 
-    async def get_user_info(self, user_id: str) -> Optional[Dict[str, Any]]:
+    async def get_user_info(self, user_id: str) -> dict[str, Any] | None:
         """Fetch Slack user information."""
         try:
             url = f"{self.SLACK_API}/users.info"
@@ -573,7 +582,7 @@ class SlackAutomation:
             logger.error(f"Error fetching user info: {e}")
             return None
 
-    async def get_channel_info(self, channel_id: str) -> Optional[Dict[str, Any]]:
+    async def get_channel_info(self, channel_id: str) -> dict[str, Any] | None:
         """Fetch Slack channel information."""
         try:
             url = f"{self.SLACK_API}/conversations.info"

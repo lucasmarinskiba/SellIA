@@ -4,9 +4,9 @@ Analiza qué está trending en Instagram/TikTok → genera posts automático.
 """
 
 import logging
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
-import httpx
+from typing import Any, ClassVar
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +31,9 @@ class TrendingTopic:
         self.volume = volume
         self.growth_rate = growth_rate
         self.best_time_utc = best_time_utc
-        self.detected_at = datetime.utcnow()
+        self.detected_at = utc_now()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "topic": self.topic,
             "platform": self.platform,
@@ -50,7 +50,7 @@ class TrendingAnalyzer:
     """Detecta tendencias en redes sociales."""
 
     # Trending topics por defecto (mock data para MVP)
-    INSTAGRAM_TRENDING = {
+    INSTAGRAM_TRENDING: ClassVar[dict] = {
         "hustle_culture": {
             "hashtags": ["#sidehustle", "#entrepreneurlife", "#makemoney"],
             "trend_score": 0.92,
@@ -71,7 +71,7 @@ class TrendingAnalyzer:
         },
     }
 
-    TIKTOK_TRENDING = {
+    TIKTOK_TRENDING: ClassVar[dict] = {
         "short_tips": {
             "hashtags": ["#shorttips", "#quickmoney", "#boostbusiness"],
             "trend_score": 0.95,
@@ -98,9 +98,9 @@ class TrendingAnalyzer:
     async def get_trending_topics(
         self,
         platform: str,  # instagram, tiktok
-        niche: Optional[str] = None,  # ej: "sales", "fitness", "ai"
+        niche: str | None = None,  # ej: "sales", "fitness", "ai"
         top_n: int = 5,
-    ) -> List[TrendingTopic]:
+    ) -> list[TrendingTopic]:
         """Obtiene trending topics para plataforma."""
         try:
             if platform == "instagram":
@@ -114,7 +114,9 @@ class TrendingAnalyzer:
 
             # Filtrar por niche si se proporciona
             if niche:
-                trending_dict = {k: v for k, v in trending_dict.items() if niche.lower() in k.lower()}
+                trending_dict = {
+                    k: v for k, v in trending_dict.items() if niche.lower() in k.lower()
+                }
 
             # Convertir a TrendingTopic objects ordenados por trend_score
             topics = []
@@ -138,14 +140,14 @@ class TrendingAnalyzer:
 
             return topics[:top_n]
 
-        except Exception as e:
-            self.logger.error(f"Error getting trending topics: {e}")
+        except Exception:
+            self.logger.exception("Error getting trending topics")
             return []
 
     async def get_best_posting_time(
         self,
         platform: str,
-        audience_timezone: Optional[str] = None,
+        audience_timezone: str | None = None,
     ) -> str:
         """Obtiene mejor hora para publicar."""
         # Basado en analytics: Instagram peak 6-9 PM, TikTok peak 7-11 PM
@@ -158,7 +160,7 @@ class TrendingAnalyzer:
         self,
         platform: str,
         niche: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Analiza performance de niche específico."""
         return {
             "niche": niche,

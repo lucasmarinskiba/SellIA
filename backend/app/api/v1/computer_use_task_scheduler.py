@@ -6,23 +6,22 @@ Endpoints para gestionar task queue:
 - GET /tasks/history — historial de tareas
 """
 
-import logging
-from typing import List, Optional
 from datetime import datetime
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
 from app.core.logger import get_logger
-from app.domains.users.models import User
 from app.domains.computer_use.services.task_scheduler import (
-    get_task_scheduler,
-    TaskType,
     TaskPriority,
+    TaskType,
+    get_task_scheduler,
 )
+from app.domains.users.models import User
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -34,11 +33,14 @@ router = APIRouter()
 class EnqueueTaskRequest(BaseModel):
     """Request para encolar tarea."""
 
-    task_type: str = Field(..., description="respond_message, schedule_appointment, close_sale, launch_ad_campaign, etc")
-    customer_id: Optional[str] = None
+    task_type: str = Field(
+        ...,
+        description="respond_message, schedule_appointment, close_sale, launch_ad_campaign, etc",
+    )
+    customer_id: str | None = None
     payload: dict = Field(..., description="Task-specific data")
-    priority: Optional[str] = None  # urgent, high, medium, low, batch
-    due_at: Optional[str] = None  # ISO datetime
+    priority: str | None = None  # urgent, high, medium, low, batch
+    due_at: str | None = None  # ISO datetime
 
 
 class TaskResponse(BaseModel):
@@ -48,7 +50,7 @@ class TaskResponse(BaseModel):
     task_type: str
     priority: str
     status: str
-    due_at: Optional[str]
+    due_at: str | None
     created_at: str
     retry_count: int
 
@@ -69,8 +71,8 @@ class QueueStatusResponse(BaseModel):
 @router.post("/tasks/enqueue", response_model=TaskResponse)
 async def enqueue_task(
     request: EnqueueTaskRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """
     Encola tarea con validación automática de conflictos.
@@ -112,7 +114,9 @@ async def enqueue_task(
             try:
                 due_at = datetime.fromisoformat(request.due_at)
             except ValueError:
-                raise HTTPException(status_code=400, detail="Invalid due_at format (use ISO)")
+                raise HTTPException(
+                    status_code=400, detail="Invalid due_at format (use ISO)"
+                )
 
         # Encolar
         scheduler = get_task_scheduler()
@@ -153,14 +157,14 @@ async def enqueue_task(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error enqueuing task: {e}")
+        logger.exception("Error enqueuing task")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/tasks/queue-status", response_model=QueueStatusResponse)
 async def get_queue_status(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Retorna estado actual de task queue."""
     try:
@@ -170,25 +174,49 @@ async def get_queue_status(
         return QueueStatusResponse(**status)
 
     except Exception as e:
-        logger.error(f"Error getting queue status: {e}")
+        logger.exception("Error getting queue status")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/tasks/info")
 async def get_task_info(
-    current_user: User = Depends(get_current_active_user),
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Retorna info sobre tipos de tareas y prioridades."""
     return {
         "task_types": {
-            "respond_message": {"description": "Respond to customer message", "default_priority": "URGENT"},
-            "schedule_appointment": {"description": "Schedule meeting/call", "default_priority": "HIGH"},
-            "close_sale": {"description": "Execute closing sequence", "default_priority": "HIGH"},
-            "launch_ad_campaign": {"description": "Launch advertising campaign", "default_priority": "MEDIUM"},
-            "send_follow_up": {"description": "Send follow-up to lead", "default_priority": "MEDIUM"},
-            "nurture_lead": {"description": "Nurture lead with content", "default_priority": "LOW"},
-            "re_engagement": {"description": "Re-engage cold lead", "default_priority": "LOW"},
-            "handle_objection": {"description": "Address customer objection", "default_priority": "URGENT"},
+            "respond_message": {
+                "description": "Respond to customer message",
+                "default_priority": "URGENT",
+            },
+            "schedule_appointment": {
+                "description": "Schedule meeting/call",
+                "default_priority": "HIGH",
+            },
+            "close_sale": {
+                "description": "Execute closing sequence",
+                "default_priority": "HIGH",
+            },
+            "launch_ad_campaign": {
+                "description": "Launch advertising campaign",
+                "default_priority": "MEDIUM",
+            },
+            "send_follow_up": {
+                "description": "Send follow-up to lead",
+                "default_priority": "MEDIUM",
+            },
+            "nurture_lead": {
+                "description": "Nurture lead with content",
+                "default_priority": "LOW",
+            },
+            "re_engagement": {
+                "description": "Re-engage cold lead",
+                "default_priority": "LOW",
+            },
+            "handle_objection": {
+                "description": "Address customer objection",
+                "default_priority": "URGENT",
+            },
         },
         "priorities": {
             "URGENT": 1,

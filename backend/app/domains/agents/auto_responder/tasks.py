@@ -3,11 +3,11 @@
 from celery import shared_task
 from sqlalchemy import select
 
+from app.core.async_bridge import run_async
 from app.core.database import AsyncSessionLocal
+from app.core.logger import get_logger
 from app.domains.agents.auto_responder.service import check_and_respond
 from app.domains.businesses.models import Business
-from app.core.logger import get_logger
-from app.core.async_bridge import run_async
 
 logger = get_logger(__name__)
 
@@ -34,6 +34,9 @@ async def _run_check():
                             f"Auto-responder sent {len(responses)} responses for business {business.id}"
                         )
                 except Exception as e:
-                    logger.warning(f"Auto-responder failed for business {business.id}: {e}")
-        except Exception as e:
-            logger.error(f"Auto-responder check task failed: {e}")
+                    logger.warning(
+                        f"Auto-responder failed for business {business.id}: {e}",
+                        exc_info=True,
+                    )
+        except Exception:
+            logger.exception("Auto-responder check task failed")

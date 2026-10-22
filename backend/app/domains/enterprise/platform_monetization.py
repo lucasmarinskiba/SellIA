@@ -7,14 +7,16 @@
 4. ConversionAnalytics - Track funnel + calculate revenue lift
 """
 
-from typing import List, Dict, Optional, Any, Tuple
 from dataclasses import dataclass
-from datetime import datetime, timedelta
 from enum import Enum
-import json
+from typing import Any
+
+from app.core.clock import utc_now
+
 
 class UserSegment(Enum):
     """5 user segments for monetization."""
+
     FREEMIUM_ACTIVE = "freemium_active"
     FREEMIUM_STALE = "freemium_stale"
     TRIAL_ENDING = "trial_ending"
@@ -25,10 +27,11 @@ class UserSegment(Enum):
 @dataclass
 class UserSegmentScore:
     """User segment with propensity score."""
+
     user_id: str
     segment: UserSegment
     propensity_score: int  # 0-100: likelihood to upgrade
-    reasoning: List[str]
+    reasoning: list[str]
 
 
 class UserSegmentationEngine:
@@ -37,12 +40,21 @@ class UserSegmentationEngine:
     def __init__(self, db):
         self.db = db
 
-    def classify_user(self, user_id: str, user_data: Dict[str, Any]) -> UserSegmentScore:
+    def classify_user(
+        self, user_id: str, user_data: dict[str, Any]
+    ) -> UserSegmentScore:
         """Classify user into segment + calculate propensity."""
         segment, score, reasoning = self._run_classification(user_data)
-        return UserSegmentScore(user_id=user_id, segment=segment, propensity_score=score, reasoning=reasoning)
+        return UserSegmentScore(
+            user_id=user_id,
+            segment=segment,
+            propensity_score=score,
+            reasoning=reasoning,
+        )
 
-    def _run_classification(self, user_data: Dict[str, Any]) -> Tuple[UserSegment, int, List[str]]:
+    def _run_classification(
+        self, user_data: dict[str, Any]
+    ) -> tuple[UserSegment, int, list[str]]:
         """Run 5-heuristic classification + ML scoring."""
         days_since_login = user_data.get("days_since_login", 0)
         login_count_7d = user_data.get("login_count_7d", 0)
@@ -111,7 +123,9 @@ class UserSegmentationEngine:
 
         return segment, score, reasoning
 
-    def bulk_classify_users(self, user_list: List[Dict[str, Any]]) -> List[UserSegmentScore]:
+    def bulk_classify_users(
+        self, user_list: list[dict[str, Any]]
+    ) -> list[UserSegmentScore]:
         """Classify multiple users (batch operation)."""
         results = []
         for user_data in user_list:
@@ -127,7 +141,9 @@ class UpgradeTriggerEngine:
     def __init__(self, db):
         self.db = db
 
-    def get_optimal_trigger(self, user_id: str, segment: UserSegment, propensity: int) -> Dict[str, Any]:
+    def get_optimal_trigger(
+        self, user_id: str, segment: UserSegment, propensity: int
+    ) -> dict[str, Any]:
         """Get optimal trigger for user's segment."""
         trigger_map = {
             UserSegment.FREEMIUM_ACTIVE: self._trigger_power_user_upsell,
@@ -148,7 +164,7 @@ class UpgradeTriggerEngine:
 
         return trigger
 
-    def _trigger_power_user_upsell(self) -> Dict[str, str]:
+    def _trigger_power_user_upsell(self) -> dict[str, str]:
         """Upsell active freemium users hitting limits."""
         return {
             "trigger_type": "power_user_upsell",
@@ -160,7 +176,7 @@ class UpgradeTriggerEngine:
             "expected_conversion": 0.35,
         }
 
-    def _trigger_reengagement(self) -> Dict[str, str]:
+    def _trigger_reengagement(self) -> dict[str, str]:
         """Re-engage stale users."""
         return {
             "trigger_type": "reengagement_offer",
@@ -172,7 +188,7 @@ class UpgradeTriggerEngine:
             "expected_conversion": 0.22,
         }
 
-    def _trigger_trial_conversion(self) -> Dict[str, str]:
+    def _trigger_trial_conversion(self) -> dict[str, str]:
         """Convert ending trials to paid."""
         return {
             "trigger_type": "trial_conversion",
@@ -184,7 +200,7 @@ class UpgradeTriggerEngine:
             "expected_conversion": 0.45,
         }
 
-    def _trigger_enterprise_upgrade(self) -> Dict[str, str]:
+    def _trigger_enterprise_upgrade(self) -> dict[str, str]:
         """Upgrade power users to enterprise."""
         return {
             "trigger_type": "enterprise_upgrade",
@@ -196,7 +212,7 @@ class UpgradeTriggerEngine:
             "expected_conversion": 0.28,
         }
 
-    def _trigger_retention(self) -> Dict[str, str]:
+    def _trigger_retention(self) -> dict[str, str]:
         """Prevent churn in at-risk paid users."""
         return {
             "trigger_type": "retention_upgrade",
@@ -208,13 +224,13 @@ class UpgradeTriggerEngine:
             "expected_conversion": 0.40,
         }
 
-    def send_trigger(self, user_id: str, trigger: Dict[str, Any]) -> Dict[str, Any]:
+    def send_trigger(self, user_id: str, trigger: dict[str, Any]) -> dict[str, Any]:
         """Send trigger via email + in-app + push."""
         return {
             "trigger_id": "trig-" + user_id,
             "user_id": user_id,
             "channels_sent": ["email", "in-app", "push"],
-            "sent_at": datetime.utcnow().isoformat(),
+            "sent_at": utc_now().isoformat(),
             "urgency_message": trigger.get("urgency_message"),
             "offer": trigger.get("offer"),
         }
@@ -226,7 +242,9 @@ class ABTestOrchestrator:
     def __init__(self, db):
         self.db = db
 
-    def create_test(self, test_name: str, element_type: str, variants: List[str], sample_size: int) -> Dict[str, Any]:
+    def create_test(
+        self, test_name: str, element_type: str, variants: list[str], sample_size: int
+    ) -> dict[str, Any]:
         """Create new A/B test."""
         return {
             "test_id": f"test-{test_name}",
@@ -234,7 +252,7 @@ class ABTestOrchestrator:
             "element_type": element_type,
             "variants": variants,
             "sample_size": sample_size,
-            "start_date": datetime.utcnow().isoformat(),
+            "start_date": utc_now().isoformat(),
             "status": "active",
         }
 
@@ -242,10 +260,18 @@ class ABTestOrchestrator:
         """Deterministically assign variant per user."""
         # Hash user_id to get consistent variant
         hash_value = hash(user_id + test_id) % num_variants
-        variant_labels = ["variant_a", "variant_b", "variant_c", "variant_d", "variant_e"]
+        variant_labels = [
+            "variant_a",
+            "variant_b",
+            "variant_c",
+            "variant_d",
+            "variant_e",
+        ]
         return variant_labels[hash_value]
 
-    def calculate_results(self, test_id: str, conversion_events: List[Dict]) -> Dict[str, Any]:
+    def calculate_results(
+        self, test_id: str, conversion_events: list[dict]
+    ) -> dict[str, Any]:
         """Calculate test results and statistical significance."""
         variants = {}
 
@@ -275,7 +301,9 @@ class ABTestOrchestrator:
                 "conversion_rate": conversion_rate,
                 "revenue": revenue,
                 "revenue_per_impression": revenue_per_impression,
-                "p_value": self._calculate_p_value(conversions, impressions),  # Simplified
+                "p_value": self._calculate_p_value(
+                    conversions, impressions
+                ),  # Simplified
             }
 
         return results
@@ -295,16 +323,18 @@ class ABTestOrchestrator:
         else:
             return 0.5  # Not significant
 
-    def identify_winner(self, test_results: Dict[str, Dict]) -> Tuple[str, float]:
+    def identify_winner(self, test_results: dict[str, dict]) -> tuple[str, float]:
         """Identify winning variant."""
         best_variant = None
         best_rate = 0
 
         for variant, data in test_results.items():
-            if data.get("p_value", 1.0) < 0.05:  # Statistically significant
-                if data.get("conversion_rate", 0) > best_rate:
-                    best_variant = variant
-                    best_rate = data["conversion_rate"]
+            if (
+                data.get("p_value", 1.0) < 0.05
+                and data.get("conversion_rate", 0) > best_rate
+            ):  # Statistically significant
+                best_variant = variant
+                best_rate = data["conversion_rate"]
 
         if not best_variant:
             return "no_winner", 0
@@ -318,7 +348,7 @@ class ConversionAnalytics:
     def __init__(self, db):
         self.db = db
 
-    def get_funnel(self, segment: UserSegment) -> Dict[str, float]:
+    def get_funnel(self, segment: UserSegment) -> dict[str, float]:
         """Get conversion funnel for segment."""
         # Mock data based on expected rates
         funnel_rates = {
@@ -363,7 +393,13 @@ class ConversionAnalytics:
         # Convert to percentages
         return {k: (v / 100) for k, v in rates.items()}
 
-    def calculate_revenue_lift(self, baseline_rate: float, treatment_rate: float, monthly_users: int, arpu: float) -> Dict[str, float]:
+    def calculate_revenue_lift(
+        self,
+        baseline_rate: float,
+        treatment_rate: float,
+        monthly_users: int,
+        arpu: float,
+    ) -> dict[str, float]:
         """Calculate revenue impact of lift."""
         baseline_revenue = monthly_users * baseline_rate * arpu
         treatment_revenue = monthly_users * treatment_rate * arpu
@@ -376,10 +412,16 @@ class ConversionAnalytics:
             "treatment_monthly_revenue": treatment_revenue,
             "monthly_lift": monthly_lift,
             "annual_lift": monthly_lift * 12,
-            "lift_percentage": ((treatment_rate - baseline_rate) / baseline_rate * 100) if baseline_rate > 0 else 0,
+            "lift_percentage": (
+                ((treatment_rate - baseline_rate) / baseline_rate * 100)
+                if baseline_rate > 0
+                else 0
+            ),
         }
 
-    def forecast_revenue(self, free_users: int, avg_conversion_rate: float, arpu: float) -> Dict[str, float]:
+    def forecast_revenue(
+        self, free_users: int, avg_conversion_rate: float, arpu: float
+    ) -> dict[str, float]:
         """Forecast monthly revenue."""
         monthly_conversions = free_users * avg_conversion_rate
         monthly_revenue = monthly_conversions * arpu
@@ -393,7 +435,9 @@ class ConversionAnalytics:
             "annual_revenue": monthly_revenue * 12,
         }
 
-    def segment_profitability(self, segments: Dict[UserSegment, Dict]) -> List[Tuple[UserSegment, float]]:
+    def segment_profitability(
+        self, segments: dict[UserSegment, dict]
+    ) -> list[tuple[UserSegment, float]]:
         """Rank segments by profitability (conversion rate)."""
         profitability = []
 

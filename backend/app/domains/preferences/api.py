@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import Any, Optional
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -21,14 +21,16 @@ router = APIRouter(prefix="/preferences", tags=["preferences"])
 async def _resolve_business(
     db: AsyncSession,
     user: User,
-    business_id: Optional[uuid.UUID],
-) -> Optional[uuid.UUID]:
+    business_id: uuid.UUID | None,
+) -> uuid.UUID | None:
     """The business being configured: the one asked for, or the user's first."""
     from app.domains.businesses.models import Business
 
     if business_id:
         result = await db.execute(
-            select(Business.id).where(Business.id == business_id, Business.user_id == user.id)
+            select(Business.id).where(
+                Business.id == business_id, Business.user_id == user.id
+            )
         )
         owned = result.scalar_one_or_none()
         if not owned:
@@ -50,34 +52,34 @@ async def _resolve_business(
 class PreferencesUpdate(BaseModel):
     """Every field optional: the screen saves sections, not the whole profile."""
 
-    business_type: Optional[str] = None
-    sales_model: Optional[str] = None
-    niche: Optional[str] = None
-    target_audience: Optional[str] = None
-    value_proposition: Optional[str] = None
-    price_range: Optional[str] = None
-    primary_goal: Optional[str] = None
-    country: Optional[str] = None
-    city: Optional[str] = None
-    primary_language: Optional[str] = None
-    tone: Optional[str] = None
-    interests: Optional[list[str]] = None
-    challenges: Optional[list[str]] = None
-    target_platforms: Optional[list[str]] = None
-    languages: Optional[list[str]] = None
-    markets: Optional[list[str]] = None
-    tastes: Optional[list[str]] = None
-    banned_topics: Optional[list[str]] = None
-    display_currency: Optional[str] = Field(default=None, max_length=3)
-    voice_notes: Optional[str] = None
-    autonomous_replies: Optional[bool] = None
+    business_type: str | None = None
+    sales_model: str | None = None
+    niche: str | None = None
+    target_audience: str | None = None
+    value_proposition: str | None = None
+    price_range: str | None = None
+    primary_goal: str | None = None
+    country: str | None = None
+    city: str | None = None
+    primary_language: str | None = None
+    tone: str | None = None
+    interests: list[str] | None = None
+    challenges: list[str] | None = None
+    target_platforms: list[str] | None = None
+    languages: list[str] | None = None
+    markets: list[str] | None = None
+    tastes: list[str] | None = None
+    banned_topics: list[str] | None = None
+    display_currency: str | None = Field(default=None, max_length=3)
+    voice_notes: str | None = None
+    autonomous_replies: bool | None = None
 
 
 @router.get("")
 async def get_preferences(
-    business_id: Optional[uuid.UUID] = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    business_id: Annotated[uuid.UUID | None, Query()] = None,
 ) -> dict[str, Any]:
     """The saved configuration, the options it can take, and what is missing."""
     resolved = await _resolve_business(db, current_user, business_id)
@@ -93,9 +95,9 @@ async def get_preferences(
 @router.put("")
 async def update_preferences(
     data: PreferencesUpdate,
-    business_id: Optional[uuid.UUID] = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    business_id: Annotated[uuid.UUID | None, Query()] = None,
 ) -> dict[str, Any]:
     resolved = await _resolve_business(db, current_user, business_id)
     if not resolved:
@@ -110,13 +112,17 @@ async def update_preferences(
 
 @router.get("/platform-suggestions")
 async def platform_suggestions(
-    business_id: Optional[uuid.UUID] = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    business_id: Annotated[uuid.UUID | None, Query()] = None,
 ) -> dict[str, Any]:
     """Platforms that fit this seller, with the reason each one is on the list."""
     resolved = await _resolve_business(db, current_user, business_id)
     if not resolved:
-        return {"connected": [], "suggestions": [], "unknowns": ["Todavía no creaste un negocio."]}
+        return {
+            "connected": [],
+            "suggestions": [],
+            "unknowns": ["Todavía no creaste un negocio."],
+        }
     profile = await service.load_profile(db, current_user.id, resolved)
     return await service.suggest_platforms(db, resolved, profile)

@@ -1,10 +1,15 @@
 """Sales Agents service."""
+
 from uuid import UUID
+
 from sqlalchemy.orm import Session
+
 
 class SalesAgentsService:
     @staticmethod
-    def prospect_lead(business_id: UUID, source: str, criteria: dict, db: Session = None) -> dict:
+    def prospect_lead(
+        business_id: UUID, source: str, criteria: dict, db: Session = None
+    ) -> dict:
         return {"status": "prospecting", "found": 45}
 
     @staticmethod

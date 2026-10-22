@@ -10,15 +10,15 @@ Responsibilities:
 No selectors needed. Pure visual matching.
 """
 
+import difflib
 import logging
-from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
 from enum import Enum
-import difflib
+from typing import Any
 
 from .visual_analyzer import (
-    VisualAnalyzer, PageAnalysis, ButtonDetection, FormField,
-    TextRegion, LayoutRegion
+    FormField,
+    VisualAnalyzer,
 )
 
 logger = logging.getLogger(__name__)
@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 class ElementType(Enum):
     """Tipos de elementos UI."""
+
     BUTTON = "button"
     LINK = "link"
     INPUT = "input"
@@ -44,6 +45,7 @@ class ElementType(Enum):
 @dataclass
 class ElementMatch:
     """Elemento encontrado en pantalla."""
+
     element_type: ElementType
     label: str
     description: str
@@ -52,8 +54,8 @@ class ElementMatch:
     width: int
     height: int
     confidence: float
-    center_x: Optional[int] = None
-    center_y: Optional[int] = None
+    center_x: int | None = None
+    center_y: int | None = None
 
     def __post_init__(self):
         if self.center_x is None:
@@ -65,6 +67,7 @@ class ElementMatch:
 @dataclass
 class ViewportState:
     """Estado actual del viewport."""
+
     viewport_width: int
     viewport_height: int
     scroll_top: int = 0
@@ -84,9 +87,9 @@ class VisionNavigator:
         self,
         screenshot_bytes: bytes,
         description: str,
-        element_type: Optional[ElementType] = None,
-        threshold: float = 0.7
-    ) -> Optional[ElementMatch]:
+        element_type: ElementType | None = None,
+        threshold: float = 0.7,
+    ) -> ElementMatch | None:
         """Encuentra un elemento por descripción natural.
 
         Args:
@@ -107,8 +110,7 @@ class VisionNavigator:
         if not element_type or element_type == ElementType.BUTTON:
             for btn in analysis.buttons:
                 score = self._calculate_similarity(
-                    description.lower(),
-                    f"{btn.label} {btn.color} button".lower()
+                    description.lower(), f"{btn.label} {btn.color} button".lower()
                 )
                 if score > best_score:
                     best_score = score
@@ -120,15 +122,19 @@ class VisionNavigator:
                         y=btn.y,
                         width=btn.width,
                         height=btn.height,
-                        confidence=score
+                        confidence=score,
                     )
 
         # Buscar en campos de formulario
-        if not element_type or element_type in [ElementType.INPUT, ElementType.SELECT, ElementType.TEXTAREA]:
+        if not element_type or element_type in [
+            ElementType.INPUT,
+            ElementType.SELECT,
+            ElementType.TEXTAREA,
+        ]:
             for field in analysis.form_fields:
                 score = self._calculate_similarity(
                     description.lower(),
-                    f"{field.label} {field.field_type} field".lower()
+                    f"{field.label} {field.field_type} field".lower(),
                 )
                 if score > best_score:
                     field_type_map = {
@@ -140,22 +146,23 @@ class VisionNavigator:
                     }
                     best_score = score
                     best_match = ElementMatch(
-                        element_type=field_type_map.get(field.field_type, ElementType.INPUT),
+                        element_type=field_type_map.get(
+                            field.field_type, ElementType.INPUT
+                        ),
                         label=field.label,
                         description=description,
                         x=field.x,
                         y=field.y,
                         width=field.width,
                         height=field.height,
-                        confidence=score
+                        confidence=score,
                     )
 
         # Buscar en texto
         if not element_type or element_type == ElementType.TEXT:
             for text in analysis.all_text:
                 score = self._calculate_similarity(
-                    description.lower(),
-                    text.text.lower()
+                    description.lower(), text.text.lower()
                 )
                 if score > best_score:
                     best_score = score
@@ -167,7 +174,7 @@ class VisionNavigator:
                         y=text.y,
                         width=text.width,
                         height=text.height,
-                        confidence=score
+                        confidence=score,
                     )
 
         logger.info(
@@ -178,10 +185,8 @@ class VisionNavigator:
         return best_match
 
     async def find_clickable_areas(
-        self,
-        screenshot_bytes: bytes,
-        max_results: int = 10
-    ) -> List[ElementMatch]:
+        self, screenshot_bytes: bytes, max_results: int = 10
+    ) -> list[ElementMatch]:
         """Encuentra todas las áreas clickeables (botones, links, form inputs)."""
         analysis = await self.analyzer.analyze_screenshot(screenshot_bytes)
 
@@ -189,16 +194,18 @@ class VisionNavigator:
 
         # Botones
         for btn in analysis.buttons:
-            clickables.append(ElementMatch(
-                element_type=ElementType.BUTTON,
-                label=btn.label,
-                description=f"Button: {btn.label}",
-                x=btn.x,
-                y=btn.y,
-                width=btn.width,
-                height=btn.height,
-                confidence=btn.confidence
-            ))
+            clickables.append(
+                ElementMatch(
+                    element_type=ElementType.BUTTON,
+                    label=btn.label,
+                    description=f"Button: {btn.label}",
+                    x=btn.x,
+                    y=btn.y,
+                    width=btn.width,
+                    height=btn.height,
+                    confidence=btn.confidence,
+                )
+            )
 
         # Campos de formulario
         for field in analysis.form_fields:
@@ -209,27 +216,28 @@ class VisionNavigator:
                 "checkbox": ElementType.CHECKBOX,
                 "radio": ElementType.RADIO,
             }
-            clickables.append(ElementMatch(
-                element_type=field_type_map.get(field.field_type, ElementType.INPUT),
-                label=field.label,
-                description=f"{field.field_type.title()}: {field.label}",
-                x=field.x,
-                y=field.y,
-                width=field.width,
-                height=field.height,
-                confidence=field.confidence
-            ))
+            clickables.append(
+                ElementMatch(
+                    element_type=field_type_map.get(
+                        field.field_type, ElementType.INPUT
+                    ),
+                    label=field.label,
+                    description=f"{field.field_type.title()}: {field.label}",
+                    x=field.x,
+                    y=field.y,
+                    width=field.width,
+                    height=field.height,
+                    confidence=field.confidence,
+                )
+            )
 
         # Ordenar por confianza
         clickables.sort(key=lambda x: x.confidence, reverse=True)
         return clickables[:max_results]
 
     async def find_form_field_by_label(
-        self,
-        screenshot_bytes: bytes,
-        label: str,
-        threshold: float = 0.7
-    ) -> Optional[FormField]:
+        self, screenshot_bytes: bytes, label: str, threshold: float = 0.7
+    ) -> FormField | None:
         """Encuentra un campo de formulario por su label."""
         analysis = await self.analyzer.analyze_screenshot(screenshot_bytes)
 
@@ -242,14 +250,14 @@ class VisionNavigator:
                 best_score = score
                 best_field = field
 
-        logger.info(f"Found form field '{label}': {best_field.label if best_field else 'NOT FOUND'}")
+        logger.info(
+            f"Found form field '{label}': {best_field.label if best_field else 'NOT FOUND'}"
+        )
         return best_field
 
     async def find_elements_of_type(
-        self,
-        screenshot_bytes: bytes,
-        element_type: ElementType
-    ) -> List[ElementMatch]:
+        self, screenshot_bytes: bytes, element_type: ElementType
+    ) -> list[ElementMatch]:
         """Encuentra todos los elementos de un tipo específico."""
         analysis = await self.analyzer.analyze_screenshot(screenshot_bytes)
 
@@ -257,52 +265,59 @@ class VisionNavigator:
 
         if element_type == ElementType.BUTTON:
             for btn in analysis.buttons:
-                matches.append(ElementMatch(
-                    element_type=ElementType.BUTTON,
-                    label=btn.label,
-                    description=f"Button: {btn.label}",
-                    x=btn.x,
-                    y=btn.y,
-                    width=btn.width,
-                    height=btn.height,
-                    confidence=btn.confidence
-                ))
+                matches.append(
+                    ElementMatch(
+                        element_type=ElementType.BUTTON,
+                        label=btn.label,
+                        description=f"Button: {btn.label}",
+                        x=btn.x,
+                        y=btn.y,
+                        width=btn.width,
+                        height=btn.height,
+                        confidence=btn.confidence,
+                    )
+                )
 
-        elif element_type in [ElementType.INPUT, ElementType.SELECT, ElementType.TEXTAREA]:
+        elif element_type in [
+            ElementType.INPUT,
+            ElementType.SELECT,
+            ElementType.TEXTAREA,
+        ]:
             field_type_str = element_type.value
             for field in analysis.form_fields:
                 if field.field_type == field_type_str:
-                    matches.append(ElementMatch(
-                        element_type=element_type,
-                        label=field.label,
-                        description=f"{field.field_type.title()}: {field.label}",
-                        x=field.x,
-                        y=field.y,
-                        width=field.width,
-                        height=field.height,
-                        confidence=field.confidence
-                    ))
+                    matches.append(
+                        ElementMatch(
+                            element_type=element_type,
+                            label=field.label,
+                            description=f"{field.field_type.title()}: {field.label}",
+                            x=field.x,
+                            y=field.y,
+                            width=field.width,
+                            height=field.height,
+                            confidence=field.confidence,
+                        )
+                    )
 
         elif element_type == ElementType.TEXT:
             for text in analysis.all_text:
-                matches.append(ElementMatch(
-                    element_type=ElementType.TEXT,
-                    label=text.text,
-                    description=text.text,
-                    x=text.x,
-                    y=text.y,
-                    width=text.width,
-                    height=text.height,
-                    confidence=text.confidence
-                ))
+                matches.append(
+                    ElementMatch(
+                        element_type=ElementType.TEXT,
+                        label=text.text,
+                        description=text.text,
+                        x=text.x,
+                        y=text.y,
+                        width=text.width,
+                        height=text.height,
+                        confidence=text.confidence,
+                    )
+                )
 
         matches.sort(key=lambda x: (x.y, x.x))  # Sort top-to-bottom, left-to-right
         return matches
 
-    async def detect_tables(
-        self,
-        screenshot_bytes: bytes
-    ) -> List[Dict[str, Any]]:
+    async def detect_tables(self, screenshot_bytes: bytes) -> list[dict[str, Any]]:
         """Detecta tablas en la página."""
         analysis = await self.analyzer.analyze_screenshot(screenshot_bytes)
 
@@ -327,20 +342,19 @@ class VisionNavigator:
                     rows.append([c.text for c in columns])
 
             if len(rows) >= 2:
-                tables.append({
-                    "type": "text_table",
-                    "rows": rows,
-                    "column_count": len(rows[0]) if rows else 0,
-                    "row_count": len(rows),
-                    "confidence": 0.7
-                })
+                tables.append(
+                    {
+                        "type": "text_table",
+                        "rows": rows,
+                        "column_count": len(rows[0]) if rows else 0,
+                        "row_count": len(rows),
+                        "confidence": 0.7,
+                    }
+                )
 
         return tables
 
-    async def detect_lists(
-        self,
-        screenshot_bytes: bytes
-    ) -> List[Dict[str, Any]]:
+    async def detect_lists(self, screenshot_bytes: bytes) -> list[dict[str, Any]]:
         """Detecta listas (bullets, numbered, etc)."""
         analysis = await self.analyzer.analyze_screenshot(screenshot_bytes)
 
@@ -370,20 +384,19 @@ class VisionNavigator:
         # Si encontramos múltiples grupos, son listas
         if len(items_by_group) >= 1:
             for y_pos, items in items_by_group.items():
-                lists.append({
-                    "type": "text_list",
-                    "items": items,
-                    "count": len(items),
-                    "y_position": y_pos,
-                    "confidence": 0.8
-                })
+                lists.append(
+                    {
+                        "type": "text_list",
+                        "items": items,
+                        "count": len(items),
+                        "y_position": y_pos,
+                        "confidence": 0.8,
+                    }
+                )
 
         return lists
 
-    async def detect_cards(
-        self,
-        screenshot_bytes: bytes
-    ) -> List[Dict[str, Any]]:
+    async def detect_cards(self, screenshot_bytes: bytes) -> list[dict[str, Any]]:
         """Detecta cards/containers."""
         # Basado en layout regions y agrupaciones de elementos
         analysis = await self.analyzer.analyze_screenshot(screenshot_bytes)
@@ -394,16 +407,18 @@ class VisionNavigator:
         if len(analysis.layout_regions) >= 2:
             for region in analysis.layout_regions:
                 if region.region_type == "content":
-                    cards.append({
-                        "type": "card",
-                        "region": region,
-                        "x": region.x,
-                        "y": region.y,
-                        "width": region.width,
-                        "height": region.height,
-                        "elements_count": region.elements_count,
-                        "confidence": 0.75
-                    })
+                    cards.append(
+                        {
+                            "type": "card",
+                            "region": region,
+                            "x": region.x,
+                            "y": region.y,
+                            "width": region.width,
+                            "height": region.height,
+                            "elements_count": region.elements_count,
+                            "confidence": 0.75,
+                        }
+                    )
 
         return cards
 
@@ -411,7 +426,7 @@ class VisionNavigator:
         self,
         screenshot_bytes: bytes,
         viewport_width: int = 1280,
-        viewport_height: int = 720
+        viewport_height: int = 720,
     ) -> ViewportState:
         """Analiza el estado actual del viewport."""
         analysis = await self.analyzer.analyze_screenshot(screenshot_bytes)
@@ -440,7 +455,7 @@ class VisionNavigator:
             viewport_height=viewport_height,
             visible_area_height=viewport_height,
             visible_element_count=visible_count,
-            below_fold_elements=below_fold_count
+            below_fold_elements=below_fold_count,
         )
 
     def _calculate_similarity(self, desc1: str, desc2: str) -> float:
@@ -454,16 +469,15 @@ class VisionNavigator:
 
         return ratio
 
-    async def get_all_clickable_elements_summary(
-        self,
-        screenshot_bytes: bytes
-    ) -> str:
+    async def get_all_clickable_elements_summary(self, screenshot_bytes: bytes) -> str:
         """Retorna resumen de elementos clickeables en formato legible."""
         clickables = await self.find_clickable_areas(screenshot_bytes, max_results=20)
 
         lines = [f"CLICKABLE ELEMENTS ({len(clickables)}):"]
         for i, elem in enumerate(clickables, 1):
             lines.append(f"{i}. [{elem.element_type.value.upper()}] {elem.label}")
-            lines.append(f"   Position: ({elem.center_x}, {elem.center_y}) | Confidence: {elem.confidence:.1%}")
+            lines.append(
+                f"   Position: ({elem.center_x}, {elem.center_y}) | Confidence: {elem.confidence:.1%}"
+            )
 
         return "\n".join(lines)

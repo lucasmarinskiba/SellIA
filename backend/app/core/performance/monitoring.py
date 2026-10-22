@@ -1,12 +1,13 @@
 """Monitoring — Query time tracking, bottleneck detection, performance metrics."""
 
 import logging
-import time
-from typing import Dict, List, Any, Optional, Tuple
+import statistics
+from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from collections import defaultdict, deque
-import statistics
+from typing import Any, ClassVar
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -14,13 +15,14 @@ logger = logging.getLogger(__name__)
 @dataclass
 class PerformanceMetric:
     """Single performance metric."""
+
     name: str
     value: float
     unit: str
     timestamp: datetime
-    tags: Dict[str, str] = field(default_factory=dict)
+    tags: dict[str, str] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "value": round(self.value, 3),
@@ -33,6 +35,7 @@ class PerformanceMetric:
 @dataclass
 class BottleneckAlert:
     """Alert for detected bottleneck."""
+
     component: str
     metric_name: str
     current_value: float
@@ -41,7 +44,7 @@ class BottleneckAlert:
     detected_at: datetime
     message: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "component": self.component,
             "metric_name": self.metric_name,
@@ -57,7 +60,7 @@ class PerformanceMonitor:
     """Monitor application performance metrics."""
 
     # Performance thresholds
-    THRESHOLDS = {
+    THRESHOLDS: ClassVar[dict] = {
         "response_time_ms": {"warning": 200, "critical": 1000},
         "database_query_ms": {"warning": 100, "critical": 500},
         "cache_hit_rate": {"warning": 0.7, "critical": 0.5},  # Lower is worse
@@ -70,16 +73,16 @@ class PerformanceMonitor:
     def __init__(self, max_history: int = 10000):
         """Initialize performance monitor."""
         self.max_history = max_history
-        self.metrics: Dict[str, deque] = defaultdict(lambda: deque(maxlen=max_history))
-        self.alerts: List[BottleneckAlert] = []
-        self.bottlenecks: Dict[str, Dict[str, Any]] = {}
+        self.metrics: dict[str, deque] = defaultdict(lambda: deque(maxlen=max_history))
+        self.alerts: list[BottleneckAlert] = []
+        self.bottlenecks: dict[str, dict[str, Any]] = {}
 
     def record_metric(
         self,
         name: str,
         value: float,
         unit: str = "ms",
-        tags: Optional[Dict[str, str]] = None,
+        tags: dict[str, str] | None = None,
     ) -> None:
         """Record a performance metric."""
 
@@ -87,7 +90,7 @@ class PerformanceMonitor:
             name=name,
             value=value,
             unit=unit,
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             tags=tags or {},
         )
 
@@ -110,7 +113,9 @@ class PerformanceMonitor:
         is_inverted = metric_name == "cache_hit_rate"
 
         if critical:
-            if (not is_inverted and value > critical) or (is_inverted and value < critical):
+            if (not is_inverted and value > critical) or (
+                is_inverted and value < critical
+            ):
                 self._create_alert(
                     component=metric_name,
                     metric_name=metric_name,
@@ -119,15 +124,18 @@ class PerformanceMonitor:
                     severity="critical",
                 )
 
-        elif warning:
-            if (not is_inverted and value > warning) or (is_inverted and value < warning):
-                self._create_alert(
-                    component=metric_name,
-                    metric_name=metric_name,
-                    current_value=value,
-                    threshold=warning,
-                    severity="warning",
-                )
+        elif (
+            warning
+            and (not is_inverted and value > warning)
+            or (is_inverted and value < warning)
+        ):
+            self._create_alert(
+                component=metric_name,
+                metric_name=metric_name,
+                current_value=value,
+                threshold=warning,
+                severity="warning",
+            )
 
     def _create_alert(
         self,
@@ -145,7 +153,7 @@ class PerformanceMonitor:
             current_value=current_value,
             threshold=threshold,
             severity=severity,
-            detected_at=datetime.utcnow(),
+            detected_at=utc_now(),
             message=f"{component} exceeded {severity} threshold: {current_value:.2f} > {threshold:.2f}",
         )
 
@@ -183,7 +191,7 @@ class PerformanceMonitor:
             tags={"endpoint": endpoint, "method": method, "status": str(status_code)},
         )
 
-    def get_metric_stats(self, metric_name: str) -> Optional[Dict[str, Any]]:
+    def get_metric_stats(self, metric_name: str) -> dict[str, Any] | None:
         """Get statistics for a metric."""
 
         if metric_name not in self.metrics:
@@ -206,7 +214,7 @@ class PerformanceMonitor:
             "p99": round(sorted(values)[int(len(values) * 0.99)], 2) if values else 0.0,
         }
 
-    def detect_bottlenecks(self) -> Dict[str, Dict[str, Any]]:
+    def detect_bottlenecks(self) -> dict[str, dict[str, Any]]:
         """Detect performance bottlenecks."""
 
         self.bottlenecks = {}
@@ -239,13 +247,12 @@ class PerformanceMonitor:
 
         return self.bottlenecks
 
-    def get_system_health(self) -> Dict[str, Any]:
+    def get_system_health(self) -> dict[str, Any]:
         """Get overall system health status."""
 
         # Count recent alerts by severity
         recent_alerts = [
-            a for a in self.alerts
-            if a.detected_at > datetime.utcnow() - timedelta(minutes=5)
+            a for a in self.alerts if a.detected_at > utc_now() - timedelta(minutes=5)
         ]
 
         critical_count = sum(1 for a in recent_alerts if a.severity == "critical")
@@ -268,7 +275,7 @@ class PerformanceMonitor:
             "metrics_tracked": len(self.metrics),
         }
 
-    def get_performance_report(self) -> Dict[str, Any]:
+    def get_performance_report(self) -> dict[str, Any]:
         """Get comprehensive performance report."""
 
         # Get top bottlenecks
@@ -284,7 +291,7 @@ class PerformanceMonitor:
         self.detect_bottlenecks()
 
         return {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "health": self.get_system_health(),
             "top_metrics": top_metrics,
             "detected_bottlenecks": self.bottlenecks,
@@ -292,7 +299,7 @@ class PerformanceMonitor:
             "recommendations": self._generate_recommendations(),
         }
 
-    def _generate_recommendations(self) -> List[str]:
+    def _generate_recommendations(self) -> list[str]:
         """Generate optimization recommendations."""
 
         recommendations = []
@@ -303,22 +310,26 @@ class PerformanceMonitor:
             )
 
         # Check for high error rates
-        if "error_rate" in self.metrics and self.metrics["error_rate"]:
+        if self.metrics.get("error_rate"):
             error_rates = [m.value for m in self.metrics["error_rate"]]
             if statistics.mean(error_rates) > 1:
                 recommendations.append("Investigate high error rate")
 
         # Check for queue depth
-        if "queue_depth" in self.metrics and self.metrics["queue_depth"]:
+        if self.metrics.get("queue_depth"):
             queue_depths = [m.value for m in self.metrics["queue_depth"]]
             if max(queue_depths) > 100:
-                recommendations.append("Consider adding more workers for queue processing")
+                recommendations.append(
+                    "Consider adding more workers for queue processing"
+                )
 
         # Check for cache hit rate
-        if "cache_hit_rate" in self.metrics and self.metrics["cache_hit_rate"]:
+        if self.metrics.get("cache_hit_rate"):
             hit_rates = [m.value for m in self.metrics["cache_hit_rate"]]
             if statistics.mean(hit_rates) < 0.6:
-                recommendations.append("Improve cache hit rate with better cache strategy")
+                recommendations.append(
+                    "Improve cache hit rate with better cache strategy"
+                )
 
         return recommendations
 
@@ -326,7 +337,7 @@ class PerformanceMonitor:
         self,
         metric_name: str,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get recent metrics."""
 
         if metric_name not in self.metrics:
@@ -343,9 +354,9 @@ class PerformanceMonitor:
 
     def get_alerts(
         self,
-        severity: Optional[str] = None,
+        severity: str | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get alerts."""
 
         filtered = self.alerts

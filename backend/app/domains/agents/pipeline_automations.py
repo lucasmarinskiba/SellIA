@@ -9,16 +9,16 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import uuid
-from typing import Any, Optional, Callable, Awaitable
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 from enum import Enum
-from datetime import datetime, timezone, timedelta
+from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.agents.pipeline_agents import PipelineStage, PipelineContext
+from app.domains.agents.pipeline_agents import PipelineStage
 
 logger = get_logger(__name__)
 
@@ -26,6 +26,7 @@ logger = get_logger(__name__)
 # ─────────────────────────────────────────────
 # TIPOS DE TRIGGERS
 # ─────────────────────────────────────────────
+
 
 class TriggerType(str, Enum):
     # Eventos de tiempo
@@ -85,6 +86,7 @@ class ActionType(str, Enum):
 @dataclass
 class AutomationRule:
     """Regla de automatización: si [trigger] entonces [acciones]."""
+
     id: str
     name: str
     trigger: TriggerType
@@ -102,15 +104,18 @@ class AutomationRule:
             operator = condition.get("operator", "eq")
             expected = condition.get("value")
 
-            if operator == "eq" and field_val != expected:
-                return False
-            elif operator == "gt" and not (isinstance(field_val, (int, float)) and field_val > expected):
-                return False
-            elif operator == "lt" and not (isinstance(field_val, (int, float)) and field_val < expected):
-                return False
-            elif operator == "contains" and expected not in str(field_val):
-                return False
-            elif operator == "not_null" and field_val is None:
+            if (
+                operator == "eq"
+                and field_val != expected
+                or operator == "gt"
+                and not (isinstance(field_val, (int, float)) and field_val > expected)
+                or operator == "lt"
+                and not (isinstance(field_val, (int, float)) and field_val < expected)
+                or operator == "contains"
+                and expected not in str(field_val)
+                or operator == "not_null"
+                and field_val is None
+            ):
                 return False
         return True
 
@@ -120,7 +125,6 @@ class AutomationRule:
 # ─────────────────────────────────────────────
 
 PIPELINE_AUTOMATION_RULES: list[AutomationRule] = [
-
     # ───── ETAPA 1: PROSPECCIÓN ─────
     AutomationRule(
         id="capture-welcome-message",
@@ -147,7 +151,6 @@ PIPELINE_AUTOMATION_RULES: list[AutomationRule] = [
         cooldown_hours=0,
         priority=1,
     ),
-
     AutomationRule(
         id="prospect-no-reply-24h",
         name="Follow-up si no responde en 24h",
@@ -163,7 +166,6 @@ PIPELINE_AUTOMATION_RULES: list[AutomationRule] = [
         cooldown_hours=24,
         priority=3,
     ),
-
     AutomationRule(
         id="prospect-no-reply-72h",
         name="Follow-up 72h con oferta de valor",
@@ -184,7 +186,6 @@ PIPELINE_AUTOMATION_RULES: list[AutomationRule] = [
         cooldown_hours=48,
         priority=3,
     ),
-
     # ───── ETAPA 2: CALIFICACIÓN ─────
     AutomationRule(
         id="qualify-buying-signal",
@@ -208,7 +209,6 @@ PIPELINE_AUTOMATION_RULES: list[AutomationRule] = [
         cooldown_hours=0,
         priority=1,
     ),
-
     AutomationRule(
         id="qualify-high-score-advance",
         name="Score alto — avanzar a diagnóstico",
@@ -232,7 +232,6 @@ PIPELINE_AUTOMATION_RULES: list[AutomationRule] = [
         cooldown_hours=0,
         priority=1,
     ),
-
     AutomationRule(
         id="qualify-low-score-nurture",
         name="Score bajo — iniciar nurturing",
@@ -252,7 +251,6 @@ PIPELINE_AUTOMATION_RULES: list[AutomationRule] = [
         cooldown_hours=0,
         priority=2,
     ),
-
     # ───── ETAPA 3: NURTURING ─────
     AutomationRule(
         id="nurture-week1-education",
@@ -270,7 +268,6 @@ PIPELINE_AUTOMATION_RULES: list[AutomationRule] = [
         cooldown_hours=168,
         priority=4,
     ),
-
     AutomationRule(
         id="nurture-case-study",
         name="Caso de éxito día 3",
@@ -287,7 +284,6 @@ PIPELINE_AUTOMATION_RULES: list[AutomationRule] = [
         cooldown_hours=168,
         priority=4,
     ),
-
     AutomationRule(
         id="nurture-buying-signal",
         name="Lead tibio muestra señal de compra — escalar",
@@ -312,7 +308,6 @@ PIPELINE_AUTOMATION_RULES: list[AutomationRule] = [
         cooldown_hours=0,
         priority=1,
     ),
-
     # ───── ETAPA 4: DIAGNÓSTICO ─────
     AutomationRule(
         id="discovery-pain-identified",
@@ -334,7 +329,6 @@ PIPELINE_AUTOMATION_RULES: list[AutomationRule] = [
         cooldown_hours=0,
         priority=2,
     ),
-
     AutomationRule(
         id="discovery-stalled-3d",
         name="Diagnóstico sin avance 3 días — intervención",
@@ -354,7 +348,6 @@ PIPELINE_AUTOMATION_RULES: list[AutomationRule] = [
         cooldown_hours=72,
         priority=3,
     ),
-
     # ───── ETAPA 5: PROPUESTA ─────
     AutomationRule(
         id="proposal-sent-followup-24h",
@@ -370,7 +363,6 @@ PIPELINE_AUTOMATION_RULES: list[AutomationRule] = [
         cooldown_hours=24,
         priority=2,
     ),
-
     AutomationRule(
         id="proposal-followup-48h",
         name="Follow-up urgente 48h sin respuesta a propuesta",
@@ -389,7 +381,6 @@ PIPELINE_AUTOMATION_RULES: list[AutomationRule] = [
         cooldown_hours=24,
         priority=2,
     ),
-
     # ───── ETAPA 6: OBJECIONES ─────
     AutomationRule(
         id="objection-price-detected",
@@ -415,13 +406,14 @@ PIPELINE_AUTOMATION_RULES: list[AutomationRule] = [
         cooldown_hours=0,
         priority=1,
     ),
-
     AutomationRule(
         id="objection-think-about-it",
         name="Objeción 'necesito pensarlo' detectada",
         trigger=TriggerType.OBJECTION_DETECTED,
         stage=PipelineStage.OBJECTION,
-        conditions=[{"field": "objection_type", "operator": "eq", "value": "think_about_it"}],
+        conditions=[
+            {"field": "objection_type", "operator": "eq", "value": "think_about_it"}
+        ],
         actions=[
             {
                 "type": ActionType.SEND_MESSAGE,
@@ -431,7 +423,6 @@ PIPELINE_AUTOMATION_RULES: list[AutomationRule] = [
         cooldown_hours=0,
         priority=1,
     ),
-
     AutomationRule(
         id="objection-negative-sentiment",
         name="Sentimiento muy negativo — escalar a humano",
@@ -453,7 +444,6 @@ PIPELINE_AUTOMATION_RULES: list[AutomationRule] = [
         cooldown_hours=0,
         priority=1,
     ),
-
     # ───── ETAPA 7: CIERRE ─────
     AutomationRule(
         id="close-buying-signal-urgent",
@@ -474,7 +464,6 @@ PIPELINE_AUTOMATION_RULES: list[AutomationRule] = [
         cooldown_hours=0,
         priority=1,
     ),
-
     AutomationRule(
         id="close-achieved-celebrate",
         name="¡Venta cerrada! — iniciar onboarding",
@@ -507,7 +496,6 @@ PIPELINE_AUTOMATION_RULES: list[AutomationRule] = [
         cooldown_hours=0,
         priority=1,
     ),
-
     # ───── ETAPA 8: ONBOARDING ─────
     AutomationRule(
         id="onboarding-day-1",
@@ -527,7 +515,6 @@ PIPELINE_AUTOMATION_RULES: list[AutomationRule] = [
         cooldown_hours=0,
         priority=1,
     ),
-
     AutomationRule(
         id="onboarding-day-3-checkin",
         name="Onboarding día 3 — check-in de primera victoria",
@@ -542,7 +529,6 @@ PIPELINE_AUTOMATION_RULES: list[AutomationRule] = [
         cooldown_hours=0,
         priority=2,
     ),
-
     AutomationRule(
         id="onboarding-day-7-roadmap",
         name="Onboarding día 7 — roadmap de 30 días",
@@ -557,7 +543,6 @@ PIPELINE_AUTOMATION_RULES: list[AutomationRule] = [
         cooldown_hours=0,
         priority=2,
     ),
-
     AutomationRule(
         id="onboarding-day-30-results",
         name="Onboarding día 30 — revisión de resultados y testimonio",
@@ -580,7 +565,6 @@ PIPELINE_AUTOMATION_RULES: list[AutomationRule] = [
         cooldown_hours=0,
         priority=2,
     ),
-
     # ───── ETAPA 9: RETENCIÓN ─────
     AutomationRule(
         id="retention-churn-risk",
@@ -606,7 +590,6 @@ PIPELINE_AUTOMATION_RULES: list[AutomationRule] = [
         cooldown_hours=48,
         priority=1,
     ),
-
     AutomationRule(
         id="retention-nps-low",
         name="NPS bajo — recuperación inmediata",
@@ -628,7 +611,6 @@ PIPELINE_AUTOMATION_RULES: list[AutomationRule] = [
         cooldown_hours=0,
         priority=1,
     ),
-
     AutomationRule(
         id="retention-upsell-moment",
         name="Momento de upsell — cliente con éxito demostrado",
@@ -648,7 +630,6 @@ PIPELINE_AUTOMATION_RULES: list[AutomationRule] = [
         cooldown_hours=720,
         priority=3,
     ),
-
     AutomationRule(
         id="retention-referral-request",
         name="Solicitud de referido en momento de alta satisfacción",
@@ -674,6 +655,7 @@ PIPELINE_AUTOMATION_RULES: list[AutomationRule] = [
 # MOTOR DE EJECUCIÓN DE AUTOMATIZACIONES
 # ─────────────────────────────────────────────
 
+
 class PipelineAutomationEngine:
     """Motor autónomo que evalúa y ejecuta reglas de automatización del pipeline."""
 
@@ -686,20 +668,27 @@ class PipelineAutomationEngine:
         trigger: TriggerType,
         context: dict[str, Any],
         business_id: str,
-        deal_id: Optional[str] = None,
+        deal_id: str | None = None,
     ) -> list[dict[str, Any]]:
         """Procesa un evento y ejecuta todas las reglas aplicables."""
         results = []
-        current_stage = PipelineStage(context.get("current_stage", PipelineStage.PROSPECTING))
+        current_stage = PipelineStage(
+            context.get("current_stage", PipelineStage.PROSPECTING)
+        )
 
         applicable_rules = [
-            rule for rule in self.rules
+            rule
+            for rule in self.rules
             if rule.trigger == trigger
-            and (rule.stage == current_stage or trigger in {
-                TriggerType.BUYING_SIGNAL_DETECTED,
-                TriggerType.SENTIMENT_NEGATIVE,
-                TriggerType.CHURN_RISK_DETECTED,
-            })
+            and (
+                rule.stage == current_stage
+                or trigger
+                in {
+                    TriggerType.BUYING_SIGNAL_DETECTED,
+                    TriggerType.SENTIMENT_NEGATIVE,
+                    TriggerType.CHURN_RISK_DETECTED,
+                }
+            )
             and rule.is_active
             and rule.evaluate_conditions(context)
         ]
@@ -710,11 +699,15 @@ class PipelineAutomationEngine:
         for rule in applicable_rules:
             try:
                 result = await self._execute_rule(rule, context, business_id, deal_id)
-                results.append({"rule": rule.id, "status": "executed", "result": result})
-                logger.info(f"[PipelineAuto] Rule '{rule.name}' executed for deal {deal_id}")
+                results.append(
+                    {"rule": rule.id, "status": "executed", "result": result}
+                )
+                logger.info(
+                    f"[PipelineAuto] Rule '{rule.name}' executed for deal {deal_id}"
+                )
             except Exception as e:
                 results.append({"rule": rule.id, "status": "error", "error": str(e)})
-                logger.error(f"[PipelineAuto] Rule '{rule.name}' failed: {e}")
+                logger.exception(f"[PipelineAuto] Rule '{rule.name}' failed")
 
         return results
 
@@ -723,7 +716,7 @@ class PipelineAutomationEngine:
         rule: AutomationRule,
         context: dict[str, Any],
         business_id: str,
-        deal_id: Optional[str],
+        deal_id: str | None,
     ) -> dict[str, Any]:
         """Ejecuta las acciones de una regla."""
         executed_actions = []
@@ -738,10 +731,12 @@ class PipelineAutomationEngine:
             action_result = await self._dispatch_action(
                 action_type, action, context, business_id, deal_id
             )
-            executed_actions.append({
-                "action": action_type,
-                "result": action_result,
-            })
+            executed_actions.append(
+                {
+                    "action": action_type,
+                    "result": action_result,
+                }
+            )
 
         return {"actions_executed": len(executed_actions), "details": executed_actions}
 
@@ -751,7 +746,7 @@ class PipelineAutomationEngine:
         action: dict[str, Any],
         context: dict[str, Any],
         business_id: str,
-        deal_id: Optional[str],
+        deal_id: str | None,
     ) -> dict[str, Any]:
         """Despacha una acción específica al sistema correspondiente."""
 
@@ -791,7 +786,6 @@ class PipelineAutomationEngine:
         """Genera y envía mensaje automatizado vía canal del prospecto."""
         try:
             from app.domains.channels.services import send_outbound_message
-            from app.domains.agents.ai_reply import generate_raw_ai_response
 
             conversation_id = context.get("conversation_id")
             if not conversation_id:
@@ -809,22 +803,22 @@ class PipelineAutomationEngine:
 
             return {"status": "sent", "template": template}
         except Exception as e:
-            logger.error(f"[PipelineAuto] Message send error: {e}")
+            logger.exception("[PipelineAuto] Message send error")
             return {"status": "error", "error": str(e)}
 
-    async def _update_crm(self, fields: dict, deal_id: Optional[str], business_id: str) -> dict:
+    async def _update_crm(
+        self, fields: dict, deal_id: str | None, business_id: str
+    ) -> dict:
         """Actualiza campos del deal en el CRM."""
         try:
             if not deal_id:
                 return {"status": "skipped", "reason": "no_deal_id"}
 
             from app.domains.crm.models import Deal
-            now = datetime.now(timezone.utc)
 
-            resolved_fields = {
-                k: now if v == "now" else v
-                for k, v in fields.items()
-            }
+            now = datetime.now(UTC)
+
+            resolved_fields = {k: now if v == "now" else v for k, v in fields.items()}
 
             await self.db.execute(
                 update(Deal)
@@ -834,11 +828,11 @@ class PipelineAutomationEngine:
             await self.db.commit()
             return {"status": "updated", "fields": list(resolved_fields.keys())}
         except Exception as e:
-            logger.error(f"[PipelineAuto] CRM update error: {e}")
+            logger.exception("[PipelineAuto] CRM update error")
             return {"status": "error", "error": str(e)}
 
     async def _advance_pipeline_stage(
-        self, deal_id: Optional[str], to_stage: PipelineStage, business_id: str
+        self, deal_id: str | None, to_stage: PipelineStage, business_id: str
     ) -> dict:
         """Avanza el deal a la siguiente etapa del pipeline."""
         try:
@@ -846,19 +840,20 @@ class PipelineAutomationEngine:
                 return {"status": "skipped", "reason": "no_deal_id"}
 
             from app.domains.crm.models import Deal
+
             await self.db.execute(
                 update(Deal)
                 .where(Deal.id == uuid.UUID(deal_id))
                 .values(
                     pipeline_stage=to_stage.value,
-                    stage_changed_at=datetime.now(timezone.utc),
+                    stage_changed_at=datetime.now(UTC),
                 )
             )
             await self.db.commit()
             logger.info(f"[PipelineAuto] Deal {deal_id} advanced to {to_stage}")
             return {"status": "advanced", "to_stage": to_stage.value}
         except Exception as e:
-            logger.error(f"[PipelineAuto] Stage advance error: {e}")
+            logger.exception("[PipelineAuto] Stage advance error")
             return {"status": "error", "error": str(e)}
 
     #: The same pipeline condition is evaluated on every run; one alert per distinct message per hour.
@@ -879,7 +874,10 @@ class PipelineAutomationEngine:
             # Only groups identical messages (not a security use); SHA-256 so no weak-hash finding either.
             dedupe_key = hashlib.sha256(message.encode("utf-8")).hexdigest()[:16]
             if await alert_sent_recently(
-                self.db, biz_id, "pipeline_owner_alert", self.OWNER_ALERT_REPEAT_AFTER,
+                self.db,
+                biz_id,
+                "pipeline_owner_alert",
+                self.OWNER_ALERT_REPEAT_AFTER,
                 dedupe_key=dedupe_key,
             ):
                 return {"status": "alert_suppressed", "reason": "already sent recently"}
@@ -889,7 +887,11 @@ class PipelineAutomationEngine:
                 f"[SellIA Auto] {action.get('message', 'Alerta del pipeline')}",
                 message,
                 kind="pipeline_owner_alert",
-                level="high" if action.get("priority") in ("critical", "high") else "medium",
+                level=(
+                    "high"
+                    if action.get("priority") in ("critical", "high")
+                    else "medium"
+                ),
                 dedupe_key=dedupe_key,
             )
             # SAVEPOINT: a failed insert must not leave the shared session's transaction aborted.
@@ -898,13 +900,16 @@ class PipelineAutomationEngine:
             await self.db.commit()
             return {"status": "alert_created"}
         except Exception as e:
-            logger.error(f"[PipelineAuto] Alert send error: {e}")
+            logger.exception("[PipelineAuto] Alert send error")
             return {"status": "error", "error": str(e)}
 
-    async def _activate_workflow(self, action: dict, business_id: str, context: dict) -> dict:
+    async def _activate_workflow(
+        self, action: dict, business_id: str, context: dict
+    ) -> dict:
         """Activa un workflow de automaciones existente."""
         try:
             from app.domains.automations.models import Workflow, WorkflowStatus
+
             workflow_type = action.get("workflow_type", "")
 
             result = await self.db.execute(
@@ -923,10 +928,11 @@ class PipelineAutomationEngine:
 
             return {"status": "workflow_not_found", "type": workflow_type}
         except Exception as e:
+            logger.exception("_activate_workflow: error inesperado")
             return {"status": "error", "error": str(e)}
 
     async def _escalate_to_human(
-        self, action: dict, context: dict, business_id: str, deal_id: Optional[str]
+        self, action: dict, context: dict, business_id: str, deal_id: str | None
     ) -> dict:
         """Escala la conversación a un humano."""
         try:
@@ -935,30 +941,38 @@ class PipelineAutomationEngine:
                 return {"status": "skipped"}
 
             from app.domains.channels.models import Conversation
+
             await self.db.execute(
                 update(Conversation)
                 .where(Conversation.id == uuid.UUID(conversation_id))
                 .values(
                     needs_human=True,
-                    human_requested_at=datetime.now(timezone.utc),
+                    human_requested_at=datetime.now(UTC),
                     human_request_reason=action.get("reason", "Escalación automática"),
                 )
             )
             await self.db.commit()
 
             await self._send_owner_alert(
-                {"message": f"🙋 Conversación requiere atención humana: {action.get('reason', '')}", "priority": action.get("urgency", "high")},
+                {
+                    "message": f"🙋 Conversación requiere atención humana: {action.get('reason', '')}",
+                    "priority": action.get("urgency", "high"),
+                },
                 business_id,
             )
 
             return {"status": "escalated"}
         except Exception as e:
+            logger.exception("_escalate_to_human: error inesperado")
             return {"status": "error", "error": str(e)}
 
-    async def _generate_ai_content(self, action: dict, context: dict, business_id: str) -> dict:
+    async def _generate_ai_content(
+        self, action: dict, context: dict, business_id: str
+    ) -> dict:
         """Genera contenido de IA para el prospecto."""
         try:
             from app.domains.agents.ai_reply import generate_raw_ai_response
+
             content_type = action.get("content_type", "")
 
             prompts = {
@@ -975,11 +989,18 @@ class PipelineAutomationEngine:
                 max_tokens=1000,
             )
 
-            return {"status": "content_generated", "content_type": content_type, "length": len(content or "")}
+            return {
+                "status": "content_generated",
+                "content_type": content_type,
+                "length": len(content or ""),
+            }
         except Exception as e:
+            logger.exception("_generate_ai_content: error inesperado")
             return {"status": "error", "error": str(e)}
 
-    async def _send_referral_request(self, action: dict, context: dict, business_id: str) -> dict:
+    async def _send_referral_request(
+        self, action: dict, context: dict, business_id: str
+    ) -> dict:
         """Envía solicitud de referido al cliente satisfecho."""
         return await self._send_automated_message(
             {**action, "template": action.get("template", "referral_request")},
@@ -987,7 +1008,9 @@ class PipelineAutomationEngine:
             business_id,
         )
 
-    async def _schedule_nps(self, action: dict, context: dict, business_id: str) -> dict:
+    async def _schedule_nps(
+        self, action: dict, context: dict, business_id: str
+    ) -> dict:
         """Programa envío de NPS para el futuro."""
         delay_days = action.get("delay_days", 7)
         return {"status": "nps_scheduled", "send_in_days": delay_days}
@@ -1018,7 +1041,10 @@ class PipelineAutomationEngine:
             "discovery_reactivation": f"Hola{' ' + name if name else ''}! Quería retomar nuestra conversación. ¿Sigues teniendo el desafío que me mencionaste? Me gustaría ayudarte a resolverlo. 🤝",
         }
 
-        return templates.get(template_name, f"Hola{' ' + name if name else ''}! ¿En qué te puedo ayudar hoy?")
+        return templates.get(
+            template_name,
+            f"Hola{' ' + name if name else ''}! ¿En qué te puedo ayudar hoy?",
+        )
 
 
 def get_pipeline_automation_engine(db: AsyncSession) -> PipelineAutomationEngine:

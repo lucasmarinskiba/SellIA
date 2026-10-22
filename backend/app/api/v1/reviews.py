@@ -2,23 +2,27 @@
 Reviews & Testimonials — Sistema de reseñas, moderation, spam detection.
 """
 
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from typing import Optional, Dict, List, Any
-from datetime import datetime
 import logging
 import re
+from datetime import datetime
+from typing import Any
+
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+
+from app.core.clock import utc_now
 
 router = APIRouter(prefix="/api/v1/reviews", tags=["reviews"])
 logger = logging.getLogger(__name__)
 
 # Mock reviews DB
-_REVIEWS_DB: Dict[str, Any] = {}
+_REVIEWS_DB: dict[str, Any] = {}
 _REVIEW_COUNTER = 0
 
 
 class Review(BaseModel):
     """Reseña de producto."""
+
     id: str
     product_id: str
     customer_id: str
@@ -54,7 +58,9 @@ async def create_review(
 
         # Validar texto (min 10 caracteres)
         if len(text) < 10:
-            raise HTTPException(status_code=400, detail="Review too short (min 10 chars)")
+            raise HTTPException(
+                status_code=400, detail="Review too short (min 10 chars)"
+            )
 
         # Detectar spam
         spam_patterns = [
@@ -83,12 +89,14 @@ async def create_review(
             "text": text,
             "verified_purchase": verified_purchase,
             "status": "spam" if is_spam else "pending",  # Pending = espera moderación
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": utc_now().isoformat(),
         }
 
         _REVIEWS_DB[review_id] = review
 
-        status_msg = "pending_moderation" if review["status"] == "pending" else "flagged_as_spam"
+        status_msg = (
+            "pending_moderation" if review["status"] == "pending" else "flagged_as_spam"
+        )
         logger.info(f"Reseña creada: {review_id} (⭐{rating}), status: {status_msg}")
 
         return {
@@ -98,7 +106,7 @@ async def create_review(
         }
 
     except Exception as e:
-        logger.error(f"Error creando reseña: {str(e)}")
+        logger.exception("Error creando reseña")
         raise HTTPException(status_code=500, detail=str(e))
 
 

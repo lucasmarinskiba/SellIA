@@ -4,18 +4,18 @@ Simple permission system: roles have permissions, users have roles per business.
 """
 
 import uuid
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable
+from typing import Annotated
 
-from fastapi import HTTPException, status, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import Depends, HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.security.models import BusinessUserRole, RolePermission
-
+from app.domains.users.models import User
 
 # Default permissions matrix
 DEFAULT_PERMISSIONS = [
@@ -82,12 +82,13 @@ async def check_permission(
     if not bur:
         # If no role assigned, check if user owns the business
         from app.domains.businesses.models import Business
+
         result = await db.execute(
-            select(Business).where(Business.id == business_id, Business.user_id == user_id)
+            select(Business).where(
+                Business.id == business_id, Business.user_id == user_id
+            )
         )
-        if result.scalar_one_or_none():
-            return True
-        return False
+        return bool(result.scalar_one_or_none())
 
     role = bur.role
 
@@ -99,29 +100,37 @@ async def check_permission(
             RolePermission.action.in_([action, "admin"]),
         )
     )
-    if result.scalars().first():
-        return True
-
-    return False
+    return bool(result.scalars().first())
 
 
 def require_permission(resource: str, action: str = "read"):
     """Decorator to require a permission on an endpoint."""
+
     def decorator(func: Callable):
         @wraps(func)
         async def wrapper(
             business_id: uuid.UUID,
-            db: AsyncSession = Depends(get_db),
-            current_user: User = Depends(get_current_user),
+            db: Annotated[AsyncSession, Depends(get_db)],
+            current_user: Annotated[User, Depends(get_current_user)],
             *args,
             **kwargs,
         ):
-            has = await check_permission(db, current_user.id, business_id, resource, action)
+            has = await check_permission(
+                db, current_user.id, business_id, resource, action
+            )
             if not has:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail=f"No tienes permiso para {action} en {resource}.",
                 )
-            return await func(business_id=business_id, db=db, current_user=current_user, *args, **kwargs)
+            return await func(
+                *args,
+                business_id=business_id,
+                db=db,
+                current_user=current_user,
+                **kwargs,
+            )
+
         return wrapper
+
     return decorator

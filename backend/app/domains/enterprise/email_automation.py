@@ -1,22 +1,21 @@
 """Email + Proposal Automation Services (Phase 28)."""
 
+import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import List, Optional, Dict, Any
+from typing import Any, ClassVar
+
 import numpy as np
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.clock import utc_now
 from app.models.email_automation import (
-    SendTimePrediction,
     EmailOpenTracking,
     ProposalDraft,
     ProposalView,
-    CompetitorMention,
-    CompetitorResponse,
+    SendTimePrediction,
 )
 from celery_app import celery_app
-import logging
 
 try:
     from anthropic import Anthropic
@@ -33,7 +32,7 @@ class SendTimeRecommendation:
     person_id: str
     recommended_time: datetime
     predicted_open_probability: float  # 0-100
-    alternatives: List[datetime]
+    alternatives: list[datetime]
     confidence: float
 
 
@@ -52,8 +51,8 @@ class ProposalDraftResult:
 class CompetitorDetectionResult:
     """Competitor mention detection."""
 
-    competitors: List[str]
-    mentions: List[Dict[str, Any]]
+    competitors: list[str]
+    mentions: list[dict[str, Any]]
     has_threats: bool
 
 
@@ -70,7 +69,7 @@ class SendTimeOptimizer:
         """Predict optimal send time for email."""
 
         # Generate candidate times (next 72 hours, hourly)
-        now = datetime.utcnow()
+        now = utc_now()
         candidates = [now + timedelta(hours=i) for i in range(1, 73)]
 
         # Extract features for each candidate time
@@ -88,7 +87,9 @@ class SendTimeOptimizer:
                 top_times = [candidates[i] for i in top_indices]
                 top_probs = [scores[i] * 100 for i in top_indices]
             except Exception as e:
-                logger.warning(f"Model inference failed: {e}. Using default times.")
+                logger.warning(
+                    f"Model inference failed: {e}. Using default times.", exc_info=True
+                )
                 top_times, top_probs = self._get_default_send_times(candidates)
         else:
             top_times, top_probs = self._get_default_send_times(candidates)
@@ -116,7 +117,7 @@ class SendTimeOptimizer:
         return recommendation
 
     def _score_candidates(
-        self, person_id: str, subject: str, body: str, candidates: List[datetime]
+        self, person_id: str, subject: str, body: str, candidates: list[datetime]
     ) -> np.ndarray:
         """Score candidate send times using ML model."""
 
@@ -130,11 +131,12 @@ class SendTimeOptimizer:
         # Placeholder: return random scores
         return np.random.uniform(0.4, 0.9, len(candidates))
 
-    def _get_default_send_times(self, candidates: List[datetime]) -> tuple:
+    def _get_default_send_times(self, candidates: list[datetime]) -> tuple:
         """Get default send times (business hours)."""
 
         default_times = [
-            c for c in candidates
+            c
+            for c in candidates
             if c.hour in [9, 10, 14, 15] and c.weekday() < 5  # Business hours, weekdays
         ]
 
@@ -146,9 +148,7 @@ class SendTimeOptimizer:
         probs = [65, 55, 45]  # Default probabilities
         return default_times, probs
 
-    def track_open(
-        self, email_id: str, person_id: str, opened_at: datetime
-    ) -> bool:
+    def track_open(self, email_id: str, person_id: str, opened_at: datetime) -> bool:
         """Track email open event."""
 
         # Find original prediction
@@ -179,11 +179,15 @@ class SendTimeOptimizer:
 class ProposalGenerator:
     """AI-powered proposal generation using Claude."""
 
-    def __init__(self, db: Session, claude_api_key: Optional[str] = None):
+    def __init__(self, db: Session, claude_api_key: str | None = None):
         self.db = db
-        self.claude = Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
+        self.claude = (
+            Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
+        )
 
-    def generate_proposal(self, deal_id: str, options: Optional[Dict[str, Any]] = None) -> ProposalDraftResult:
+    def generate_proposal(
+        self, deal_id: str, options: dict[str, Any] | None = None
+    ) -> ProposalDraftResult:
         """Generate AI proposal for deal."""
 
         if not self.claude:
@@ -191,7 +195,9 @@ class ProposalGenerator:
             return self._generate_template_proposal(deal_id)
 
         try:
-            from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+            from app.domains.crm.models import (
+                Deal,  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+            )
 
             # Gather context
             deal = self.db.query(Deal).filter(Deal.id == deal_id).first()
@@ -202,18 +208,13 @@ class ProposalGenerator:
             prompt = self._build_proposal_prompt(deal, options or {})
 
             # Call Claude
-            start_time = datetime.utcnow()
+            start_time = utc_now()
             message = self.claude.messages.create(
                 model="claude-opus",
                 max_tokens=3000,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ]
+                messages=[{"role": "user", "content": prompt}],
             )
-            generation_time = (datetime.utcnow() - start_time).total_seconds()
+            generation_time = (utc_now() - start_time).total_seconds()
 
             proposal_html = message.content[0].text
 
@@ -223,12 +224,14 @@ class ProposalGenerator:
                 html_content=proposal_html,
                 word_count=len(proposal_html.split()),
                 generation_method="claude_opus",
-                generated_at=datetime.utcnow(),
+                generated_at=utc_now(),
             )
             self.db.add(draft)
             self.db.commit()
 
-            logger.info(f"Generated proposal for deal {deal_id} in {generation_time:.1f}s")
+            logger.info(
+                f"Generated proposal for deal {deal_id} in {generation_time:.1f}s"
+            )
 
             return ProposalDraftResult(
                 draft_id=str(draft.id),
@@ -238,11 +241,11 @@ class ProposalGenerator:
                 generation_time_seconds=generation_time,
             )
 
-        except Exception as e:
-            logger.error(f"Error generating proposal: {e}")
+        except Exception:
+            logger.exception("Error generating proposal")
             return self._generate_template_proposal(deal_id)
 
-    def _build_proposal_prompt(self, deal: Any, options: Dict[str, Any]) -> str:
+    def _build_proposal_prompt(self, deal: Any, options: dict[str, Any]) -> str:
         """Build Claude prompt for proposal generation."""
 
         tone = options.get("tone", "professional")
@@ -290,7 +293,7 @@ class ProposalGenerator:
             html_content=template_html,
             word_count=20,
             generation_method="template",
-            generated_at=datetime.utcnow(),
+            generated_at=utc_now(),
         )
         self.db.add(draft)
         self.db.commit()
@@ -303,15 +306,13 @@ class ProposalGenerator:
             generation_time_seconds=0.5,
         )
 
-    def track_view(
-        self, draft_id: str, viewed_by: str, duration_seconds: int
-    ) -> bool:
+    def track_view(self, draft_id: str, viewed_by: str, duration_seconds: int) -> bool:
         """Track proposal view."""
 
         view = ProposalView(
             draft_id=draft_id,
             viewed_by=viewed_by,
-            viewed_at=datetime.utcnow(),
+            viewed_at=utc_now(),
             duration_seconds=duration_seconds,
         )
         self.db.add(view)
@@ -323,15 +324,25 @@ class ProposalGenerator:
 class CompetitorDetector:
     """NLP-based competitor mention detection."""
 
-    COMPETITORS = [
-        "outreach", "chorus", "salesloft", "pipedrive",
-        "salesforce", "hubspot", "ringcentral", "gong",
-        "microsoft teams", "slack", "zoom",
+    COMPETITORS: ClassVar[list] = [
+        "outreach",
+        "chorus",
+        "salesloft",
+        "pipedrive",
+        "salesforce",
+        "hubspot",
+        "ringcentral",
+        "gong",
+        "microsoft teams",
+        "slack",
+        "zoom",
     ]
 
-    def __init__(self, db: Session, claude_api_key: Optional[str] = None):
+    def __init__(self, db: Session, claude_api_key: str | None = None):
         self.db = db
-        self.claude = Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
+        self.claude = (
+            Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
+        )
 
     def detect_competitors(self, text: str) -> CompetitorDetectionResult:
         """Extract competitor mentions from text."""
@@ -345,11 +356,13 @@ class CompetitorDetector:
                 sentences = text.split(".")
                 for sentence in sentences:
                     if competitor.lower() in sentence.lower():
-                        mentions.append({
-                            "competitor": competitor,
-                            "context": sentence.strip(),
-                            "confidence": 0.95,
-                        })
+                        mentions.append(
+                            {
+                                "competitor": competitor,
+                                "context": sentence.strip(),
+                                "confidence": 0.95,
+                            }
+                        )
 
         has_threats = len(mentions) > 0
 
@@ -384,18 +397,13 @@ class CompetitorDetector:
             message = self.claude.messages.create(
                 model="claude-opus",
                 max_tokens=300,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ]
+                messages=[{"role": "user", "content": prompt}],
             )
 
             return message.content[0].text
 
-        except Exception as e:
-            logger.error(f"Error generating response: {e}")
+        except Exception:
+            logger.exception("Error generating response")
             return self._get_template_response(competitor)
 
     def _get_template_response(self, competitor: str) -> str:
@@ -414,7 +422,9 @@ class CompetitorDetector:
 
 
 @celery_app.task(bind=True, max_retries=3)
-def send_email_with_optimal_timing(self, email_id: str, person_id: str, email_content: str):
+def send_email_with_optimal_timing(
+    self, email_id: str, person_id: str, email_content: str
+):
     """Send email at optimal time."""
     try:
         from app.core.database import SessionLocal
@@ -427,13 +437,19 @@ def send_email_with_optimal_timing(self, email_id: str, person_id: str, email_co
         # Schedule email
         send_at = recommendation.recommended_time
 
-        logger.info(f"Email {email_id} scheduled for {send_at} (open prob: {recommendation.predicted_open_probability:.0f}%)")
+        logger.info(
+            f"Email {email_id} scheduled for {send_at} (open prob: {recommendation.predicted_open_probability:.0f}%)"
+        )
         db.close()
 
-        return {"status": "scheduled", "email_id": email_id, "send_at": send_at.isoformat()}
+        return {
+            "status": "scheduled",
+            "email_id": email_id,
+            "send_at": send_at.isoformat(),
+        }
 
     except Exception as exc:
-        logger.error(f"Error scheduling email: {exc}")
+        logger.exception("Error scheduling email")
         raise self.retry(exc=exc, countdown=60)
 
 
@@ -448,11 +464,13 @@ def generate_proposal_async(self, deal_id: str):
 
         result = generator.generate_proposal(deal_id)
 
-        logger.info(f"Proposal generated for deal {deal_id}: {result.word_count} words in {result.generation_time_seconds:.1f}s")
+        logger.info(
+            f"Proposal generated for deal {deal_id}: {result.word_count} words in {result.generation_time_seconds:.1f}s"
+        )
         db.close()
 
         return {"status": "complete", "deal_id": deal_id, "draft_id": result.draft_id}
 
     except Exception as exc:
-        logger.error(f"Error generating proposal: {exc}")
+        logger.exception("Error generating proposal")
         raise self.retry(exc=exc, countdown=60)

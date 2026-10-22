@@ -2,13 +2,14 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime
+from typing import Any
 
 import numpy as np
-from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestRegressor
-from scipy import optimize
+from sklearn.preprocessing import StandardScaler
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -23,13 +24,13 @@ class PricingOptimization:
     expected_revenue_change: float  # % change
     expected_volume_change: float  # % change
     confidence: float
-    price_range: Tuple[float, float]  # min, max safe range
+    price_range: tuple[float, float]  # min, max safe range
     revenue_at_recommended: float
     risk_level: str  # low, medium, high
-    competitors_avg_price: Optional[float] = None
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    competitors_avg_price: float | None = None
+    timestamp: datetime = field(default_factory=utc_now)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "recommended_price": float(self.recommended_price),
             "current_price": float(self.current_price),
@@ -40,7 +41,11 @@ class PricingOptimization:
             "price_range": (float(self.price_range[0]), float(self.price_range[1])),
             "revenue_at_recommended": float(self.revenue_at_recommended),
             "risk_level": self.risk_level,
-            "competitors_avg_price": float(self.competitors_avg_price) if self.competitors_avg_price else None,
+            "competitors_avg_price": (
+                float(self.competitors_avg_price)
+                if self.competitors_avg_price
+                else None
+            ),
             "timestamp": self.timestamp.isoformat(),
         }
 
@@ -50,16 +55,16 @@ class ChannelOptimization:
     """Channel optimization recommendation."""
 
     best_channel: str  # email, phone, sms, social, etc.
-    channel_scores: Dict[str, float]  # channel -> effectiveness score
+    channel_scores: dict[str, float]  # channel -> effectiveness score
     expected_response_rate: float  # 0-1
     expected_conversion_rate: float  # 0-1
-    priority_order: List[str]  # ranked channels
-    timing_by_channel: Dict[str, str]  # channel -> recommended time
-    message_tone_by_channel: Dict[str, str]  # channel -> tone
+    priority_order: list[str]  # ranked channels
+    timing_by_channel: dict[str, str]  # channel -> recommended time
+    message_tone_by_channel: dict[str, str]  # channel -> tone
     confidence: float
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "best_channel": self.best_channel,
             "channel_scores": self.channel_scores,
@@ -78,16 +83,16 @@ class MessageTimingOptimization:
     """Message timing optimization."""
 
     send_immediately: bool
-    recommended_send_time: Optional[str]  # ISO format
+    recommended_send_time: str | None  # ISO format
     hours_to_wait: int
     expected_engagement_rate: float
     expected_click_rate: float
     expected_conversion_rate: float
     reason_for_timing: str
-    alternative_times: List[str] = field(default_factory=list)  # ISO format
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    alternative_times: list[str] = field(default_factory=list)  # ISO format
+    timestamp: datetime = field(default_factory=utc_now)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "send_immediately": self.send_immediately,
             "recommended_send_time": self.recommended_send_time,
@@ -106,25 +111,31 @@ class BudgetAllocation:
     """Budget allocation optimization."""
 
     total_budget: float
-    allocation_by_channel: Dict[str, float]  # channel -> budget amount
-    allocation_by_campaign: Dict[str, float]  # campaign -> budget amount
+    allocation_by_channel: dict[str, float]  # channel -> budget amount
+    allocation_by_campaign: dict[str, float]  # campaign -> budget amount
     expected_roi: float  # return per dollar spent
     expected_revenue: float
     confidence: float
     reallocation_reason: str
-    performance_by_allocation: Dict[str, float]  # allocation -> expected performance
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    performance_by_allocation: dict[str, float]  # allocation -> expected performance
+    timestamp: datetime = field(default_factory=utc_now)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "total_budget": float(self.total_budget),
-            "allocation_by_channel": {k: float(v) for k, v in self.allocation_by_channel.items()},
-            "allocation_by_campaign": {k: float(v) for k, v in self.allocation_by_campaign.items()},
+            "allocation_by_channel": {
+                k: float(v) for k, v in self.allocation_by_channel.items()
+            },
+            "allocation_by_campaign": {
+                k: float(v) for k, v in self.allocation_by_campaign.items()
+            },
             "expected_roi": float(self.expected_roi),
             "expected_revenue": float(self.expected_revenue),
             "confidence": float(self.confidence),
             "reallocation_reason": self.reallocation_reason,
-            "performance_by_allocation": {k: float(v) for k, v in self.performance_by_allocation.items()},
+            "performance_by_allocation": {
+                k: float(v) for k, v in self.performance_by_allocation.items()
+            },
             "timestamp": self.timestamp.isoformat(),
         }
 
@@ -133,13 +144,13 @@ class BudgetAllocation:
 class FeatureImportance:
     """Feature importance analysis."""
 
-    top_features: List[Tuple[str, float]]  # (feature_name, importance_score)
-    feature_scores: Dict[str, float]  # feature -> score
-    key_drivers: List[str]  # most important features
-    surprising_findings: List[str]  # unexpected important features
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    top_features: list[tuple[str, float]]  # (feature_name, importance_score)
+    feature_scores: dict[str, float]  # feature -> score
+    key_drivers: list[str]  # most important features
+    surprising_findings: list[str]  # unexpected important features
+    timestamp: datetime = field(default_factory=utc_now)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "top_features": [(name, float(score)) for name, score in self.top_features],
             "feature_scores": {k: float(v) for k, v in self.feature_scores.items()},
@@ -154,12 +165,17 @@ class PricingOptimizationNetwork:
 
     def __init__(self):
         self.regressor = RandomForestRegressor(n_estimators=100, random_state=42)
-        self.elasticity_regressor = RandomForestRegressor(n_estimators=100, random_state=42)
+        self.elasticity_regressor = RandomForestRegressor(
+            n_estimators=100, random_state=42
+        )
         self.is_trained = False
         self.scaler = StandardScaler()
 
     def fit(
-        self, X: np.ndarray, y_revenue: np.ndarray, y_elasticity: Optional[np.ndarray] = None
+        self,
+        X: np.ndarray,
+        y_revenue: np.ndarray,
+        y_elasticity: np.ndarray | None = None,
     ) -> "PricingOptimizationNetwork":
         """Train the network."""
         X_scaled = self.scaler.fit_transform(X)
@@ -170,7 +186,12 @@ class PricingOptimizationNetwork:
         logger.info("Pricing optimization network trained")
         return self
 
-    def predict(self, X: np.ndarray, current_price: float, competitors_price: Optional[float] = None) -> List[PricingOptimization]:
+    def predict(
+        self,
+        X: np.ndarray,
+        current_price: float,
+        competitors_price: float | None = None,
+    ) -> list[PricingOptimization]:
         """Optimize pricing."""
         if not self.is_trained:
             raise ValueError("Network must be trained first")
@@ -190,7 +211,7 @@ class PricingOptimizationNetwork:
 
             for price_mult in np.linspace(0.8, 1.3, 20):
                 test_price = current_price * price_mult
-                test_volume = base_revenue / current_price * (price_mult ** elasticity)
+                test_volume = base_revenue / current_price * (price_mult**elasticity)
                 test_revenue = test_price * test_volume
 
                 if test_revenue > best_revenue:
@@ -198,10 +219,16 @@ class PricingOptimizationNetwork:
                     best_price = test_price
 
             price_change = (best_price - current_price) / current_price
-            revenue_change = (best_revenue - base_revenue) / base_revenue if base_revenue > 0 else 0
-            volume_change = ((best_price / current_price) ** elasticity - 1)
+            revenue_change = (
+                (best_revenue - base_revenue) / base_revenue if base_revenue > 0 else 0
+            )
+            volume_change = (best_price / current_price) ** elasticity - 1
 
-            risk = "low" if abs(price_change) < 0.05 else ("medium" if abs(price_change) < 0.15 else "high")
+            risk = (
+                "low"
+                if abs(price_change) < 0.05
+                else ("medium" if abs(price_change) < 0.15 else "high")
+            )
 
             pred = PricingOptimization(
                 recommended_price=float(best_price),
@@ -237,13 +264,13 @@ class ChannelOptimizationNetwork:
         logger.info("Channel optimization network trained")
         return self
 
-    def predict(self, X: np.ndarray) -> List[ChannelOptimization]:
+    def predict(self, X: np.ndarray) -> list[ChannelOptimization]:
         """Optimize channel selection."""
         if not self.is_trained:
             raise ValueError("Network must be trained first")
 
         X_scaled = self.scaler.transform(X)
-        channel_indices = self.channel_regressor.predict(X_scaled)
+        self.channel_regressor.predict(X_scaled)
 
         predictions = []
         for i in range(len(X)):
@@ -302,7 +329,7 @@ class MessageTimingNetwork:
         logger.info("Message timing network trained")
         return self
 
-    def predict(self, X: np.ndarray) -> List[MessageTimingOptimization]:
+    def predict(self, X: np.ndarray) -> list[MessageTimingOptimization]:
         """Optimize message timing."""
         if not self.is_trained:
             raise ValueError("Network must be trained first")
@@ -325,7 +352,11 @@ class MessageTimingNetwork:
                 expected_engagement_rate=float(engagement),
                 expected_click_rate=float(engagement * 0.35),
                 expected_conversion_rate=float(engagement * 0.12),
-                reason_for_timing="High engagement window detected" if send_now else "Optimal engagement window identified",
+                reason_for_timing=(
+                    "High engagement window detected"
+                    if send_now
+                    else "Optimal engagement window identified"
+                ),
                 alternative_times=[
                     "2025-01-05T15:00:00",
                     "2025-01-06T10:00:00",
@@ -352,7 +383,7 @@ class BudgetAllocationNetwork:
         logger.info("Budget allocation network trained")
         return self
 
-    def predict(self, X: np.ndarray, total_budget: float) -> List[BudgetAllocation]:
+    def predict(self, X: np.ndarray, total_budget: float) -> list[BudgetAllocation]:
         """Allocate budget."""
         if not self.is_trained:
             raise ValueError("Network must be trained first")
@@ -383,8 +414,8 @@ class BudgetAllocationNetwork:
             # Normalize
             total_allocated = sum(channel_allocation.values())
             if total_allocated > 0:
-                for ch in channel_allocation:
-                    channel_allocation[ch] = (channel_allocation[ch] / total_allocated) * total_budget
+                for ch, alloc in channel_allocation.items():
+                    channel_allocation[ch] = (alloc / total_allocated) * total_budget
 
             expected_revenue = total_budget * roi * 3.5  # 3.5x ROI on average
 
@@ -414,9 +445,11 @@ class FeatureImportanceNetwork:
         self.regressor = RandomForestRegressor(n_estimators=100, random_state=42)
         self.is_trained = False
         self.scaler = StandardScaler()
-        self.feature_names: List[str] = []
+        self.feature_names: list[str] = []
 
-    def fit(self, X: np.ndarray, y: np.ndarray, feature_names: Optional[List[str]] = None) -> "FeatureImportanceNetwork":
+    def fit(
+        self, X: np.ndarray, y: np.ndarray, feature_names: list[str] | None = None
+    ) -> "FeatureImportanceNetwork":
         """Train the network."""
         if feature_names:
             self.feature_names = feature_names
@@ -429,7 +462,7 @@ class FeatureImportanceNetwork:
         logger.info("Feature importance network trained")
         return self
 
-    def predict(self, X: np.ndarray) -> List[FeatureImportance]:
+    def predict(self, X: np.ndarray) -> list[FeatureImportance]:
         """Get feature importance."""
         if not self.is_trained:
             raise ValueError("Network must be trained first")
@@ -437,8 +470,13 @@ class FeatureImportanceNetwork:
         importances = self.regressor.feature_importances_
         top_indices = np.argsort(importances)[::-1][:5]
 
-        top_features = [(self.feature_names[i], float(importances[i])) for i in top_indices]
-        feature_scores = {self.feature_names[i]: float(importances[i]) for i in range(len(self.feature_names))}
+        top_features = [
+            (self.feature_names[i], float(importances[i])) for i in top_indices
+        ]
+        feature_scores = {
+            self.feature_names[i]: float(importances[i])
+            for i in range(len(self.feature_names))
+        }
 
         key_drivers = [name for name, _ in top_features[:3]]
         surprising = []

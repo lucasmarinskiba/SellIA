@@ -22,16 +22,22 @@ Error Handling: Standardized error responses with correlation IDs
 
 import logging
 import uuid
-from typing import Optional, Dict, List, Any
-from datetime import datetime, timezone
-from fastapi import APIRouter, HTTPException, Depends, Header, Request, status
+from datetime import UTC, datetime
+from typing import Annotated, Any
+
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-import json
 
+from app.core.clock import utc_now
 from app.core.database import get_db
-from app.domains.channels.models import ChannelConnection, ChannelPlatform, ChannelStatus
+from app.domains.channels.models import (
+    ChannelConnection,
+    ChannelPlatform,
+    ChannelStatus,
+)
+
 # get_connector se importa perezoso dentro de cada handler (no a nivel de
 # módulo): app.domains.channels.connectors.__init__ importa TODOS los
 # conectores al cargarse, incluido email.py -> aiosmtplib. Un import a nivel
@@ -48,6 +54,7 @@ router = APIRouter(prefix="/api/v1/platforms", tags=["platforms"])
 
 class WebhookResponse(BaseModel):
     """Standard webhook response."""
+
     status: str
     message: str
     correlation_id: str
@@ -55,15 +62,17 @@ class WebhookResponse(BaseModel):
 
 class PlatformConfig(BaseModel):
     """Platform configuration."""
+
     platform_type: str
     api_key: str
     webhook_url: str
     is_active: bool = True
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class OrderSyncRequest(BaseModel):
     """Order sync request."""
+
     platform_type: str
     force_refresh: bool = False
     page: int = 1
@@ -72,27 +81,30 @@ class OrderSyncRequest(BaseModel):
 
 class SyncResponse(BaseModel):
     """Sync operation response."""
+
     status: str
     synced_count: int
     duration_seconds: float
-    errors: List[str] = []
+    errors: list[str] = []
 
 
 class AlertRequest(BaseModel):
     """Alert notification request."""
+
     title: str
     message: str
     level: str = "info"  # info, warning, error, critical
-    data: Optional[Dict[str, Any]] = None
+    data: dict[str, Any] | None = None
 
 
 # ========== FACEBOOK SHOP ENDPOINTS ==========
 
+
 @router.post("/facebook-shop/webhooks/orders")
 async def facebook_shop_webhook_orders(
     request: Request,
-    account_id: str = Header(...),
-    x_hub_signature: str = Header(...),
+    account_id: Annotated[str, Header()],
+    x_hub_signature: Annotated[str, Header()],
 ) -> WebhookResponse:
     """
     Handle Facebook Shop webhook for orders.
@@ -111,7 +123,7 @@ async def facebook_shop_webhook_orders(
         logger.info(f"[{correlation_id}] Facebook Shop webhook received")
 
         # Get raw body for signature verification
-        body = await request.body()
+        await request.body()
 
         # TODO: Verify signature
         # TODO: Parse payload
@@ -125,18 +137,18 @@ async def facebook_shop_webhook_orders(
         )
 
     except Exception as e:
-        logger.error(f"[{correlation_id}] Error processing webhook: {e}")
+        logger.exception(f"[{correlation_id}] Error processing webhook")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Webhook processing failed: {str(e)}",
+            detail=f"Webhook processing failed: {e!s}",
         )
 
 
 @router.post("/facebook-shop/config")
 async def facebook_shop_config(
     config: PlatformConfig,
-    account_id: str = Header(...),
-) -> Dict[str, Any]:
+    account_id: Annotated[str, Header()],
+) -> dict[str, Any]:
     """
     Configure Facebook Shop integration.
 
@@ -160,19 +172,19 @@ async def facebook_shop_config(
             "status": "success",
             "platform": "facebook_shop",
             "account_id": account_id,
-            "configured_at": datetime.utcnow().isoformat(),
+            "configured_at": utc_now().isoformat(),
             "correlation_id": correlation_id,
         }
 
     except Exception as e:
-        logger.error(f"[{correlation_id}] Error configuring: {e}")
+        logger.exception(f"[{correlation_id}] Error configuring")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/facebook-shop/sync/products")
 async def facebook_shop_sync_products(
     request: OrderSyncRequest,
-    account_id: str = Header(...),
+    account_id: Annotated[str, Header()],
 ) -> SyncResponse:
     """
     Sync products from Facebook Shop to local DB.
@@ -185,6 +197,7 @@ async def facebook_shop_sync_products(
         SyncResponse
     """
     import time
+
     start_time = time.time()
     correlation_id = str(uuid.uuid4())
 
@@ -205,15 +218,15 @@ async def facebook_shop_sync_products(
         )
 
     except Exception as e:
-        logger.error(f"[{correlation_id}] Error syncing products: {e}")
+        logger.exception(f"[{correlation_id}] Error syncing products")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/facebook-shop/orders/{order_id}")
 async def facebook_shop_get_order(
     order_id: str,
-    account_id: str = Header(...),
-) -> Dict[str, Any]:
+    account_id: Annotated[str, Header()],
+) -> dict[str, Any]:
     """
     Fetch Facebook Shop order details.
 
@@ -237,18 +250,19 @@ async def facebook_shop_get_order(
             "platform": "facebook_shop",
         }
 
-    except Exception as e:
-        logger.error(f"Error fetching order: {e}")
+    except Exception:
+        logger.exception("Error fetching order")
         raise HTTPException(status_code=404, detail="Order not found")
 
 
 # ========== INSTAGRAM SHOP ENDPOINTS ==========
 
+
 @router.post("/instagram-shop/webhooks/orders")
 async def instagram_shop_webhook_orders(
     request: Request,
-    account_id: str = Header(...),
-    x_hub_signature: str = Header(...),
+    account_id: Annotated[str, Header()],
+    x_hub_signature: Annotated[str, Header()],
 ) -> WebhookResponse:
     """Handle Instagram Shop webhook for orders."""
     correlation_id = str(uuid.uuid4())
@@ -256,7 +270,7 @@ async def instagram_shop_webhook_orders(
     try:
         logger.info(f"[{correlation_id}] Instagram Shop webhook received")
 
-        body = await request.body()
+        await request.body()
 
         # TODO: Verify signature
         # TODO: Parse and process webhook
@@ -268,17 +282,18 @@ async def instagram_shop_webhook_orders(
         )
 
     except Exception as e:
-        logger.error(f"[{correlation_id}] Error: {e}")
+        logger.exception(f"[{correlation_id}] Error")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/instagram-shop/sync/products")
 async def instagram_shop_sync_products(
     request: OrderSyncRequest,
-    account_id: str = Header(...),
+    account_id: Annotated[str, Header()],
 ) -> SyncResponse:
     """Sync products to Instagram Shop."""
     import time
+
     start_time = time.time()
 
     try:
@@ -297,14 +312,15 @@ async def instagram_shop_sync_products(
         )
 
     except Exception as e:
+        logger.exception("instagram_shop_sync_products: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/instagram-shop/analytics")
 async def instagram_shop_analytics(
-    account_id: str = Header(...),
+    account_id: Annotated[str, Header()],
     days: int = 30,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Fetch Instagram Shop analytics."""
     try:
         logger.info(f"Fetching Instagram analytics for {account_id}")
@@ -321,15 +337,17 @@ async def instagram_shop_analytics(
         }
 
     except Exception as e:
+        logger.exception("instagram_shop_analytics: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 # ========== TIKTOK SHOP ENDPOINTS ==========
 
+
 @router.post("/tiktok-shop/webhooks/orders")
 async def tiktok_shop_webhook_orders(
     request: Request,
-    account_id: str = Header(...),
+    account_id: Annotated[str, Header()],
 ) -> WebhookResponse:
     """Handle TikTok Shop webhook for orders."""
     correlation_id = str(uuid.uuid4())
@@ -337,7 +355,7 @@ async def tiktok_shop_webhook_orders(
     try:
         logger.info(f"[{correlation_id}] TikTok Shop webhook received")
 
-        body = await request.body()
+        await request.body()
 
         # TODO: Verify TikTok signature
         # TODO: Parse and process webhook
@@ -349,15 +367,15 @@ async def tiktok_shop_webhook_orders(
         )
 
     except Exception as e:
-        logger.error(f"[{correlation_id}] Error: {e}")
+        logger.exception(f"[{correlation_id}] Error")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/tiktok-shop/config")
 async def tiktok_shop_config(
     config: PlatformConfig,
-    account_id: str = Header(...),
-) -> Dict[str, Any]:
+    account_id: Annotated[str, Header()],
+) -> dict[str, Any]:
     """Configure TikTok Shop OAuth."""
     try:
         logger.info(f"Configuring TikTok Shop for {account_id}")
@@ -373,14 +391,19 @@ async def tiktok_shop_config(
         }
 
     except Exception as e:
+        logger.exception("tiktok_shop_config: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
-async def _get_tiktok_shop_connection(account_id: str, db: AsyncSession) -> ChannelConnection:
+async def _get_tiktok_shop_connection(
+    account_id: str, db: AsyncSession
+) -> ChannelConnection:
     try:
         business_uuid = uuid.UUID(account_id)
     except ValueError:
-        raise HTTPException(status_code=422, detail="account_id debe ser un UUID de business válido")
+        raise HTTPException(
+            status_code=422, detail="account_id debe ser un UUID de business válido"
+        )
 
     result = await db.execute(
         select(ChannelConnection).where(
@@ -394,7 +417,7 @@ async def _get_tiktok_shop_connection(account_id: str, db: AsyncSession) -> Chan
         raise HTTPException(
             status_code=404,
             detail="No hay conexión de TikTok Shop configurada para este business_id. "
-                   "Crear una vía POST /api/v1/businesses/{business_id}/channels con platform=tiktok_shop.",
+            "Crear una vía POST /api/v1/businesses/{business_id}/channels con platform=tiktok_shop.",
         )
     return connection
 
@@ -402,16 +425,20 @@ async def _get_tiktok_shop_connection(account_id: str, db: AsyncSession) -> Chan
 @router.post("/tiktok-shop/sync/orders")
 async def tiktok_shop_sync_orders(
     request: OrderSyncRequest,
-    account_id: str = Header(...),
-    db: AsyncSession = Depends(get_db),
+    account_id: Annotated[str, Header()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> SyncResponse:
     """Sync orders reales desde TikTok Shop Seller API."""
     import time
+
     start_time = time.time()
 
     connection = await _get_tiktok_shop_connection(account_id, db)
     from app.domains.channels.connectors import get_connector
-    connector = get_connector(ChannelPlatform.TIKTOK_SHOP, connection.credentials, connection.settings)
+
+    connector = get_connector(
+        ChannelPlatform.TIKTOK_SHOP, connection.credentials, connection.settings
+    )
 
     try:
         orders = await connector.list_orders(page=request.page, page_size=request.limit)
@@ -419,18 +446,29 @@ async def tiktok_shop_sync_orders(
 
         if orders is None:
             connection.status = ChannelStatus.ERROR
-            connection.status_message = "list_orders devolvió error - ver logs de TikTok API"
+            connection.status_message = (
+                "list_orders devolvió error - ver logs de TikTok API"
+            )
             await db.commit()
-            return SyncResponse(status="error", synced_count=0, duration_seconds=duration,
-                                 errors=["TikTok Shop API no devolvió órdenes - credenciales inválidas o error de API"])
+            return SyncResponse(
+                status="error",
+                synced_count=0,
+                duration_seconds=duration,
+                errors=[
+                    "TikTok Shop API no devolvió órdenes - credenciales inválidas o error de API"
+                ],
+            )
 
         connection.status = ChannelStatus.CONNECTED
-        connection.last_sync_at = datetime.now(timezone.utc)
+        connection.last_sync_at = datetime.now(UTC)
         await db.commit()
 
-        return SyncResponse(status="success", synced_count=len(orders), duration_seconds=duration)
+        return SyncResponse(
+            status="success", synced_count=len(orders), duration_seconds=duration
+        )
 
     except Exception as e:
+        logger.exception("tiktok_shop_sync_orders: error inesperado")
         connection.status = ChannelStatus.ERROR
         connection.status_message = str(e)[:255]
         await db.commit()
@@ -439,10 +477,11 @@ async def tiktok_shop_sync_orders(
 
 # ========== CALENDLY ENDPOINTS ==========
 
+
 @router.post("/calendly/webhooks/events")
 async def calendly_webhook_events(
-    payload: Dict[str, Any],
-    account_id: str = Header(...),
+    payload: dict[str, Any],
+    account_id: Annotated[str, Header()],
 ) -> WebhookResponse:
     """Handle Calendly webhook for scheduled events."""
     correlation_id = str(uuid.uuid4())
@@ -461,15 +500,15 @@ async def calendly_webhook_events(
         )
 
     except Exception as e:
-        logger.error(f"[{correlation_id}] Error: {e}")
+        logger.exception(f"[{correlation_id}] Error")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/calendly/config")
 async def calendly_config(
     config: PlatformConfig,
-    account_id: str = Header(...),
-) -> Dict[str, Any]:
+    account_id: Annotated[str, Header()],
+) -> dict[str, Any]:
     """Configure Calendly integration."""
     try:
         logger.info(f"Configuring Calendly for {account_id}")
@@ -485,14 +524,15 @@ async def calendly_config(
         }
 
     except Exception as e:
+        logger.exception("calendly_config: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/calendly/events")
 async def calendly_list_events(
-    account_id: str = Header(...),
+    account_id: Annotated[str, Header()],
     days: int = 7,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """List upcoming Calendly events."""
     try:
         logger.info(f"Fetching Calendly events for {account_id}")
@@ -507,16 +547,18 @@ async def calendly_list_events(
         }
 
     except Exception as e:
+        logger.exception("calendly_list_events: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 # ========== SLACK ENDPOINTS ==========
 
+
 @router.post("/slack/commands")
 async def slack_command_handler(
     request: Request,
-    account_id: str = Header(...),
-) -> Dict[str, Any]:
+    account_id: Annotated[str, Header()],
+) -> dict[str, Any]:
     """
     Handle Slack slash commands.
 
@@ -533,7 +575,7 @@ async def slack_command_handler(
         logger.info(f"[{correlation_id}] Slack command received")
 
         # Parse request body
-        body = await request.form()
+        await request.form()
 
         # TODO: Verify token
         # TODO: Parse command and arguments
@@ -546,15 +588,15 @@ async def slack_command_handler(
         }
 
     except Exception as e:
-        logger.error(f"[{correlation_id}] Error: {e}")
+        logger.exception(f"[{correlation_id}] Error")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/slack/events")
 async def slack_events_handler(
-    payload: Dict[str, Any],
-    account_id: str = Header(...),
-) -> Dict[str, Any]:
+    payload: dict[str, Any],
+    account_id: Annotated[str, Header()],
+) -> dict[str, Any]:
     """Handle Slack Events API."""
     try:
         # Handle verification challenges
@@ -568,15 +610,15 @@ async def slack_events_handler(
         return {"status": "ok"}
 
     except Exception as e:
-        logger.error(f"Error handling event: {e}")
+        logger.exception("Error handling event")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/slack/alerts")
 async def slack_send_alert(
     alert: AlertRequest,
-    account_id: str = Header(...),
-) -> Dict[str, Any]:
+    account_id: Annotated[str, Header()],
+) -> dict[str, Any]:
     """Send alert via Slack bot."""
     try:
         logger.info(f"Sending Slack alert for {account_id}")
@@ -591,23 +633,25 @@ async def slack_send_alert(
         }
 
     except Exception as e:
+        logger.exception("slack_send_alert: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 # ========== TELEGRAM ENDPOINTS ==========
 
+
 @router.post("/telegram/webhooks/updates")
 async def telegram_webhook_updates(
     request: Request,
-    account_id: str = Header(...),
-) -> Dict[str, Any]:
+    account_id: Annotated[str, Header()],
+) -> dict[str, Any]:
     """Handle Telegram bot updates."""
     correlation_id = str(uuid.uuid4())
 
     try:
         logger.info(f"[{correlation_id}] Telegram update received")
 
-        payload = await request.json()
+        await request.json()
 
         # TODO: Call TelegramAutomation.handle_update()
         # TODO: Process message/command/callback
@@ -619,15 +663,15 @@ async def telegram_webhook_updates(
         }
 
     except Exception as e:
-        logger.error(f"[{correlation_id}] Error: {e}")
+        logger.exception(f"[{correlation_id}] Error")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/telegram/config")
 async def telegram_config(
     config: PlatformConfig,
-    account_id: str = Header(...),
-) -> Dict[str, Any]:
+    account_id: Annotated[str, Header()],
+) -> dict[str, Any]:
     """Configure Telegram bot."""
     try:
         logger.info(f"Configuring Telegram for {account_id}")
@@ -643,14 +687,15 @@ async def telegram_config(
         }
 
     except Exception as e:
+        logger.exception("telegram_config: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/telegram/send-notification")
 async def telegram_send_notification(
     alert: AlertRequest,
-    account_id: str = Header(...),
-) -> Dict[str, Any]:
+    account_id: Annotated[str, Header()],
+) -> dict[str, Any]:
     """Send Telegram notification."""
     try:
         logger.info(f"Sending Telegram notification for {account_id}")
@@ -665,13 +710,15 @@ async def telegram_send_notification(
         }
 
     except Exception as e:
+        logger.exception("telegram_send_notification: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 # ========== HEALTH & STATUS ==========
 
+
 @router.get("/health")
-async def platforms_health() -> Dict[str, Any]:
+async def platforms_health() -> dict[str, Any]:
     """Check health of all platform integrations."""
     try:
         return {
@@ -684,18 +731,19 @@ async def platforms_health() -> Dict[str, Any]:
                 "slack": "ok",
                 "telegram": "ok",
             },
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
     except Exception as e:
+        logger.exception("platforms_health: error inesperado")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/status")
 async def platforms_status(
-    account_id: str = Header(...),
-    db: AsyncSession = Depends(get_db),
-) -> Dict[str, Any]:
+    account_id: Annotated[str, Header()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict[str, Any]:
     """Get platform integration status for account.
 
     tiktok_shop consulta la conexión real en channel_connections. Las otras 5
@@ -722,7 +770,11 @@ async def platforms_status(
                     "connected": connection.status == ChannelStatus.CONNECTED,
                     "status": connection.status.value,
                     "status_message": connection.status_message,
-                    "last_sync": connection.last_sync_at.isoformat() if connection.last_sync_at else None,
+                    "last_sync": (
+                        connection.last_sync_at.isoformat()
+                        if connection.last_sync_at
+                        else None
+                    ),
                 }
         except ValueError:
             pass  # account_id no es UUID válido - se reporta como no conectado
@@ -730,14 +782,31 @@ async def platforms_status(
         return {
             "account_id": account_id,
             "platforms": {
-                "facebook_shop": {"connected": False, "last_sync": None, "implemented": False},
-                "instagram_shop": {"connected": False, "last_sync": None, "implemented": False},
+                "facebook_shop": {
+                    "connected": False,
+                    "last_sync": None,
+                    "implemented": False,
+                },
+                "instagram_shop": {
+                    "connected": False,
+                    "last_sync": None,
+                    "implemented": False,
+                },
                 "tiktok_shop": {**tiktok_status, "implemented": True},
-                "calendly": {"connected": False, "last_sync": None, "implemented": False},
+                "calendly": {
+                    "connected": False,
+                    "last_sync": None,
+                    "implemented": False,
+                },
                 "slack": {"connected": False, "last_sync": None, "implemented": False},
-                "telegram": {"connected": False, "last_sync": None, "implemented": False},
+                "telegram": {
+                    "connected": False,
+                    "last_sync": None,
+                    "implemented": False,
+                },
             },
         }
 
     except Exception as e:
+        logger.exception("platforms_status: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

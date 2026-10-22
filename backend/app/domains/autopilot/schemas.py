@@ -2,17 +2,17 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional, Any
+from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
-from app.domains.autopilot.models import AutopilotActionType, AutopilotActionStatus
-
+from app.domains.autopilot.models import AutopilotActionStatus, AutopilotActionType
 
 # ---------------------------------------------------------------------------
 # AutopilotConfig
 # ---------------------------------------------------------------------------
+
 
 class AutopilotConfigBase(BaseModel):
     auto_qualify_leads: bool = False
@@ -23,13 +23,13 @@ class AutopilotConfigBase(BaseModel):
     auto_request_reviews: bool = False
     auto_activate_recovery_workflows: bool = False
     auto_escalate_to_human: bool = True
-    approval_threshold_amount: Decimal = Decimal("5000")
+    approval_threshold_amount: Decimal = Decimal(5000)
     max_daily_auto_messages: int = 50
     max_daily_auto_closes: int = 10
     max_daily_auto_orders: int = 10
     human_escalation_channels: list[str] = Field(default_factory=list)
-    escalation_email: Optional[str] = None
-    escalation_whatsapp: Optional[str] = None
+    escalation_email: str | None = None
+    escalation_whatsapp: str | None = None
     is_active: bool = False
     require_ai_explanation: bool = True
     explanation_language: str = "es"
@@ -40,33 +40,33 @@ class AutopilotConfigCreate(AutopilotConfigBase):
 
 
 class AutopilotConfigUpdate(BaseModel):
-    auto_qualify_leads: Optional[bool] = None
-    auto_move_deals: Optional[bool] = None
-    auto_send_followups: Optional[bool] = None
-    auto_close_deals: Optional[bool] = None
-    auto_create_orders: Optional[bool] = None
-    auto_request_reviews: Optional[bool] = None
-    auto_activate_recovery_workflows: Optional[bool] = None
-    auto_escalate_to_human: Optional[bool] = None
-    approval_threshold_amount: Optional[Decimal] = None
-    max_daily_auto_messages: Optional[int] = None
-    max_daily_auto_closes: Optional[int] = None
-    max_daily_auto_orders: Optional[int] = None
-    human_escalation_channels: Optional[list[str]] = None
-    escalation_email: Optional[str] = None
-    escalation_whatsapp: Optional[str] = None
-    is_active: Optional[bool] = None
-    is_paused: Optional[bool] = None
-    require_ai_explanation: Optional[bool] = None
-    explanation_language: Optional[str] = None
+    auto_qualify_leads: bool | None = None
+    auto_move_deals: bool | None = None
+    auto_send_followups: bool | None = None
+    auto_close_deals: bool | None = None
+    auto_create_orders: bool | None = None
+    auto_request_reviews: bool | None = None
+    auto_activate_recovery_workflows: bool | None = None
+    auto_escalate_to_human: bool | None = None
+    approval_threshold_amount: Decimal | None = None
+    max_daily_auto_messages: int | None = None
+    max_daily_auto_closes: int | None = None
+    max_daily_auto_orders: int | None = None
+    human_escalation_channels: list[str] | None = None
+    escalation_email: str | None = None
+    escalation_whatsapp: str | None = None
+    is_active: bool | None = None
+    is_paused: bool | None = None
+    require_ai_explanation: bool | None = None
+    explanation_language: str | None = None
 
 
 class AutopilotConfigResponse(AutopilotConfigBase):
     id: UUID
     business_id: UUID
     is_paused: bool = False
-    paused_reason: Optional[str] = None
-    paused_at: Optional[datetime] = None
+    paused_reason: str | None = None
+    paused_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -77,6 +77,7 @@ class AutopilotConfigResponse(AutopilotConfigBase):
 # AutopilotActionLog
 # ---------------------------------------------------------------------------
 
+
 class AutopilotActionLogResponse(BaseModel):
     id: UUID
     business_id: UUID
@@ -84,35 +85,35 @@ class AutopilotActionLogResponse(BaseModel):
     entity_type: str
     entity_id: UUID
     reason: str
-    ai_explanation: Optional[str] = None
+    ai_explanation: str | None = None
     confidence_score: int = 0
     context_data: dict[str, Any] = Field(default_factory=dict)
     status: AutopilotActionStatus
-    error_message: Optional[str] = None
+    error_message: str | None = None
     requires_approval: bool = False
-    approved_at: Optional[datetime] = None
-    approved_by_user_id: Optional[UUID] = None
-    rejected_at: Optional[datetime] = None
-    rejected_reason: Optional[str] = None
-    revenue_impact: Optional[Decimal] = None
+    approved_at: datetime | None = None
+    approved_by_user_id: UUID | None = None
+    rejected_at: datetime | None = None
+    rejected_reason: str | None = None
+    revenue_impact: Decimal | None = None
     created_at: datetime
-    executed_at: Optional[datetime] = None
+    executed_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class AutopilotActionLogFilter(BaseModel):
-    status: Optional[AutopilotActionStatus] = None
-    action_type: Optional[AutopilotActionType] = None
-    entity_type: Optional[str] = None
-    date_from: Optional[datetime] = None
-    date_to: Optional[datetime] = None
+    status: AutopilotActionStatus | None = None
+    action_type: AutopilotActionType | None = None
+    entity_type: str | None = None
+    date_from: datetime | None = None
+    date_to: datetime | None = None
     limit: int = 50
     offset: int = 0
 
 
 class AutopilotActionApproveRequest(BaseModel):
-    reason: Optional[str] = None
+    reason: str | None = None
 
 
 class AutopilotActionRejectRequest(BaseModel):
@@ -122,6 +123,7 @@ class AutopilotActionRejectRequest(BaseModel):
 # ---------------------------------------------------------------------------
 # AutopilotDailyReport
 # ---------------------------------------------------------------------------
+
 
 class AutopilotDailyReportResponse(BaseModel):
     id: UUID
@@ -134,12 +136,12 @@ class AutopilotDailyReportResponse(BaseModel):
     messages_sent: int = 0
     sequences_started: int = 0
     workflows_activated: int = 0
-    revenue_generated: Decimal = Decimal("0")
-    deals_value_closed: Decimal = Decimal("0")
+    revenue_generated: Decimal = Decimal(0)
+    deals_value_closed: Decimal = Decimal(0)
     actions_escalated: int = 0
     actions_pending_approval: int = 0
     actions_rejected: int = 0
-    ai_summary: Optional[str] = None
+    ai_summary: str | None = None
     highlights: list[dict[str, Any]] = Field(default_factory=list)
     created_at: datetime
 
@@ -150,16 +152,17 @@ class AutopilotDailyReportResponse(BaseModel):
 # Status & Overview
 # ---------------------------------------------------------------------------
 
+
 class AutopilotStatusResponse(BaseModel):
     business_id: UUID
     is_active: bool
     is_paused: bool
-    paused_reason: Optional[str] = None
+    paused_reason: str | None = None
     today_executed: int = 0
     today_pending: int = 0
     today_escalated: int = 0
-    today_revenue: Decimal = Decimal("0")
-    last_action_at: Optional[datetime] = None
+    today_revenue: Decimal = Decimal(0)
+    last_action_at: datetime | None = None
 
 
 class AutopilotOverviewResponse(BaseModel):
@@ -175,9 +178,10 @@ class AutopilotOverviewResponse(BaseModel):
 # Overnight Report (Mientras Dormías)
 # ---------------------------------------------------------------------------
 
+
 class OvernightSaleItem(BaseModel):
     seller_name: str
-    seller_avatar: Optional[str] = None
+    seller_avatar: str | None = None
     platform: str
     customer_name: str
     amount: float
@@ -189,7 +193,7 @@ class OvernightSection(BaseModel):
     title: str
     count: int
     items: list[dict[str, Any]] = Field(default_factory=list)
-    highlight: Optional[str] = None
+    highlight: str | None = None
 
 
 class OvernightReportResponse(BaseModel):
@@ -197,7 +201,7 @@ class OvernightReportResponse(BaseModel):
     night_period: str  # "23:00 → 07:00"
     summary_stats: dict[str, Any]
     sections: list[OvernightSection] = Field(default_factory=list)
-    top_seller: Optional[dict[str, Any]] = None
+    top_seller: dict[str, Any] | None = None
     prediction: str
     trust_score: int
     recommendation: str

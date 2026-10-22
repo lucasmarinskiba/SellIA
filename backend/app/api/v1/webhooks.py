@@ -1,9 +1,9 @@
 """Webhook API — event delivery & streaming."""
 
+from typing import Annotated
 from uuid import UUID
-from typing import Optional, List, Dict
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -15,20 +15,20 @@ router = APIRouter(prefix="/api/v1", tags=["webhooks"])
 
 class RegisterWebhookRequest(BaseModel):
     url: str
-    subscribed_events: List[str]
-    description: Optional[str] = None
+    subscribed_events: list[str]
+    description: str | None = None
 
 
 class TriggerEventRequest(BaseModel):
     event_type: str
-    event_data: Dict
+    event_data: dict
 
 
 @router.post("/businesses/{business_id}/webhooks")
 def register_webhook(
     business_id: UUID,
     request: RegisterWebhookRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Register webhook endpoint."""
     return WebhookService.register_webhook(
@@ -36,7 +36,7 @@ def register_webhook(
         url=request.url,
         subscribed_events=request.subscribed_events,
         description=request.description,
-        db=db
+        db=db,
     )
 
 
@@ -44,14 +44,14 @@ def register_webhook(
 def trigger_event(
     business_id: UUID,
     request: TriggerEventRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Trigger webhook event."""
     return WebhookService.trigger_event(
         business_id=business_id,
         event_type=request.event_type,
         event_data=request.event_data,
-        db=db
+        db=db,
     )
 
 
@@ -59,26 +59,22 @@ def trigger_event(
 def queue_event(
     business_id: UUID,
     request: TriggerEventRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Queue event for async processing."""
     return WebhookService.queue_event(
         business_id=business_id,
         event_type=request.event_type,
         event_data=request.event_data,
-        db=db
+        db=db,
     )
 
 
 @router.get("/businesses/{business_id}/webhooks/stats")
 def get_webhook_stats(
     business_id: UUID,
-    days: int = Query(30, ge=1, le=365),
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ):
     """Get webhook delivery statistics."""
-    return WebhookService.get_webhook_stats(
-        business_id=business_id,
-        days=days,
-        db=db
-    )
+    return WebhookService.get_webhook_stats(business_id=business_id, days=days, db=db)

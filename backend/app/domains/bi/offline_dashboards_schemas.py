@@ -1,13 +1,14 @@
 """BI schemas for offline analytics dashboards."""
 
-from pydantic import BaseModel
-from uuid import UUID
 from decimal import Decimal
-from typing import Optional, List, Dict
+from uuid import UUID
+
+from pydantic import BaseModel
 
 
 class FootTrafficMetrics(BaseModel):
     """Foot traffic metrics for location."""
+
     location_id: UUID
     location_name: str
     period: str
@@ -17,14 +18,15 @@ class FootTrafficMetrics(BaseModel):
     qr_scans: int
     scheduled_visits: int
     peak_hour: str
-    peak_day: Optional[str]
+    peak_day: str | None
     avg_dwell_minutes: int
-    hourly_breakdown: Dict[str, int]
-    daily_visits_trend: List[Dict]
+    hourly_breakdown: dict[str, int]
+    daily_visits_trend: list[dict]
 
 
 class OfflineConversionMetrics(BaseModel):
     """Conversion metrics from offline visits."""
+
     location_id: UUID
     location_name: str
     total_visits: int
@@ -33,11 +35,12 @@ class OfflineConversionMetrics(BaseModel):
     total_revenue: Decimal
     avg_order_value: Decimal
     avg_transaction_value: Decimal
-    by_visit_type: Dict[str, dict]
+    by_visit_type: dict[str, dict]
 
 
 class OnlineOfflineAttributionMetrics(BaseModel):
     """Attribution metrics: online→offline→purchase."""
+
     business_id: UUID
     period: str
     total_online_leads: int
@@ -52,14 +55,15 @@ class OnlineOfflineAttributionMetrics(BaseModel):
     attributed_revenue: float
     attributed_orders: int
     avg_attributed_order_value: Decimal
-    top_online_channels: List[Dict]
+    top_online_channels: list[dict]
 
 
 class LocationComparisonMetrics(BaseModel):
     """Compare foot traffic + conversion across locations."""
+
     business_id: UUID
     period: str
-    locations: List[Dict]
+    locations: list[dict]
     highest_traffic: str
     highest_conversion: str
     best_performing_hour: str
@@ -68,6 +72,7 @@ class LocationComparisonMetrics(BaseModel):
 
 class ProximityTriggerROI(BaseModel):
     """ROI metrics for proximity trigger."""
+
     business_id: UUID
     trigger_name: str
     period: str
@@ -85,6 +90,7 @@ class ProximityTriggerROI(BaseModel):
 
 class DashboardSummary(BaseModel):
     """High-level summary for main BI dashboard."""
+
     business_id: UUID
     period: str
     total_visits: int
@@ -101,11 +107,12 @@ class DashboardSummary(BaseModel):
     peak_hour: str
     peak_day: str
     avg_dwell_minutes: int
-    actionable_insights: List[str]
+    actionable_insights: list[str]
 
 
 class LocationAnalyticsDetailedReport(BaseModel):
     """Detailed analytics report for single location."""
+
     location_id: UUID
     location_name: str
     location_address: str
@@ -124,8 +131,8 @@ class LocationAnalyticsDetailedReport(BaseModel):
     avg_purchase_value: Decimal
     contact_collection_rate: float
     high_engagement_visitors: int
-    hourly_traffic: Dict[str, int]
-    daily_visits_trend: List[Dict]
-    conversion_trend: List[Dict]
-    top_proximity_triggers: List[Dict]
-    optimization_recommendations: List[str]
+    hourly_traffic: dict[str, int]
+    daily_visits_trend: list[dict]
+    conversion_trend: list[dict]
+    top_proximity_triggers: list[dict]
+    optimization_recommendations: list[str]

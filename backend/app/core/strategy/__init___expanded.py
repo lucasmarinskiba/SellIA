@@ -7,29 +7,29 @@ available across 5 categories with real case studies and metrics.
 
 # Import expansion pack libraries
 from .expansion_pack_1 import (
+    BLUE_OCEAN_STRATEGIES,
     BlueOceanExpansionPack1,
     BlueOceanStrategy,
-    BLUE_OCEAN_STRATEGIES,
 )
 from .expansion_pack_2 import (
-    SalesMethodsExpansionPack2,
-    SalesMethod,
     CONSULTATIVE_SALES_METHODS,
+    SalesMethod,
+    SalesMethodsExpansionPack2,
 )
 from .expansion_pack_3 import (
+    PRICING_STRATEGIES,
     PricingExpansionPack3,
     PricingStrategy,
-    PRICING_STRATEGIES,
 )
 from .expansion_pack_4 import (
+    ACQUISITION_METHODS,
     AcquisitionExpansionPack4,
     AcquisitionMethod,
-    ACQUISITION_METHODS,
 )
 from .expansion_pack_5 import (
+    VERTICAL_STRATEGIES,
     VerticalExpansionPack5,
     VerticalStrategy,
-    VERTICAL_STRATEGIES,
 )
 
 
@@ -160,7 +160,7 @@ class StrategyExpansionEngine:
     # VERTICAL-SPECIFIC STRATEGIES (40 strategies)
     # ========================================================================
 
-    def get_vertical_strategies(self, vertical: str = None) -> dict:
+    def get_vertical_strategies(self, vertical: str | None = None) -> dict:
         """Get vertical-specific strategies. Verticals: real_estate, ecommerce, saas, services."""
         if vertical:
             return {s.strategy_id: s for s in self.vertical.get_by_vertical(vertical)}
@@ -201,7 +201,9 @@ class StrategyExpansionEngine:
         """
         recommendations = {
             "startup": {
-                "blue_ocean": self.blue_ocean.get_by_difficulty(5.0),  # Simpler elimination
+                "blue_ocean": self.blue_ocean.get_by_difficulty(
+                    5.0
+                ),  # Simpler elimination
                 "sales": self.sales.get_quick_learning(),  # Quick ramp
                 "pricing": self.pricing.get_easy_to_implement(),  # Simple pricing
                 "acquisition": self.acquisition.get_lowest_cac_methods(),  # Low CAC
@@ -238,7 +240,9 @@ class StrategyExpansionEngine:
         """
         recommendations = {
             "small": {
-                "blue_ocean": self.blue_ocean.get_by_replicability(6.0),  # Easier replicate
+                "blue_ocean": self.blue_ocean.get_by_replicability(
+                    6.0
+                ),  # Easier replicate
                 "sales": self.sales.get_quick_learning(),  # Low training cost
                 "pricing": self.pricing.get_easy_to_implement(),  # Low implementation
                 "acquisition": self.acquisition.get_lowest_cac_methods(),  # Organic focus
@@ -317,27 +321,27 @@ class StrategyExpansionEngine:
 
 # Export main classes for direct import
 __all__ = [
-    "StrategyExpansionEngine",
-    # Pack 1
-    "BlueOceanExpansionPack1",
-    "BlueOceanStrategy",
+    "ACQUISITION_METHODS",
     "BLUE_OCEAN_STRATEGIES",
-    # Pack 2
-    "SalesMethodsExpansionPack2",
-    "SalesMethod",
     "CONSULTATIVE_SALES_METHODS",
-    # Pack 3
-    "PricingExpansionPack3",
-    "PricingStrategy",
     "PRICING_STRATEGIES",
+    "VERTICAL_STRATEGIES",
     # Pack 4
     "AcquisitionExpansionPack4",
     "AcquisitionMethod",
-    "ACQUISITION_METHODS",
+    # Pack 1
+    "BlueOceanExpansionPack1",
+    "BlueOceanStrategy",
+    # Pack 3
+    "PricingExpansionPack3",
+    "PricingStrategy",
+    "SalesMethod",
+    # Pack 2
+    "SalesMethodsExpansionPack2",
+    "StrategyExpansionEngine",
     # Pack 5
     "VerticalExpansionPack5",
     "VerticalStrategy",
-    "VERTICAL_STRATEGIES",
 ]
 
 

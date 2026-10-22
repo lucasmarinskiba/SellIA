@@ -1,14 +1,16 @@
 """Integration marketplace API."""
 
+from typing import Annotated
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.integrations.integration_service import IntegrationService
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/api/v1", tags=["integrations"])
 
@@ -46,8 +48,8 @@ async def list_apps():
 async def create_connection(
     business_id: UUID,
     data: CreateConnectionRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create platform connection + auto-enable SEO config."""
     svc = IntegrationService(db)
@@ -71,8 +73,8 @@ async def create_connection(
 @router.get("/businesses/{business_id}/connections")
 async def list_connections(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """List all platform connections for a business."""
     svc = IntegrationService(db)
@@ -96,8 +98,8 @@ async def update_connection(
     business_id: UUID,
     connection_id: UUID,
     data: CreateConnectionRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Update platform connection credentials."""
     svc = IntegrationService(db)

@@ -3,16 +3,26 @@ Coupon & Discount System
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Integer, Numeric, Boolean
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 
 
 class Coupon(Base):
     """A discount coupon."""
+
     __tablename__ = "coupons"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -43,19 +53,30 @@ class Coupon(Base):
     flash_sale_ends_at = Column(DateTime(timezone=True), nullable=True)
 
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class CouponUsage(Base):
     """Tracks coupon redemptions."""
+
     __tablename__ = "coupon_usages"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    coupon_id = Column(UUID(as_uuid=True), ForeignKey("coupons.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    coupon_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("coupons.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     discount_applied = Column(Numeric(10, 2), nullable=False)
     original_amount = Column(Numeric(10, 2), nullable=False)
     final_amount = Column(Numeric(10, 2), nullable=False)
 
-    used_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    used_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))

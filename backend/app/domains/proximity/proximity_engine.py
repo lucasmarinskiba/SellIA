@@ -3,8 +3,7 @@
 import logging
 import math
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import List, Optional
+from datetime import UTC, datetime
 from uuid import UUID
 
 logger = logging.getLogger(__name__)
@@ -13,6 +12,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class Location:
     """Location with coordinates."""
+
     location_id: UUID
     latitude: float
     longitude: float
@@ -23,6 +23,7 @@ class Location:
 @dataclass
 class UserLocation:
     """User's detected location."""
+
     user_id: UUID
     latitude: float
     longitude: float
@@ -31,19 +32,20 @@ class UserLocation:
 
     def __post_init__(self):
         if self.timestamp is None:
-            self.timestamp = datetime.now(timezone.utc)
+            self.timestamp = datetime.now(UTC)
 
 
 @dataclass
 class ProximityEvent:
     """Event when user enters location geofence."""
+
     event_id: str
     user_id: UUID
     location_id: UUID
     distance_km: float
     detected_at: datetime
     automation_triggered: bool = False
-    automation_id: Optional[UUID] = None
+    automation_id: UUID | None = None
 
 
 class ProximityEngine:
@@ -65,8 +67,8 @@ class ProximityEngine:
     @staticmethod
     def check_proximity(
         user_location: UserLocation,
-        locations: List[Location],
-    ) -> List[ProximityEvent]:
+        locations: list[Location],
+    ) -> list[ProximityEvent]:
         """Check if user near any location."""
         nearby = []
         for loc in locations:
@@ -74,7 +76,7 @@ class ProximityEngine:
                 user_location.latitude,
                 user_location.longitude,
                 loc.latitude,
-                loc.longitude
+                loc.longitude,
             )
             radius = loc.radius_km or 5.0
             if distance <= radius:
@@ -83,7 +85,7 @@ class ProximityEngine:
                     user_id=user_location.user_id,
                     location_id=loc.location_id,
                     distance_km=round(distance, 2),
-                    detected_at=user_location.timestamp
+                    detected_at=user_location.timestamp,
                 )
                 nearby.append(event)
         return nearby

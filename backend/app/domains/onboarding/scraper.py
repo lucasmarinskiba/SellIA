@@ -1,8 +1,9 @@
 """Onboarding Mágico — Scraper con Playwright"""
 
 import re
-from typing import Optional
+
 from playwright.async_api import async_playwright
+
 from app.core.logger import get_logger
 
 logger = get_logger(__name__)
@@ -19,7 +20,11 @@ class OnboardingScraper:
         self._playwright = await async_playwright().start()
         self._browser = await self._playwright.chromium.launch(
             headless=True,
-            args=["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+            args=[
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage",
+            ],
         )
 
     async def _stop(self):
@@ -58,14 +63,21 @@ class OnboardingScraper:
             await page.wait_for_timeout(2500)
 
             # Intentar cerrar popups de cookies comunes
-            for btn_text in ["Aceptar", "Accept", "Aceptar todo", "Accept all", "Entendido", "OK"]:
+            for btn_text in [
+                "Aceptar",
+                "Accept",
+                "Aceptar todo",
+                "Accept all",
+                "Entendido",
+                "OK",
+            ]:
                 try:
                     btn = page.locator(f"button:has-text('{btn_text}')").first
                     if await btn.is_visible(timeout=500):
                         await btn.click(timeout=1000)
                         await page.wait_for_timeout(500)
                 except Exception:
-                    pass
+                    logger.exception("scrape: error inesperado")
 
             # Extraer texto visible
             text = await page.evaluate("""

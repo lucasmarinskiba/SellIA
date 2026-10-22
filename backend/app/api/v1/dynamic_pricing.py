@@ -92,7 +92,7 @@ async def calculate_price(
                 base_price=request.base_price,
                 discount_code=request.discount_code,
                 checkin_id=request.checkin_id,
-                db=sync_db
+                db=sync_db,
             )
         )
     except Exception as e:
@@ -119,7 +119,7 @@ async def log_pricing_transaction(
                 final_price=request.final_price,
                 discount_code=request.discount_code,
                 discount_amount=request.discount_amount,
-                db=sync_db
+                db=sync_db,
             )
         )
     except Exception as e:
@@ -137,7 +137,9 @@ async def get_pricing_tier(
 
     try:
         return await db.run_sync(
-            lambda sync_db: DynamicPricingService.get_location_pricing_tier(location_id, sync_db)
+            lambda sync_db: DynamicPricingService.get_location_pricing_tier(
+                location_id, sync_db
+            )
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -162,7 +164,7 @@ async def update_pricing_tier(
                 tier=request.tier,
                 tier_multiplier=request.tier_multiplier,
                 peak_discount_pct=request.peak_discount_pct,
-                db=sync_db
+                db=sync_db,
             )
         )
     except Exception as e:
@@ -180,7 +182,9 @@ async def create_discount_code(
     location = await require_location_access(db, location_id, current_user, manage=True)
     business_id = location.business_id
     if request.discount_type == "percentage" and request.discount_value > 100:
-        raise HTTPException(status_code=422, detail="Un descuento porcentual no puede superar 100")
+        raise HTTPException(
+            status_code=422, detail="Un descuento porcentual no puede superar 100"
+        )
 
     try:
         return await db.run_sync(
@@ -192,7 +196,7 @@ async def create_discount_code(
                 discount_type=request.discount_type,
                 valid_days=request.valid_days,
                 usage_limit=request.usage_limit,
-                db=sync_db
+                db=sync_db,
             )
         )
     except Exception as e:
@@ -211,7 +215,9 @@ async def validate_discount(
 
     try:
         return await db.run_sync(
-            lambda sync_db: DiscountCodeService.validate_discount_code(code, location_id, sync_db)
+            lambda sync_db: DiscountCodeService.validate_discount_code(
+                code, location_id, sync_db
+            )
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -238,7 +244,7 @@ async def create_ab_test(
                 variant_a_price=request.variant_a_price,
                 variant_b_price=request.variant_b_price,
                 test_duration_days=request.test_duration_days,
-                db=sync_db
+                db=sync_db,
             )
         )
     except Exception as e:
@@ -258,7 +264,9 @@ async def get_ab_test_results(
     await require_business_access(db, test.business_id, current_user)
 
     try:
-        return await db.run_sync(lambda sync_db: ABTestService.get_test_results(test_id, sync_db))
+        return await db.run_sync(
+            lambda sync_db: ABTestService.get_test_results(test_id, sync_db)
+        )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -277,10 +285,7 @@ async def get_revenue_impact(
     try:
         return await db.run_sync(
             lambda sync_db: RevenueAnalyticsService.aggregate_daily_impact(
-                location_id=location_id,
-                business_id=business_id,
-                date=date,
-                db=sync_db
+                location_id=location_id, business_id=business_id, date=date, db=sync_db
             )
         )
     except Exception as e:
@@ -302,10 +307,15 @@ async def get_pricing_analytics(
         cutoff_str = cutoff.strftime("%Y-%m-%d")
 
         def _load(sync_db: Session) -> list:
-            return sync_db.query(LocationRevenueImpact).filter(
-                LocationRevenueImpact.location_id == location_id,
-                LocationRevenueImpact.date >= cutoff_str
-            ).order_by(LocationRevenueImpact.date.desc()).all()
+            return (
+                sync_db.query(LocationRevenueImpact)
+                .filter(
+                    LocationRevenueImpact.location_id == location_id,
+                    LocationRevenueImpact.date >= cutoff_str,
+                )
+                .order_by(LocationRevenueImpact.date.desc())
+                .all()
+            )
 
         impacts = await db.run_sync(_load)
 
@@ -334,7 +344,7 @@ async def get_pricing_analytics(
             "total_discounts_given": total_discounts,
             "net_revenue_impact": total_final - total_base,
             "impact_pct": ((total_final - total_base) / max(total_base, 0.01)) * 100,
-            "daily_breakdown": impact_data
+            "daily_breakdown": impact_data,
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

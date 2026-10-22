@@ -1,8 +1,8 @@
 import os
-
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import model_validator
 from functools import lru_cache
+
+from pydantic import model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -18,38 +18,40 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str | None = None
     ANTHROPIC_API_KEY: str | None = None
     KIMI_API_KEY: str | None = None  # Moonshot AI (Kimi K2.5) — OpenAI-compatible API
-    GROQ_API_KEY: str | None = None  # Groq — free/ultra-fast Llama/Mixtral inference (OpenAI-compatible)
+    GROQ_API_KEY: str | None = (
+        None  # Groq — free/ultra-fast Llama/Mixtral inference (OpenAI-compatible)
+    )
     GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
     OLLAMA_BASE_URL: str = "http://localhost:11434"  # Ollama local LLM server
 
     # AI Content Generation APIs
     STABILITY_API_KEY: str | None = None  # Stable Diffusion / Stability AI
     REPLICATE_API_KEY: str | None = None  # Replicate (Runway, Flux, etc.)
-    RUNWAY_API_KEY: str | None = None     # Runway Gen-4 video
+    RUNWAY_API_KEY: str | None = None  # Runway Gen-4 video
     MIDJOURNEY_API_KEY: str | None = None  # Midjourney (via API proxy)
     ELEVENLABS_API_KEY: str | None = None  # ElevenLabs voice/AI audio
-    FAL_KEY: str | None = None            # fal.ai (Seedance 2.0, Flux, etc.)
+    FAL_KEY: str | None = None  # fal.ai (Seedance 2.0, Flux, etc.)
 
     # Additional Content Generation APIs
-    LEONARDO_API_KEY: str | None = None       # Leonardo.ai image generation
-    PHOTOROOM_API_KEY: str | None = None      # Photoroom product photos
-    IDEOGRAM_API_KEY: str | None = None       # Ideogram 2.0 text-in-image
-    HEYGEN_API_KEY: str | None = None         # HeyGen AI avatars
-    PIKA_API_KEY: str | None = None           # Pika Labs video
-    OPUSCLIP_API_KEY: str | None = None       # Opus Clip video repurposing
-    COPYAI_API_KEY: str | None = None         # Copy.ai marketing copy
-    JASPER_API_KEY: str | None = None         # Jasper long-form copy
-    BEAUTIFULAI_API_KEY: str | None = None    # Beautiful.ai presentations
-    GAMMA_API_KEY: str | None = None          # Gamma docs/presentations
-    SUNO_API_KEY: str | None = None           # Suno AI music
-    MUREKA_API_KEY: str | None = None         # Mureka AI music
-    KLING_API_KEY: str | None = None          # Kling AI video
-    MINIMAX_API_KEY: str | None = None        # Minimax AI video
-    LUMA_API_KEY: str | None = None           # Luma Dream Machine 3D video
-    ADCREATIVE_API_KEY: str | None = None     # AdCreative.ai ad banners
-    WRITESONIC_API_KEY: str | None = None     # Writesonic SEO + ads
-    CANVA_API_KEY: str | None = None          # Canva design API
-    CAPCUT_API_KEY: str | None = None         # CapCut video editing
+    LEONARDO_API_KEY: str | None = None  # Leonardo.ai image generation
+    PHOTOROOM_API_KEY: str | None = None  # Photoroom product photos
+    IDEOGRAM_API_KEY: str | None = None  # Ideogram 2.0 text-in-image
+    HEYGEN_API_KEY: str | None = None  # HeyGen AI avatars
+    PIKA_API_KEY: str | None = None  # Pika Labs video
+    OPUSCLIP_API_KEY: str | None = None  # Opus Clip video repurposing
+    COPYAI_API_KEY: str | None = None  # Copy.ai marketing copy
+    JASPER_API_KEY: str | None = None  # Jasper long-form copy
+    BEAUTIFULAI_API_KEY: str | None = None  # Beautiful.ai presentations
+    GAMMA_API_KEY: str | None = None  # Gamma docs/presentations
+    SUNO_API_KEY: str | None = None  # Suno AI music
+    MUREKA_API_KEY: str | None = None  # Mureka AI music
+    KLING_API_KEY: str | None = None  # Kling AI video
+    MINIMAX_API_KEY: str | None = None  # Minimax AI video
+    LUMA_API_KEY: str | None = None  # Luma Dream Machine 3D video
+    ADCREATIVE_API_KEY: str | None = None  # AdCreative.ai ad banners
+    WRITESONIC_API_KEY: str | None = None  # Writesonic SEO + ads
+    CANVA_API_KEY: str | None = None  # Canva design API
+    CAPCUT_API_KEY: str | None = None  # CapCut video editing
 
     # Seguridad
     ENVIRONMENT: str = "development"  # development | production
@@ -57,7 +59,9 @@ class Settings(BaseSettings):
     SIDECAR_SHARED_SECRET: str = ""
 
     # Database SSL (production)
-    DB_SSL_MODE: str = "prefer"  # disable | allow | prefer | require | verify-ca | verify-full
+    DB_SSL_MODE: str = (
+        "prefer"  # disable | allow | prefer | require | verify-ca | verify-full
+    )
     DB_SSL_CA: str | None = None  # path to CA certificate for verify-ca / verify-full
 
     # Cloudflare Turnstile
@@ -113,14 +117,14 @@ class Settings(BaseSettings):
     BSCSCAN_API_KEY: str | None = None
 
     # Creator billing / fiscal information
-    CREATOR_MP_ALIAS: str | None = None           # MercadoPago alias
-    CREATOR_COCO_ALIAS: str | None = None         # Coco alias (transfers)
-    CREATOR_CBU: str | None = None                # Bank CBU
-    CREATOR_CUIT: str | None = None               # Argentinian tax ID
-    CREATOR_FULL_NAME: str | None = None          # Legal name for invoices
-    CREATOR_BUSINESS_NAME: str | None = None      # Razón social
-    CREATOR_BILLING_ADDRESS: str | None = None    # Fiscal address
-    CREATOR_IVA_CONDITION: str | None = None      # Monotributo / RI / Exento
+    CREATOR_MP_ALIAS: str | None = None  # MercadoPago alias
+    CREATOR_COCO_ALIAS: str | None = None  # Coco alias (transfers)
+    CREATOR_CBU: str | None = None  # Bank CBU
+    CREATOR_CUIT: str | None = None  # Argentinian tax ID
+    CREATOR_FULL_NAME: str | None = None  # Legal name for invoices
+    CREATOR_BUSINESS_NAME: str | None = None  # Razón social
+    CREATOR_BILLING_ADDRESS: str | None = None  # Fiscal address
+    CREATOR_IVA_CONDITION: str | None = None  # Monotributo / RI / Exento
 
     # ReAct Orchestrator
     USE_REACT_ORCHESTRATOR: bool = True
@@ -132,12 +136,18 @@ class Settings(BaseSettings):
     COMPUTER_USE_SCREENSHOT_QUALITY: int = 75
     COMPUTER_USE_MAX_SCREENSHOT_WIDTH: int = 1280
     # Performance / precision tuning
-    COMPUTER_USE_BLOCK_RESOURCES: bool = True       # block heavy images/media/fonts/ads → faster loads
-    COMPUTER_USE_NAV_TIMEOUT_MS: int = 30000        # navigation hard timeout
-    COMPUTER_USE_SETTLE_TIMEOUT_MS: int = 4000      # max wait for network/DOM settle after action
-    COMPUTER_USE_ACTION_SETTLE_MS: int = 250        # short post-action settle floor
-    COMPUTER_USE_TYPE_DELAY_MS: int = 6             # per-char keystroke delay
-    COMPUTER_USE_DEVICE_SCALE: float = 1.0          # device scale factor (lower = smaller screenshots)
+    COMPUTER_USE_BLOCK_RESOURCES: bool = (
+        True  # block heavy images/media/fonts/ads → faster loads
+    )
+    COMPUTER_USE_NAV_TIMEOUT_MS: int = 30000  # navigation hard timeout
+    COMPUTER_USE_SETTLE_TIMEOUT_MS: int = (
+        4000  # max wait for network/DOM settle after action
+    )
+    COMPUTER_USE_ACTION_SETTLE_MS: int = 250  # short post-action settle floor
+    COMPUTER_USE_TYPE_DELAY_MS: int = 6  # per-char keystroke delay
+    COMPUTER_USE_DEVICE_SCALE: float = (
+        1.0  # device scale factor (lower = smaller screenshots)
+    )
     COMPUTER_USE_URL_WHITELIST: list[str] = [
         # Diseño / Presentaciones
         "canva.com",
@@ -382,9 +392,9 @@ class Settings(BaseSettings):
         """
         url = self.DATABASE_URL
         if url.startswith("postgres://"):
-            url = "postgresql+asyncpg://" + url[len("postgres://"):]
+            url = "postgresql+asyncpg://" + url[len("postgres://") :]
         elif url.startswith("postgresql://"):
-            url = "postgresql+asyncpg://" + url[len("postgresql://"):]
+            url = "postgresql+asyncpg://" + url[len("postgresql://") :]
         if url != self.DATABASE_URL:
             self.DATABASE_URL = url
         return self
@@ -397,13 +407,18 @@ class Settings(BaseSettings):
                 "DATABASE_URL es requerido en todos los entornos. "
                 "Configure la variable de entorno DATABASE_URL con credentials seguros."
             )
-        if "devpassword123" in self.DATABASE_URL or "password" in self.DATABASE_URL.lower() and "postgres://" in self.DATABASE_URL:
-            # Check for common insecure patterns
-            if any(weak in self.DATABASE_URL.lower() for weak in ["devpassword", "password123", "postgres://user:password@"]):
-                raise ValueError(
-                    "DATABASE_URL contiene credenciales débiles o por defecto. "
-                    "Use contraseñas seguras (mínimo 16 caracteres alfanuméricos + símbolos)."
-                )
+        if (
+            "devpassword123" in self.DATABASE_URL
+            or "password" in self.DATABASE_URL.lower()
+            and "postgres://" in self.DATABASE_URL
+        ) and any(
+            weak in self.DATABASE_URL.lower()
+            for weak in ["devpassword", "password123", "postgres://user:password@"]
+        ):
+            raise ValueError(
+                "DATABASE_URL contiene credenciales débiles o por defecto. "
+                "Use contraseñas seguras (mínimo 16 caracteres alfanuméricos + símbolos)."
+            )
 
         # P0: SECRET_KEY is always required - NEVER auto-assign even in dev
         if not self.SECRET_KEY:
@@ -431,11 +446,10 @@ class Settings(BaseSettings):
             raise ValueError("SECRET_KEY debe tener al menos 32 caracteres.")
 
         # Production-specific checks
-        if self.ENVIRONMENT == "production":
-            if not self.SIDECAR_SHARED_SECRET:
-                raise ValueError(
-                    "SIDECAR_SHARED_SECRET es requerido en producción cuando se usa Envoy sidecar."
-                )
+        if self.ENVIRONMENT == "production" and not self.SIDECAR_SHARED_SECRET:
+            raise ValueError(
+                "SIDECAR_SHARED_SECRET es requerido en producción cuando se usa Envoy sidecar."
+            )
 
         # Validate FERNET_SECRET if defined
         fernet_secret = os.environ.get("FERNET_SECRET")
@@ -447,6 +461,6 @@ class Settings(BaseSettings):
         return self
 
 
-@lru_cache()
+@lru_cache
 def get_settings() -> Settings:
     return Settings()

@@ -6,24 +6,24 @@ Monitorea performance → optimiza budget automáticamente.
 
 import logging
 import uuid
-from typing import Dict, List, Any, Optional, Tuple
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from dataclasses import dataclass
+from typing import Any, ClassVar
 
-from app.domains.computer_use.integrations import (
-    MetaAdsConnector,
-    GoogleAdsConnector,
-    get_meta_ads_connector,
-    get_google_ads_connector,
-)
+from app.core.clock import utc_now
 from app.core.config import get_settings
+from app.domains.computer_use.integrations import (
+    get_google_ads_connector,
+    get_meta_ads_connector,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class AdPlatform(str, Enum):
     """Plataformas de ads soportadas."""
+
     FACEBOOK = "facebook"
     INSTAGRAM = "instagram"
     GOOGLE_SEARCH = "google_search"
@@ -33,6 +33,7 @@ class AdPlatform(str, Enum):
 
 class AdFormat(str, Enum):
     """Formatos de ads."""
+
     SINGLE_IMAGE = "single_image"
     CAROUSEL = "carousel"
     VIDEO = "video"
@@ -42,6 +43,7 @@ class AdFormat(str, Enum):
 
 class CopyTone(str, Enum):
     """Tonalidad del copy."""
+
     URGENT = "urgent"  # Limited time, scarcity
     EDUCATIONAL = "educational"  # Learn, discover
     LIFESTYLE = "lifestyle"  # Aspirational, dream
@@ -65,9 +67,9 @@ class AdCreative:
     """Asset creativo para ad."""
 
     type: str  # image_url, video_url, text_only
-    content_url: Optional[str] = None
-    description: Optional[str] = None
-    dimensions: Optional[str] = None  # 1200x628, 1080x1080, etc
+    content_url: str | None = None
+    description: str | None = None
+    dimensions: str | None = None  # 1200x628, 1080x1080, etc
 
 
 @dataclass
@@ -78,20 +80,20 @@ class AdCampaign:
     name: str
     platform: AdPlatform
     format: AdFormat
-    copies: List[AdCopy]
-    creatives: List[AdCreative]
-    target_audience: Dict[str, Any]
+    copies: list[AdCopy]
+    creatives: list[AdCreative]
+    target_audience: dict[str, Any]
     daily_budget: float
     start_date: datetime
-    end_date: Optional[datetime] = None
+    end_date: datetime | None = None
     status: str = "draft"  # draft, running, paused, completed
     created_at: datetime = None
 
     def __post_init__(self):
         if self.created_at is None:
-            self.created_at = datetime.utcnow()
+            self.created_at = utc_now()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "campaign_id": self.campaign_id,
             "name": self.name,
@@ -118,7 +120,7 @@ class AdCampaign:
 class AdCopyGenerator:
     """Genera variantes de ad copy."""
 
-    COPY_TEMPLATES = {
+    COPY_TEMPLATES: ClassVar[dict] = {
         CopyTone.URGENT: {
             "headlines": [
                 "⏰ Last {count} spots available",
@@ -134,7 +136,13 @@ class AdCopyGenerator:
                 "The fastest {time_period} {count} people made this decision.",
                 "{percentage}% off for the first {count} customers.",
             ],
-            "ctas": ["Claim Your Spot", "Grab Yours Now", "Secure Access", "Lock In Price", "Act Now"],
+            "ctas": [
+                "Claim Your Spot",
+                "Grab Yours Now",
+                "Secure Access",
+                "Lock In Price",
+                "Act Now",
+            ],
         },
         CopyTone.EDUCATIONAL: {
             "headlines": [
@@ -151,7 +159,13 @@ class AdCopyGenerator:
                 "Get the playbook {successful_people} use for {outcome}.",
                 "Download: The {topic} blueprint used by {creators}.",
             ],
-            "ctas": ["Watch Free", "Learn More", "Get Access", "Download Now", "Enroll Free"],
+            "ctas": [
+                "Watch Free",
+                "Learn More",
+                "Get Access",
+                "Download Now",
+                "Enroll Free",
+            ],
         },
         CopyTone.LIFESTYLE: {
             "headlines": [
@@ -168,7 +182,13 @@ class AdCopyGenerator:
                 "The {time_period} that changes everything. Real stories from {community}.",
                 "Stop dreaming. Start doing. {CTA} today.",
             ],
-            "ctas": ["Start My Journey", "See Transformation", "Join Community", "Begin Today", "Get Started"],
+            "ctas": [
+                "Start My Journey",
+                "See Transformation",
+                "Join Community",
+                "Begin Today",
+                "Get Started",
+            ],
         },
         CopyTone.DISCOUNT: {
             "headlines": [
@@ -202,7 +222,13 @@ class AdCopyGenerator:
                 "Join {count}+ {audience} who {outcome}.",
                 "{expert_type} recommend us. Here's why {count}+ agree.",
             ],
-            "ctas": ["Read Reviews", "See Stories", "Join {count}+", "Start Free", "Learn How"],
+            "ctas": [
+                "Read Reviews",
+                "See Stories",
+                "Join {count}+",
+                "Start Free",
+                "Learn How",
+            ],
         },
     }
 
@@ -211,10 +237,10 @@ class AdCopyGenerator:
 
     async def generate_ad_copies(
         self,
-        product_info: Dict[str, Any],
+        product_info: dict[str, Any],
         tone: CopyTone,
         count: int = 5,
-    ) -> List[AdCopy]:
+    ) -> list[AdCopy]:
         """
         Genera múltiples variantes de ad copy.
 
@@ -249,7 +275,7 @@ class AdCopyGenerator:
 
         return copies
 
-    def _fill_template(self, template: str, context: Dict[str, Any]) -> str:
+    def _fill_template(self, template: str, context: dict[str, Any]) -> str:
         """Reemplaza variables en template con valores del contexto."""
         replacements = {
             "{product}": context.get("product_name", "product"),
@@ -282,7 +308,7 @@ class AdOrchestrator:
     def __init__(self):
         self.copy_generator = AdCopyGenerator()
         self.logger = logger
-        self.campaigns: Dict[str, AdCampaign] = {}  # campaign_id → AdCampaign
+        self.campaigns: dict[str, AdCampaign] = {}  # campaign_id → AdCampaign
 
         # Real API connectors. Same "from app.core.config import settings"
         # ImportError as conversion_tracker.py -- app.core.config exports
@@ -292,7 +318,9 @@ class AdOrchestrator:
             get_meta_ads_connector(
                 access_token=settings.META_ACCESS_TOKEN,
                 ad_account_id=settings.META_AD_ACCOUNT_ID,
-            ) if hasattr(settings, 'META_ACCESS_TOKEN') else None
+            )
+            if hasattr(settings, "META_ACCESS_TOKEN")
+            else None
         )
         self.google_ads_connector = (
             get_google_ads_connector(
@@ -301,18 +329,20 @@ class AdOrchestrator:
                 refresh_token=settings.GOOGLE_ADS_REFRESH_TOKEN,
                 developer_token=settings.GOOGLE_ADS_DEVELOPER_TOKEN,
                 customer_id=settings.GOOGLE_ADS_CUSTOMER_ID,
-            ) if hasattr(settings, 'GOOGLE_ADS_DEVELOPER_TOKEN') else None
+            )
+            if hasattr(settings, "GOOGLE_ADS_DEVELOPER_TOKEN")
+            else None
         )
 
     async def create_campaign(
         self,
         campaign_name: str,
-        product_info: Dict[str, Any],
-        platforms: List[AdPlatform],
+        product_info: dict[str, Any],
+        platforms: list[AdPlatform],
         daily_budget: float,
         duration_days: int = 7,
-        target_audience: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[bool, List[str]]:
+        target_audience: dict[str, Any] | None = None,
+    ) -> tuple[bool, list[str]]:
         """
         Crea campaign: genera copy + creatives + lanza en plataformas.
 
@@ -339,7 +369,7 @@ class AdOrchestrator:
             for platform in platforms:
                 # Was minute-precision only (no seconds) — widened plus a random
                 # suffix to guarantee uniqueness regardless of timing.
-                campaign_id = f"camp_{platform.value}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
+                campaign_id = f"camp_{platform.value}_{utc_now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
 
                 campaign = AdCampaign(
                     campaign_id=campaign_id,
@@ -350,8 +380,8 @@ class AdOrchestrator:
                     creatives=creatives,
                     target_audience=target_audience or self._default_audience(),
                     daily_budget=daily_budget,
-                    start_date=datetime.utcnow(),
-                    end_date=datetime.utcnow() + timedelta(days=duration_days),
+                    start_date=utc_now(),
+                    end_date=utc_now() + timedelta(days=duration_days),
                 )
 
                 self.campaigns[campaign_id] = campaign
@@ -360,15 +390,17 @@ class AdOrchestrator:
                 # 4. Lanzar campaign (placeholder)
                 await self._launch_campaign(campaign)
 
-            self.logger.info(f"Campaigns created: {len(campaign_ids)} | platforms: {[p.value for p in platforms]}")
+            self.logger.info(
+                f"Campaigns created: {len(campaign_ids)} | platforms: {[p.value for p in platforms]}"
+            )
 
             return True, campaign_ids
 
-        except Exception as e:
-            self.logger.error(f"Error creating campaign: {e}")
+        except Exception:
+            self.logger.exception("Error creating campaign")
             return False, []
 
-    async def get_campaign_performance(self, campaign_id: str) -> Dict[str, Any]:
+    async def get_campaign_performance(self, campaign_id: str) -> dict[str, Any]:
         """Obtiene metrics de performance (placeholder)."""
         campaign = self.campaigns.get(campaign_id)
 
@@ -393,8 +425,8 @@ class AdOrchestrator:
     async def optimize_campaigns(
         self,
         user_id: str,
-        campaigns: List[str],
-    ) -> Tuple[int, List[str]]:
+        campaigns: list[str],
+    ) -> tuple[int, list[str]]:
         """
         Optimiza campaigns basado en performance.
 
@@ -417,7 +449,9 @@ class AdOrchestrator:
                     campaign.status = "paused"
                     paused.append(campaign_id)
 
-                    self.logger.info(f"Campaign paused (low ROAS): {campaign_id} | roas={perf.get('roas')}")
+                    self.logger.info(
+                        f"Campaign paused (low ROAS): {campaign_id} | roas={perf.get('roas')}"
+                    )
 
         return len(paused), paused
 
@@ -434,7 +468,7 @@ class AdOrchestrator:
         else:
             return AdFormat.SINGLE_IMAGE
 
-    def _generate_placeholder_creatives(self, count: int = 3) -> List[AdCreative]:
+    def _generate_placeholder_creatives(self, count: int = 3) -> list[AdCreative]:
         """Genera creatives placeholder."""
         return [
             AdCreative(
@@ -446,7 +480,7 @@ class AdOrchestrator:
             for i in range(1, count + 1)
         ]
 
-    def _default_audience(self) -> Dict[str, Any]:
+    def _default_audience(self) -> dict[str, Any]:
         """Audience targeting por defecto."""
         return {
             "age_min": 18,
@@ -459,23 +493,32 @@ class AdOrchestrator:
     async def _launch_campaign(self, campaign: AdCampaign) -> bool:
         """Lanza campaign en plataforma REAL (Meta o Google)."""
         try:
-            if campaign.platform in (AdPlatform.FACEBOOK, AdPlatform.INSTAGRAM) and self.meta_ads_connector:
+            if (
+                campaign.platform in (AdPlatform.FACEBOOK, AdPlatform.INSTAGRAM)
+                and self.meta_ads_connector
+            ):
                 return await self._launch_meta_campaign(campaign)
-            elif campaign.platform in (AdPlatform.GOOGLE_SEARCH, AdPlatform.GOOGLE_DISPLAY) and self.google_ads_connector:
+            elif (
+                campaign.platform
+                in (AdPlatform.GOOGLE_SEARCH, AdPlatform.GOOGLE_DISPLAY)
+                and self.google_ads_connector
+            ):
                 return await self._launch_google_campaign(campaign)
             else:
-                self.logger.warning(f"No connector for platform {campaign.platform.value}")
+                self.logger.warning(
+                    f"No connector for platform {campaign.platform.value}"
+                )
                 campaign.status = "draft"
                 return False
-        except Exception as e:
-            self.logger.error(f"Error launching campaign: {e}")
+        except Exception:
+            self.logger.exception("Error launching campaign")
             campaign.status = "draft"
             return False
 
     async def _launch_meta_campaign(self, campaign: AdCampaign) -> bool:
         """Lanza en Meta Ads (Facebook/Instagram)."""
         try:
-            budget_micros = int(campaign.daily_budget * 100 * 1000)  # Convertir a microdólares
+            int(campaign.daily_budget * 100 * 1000)  # Convertir a microdólares
 
             success, campaign_id = await self.meta_ads_connector.create_campaign(
                 campaign_name=campaign.name,
@@ -499,7 +542,7 @@ class AdOrchestrator:
 
             # Crear ads
             for copy in campaign.copies[:3]:  # Max 3 ads por adset
-                ad_success, ad_id = await self.meta_ads_connector.create_ad(
+                ad_success, _ad_id = await self.meta_ads_connector.create_ad(
                     adset_id=adset_id,
                     ad_name=f"{campaign.name} - v{copy.version}",
                     creative_id=None,  # O usar creative upload
@@ -514,31 +557,39 @@ class AdOrchestrator:
             campaign.status = "running"
             campaign.campaign_id = campaign_id
 
-            self.logger.info(f"Meta campaign launched: {campaign_id} | budget: ${campaign.daily_budget}/day")
+            self.logger.info(
+                f"Meta campaign launched: {campaign_id} | budget: ${campaign.daily_budget}/day"
+            )
             return True
 
-        except Exception as e:
-            self.logger.error(f"Error launching Meta campaign: {e}")
+        except Exception:
+            self.logger.exception("Error launching Meta campaign")
             return False
 
     async def _launch_google_campaign(self, campaign: AdCampaign) -> bool:
         """Lanza en Google Ads (Search/Display)."""
         try:
             # Crear campaign
-            campaign_success, campaign_id = await self.google_ads_connector.create_search_campaign(
-                campaign_name=campaign.name,
-                budget_micros=int(campaign.daily_budget * 1_000_000),  # Convertir a microdólares
-                keywords=[k for k in campaign.target_audience.get("keywords", [])],
+            campaign_success, campaign_id = (
+                await self.google_ads_connector.create_search_campaign(
+                    campaign_name=campaign.name,
+                    budget_micros=int(
+                        campaign.daily_budget * 1_000_000
+                    ),  # Convertir a microdólares
+                    keywords=[k for k in campaign.target_audience.get("keywords", [])],
+                )
             )
 
             if not campaign_success:
                 return False
 
             # Crear ad group
-            adgroup_success, adgroup_id = await self.google_ads_connector.create_ad_group(
-                campaign_id=campaign_id,
-                ad_group_name=f"AdGroup - {campaign.name}",
-                cpc_bid_micros=int(0.50 * 1_000_000),  # $0.50 CPC default
+            adgroup_success, adgroup_id = (
+                await self.google_ads_connector.create_ad_group(
+                    campaign_id=campaign_id,
+                    ad_group_name=f"AdGroup - {campaign.name}",
+                    cpc_bid_micros=int(0.50 * 1_000_000),  # $0.50 CPC default
+                )
             )
 
             if not adgroup_success:
@@ -546,25 +597,31 @@ class AdOrchestrator:
 
             # Crear ads
             for copy in campaign.copies[:3]:
-                ad_success, ad_id = await self.google_ads_connector.create_text_ad(
+                ad_success, _ad_id = await self.google_ads_connector.create_text_ad(
                     ad_group_id=adgroup_id,
                     headline1=copy.headline,
                     headline2=f"v{copy.version}",
                     description=copy.body,
-                    final_url=campaign.target_audience.get("landing_page_url", "https://yoursite.com"),
+                    final_url=campaign.target_audience.get(
+                        "landing_page_url", "https://yoursite.com"
+                    ),
                 )
 
                 if not ad_success:
-                    self.logger.warning(f"Failed to create Google ad variant {copy.version}")
+                    self.logger.warning(
+                        f"Failed to create Google ad variant {copy.version}"
+                    )
 
             campaign.status = "running"
             campaign.campaign_id = campaign_id
 
-            self.logger.info(f"Google campaign launched: {campaign_id} | budget: ${campaign.daily_budget}/day")
+            self.logger.info(
+                f"Google campaign launched: {campaign_id} | budget: ${campaign.daily_budget}/day"
+            )
             return True
 
-        except Exception as e:
-            self.logger.error(f"Error launching Google campaign: {e}")
+        except Exception:
+            self.logger.exception("Error launching Google campaign")
             return False
 
 

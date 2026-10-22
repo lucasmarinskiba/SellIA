@@ -1,13 +1,14 @@
 """OAuth Connectors for Mercado Libre, Amazon, Hotmart."""
 
+from datetime import timedelta
+
 import httpx
-from datetime import datetime, timedelta
-from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.platform_integration import PlatformCredential
+from app.core.clock import utc_now
 from app.core.config import get_settings
+from app.models.platform_integration import PlatformCredential
 
 settings = get_settings()
 
@@ -74,7 +75,9 @@ class AmazonSPAPI:
     """Amazon Selling Partner API connector."""
 
     TOKEN_URL = "https://api.amazon.com/auth/o2/token"
-    RESTRICTED_DATA_TOKEN_URL = "https://sellingpartnerapi-na.amazon.com/tokens/2021-03-01/restrictedDataToken"
+    RESTRICTED_DATA_TOKEN_URL = (
+        "https://sellingpartnerapi-na.amazon.com/tokens/2021-03-01/restrictedDataToken"
+    )
 
     @classmethod
     async def exchange_code(cls, code: str) -> dict:
@@ -147,12 +150,12 @@ async def store_platform_credential(
     seller_id: str,
     platform: str,
     access_token: str,
-    refresh_token: Optional[str] = None,
-    seller_username: Optional[str] = None,
+    refresh_token: str | None = None,
+    seller_username: str | None = None,
     token_expiry_minutes: int = 3600,
 ) -> PlatformCredential:
     """Store platform OAuth credential in database."""
-    token_expiry = datetime.utcnow() + timedelta(minutes=token_expiry_minutes)
+    token_expiry = utc_now() + timedelta(minutes=token_expiry_minutes)
 
     cred = PlatformCredential(
         seller_id=seller_id,
@@ -173,7 +176,7 @@ async def get_platform_credential(
     db: AsyncSession,
     seller_id: str,
     platform: str,
-) -> Optional[PlatformCredential]:
+) -> PlatformCredential | None:
     """Retrieve platform credential."""
     stmt = select(PlatformCredential).where(
         PlatformCredential.seller_id == seller_id,

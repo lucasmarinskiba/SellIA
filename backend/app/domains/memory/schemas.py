@@ -1,16 +1,16 @@
 """Memory Engine Schemas"""
 
-from uuid import UUID
 from datetime import datetime
-from typing import Optional, Dict, List, Any
+from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict
 
 
 class MemoryChunkBase(BaseModel):
     conversation_id: UUID
-    business_id: Optional[UUID] = None
-    user_id: Optional[UUID] = None
-    agent_id: Optional[UUID] = None
+    business_id: UUID | None = None
+    user_id: UUID | None = None
+    agent_id: UUID | None = None
     role: str
     content: str
     chunk_index: int = 0
@@ -33,7 +33,7 @@ class CustomerMemoryBase(BaseModel):
     memory_type: str
     content: str
     confidence: float = 0.0
-    source_conversation_id: Optional[UUID] = None
+    source_conversation_id: UUID | None = None
 
 
 class CustomerMemoryCreate(CustomerMemoryBase):
@@ -50,4 +50,4 @@ class CustomerMemoryResponse(CustomerMemoryBase):
 
 class CustomerProfileResponse(BaseModel):
     customer_id: UUID
-    memories: Dict[str, List[CustomerMemoryResponse]]
+    memories: dict[str, list[CustomerMemoryResponse]]

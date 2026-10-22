@@ -5,22 +5,41 @@ Clasifica automáticamente tickets por categoría y prioridad usando LLM.
 Detecta urgencia y keywords críticas para escalamiento automático.
 """
 
+import logging
 import uuid
-from typing import Optional, Tuple
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.support.models import TicketCategory, TicketPriority
 from app.domains.agents.ai_reply import generate_raw_ai_response
+from app.domains.support.models import TicketCategory, TicketPriority
 
+logger = logging.getLogger(__name__)
 
 # Keywords que disparan escalamiento inmediato a CRITICAL
 URGENT_KEYWORDS = [
-    "hackeado", "hack", "robo", "fraude", "estafa", "phishing",
-    "no funciona", "caído", "down", "error crítico", "bloqueado",
-    "dinero", "pago", "cobro", "facturación", "tarjeta",
-    "urgente", "emergencia", "ahora", "inmediato",
-    "eliminar cuenta", "borrar datos", "gdpr",
+    "hackeado",
+    "hack",
+    "robo",
+    "fraude",
+    "estafa",
+    "phishing",
+    "no funciona",
+    "caído",
+    "down",
+    "error crítico",
+    "bloqueado",
+    "dinero",
+    "pago",
+    "cobro",
+    "facturación",
+    "tarjeta",
+    "urgente",
+    "emergencia",
+    "ahora",
+    "inmediato",
+    "eliminar cuenta",
+    "borrar datos",
+    "gdpr",
 ]
 
 
@@ -29,7 +48,7 @@ async def classify_ticket(
     business_id: uuid.UUID,
     title: str,
     description: str,
-) -> Tuple[TicketCategory, TicketPriority, float]:
+) -> tuple[TicketCategory, TicketPriority, float]:
     """
     Clasifica un ticket usando LLM.
 
@@ -71,6 +90,7 @@ Classify this ticket:"""
             return TicketCategory.OTHER, TicketPriority.MEDIUM, 0.5
 
         import json
+
         data = json.loads(response.strip())
 
         category = _safe_category(data.get("category", "other"))
@@ -83,6 +103,7 @@ Classify this ticket:"""
 
         return category, priority, confidence
     except Exception:
+        logger.exception("classify_ticket: error inesperado")
         return TicketCategory.OTHER, TicketPriority.MEDIUM, 0.5
 
 

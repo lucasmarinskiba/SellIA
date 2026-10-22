@@ -4,19 +4,19 @@ The system INITIATES conversations autonomously.
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Any
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.outreach.models import OutreachLog, OutreachLogStatus
-from app.domains.outreach.service import FatigueScoringService
-from app.domains.channels.models import Conversation
-from app.domains.crm.models import LeadScore, Deal
-from app.domains.orders.models import Order
-from app.domains.agents.ai_reply import generate_raw_ai_response
 from app.core.logger import get_logger
+from app.domains.agents.ai_reply import generate_raw_ai_response
+from app.domains.channels.models import Conversation
+from app.domains.crm.models import Deal, LeadScore
+from app.domains.orders.models import Order
+from app.domains.outreach.models import OutreachLog
+from app.domains.outreach.service import FatigueScoringService
 
 logger = get_logger(__name__)
 
@@ -126,7 +126,7 @@ class ProactiveOutreachEngine:
         business_id: uuid.UUID,
         outreach_type: str,
         conversation_id: uuid.UUID,
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Generate a proactive outreach message for a conversation."""
         config = OUTREACH_TYPES.get(outreach_type)
         if not config:
@@ -135,7 +135,9 @@ class ProactiveOutreachEngine:
         # Check fatigue
         contact_check = await self.fatigue.can_contact_now(business_id, conversation_id)
         if not contact_check["can_contact"]:
-            logger.info(f"Proactive outreach blocked by fatigue for conv {conversation_id}: {contact_check['reason']}")
+            logger.info(
+                f"Proactive outreach blocked by fatigue for conv {conversation_id}: {contact_check['reason']}"
+            )
             return None
 
         # Get conversation context
@@ -163,10 +165,13 @@ class ProactiveOutreachEngine:
 
         # Get last order
         order_result = await self.db.execute(
-            select(Order).where(
+            select(Order)
+            .where(
                 Order.conversation_id == conversation_id,
                 Order.is_active == True,
-            ).order_by(desc(Order.created_at)).limit(1)
+            )
+            .order_by(desc(Order.created_at))
+            .limit(1)
         )
         last_order = order_result.scalar_one_or_none()
 
@@ -217,7 +222,9 @@ class ProactiveOutreachEngine:
                 ai_generated=True,
             )
 
-            logger.info(f"Generated proactive outreach {outreach_type} for conv {conversation_id}")
+            logger.info(
+                f"Generated proactive outreach {outreach_type} for conv {conversation_id}"
+            )
             return {
                 "outreach_type": outreach_type,
                 "conversation_id": str(conversation_id),
@@ -226,8 +233,8 @@ class ProactiveOutreachEngine:
                 "log_id": str(log.id),
             }
 
-        except Exception as e:
-            logger.exception(f"Failed to generate proactive outreach: {e}")
+        except Exception:
+            logger.exception("Failed to generate proactive outreach")
             return None
 
     def _build_outreach_prompt(
@@ -235,14 +242,14 @@ class ProactiveOutreachEngine:
         outreach_type: str,
         config: dict,
         conversation: Conversation,
-        score: Optional[LeadScore],
-        deal: Optional[Deal],
-        last_order: Optional[Order],
+        score: LeadScore | None,
+        deal: Deal | None,
+        last_order: Order | None,
     ) -> str:
         """Build contextual prompt for outreach generation."""
         parts = [f"Tipo de outreach: {config['name']}"]
         parts.append(f"Descripción: {config['description']}")
-        parts.append(f"Canal preferido: WhatsApp")
+        parts.append("Canal preferido: WhatsApp")
         parts.append(f"Lead: {conversation.lead_name or 'Cliente'}")
         parts.append(f"Canal de origen: {conversation.lead_source or 'desconocido'}")
 
@@ -250,35 +257,61 @@ class ProactiveOutreachEngine:
             parts.append(f"Lead score: {score.total_score} ({score.classification})")
 
         if deal:
-            parts.append(f"Deal actual: {deal.title or 'Sin título'} - Stage: {deal.stage}")
+            parts.append(
+                f"Deal actual: {deal.title or 'Sin título'} - Stage: {deal.stage}"
+            )
             if deal.value:
                 parts.append(f"Valor del deal: ${deal.value} {deal.currency}")
 
         if last_order:
-            days_ago = (datetime.now(timezone.utc) - last_order.created_at).days if last_order.created_at else 0
-            parts.append(f"Última compra: hace {days_ago} días - ${last_order.total_amount}")
+            days_ago = (
+                (datetime.now(UTC) - last_order.created_at).days
+                if last_order.created_at
+                else 0
+            )
+            parts.append(
+                f"Última compra: hace {days_ago} días - ${last_order.total_amount}"
+            )
 
         # Type-specific instructions
         if outreach_type == "cold_reactivation":
-            parts.append("Instrucción: El lead estuvo inactivo 30+ días. Enviar mensaje de valor puro (tip, insight, noticia relevante) SIN pedir nada a cambio. Corto, amigable, sin presión.")
+            parts.append(
+                "Instrucción: El lead estuvo inactivo 30+ días. Enviar mensaje de valor puro (tip, insight, noticia relevante) SIN pedir nada a cambio. Corto, amigable, sin presión."
+            )
         elif outreach_type == "warm_nurturing":
-            parts.append("Instrucción: Enviar contenido educativo relevante al negocio. Puede ser un tip, caso de éxito, o testimonio. Build trust.")
+            parts.append(
+                "Instrucción: Enviar contenido educativo relevante al negocio. Puede ser un tip, caso de éxito, o testimonio. Build trust."
+            )
         elif outreach_type == "hot_acceleration":
-            parts.append("Instrucción: El lead está caliente. Acelerar con propuesta clara, testimonio social, o scarcity/urgencia legítima.")
+            parts.append(
+                "Instrucción: El lead está caliente. Acelerar con propuesta clara, testimonio social, o scarcity/urgencia legítima."
+            )
         elif outreach_type == "cart_recovery":
-            parts.append("Instrucción: Recordarle amablemente que tiene items en el carrito. Ofrecer ayuda, no presionar. Preguntar si tiene dudas.")
+            parts.append(
+                "Instrucción: Recordarle amablemente que tiene items en el carrito. Ofrecer ayuda, no presionar. Preguntar si tiene dudas."
+            )
         elif outreach_type == "churn_recovery":
-            parts.append("Instrucción: El cliente muestra señales de insatisfacción. Mensaje de empatía, preguntar qué pasó, ofrecer solución. NO vender todavía.")
+            parts.append(
+                "Instrucción: El cliente muestra señales de insatisfacción. Mensaje de empatía, preguntar qué pasó, ofrecer solución. NO vender todavía."
+            )
         elif outreach_type == "upsell":
-            parts.append("Instrucción: Cliente satisfecho. Recomendar producto/servicio complementario basado en su compra anterior. Incluir beneficio claro.")
+            parts.append(
+                "Instrucción: Cliente satisfecho. Recomendar producto/servicio complementario basado en su compra anterior. Incluir beneficio claro."
+            )
         elif outreach_type == "referral_request":
-            parts.append("Instrucción: Cliente campeón. Pedir referido con incentivo. Agradecer primero, luego pedir. Hacerlo fácil.")
+            parts.append(
+                "Instrucción: Cliente campeón. Pedir referido con incentivo. Agradecer primero, luego pedir. Hacerlo fácil."
+            )
         elif outreach_type == "review_request":
-            parts.append("Instrucción: Post-compra. Pedir review/NPS amablemente. Agradecer por la confianza. Incluir link.")
+            parts.append(
+                "Instrucción: Post-compra. Pedir review/NPS amablemente. Agradecer por la confianza. Incluir link."
+            )
 
         return "\n\n".join(parts)
 
-    async def schedule_outreach_for_business(self, business_id: uuid.UUID) -> list[dict[str, Any]]:
+    async def schedule_outreach_for_business(
+        self, business_id: uuid.UUID
+    ) -> list[dict[str, Any]]:
         """Schedule all proactive outreach for a business for today."""
         results = []
 
@@ -286,11 +319,15 @@ class ProactiveOutreachEngine:
             try:
                 targets = await self._find_targets(business_id, outreach_type, config)
                 for conv_id in targets:
-                    result = await self.generate_outreach(business_id, outreach_type, conv_id)
+                    result = await self.generate_outreach(
+                        business_id, outreach_type, conv_id
+                    )
                     if result:
                         results.append(result)
-            except Exception as e:
-                logger.error(f"Failed to schedule {outreach_type} for business {business_id}: {e}")
+            except Exception:
+                logger.exception(
+                    f"Failed to schedule {outreach_type} for business {business_id}"
+                )
 
         return results
 
@@ -305,75 +342,99 @@ class ProactiveOutreachEngine:
         frequency_days = config["frequency_days"]
         max_per_day = config["max_per_day"]
 
-        since = datetime.now(timezone.utc) - timedelta(days=frequency_days)
+        since = datetime.now(UTC) - timedelta(days=frequency_days)
 
         if target_segment == "cold":
             # Leads with score < 40 and no activity in frequency_days
             result = await self.db.execute(
-                select(LeadScore.conversation_id).where(
+                select(LeadScore.conversation_id)
+                .where(
                     LeadScore.business_id == business_id,
                     LeadScore.classification == "cold",
                     LeadScore.last_calculated_at < since,
-                ).limit(max_per_day)
+                )
+                .limit(max_per_day)
             )
             return [row[0] for row in result.all()]
 
         elif target_segment == "warm":
             result = await self.db.execute(
-                select(LeadScore.conversation_id).where(
+                select(LeadScore.conversation_id)
+                .where(
                     LeadScore.business_id == business_id,
                     LeadScore.classification == "warm",
-                ).limit(max_per_day)
+                )
+                .limit(max_per_day)
             )
             return [row[0] for row in result.all()]
 
         elif target_segment == "hot":
             result = await self.db.execute(
-                select(LeadScore.conversation_id).where(
+                select(LeadScore.conversation_id)
+                .where(
                     LeadScore.business_id == business_id,
                     LeadScore.classification == "hot",
-                ).limit(max_per_day)
+                )
+                .limit(max_per_day)
             )
             return [row[0] for row in result.all()]
 
         elif target_segment == "cart_abandoned":
             # Pending orders older than 1 day
             result = await self.db.execute(
-                select(Order.conversation_id).where(
+                select(Order.conversation_id)
+                .where(
                     Order.business_id == business_id,
                     Order.status == "pending",
-                    Order.created_at < datetime.now(timezone.utc) - timedelta(days=1),
-                ).limit(max_per_day)
+                    Order.created_at < datetime.now(UTC) - timedelta(days=1),
+                )
+                .limit(max_per_day)
             )
             return [row[0] for row in result.all() if row[0]]
 
         elif target_segment == "at_risk":
-            from app.domains.retention.models import CustomerSegment, CustomerSegmentType
+            from app.domains.retention.models import (
+                CustomerSegment,
+                CustomerSegmentType,
+            )
+
             result = await self.db.execute(
-                select(CustomerSegment.conversation_id).where(
+                select(CustomerSegment.conversation_id)
+                .where(
                     CustomerSegment.business_id == business_id,
-                    CustomerSegment.segment.in_([CustomerSegmentType.AT_RISK, CustomerSegmentType.LOST]),
-                ).limit(max_per_day)
+                    CustomerSegment.segment.in_(
+                        [CustomerSegmentType.AT_RISK, CustomerSegmentType.LOST]
+                    ),
+                )
+                .limit(max_per_day)
             )
             return [row[0] for row in result.all()]
 
         elif target_segment == "champions":
-            from app.domains.retention.models import CustomerSegment, CustomerSegmentType
+            from app.domains.retention.models import (
+                CustomerSegment,
+                CustomerSegmentType,
+            )
+
             result = await self.db.execute(
-                select(CustomerSegment.conversation_id).where(
+                select(CustomerSegment.conversation_id)
+                .where(
                     CustomerSegment.business_id == business_id,
                     CustomerSegment.segment == CustomerSegmentType.CHAMPIONS,
-                ).limit(max_per_day)
+                )
+                .limit(max_per_day)
             )
             return [row[0] for row in result.all()]
 
         elif target_segment == "recent_buyers":
             result = await self.db.execute(
-                select(Order.conversation_id).where(
+                select(Order.conversation_id)
+                .where(
                     Order.business_id == business_id,
                     Order.status == "paid",
-                    Order.paid_at >= datetime.now(timezone.utc) - timedelta(days=7),
-                ).limit(max_per_day)
+                    Order.paid_at >= datetime.now(UTC) - timedelta(days=7),
+                )
+                .limit(max_per_day)
             )
             return [row[0] for row in result.all() if row[0]]
 

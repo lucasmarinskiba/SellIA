@@ -1,19 +1,19 @@
 """Email authentication & account approval service."""
 
-from dataclasses import dataclass
-from datetime import datetime, timedelta
-from typing import Optional, List
-import secrets
 import logging
+import secrets
+from dataclasses import dataclass
+from datetime import timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.clock import utc_now
 from app.models.email_auth import (
-    EmailVerificationToken,
     AccountApproval,
     ApprovalAuditLog,
     EmailTemplate,
+    EmailVerificationToken,
 )
 from app.models.user import User
 from celery_app import celery_app
@@ -29,7 +29,7 @@ class EmailVerificationResult:
     user_id: str
     email: str
     message: str
-    error_code: Optional[str] = None
+    error_code: str | None = None
 
 
 @dataclass
@@ -39,8 +39,8 @@ class ApprovalRequest:
     user_id: str
     email: str
     full_name: str
-    company: Optional[str]
-    role: Optional[str]
+    company: str | None
+    role: str | None
     auto_approved: bool
 
 
@@ -58,7 +58,7 @@ class EmailAuthManager:
         """Generate verification token & queue email."""
 
         token = secrets.token_urlsafe(32)
-        expires_at = datetime.utcnow() + timedelta(hours=24)
+        expires_at = utc_now() + timedelta(hours=24)
 
         verification = EmailVerificationToken(
             user_id=user_id,
@@ -82,7 +82,8 @@ class EmailAuthManager:
         """Verify email token and mark as verified."""
 
         query = select(EmailVerificationToken).where(
-            (EmailVerificationToken.token == token) & (EmailVerificationToken.is_verified == False)
+            (EmailVerificationToken.token == token)
+            & (EmailVerificationToken.is_verified == False)
         )
         verification = self.db.execute(query).scalar()
 
@@ -95,7 +96,7 @@ class EmailAuthManager:
                 error_code="TOKEN_NOT_FOUND",
             )
 
-        if datetime.utcnow() > verification.expires_at:
+        if utc_now() > verification.expires_at:
             return EmailVerificationResult(
                 success=False,
                 user_id=verification.user_id,
@@ -105,13 +106,13 @@ class EmailAuthManager:
             )
 
         verification.is_verified = True
-        verification.verified_at = datetime.utcnow()
+        verification.verified_at = utc_now()
         self.db.add(verification)
 
         user = self.db.query(User).filter(User.id == verification.user_id).first()
         if user:
             user.email_verified = True
-            user.verified_at = datetime.utcnow()
+            user.verified_at = utc_now()
             self.db.add(user)
 
         self.db.commit()
@@ -134,8 +135,8 @@ class EmailAuthManager:
         user_id: str,
         email: str,
         full_name: str,
-        company: Optional[str] = None,
-        role: Optional[str] = None,
+        company: str | None = None,
+        role: str | None = None,
     ) -> ApprovalRequest:
         """Create account approval request."""
 
@@ -148,7 +149,7 @@ class EmailAuthManager:
             company=company,
             role=role,
             approval_status="approved" if auto_approved else "pending",
-            approved_at=datetime.utcnow() if auto_approved else None,
+            approved_at=utc_now() if auto_approved else None,
             auto_approved=auto_approved,
             requested_by=user_id,
         )
@@ -185,21 +186,29 @@ class EmailAuthManager:
             auto_approved=auto_approved,
         )
 
-    def approve_account(self, approval_id: str, admin_id: str, notes: Optional[str] = None) -> bool:
+    def approve_account(
+        self, approval_id: str, admin_id: str, notes: str | None = None
+    ) -> bool:
         """Approve account (admin action)."""
 
-        approval = self.db.query(AccountApproval).filter(AccountApproval.id == approval_id).first()
+        approval = (
+            self.db.query(AccountApproval)
+            .filter(AccountApproval.id == approval_id)
+            .first()
+        )
 
         if not approval or approval.approval_status != "pending":
             return False
 
         approval.approval_status = "approved"
         approval.approved_by = admin_id
-        approval.approved_at = datetime.utcnow()
+        approval.approved_at = utc_now()
         approval.approval_notes = notes
         self.db.add(approval)
 
-        audit = ApprovalAuditLog(approval_id=approval_id, action="approved", actor_id=admin_id, notes=notes)
+        audit = ApprovalAuditLog(
+            approval_id=approval_id, action="approved", actor_id=admin_id, notes=notes
+        )
         self.db.add(audit)
 
         user = self.db.query(User).filter(User.id == approval.user_id).first()
@@ -211,28 +220,40 @@ class EmailAuthManager:
         self.db.commit()
 
         send_approval_email.delay(
-            user_id=approval.user_id, email=approval.email, full_name=approval.full_name, approved=True
+            user_id=approval.user_id,
+            email=approval.email,
+            full_name=approval.full_name,
+            approved=True,
         )
 
         logger.info(f"Account approved: {approval.email} (by {admin_id})")
         return True
 
-    def reject_account(self, approval_id: str, admin_id: str, rejection_reason: str) -> bool:
+    def reject_account(
+        self, approval_id: str, admin_id: str, rejection_reason: str
+    ) -> bool:
         """Reject account (admin action)."""
 
-        approval = self.db.query(AccountApproval).filter(AccountApproval.id == approval_id).first()
+        approval = (
+            self.db.query(AccountApproval)
+            .filter(AccountApproval.id == approval_id)
+            .first()
+        )
 
         if not approval or approval.approval_status != "pending":
             return False
 
         approval.approval_status = "rejected"
         approval.approved_by = admin_id
-        approval.approved_at = datetime.utcnow()
+        approval.approved_at = utc_now()
         approval.rejection_reason = rejection_reason
         self.db.add(approval)
 
         audit = ApprovalAuditLog(
-            approval_id=approval_id, action="rejected", actor_id=admin_id, notes=rejection_reason
+            approval_id=approval_id,
+            action="rejected",
+            actor_id=admin_id,
+            notes=rejection_reason,
         )
         self.db.add(audit)
         self.db.commit()
@@ -246,7 +267,7 @@ class EmailAuthManager:
 
         return True
 
-    def get_pending_approvals(self, limit: int = 100) -> List[dict]:
+    def get_pending_approvals(self, limit: int = 100) -> list[dict]:
         """Get pending account approvals."""
 
         approvals = (
@@ -269,7 +290,7 @@ class EmailAuthManager:
             for a in approvals
         ]
 
-    def get_approval_status(self, user_id: str) -> Optional[dict]:
+    def get_approval_status(self, user_id: str) -> dict | None:
         """Get account approval status for user."""
 
         approval = (
@@ -284,12 +305,14 @@ class EmailAuthManager:
 
         return {
             "approval_status": approval.approval_status,
-            "approved_at": approval.approved_at.isoformat() if approval.approved_at else None,
+            "approved_at": (
+                approval.approved_at.isoformat() if approval.approved_at else None
+            ),
             "rejection_reason": approval.rejection_reason,
             "auto_approved": approval.auto_approved,
         }
 
-    def _check_auto_approval(self, email: str, company: Optional[str]) -> bool:
+    def _check_auto_approval(self, email: str, company: str | None) -> bool:
         """Check if should auto-approve based on rules."""
         # TODO: Implement auto-approval logic
         return False
@@ -300,9 +323,13 @@ class EmailAuthManager:
 # ============================================================
 
 
-def get_email_template(template_name: str, db: Session) -> Optional[EmailTemplate]:
+def get_email_template(template_name: str, db: Session) -> EmailTemplate | None:
     """Get email template by name."""
-    return db.query(EmailTemplate).filter(EmailTemplate.template_name == template_name).first()
+    return (
+        db.query(EmailTemplate)
+        .filter(EmailTemplate.template_name == template_name)
+        .first()
+    )
 
 
 def send_email(to_email: str, subject: str, body: str, html: bool = True) -> bool:
@@ -313,7 +340,9 @@ def send_email(to_email: str, subject: str, body: str, html: bool = True) -> boo
 
 
 @celery_app.task(bind=True, max_retries=3)
-def send_verification_email(self, user_id: str, email: str, token: str, verification_url: str):
+def send_verification_email(
+    self, user_id: str, email: str, token: str, verification_url: str
+):
     """Send verification email to user."""
     try:
         from app.core.database import SessionLocal
@@ -334,12 +363,14 @@ def send_verification_email(self, user_id: str, email: str, token: str, verifica
         return {"status": "sent", "email": email}
 
     except Exception as exc:
-        logger.error(f"Failed to send verification email: {exc}")
+        logger.exception("Failed to send verification email")
         raise self.retry(exc=exc, countdown=60)
 
 
 @celery_app.task(bind=True, max_retries=3)
-def notify_admins_approval_pending(self, approval_id: str, user_email: str, user_name: str, company: str):
+def notify_admins_approval_pending(
+    self, approval_id: str, user_email: str, user_name: str, company: str
+):
     """Notify admins of pending approval."""
     try:
         from app.core.database import SessionLocal
@@ -359,15 +390,20 @@ def notify_admins_approval_pending(self, approval_id: str, user_email: str, user
             body = body.replace("{{full_name}}", user_name)
             body = body.replace("{{email}}", user_email)
             body = body.replace("{{company}}", company or "N/A")
-            body = body.replace("{{approval_url}}", f"https://app.sellia.com/admin/approvals/{approval_id}")
+            body = body.replace(
+                "{{approval_url}}",
+                f"https://app.sellia.com/admin/approvals/{approval_id}",
+            )
 
-            send_email(to_email=admin_email, subject=template.subject, body=body, html=True)
+            send_email(
+                to_email=admin_email, subject=template.subject, body=body, html=True
+            )
 
         logger.info(f"Admin notification sent for approval {approval_id}")
         db.close()
 
     except Exception as exc:
-        logger.error(f"Failed to notify admins: {exc}")
+        logger.exception("Failed to notify admins")
         raise self.retry(exc=exc, countdown=60)
 
 
@@ -394,7 +430,7 @@ def send_approval_email(self, user_id: str, email: str, full_name: str, approved
         db.close()
 
     except Exception as exc:
-        logger.error(f"Failed to send approval email: {exc}")
+        logger.exception("Failed to send approval email")
         raise self.retry(exc=exc, countdown=60)
 
 
@@ -423,5 +459,5 @@ def send_rejection_email(
         db.close()
 
     except Exception as exc:
-        logger.error(f"Failed to send rejection email: {exc}")
+        logger.exception("Failed to send rejection email")
         raise self.retry(exc=exc, countdown=60)

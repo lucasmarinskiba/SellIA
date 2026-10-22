@@ -10,20 +10,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.competitive import service as competitive_service
 from app.domains.competitive.intelligence_engine import CompetitiveIntelligenceEngine
 from app.domains.competitive.schemas import (
     BattlecardCreate,
-    BattlecardUpdate,
     BattlecardOut,
-    BattlecardCompareOut,
+    BattlecardUpdate,
     MonitorCreate,
-    MonitorUpdate,
     MonitorOut,
-    ScrapeResult,
-    IntelligenceDashboard,
 )
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/battlecards", tags=["competitive"])
 intelligence_router = APIRouter(prefix="/competitive", tags=["competitive"])
@@ -37,6 +33,7 @@ async def get_db():
 # ═══════════════════════════════════════════════════════
 #   Battlecards (existentes)
 # ═══════════════════════════════════════════════════════
+
 
 @router.get("", response_model=list[BattlecardOut])
 async def list_battlecards(
@@ -66,7 +63,9 @@ async def get_battlecard(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get a single battlecard."""
-    battlecard = await competitive_service.get_battlecard(db, battlecard_id, current_user.id)
+    battlecard = await competitive_service.get_battlecard(
+        db, battlecard_id, current_user.id
+    )
     if not battlecard:
         raise HTTPException(status_code=404, detail="Battlecard no encontrado")
     return battlecard
@@ -80,7 +79,9 @@ async def update_battlecard(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Update a battlecard."""
-    battlecard = await competitive_service.get_battlecard(db, battlecard_id, current_user.id)
+    battlecard = await competitive_service.get_battlecard(
+        db, battlecard_id, current_user.id
+    )
     if not battlecard:
         raise HTTPException(status_code=404, detail="Battlecard no encontrado")
     return await competitive_service.update_battlecard(
@@ -95,11 +96,12 @@ async def delete_battlecard(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Delete a battlecard."""
-    battlecard = await competitive_service.get_battlecard(db, battlecard_id, current_user.id)
+    battlecard = await competitive_service.get_battlecard(
+        db, battlecard_id, current_user.id
+    )
     if not battlecard:
         raise HTTPException(status_code=404, detail="Battlecard no encontrado")
     await competitive_service.delete_battlecard(db, battlecard)
-    return None
 
 
 @router.get("/{battlecard_id}/compare")
@@ -109,7 +111,9 @@ async def compare_battlecard(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Return structured comparison data for a battlecard."""
-    battlecard = await competitive_service.get_battlecard(db, battlecard_id, current_user.id)
+    battlecard = await competitive_service.get_battlecard(
+        db, battlecard_id, current_user.id
+    )
     if not battlecard:
         raise HTTPException(status_code=404, detail="Battlecard no encontrado")
     return await competitive_service.get_comparison_data(battlecard)
@@ -119,7 +123,10 @@ async def compare_battlecard(
 #   Competitive Intelligence (nuevo)
 # ═══════════════════════════════════════════════════════
 
-@intelligence_router.post("/monitors", response_model=MonitorOut, status_code=status.HTTP_201_CREATED)
+
+@intelligence_router.post(
+    "/monitors", response_model=MonitorOut, status_code=status.HTTP_201_CREATED
+)
 async def create_monitor(
     data: MonitorCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -143,7 +150,8 @@ async def list_monitors(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Lista los competidores monitoreados."""
-    from sqlalchemy import select, desc
+    from sqlalchemy import desc, select
+
     from app.domains.competitive.models import CompetitiveMonitor
 
     result = await db.execute(
@@ -172,7 +180,8 @@ async def get_competitive_alerts(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Alertas recientes generadas por cambios de competidores."""
-    from sqlalchemy import select, desc
+    from sqlalchemy import desc, select
+
     from app.domains.alerts.models import Alert
 
     result = await db.execute(
@@ -201,7 +210,9 @@ async def scrape_monitor(
     return result
 
 
-@intelligence_router.delete("/monitors/{monitor_id}", status_code=status.HTTP_204_NO_CONTENT)
+@intelligence_router.delete(
+    "/monitors/{monitor_id}", status_code=status.HTTP_204_NO_CONTENT
+)
 async def delete_monitor(
     monitor_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -209,6 +220,7 @@ async def delete_monitor(
 ):
     """Elimina un monitor de competidor."""
     from sqlalchemy import select
+
     from app.domains.competitive.models import CompetitiveMonitor
 
     result = await db.execute(
@@ -219,4 +231,3 @@ async def delete_monitor(
         raise HTTPException(status_code=404, detail="Monitor no encontrado")
     await db.delete(monitor)
     await db.commit()
-    return None

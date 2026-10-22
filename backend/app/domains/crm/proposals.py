@@ -5,23 +5,23 @@ proposal document using expert sales voices (Belfort, Hormozi, etc.).
 """
 
 import uuid
-from typing import Dict, Any, Optional
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.crm.models import Deal, LeadStage
-from app.domains.channels.models import Conversation, Message
-from app.domains.catalogs.models import CatalogItem
 from app.domains.agents.ai_reply import generate_ai_response
+from app.domains.catalogs.models import CatalogItem
+from app.domains.channels.models import Conversation, Message
+from app.domains.crm.models import Deal
 
 
 async def generate_deal_proposal(
     db: AsyncSession,
     deal: Deal,
     business_id: uuid.UUID,
-    voice_slug: Optional[str] = None,
-) -> Optional[Dict[str, Any]]:
+    voice_slug: str | None = None,
+) -> dict[str, Any] | None:
     """Generate a professional sales proposal for a deal.
 
     Analyzes conversation history, catalog items, and deal context to generate
@@ -41,29 +41,40 @@ async def generate_deal_proposal(
         return None
 
     result = await db.execute(
-        select(Message).where(
-            Message.conversation_id == conversation.id
-        ).order_by(Message.created_at.desc()).limit(15)
+        select(Message)
+        .where(Message.conversation_id == conversation.id)
+        .order_by(Message.created_at.desc())
+        .limit(15)
     )
     messages = list(reversed(result.scalars().all()))
-    conversation_summary = "\n".join([
-        f"{'Lead' if m.direction.value == 'inbound' else 'Agent'}: {m.content[:300]}"
-        for m in messages
-    ])
+    conversation_summary = "\n".join(
+        [
+            f"{'Lead' if m.direction.value == 'inbound' else 'Agent'}: {m.content[:300]}"
+            for m in messages
+        ]
+    )
 
     # Fetch catalog items for this business (for context)
     result = await db.execute(
-        select(CatalogItem).where(
+        select(CatalogItem)
+        .where(
             CatalogItem.business_id == business_id,
             CatalogItem.is_active == True,
             CatalogItem.is_available == True,
-        ).limit(10)
+        )
+        .limit(10)
     )
     catalog_items = result.scalars().all()
-    catalog_summary = "\n".join([
-        f"- {item.name}: ${item.price} {item.currency} — {item.description[:100] if item.description else 'Sin descripción'}"
-        for item in catalog_items
-    ]) if catalog_items else "No hay productos/servicios en catálogo."
+    catalog_summary = (
+        "\n".join(
+            [
+                f"- {item.name}: ${item.price} {item.currency} — {item.description[:100] if item.description else 'Sin descripción'}"
+                for item in catalog_items
+            ]
+        )
+        if catalog_items
+        else "No hay productos/servicios en catálogo."
+    )
 
     custom_prompt = f"""Genera una propuesta de venta profesional en español basada en esta oportunidad.
 
@@ -111,7 +122,9 @@ URGENCY: <línea de cierre que cree urgencia sin ser agresivo>"""
         "next_steps": "",
         "urgency": "",
         "raw": ai_response,
-        "generated_at": __import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat(),
+        "generated_at": __import__("datetime")
+        .datetime.now(__import__("datetime").timezone.utc)
+        .isoformat(),
     }
 
     current_key = None

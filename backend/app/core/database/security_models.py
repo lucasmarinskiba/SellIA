@@ -4,9 +4,10 @@ These models are defined here for Alembic migration purposes.
 Import in main ORM registry during app startup.
 """
 
-from sqlalchemy import Column, String, DateTime, JSON, Integer, Boolean, Text, Index, ForeignKey
+from datetime import UTC, datetime
+
+from sqlalchemy import JSON, Boolean, Column, DateTime, Index, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
-from datetime import datetime, timezone
 
 Base = declarative_base()
 
@@ -43,7 +44,7 @@ class AuditLog(Base):
     is_risk = Column(Boolean, default=False, index=True)
     risk_score = Column(Integer, nullable=True)
     risk_reason = Column(String(255), nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), index=True)
     expires_at = Column(DateTime, nullable=True)
 
 
@@ -68,8 +69,8 @@ class TOTP2FA(Base):
     verified_at = Column(DateTime, nullable=True)
     last_used_at = Column(DateTime, nullable=True)
     failed_attempts = Column(Integer, default=0)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
 
 class APIKey(Base):
@@ -97,7 +98,7 @@ class APIKey(Base):
     rate_limit_per_min = Column(Integer, default=60)
     last_used_at = Column(DateTime, nullable=True)
     last_used_ip = Column(String(50), nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
     expires_at = Column(DateTime, nullable=False)
     rotation_scheduled_at = Column(DateTime, nullable=True)
     rotated_at = Column(DateTime, nullable=True)

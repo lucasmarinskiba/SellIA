@@ -1,72 +1,75 @@
 """Shipments Schemas"""
 
-from uuid import UUID
 from datetime import datetime
-from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, ConfigDict
+from typing import Any
+from uuid import UUID
 
+from pydantic import BaseModel, ConfigDict, Field
 
 # ========== Address Schema ==========
 
+
 class Address(BaseModel):
     name: str
-    company: Optional[str] = None
+    company: str | None = None
     street: str
     city: str
     state: str
     zip: str
     country: str = "AR"
-    phone: Optional[str] = None
-    email: Optional[str] = None
+    phone: str | None = None
+    email: str | None = None
 
 
 # ========== Package Schema ==========
 
+
 class PackageItem(BaseModel):
     name: str
     qty: int = 1
-    sku: Optional[str] = None
+    sku: str | None = None
 
 
 class Package(BaseModel):
     weight_kg: float = Field(..., gt=0)
-    length_cm: Optional[float] = None
-    width_cm: Optional[float] = None
-    height_cm: Optional[float] = None
-    items: List[PackageItem] = Field(default_factory=list)
-    description: Optional[str] = None
+    length_cm: float | None = None
+    width_cm: float | None = None
+    height_cm: float | None = None
+    items: list[PackageItem] = Field(default_factory=list)
+    description: str | None = None
 
 
 # ========== Shipment Config Schemas ==========
 
+
 class ShipmentConfigCreate(BaseModel):
     carrier: str
-    label: Optional[str] = None
-    credentials: Dict[str, Any] = Field(default_factory=dict)
+    label: str | None = None
+    credentials: dict[str, Any] = Field(default_factory=dict)
     is_test_mode: bool = False
     is_active: bool = True
-    default_service_type: Optional[str] = None
-    default_from_address: Optional[Address] = None
+    default_service_type: str | None = None
+    default_from_address: Address | None = None
 
 
 class ShipmentConfigUpdate(BaseModel):
-    label: Optional[str] = None
-    credentials: Optional[Dict[str, Any]] = None
-    is_test_mode: Optional[bool] = None
-    is_active: Optional[bool] = None
-    default_service_type: Optional[str] = None
-    default_from_address: Optional[Address] = None
+    label: str | None = None
+    credentials: dict[str, Any] | None = None
+    is_test_mode: bool | None = None
+    is_active: bool | None = None
+    default_service_type: str | None = None
+    default_from_address: Address | None = None
 
 
 class ShipmentConfigResponse(BaseModel):
     id: UUID
     business_id: UUID
     carrier: str
-    label: Optional[str]
+    label: str | None
     is_test_mode: bool
     is_active: bool
-    default_service_type: Optional[str]
-    default_from_address: Optional[Dict[str, Any]]
+    default_service_type: str | None
+    default_from_address: dict[str, Any] | None
     created_at: datetime
     updated_at: datetime
     model_config = ConfigDict(from_attributes=True)
@@ -74,13 +77,14 @@ class ShipmentConfigResponse(BaseModel):
 
 # ========== Shipment Tracking Event Schemas ==========
 
+
 class ShipmentTrackingEventResponse(BaseModel):
     id: UUID
     shipment_id: UUID
-    event_code: Optional[str]
+    event_code: str | None
     event_description: str
-    location: Optional[str]
-    carrier_status: Optional[str]
+    location: str | None
+    carrier_status: str | None
     event_at: datetime
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
@@ -88,60 +92,61 @@ class ShipmentTrackingEventResponse(BaseModel):
 
 # ========== Shipment Schemas ==========
 
+
 class ShipmentCreate(BaseModel):
     order_id: UUID
-    config_id: Optional[UUID] = None
+    config_id: UUID | None = None
     carrier: str
-    service_type: Optional[str] = "standard"
-    from_address: Optional[Address] = None
-    to_address: Optional[Address] = None
+    service_type: str | None = "standard"
+    from_address: Address | None = None
+    to_address: Address | None = None
     package: Package
-    shipping_cost: Optional[float] = None
-    insurance_amount: Optional[float] = None
-    declared_value: Optional[float] = None
-    estimated_delivery_date: Optional[datetime] = None
-    notes: Optional[str] = None
+    shipping_cost: float | None = None
+    insurance_amount: float | None = None
+    declared_value: float | None = None
+    estimated_delivery_date: datetime | None = None
+    notes: str | None = None
     auto_generate_label: bool = False
     notify_customer: bool = False
-    notification_channel: Optional[str] = None
+    notification_channel: str | None = None
 
 
 class ShipmentUpdate(BaseModel):
-    tracking_number: Optional[str] = None
-    tracking_url: Optional[str] = None
-    status: Optional[str] = None
-    label_url: Optional[str] = None
-    label_data: Optional[str] = None
-    shipping_cost: Optional[float] = None
-    estimated_delivery_date: Optional[datetime] = None
-    actual_delivery_date: Optional[datetime] = None
-    notes: Optional[str] = None
-    is_active: Optional[bool] = None
+    tracking_number: str | None = None
+    tracking_url: str | None = None
+    status: str | None = None
+    label_url: str | None = None
+    label_data: str | None = None
+    shipping_cost: float | None = None
+    estimated_delivery_date: datetime | None = None
+    actual_delivery_date: datetime | None = None
+    notes: str | None = None
+    is_active: bool | None = None
 
 
 class ShipmentResponse(BaseModel):
     id: UUID
     business_id: UUID
     order_id: UUID
-    config_id: Optional[UUID]
+    config_id: UUID | None
     carrier: str
     service_type: str
     status: str
-    tracking_number: Optional[str]
-    tracking_url: Optional[str]
-    label_url: Optional[str]
-    from_address: Dict[str, Any]
-    to_address: Dict[str, Any]
-    package: Dict[str, Any]
-    shipping_cost: Optional[float]
-    insurance_amount: Optional[float]
-    declared_value: Optional[float]
-    estimated_delivery_date: Optional[datetime]
-    actual_delivery_date: Optional[datetime]
-    picked_up_at: Optional[datetime]
-    customer_notified_at: Optional[datetime]
-    notification_channel: Optional[str]
-    notes: Optional[str]
+    tracking_number: str | None
+    tracking_url: str | None
+    label_url: str | None
+    from_address: dict[str, Any]
+    to_address: dict[str, Any]
+    package: dict[str, Any]
+    shipping_cost: float | None
+    insurance_amount: float | None
+    declared_value: float | None
+    estimated_delivery_date: datetime | None
+    actual_delivery_date: datetime | None
+    picked_up_at: datetime | None
+    customer_notified_at: datetime | None
+    notification_channel: str | None
+    notes: str | None
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -149,24 +154,25 @@ class ShipmentResponse(BaseModel):
 
 
 class ShipmentDetailResponse(ShipmentResponse):
-    tracking_events: List[ShipmentTrackingEventResponse] = Field(default_factory=list)
+    tracking_events: list[ShipmentTrackingEventResponse] = Field(default_factory=list)
 
 
 class ShipmentListResponse(BaseModel):
-    items: List[ShipmentResponse]
+    items: list[ShipmentResponse]
     total: int
 
 
 # ========== Carrier Info ==========
+
 
 class CarrierInfo(BaseModel):
     id: str
     name: str
     label: str
     country: str
-    service_types: List[str]
-    features: List[str]  # label_generation, tracking, pickup, insurance, international
-    icon: Optional[str] = None
+    service_types: list[str]
+    features: list[str]  # label_generation, tracking, pickup, insurance, international
+    icon: str | None = None
 
 
 class RefreshTrackingResponse(BaseModel):
@@ -178,5 +184,5 @@ class RefreshTrackingResponse(BaseModel):
 
 class NotifyCustomerResponse(BaseModel):
     success: bool
-    channel: Optional[str]
+    channel: str | None
     message: str

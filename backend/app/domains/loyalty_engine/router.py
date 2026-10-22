@@ -8,16 +8,17 @@ pero nunca instanciados. Ahora enroll crea/actualiza una fila real,
 loyalty-status la lee (404 si nunca se inscribió), y unlock-vip actualiza
 esa misma fila.
 """
-import uuid
-from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, Body, HTTPException
+import uuid
+from datetime import UTC, datetime
+from typing import Annotated
+
+from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.domains.loyalty_engine.models import LoyaltyProgram, RetentionSequence
-
 
 router = APIRouter(prefix="/api/v1/loyalty-engine", tags=["loyalty-engine"])
 
@@ -63,25 +64,33 @@ RETENTION_SEQUENCES = {
 
 def _tier_for_points(points: float) -> str:
     for tier, low, high in TIER_THRESHOLDS:
-        if high is None or (low <= points <= high):
-            if points >= low:
-                return tier
+        if (high is None or (low <= points <= high)) and points >= low:
+            return tier
     return "bronze"
 
 
 def _progress_to_next_tier(points: float) -> dict:
     for i, (tier, low, high) in enumerate(TIER_THRESHOLDS):
         if high is not None and low <= points <= high:
-            next_tier, next_low, _ = TIER_THRESHOLDS[i + 1]
-            return {"points_to_next_tier": next_low - points, "progress_to_next": (points - low) / (next_low - low)}
+            _next_tier, next_low, _ = TIER_THRESHOLDS[i + 1]
+            return {
+                "points_to_next_tier": next_low - points,
+                "progress_to_next": (points - low) / (next_low - low),
+            }
     return {"points_to_next_tier": 0, "progress_to_next": 1.0}
 
 
-async def _get_or_create_program(db: AsyncSession, user_id: str, email: str | None = None) -> LoyaltyProgram:
-    result = await db.execute(select(LoyaltyProgram).where(LoyaltyProgram.user_id == user_id))
+async def _get_or_create_program(
+    db: AsyncSession, user_id: str, email: str | None = None
+) -> LoyaltyProgram:
+    result = await db.execute(
+        select(LoyaltyProgram).where(LoyaltyProgram.user_id == user_id)
+    )
     program = result.scalars().first()
     if program is None:
-        program = LoyaltyProgram(id=str(uuid.uuid4()), user_id=user_id, email=email or f"{user_id}@unknown")
+        program = LoyaltyProgram(
+            id=str(uuid.uuid4()), user_id=user_id, email=email or f"{user_id}@unknown"
+        )
         db.add(program)
         await db.commit()
         await db.refresh(program)
@@ -91,8 +100,8 @@ async def _get_or_create_program(db: AsyncSession, user_id: str, email: str | No
 @router.post("/enroll-loyalty/{user_id}")
 async def enroll_loyalty_program(
     user_id: str,
-    email: str = Body(...),
-    db: AsyncSession = Depends(get_db),
+    email: Annotated[str, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Enroll customer in loyalty program - crea la fila real, idempotente."""
     program = await _get_or_create_program(db, user_id, email)
@@ -116,7 +125,7 @@ async def enroll_loyalty_program(
 async def trigger_retention_sequence(
     user_id: str,
     sequence_type: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Trigger automated retention sequence - persiste la secuencia real."""
     steps = RETENTION_SEQUENCES.get(sequence_type, {})
@@ -131,7 +140,7 @@ async def trigger_retention_sequence(
         step_3_message=steps.get("step_3"),
         step_4_message=steps.get("step_4"),
         step_5_message=steps.get("step_5"),
-        started_at=datetime.now(timezone.utc),
+        started_at=datetime.now(UTC),
     )
     db.add(record)
     await db.commit()
@@ -151,13 +160,18 @@ async def trigger_retention_sequence(
 @router.get("/loyalty-status/{user_id}")
 async def get_loyalty_status(
     user_id: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Get customer loyalty tier + progress - lee la fila real, 404 si nunca se inscribió."""
-    result = await db.execute(select(LoyaltyProgram).where(LoyaltyProgram.user_id == user_id))
+    result = await db.execute(
+        select(LoyaltyProgram).where(LoyaltyProgram.user_id == user_id)
+    )
     program = result.scalars().first()
     if program is None:
-        raise HTTPException(status_code=404, detail=f"user_id={user_id} no está inscripto en el programa de loyalty")
+        raise HTTPException(
+            status_code=404,
+            detail=f"user_id={user_id} no está inscripto en el programa de loyalty",
+        )
 
     progress = _progress_to_next_tier(program.points_balance)
 
@@ -177,7 +191,7 @@ async def get_loyalty_status(
 @router.post("/unlock-vip/{user_id}")
 async def unlock_vip_tier(
     user_id: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Upgrade high-value customer to VIP - actualiza la fila real a platinum."""
     program = await _get_or_create_program(db, user_id)

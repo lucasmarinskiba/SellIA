@@ -7,16 +7,16 @@ Endpoints:
 - POST /execute-now: Comienza a vender HOY
 """
 
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from typing import Optional, Dict, List, Any
-from datetime import datetime
 import logging
 
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+
+from app.core.clock import utc_now
 from app.core.intelligence.market_analyzer import MarketAnalyzer
-from app.core.intelligence.strategy_generator import StrategyGenerator
 from app.core.intelligence.problem_detector import ProblemDetector, ProblemSolver
 from app.core.intelligence.sales_executor import SalesExecutor
+from app.core.intelligence.strategy_generator import StrategyGenerator
 
 router = APIRouter(prefix="/api/v1/super-seller", tags=["super_seller"])
 logger = logging.getLogger(__name__)
@@ -24,13 +24,14 @@ logger = logging.getLogger(__name__)
 
 class ProductDiagnosis(BaseModel):
     """Diagnóstico de producto."""
+
     product_name: str
     product_description: str
     price: float
-    current_conversion_rate: Optional[float] = None
-    current_mrr: Optional[float] = None
-    current_reviews_count: Optional[int] = 0
-    current_email_sequences: Optional[int] = 0
+    current_conversion_rate: float | None = None
+    current_mrr: float | None = None
+    current_reviews_count: int | None = 0
+    current_email_sequences: int | None = 0
 
 
 @router.post("/diagnose", tags=["diagnosis"])
@@ -80,7 +81,11 @@ async def diagnose_product(diagnosis: ProductDiagnosis):
         # 4. Detectar problemas
         problems = ProblemDetector.analyze(
             product_name=diagnosis.product_name,
-            market_analysis=market_analysis.__dict__ if hasattr(market_analysis, '__dict__') else market_analysis,
+            market_analysis=(
+                market_analysis.__dict__
+                if hasattr(market_analysis, "__dict__")
+                else market_analysis
+            ),
             performance_data=performance_data,
             strategy=strategy,
         )
@@ -88,7 +93,9 @@ async def diagnose_product(diagnosis: ProductDiagnosis):
         # 5. Soluciones por problema (usando grandes mentes)
         solutions = []
         for problem in problems:
-            solution = ProblemSolver.solve(problem, business_minds=["hermozi", "belfort", "jobs", "buffett"])
+            solution = ProblemSolver.solve(
+                problem, business_minds=["hermozi", "belfort", "jobs", "buffett"]
+            )
             solutions.append(solution)
 
         logger.info(f"Diagnóstico completado: {len(problems)} problemas detectados")
@@ -113,12 +120,16 @@ async def diagnose_product(diagnosis: ProductDiagnosis):
                 for p in problems
             ],
             "solutions_by_problem": solutions,
-            "urgent_actions": [s["recommended_priority"] for s in solutions if s.get("recommended_priority") == 1],
-            "diagnosed_at": datetime.utcnow().isoformat(),
+            "urgent_actions": [
+                s["recommended_priority"]
+                for s in solutions
+                if s.get("recommended_priority") == 1
+            ],
+            "diagnosed_at": utc_now().isoformat(),
         }
 
     except Exception as e:
-        logger.error(f"Error en diagnóstico: {str(e)}")
+        logger.exception("Error en diagnóstico")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -174,7 +185,11 @@ async def generate_complete_plan(diagnosis: ProductDiagnosis):
 
         problems = ProblemDetector.analyze(
             product_name=diagnosis.product_name,
-            market_analysis=market_analysis.__dict__ if hasattr(market_analysis, '__dict__') else market_analysis,
+            market_analysis=(
+                market_analysis.__dict__
+                if hasattr(market_analysis, "__dict__")
+                else market_analysis
+            ),
             performance_data=performance_data,
             strategy=strategy,
         )
@@ -192,7 +207,11 @@ async def generate_complete_plan(diagnosis: ProductDiagnosis):
         complete_plan = SalesExecutor.build_complete_sales_plan(
             product=diagnosis.product_name,
             category=market_analysis.category,
-            market_analysis=market_analysis.__dict__ if hasattr(market_analysis, '__dict__') else market_analysis,
+            market_analysis=(
+                market_analysis.__dict__
+                if hasattr(market_analysis, "__dict__")
+                else market_analysis
+            ),
             strategy=strategy,
             problems=problems_dict,
         )
@@ -218,11 +237,11 @@ async def generate_complete_plan(diagnosis: ProductDiagnosis):
                 "week_9": "80%+ aha moment rate",
                 "week_12": "<2% churn, >100% NRR",
             },
-            "plan_generated_at": datetime.utcnow().isoformat(),
+            "plan_generated_at": utc_now().isoformat(),
         }
 
     except Exception as e:
-        logger.error(f"Error generando plan: {str(e)}")
+        logger.exception("Error generando plan")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -275,12 +294,12 @@ async def execute_immediately(diagnosis: ProductDiagnosis):
             ],
         }
 
-        logger.info(f"Plan de ejecución inmediata generado")
+        logger.info("Plan de ejecución inmediata generado")
 
         return {
             "status": "execution_ready",
             "product": diagnosis.product_name,
-            "go_live_date": datetime.utcnow().isoformat(),
+            "go_live_date": utc_now().isoformat(),
             "segment": strategy.get("segment"),
             "channels": strategy.get("recommended_channels"),
             "immediate_actions": immediate_actions,
@@ -304,5 +323,5 @@ async def execute_immediately(diagnosis: ProductDiagnosis):
         }
 
     except Exception as e:
-        logger.error(f"Error en ejecución: {str(e)}")
+        logger.exception("Error en ejecución")
         raise HTTPException(status_code=500, detail=str(e))

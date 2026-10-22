@@ -1,8 +1,9 @@
-from pydantic import BaseModel, ConfigDict, Field
-from uuid import UUID
+import enum
 from datetime import datetime
 from typing import Any
-import enum
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.domains.subscriptions.models import SubscriptionStatus
 
@@ -122,6 +123,7 @@ class CheckLimitResponse(BaseModel):
 # PaymentTransaction Schemas
 # =============================================================================
 
+
 class PaymentTransactionBase(BaseModel):
     amount: float
     currency: str
@@ -159,6 +161,7 @@ class PaymentTransactionResponse(PaymentTransactionBase):
 # Invoice Schemas
 # =============================================================================
 
+
 class InvoiceBase(BaseModel):
     invoice_number: str
     invoice_type: str = "C"
@@ -189,6 +192,7 @@ class InvoiceResponse(InvoiceBase):
 # =============================================================================
 # Checkout Schemas
 # =============================================================================
+
 
 class CheckoutRequest(BaseModel):
     plan_slug: str
@@ -235,6 +239,7 @@ class CryptoPaymentStatusResponse(BaseModel):
 # Region Detection Schemas
 # =============================================================================
 
+
 class RegionDetectResponse(BaseModel):
     detected_country: str | None = None
     detected_region: str  # AR | LATAM | INTL
@@ -250,6 +255,7 @@ class UserRegionUpdate(BaseModel):
 # =============================================================================
 # Billing Details Schemas
 # =============================================================================
+
 
 class BillingDetailsUpdate(BaseModel):
     tax_id: str | None = None
@@ -269,6 +275,7 @@ class BillingDetailsResponse(BaseModel):
 # Usage Alert Schemas
 # =============================================================================
 
+
 class UsageAlertResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -282,6 +289,7 @@ class UsageAlertResponse(BaseModel):
 # =============================================================================
 # Bank Transfer Payment Schemas
 # =============================================================================
+
 
 class BankTransferOrderCreate(BaseModel):
     plan_slug: str
@@ -324,6 +332,7 @@ class BankTransferAdminApproveRequest(BaseModel):
 # Cancellation Feedback Schemas
 # =============================================================================
 
+
 class CancellationReason(str, enum.Enum):
     PRICE = "price"
     COMPETITOR = "competitor"
@@ -360,6 +369,7 @@ class CancellationFeedbackResponse(BaseModel):
 # Retention Dashboard Schemas
 # =============================================================================
 
+
 class RetentionSummary(BaseModel):
     total_cancellations: int
     cancellations_this_month: int
@@ -372,6 +382,7 @@ class RetentionSummary(BaseModel):
 # =============================================================================
 # MercadoPago Preapproval Schemas
 # =============================================================================
+
 
 class PreapprovalCreateRequest(BaseModel):
     plan_slug: str
@@ -393,10 +404,10 @@ class PreapprovalStatusResponse(BaseModel):
     next_payment_date: datetime | None = None
 
 
-
 # =============================================================================
 # Admin Dashboard Schemas
 # =============================================================================
+
 
 class RevenueSummary(BaseModel):
     mrr: float

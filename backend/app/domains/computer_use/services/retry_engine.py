@@ -3,15 +3,18 @@
 Maneja fallos transitorios sin intervención humana.
 """
 
-import logging
 import asyncio
-from typing import Callable, Any, TypeVar, Optional, Dict
+import logging
+from collections.abc import Callable
+from datetime import datetime
 from functools import wraps
-from datetime import datetime, timedelta
+from typing import Any, TypeVar
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class RetryPolicy:
@@ -34,19 +37,20 @@ class RetryPolicy:
     def get_delay(self, attempt: int) -> float:
         """Calcula delay con exponential backoff."""
         delay = min(
-            self.initial_delay * (self.exponential_base ** attempt),
+            self.initial_delay * (self.exponential_base**attempt),
             self.max_delay,
         )
 
         if self.jitter:
             import random
+
             delay *= random.uniform(0.8, 1.2)
 
         return delay
 
 
 def retry_with_backoff(
-    policy: Optional[RetryPolicy] = None,
+    policy: RetryPolicy | None = None,
     retryable_exceptions: tuple = (Exception,),
 ) -> Callable:
     """Decorator para reintentos automáticos con backoff."""
@@ -72,7 +76,9 @@ def retry_with_backoff(
                         )
                         await asyncio.sleep(delay)
                     else:
-                        logger.error(f"All {policy.max_retries + 1} retries exhausted for {func.__name__}")
+                        logger.error(
+                            f"All {policy.max_retries + 1} retries exhausted for {func.__name__}"
+                        )
                         raise
 
             raise last_exception
@@ -95,7 +101,9 @@ def retry_with_backoff(
                         )
                         asyncio.run(asyncio.sleep(delay))
                     else:
-                        logger.error(f"All {policy.max_retries + 1} retries exhausted for {func.__name__}")
+                        logger.error(
+                            f"All {policy.max_retries + 1} retries exhausted for {func.__name__}"
+                        )
                         raise
 
             raise last_exception
@@ -117,8 +125,8 @@ class RetryableTask:
         task_id: str,
         func: Callable,
         args: tuple = (),
-        kwargs: Optional[Dict[str, Any]] = None,
-        policy: Optional[RetryPolicy] = None,
+        kwargs: dict[str, Any] | None = None,
+        policy: RetryPolicy | None = None,
     ):
         self.task_id = task_id
         self.func = func
@@ -127,11 +135,11 @@ class RetryableTask:
         self.policy = policy or RetryPolicy()
 
         self.attempts = 0
-        self.last_error: Optional[str] = None
-        self.result: Optional[Any] = None
+        self.last_error: str | None = None
+        self.result: Any | None = None
         self.status = "pending"  # pending, running, success, failed
-        self.created_at = datetime.utcnow()
-        self.completed_at: Optional[datetime] = None
+        self.created_at = utc_now()
+        self.completed_at: datetime | None = None
 
     async def execute(self) -> bool:
         """Ejecuta tarea con reintentos."""
@@ -146,11 +154,12 @@ class RetryableTask:
                     self.result = self.func(*self.args, **self.kwargs)
 
                 self.status = "success"
-                self.completed_at = datetime.utcnow()
+                self.completed_at = utc_now()
                 logger.info(f"Task {self.task_id} succeeded on attempt {self.attempts}")
                 return True
 
             except Exception as e:
+                logger.exception("execute: error inesperado")
                 self.last_error = str(e)
 
                 if attempt < self.policy.max_retries:
@@ -162,13 +171,15 @@ class RetryableTask:
                     await asyncio.sleep(delay)
                 else:
                     self.status = "failed"
-                    self.completed_at = datetime.utcnow()
-                    logger.error(f"Task {self.task_id} failed after {self.attempts} attempts: {e}")
+                    self.completed_at = utc_now()
+                    logger.error(
+                        f"Task {self.task_id} failed after {self.attempts} attempts: {e}"
+                    )
                     return False
 
         return False
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convierte a dict para logging/storage."""
         return {
             "task_id": self.task_id,
@@ -177,5 +188,7 @@ class RetryableTask:
             "last_error": self.last_error,
             "result": str(self.result) if self.result else None,
             "created_at": self.created_at.isoformat(),
-            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
         }

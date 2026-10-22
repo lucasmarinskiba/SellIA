@@ -4,12 +4,21 @@ Tracks conversation outcomes, analyzes prompt effectiveness,
 and uses LLM to suggest prompt improvements.
 """
 
-import uuid
 import json
-from datetime import datetime, timezone, timedelta
-from typing import Optional, List, Dict, Any
+import uuid
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Numeric, Float, func, select
+from sqlalchemy import (
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Numeric,
+    String,
+    Text,
+    select,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -40,7 +49,7 @@ class ConversationOutcome(Base):
     feedback = Column(Text, nullable=True)
     created_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
 
@@ -55,9 +64,9 @@ class PromptOptimizer:
         conversation_id: uuid.UUID,
         agent_type: str,
         outcome: str,
-        revenue: Optional[float] = None,
+        revenue: float | None = None,
         confidence: float = 0.0,
-        feedback: Optional[str] = None,
+        feedback: str | None = None,
     ) -> ConversationOutcome:
         """Record the outcome of a conversation."""
         record = ConversationOutcome(
@@ -78,13 +87,12 @@ class PromptOptimizer:
         self,
         agent_type: str,
         days: int = 30,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Correlate prompt usage with outcomes and return success rate by variant."""
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
 
         result = await self.db.execute(
-            select(ConversationOutcome)
-            .where(
+            select(ConversationOutcome).where(
                 ConversationOutcome.agent_type == agent_type,
                 ConversationOutcome.created_at >= cutoff,
             )
@@ -95,7 +103,7 @@ class PromptOptimizer:
         if total == 0:
             return {"total": 0, "success_rate": 0.0, "by_outcome": {}}
 
-        by_outcome: Dict[str, int] = {}
+        by_outcome: dict[str, int] = {}
         successes = 0
         total_revenue = 0.0
         revenue_count = 0
@@ -119,16 +127,15 @@ class PromptOptimizer:
         self,
         agent_type: str,
         days: int = 30,
-    ) -> List[Dict[str, str]]:
+    ) -> list[dict[str, str]]:
         """
         Analyze failed conversations and use LLM to suggest prompt improvements.
         Returns list of suggested changes with rationale.
         """
         from app.domains.agents.ai_reply import generate_raw_ai_response
-        from app.domains.channels.models import Conversation
         from app.domains.memory.models import ConversationMemoryChunk
 
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
 
         result = await self.db.execute(
             select(ConversationOutcome)
@@ -150,7 +157,9 @@ class PromptOptimizer:
         for outcome in failed:
             chunk_result = await self.db.execute(
                 select(ConversationMemoryChunk)
-                .where(ConversationMemoryChunk.conversation_id == outcome.conversation_id)
+                .where(
+                    ConversationMemoryChunk.conversation_id == outcome.conversation_id
+                )
                 .order_by(ConversationMemoryChunk.chunk_index.asc())
                 .limit(10)
             )

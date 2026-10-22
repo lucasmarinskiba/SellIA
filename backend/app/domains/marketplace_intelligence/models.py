@@ -1,15 +1,36 @@
 """Phase 48: Marketplace Intelligence & Competitive Analysis."""
+
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, DateTime, ForeignKey, Float, Boolean, Integer, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
+from datetime import UTC, datetime
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+
 from app.core.database import Base
+
 
 class CompetitorTracking(Base):
     __tablename__ = "competitor_tracking"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    product_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("products.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     competitor_name = Column(String(255), nullable=False)
     competitor_url = Column(String(500), nullable=True)
     platform = Column(String(50), nullable=False)
@@ -20,12 +41,17 @@ class CompetitorTracking(Base):
     price_difference = Column(Float, default=0)
     price_difference_percent = Column(Float, default=0)
     stock_available = Column(Boolean, default=True)
-    tracked_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    tracked_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+
 
 class MarketAnalysis(Base):
     __tablename__ = "market_analysis"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     category = Column(String(255), nullable=False)
     platform = Column(String(50), nullable=False)
     total_sellers = Column(Integer, default=0)
@@ -38,13 +64,22 @@ class MarketAnalysis(Base):
     trend = Column(String(50), nullable=False)  # rising, stable, declining
     market_size = Column(Float, default=0)
     market_growth = Column(Float, default=0)
-    analyzed_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    analyzed_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+
 
 class PriceOptimization(Base):
     __tablename__ = "price_optimization"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False)
-    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    product_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("products.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     platform = Column(String(50), nullable=False)
     current_price = Column(Float, default=0)
     recommended_price = Column(Float, default=0)
@@ -55,12 +90,17 @@ class PriceOptimization(Base):
     price_position = Column(String(50), nullable=False)  # premium, competitive, value
     revenue_impact = Column(Float, default=0)
     profit_impact = Column(Float, default=0)
-    optimization_date = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    optimization_date = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+
 
 class ProductResearch(Base):
     __tablename__ = "product_research"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     platform = Column(String(50), nullable=False)
     category = Column(String(255), nullable=False)
     product_name = Column(String(500), nullable=False)
@@ -71,13 +111,22 @@ class ProductResearch(Base):
     profit_potential = Column(Float, default=0)
     trend_score = Column(Float, default=0)
     recommendation = Column(String(50), nullable=False)  # pursue, research, avoid
-    research_date = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    research_date = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+
 
 class SeasonalTrends(Base):
     __tablename__ = "seasonal_trends"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False)
-    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    product_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("products.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     platform = Column(String(50), nullable=False)
     month = Column(String(50), nullable=False)
     expected_demand = Column(Integer, default=0)

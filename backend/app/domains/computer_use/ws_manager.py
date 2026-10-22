@@ -10,8 +10,6 @@ otro worker) pueda enviar mensajes al cliente, usamos Redis Pub/Sub.
 
 import asyncio
 import json
-from typing import Dict, Optional
-from uuid import UUID
 
 import redis.asyncio as redis
 from fastapi import WebSocket
@@ -27,10 +25,10 @@ class ComputerUseWebSocketManager:
     """Gestiona conexiones WebSocket con Redis Pub/Sub para multi-worker."""
 
     def __init__(self):
-        self._connections: Dict[str, WebSocket] = {}
-        self._redis: Optional[redis.Redis] = None
-        self._pubsub: Optional[redis.client.PubSub] = None
-        self._listener_task: Optional[asyncio.Task] = None
+        self._connections: dict[str, WebSocket] = {}
+        self._redis: redis.Redis | None = None
+        self._pubsub: redis.client.PubSub | None = None
+        self._listener_task: asyncio.Task | None = None
         self._lock = asyncio.Lock()
 
     async def _get_redis(self) -> redis.Redis:
@@ -66,7 +64,7 @@ class ComputerUseWebSocketManager:
             try:
                 await ws.close()
             except Exception:
-                pass
+                logger.exception("stop: error inesperado")
         self._connections.clear()
         logger.info("ComputerUseWebSocketManager stopped")
 
@@ -76,7 +74,7 @@ class ComputerUseWebSocketManager:
             self._connections[session_id] = websocket
 
         # Subscribe to Redis channel for this session
-        redis_client = await self._get_redis()
+        await self._get_redis()
         if self._pubsub:
             await self._pubsub.subscribe(f"cuws:{session_id}")
 
@@ -92,7 +90,7 @@ class ComputerUseWebSocketManager:
             try:
                 await self._pubsub.unsubscribe(f"cuws:{session_id}")
             except Exception:
-                pass
+                logger.exception("disconnect: error inesperado")
 
         logger.info(f"WS disconnected for session {session_id}")
 
@@ -109,7 +107,9 @@ class ComputerUseWebSocketManager:
                 await ws.send_json(message)
                 return
             except Exception as e:
-                logger.warning(f"Local WS send failed for {session_id}: {e}")
+                logger.warning(
+                    f"Local WS send failed for {session_id}: {e}", exc_info=True
+                )
                 # Connection might be broken, remove it
                 async with self._lock:
                     self._connections.pop(session_id, None)
@@ -121,8 +121,8 @@ class ComputerUseWebSocketManager:
                 f"cuws:{session_id}",
                 json.dumps({"target": session_id, "message": message}),
             )
-        except Exception as e:
-            logger.error(f"Redis publish failed for {session_id}: {e}")
+        except Exception:
+            logger.exception(f"Redis publish failed for {session_id}")
 
     async def _listen_loop(self):
         """Escucha mensajes de Redis y los reenvía a conexiones locales."""
@@ -144,15 +144,17 @@ class ComputerUseWebSocketManager:
                                 try:
                                     await ws.send_json(message)
                                 except Exception as e:
-                                    logger.warning(f"WS send via Redis failed: {e}")
+                                    logger.warning(
+                                        f"WS send via Redis failed: {e}", exc_info=True
+                                    )
                                     async with self._lock:
                                         self._connections.pop(session_id, None)
-                    except Exception as e:
-                        logger.error(f"Redis message handling error: {e}")
+                    except Exception:
+                        logger.exception("Redis message handling error")
         except asyncio.CancelledError:
             raise
-        except Exception as e:
-            logger.error(f"Redis listener error: {e}")
+        except Exception:
+            logger.exception("Redis listener error")
             # Restart after delay
             await asyncio.sleep(5)
             asyncio.create_task(self._listen_loop())

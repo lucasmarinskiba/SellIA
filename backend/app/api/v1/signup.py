@@ -63,12 +63,16 @@ async def signup(
 ):
     """Register new user account with strong password requirements."""
     try:
-        result = await db.execute(text("SELECT id FROM users WHERE email = :email"), {"email": req.email})
+        result = await db.execute(
+            text("SELECT id FROM users WHERE email = :email"), {"email": req.email}
+        )
         if result.scalar():
             raise HTTPException(status_code=400, detail="Email already registered")
 
         user_id = str(uuid.uuid4())
-        password_hash = bcrypt.hashpw(req.password.encode(), bcrypt.gensalt(12)).decode()
+        password_hash = bcrypt.hashpw(
+            req.password.encode(), bcrypt.gensalt(12)
+        ).decode()
 
         # Every NOT NULL users column must be listed here: raw SQL bypasses the ORM's
         # Python-side defaults, and a fresh database (create_all) has no DB-level
@@ -82,11 +86,17 @@ async def signup(
                 VALUES (:id, :email, :hash, :full_name, true, false, 0, false, false, false, 'AR', 'ARS',
                     'America/Argentina/Buenos_Aires', '{}', '[]', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             """),
-            {"id": user_id, "email": req.email, "hash": password_hash, "full_name": req.full_name}
+            {
+                "id": user_id,
+                "email": req.email,
+                "hash": password_hash,
+                "full_name": req.full_name,
+            },
         )
         await db.commit()
 
         from app.core.security import create_access_token
+
         access_token = create_access_token({"sub": user_id})
 
         # This route duplicates /auth/register's account creation but used to
@@ -97,6 +107,7 @@ async def signup(
         # /auth/register sends, so both signup paths behave the same way.
         try:
             from app.api.v1.auth import _send_verification_email
+
             settings = get_settings()
             verify_token = create_access_token(
                 data={"sub": user_id, "scope": "email_verify"},
@@ -137,8 +148,10 @@ async def signin(
     """Sign in with password + optional 2FA."""
     try:
         result = await db.execute(
-            text("SELECT id, email, full_name, hashed_password, is_2fa_enabled FROM users WHERE email = :email"),
-            {"email": req.email}
+            text(
+                "SELECT id, email, full_name, hashed_password, is_2fa_enabled FROM users WHERE email = :email"
+            ),
+            {"email": req.email},
         )
         user_row = result.first()
 
@@ -152,7 +165,11 @@ async def signin(
 
         if is_2fa_enabled:
             if not req.totp_code:
-                return {"requires_2fa": True, "user_id": str(user_id), "message": "2FA code required"}
+                return {
+                    "requires_2fa": True,
+                    "user_id": str(user_id),
+                    "message": "2FA code required",
+                }
 
             # users.totp_secret is an EncryptedString column: a raw SELECT of it returns
             # the ciphertext (pyotp then fails with "Non-base32 digit found" -> 500, so
@@ -161,10 +178,13 @@ async def signin(
             totp_secret = (
                 await db.execute(select(User.totp_secret).where(User.id == user_id))
             ).scalar_one_or_none()
-            if not totp_secret or not pyotp.TOTP(totp_secret).verify(req.totp_code, valid_window=1):
+            if not totp_secret or not pyotp.TOTP(totp_secret).verify(
+                req.totp_code, valid_window=1
+            ):
                 raise HTTPException(status_code=401, detail="Invalid 2FA code")
 
         from app.core.security import create_access_token
+
         access_token = create_access_token({"sub": str(user_id)})
 
         return {

@@ -1,7 +1,9 @@
 from dataclasses import dataclass
-from datetime import datetime, timedelta
-from typing import Optional
+from datetime import datetime
 from enum import Enum
+from typing import ClassVar
+
+from app.core.clock import utc_now
 
 
 class RiskLevel(str, Enum):
@@ -36,7 +38,7 @@ class DealScore:
 
 
 class DealScorer:
-    STAGE_WEIGHTS = {
+    STAGE_WEIGHTS: ClassVar[dict] = {
         "discovery": 0.1,
         "qualified": 0.2,
         "proposal": 0.4,
@@ -80,7 +82,7 @@ class DealScorer:
                 "proposal_score": proposal_score,
                 "historical_close_rate": factors.historical_close_rate,
             },
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
         )
 
     def _calculate_engagement_score(self, factors: DealScoreFactors) -> float:
@@ -154,7 +156,9 @@ class DealScorer:
 
         return (data_confidence * 0.6 + stage_confidence * 0.4) * 0.9
 
-    def _assess_risk(self, factors: DealScoreFactors, win_probability: float) -> RiskLevel:
+    def _assess_risk(
+        self, factors: DealScoreFactors, win_probability: float
+    ) -> RiskLevel:
         """Assess risk level based on multiple factors."""
         if factors.last_activity_days > self.CRITICAL_THRESHOLD_DAYS:
             return RiskLevel.CRITICAL
@@ -183,9 +187,7 @@ class RevenueForecast:
     def __init__(self):
         self.scorer = DealScorer()
 
-    def forecast_revenue(
-        self, deals: list[dict], days_ahead: int = 30
-    ) -> dict:
+    def forecast_revenue(self, deals: list[dict], days_ahead: int = 30) -> dict:
         """Forecast revenue based on deal scores."""
         if not deals:
             return {

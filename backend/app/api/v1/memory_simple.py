@@ -1,18 +1,24 @@
 """User Memory API - Minimal implementation"""
 
-from fastapi import APIRouter, Depends, HTTPException, Header
+import logging
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+
 from app.core.database import get_db
 from app.core.security import decode_access_token
-from app.domains.users.models import User
-from app.domains.user_memory.service import UserMemoryService
 from app.domains.user_memory.schemas import UserMemoryResponse
+from app.domains.user_memory.service import UserMemoryService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
-async def get_user_from_token(authorization: str = Header(None)) -> str:
+async def get_user_from_token(
+    authorization: Annotated[str | None, Header()] = None,
+) -> str:
     """Extract user_id from Bearer token"""
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing or invalid token")
@@ -28,8 +34,8 @@ async def get_user_from_token(authorization: str = Header(None)) -> str:
 
 @router.get("/me")
 async def get_my_memory(
-    user_id: str = Depends(get_user_from_token),
-    db: AsyncSession = Depends(get_db),
+    user_id: Annotated[str, Depends(get_user_from_token)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Get user memory"""
     try:
@@ -56,22 +62,35 @@ async def get_my_memory(
             satisfaction_score=memory.satisfaction_score,
             churn_risk_score=memory.churn_risk_score,
             lifetime_value_estimate=memory.lifetime_value_estimate,
-            last_active_business_id=str(memory.last_active_business_id) if memory.last_active_business_id else None,
-            last_active_conversation_id=str(memory.last_active_conversation_id) if memory.last_active_conversation_id else None,
-            last_active_agent_id=str(memory.last_active_agent_id) if memory.last_active_agent_id else None,
+            last_active_business_id=(
+                str(memory.last_active_business_id)
+                if memory.last_active_business_id
+                else None
+            ),
+            last_active_conversation_id=(
+                str(memory.last_active_conversation_id)
+                if memory.last_active_conversation_id
+                else None
+            ),
+            last_active_agent_id=(
+                str(memory.last_active_agent_id)
+                if memory.last_active_agent_id
+                else None
+            ),
             created_at=memory.created_at,
             updated_at=memory.updated_at,
             last_activity_at=memory.last_activity_at,
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        logger.exception("get_my_memory: error inesperado")
+        raise HTTPException(status_code=500, detail=f"Error: {e!s}")
 
 
 @router.patch("/me")
 async def update_my_memory(
     data: dict,
-    user_id: str = Depends(get_user_from_token),
-    db: AsyncSession = Depends(get_db),
+    user_id: Annotated[str, Depends(get_user_from_token)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Update user memory"""
     try:
@@ -101,12 +120,25 @@ async def update_my_memory(
             satisfaction_score=memory.satisfaction_score,
             churn_risk_score=memory.churn_risk_score,
             lifetime_value_estimate=memory.lifetime_value_estimate,
-            last_active_business_id=str(memory.last_active_business_id) if memory.last_active_business_id else None,
-            last_active_conversation_id=str(memory.last_active_conversation_id) if memory.last_active_conversation_id else None,
-            last_active_agent_id=str(memory.last_active_agent_id) if memory.last_active_agent_id else None,
+            last_active_business_id=(
+                str(memory.last_active_business_id)
+                if memory.last_active_business_id
+                else None
+            ),
+            last_active_conversation_id=(
+                str(memory.last_active_conversation_id)
+                if memory.last_active_conversation_id
+                else None
+            ),
+            last_active_agent_id=(
+                str(memory.last_active_agent_id)
+                if memory.last_active_agent_id
+                else None
+            ),
             created_at=memory.created_at,
             updated_at=memory.updated_at,
             last_activity_at=memory.last_activity_at,
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        logger.exception("update_my_memory: error inesperado")
+        raise HTTPException(status_code=500, detail=f"Error: {e!s}")

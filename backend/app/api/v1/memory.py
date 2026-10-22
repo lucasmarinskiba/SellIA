@@ -9,9 +9,15 @@ This is deterministic regardless of what codec (if any) the connection
 has registered.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Request
 import json
+import logging
 import uuid
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy.ext.asyncio import AsyncSession
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -53,6 +59,7 @@ async def get_user_id(request: Request) -> str:
 async def get_db():
     """Get database session"""
     from app.core.database import get_db as _get_db
+
     async for session in _get_db():
         yield session
 
@@ -73,6 +80,7 @@ async def _ensure_memory_row(user_id: str, db) -> None:
     events, interests, challenges) before ever calling GET /me silently
     no-op'd against a nonexistent row."""
     from sqlalchemy import text
+
     await db.execute(
         text("""INSERT INTO user_memory
         (id, user_id, preferred_language, preferred_tone, industry_focus, business_stage,
@@ -84,20 +92,24 @@ async def _ensure_memory_row(user_id: str, db) -> None:
         '[]'::jsonb, '[]'::jsonb, '[]'::jsonb,
         0, 0, '[]'::jsonb, '[]'::jsonb, 0.0, 0.0, 0.0, 'low', NOW(), NOW(), NOW())
         ON CONFLICT (user_id) DO NOTHING"""),
-        {"uid": user_id, "new_id": str(uuid.uuid4())}
+        {"uid": user_id, "new_id": str(uuid.uuid4())},
     )
     await db.commit()
 
 
 @router.get("/me")
-async def get_memory(user_id: str = Depends(get_user_id), db = Depends(get_db)):
+async def get_memory(
+    user_id: Annotated[str, Depends(get_user_id)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """Get user memory"""
     try:
         from sqlalchemy import text
+
         await _ensure_memory_row(user_id, db)
         result = await db.execute(
             text(f"SELECT {MEMORY_COLUMNS} FROM user_memory WHERE user_id = :uid"),
-            {"uid": user_id}
+            {"uid": user_id},
         )
         row = result.fetchone()
 
@@ -125,30 +137,52 @@ async def get_memory(user_id: str = Depends(get_user_id), db = Depends(get_db)):
             "updated_at": row[20],
         }
     except Exception as e:
+        logger.exception("get_memory: error inesperado")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-JSONB_MEMORY_FIELDS = {"key_challenges", "key_interests", "technologies_used", "favorite_agents", "frequently_asked_topics"}
+JSONB_MEMORY_FIELDS = {
+    "key_challenges",
+    "key_interests",
+    "technologies_used",
+    "favorite_agents",
+    "frequently_asked_topics",
+}
 
 # Columns a client is allowed to PATCH via /me — everything in user_memory
 # except id/user_id/created_at/updated_at, which the client must never
 # control directly.
 ALLOWED_UPDATE_FIELDS = {
-    "preferred_language", "preferred_tone", "industry_focus", "business_stage",
-    "primary_business_type", "target_audience_summary",
-    "key_challenges", "key_interests", "technologies_used",
-    "total_conversations", "total_messages",
-    "favorite_agents", "frequently_asked_topics",
-    "engagement_score", "satisfaction_score", "churn_risk_score",
+    "preferred_language",
+    "preferred_tone",
+    "industry_focus",
+    "business_stage",
+    "primary_business_type",
+    "target_audience_summary",
+    "key_challenges",
+    "key_interests",
+    "technologies_used",
+    "total_conversations",
+    "total_messages",
+    "favorite_agents",
+    "frequently_asked_topics",
+    "engagement_score",
+    "satisfaction_score",
+    "churn_risk_score",
     "lifetime_value_estimate",
 } | JSONB_MEMORY_FIELDS
 
 
 @router.patch("/me")
-async def update_memory(data: dict, user_id: str = Depends(get_user_id), db = Depends(get_db)):
+async def update_memory(
+    data: dict,
+    user_id: Annotated[str, Depends(get_user_id)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """Update user memory"""
     try:
         from sqlalchemy import text
+
         await _ensure_memory_row(user_id, db)
         # SECURITY: `key` becomes a raw SQL identifier below (column names
         # can't be bound parameters in SQLAlchemy). Without this whitelist
@@ -183,14 +217,20 @@ async def update_memory(data: dict, user_id: str = Depends(get_user_id), db = De
     except HTTPException:
         raise
     except Exception as e:
+        logger.exception("update_memory: error inesperado")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/events")
-async def log_event(data: dict, user_id: str = Depends(get_user_id), db = Depends(get_db)):
+async def log_event(
+    data: dict,
+    user_id: Annotated[str, Depends(get_user_id)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """Log event"""
     try:
         from sqlalchemy import text
+
         await _ensure_memory_row(user_id, db)
         event_type = data.get("event_type", "action")
         event_data = data.get("data", {})
@@ -199,37 +239,50 @@ async def log_event(data: dict, user_id: str = Depends(get_user_id), db = Depend
             text("""INSERT INTO user_memory_events
             (id, user_id, event_type, event_data, created_at)
             VALUES (:new_id, :uid, :et, CAST(:ed AS jsonb), NOW())"""),
-            {"new_id": str(uuid.uuid4()), "uid": user_id, "et": event_type, "ed": json.dumps(event_data)}
+            {
+                "new_id": str(uuid.uuid4()),
+                "uid": user_id,
+                "et": event_type,
+                "ed": json.dumps(event_data),
+            },
         )
 
         # Increment total_messages in user_memory
         await db.execute(
-            text("UPDATE user_memory SET total_messages = total_messages + 1 WHERE user_id = :uid"),
-            {"uid": user_id}
+            text(
+                "UPDATE user_memory SET total_messages = total_messages + 1 WHERE user_id = :uid"
+            ),
+            {"uid": user_id},
         )
 
         await db.commit()
 
         result = await db.execute(
             text("SELECT total_messages FROM user_memory WHERE user_id = :uid"),
-            {"uid": user_id}
+            {"uid": user_id},
         )
         row = result.fetchone()
 
         return {"status": "logged", "total_messages": row[0] if row else 0}
     except Exception as e:
+        logger.exception("log_event: error inesperado")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/interests/{interest}")
-async def add_interest(interest: str, user_id: str = Depends(get_user_id), db = Depends(get_db)):
+async def add_interest(
+    interest: str,
+    user_id: Annotated[str, Depends(get_user_id)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """Add interest"""
     try:
         from sqlalchemy import text
+
         await _ensure_memory_row(user_id, db)
         result = await db.execute(
             text("SELECT key_interests::text FROM user_memory WHERE user_id = :uid"),
-            {"uid": user_id}
+            {"uid": user_id},
         )
         row = result.fetchone()
         interests = (_loads(row[0]) if row else None) or []
@@ -238,25 +291,33 @@ async def add_interest(interest: str, user_id: str = Depends(get_user_id), db = 
             interests.append(interest)
 
         await db.execute(
-            text("UPDATE user_memory SET key_interests = CAST(:interests AS jsonb) WHERE user_id = :uid"),
-            {"uid": user_id, "interests": json.dumps(interests)}
+            text(
+                "UPDATE user_memory SET key_interests = CAST(:interests AS jsonb) WHERE user_id = :uid"
+            ),
+            {"uid": user_id, "interests": json.dumps(interests)},
         )
         await db.commit()
 
         return {"status": "added", "interests": interests}
     except Exception as e:
+        logger.exception("add_interest: error inesperado")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/challenges/{challenge}")
-async def add_challenge(challenge: str, user_id: str = Depends(get_user_id), db = Depends(get_db)):
+async def add_challenge(
+    challenge: str,
+    user_id: Annotated[str, Depends(get_user_id)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """Add challenge"""
     try:
         from sqlalchemy import text
+
         await _ensure_memory_row(user_id, db)
         result = await db.execute(
             text("SELECT key_challenges::text FROM user_memory WHERE user_id = :uid"),
-            {"uid": user_id}
+            {"uid": user_id},
         )
         row = result.fetchone()
         challenges = (_loads(row[0]) if row else None) or []
@@ -265,70 +326,103 @@ async def add_challenge(challenge: str, user_id: str = Depends(get_user_id), db 
             challenges.append(challenge)
 
         await db.execute(
-            text("UPDATE user_memory SET key_challenges = CAST(:challenges AS jsonb) WHERE user_id = :uid"),
-            {"uid": user_id, "challenges": json.dumps(challenges)}
+            text(
+                "UPDATE user_memory SET key_challenges = CAST(:challenges AS jsonb) WHERE user_id = :uid"
+            ),
+            {"uid": user_id, "challenges": json.dumps(challenges)},
         )
         await db.commit()
 
         return {"status": "added", "challenges": challenges}
     except Exception as e:
+        logger.exception("add_challenge: error inesperado")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/preferences")
-async def set_preference(data: dict, user_id: str = Depends(get_user_id), db = Depends(get_db)):
+async def set_preference(
+    data: dict,
+    user_id: Annotated[str, Depends(get_user_id)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """Set preference"""
     try:
         from sqlalchemy import text
+
         key = data.get("key")
         value = data.get("value")
         val_json = json.dumps(value)
 
         # Try update first
         result = await db.execute(
-            text("UPDATE user_preferences SET preference_value = CAST(:val AS jsonb) WHERE user_id = :uid AND preference_key = :key"),
-            {"uid": user_id, "key": key, "val": val_json}
+            text(
+                "UPDATE user_preferences SET preference_value = CAST(:val AS jsonb) WHERE user_id = :uid AND preference_key = :key"
+            ),
+            {"uid": user_id, "key": key, "val": val_json},
         )
 
         # If no rows updated, insert
         if result.rowcount == 0:
             await db.execute(
-                text("""INSERT INTO user_preferences (id, user_id, preference_key, preference_value, created_at, updated_at)
-                VALUES (:new_id, :uid, :key, CAST(:val AS jsonb), NOW(), NOW())"""),
-                {"new_id": str(uuid.uuid4()), "uid": user_id, "key": key, "val": val_json}
+                text(
+                    """INSERT INTO user_preferences (id, user_id, preference_key, preference_value, created_at, updated_at)
+                VALUES (:new_id, :uid, :key, CAST(:val AS jsonb), NOW(), NOW())"""
+                ),
+                {
+                    "new_id": str(uuid.uuid4()),
+                    "uid": user_id,
+                    "key": key,
+                    "val": val_json,
+                },
             )
 
         await db.commit()
         return {"status": "set", "key": key}
     except Exception as e:
+        logger.exception("set_preference: error inesperado")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/preferences/{key}")
-async def get_preference(key: str, user_id: str = Depends(get_user_id), db = Depends(get_db)):
+async def get_preference(
+    key: str,
+    user_id: Annotated[str, Depends(get_user_id)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
     """Get preference"""
     try:
         from sqlalchemy import text
+
         result = await db.execute(
-            text("SELECT preference_value::text FROM user_preferences WHERE user_id = :uid AND preference_key = :key"),
-            {"uid": user_id, "key": key}
+            text(
+                "SELECT preference_value::text FROM user_preferences WHERE user_id = :uid AND preference_key = :key"
+            ),
+            {"uid": user_id, "key": key},
         )
         row = result.fetchone()
         value = _loads(row[0]) if row else None
         return {"key": key, "value": value}
     except Exception as e:
+        logger.exception("get_preference: error inesperado")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/events")
-async def get_events(limit: int = 50, user_id: str = Depends(get_user_id), db = Depends(get_db)):
+async def get_events(
+    user_id: Annotated[str, Depends(get_user_id)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    limit: int = 50,
+):
     """Get recent events"""
     try:
         from sqlalchemy import text
+
         result = await db.execute(
-            text("""SELECT id, event_type, event_data::text, created_at FROM user_memory_events
-            WHERE user_id = :uid ORDER BY created_at DESC LIMIT :limit"""),
-            {"uid": user_id, "limit": limit}
+            text(
+                """SELECT id, event_type, event_data::text, created_at FROM user_memory_events
+            WHERE user_id = :uid ORDER BY created_at DESC LIMIT :limit"""
+            ),
+            {"uid": user_id, "limit": limit},
         )
         rows = result.fetchall()
         events = [
@@ -336,10 +430,11 @@ async def get_events(limit: int = 50, user_id: str = Depends(get_user_id), db = 
                 "id": str(row[0]),
                 "event_type": row[1],
                 "event_data": _loads(row[2]) or {},
-                "created_at": row[3]
+                "created_at": row[3],
             }
             for row in rows
         ]
         return {"events": events, "count": len(events)}
     except Exception as e:
+        logger.exception("get_events: error inesperado")
         raise HTTPException(status_code=500, detail=str(e))

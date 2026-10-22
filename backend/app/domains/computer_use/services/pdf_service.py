@@ -5,15 +5,16 @@ log de acciones, y resumen ejecutivo. Usa Playwright para renderizar
 HTML a PDF (ya instalado) sin librerías adicionales.
 """
 
-import os
+import asyncio
 import base64
 import json
-from datetime import datetime, timezone
-from typing import Optional
+import os
+from datetime import UTC, datetime
 from uuid import UUID
 
-from app.core.logger import get_logger
 from app.core.config import get_settings
+from app.core.fileio import write_file, write_json
+from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -51,13 +52,13 @@ class PDFExportService:
             '<html lang="es">',
             "<head>",
             '<meta charset="UTF-8">',
-            '<style>',
+            "<style>",
             self._get_css(),
             "</style>",
             "</head>",
             "<body>",
             '<div class="header">',
-            '<h1>🖥️ Reporte de Sesión — Caja de Cristal</h1>',
+            "<h1>🖥️ Reporte de Sesión — Caja de Cristal</h1>",
             f'<p class="meta">Tarea: <strong>{session.get("task_description", "N/A")}</strong></p>',
             f'<p class="meta">Estado: <span class="badge badge-{session.get("status", "unknown")}">{session.get("status", "N/A")}</span></p>',
             f'<p class="meta">Inicio: {created_at} | Fin: {completed_at} | Pasos: {session.get("total_steps", 0)}</p>',
@@ -66,19 +67,23 @@ class PDFExportService:
 
         # Summary section
         result_data = session.get("result_data") or {}
-        html_parts.extend([
-            '<div class="section">',
-            "<h2>📋 Resumen Ejecutivo</h2>",
-            f'<p>{result_data.get("summary", "No hay resumen disponible.")}</p>',
-            "</div>",
-        ])
+        html_parts.extend(
+            [
+                '<div class="section">',
+                "<h2>📋 Resumen Ejecutivo</h2>",
+                f'<p>{result_data.get("summary", "No hay resumen disponible.")}</p>',
+                "</div>",
+            ]
+        )
 
         # Steps timeline
-        html_parts.extend([
-            '<div class="section">',
-            "<h2>🔄 Timeline de Acciones</h2>",
-            '<div class="timeline">',
-        ])
+        html_parts.extend(
+            [
+                '<div class="section">',
+                "<h2>🔄 Timeline de Acciones</h2>",
+                '<div class="timeline">',
+            ]
+        )
 
         for step in steps:
             step_num = step.get("step_number", 0)
@@ -93,19 +98,28 @@ class PDFExportService:
             if len(params_str) > 200:
                 params_str = params_str[:200] + "..."
 
-            step_annotations = [a for a in annotations if a.get("step_number") == step_num]
+            step_annotations = [
+                a for a in annotations if a.get("step_number") == step_num
+            ]
             annotations_html = ""
             if step_annotations:
-                annotations_html = '<div class="annotations">' + "".join(
-                    f'<span class="annotation" style="background:{a.get("color", "#f59e0b")}">💬 {a.get("content", "")}</span>'
-                    for a in step_annotations
-                ) + "</div>"
+                annotations_html = (
+                    '<div class="annotations">'
+                    + "".join(
+                        f'<span class="annotation" style="background:{a.get("color", "#f59e0b")}">💬 {a.get("content", "")}</span>'
+                        for a in step_annotations
+                    )
+                    + "</div>"
+                )
 
             screenshot_html = ""
             if include_screenshots and step.get("screenshot_path"):
                 screenshot_path = os.path.join(
-                    os.getcwd(), "storage", "screenshots",
-                    str(session.get("id")), f"step_{step_num}.jpg"
+                    os.getcwd(),
+                    "storage",
+                    "screenshots",
+                    str(session.get("id")),
+                    f"step_{step_num}.jpg",
                 )
                 if os.path.exists(screenshot_path):
                     with open(screenshot_path, "rb") as f:
@@ -129,15 +143,17 @@ class PDFExportService:
                 </div>
             """)
 
-        html_parts.extend([
-            "</div>",  # timeline
-            "</div>",  # section
-            '<div class="footer">',
-            f'<p>Generado por SellIA Caja de Cristal — {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>',
-            "</div>",
-            "</body>",
-            "</html>",
-        ])
+        html_parts.extend(
+            [
+                "</div>",  # timeline
+                "</div>",  # section
+                '<div class="footer">',
+                f'<p>Generado por SellIA Caja de Cristal — {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>',
+                "</div>",
+                "</body>",
+                "</html>",
+            ]
+        )
 
         return "\n".join(html_parts)
 
@@ -177,7 +193,9 @@ class PDFExportService:
         include_screenshots: bool = True,
     ) -> str:
         """Genera un PDF y devuelve la ruta al archivo."""
-        html_content = self._build_html(session_data, steps, annotations, include_screenshots)
+        html_content = self._build_html(
+            session_data, steps, annotations, include_screenshots
+        )
 
         output_path = os.path.join(self.storage_dir, f"session_{session_id}.pdf")
 
@@ -191,7 +209,12 @@ class PDFExportService:
             await page.pdf(
                 path=output_path,
                 format="A4",
-                margin={"top": "20px", "right": "20px", "bottom": "20px", "left": "20px"},
+                margin={
+                    "top": "20px",
+                    "right": "20px",
+                    "bottom": "20px",
+                    "left": "20px",
+                },
                 print_background=True,
             )
             await browser.close()
@@ -206,35 +229,57 @@ class PDFExportService:
 
         output = io.StringIO()
         writer = csv.writer(output)
-        writer.writerow(["step_number", "action_type", "action_params", "reason", "execution_result", "execution_ms"])
+        writer.writerow(
+            [
+                "step_number",
+                "action_type",
+                "action_params",
+                "reason",
+                "execution_result",
+                "execution_ms",
+            ]
+        )
 
         for step in steps:
-            writer.writerow([
-                step.get("step_number", ""),
-                step.get("action_type", ""),
-                json.dumps(step.get("action_params") or {}, ensure_ascii=False),
-                step.get("reason", ""),
-                step.get("execution_result", ""),
-                step.get("execution_ms", ""),
-            ])
+            writer.writerow(
+                [
+                    step.get("step_number", ""),
+                    step.get("action_type", ""),
+                    json.dumps(step.get("action_params") or {}, ensure_ascii=False),
+                    step.get("reason", ""),
+                    step.get("execution_result", ""),
+                    step.get("execution_ms", ""),
+                ]
+            )
 
-        output_path = os.path.join(self.storage_dir, f"steps_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
-        with open(output_path, "w", newline="", encoding="utf-8") as f:
-            f.write(output.getvalue())
+        output_path = os.path.join(
+            self.storage_dir, f"steps_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        )
+        await asyncio.to_thread(
+            write_file,
+            output_path,
+            "w",
+            newline="",
+            encoding="utf-8",
+            data=output.getvalue(),
+        )
 
         return output_path
 
-    async def export_json(self, session_data: dict, steps: list[dict], annotations: list[dict]) -> str:
+    async def export_json(
+        self, session_data: dict, steps: list[dict], annotations: list[dict]
+    ) -> str:
         """Exporta la sesión completa a JSON."""
         export_data = {
             "session": session_data,
             "steps": steps,
             "annotations": annotations,
-            "exported_at": datetime.now(timezone.utc).isoformat(),
+            "exported_at": datetime.now(UTC).isoformat(),
         }
 
-        output_path = os.path.join(self.storage_dir, f"session_{session_data.get('id')}.json")
-        with open(output_path, "w", encoding="utf-8") as f:
-            json.dump(export_data, f, ensure_ascii=False, indent=2, default=str)
+        output_path = os.path.join(
+            self.storage_dir, f"session_{session_data.get('id')}.json"
+        )
+        await asyncio.to_thread(write_json, output_path, export_data)
 
         return output_path

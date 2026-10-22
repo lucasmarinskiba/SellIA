@@ -9,8 +9,9 @@ Endpoints:
 """
 
 import logging
-from typing import Dict, List, Any
 from datetime import datetime, timedelta
+from typing import Any
+
 from fastapi import APIRouter
 
 logger = logging.getLogger(__name__)
@@ -22,7 +23,7 @@ router = APIRouter(prefix="/api/v1/analytics", tags=["analytics"])
 async def get_analytics_overview(
     seller_id: str,
     days: int = 30,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     KPIs principales último período.
 
@@ -61,7 +62,7 @@ async def get_analytics_overview(
         }
 
     except Exception as e:
-        logger.error(f"Overview failed: {str(e)}")
+        logger.exception("Overview failed")
         return {"status": "error", "error": str(e)}
 
 
@@ -69,7 +70,7 @@ async def get_analytics_overview(
 async def get_sales_by_channel(
     seller_id: str,
     days: int = 30,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Desglose de ventas por canal/plataforma.
 
@@ -116,15 +117,15 @@ async def get_sales_by_channel(
             "total_orders": 87,
         }
 
-    except Exception as e:
-        logger.error(f"Sales by channel failed: {str(e)}")
+    except Exception:
+        logger.exception("Sales by channel failed")
         return {"status": "error"}
 
 
 @router.get("/funnel")
 async def get_conversion_funnel(
     seller_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Embudo de conversión (awareness → consideration → purchase → retention).
 
@@ -164,15 +165,15 @@ async def get_conversion_funnel(
             "overall_conversion": 0.0070,  # 0.7% awareness → purchase
         }
 
-    except Exception as e:
-        logger.error(f"Funnel failed: {str(e)}")
+    except Exception:
+        logger.exception("Funnel failed")
         return {"status": "error"}
 
 
 @router.get("/cohorts")
 async def get_cohort_analysis(
     seller_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Análisis de cohortes (LTV por grupo de adquisición).
 
@@ -209,8 +210,8 @@ async def get_cohort_analysis(
             ],
         }
 
-    except Exception as e:
-        logger.error(f"Cohorts failed: {str(e)}")
+    except Exception:
+        logger.exception("Cohorts failed")
         return {"status": "error"}
 
 
@@ -218,7 +219,7 @@ async def get_cohort_analysis(
 async def get_revenue_forecast(
     seller_id: str,
     months: int = 3,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Proyección de ingresos (próximos N meses).
 
@@ -233,13 +234,15 @@ async def get_revenue_forecast(
 
         for i in range(months):
             month = datetime.now() + timedelta(days=30 * i)
-            projected = base_revenue * (1.12 ** i)  # 12% MoM growth
+            projected = base_revenue * (1.12**i)  # 12% MoM growth
 
-            forecast.append({
-                "month": month.strftime("%B %Y"),
-                "projected_revenue": projected,
-                "confidence": 0.85 - (0.05 * i),  # Decreases farther out
-            })
+            forecast.append(
+                {
+                    "month": month.strftime("%B %Y"),
+                    "projected_revenue": projected,
+                    "confidence": 0.85 - (0.05 * i),  # Decreases farther out
+                }
+            )
 
         return {
             "status": "success",
@@ -247,6 +250,6 @@ async def get_revenue_forecast(
             "assumption": "12% MoM growth based on historical trend",
         }
 
-    except Exception as e:
-        logger.error(f"Forecast failed: {str(e)}")
+    except Exception:
+        logger.exception("Forecast failed")
         return {"status": "error"}

@@ -1,20 +1,19 @@
 """Acquisition Strategist Service"""
 
-import uuid
 import json
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timezone
+import uuid
+from typing import Any
 
+from langchain_core.messages import HumanMessage, SystemMessage
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
-from langchain_core.messages import SystemMessage, HumanMessage
 
 from app.core.logger import get_logger
 from app.domains.agents.acquisition_strategist.models import AcquisitionStrategy
 from app.domains.agents.llm_provider import generate_with_fallback
 from app.domains.agents.prompts.business_context_adapter import (
-    get_agent_prompt_context,
     format_business_context_for_prompt,
+    get_agent_prompt_context,
 )
 
 logger = get_logger(__name__)
@@ -24,8 +23,8 @@ async def design_acquisition_strategy(
     db: AsyncSession,
     business_id: uuid.UUID,
     strategy_name: str,
-    goals: Dict[str, Any],
-    budget: Optional[float],
+    goals: dict[str, Any],
+    budget: float | None,
 ) -> AcquisitionStrategy:
     """Diseña una estrategia de adquisición completa usando LLM."""
     ctx = await get_agent_prompt_context(db, business_id)
@@ -64,7 +63,7 @@ async def design_acquisition_strategy(
         max_tokens=3000,
     )
 
-    parsed: Dict[str, Any] = {
+    parsed: dict[str, Any] = {
         "channels": [],
         "funnel_stages": [],
         "cac_target": None,
@@ -82,7 +81,9 @@ async def design_acquisition_strategy(
                 content = content.split("```")[1].split("```")[0].strip()
             parsed = json.loads(content)
         except Exception as e:
-            logger.warning(f"Failed to parse acquisition strategy LLM output: {e}")
+            logger.warning(
+                f"Failed to parse acquisition strategy LLM output: {e}", exc_info=True
+            )
 
     strategy = AcquisitionStrategy(
         business_id=business_id,
@@ -101,12 +102,18 @@ async def design_acquisition_strategy(
     return strategy
 
 
-async def get_strategy(db: AsyncSession, strategy_id: uuid.UUID) -> Optional[AcquisitionStrategy]:
-    result = await db.execute(select(AcquisitionStrategy).where(AcquisitionStrategy.id == strategy_id))
+async def get_strategy(
+    db: AsyncSession, strategy_id: uuid.UUID
+) -> AcquisitionStrategy | None:
+    result = await db.execute(
+        select(AcquisitionStrategy).where(AcquisitionStrategy.id == strategy_id)
+    )
     return result.scalar_one_or_none()
 
 
-async def list_strategies(db: AsyncSession, business_id: uuid.UUID) -> List[AcquisitionStrategy]:
+async def list_strategies(
+    db: AsyncSession, business_id: uuid.UUID
+) -> list[AcquisitionStrategy]:
     result = await db.execute(
         select(AcquisitionStrategy)
         .where(AcquisitionStrategy.business_id == business_id)

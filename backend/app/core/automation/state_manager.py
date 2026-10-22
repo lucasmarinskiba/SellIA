@@ -9,11 +9,13 @@ Maneja:
 - Analytics: success rate, avg duration, by job type
 """
 
-import logging
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
-from collections import defaultdict
 import asyncio
+import logging
+from collections import defaultdict
+from datetime import timedelta
+from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -22,9 +24,13 @@ class StateManager:
     """Maneja state de jobs."""
 
     def __init__(self):
-        self.jobs: Dict[str, Any] = {}  # job_id → Job
-        self.job_status_index: Dict[str, List[str]] = defaultdict(list)  # status → [job_id, ...]
-        self.job_type_index: Dict[str, List[str]] = defaultdict(list)  # job_type → [job_id, ...]
+        self.jobs: dict[str, Any] = {}  # job_id → Job
+        self.job_status_index: dict[str, list[str]] = defaultdict(
+            list
+        )  # status → [job_id, ...]
+        self.job_type_index: dict[str, list[str]] = defaultdict(
+            list
+        )  # job_type → [job_id, ...]
         self.lock = asyncio.Lock()
 
     async def create(self, job: Any) -> None:
@@ -53,11 +59,9 @@ class StateManager:
                     self.job_status_index[old_status].remove(job_id)
                 self.job_status_index[job.status.value].append(job_id)
 
-            logger.debug(
-                f"Job updated: {job_id} {old_status} → {job.status.value}"
-            )
+            logger.debug(f"Job updated: {job_id} {old_status} → {job.status.value}")
 
-    async def get(self, job_id: str) -> Optional[Any]:
+    async def get(self, job_id: str) -> Any | None:
         """Obtiene un job."""
         async with self.lock:
             return self.jobs.get(job_id)
@@ -65,38 +69,37 @@ class StateManager:
     async def count_by_status(self, status: Any) -> int:
         """Cuenta jobs por status."""
         async with self.lock:
-            status_value = status.value if hasattr(status, 'value') else str(status)
+            status_value = status.value if hasattr(status, "value") else str(status)
             return len(self.job_status_index.get(status_value, []))
 
-    async def get_by_status(self, status: Any, limit: int = 100) -> List[Any]:
+    async def get_by_status(self, status: Any, limit: int = 100) -> list[Any]:
         """Obtiene jobs por status."""
         async with self.lock:
-            status_value = status.value if hasattr(status, 'value') else str(status)
+            status_value = status.value if hasattr(status, "value") else str(status)
             job_ids = self.job_status_index.get(status_value, [])[-limit:]
             return [self.jobs[jid] for jid in job_ids if jid in self.jobs]
 
-    async def get_by_type(self, job_type: Any, limit: int = 100) -> List[Any]:
+    async def get_by_type(self, job_type: Any, limit: int = 100) -> list[Any]:
         """Obtiene jobs por type."""
         async with self.lock:
-            job_type_value = job_type.value if hasattr(job_type, 'value') else str(job_type)
+            job_type_value = (
+                job_type.value if hasattr(job_type, "value") else str(job_type)
+            )
             job_ids = self.job_type_index.get(job_type_value, [])[-limit:]
             return [self.jobs[jid] for jid in job_ids if jid in self.jobs]
 
-    async def get_recent(self, hours: int = 1, limit: int = 100) -> List[Any]:
+    async def get_recent(self, hours: int = 1, limit: int = 100) -> list[Any]:
         """Obtiene jobs recientes."""
         async with self.lock:
-            cutoff = datetime.utcnow() - timedelta(hours=hours)
-            recent = [
-                job for job in self.jobs.values()
-                if job.created_at >= cutoff
-            ]
+            cutoff = utc_now() - timedelta(hours=hours)
+            recent = [job for job in self.jobs.values() if job.created_at >= cutoff]
             return sorted(
                 recent,
                 key=lambda j: j.created_at,
                 reverse=True,
             )[:limit]
 
-    async def get_history(self, job_id: str) -> Optional[Dict[str, Any]]:
+    async def get_history(self, job_id: str) -> dict[str, Any] | None:
         """Obtiene historial completo de un job."""
         async with self.lock:
             job = self.jobs.get(job_id)
@@ -110,7 +113,9 @@ class StateManager:
                 "status": job.status.value,
                 "created_at": job.created_at.isoformat(),
                 "started_at": job.started_at.isoformat() if job.started_at else None,
-                "completed_at": job.completed_at.isoformat() if job.completed_at else None,
+                "completed_at": (
+                    job.completed_at.isoformat() if job.completed_at else None
+                ),
                 "duration_seconds": job.duration_seconds,
                 "attempts": job.attempts,
                 "max_retries": job.max_retries,
@@ -119,13 +124,12 @@ class StateManager:
                 "escalation_reason": job.escalation_reason,
             }
 
-    async def get_statistics(self, hours: int = 24) -> Dict[str, Any]:
+    async def get_statistics(self, hours: int = 24) -> dict[str, Any]:
         """Estadísticas de jobs (últimas N horas)."""
         async with self.lock:
-            cutoff = datetime.utcnow() - timedelta(hours=hours)
+            cutoff = utc_now() - timedelta(hours=hours)
             recent_jobs = [
-                job for job in self.jobs.values()
-                if job.created_at >= cutoff
+                job for job in self.jobs.values() if job.created_at >= cutoff
             ]
 
             if not recent_jobs:
@@ -156,7 +160,8 @@ class StateManager:
             completed_jobs = [j for j in recent_jobs if j.completed_at]
             avg_duration = (
                 sum(j.duration_seconds for j in completed_jobs) / len(completed_jobs)
-                if completed_jobs else 0.0
+                if completed_jobs
+                else 0.0
             )
 
             return {
@@ -179,13 +184,16 @@ class StateManager:
     async def cleanup_old(self, days: int = 7) -> int:
         """Limpia jobs viejos (archive)."""
         async with self.lock:
-            cutoff = datetime.utcnow() - timedelta(days=days)
+            cutoff = utc_now() - timedelta(days=days)
             original_count = len(self.jobs)
 
             # Keep only recent jobs + pending jobs
             new_jobs = {}
             for job_id, job in self.jobs.items():
-                if job.created_at >= cutoff or job.status.value in ["pending", "running"]:
+                if job.created_at >= cutoff or job.status.value in [
+                    "pending",
+                    "running",
+                ]:
                     new_jobs[job_id] = job
                 else:
                     # Remove from indexes
@@ -201,21 +209,21 @@ class StateManager:
             logger.info(f"State cleanup: removed {removed} old jobs")
             return removed
 
-    async def export_metrics(self) -> Dict[str, Any]:
+    async def export_metrics(self) -> dict[str, Any]:
         """Exporta métricas para monitoring."""
         async with self.lock:
             stats = await self.get_statistics(hours=24)
             return {
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": utc_now().isoformat(),
                 "jobs_total": len(self.jobs),
-                "status_distribution": dict(
-                    (status, len(job_ids))
+                "status_distribution": {
+                    status: len(job_ids)
                     for status, job_ids in self.job_status_index.items()
-                ),
-                "type_distribution": dict(
-                    (job_type, len(job_ids))
+                },
+                "type_distribution": {
+                    job_type: len(job_ids)
                     for job_type, job_ids in self.job_type_index.items()
-                ),
+                },
                 "recent_stats": stats,
             }
 
@@ -237,18 +245,20 @@ class JobRecovery:
             # Mark as failed (will be retried if applicable)
             job.status = JobStatus.FAILED
             job.error = "Job interrupted due to system restart"
-            job.completed_at = datetime.utcnow()
+            job.completed_at = utc_now()
             await self.state_manager.update(job.id, job)
             recovered += 1
 
         logger.info(f"Recovered {recovered} crashed jobs")
         return recovered
 
-    async def get_jobs_requiring_attention(self) -> Dict[str, List[Any]]:
+    async def get_jobs_requiring_attention(self) -> dict[str, list[Any]]:
         """Retorna jobs que requieren atención humana."""
         from automation_engine import JobStatus
 
-        escalated = await self.state_manager.get_by_status(JobStatus.ESCALATED, limit=50)
+        escalated = await self.state_manager.get_by_status(
+            JobStatus.ESCALATED, limit=50
+        )
         failed = await self.state_manager.get_by_status(JobStatus.FAILED, limit=50)
 
         return {

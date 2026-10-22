@@ -3,15 +3,21 @@ Coupon Service
 """
 
 import uuid
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
 
 from app.domains.coupons.models import Coupon, CouponUsage
 
 
-async def validate_coupon(db: AsyncSession, code: str, user_id: uuid.UUID, plan_id: Optional[str] = None, amount: float = 0) -> dict:
+async def validate_coupon(
+    db: AsyncSession,
+    code: str,
+    user_id: uuid.UUID,
+    plan_id: str | None = None,
+    amount: float = 0,
+) -> dict:
     result = await db.execute(select(Coupon).where(Coupon.code == code.upper()))
     coupon = result.scalar_one_or_none()
 
@@ -21,7 +27,7 @@ async def validate_coupon(db: AsyncSession, code: str, user_id: uuid.UUID, plan_
     if not coupon.is_active:
         return {"valid": False, "reason": "Cupón inactivo"}
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if coupon.starts_at and coupon.starts_at > now:
         return {"valid": False, "reason": "Cupón aún no válido"}
     if coupon.expires_at and coupon.expires_at < now:
@@ -31,7 +37,10 @@ async def validate_coupon(db: AsyncSession, code: str, user_id: uuid.UUID, plan_
         return {"valid": False, "reason": "Cupón agotado"}
 
     if coupon.min_purchase_amount and amount < float(coupon.min_purchase_amount):
-        return {"valid": False, "reason": f"Mínimo de compra: ${coupon.min_purchase_amount}"}
+        return {
+            "valid": False,
+            "reason": f"Mínimo de compra: ${coupon.min_purchase_amount}",
+        }
 
     # Check per-user limit
     user_uses = await db.execute(
@@ -62,7 +71,13 @@ async def validate_coupon(db: AsyncSession, code: str, user_id: uuid.UUID, plan_
     }
 
 
-async def apply_coupon(db: AsyncSession, coupon_id: uuid.UUID, user_id: uuid.UUID, original_amount: float, discount: float) -> CouponUsage:
+async def apply_coupon(
+    db: AsyncSession,
+    coupon_id: uuid.UUID,
+    user_id: uuid.UUID,
+    original_amount: float,
+    discount: float,
+) -> CouponUsage:
     usage = CouponUsage(
         coupon_id=coupon_id,
         user_id=user_id,

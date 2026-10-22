@@ -9,14 +9,15 @@ Usage:
         ...
 """
 
-from typing import Any
+from typing import Annotated, Any
+
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
+from app.domains.subscriptions.services import check_subscription_limit
 from app.domains.users.models import User
-from app.domains.subscriptions.services import check_subscription_limit, track_usage
 
 
 def require_limit(metric_type: str, quantity: int = 1, track_after: bool = True):
@@ -26,15 +27,18 @@ def require_limit(metric_type: str, quantity: int = 1, track_after: bool = True)
     Note: automatic post-tracking requires wrapping the endpoint, which is complex.
     For simplicity, set track_after=False and call track_usage manually in the endpoint.
     """
+
     async def _check_limit(
-        db: AsyncSession = Depends(get_db),
-        current_user: User = Depends(get_current_active_user),
+        db: Annotated[AsyncSession, Depends(get_db)],
+        current_user: Annotated[User, Depends(get_current_active_user)],
     ):
-        result = await check_subscription_limit(db, current_user.id, metric_type, quantity)
+        result = await check_subscription_limit(
+            db, current_user.id, metric_type, quantity
+        )
         if not result["allowed"]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Límite alcanzado para {metric_type}. Usados: {result['used']}/{result['limit']}"
+                detail=f"Límite alcanzado para {metric_type}. Usados: {result['used']}/{result['limit']}",
             )
         return result
 
@@ -52,6 +56,6 @@ async def enforce_limit(
     if not result["allowed"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Límite alcanzado para {metric_type}. Usados: {result['used']}/{result['limit']}"
+            detail=f"Límite alcanzado para {metric_type}. Usados: {result['used']}/{result['limit']}",
         )
     return result

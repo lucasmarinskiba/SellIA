@@ -4,10 +4,14 @@ Pricing: ~$0.20-$0.50/second (estimated)
 Strengths: Photorealism, physics, narrative video
 """
 
-from typing import Dict, Any
+import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
+
+from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -17,7 +21,7 @@ class SoraProvider(BaseProvider):
 
     name = "Sora (OpenAI)"
     slug = "sora"
-    supports = [ContentType.VIDEO]
+    supports: ClassVar[list] = [ContentType.VIDEO]
 
     @property
     def is_available(self) -> bool:
@@ -27,15 +31,18 @@ class SoraProvider(BaseProvider):
         duration = config.duration_seconds or 5
         return 0.30 * duration
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {"sora-standard": 0.30, "sora-hd": 0.50}
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         if not self.is_available:
-            return GenerationResult(success=False, error_message="OPENAI_API_KEY no configurada para Sora")
+            return GenerationResult(
+                success=False, error_message="OPENAI_API_KEY no configurada para Sora"
+            )
 
         try:
             from openai import AsyncOpenAI
+
             client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
             # Sora API (when publicly available)
@@ -48,7 +55,9 @@ class SoraProvider(BaseProvider):
 
             video_url = response.data[0].url if response.data else None
             if not video_url:
-                return GenerationResult(success=False, error_message="Sora no devolvió video")
+                return GenerationResult(
+                    success=False, error_message="Sora no devolvió video"
+                )
 
             duration = config.duration_seconds or 5
             return GenerationResult(
@@ -62,4 +71,5 @@ class SoraProvider(BaseProvider):
             )
 
         except Exception as e:
+            logger.exception("generate: error inesperado")
             return GenerationResult(success=False, error_message=str(e))

@@ -7,14 +7,18 @@ Endpoints:
 - POST /optimize-strategy: Optimiza según performance
 """
 
+import logging
+from typing import Any
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional, Dict, List, Any
-from datetime import datetime
-import logging
 
-from app.core.intelligence.market_analyzer import MarketAnalyzer, MarketAnalysis
-from app.core.intelligence.strategy_generator import StrategyGenerator, StrategyOptimizer
+from app.core.clock import utc_now
+from app.core.intelligence.market_analyzer import MarketAnalyzer
+from app.core.intelligence.strategy_generator import (
+    StrategyGenerator,
+    StrategyOptimizer,
+)
 
 router = APIRouter(prefix="/api/v1/intelligence", tags=["intelligence"])
 logger = logging.getLogger(__name__)
@@ -22,27 +26,30 @@ logger = logging.getLogger(__name__)
 
 class ProductInput(BaseModel):
     """Información producto para análisis."""
+
     product_name: str
     product_description: str
     price: float
-    business_goals: Optional[List[str]] = None
+    business_goals: list[str] | None = None
 
 
 class PerformanceInput(BaseModel):
     """Datos performance para optimización."""
+
     conversion_rate: float
     mrr: float
     reviews_avg: float
-    channel_performance: Dict[str, float]
-    customer_feedback: Optional[str] = None
+    channel_performance: dict[str, float]
+    customer_feedback: str | None = None
 
 
 class IntelligenceReport(BaseModel):
     """Reporte completo inteligencia."""
-    market_analysis: Dict[str, Any]
-    strategy: Dict[str, Any]
-    recommendations: List[str]
-    next_actions: List[str]
+
+    market_analysis: dict[str, Any]
+    strategy: dict[str, Any]
+    recommendations: list[str]
+    next_actions: list[str]
 
 
 @router.post("/analyze-market", tags=["market"])
@@ -80,7 +87,7 @@ async def analyze_market(product: ProductInput):
             "threats": analysis.threats,
             "recommended_positioning": analysis.recommended_positioning,
             "confidence": analysis.confidence,
-            "analyzed_at": datetime.utcnow().isoformat(),
+            "analyzed_at": utc_now().isoformat(),
         }
 
         return {
@@ -89,7 +96,7 @@ async def analyze_market(product: ProductInput):
         }
 
     except Exception as e:
-        logger.error(f"Error analizando mercado: {str(e)}")
+        logger.exception("Error analizando mercado")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -152,18 +159,18 @@ async def generate_strategy(product: ProductInput):
             "strategy": strategy,
             "recommendations": recommendations,
             "next_actions": next_actions,
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
         }
 
     except Exception as e:
-        logger.error(f"Error generando estrategia: {str(e)}")
+        logger.exception("Error generando estrategia")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/optimize-strategy", tags=["optimization"])
 async def optimize_strategy(
     product_name: str,
-    current_strategy: Dict[str, Any],
+    current_strategy: dict[str, Any],
     performance: PerformanceInput,
     iteration: int = 1,
 ):
@@ -175,7 +182,9 @@ async def optimize_strategy(
     """
 
     try:
-        logger.info(f"Optimizando estrategia para: {product_name}, iteración {iteration}")
+        logger.info(
+            f"Optimizando estrategia para: {product_name}, iteración {iteration}"
+        )
 
         performance_data = {
             "conversion_rate": performance.conversion_rate,
@@ -209,15 +218,15 @@ async def optimize_strategy(
             "recommended_changes": optimized.get("changes_recommended", []),
             "escalation_plan": escalation,
             "next_iteration_focus": (
-                "A/B test messaging" if performance.conversion_rate < 2
-                else "Scale winners" if performance.mrr > 3000
-                else "Improve retention"
+                "A/B test messaging"
+                if performance.conversion_rate < 2
+                else "Scale winners" if performance.mrr > 3000 else "Improve retention"
             ),
             "optimized_strategy": optimized,
         }
 
     except Exception as e:
-        logger.error(f"Error optimizando estrategia: {str(e)}")
+        logger.exception("Error optimizando estrategia")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -291,9 +300,9 @@ async def generate_full_report(product: ProductInput):
             "recommendations": recommendations,
             "roadmap_90_days": strategy["roadmap_90days"],
             "next_actions": next_actions,
-            "report_generated_at": datetime.utcnow().isoformat(),
+            "report_generated_at": utc_now().isoformat(),
         }
 
     except Exception as e:
-        logger.error(f"Error generando reporte: {str(e)}")
+        logger.exception("Error generando reporte")
         raise HTTPException(status_code=500, detail=str(e))

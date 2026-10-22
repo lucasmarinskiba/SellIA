@@ -16,17 +16,32 @@ Migrations:
   alembic upgrade head
 """
 
+import enum
+import os
+
 from sqlalchemy import (
-    create_engine, Column, String, Float, Integer, DateTime, Boolean, JSON, Text,
-    ForeignKey, Enum, Index, UniqueConstraint
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    create_engine,
 )
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
-from datetime import datetime
-import os
-import enum
+from sqlalchemy.orm import relationship, sessionmaker
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/sellia")
+from app.core.clock import utc_now
+
+DATABASE_URL = os.getenv(
+    "DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/sellia"
+)
 
 engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -36,6 +51,7 @@ Base = declarative_base()
 
 class PlatformType(enum.Enum):
     """Supported platforms."""
+
     FACEBOOK_SHOP = "facebook_shop"
     INSTAGRAM_SHOP = "instagram_shop"
     TIKTOK_SHOP = "tiktok_shop"
@@ -46,6 +62,7 @@ class PlatformType(enum.Enum):
 
 class OrderStatus(enum.Enum):
     """Order lifecycle states."""
+
     PENDING = "pending"
     CONFIRMED = "confirmed"
     PROCESSING = "processing"
@@ -57,6 +74,7 @@ class OrderStatus(enum.Enum):
 
 class PaymentStatus(enum.Enum):
     """Payment states."""
+
     PENDING = "pending"
     CAPTURED = "captured"
     FAILED = "failed"
@@ -64,6 +82,7 @@ class PaymentStatus(enum.Enum):
 
 
 # ============= FACEBOOK SHOP MODELS =============
+
 
 class FacebookShop(Base):
     """Facebook Shop account integration."""
@@ -81,8 +100,8 @@ class FacebookShop(Base):
     is_active = Column(Boolean, default=True)
     last_sync = Column(DateTime)
     metadata = Column(JSON, default=dict)  # settings, features, etc
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     orders = relationship("FacebookOrder", back_populates="shop")
     products = relationship("FacebookProduct", back_populates="shop")
@@ -93,8 +112,8 @@ class FacebookProduct(Base):
 
     __tablename__ = "facebook_products"
     __table_args__ = (
-        Index('idx_shop_sku', 'shop_id', 'sku'),
-        UniqueConstraint('shop_id', 'facebook_product_id', name='uq_shop_fb_product'),
+        Index("idx_shop_sku", "shop_id", "sku"),
+        UniqueConstraint("shop_id", "facebook_product_id", name="uq_shop_fb_product"),
     )
 
     id = Column(String, primary_key=True)
@@ -111,8 +130,8 @@ class FacebookProduct(Base):
     category = Column(String)
     metadata = Column(JSON, default=dict)
     synced_at = Column(DateTime)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     shop = relationship("FacebookShop", back_populates="products")
 
@@ -122,8 +141,8 @@ class FacebookOrder(Base):
 
     __tablename__ = "facebook_orders"
     __table_args__ = (
-        Index('idx_shop_status', 'shop_id', 'status'),
-        UniqueConstraint('shop_id', 'facebook_order_id', name='uq_shop_fb_order'),
+        Index("idx_shop_status", "shop_id", "status"),
+        UniqueConstraint("shop_id", "facebook_order_id", name="uq_shop_fb_order"),
     )
 
     id = Column(String, primary_key=True)
@@ -141,13 +160,14 @@ class FacebookOrder(Base):
     tracking_number = Column(String)
     notes = Column(Text)
     metadata = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     shop = relationship("FacebookShop", back_populates="orders")
 
 
 # ============= INSTAGRAM SHOP MODELS =============
+
 
 class InstagramShop(Base):
     """Instagram Shop account integration."""
@@ -164,8 +184,8 @@ class InstagramShop(Base):
     last_sync = Column(DateTime)
     analytics = Column(JSON, default=dict)  # profile_views, website_clicks, etc
     metadata = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     orders = relationship("InstagramOrder", back_populates="shop")
     products = relationship("InstagramProduct", back_populates="shop")
@@ -176,8 +196,8 @@ class InstagramProduct(Base):
 
     __tablename__ = "instagram_products"
     __table_args__ = (
-        Index('idx_shop_sku', 'shop_id', 'sku'),
-        UniqueConstraint('shop_id', 'instagram_product_id', name='uq_shop_ig_product'),
+        Index("idx_shop_sku", "shop_id", "sku"),
+        UniqueConstraint("shop_id", "instagram_product_id", name="uq_shop_ig_product"),
     )
 
     id = Column(String, primary_key=True)
@@ -194,8 +214,8 @@ class InstagramProduct(Base):
     linked_post_id = Column(String)  # Instagram post/reel
     metadata = Column(JSON, default=dict)
     synced_at = Column(DateTime)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     shop = relationship("InstagramShop", back_populates="products")
 
@@ -205,8 +225,8 @@ class InstagramOrder(Base):
 
     __tablename__ = "instagram_orders"
     __table_args__ = (
-        Index('idx_shop_status', 'shop_id', 'status'),
-        UniqueConstraint('shop_id', 'instagram_order_id', name='uq_shop_ig_order'),
+        Index("idx_shop_status", "shop_id", "status"),
+        UniqueConstraint("shop_id", "instagram_order_id", name="uq_shop_ig_order"),
     )
 
     id = Column(String, primary_key=True)
@@ -224,13 +244,14 @@ class InstagramOrder(Base):
     shipping_address = Column(JSON)
     tracking_number = Column(String)
     metadata = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     shop = relationship("InstagramShop", back_populates="orders")
 
 
 # ============= TIKTOK SHOP MODELS =============
+
 
 class TikTokShop(Base):
     """TikTok Shop account integration."""
@@ -250,8 +271,8 @@ class TikTokShop(Base):
     quota_reset_at = Column(DateTime)  # For rate limit tracking
     quota_used = Column(Integer, default=0)
     metadata = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     orders = relationship("TikTokOrder", back_populates="shop")
     products = relationship("TikTokProduct", back_populates="shop")
@@ -262,8 +283,8 @@ class TikTokProduct(Base):
 
     __tablename__ = "tiktok_products"
     __table_args__ = (
-        Index('idx_shop_sku', 'shop_id', 'sku'),
-        UniqueConstraint('shop_id', 'tiktok_product_id', name='uq_shop_tt_product'),
+        Index("idx_shop_sku", "shop_id", "sku"),
+        UniqueConstraint("shop_id", "tiktok_product_id", name="uq_shop_tt_product"),
     )
 
     id = Column(String, primary_key=True)
@@ -280,8 +301,8 @@ class TikTokProduct(Base):
     category = Column(String)
     metadata = Column(JSON, default=dict)
     synced_at = Column(DateTime)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     shop = relationship("TikTokShop", back_populates="products")
 
@@ -291,8 +312,8 @@ class TikTokOrder(Base):
 
     __tablename__ = "tiktok_orders"
     __table_args__ = (
-        Index('idx_shop_status', 'shop_id', 'status'),
-        UniqueConstraint('shop_id', 'tiktok_order_id', name='uq_shop_tt_order'),
+        Index("idx_shop_status", "shop_id", "status"),
+        UniqueConstraint("shop_id", "tiktok_order_id", name="uq_shop_tt_order"),
     )
 
     id = Column(String, primary_key=True)
@@ -312,13 +333,14 @@ class TikTokOrder(Base):
     tracking_provider = Column(String)
     estimated_delivery = Column(DateTime)
     metadata = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     shop = relationship("TikTokShop", back_populates="orders")
 
 
 # ============= CALENDLY MODELS =============
+
 
 class CalendlyAccount(Base):
     """Calendly account integration."""
@@ -340,8 +362,8 @@ class CalendlyAccount(Base):
     timezone = Column(String, default="UTC")
     last_sync = Column(DateTime)
     metadata = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     events = relationship("CalendlyEvent", back_populates="account")
 
@@ -351,8 +373,8 @@ class CalendlyEvent(Base):
 
     __tablename__ = "calendly_events"
     __table_args__ = (
-        Index('idx_account_status', 'account_id', 'status'),
-        UniqueConstraint('account_id', 'calendly_event_uri', name='uq_account_event'),
+        Index("idx_account_status", "account_id", "status"),
+        UniqueConstraint("account_id", "calendly_event_uri", name="uq_account_event"),
     )
 
     id = Column(String, primary_key=True)
@@ -373,13 +395,14 @@ class CalendlyEvent(Base):
     reminder_sent = Column(Boolean, default=False)
     cancellation_reason = Column(String)
     metadata = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     account = relationship("CalendlyAccount", back_populates="events")
 
 
 # ============= SLACK MODELS =============
+
 
 class SlackWorkspace(Base):
     """Slack workspace integration."""
@@ -396,12 +419,14 @@ class SlackWorkspace(Base):
     installed_by = Column(String)  # user_id
     is_active = Column(Boolean, default=True)
     scopes = Column(JSON, default=list)  # OAuth scopes granted
-    features_enabled = Column(JSON, default=dict)  # {orders: true, analytics: true, ...}
+    features_enabled = Column(
+        JSON, default=dict
+    )  # {orders: true, analytics: true, ...}
     notification_channel = Column(String)  # Default channel for alerts
     last_sync = Column(DateTime)
     metadata = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     commands = relationship("SlackCommand", back_populates="workspace")
     messages = relationship("SlackMessage", back_populates="workspace")
@@ -420,7 +445,7 @@ class SlackCommand(Base):
     text_input = Column(String)
     response = Column(Text)
     status_code = Column(Integer)
-    executed_at = Column(DateTime, default=datetime.utcnow, index=True)
+    executed_at = Column(DateTime, default=utc_now, index=True)
 
     workspace = relationship("SlackWorkspace", back_populates="commands")
 
@@ -436,12 +461,13 @@ class SlackMessage(Base):
     message_type = Column(String)  # alert, report, notification
     title = Column(String)
     content = Column(Text)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=utc_now)
 
     workspace = relationship("SlackWorkspace", back_populates="messages")
 
 
 # ============= TELEGRAM MODELS =============
+
 
 class TelegramBot(Base):
     """Telegram bot integration."""
@@ -463,8 +489,8 @@ class TelegramBot(Base):
     last_update_id = Column(Integer, default=0)  # For polling fallback
     last_sync = Column(DateTime)
     metadata = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     users = relationship("TelegramUser", back_populates="bot")
     messages = relationship("TelegramMessage", back_populates="bot")
@@ -475,7 +501,7 @@ class TelegramUser(Base):
 
     __tablename__ = "telegram_users"
     __table_args__ = (
-        UniqueConstraint('bot_id', 'telegram_user_id', name='uq_bot_user'),
+        UniqueConstraint("bot_id", "telegram_user_id", name="uq_bot_user"),
     )
 
     id = Column(String, primary_key=True)
@@ -493,8 +519,8 @@ class TelegramUser(Base):
     last_interaction = Column(DateTime)
     conversation_state = Column(JSON, default=dict)  # For maintaining context
     metadata = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     bot = relationship("TelegramBot", back_populates="users")
     messages = relationship("TelegramMessage", back_populates="user")
@@ -514,7 +540,7 @@ class TelegramMessage(Base):
     message_type = Column(String)  # text, command, notification, alert
     response_text = Column(Text)
     response_sent = Column(Boolean, default=False)
-    sent_at = Column(DateTime, default=datetime.utcnow, index=True)
+    sent_at = Column(DateTime, default=utc_now, index=True)
 
     bot = relationship("TelegramBot", back_populates="messages")
     user = relationship("TelegramUser", back_populates="messages")
@@ -522,15 +548,16 @@ class TelegramMessage(Base):
 
 # ============= WEBHOOK EVENT LOG (ALL PLATFORMS) =============
 
+
 class PlatformWebhookEvent(Base):
     """Unified webhook event log for all platforms."""
 
     __tablename__ = "platform_webhook_events"
     __table_args__ = (
-        Index('idx_platform_type', 'platform_type'),
-        Index('idx_account_platform', 'account_id', 'platform_type'),
-        Index('idx_processed', 'processed'),
-        Index('idx_created', 'created_at'),
+        Index("idx_platform_type", "platform_type"),
+        Index("idx_account_platform", "account_id", "platform_type"),
+        Index("idx_processed", "processed"),
+        Index("idx_created", "created_at"),
     )
 
     id = Column(String, primary_key=True)
@@ -543,18 +570,21 @@ class PlatformWebhookEvent(Base):
     processed = Column(Boolean, default=False, index=True)
     error_message = Column(Text)
     retry_count = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     processed_at = Column(DateTime)
 
 
 # ============= PLATFORM CREDENTIALS (ENCRYPTED) =============
+
 
 class PlatformCredential(Base):
     """Securely store platform API credentials."""
 
     __tablename__ = "platform_credentials"
     __table_args__ = (
-        UniqueConstraint('account_id', 'platform_type', name='uq_account_platform_cred'),
+        UniqueConstraint(
+            "account_id", "platform_type", name="uq_account_platform_cred"
+        ),
     )
 
     id = Column(String, primary_key=True)
@@ -564,18 +594,21 @@ class PlatformCredential(Base):
     credential_value = Column(String)  # Encrypted
     expires_at = Column(DateTime)
     metadata = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
 
 # ============= RATE LIMIT TRACKING =============
+
 
 class PlatformRateLimit(Base):
     """Track rate limits for each platform."""
 
     __tablename__ = "platform_rate_limits"
     __table_args__ = (
-        UniqueConstraint('account_id', 'platform_type', 'endpoint', name='uq_account_endpoint'),
+        UniqueConstraint(
+            "account_id", "platform_type", "endpoint", name="uq_account_endpoint"
+        ),
     )
 
     id = Column(String, primary_key=True)
@@ -586,18 +619,21 @@ class PlatformRateLimit(Base):
     requests_limit = Column(Integer)
     reset_at = Column(DateTime, index=True)
     last_request_at = Column(DateTime)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
 
 # ============= SYNC STATUS =============
+
 
 class PlatformSyncStatus(Base):
     """Track sync status for each platform."""
 
     __tablename__ = "platform_sync_status"
     __table_args__ = (
-        UniqueConstraint('account_id', 'platform_type', name='uq_account_platform_sync'),
+        UniqueConstraint(
+            "account_id", "platform_type", name="uq_account_platform_sync"
+        ),
     )
 
     id = Column(String, primary_key=True)
@@ -609,11 +645,12 @@ class PlatformSyncStatus(Base):
     items_synced = Column(Integer, default=0)
     status = Column(String, default="idle")  # idle, syncing, error
     error_message = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
 
 # ============= DATABASE INIT =============
+
 
 def init_db() -> None:
     """Create all tables in database."""

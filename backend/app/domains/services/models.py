@@ -3,16 +3,23 @@
 Gestión de entregas de servicios, citas y agenda del prestador.
 """
 
+import enum
 import uuid
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Enum, Integer, Numeric, Boolean
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
-import enum
 
 
 class ServiceModality(str, enum.Enum):
@@ -79,13 +86,33 @@ class AppointmentStatus(str, enum.Enum):
 
 class ServiceDelivery(Base):
     """Entrega de un servicio vendido."""
+
     __tablename__ = "service_deliveries"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    order_id = Column(UUID(as_uuid=True), ForeignKey("orders.id", ondelete="CASCADE"), nullable=False, index=True)
-    catalog_item_id = Column(UUID(as_uuid=True), ForeignKey("catalog_items.id", ondelete="SET NULL"), nullable=True)
-    conversation_id = Column(UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="SET NULL"), nullable=True, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    order_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("orders.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    catalog_item_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("catalog_items.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    conversation_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("conversations.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     # Scheduling
     scheduled_at = Column(DateTime(timezone=True), nullable=True)
@@ -96,7 +123,12 @@ class ServiceDelivery(Base):
     # Service details
     modality = Column(Enum(ServiceModality), nullable=True)
     solution_type = Column(Enum(SolutionType), nullable=True)
-    status = Column(Enum(ServiceDeliveryStatus), default=ServiceDeliveryStatus.SCHEDULED, nullable=False, index=True)
+    status = Column(
+        Enum(ServiceDeliveryStatus),
+        default=ServiceDeliveryStatus.SCHEDULED,
+        nullable=False,
+        index=True,
+    )
 
     # Location
     location_address = Column(JSONB, default=dict, nullable=False)
@@ -108,32 +140,62 @@ class ServiceDelivery(Base):
     client_rating = Column(Integer, nullable=True)  # 1-5
 
     # Structured data
-    materials_used = Column(JSONB, default=list, nullable=False)  # [{"name": "...", "qty": 1, "cost": 0}]
-    diagnosis = Column(JSONB, default=dict, nullable=False)       # {"findings": "...", "severity": "...", "recommendations": "..."}
+    materials_used = Column(
+        JSONB, default=list, nullable=False
+    )  # [{"name": "...", "qty": 1, "cost": 0}]
+    diagnosis = Column(
+        JSONB, default=dict, nullable=False
+    )  # {"findings": "...", "severity": "...", "recommendations": "..."}
     follow_up_required = Column(Boolean, default=False, nullable=False)
     follow_up_notes = Column(Text, nullable=True)
 
     # Reminders tracking
-    reminders_sent = Column(JSONB, default=list, nullable=False)  # [{"type": "24h", "channel": "whatsapp", "sent_at": "..."}]
+    reminders_sent = Column(
+        JSONB, default=list, nullable=False
+    )  # [{"type": "24h", "channel": "whatsapp", "sent_at": "..."}]
 
     # Duration tracking
     estimated_duration_minutes = Column(Integer, nullable=True)
     actual_duration_minutes = Column(Integer, nullable=True)
 
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
 
 class Appointment(Base):
     """Cita individual en la agenda del prestador."""
+
     __tablename__ = "appointments"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    service_delivery_id = Column(UUID(as_uuid=True), ForeignKey("service_deliveries.id", ondelete="CASCADE"), nullable=True, index=True)
-    order_id = Column(UUID(as_uuid=True), ForeignKey("orders.id", ondelete="SET NULL"), nullable=True, index=True)
-    conversation_id = Column(UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="SET NULL"), nullable=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    service_delivery_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("service_deliveries.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    order_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("orders.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    conversation_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("conversations.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     # Client info
     client_name = Column(String(255), nullable=True)
@@ -143,7 +205,9 @@ class Appointment(Base):
     # Timing
     start_time = Column(DateTime(timezone=True), nullable=False)
     end_time = Column(DateTime(timezone=True), nullable=False)
-    timezone = Column(String(50), default="America/Argentina/Buenos_Aires", nullable=False)
+    timezone = Column(
+        String(50), default="America/Argentina/Buenos_Aires", nullable=False
+    )
 
     # Service context
     modality = Column(Enum(ServiceModality), nullable=True)
@@ -155,7 +219,12 @@ class Appointment(Base):
     meeting_url = Column(Text, nullable=True)
 
     # Status
-    status = Column(Enum(AppointmentStatus), default=AppointmentStatus.PENDING, nullable=False, index=True)
+    status = Column(
+        Enum(AppointmentStatus),
+        default=AppointmentStatus.PENDING,
+        nullable=False,
+        index=True,
+    )
 
     # Communication tracking
     reminder_sent_at = Column(DateTime(timezone=True), nullable=True)
@@ -169,5 +238,9 @@ class Appointment(Base):
     preparation_notes = Column(Text, nullable=True)
 
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )

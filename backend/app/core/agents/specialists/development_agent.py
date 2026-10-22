@@ -9,15 +9,15 @@ Specialties:
 """
 
 import logging
-from typing import Dict, List, Any, Optional
 from enum import Enum
-from datetime import datetime
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
 
 class TechStackLayer(str, Enum):
     """Technology stack layers."""
+
     FRONTEND = "frontend"
     BACKEND = "backend"
     DATABASE = "database"
@@ -27,6 +27,7 @@ class TechStackLayer(str, Enum):
 
 class GrowthHackingTactic(str, Enum):
     """Growth hacking tactics."""
+
     VIRAL = "viral"
     CONTENT = "content"
     PRODUCT = "product"
@@ -38,7 +39,7 @@ class GrowthHackingTactic(str, Enum):
 class DevelopmentAgent:
     """Expert in technical decisions and growth strategy."""
 
-    TECH_STACK_FRAMEWORKS = {
+    TECH_STACK_FRAMEWORKS: ClassVar[dict] = {
         "startup_stage": {
             "goal": "Move fast, validate product-market fit",
             "principles": [
@@ -72,7 +73,7 @@ class DevelopmentAgent:
         },
     }
 
-    GROWTH_HACKING_TACTICS = {
+    GROWTH_HACKING_TACTICS: ClassVar[dict] = {
         GrowthHackingTactic.PRODUCT: {
             "name": "Product-driven growth",
             "description": "Growth is built into product",
@@ -144,7 +145,7 @@ class DevelopmentAgent:
         },
     }
 
-    MVP_FRAMEWORK = {
+    MVP_FRAMEWORK: ClassVar[dict] = {
         "definition": "Minimum feature set to validate core hypothesis",
         "scope_checklist": [
             "Must-have features (core job)",
@@ -170,7 +171,7 @@ class DevelopmentAgent:
         ],
     }
 
-    FEATURE_PRIORITIZATION_FRAMEWORKS = {
+    FEATURE_PRIORITIZATION_FRAMEWORKS: ClassVar[dict] = {
         "kano_model": {
             "name": "Kano Model",
             "description": "Categorize features by impact on satisfaction",
@@ -214,7 +215,7 @@ class DevelopmentAgent:
         },
     }
 
-    TECHNICAL_DEBT_MANAGEMENT = {
+    TECHNICAL_DEBT_MANAGEMENT: ClassVar[dict] = {
         "definition": "Shortcuts taken that require future repayment",
         "types": [
             "Code debt (messy code)",
@@ -244,7 +245,7 @@ class DevelopmentAgent:
         ],
     }
 
-    AUTOMATION_OPPORTUNITIES = {
+    AUTOMATION_OPPORTUNITIES: ClassVar[dict] = {
         "deployment": [
             "CI/CD pipeline (GitHub Actions, GitLab CI)",
             "Automated testing",
@@ -281,9 +282,9 @@ class DevelopmentAgent:
     def recommend_tech_stack(
         company_stage: str,
         expected_scale: str,
-        team_expertise: List[str],
-        budget: float
-    ) -> Dict[str, Any]:
+        team_expertise: list[str],
+        budget: float,
+    ) -> dict[str, Any]:
         """Recommend technology stack."""
         return {
             "company_stage": company_stage,
@@ -303,11 +304,8 @@ class DevelopmentAgent:
 
     @staticmethod
     def design_growth_hack(
-        product: str,
-        target_users: str,
-        budget: float,
-        timeline_months: int
-    ) -> Dict[str, Any]:
+        product: str, target_users: str, budget: float, timeline_months: int
+    ) -> dict[str, Any]:
         """Design growth hacking experiment."""
         return {
             "product": product,
@@ -328,10 +326,8 @@ class DevelopmentAgent:
 
     @staticmethod
     def create_mvp_roadmap(
-        product_vision: str,
-        target_launch_date: str,
-        team_size: int
-    ) -> Dict[str, Any]:
+        product_vision: str, target_launch_date: str, team_size: int
+    ) -> dict[str, Any]:
         """Create MVP development roadmap."""
         return {
             "vision": product_vision,
@@ -366,9 +362,8 @@ class DevelopmentAgent:
 
     @staticmethod
     def prioritize_features(
-        features: List[Dict[str, Any]],
-        framework: str = "rice"
-    ) -> Dict[str, Any]:
+        features: list[dict[str, Any]], framework: str = "rice"
+    ) -> dict[str, Any]:
         """Prioritize features using selected framework."""
         return {
             "framework": framework,
@@ -380,9 +375,8 @@ class DevelopmentAgent:
 
     @staticmethod
     def assess_technical_debt(
-        codebase_metrics: Dict[str, Any],
-        team_velocity: int
-    ) -> Dict[str, Any]:
+        codebase_metrics: dict[str, Any], team_velocity: int
+    ) -> dict[str, Any]:
         """Assess technical debt in codebase."""
         return {
             "debt_score": 0,
@@ -400,9 +394,8 @@ class DevelopmentAgent:
 
     @staticmethod
     def identify_automation_opportunities(
-        current_processes: List[str],
-        team_size: int
-    ) -> Dict[str, Any]:
+        current_processes: list[str], team_size: int
+    ) -> dict[str, Any]:
         """Identify automation opportunities."""
         return {
             "current_processes": current_processes,
@@ -422,10 +415,8 @@ class DevelopmentAgent:
 
     @staticmethod
     def design_architecture(
-        product_type: str,
-        expected_users: int,
-        data_volume_gb: int
-    ) -> Dict[str, Any]:
+        product_type: str, expected_users: int, data_volume_gb: int
+    ) -> dict[str, Any]:
         """Design system architecture."""
         return {
             "product_type": product_type,
@@ -450,7 +441,7 @@ class DevelopmentAgent:
         }
 
     @staticmethod
-    def growth_metrics_framework() -> Dict[str, List[str]]:
+    def growth_metrics_framework() -> dict[str, list[str]]:
         """Get growth metrics to track."""
         return {
             "awareness": [

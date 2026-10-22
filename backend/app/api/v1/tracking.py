@@ -6,14 +6,15 @@ from email clients via image pixels and link redirects.
 
 from urllib.parse import urlparse
 
-from fastapi import APIRouter, Request, Response, HTTPException
+from fastapi import APIRouter, Request, Response
 from fastapi.responses import RedirectResponse
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 
 from app.core.database import AsyncSessionLocal
-from app.domains.automations.models import SequenceEmailLog, EmailSequence
+from app.domains.automations.models import EmailSequence, SequenceEmailLog
 
 router = APIRouter(tags=["tracking"])
+
 
 # Allowed redirect schemes and domains
 def _is_safe_redirect_url(url: str) -> bool:
@@ -32,13 +33,47 @@ def _is_safe_redirect_url(url: str) -> bool:
     # return parsed.netloc.lower() in allowed_domains
     return True
 
+
 # Transparent 1x1 GIF pixel
-TRACKING_PIXEL = bytes([
-    0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x01, 0x00, 0x01, 0x00,
-    0x80, 0x00, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x2c,
-    0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x02,
-    0x02, 0x44, 0x01, 0x00, 0x3b,
-])
+TRACKING_PIXEL = bytes(
+    [
+        0x47,
+        0x49,
+        0x46,
+        0x38,
+        0x39,
+        0x61,
+        0x01,
+        0x00,
+        0x01,
+        0x00,
+        0x80,
+        0x00,
+        0x00,
+        0xFF,
+        0xFF,
+        0xFF,
+        0x00,
+        0x00,
+        0x00,
+        0x2C,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x01,
+        0x00,
+        0x01,
+        0x00,
+        0x00,
+        0x02,
+        0x02,
+        0x44,
+        0x01,
+        0x00,
+        0x3B,
+    ]
+)
 
 
 @router.get("/track/open/{tracking_token}")
@@ -46,7 +81,9 @@ async def track_open(tracking_token: str, request: Request):
     """Track an email open via a 1x1 transparent pixel."""
     async with AsyncSessionLocal() as db:
         result = await db.execute(
-            select(SequenceEmailLog).where(SequenceEmailLog.tracking_token == tracking_token)
+            select(SequenceEmailLog).where(
+                SequenceEmailLog.tracking_token == tracking_token
+            )
         )
         log = result.scalar_one_or_none()
 
@@ -67,7 +104,9 @@ async def track_open(tracking_token: str, request: Request):
     return Response(
         content=TRACKING_PIXEL,
         media_type="image/gif",
-        headers={"Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate"},
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate"
+        },
     )
 
 
@@ -80,7 +119,9 @@ async def track_click(tracking_token: str, request: Request):
 
     async with AsyncSessionLocal() as db:
         result = await db.execute(
-            select(SequenceEmailLog).where(SequenceEmailLog.tracking_token == tracking_token)
+            select(SequenceEmailLog).where(
+                SequenceEmailLog.tracking_token == tracking_token
+            )
         )
         log = result.scalar_one_or_none()
 

@@ -2,10 +2,11 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Callable
 from datetime import datetime
 from enum import Enum
-import asyncio
+from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -45,10 +46,10 @@ class LeadProfile:
     property_type: str
     motivation: str
     timeline: str
-    credit_score: Optional[int] = None
+    credit_score: int | None = None
     prequalified: bool = False
     score: float = 0.0
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utc_now)
 
 
 @dataclass
@@ -65,9 +66,9 @@ class PropertyProfile:
     asking_price: float
     days_on_market: int
     condition: str
-    photos: List[str] = field(default_factory=list)
-    features: List[str] = field(default_factory=list)
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    photos: list[str] = field(default_factory=list)
+    features: list[str] = field(default_factory=list)
+    created_at: datetime = field(default_factory=utc_now)
 
 
 @dataclass
@@ -75,41 +76,54 @@ class ConversationState:
     """Current conversation state."""
 
     session_id: str
-    lead: Optional[LeadProfile] = None
-    property_item: Optional[PropertyProfile] = None
+    lead: LeadProfile | None = None
+    property_item: PropertyProfile | None = None
     phase: DialoguePhase = DialoguePhase.GREETING
     message_count: int = 0
-    agent_responses: List[Dict[str, Any]] = field(default_factory=list)
+    agent_responses: list[dict[str, Any]] = field(default_factory=list)
     negotiation_strategy: NegotiationStrategy = NegotiationStrategy.BALANCED
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    updated_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utc_now)
+    updated_at: datetime = field(default_factory=utc_now)
 
 
 class OrchestratorV2:
     """Main orchestrator coordinating 24+ agents."""
 
-    def __init__(self, knowledge_base: Optional[Any] = None):
+    def __init__(self, knowledge_base: Any | None = None):
         self.knowledge_base = knowledge_base
-        self.agents: Dict[str, Any] = {}
-        self.conversations: Dict[str, ConversationState] = {}
-        self.phase_workflows: Dict[DialoguePhase, List[str]] = self._init_phase_workflows()
+        self.agents: dict[str, Any] = {}
+        self.conversations: dict[str, ConversationState] = {}
+        self.phase_workflows: dict[DialoguePhase, list[str]] = (
+            self._init_phase_workflows()
+        )
         self._initialize_agents()
 
-    def _init_phase_workflows(self) -> Dict[DialoguePhase, List[str]]:
+    def _init_phase_workflows(self) -> dict[DialoguePhase, list[str]]:
         """Map dialogue phases to agent sequences."""
         return {
             DialoguePhase.GREETING: ["welcome_agent"],
             DialoguePhase.LEAD_CAPTURE: ["lead_capture_agent", "contact_agent"],
-            DialoguePhase.LEAD_QUALIFICATION: ["lead_scorer_agent", "motivation_analyzer_agent"],
+            DialoguePhase.LEAD_QUALIFICATION: [
+                "lead_scorer_agent",
+                "motivation_analyzer_agent",
+            ],
             DialoguePhase.PROPERTY_ANALYSIS: [
                 "property_analyzer_agent",
                 "valuation_agent",
                 "inspection_agent",
                 "market_comps_agent",
             ],
-            DialoguePhase.MARKET_ANALYSIS: ["market_intelligence_agent", "neighborhood_analyzer_agent", "competitor_analyzer_agent"],
+            DialoguePhase.MARKET_ANALYSIS: [
+                "market_intelligence_agent",
+                "neighborhood_analyzer_agent",
+                "competitor_analyzer_agent",
+            ],
             DialoguePhase.RIGHTS_ANALYSIS: ["rights_analyzer_agent"],
-            DialoguePhase.LEGAL_CHECK: ["legal_compliance_agent", "document_checker_agent", "disclosure_agent"],
+            DialoguePhase.LEGAL_CHECK: [
+                "legal_compliance_agent",
+                "document_checker_agent",
+                "disclosure_agent",
+            ],
             DialoguePhase.FINANCING_DISCUSSION: [
                 "financing_advisor_agent",
                 "mortgage_calculator_agent",
@@ -121,9 +135,21 @@ class OrchestratorV2:
                 "terms_negotiator_agent",
                 "contingency_agent",
             ],
-            DialoguePhase.CONTRACT_REVIEW: ["contract_generator_agent", "contract_reviewer_agent", "escrow_agent"],
-            DialoguePhase.CLOSING: ["closing_coordinator_agent", "title_verification_agent", "final_walkthrough_agent"],
-            DialoguePhase.POST_SALE: ["retention_agent", "referral_agent", "support_agent"],
+            DialoguePhase.CONTRACT_REVIEW: [
+                "contract_generator_agent",
+                "contract_reviewer_agent",
+                "escrow_agent",
+            ],
+            DialoguePhase.CLOSING: [
+                "closing_coordinator_agent",
+                "title_verification_agent",
+                "final_walkthrough_agent",
+            ],
+            DialoguePhase.POST_SALE: [
+                "retention_agent",
+                "referral_agent",
+                "support_agent",
+            ],
         }
 
     def _initialize_agents(self) -> None:
@@ -182,14 +208,16 @@ class OrchestratorV2:
         logger.info(f"Started conversation: {session_id}")
         return state
 
-    async def process_message(self, session_id: str, user_message: str) -> Dict[str, Any]:
+    async def process_message(
+        self, session_id: str, user_message: str
+    ) -> dict[str, Any]:
         """Process user message and route to appropriate agents."""
         if session_id not in self.conversations:
             return {"error": "Session not found"}
 
         state = self.conversations[session_id]
         state.message_count += 1
-        state.updated_at = datetime.utcnow()
+        state.updated_at = utc_now()
 
         # Route based on current phase
         agent_ids = self.phase_workflows.get(state.phase, [])
@@ -218,7 +246,9 @@ class OrchestratorV2:
             "property": state.property_item.__dict__ if state.property_item else None,
         }
 
-    async def _run_agent(self, agent_id: str, state: ConversationState, user_message: str) -> Optional[Dict[str, Any]]:
+    async def _run_agent(
+        self, agent_id: str, state: ConversationState, user_message: str
+    ) -> dict[str, Any] | None:
         """Run individual agent."""
         if agent_id not in self.agents:
             logger.warning(f"Agent not found: {agent_id}")
@@ -234,16 +264,18 @@ class OrchestratorV2:
             "priority": agent["priority"],
             "message": self._generate_agent_response(agent_id, state, user_message),
             "recommendations": self._generate_recommendations(agent_id, state),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
         return response
 
-    def _generate_agent_response(self, agent_id: str, state: ConversationState, user_message: str) -> str:
+    def _generate_agent_response(
+        self, agent_id: str, state: ConversationState, user_message: str
+    ) -> str:
         """Generate agent response (would be replaced with actual agent logic)."""
         response_templates = {
             "welcome_agent": "Welcome to our real estate service! How can I assist you today?",
-            "lead_capture_agent": f"Thank you for your interest. I'll collect some information to serve you better.",
+            "lead_capture_agent": "Thank you for your interest. I'll collect some information to serve you better.",
             "lead_scorer_agent": "I'm analyzing your profile to find the best property matches.",
             "property_analyzer_agent": "Let me provide a detailed analysis of this property.",
             "rights_analyzer_agent": "I'm reviewing the legal rights associated with this property.",
@@ -251,37 +283,55 @@ class OrchestratorV2:
             "negotiation_agent": "Let's discuss the terms that work best for you.",
         }
 
-        return response_templates.get(agent_id, f"Processing your request with {agent_id}...")
+        return response_templates.get(
+            agent_id, f"Processing your request with {agent_id}..."
+        )
 
-    def _generate_recommendations(self, agent_id: str, state: ConversationState) -> List[Dict[str, Any]]:
+    def _generate_recommendations(
+        self, agent_id: str, state: ConversationState
+    ) -> list[dict[str, Any]]:
         """Generate agent recommendations."""
         recommendations = []
 
         if agent_id == "lead_scorer_agent" and state.lead:
-            recommendations.append({
-                "type": "lead_quality",
-                "score": state.lead.score,
-                "action": "proceed" if state.lead.score > 70 else "qualify_further",
-            })
+            recommendations.append(
+                {
+                    "type": "lead_quality",
+                    "score": state.lead.score,
+                    "action": "proceed" if state.lead.score > 70 else "qualify_further",
+                }
+            )
 
         if agent_id == "negotiation_agent" and state.property_item:
-            recommendations.append({
-                "type": "offer_strategy",
-                "suggested_price": state.property_item.asking_price * 0.95,
-                "rationale": "Below-ask offer in current market conditions",
-            })
+            recommendations.append(
+                {
+                    "type": "offer_strategy",
+                    "suggested_price": state.property_item.asking_price * 0.95,
+                    "rationale": "Below-ask offer in current market conditions",
+                }
+            )
 
         return recommendations
 
-    def _determine_next_phase(self, state: ConversationState, responses: List[Dict[str, Any]]) -> DialoguePhase:
+    def _determine_next_phase(
+        self, state: ConversationState, responses: list[dict[str, Any]]
+    ) -> DialoguePhase:
         """Determine next conversation phase."""
         if state.phase == DialoguePhase.GREETING and state.message_count > 1:
             return DialoguePhase.LEAD_CAPTURE
 
-        if state.phase == DialoguePhase.LEAD_CAPTURE and state.lead and state.lead.prequalified:
+        if (
+            state.phase == DialoguePhase.LEAD_CAPTURE
+            and state.lead
+            and state.lead.prequalified
+        ):
             return DialoguePhase.LEAD_QUALIFICATION
 
-        if state.phase == DialoguePhase.LEAD_QUALIFICATION and state.lead and state.lead.score > 70:
+        if (
+            state.phase == DialoguePhase.LEAD_QUALIFICATION
+            and state.lead
+            and state.lead.score > 70
+        ):
             return DialoguePhase.PROPERTY_ANALYSIS
 
         if state.phase == DialoguePhase.PROPERTY_ANALYSIS and state.property_item:
@@ -310,7 +360,7 @@ class OrchestratorV2:
 
         return state.phase
 
-    def escalate_to_human(self, session_id: str, reason: str) -> Dict[str, Any]:
+    def escalate_to_human(self, session_id: str, reason: str) -> dict[str, Any]:
         """Escalate conversation to human agent."""
         if session_id not in self.conversations:
             return {"error": "Session not found"}
@@ -328,7 +378,7 @@ class OrchestratorV2:
             "history_length": state.message_count,
         }
 
-    def get_conversation_summary(self, session_id: str) -> Optional[Dict[str, Any]]:
+    def get_conversation_summary(self, session_id: str) -> dict[str, Any] | None:
         """Get conversation summary."""
         if session_id not in self.conversations:
             return None
@@ -341,6 +391,6 @@ class OrchestratorV2:
             "lead": state.lead.__dict__ if state.lead else None,
             "property": state.property_item.__dict__ if state.property_item else None,
             "negotiation_strategy": state.negotiation_strategy.value,
-            "duration_seconds": (datetime.utcnow() - state.created_at).total_seconds(),
+            "duration_seconds": (utc_now() - state.created_at).total_seconds(),
             "total_agent_responses": len(state.agent_responses),
         }

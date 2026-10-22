@@ -12,15 +12,16 @@ Generates:
 """
 
 import logging
-from typing import Dict, List, Any, Tuple
 from enum import Enum
 from random import choice, randint
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
 
 class HumorStyle(str, Enum):
     """Humor style types."""
+
     PUNNY = "punny"  # Wordplay
     WITTY = "witty"  # Clever observation
     RELATABLE = "relatable"  # Common experience
@@ -30,6 +31,7 @@ class HumorStyle(str, Enum):
 
 class HumorTone(str, Enum):
     """Humor tone/intensity."""
+
     LIGHT = "light"  # Gentle, safe
     PLAYFUL = "playful"  # Fun, engaging
     SARCASTIC = "sarcastic"  # Sharp, clever
@@ -40,7 +42,7 @@ class HumorGenerator:
     """Generates context-aware humor."""
 
     # Pun templates (product/industry agnostic)
-    PUN_TEMPLATES = [
+    PUN_TEMPLATES: ClassVar[list] = [
         "Honestly, this comment deserves {adjective} applause",
         "You could say this is {adjective}... core",
         "That's a pretty {adjective} take on things",
@@ -50,7 +52,7 @@ class HumorGenerator:
     ]
 
     # Witty observations
-    WITTY_TEMPLATES = [
+    WITTY_TEMPLATES: ClassVar[list] = [
         "You know what they say: {observation}",
         "Fun fact: {observation}",
         "Takes one to know one: {observation}",
@@ -58,7 +60,7 @@ class HumorGenerator:
     ]
 
     # Relatable humor patterns
-    RELATABLE_PATTERNS = {
+    RELATABLE_PATTERNS: ClassVar[dict] = {
         "coffee": [
             "Spoken like someone who hasn't had enough coffee yet",
             "This hits different before the first coffee",
@@ -77,7 +79,7 @@ class HumorGenerator:
     }
 
     # Self-deprecating templates
-    SELF_DEPRECATING_TEMPLATES = [
+    SELF_DEPRECATING_TEMPLATES: ClassVar[list] = [
         "I mean... we're not perfect, but this is a good reminder why",
         "Bold of you to assume we haven't thought of this",
         "Us actually delivering that? {outcome}",
@@ -85,14 +87,14 @@ class HumorGenerator:
     ]
 
     # Dad jokes (safe for all audiences)
-    DAD_JOKES = [
+    DAD_JOKES: ClassVar[list] = [
         "Why did the {thing} go to {place}? To have a {outcome}!",
         "You could say this comment is pretty... {adjective} {thing}",
         "I {action}, therefore I {result}",
     ]
 
     # Reaction emojis (context-aware)
-    REACTION_EMOJIS = {
+    REACTION_EMOJIS: ClassVar[dict] = {
         "approval": ["👏", "🙌", "✨", "🔥"],
         "laugh": ["😂", "🤣", "😆"],
         "thinking": ["🤔", "💭", "🧠"],
@@ -102,7 +104,7 @@ class HumorGenerator:
     }
 
     @staticmethod
-    def generate_punny_response(topic: str, subject: str) -> Dict[str, Any]:
+    def generate_punny_response(topic: str, subject: str) -> dict[str, Any]:
         """
         Generate pun-based response.
 
@@ -150,7 +152,7 @@ class HumorGenerator:
         }
 
     @staticmethod
-    def generate_witty_response(context: Dict[str, Any]) -> Dict[str, Any]:
+    def generate_witty_response(context: dict[str, Any]) -> dict[str, Any]:
         """
         Generate witty observation-based response.
 
@@ -183,7 +185,7 @@ class HumorGenerator:
         }
 
     @staticmethod
-    def generate_relatable_response(context: Dict[str, Any]) -> Dict[str, Any]:
+    def generate_relatable_response(context: dict[str, Any]) -> dict[str, Any]:
         """
         Generate relatable humor based on common experiences.
 
@@ -197,7 +199,7 @@ class HumorGenerator:
         """
 
         # Detect relatable trigger
-        timestamp = context.get("timestamp", "")
+        context.get("timestamp", "")
         comment_text = context.get("text", "").lower()
 
         trigger = None
@@ -232,8 +234,8 @@ class HumorGenerator:
 
     @staticmethod
     def generate_self_deprecating_response(
-        context: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        context: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Generate self-aware, humble humor.
 
@@ -269,7 +271,7 @@ class HumorGenerator:
         comment_sentiment: str,
         comment_intent: str,
         audience_type: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Check if humor is appropriate for this comment.
 
@@ -313,7 +315,9 @@ class HumorGenerator:
         # If troll, avoid humor (don't feed)
         if audience_type == "troll":
             humor_appropriate = False
-            reasoning = "Troll comment → humor encourages engagement, respond professionally"
+            reasoning = (
+                "Troll comment → humor encourages engagement, respond professionally"
+            )
 
         return {
             "humor_appropriate": humor_appropriate,
@@ -327,7 +331,7 @@ class HumorGenerator:
     def integrate_emoji(
         response_text: str,
         emoji_strategy: str = "enhance",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Integrate emojis to enhance response.
 
@@ -347,27 +351,33 @@ class HumorGenerator:
         emojis_added = []
 
         # Detect emotion/tone from text
-        if any(word in response_text.lower() for word in ["love", "awesome", "great", "thank"]):
+        if any(
+            word in response_text.lower()
+            for word in ["love", "awesome", "great", "thank"]
+        ):
             emojis_to_add = HumorGenerator.REACTION_EMOJIS["love"]
         elif any(word in response_text.lower() for word in ["laugh", "funny", "ha"]):
             emojis_to_add = HumorGenerator.REACTION_EMOJIS["laugh"]
-        elif any(word in response_text.lower() for word in ["wow", "amazing", "impressive"]):
+        elif any(
+            word in response_text.lower() for word in ["wow", "amazing", "impressive"]
+        ):
             emojis_to_add = HumorGenerator.REACTION_EMOJIS["celebration"]
-        elif any(word in response_text.lower() for word in ["think", "consider", "interesting"]):
+        elif any(
+            word in response_text.lower()
+            for word in ["think", "consider", "interesting"]
+        ):
             emojis_to_add = HumorGenerator.REACTION_EMOJIS["thinking"]
         else:
             emojis_to_add = HumorGenerator.REACTION_EMOJIS["approval"]
 
-        if emoji_strategy == "enhance":
-            emoji = choice(emojis_to_add)
-            emoji_response = f"{response_text} {emoji}"
-            emojis_added = [emoji]
-        elif emoji_strategy == "subtle":
+        if emoji_strategy == "enhance" or emoji_strategy == "subtle":
             emoji = choice(emojis_to_add)
             emoji_response = f"{response_text} {emoji}"
             emojis_added = [emoji]
         elif emoji_strategy == "heavy":
-            selected_emojis = emojis_to_add[:2] if len(emojis_to_add) > 1 else emojis_to_add
+            selected_emojis = (
+                emojis_to_add[:2] if len(emojis_to_add) > 1 else emojis_to_add
+            )
             emoji_response = f"{response_text} {' '.join(selected_emojis)}"
             emojis_added = selected_emojis
         else:
@@ -385,8 +395,8 @@ class HumorGenerator:
         comment_intent: str,
         comment_text: str,
         audience_type: str,
-        preferred_style: str = None,
-    ) -> Dict[str, Any]:
+        preferred_style: str | None = None,
+    ) -> dict[str, Any]:
         """
         Generate complete humor-based response.
 
@@ -443,7 +453,11 @@ class HumorGenerator:
         # Add emoji if appropriate
         emoji_result = HumorGenerator.integrate_emoji(
             result["pun"] if "pun" in result else result.get("response", ""),
-            emoji_strategy="enhance" if timing["intensity"] == HumorTone.PLAYFUL.value else "subtle",
+            emoji_strategy=(
+                "enhance"
+                if timing["intensity"] == HumorTone.PLAYFUL.value
+                else "subtle"
+            ),
         )
 
         return {

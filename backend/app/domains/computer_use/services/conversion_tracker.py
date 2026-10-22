@@ -9,17 +9,18 @@ Pipeline:
 """
 
 import logging
-from typing import Optional, Dict, Any, Tuple
-from datetime import datetime
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.domains.computer_use.integrations import (
-    StripeConnector,
     get_stripe_connector,
 )
-from app.domains.computer_use.services.audit_log_service import AuditLogEntry, AuditLogService
-from app.domains.computer_use.services.webhook_receiver import IncomingMessage
-from app.core.config import get_settings
+from app.domains.computer_use.services.audit_log_service import (
+    AuditLogEntry,
+    AuditLogService,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,8 @@ class ConversionTracker:
         settings = get_settings()
         self.stripe_connector = (
             get_stripe_connector(api_key=settings.STRIPE_SECRET_KEY)
-            if hasattr(settings, 'STRIPE_SECRET_KEY') else None
+            if hasattr(settings, "STRIPE_SECRET_KEY")
+            else None
         )
 
     async def process_sale_to_payment(
@@ -51,11 +53,11 @@ class ConversionTracker:
         customer_id: str,
         customer_email: str,
         customer_name: str,
-        product_info: Dict[str, Any],
+        product_info: dict[str, Any],
         amount_cents: int,
         success_url: str = "https://yoursite.com/success",
         cancel_url: str = "https://yoursite.com/cancel",
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """
         Crea checkout session en Stripe → envía link al cliente.
 
@@ -93,21 +95,25 @@ class ConversionTracker:
             log_entry.with_confidence(1.0)
             log_entry.success()
 
-            log_entry.with_metadata({
-                "customer_id": customer_id,
-                "customer_email": customer_email,
-                "product_id": product_info.get("id"),
-                "amount": amount_cents / 100,
-            })
+            log_entry.with_metadata(
+                {
+                    "customer_id": customer_id,
+                    "customer_email": customer_email,
+                    "product_id": product_info.get("id"),
+                    "amount": amount_cents / 100,
+                }
+            )
 
             await self.audit_service.log(log_entry)
 
-            logger.info(f"Checkout session created: {customer_id} | ${amount_cents / 100}")
+            logger.info(
+                f"Checkout session created: {customer_id} | ${amount_cents / 100}"
+            )
 
             return True, checkout_url
 
         except Exception as e:
-            logger.error(f"Error creating payment: {e}")
+            logger.exception("Error creating payment")
             await self._log_error(
                 user_id=user_id,
                 action="payment_checkout_failed",
@@ -116,22 +122,22 @@ class ConversionTracker:
             )
             return False, None
 
-    async def verify_payment_status(self, session_id: str) -> Dict[str, Any]:
+    async def verify_payment_status(self, session_id: str) -> dict[str, Any]:
         """Verifica status de pago en Stripe."""
         if not self.stripe_connector:
             return {}
 
         try:
             return await self.stripe_connector.get_payment_status(session_id)
-        except Exception as e:
-            logger.error(f"Error checking payment status: {e}")
+        except Exception:
+            logger.exception("Error checking payment status")
             return {}
 
     async def handle_payment_webhook(
         self,
         user_id: str,
         event_type: str,  # checkout.session.completed, payment_intent.succeeded
-        event_data: Dict[str, Any],
+        event_data: dict[str, Any],
     ) -> None:
         """Maneja webhooks de Stripe."""
         try:
@@ -152,11 +158,13 @@ class ConversionTracker:
                 log_entry.with_confidence(1.0)
                 log_entry.success()
 
-                log_entry.with_metadata({
-                    "customer_email": customer_email,
-                    "amount": amount_total,
-                    "session_id": event_data.get("id"),
-                })
+                log_entry.with_metadata(
+                    {
+                        "customer_email": customer_email,
+                        "amount": amount_total,
+                        "session_id": event_data.get("id"),
+                    }
+                )
 
                 logger.info(f"Payment confirmed: {customer_email} | ${amount_total}")
 
@@ -167,15 +175,15 @@ class ConversionTracker:
 
             await self.audit_service.log(log_entry)
 
-        except Exception as e:
-            logger.error(f"Error handling payment webhook: {e}")
+        except Exception:
+            logger.exception("Error handling payment webhook")
 
     async def _log_error(
         self,
         user_id: str,
         action: str,
         error_msg: str,
-        customer_id: Optional[str] = None,
+        customer_id: str | None = None,
     ) -> None:
         """Log error to audit trail."""
         try:
@@ -190,8 +198,8 @@ class ConversionTracker:
 
             await self.audit_service.log(log_entry)
 
-        except Exception as e:
-            logger.error(f"Error logging error: {e}")
+        except Exception:
+            logger.exception("Error logging error")
 
 
 def get_conversion_tracker(db: AsyncSession) -> ConversionTracker:

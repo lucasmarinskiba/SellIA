@@ -1,17 +1,20 @@
 """API rate limiting & caching service."""
 
-import logging
 import hashlib
-from datetime import datetime, timezone, timedelta
+import logging
+from datetime import UTC, datetime, timedelta
+from typing import ClassVar
 from uuid import UUID
-from typing import Optional, Dict, Tuple
-from decimal import Decimal
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from app.domains.api_management.rate_limit_models import (
-    ApiKey, RateLimitLog, CachePolicy, ApiMetrics, RateLimitTier, RateLimitWindow
+    ApiKey,
+    ApiMetrics,
+    CachePolicy,
+    RateLimitLog,
+    RateLimitTier,
+    RateLimitWindow,
 )
 
 logger = logging.getLogger(__name__)
@@ -21,11 +24,11 @@ class RateLimitService:
     """Manage API rate limiting and caching."""
 
     # Rate limit defaults (requests per hour)
-    RATE_LIMITS = {
+    RATE_LIMITS: ClassVar[dict] = {
         RateLimitTier.FREE: 100,
         RateLimitTier.STARTER: 1000,
         RateLimitTier.PRO: 10000,
-        RateLimitTier.ENTERPRISE: 999999
+        RateLimitTier.ENTERPRISE: 999999,
     }
 
     @staticmethod
@@ -33,9 +36,9 @@ class RateLimitService:
         business_id: UUID,
         key_name: str,
         tier: str = RateLimitTier.STARTER,
-        custom_limit: Optional[int] = None,
-        expires_at: Optional[datetime] = None,
-        db: Session = None
+        custom_limit: int | None = None,
+        expires_at: datetime | None = None,
+        db: Session = None,
     ) -> dict:
         """Create new API key."""
         if not db:
@@ -43,6 +46,7 @@ class RateLimitService:
 
         # Generate key
         import secrets
+
         raw_key = f"sk_{secrets.token_urlsafe(32)}"
         key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
         masked_key = raw_key[-8:]
@@ -54,7 +58,7 @@ class RateLimitService:
             masked_key=masked_key,
             rate_limit_tier=tier,
             custom_rph_limit=custom_limit,
-            expires_at=expires_at
+            expires_at=expires_at,
         )
 
         db.add(api_key)
@@ -68,7 +72,7 @@ class RateLimitService:
             "api_key": raw_key,  # Only return once
             "masked_key": masked_key,
             "tier": tier,
-            "rate_limit": custom_limit or RateLimitService.RATE_LIMITS.get(tier)
+            "rate_limit": custom_limit or RateLimitService.RATE_LIMITS.get(tier),
         }
 
     @staticmethod
@@ -77,25 +81,26 @@ class RateLimitService:
         endpoint: str,
         method: str,
         business_id: UUID,
-        ip_address: str = None,
-        user_agent: str = None,
-        db: Session = None
-    ) -> Tuple[bool, Optional[str]]:
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+        db: Session = None,
+    ) -> tuple[bool, str | None]:
         """Check if request is rate limited."""
         if not db:
             raise ValueError("Database session required")
 
         # Find API key
-        api_key = db.query(ApiKey).filter(
-            ApiKey.key_hash == api_key_hash,
-            ApiKey.is_active == True
-        ).first()
+        api_key = (
+            db.query(ApiKey)
+            .filter(ApiKey.key_hash == api_key_hash, ApiKey.is_active == True)
+            .first()
+        )
 
         if not api_key:
             return False, "Invalid API key"
 
         # Check expiration
-        if api_key.expires_at and datetime.now(timezone.utc) > api_key.expires_at:
+        if api_key.expires_at and datetime.now(UTC) > api_key.expires_at:
             return False, "API key expired"
 
         # Get rate limit
@@ -104,11 +109,14 @@ class RateLimitService:
         )
 
         # Count requests in past hour
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=1)
-        requests_in_hour = db.query(RateLimitLog).filter(
-            RateLimitLog.api_key_id == api_key.id,
-            RateLimitLog.created_at >= cutoff
-        ).count()
+        cutoff = datetime.now(UTC) - timedelta(hours=1)
+        requests_in_hour = (
+            db.query(RateLimitLog)
+            .filter(
+                RateLimitLog.api_key_id == api_key.id, RateLimitLog.created_at >= cutoff
+            )
+            .count()
+        )
 
         is_rate_limited = requests_in_hour >= limit
 
@@ -123,26 +131,28 @@ class RateLimitService:
             requests_in_window=requests_in_hour + 1,
             limit_threshold=limit,
             window_type=RateLimitWindow.PER_HOUR,
-            was_rate_limited=is_rate_limited
+            was_rate_limited=is_rate_limited,
         )
 
         db.add(log_entry)
 
         # Update last used
-        api_key.last_used_at = datetime.now(timezone.utc)
+        api_key.last_used_at = datetime.now(UTC)
         db.commit()
 
         if is_rate_limited:
-            logger.warning(f"Rate limit exceeded: {api_key.key_name} - {requests_in_hour}/{limit}")
-            return False, f"Rate limit exceeded: {requests_in_hour}/{limit} requests per hour"
+            logger.warning(
+                f"Rate limit exceeded: {api_key.key_name} - {requests_in_hour}/{limit}"
+            )
+            return (
+                False,
+                f"Rate limit exceeded: {requests_in_hour}/{limit} requests per hour",
+            )
 
         return True, None
 
     @staticmethod
-    def get_rate_limit_status(
-        api_key_id: UUID,
-        db: Session = None
-    ) -> dict:
+    def get_rate_limit_status(api_key_id: UUID, db: Session = None) -> dict:
         """Get current rate limit status for key."""
         if not db:
             raise ValueError("Database session required")
@@ -156,11 +166,14 @@ class RateLimitService:
         )
 
         # Requests in past hour
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=1)
-        requests_in_hour = db.query(RateLimitLog).filter(
-            RateLimitLog.api_key_id == api_key_id,
-            RateLimitLog.created_at >= cutoff
-        ).count()
+        cutoff = datetime.now(UTC) - timedelta(hours=1)
+        requests_in_hour = (
+            db.query(RateLimitLog)
+            .filter(
+                RateLimitLog.api_key_id == api_key_id, RateLimitLog.created_at >= cutoff
+            )
+            .count()
+        )
 
         remaining = max(0, limit - requests_in_hour)
 
@@ -170,7 +183,7 @@ class RateLimitService:
             "limit_per_hour": limit,
             "requests_used": requests_in_hour,
             "requests_remaining": remaining,
-            "reset_at": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+            "reset_at": (datetime.now(UTC) + timedelta(hours=1)).isoformat(),
         }
 
     @staticmethod
@@ -178,17 +191,21 @@ class RateLimitService:
         business_id: UUID,
         endpoint_path: str,
         ttl_seconds: int = 300,
-        cache_by: str = None,
-        db: Session = None
+        cache_by: str | None = None,
+        db: Session = None,
     ) -> dict:
         """Set cache policy for endpoint."""
         if not db:
             raise ValueError("Database session required")
 
-        policy = db.query(CachePolicy).filter(
-            CachePolicy.business_id == business_id,
-            CachePolicy.endpoint_path == endpoint_path
-        ).first()
+        policy = (
+            db.query(CachePolicy)
+            .filter(
+                CachePolicy.business_id == business_id,
+                CachePolicy.endpoint_path == endpoint_path,
+            )
+            .first()
+        )
 
         if policy:
             policy.ttl_seconds = ttl_seconds
@@ -198,7 +215,7 @@ class RateLimitService:
                 business_id=business_id,
                 endpoint_path=endpoint_path,
                 ttl_seconds=ttl_seconds,
-                cache_by=cache_by
+                cache_by=cache_by,
             )
             db.add(policy)
 
@@ -210,7 +227,7 @@ class RateLimitService:
             "endpoint": endpoint_path,
             "cache_enabled": policy.cache_enabled,
             "ttl_seconds": ttl_seconds,
-            "cache_by": cache_by
+            "cache_by": cache_by,
         }
 
     @staticmethod
@@ -220,17 +237,21 @@ class RateLimitService:
         response_time_ms: int,
         response_status: int,
         was_cached: bool = False,
-        db: Session = None
+        db: Session = None,
     ) -> None:
         """Log API request metrics."""
         if not db:
             return
 
         # Update cache policy stats
-        policies = db.query(CachePolicy).filter(
-            CachePolicy.business_id == business_id,
-            CachePolicy.endpoint_path == endpoint
-        ).all()
+        policies = (
+            db.query(CachePolicy)
+            .filter(
+                CachePolicy.business_id == business_id,
+                CachePolicy.endpoint_path == endpoint,
+            )
+            .all()
+        )
 
         for policy in policies:
             if was_cached:
@@ -241,26 +262,28 @@ class RateLimitService:
 
     @staticmethod
     def get_api_metrics(
-        business_id: UUID,
-        date: str = None,
-        db: Session = None
+        business_id: UUID, date: str | None = None, db: Session = None
     ) -> dict:
         """Get API performance metrics."""
         if not db:
             raise ValueError("Database session required")
 
         if not date:
-            date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            date = datetime.now(UTC).strftime("%Y-%m-%d")
 
         date_start = datetime.fromisoformat(f"{date}T00:00:00+00:00")
         date_end = date_start + timedelta(days=1)
 
         # Request logs for day
-        logs = db.query(RateLimitLog).filter(
-            RateLimitLog.business_id == business_id,
-            RateLimitLog.created_at >= date_start,
-            RateLimitLog.created_at < date_end
-        ).all()
+        logs = (
+            db.query(RateLimitLog)
+            .filter(
+                RateLimitLog.business_id == business_id,
+                RateLimitLog.created_at >= date_start,
+                RateLimitLog.created_at < date_end,
+            )
+            .all()
+        )
 
         if not logs:
             return {"metrics_available": False}
@@ -271,14 +294,24 @@ class RateLimitService:
 
         # Response times
         response_times = [l.response_time_ms for l in logs if l.response_time_ms]
-        avg_response_time = int(sum(response_times) / len(response_times)) if response_times else 0
+        avg_response_time = (
+            int(sum(response_times) / len(response_times)) if response_times else 0
+        )
 
         # Percentiles
         response_times_sorted = sorted(response_times)
         p95_idx = int(len(response_times_sorted) * 0.95)
         p99_idx = int(len(response_times_sorted) * 0.99)
-        p95 = response_times_sorted[p95_idx] if p95_idx < len(response_times_sorted) else 0
-        p99 = response_times_sorted[p99_idx] if p99_idx < len(response_times_sorted) else 0
+        p95 = (
+            response_times_sorted[p95_idx]
+            if p95_idx < len(response_times_sorted)
+            else 0
+        )
+        p99 = (
+            response_times_sorted[p99_idx]
+            if p99_idx < len(response_times_sorted)
+            else 0
+        )
 
         # Endpoints
         endpoints = {}
@@ -288,13 +321,17 @@ class RateLimitService:
         most_used = max(endpoints.items(), key=lambda x: x[1])[0] if endpoints else None
 
         # Cache stats
-        cache_policies = db.query(CachePolicy).filter(
-            CachePolicy.business_id == business_id
-        ).all()
+        cache_policies = (
+            db.query(CachePolicy).filter(CachePolicy.business_id == business_id).all()
+        )
 
         total_hits = sum(p.cache_hits for p in cache_policies)
         total_misses = sum(p.cache_misses for p in cache_policies)
-        hit_rate = (total_hits / max(total_hits + total_misses, 1)) * 100 if (total_hits + total_misses) > 0 else 0
+        hit_rate = (
+            (total_hits / max(total_hits + total_misses, 1)) * 100
+            if (total_hits + total_misses) > 0
+            else 0
+        )
 
         metrics = ApiMetrics(
             business_id=business_id,
@@ -310,7 +347,7 @@ class RateLimitService:
             p95_response_time_ms=p95,
             p99_response_time_ms=p99,
             unique_endpoints_called=len(endpoints),
-            most_used_endpoint=most_used
+            most_used_endpoint=most_used,
         )
 
         db.add(metrics)
@@ -324,16 +361,12 @@ class RateLimitService:
             "requests": {
                 "total": total_requests,
                 "errors": error_responses,
-                "rate_limited": rate_limited
+                "rate_limited": rate_limited,
             },
-            "performance": {
-                "avg_ms": avg_response_time,
-                "p95_ms": p95,
-                "p99_ms": p99
-            },
+            "performance": {"avg_ms": avg_response_time, "p95_ms": p95, "p99_ms": p99},
             "cache": {
                 "hits": total_hits,
                 "misses": total_misses,
-                "hit_rate_pct": int(hit_rate)
-            }
+                "hit_rate_pct": int(hit_rate),
+            },
         }

@@ -1,30 +1,20 @@
 """Structured logging with correlation IDs for traceability."""
 
 import logging
-import json
 import sys
-from pythonjsonlogger import jsonlogger
 from contextvars import ContextVar
-from typing import Any, Dict, Optional
-from starlette.middleware.base import BaseHTTPMiddleware
-from fastapi import Request
+from typing import Any
 
+from fastapi import Request
+from pythonjsonlogger import jsonlogger
+from starlette.middleware.base import BaseHTTPMiddleware
 
 # Context variable for correlation ID (thread-safe)
-correlation_id_context: ContextVar[str] = ContextVar(
-    "correlation_id",
-    default=""
-)
+correlation_id_context: ContextVar[str] = ContextVar("correlation_id", default="")
 
-user_id_context: ContextVar[str] = ContextVar(
-    "user_id",
-    default=""
-)
+user_id_context: ContextVar[str] = ContextVar("user_id", default="")
 
-request_id_context: ContextVar[str] = ContextVar(
-    "request_id",
-    default=""
-)
+request_id_context: ContextVar[str] = ContextVar("request_id", default="")
 
 
 class CorrelationIdFilter(logging.Filter):
@@ -50,9 +40,9 @@ class JSONFormatter(jsonlogger.JsonFormatter):
 
     def add_fields(
         self,
-        log_record: Dict[str, Any],
+        log_record: dict[str, Any],
         record: logging.LogRecord,
-        message_dict: Dict[str, Any],
+        message_dict: dict[str, Any],
     ) -> None:
         super().add_fields(log_record, record, message_dict)
 
@@ -110,9 +100,7 @@ def setup_logging(
 
     if json_format:
         # JSON format
-        formatter = JSONFormatter(
-            fmt="%(timestamp)s %(level)s %(logger)s %(message)s"
-        )
+        formatter = JSONFormatter(fmt="%(timestamp)s %(level)s %(logger)s %(message)s")
     else:
         # Plain text format with color
         formatter = logging.Formatter(
@@ -139,10 +127,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         # Extract correlation ID from header or generate
-        correlation_id = request.headers.get(
-            "X-Correlation-ID",
-            ""
-        )
+        correlation_id = request.headers.get("X-Correlation-ID", "")
         correlation_id_context.set(correlation_id)
 
         # Extract user ID from auth (if available)
@@ -153,6 +138,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
 
         # Generate request ID
         import uuid
+
         request_id = str(uuid.uuid4())
         request_id_context.set(request_id)
 
@@ -179,7 +165,7 @@ def example_structured_logging():
             "approver_id": "user_123",
             "status": "approved",
             "duration_ms": 245,
-        }
+        },
     )
     # Output: {..., "message": "Deal approved", "deal_id": "deal_001", "deal_value": 50000, "approver_id": "user_123", "status": "approved", "duration_ms": 245}
 
@@ -190,20 +176,19 @@ def example_structured_logging():
             "memory_mb": 4096,
             "threshold_mb": 3072,
             "percent": 87.5,
-        }
+        },
     )
 
     # With error + exception
     try:
-        1 / 0
+        raise ZeroDivisionError("división de prueba")
     except ZeroDivisionError:
-        logger.error(
+        logger.exception(
             "Database calculation failed",
-            exc_info=True,
             extra={
                 "query": "SELECT AVG(value) FROM deals",
                 "db_host": "db.internal",
-            }
+            },
         )
     # Output: {..., "exception": "Traceback...", "exception_type": "ZeroDivisionError"}
 

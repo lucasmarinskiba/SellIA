@@ -1,10 +1,9 @@
 """Agent Loader — Load agents dynamically per market."""
 
-import importlib
-import sys
-from typing import Any, Dict, List
 import logging
-from pathlib import Path
+from typing import Any, ClassVar
+
+from app.core.market.market_detector import MarketProfile
 
 logger = logging.getLogger(__name__)
 
@@ -12,11 +11,11 @@ logger = logging.getLogger(__name__)
 class AgentLoader:
     """Load and cache agents per market."""
 
-    _agent_cache: Dict[str, Any] = {}
-    _loaded_modules: set[str] = set()
+    _agent_cache: ClassVar[dict[str, Any]] = {}
+    _loaded_modules: ClassVar[set[str]] = set()
 
     @staticmethod
-    def load_agents_for_market(market_profile: "MarketProfile") -> List[Any]:
+    def load_agents_for_market(market_profile: "MarketProfile") -> list[Any]:
         """Load agents matching market profile."""
         agents = []
 
@@ -29,8 +28,8 @@ class AgentLoader:
                     if agent:
                         agents.append(agent)
                         AgentLoader._agent_cache[agent_id] = agent
-                except Exception as e:
-                    logger.error(f"Error loading agent {agent_id}: {e}")
+                except Exception:
+                    logger.exception(f"Error loading agent {agent_id}")
 
         return agents
 
@@ -54,18 +53,28 @@ class AgentLoader:
         return None
 
     @staticmethod
-    def _load_sellIA_base() -> Dict[str, Any]:
+    def _load_sellIA_base() -> dict[str, Any]:
         """Load SellIA base agent."""
         return {
             "id": "sellIA_base",
             "name": "SellIA Base Agent",
             "type": "orchestrator",
-            "capabilities": ["lead_capture", "qualification", "negotiation", "closing", "payment", "delivery", "retention"],
+            "capabilities": [
+                "lead_capture",
+                "qualification",
+                "negotiation",
+                "closing",
+                "payment",
+                "delivery",
+                "retention",
+            ],
             "priority": 100,
         }
 
     @staticmethod
-    def _load_real_estate_agent(agent_id: str, profile: "MarketProfile") -> Dict[str, Any]:
+    def _load_real_estate_agent(
+        agent_id: str, profile: "MarketProfile"
+    ) -> dict[str, Any]:
         """Load Real Estate agent from external Agente Inmobiliario system."""
         agents = {
             "realEstate_leadScorer": {
@@ -80,7 +89,11 @@ class AgentLoader:
                 "id": "realEstate_propertyAnalyzer",
                 "name": "Property Analyzer",
                 "type": "analyzer",
-                "capabilities": ["valuation", "market_comparison", "investment_analysis"],
+                "capabilities": [
+                    "valuation",
+                    "market_comparison",
+                    "investment_analysis",
+                ],
                 "priority": 85,
                 "source": "Agente IA - Agente Inmobiliario",
             },
@@ -96,14 +109,18 @@ class AgentLoader:
         return agents.get(agent_id)
 
     @staticmethod
-    def _load_commerce_agent(agent_id: str, profile: "MarketProfile") -> Dict[str, Any]:
+    def _load_commerce_agent(agent_id: str, profile: "MarketProfile") -> dict[str, Any]:
         """Load Commerce agent from Asesor Comercial system."""
         agents = {
             "commerce_prospector": {
                 "id": "commerce_prospector",
                 "name": "Commerce Prospector",
                 "type": "prospector",
-                "capabilities": ["market_research", "competitor_analysis", "opportunity_identification"],
+                "capabilities": [
+                    "market_research",
+                    "competitor_analysis",
+                    "opportunity_identification",
+                ],
                 "priority": 85,
                 "source": "Agente IA - Asesor Comercial",
             },
@@ -127,28 +144,36 @@ class AgentLoader:
         return agents.get(agent_id)
 
     @staticmethod
-    def _load_services_agent(agent_id: str, profile: "MarketProfile") -> Dict[str, Any]:
+    def _load_services_agent(agent_id: str, profile: "MarketProfile") -> dict[str, Any]:
         """Load Services agent."""
         agents = {
             "services_qualifier": {
                 "id": "services_qualifier",
                 "name": "Services Qualifier",
                 "type": "qualifier",
-                "capabilities": ["needs_analysis", "scope_definition", "fit_assessment"],
+                "capabilities": [
+                    "needs_analysis",
+                    "scope_definition",
+                    "fit_assessment",
+                ],
                 "priority": 85,
             },
             "services_deliveryCoordinator": {
                 "id": "services_deliveryCoordinator",
                 "name": "Delivery Coordinator",
                 "type": "coordinator",
-                "capabilities": ["project_planning", "milestone_tracking", "quality_assurance"],
+                "capabilities": [
+                    "project_planning",
+                    "milestone_tracking",
+                    "quality_assurance",
+                ],
                 "priority": 80,
             },
         }
         return agents.get(agent_id)
 
     @staticmethod
-    def _load_finance_agent(agent_id: str, profile: "MarketProfile") -> Dict[str, Any]:
+    def _load_finance_agent(agent_id: str, profile: "MarketProfile") -> dict[str, Any]:
         """Load Finance agent."""
         agents = {
             "finance_advisor": {
@@ -169,7 +194,7 @@ class AgentLoader:
         return agents.get(agent_id)
 
     @staticmethod
-    def _load_digital_agent(agent_id: str, profile: "MarketProfile") -> Dict[str, Any]:
+    def _load_digital_agent(agent_id: str, profile: "MarketProfile") -> dict[str, Any]:
         """Load Digital Products agent."""
         agents = {
             "digital_converter": {
@@ -197,6 +222,6 @@ class AgentLoader:
         logger.info("Agent cache cleared. Next load will refresh from sources.")
 
     @staticmethod
-    def get_loaded_agents() -> List[str]:
+    def get_loaded_agents() -> list[str]:
         """List all loaded agent IDs."""
         return list(AgentLoader._agent_cache.keys())

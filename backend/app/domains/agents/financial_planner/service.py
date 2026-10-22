@@ -1,28 +1,29 @@
 """Financial Planner Service"""
 
-import uuid
-import json
 import csv
 import io
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timezone
+import json
+import uuid
+from typing import Any
 
+from langchain_core.messages import HumanMessage, SystemMessage
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
-from langchain_core.messages import SystemMessage, HumanMessage
 
 from app.core.logger import get_logger
 from app.domains.agents.financial_planner.models import FinancialPlan
 from app.domains.agents.llm_provider import generate_with_fallback
 from app.domains.agents.prompts.business_context_adapter import (
-    get_agent_prompt_context,
     format_business_context_for_prompt,
+    get_agent_prompt_context,
 )
 
 logger = get_logger(__name__)
 
 
-def _build_financial_prompt(historical_data: Dict[str, Any], assumptions: Dict[str, Any]) -> str:
+def _build_financial_prompt(
+    historical_data: dict[str, Any], assumptions: dict[str, Any]
+) -> str:
     return (
         f"Datos históricos (últimos meses):\n"
         f"{json.dumps(historical_data, ensure_ascii=False, indent=2)[:4000]}\n\n"
@@ -36,8 +37,8 @@ async def create_financial_plan(
     db: AsyncSession,
     business_id: uuid.UUID,
     plan_name: str,
-    historical_data: Dict[str, Any],
-    assumptions: Dict[str, Any],
+    historical_data: dict[str, Any],
+    assumptions: dict[str, Any],
 ) -> FinancialPlan:
     """Crea un plan financiero con proyecciones LLM + cálculos estadísticos."""
     ctx = await get_agent_prompt_context(db, business_id)
@@ -56,7 +57,7 @@ async def create_financial_plan(
             '"optimistic": {"monthly_data": [...], "total_revenue": 0.0, "total_expense": 0.0, "net_result": 0.0}, '
             '"base": {"monthly_data": [...], "total_revenue": 0.0, "total_expense": 0.0, "net_result": 0.0}, '
             '"pessimistic": {"monthly_data": [...], "total_revenue": 0.0, "total_expense": 0.0, "net_result": 0.0}'
-            '}, '
+            "}, "
             '"metrics": {"ltv": 0.0, "cac": 0.0, "runway_months": 0, "ltv_cac_ratio": 0.0}}\n'
             "Los montos deben ser números (float). Incluye exactamente 12 meses."
         )
@@ -74,7 +75,7 @@ async def create_financial_plan(
         max_tokens=3000,
     )
 
-    parsed: Dict[str, Any] = {
+    parsed: dict[str, Any] = {
         "revenue_projections": [],
         "expense_projections": [],
         "cash_flow": [],
@@ -91,7 +92,9 @@ async def create_financial_plan(
                 content = content.split("```")[1].split("```")[0].strip()
             parsed = json.loads(content)
         except Exception as e:
-            logger.warning(f"Failed to parse financial plan LLM output: {e}")
+            logger.warning(
+                f"Failed to parse financial plan LLM output: {e}", exc_info=True
+            )
 
     plan = FinancialPlan(
         business_id=business_id,
@@ -110,12 +113,12 @@ async def create_financial_plan(
     return plan
 
 
-async def get_plan(db: AsyncSession, plan_id: uuid.UUID) -> Optional[FinancialPlan]:
+async def get_plan(db: AsyncSession, plan_id: uuid.UUID) -> FinancialPlan | None:
     result = await db.execute(select(FinancialPlan).where(FinancialPlan.id == plan_id))
     return result.scalar_one_or_none()
 
 
-async def list_plans(db: AsyncSession, business_id: uuid.UUID) -> List[FinancialPlan]:
+async def list_plans(db: AsyncSession, business_id: uuid.UUID) -> list[FinancialPlan]:
     result = await db.execute(
         select(FinancialPlan)
         .where(FinancialPlan.business_id == business_id)
@@ -124,7 +127,7 @@ async def list_plans(db: AsyncSession, business_id: uuid.UUID) -> List[Financial
     return result.scalars().all()
 
 
-async def export_plan(plan: FinancialPlan, format: str = "csv") -> Dict[str, Any]:
+async def export_plan(plan: FinancialPlan, format: str = "csv") -> dict[str, Any]:
     """Exporta el plan a CSV o JSON."""
     if format == "json":
         payload = {
@@ -148,28 +151,34 @@ async def export_plan(plan: FinancialPlan, format: str = "csv") -> Dict[str, Any
     # CSV export
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["month", "revenue", "expense", "cash_inflow", "cash_outflow", "cash_net"])
+    writer.writerow(
+        ["month", "revenue", "expense", "cash_inflow", "cash_outflow", "cash_net"]
+    )
     rev = {r["month"]: r["amount"] for r in plan.revenue_projections}
     exp = {e["month"]: e["amount"] for e in plan.expense_projections}
     cf = {c["month"]: c for c in plan.cash_flow}
     for month in range(1, 13):
-        writer.writerow([
-            month,
-            rev.get(month, 0.0),
-            exp.get(month, 0.0),
-            cf.get(month, {}).get("inflow", 0.0),
-            cf.get(month, {}).get("outflow", 0.0),
-            cf.get(month, {}).get("net", 0.0),
-        ])
+        writer.writerow(
+            [
+                month,
+                rev.get(month, 0.0),
+                exp.get(month, 0.0),
+                cf.get(month, {}).get("inflow", 0.0),
+                cf.get(month, {}).get("outflow", 0.0),
+                cf.get(month, {}).get("net", 0.0),
+            ]
+        )
     writer.writerow([])
     writer.writerow(["scenario", "total_revenue", "total_expense", "net_result"])
     for scenario_name, scenario_data in (plan.scenarios or {}).items():
-        writer.writerow([
-            scenario_name,
-            scenario_data.get("total_revenue", 0.0),
-            scenario_data.get("total_expense", 0.0),
-            scenario_data.get("net_result", 0.0),
-        ])
+        writer.writerow(
+            [
+                scenario_name,
+                scenario_data.get("total_revenue", 0.0),
+                scenario_data.get("total_expense", 0.0),
+                scenario_data.get("net_result", 0.0),
+            ]
+        )
     writer.writerow([])
     writer.writerow(["metric", "value"])
     for k, v in (plan.metrics or {}).items():

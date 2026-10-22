@@ -9,7 +9,7 @@ Técnicas:
 """
 
 import logging
-from typing import Dict, List, Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ class PersuasionEngine:
     """Persuade automático usando psicología demostrada."""
 
     # Cialdini: 6 principios + tactical implementations
-    CIALDINI_FRAMEWORKS = {
+    CIALDINI_FRAMEWORKS: ClassVar[dict] = {
         "reciprocity": {
             "principle": "Give first → buyer feels obligated to give back",
             "tactics": [
@@ -89,7 +89,7 @@ class PersuasionEngine:
     }
 
     # Kahneman: Behavioral economics + decision making
-    KAHNEMAN_FRAMEWORKS = {
+    KAHNEMAN_FRAMEWORKS: ClassVar[dict] = {
         "loss_aversion": {
             "principle": "Fear of loss > pleasure of gain (2:1 ratio)",
             "tactics": [
@@ -148,7 +148,7 @@ class PersuasionEngine:
     }
 
     # Language patterns: Milton model + embedded commands
-    LANGUAGE_PATTERNS = {
+    LANGUAGE_PATTERNS: ClassVar[dict] = {
         "presuppositions": {
             "pattern": "Assume outcome, question becomes 'how' not 'if'",
             "examples": [
@@ -175,8 +175,14 @@ class PersuasionEngine:
         },
         "power_words": {
             "high_impact": [
-                "Proven", "Guaranteed", "Exclusive", "Limited",
-                "Breakthrough", "Revolutionary", "Effortless", "Instantly",
+                "Proven",
+                "Guaranteed",
+                "Exclusive",
+                "Limited",
+                "Breakthrough",
+                "Revolutionary",
+                "Effortless",
+                "Instantly",
             ],
             "examples": [
                 "Proven 3-step system (not just system)",
@@ -188,7 +194,9 @@ class PersuasionEngine:
 
     # Persuasion stack: layer multiple principles
     @staticmethod
-    def build_persuasion_stack(buyer: Dict[str, Any], product: Dict[str, Any]) -> Dict[str, Any]:
+    def build_persuasion_stack(
+        buyer: dict[str, Any], product: dict[str, Any]
+    ) -> dict[str, Any]:
         """Construye stack persuasión personalizado."""
 
         stack = {
@@ -249,7 +257,7 @@ CTA: {cta}
         return copy
 
     @staticmethod
-    def objection_reframe(objection: str, principle: str) -> Dict[str, str]:
+    def objection_reframe(objection: str, principle: str) -> dict[str, str]:
         """Reframe objeción usando principio persuasión."""
 
         reframes = {

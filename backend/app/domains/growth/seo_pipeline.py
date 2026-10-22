@@ -5,16 +5,15 @@ then schedules them for publication and tracks performance.
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Any, List
+from datetime import datetime
+from typing import Any
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.growth.models import GrowthCampaign, GrowthCampaignType
-from app.domains.automations.models import GeneratedContent, ContentCalendar
-from app.domains.agents.ai_reply import generate_raw_ai_response
 from app.core.logger import get_logger
+from app.domains.agents.ai_reply import generate_raw_ai_response
+from app.domains.automations.models import ContentCalendar, GeneratedContent
 
 logger = get_logger(__name__)
 
@@ -33,11 +32,13 @@ class SEOPipeline:
         keyword: str,
         search_intent: str = "informational",  # informational, navigational, transactional, commercial
         word_count: int = 1200,
-        campaign_id: uuid.UUID = None,
+        campaign_id: uuid.UUID | None = None,
     ) -> GeneratedContent:
         """Generate a complete SEO-optimized blog post."""
         # Generate article
-        article = await self._generate_article(business_id, keyword, search_intent, word_count)
+        article = await self._generate_article(
+            business_id, keyword, search_intent, word_count
+        )
 
         # Generate meta
         meta = await self._generate_meta_tags(business_id, keyword, article)
@@ -70,7 +71,7 @@ class SEOPipeline:
         business_id: uuid.UUID,
         topic: str,
         difficulty: str = "beginner",  # beginner, intermediate, advanced
-        campaign_id: uuid.UUID = None,
+        campaign_id: uuid.UUID | None = None,
     ) -> GeneratedContent:
         """Generate a how-to guide optimized for featured snippets."""
         system_prompt = """Eres un experto en SEO y contenido educativo. Creas guías paso a paso que:
@@ -110,9 +111,10 @@ La guía debe:
                 temperature=0.7,
             )
             import json
+
             article = json.loads(response or "{}")
-        except Exception as e:
-            logger.error(f"Failed to generate guide: {e}")
+        except Exception:
+            logger.exception("Failed to generate guide")
             article = {
                 "title": f"Guía completa: {topic}",
                 "body": f"Contenido sobre {topic}...",
@@ -189,9 +191,10 @@ Requisitos:
                 temperature=0.7,
             )
             import json
+
             return json.loads(response or "{}")
-        except Exception as e:
-            logger.error(f"Article generation failed: {e}")
+        except Exception:
+            logger.exception("Article generation failed")
             return {
                 "title": keyword.title(),
                 "body": f"Artículo sobre {keyword}...",
@@ -228,9 +231,10 @@ Responde en JSON:
                 temperature=0.5,
             )
             import json
+
             return json.loads(response or "{}")
-        except Exception as e:
-            logger.error(f"Meta generation failed: {e}")
+        except Exception:
+            logger.exception("Meta generation failed")
             return {
                 "meta_description": f"Descubre todo sobre {keyword}. Guía completa con consejos prácticos.",
                 "schema_markup": "",
@@ -265,13 +269,17 @@ Responde en JSON:
     async def get_scheduled_content(
         self,
         business_id: uuid.UUID,
-        platform: str = None,
-    ) -> List[ContentCalendar]:
+        platform: str | None = None,
+    ) -> list[ContentCalendar]:
         """Get scheduled content."""
-        query = select(ContentCalendar).where(
-            ContentCalendar.business_id == business_id,
-            ContentCalendar.status == "scheduled",
-        ).order_by(ContentCalendar.scheduled_at)
+        query = (
+            select(ContentCalendar)
+            .where(
+                ContentCalendar.business_id == business_id,
+                ContentCalendar.status == "scheduled",
+            )
+            .order_by(ContentCalendar.scheduled_at)
+        )
         if platform:
             query = query.where(ContentCalendar.platform == platform)
         result = await self.db.execute(query)
@@ -287,6 +295,7 @@ Responde en JSON:
 
         # Count inbound leads attributed to this content
         from app.domains.growth.models import InboundLead
+
         leads_result = await self.db.execute(
             select(func.count(InboundLead.id)).where(
                 InboundLead.source_detail.contains(str(content_id)),
@@ -300,7 +309,9 @@ Responde en JSON:
             "type": content.content_type,
             "status": content.status,
             "leads_generated": leads_generated,
-            "created_at": content.created_at.isoformat() if content.created_at else None,
+            "created_at": (
+                content.created_at.isoformat() if content.created_at else None
+            ),
         }
 
     # ========== Batch Operations ==========
@@ -308,9 +319,9 @@ Responde en JSON:
     async def generate_content_batch(
         self,
         business_id: uuid.UUID,
-        keywords: List[str],
-        campaign_id: uuid.UUID = None,
-    ) -> List[GeneratedContent]:
+        keywords: list[str],
+        campaign_id: uuid.UUID | None = None,
+    ) -> list[GeneratedContent]:
         """Generate multiple pieces of SEO content."""
         contents = []
         for keyword in keywords:
@@ -321,6 +332,6 @@ Responde en JSON:
                     campaign_id=campaign_id,
                 )
                 contents.append(content)
-            except Exception as e:
-                logger.error(f"Failed to generate content for '{keyword}': {e}")
+            except Exception:
+                logger.exception(f"Failed to generate content for '{keyword}'")
         return contents

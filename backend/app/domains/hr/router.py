@@ -1,9 +1,10 @@
 """HR API — /api/v1/businesses/{business_id}/hr/*"""
 
 from datetime import date
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -28,22 +29,25 @@ router = APIRouter(prefix="/{business_id}/hr", tags=["HR"])
 async def add_candidate(
     business_id: UUID,
     body: CandidateCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     svc = RecruitmentService(db)
-    return await svc.add_candidate(business_id, body.full_name, body.email, body.position, body.sourced_via)
+    return await svc.add_candidate(
+        business_id, body.full_name, body.email, body.position, body.sourced_via
+    )
 
 
 @router.post("/candidates/{candidate_id}/score", response_model=CandidateOut)
 async def score_candidate(
     business_id: UUID,
     candidate_id: UUID,
-    score: float = Query(..., ge=0, le=100),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    score: Annotated[float, Query(ge=0, le=100)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     from decimal import Decimal
+
     svc = RecruitmentService(db)
     return await svc.score_screening(candidate_id, Decimal(str(score)))
 
@@ -53,8 +57,8 @@ async def send_offer(
     business_id: UUID,
     candidate_id: UUID,
     body: OfferCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     svc = RecruitmentService(db)
     return await svc.send_offer(candidate_id, body.salary_aed)
@@ -64,20 +68,22 @@ async def send_offer(
 async def accept_offer(
     business_id: UUID,
     candidate_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     svc = RecruitmentService(db)
     return await svc.accept_offer(candidate_id)
 
 
 # Onboarding
-@router.post("/employees/{employee_id}/onboarding/init", response_model=list[OnboardingItemOut])
+@router.post(
+    "/employees/{employee_id}/onboarding/init", response_model=list[OnboardingItemOut]
+)
 async def init_onboarding(
     business_id: UUID,
     employee_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     svc = OnboardingService(db)
     return await svc.create_checklist(employee_id, business_id)
@@ -87,9 +93,9 @@ async def init_onboarding(
 async def complete_onboarding_item(
     business_id: UUID,
     item_id: UUID,
-    notes: str = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    notes: Annotated[str | None, Query()] = None,
 ):
     svc = OnboardingService(db)
     return await svc.complete_item(item_id, notes)
@@ -99,8 +105,8 @@ async def complete_onboarding_item(
 async def onboarding_status(
     business_id: UUID,
     employee_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     svc = OnboardingService(db)
     return await svc.onboarding_status(employee_id)
@@ -111,11 +117,13 @@ async def onboarding_status(
 async def calculate_payroll(
     business_id: UUID,
     employee_id: UUID,
-    payroll_date: date = Query(...),
-    body: PayrollCalcRequest = PayrollCalcRequest(),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    payroll_date: Annotated[date, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    body: PayrollCalcRequest | None = None,
 ):
+    if body is None:
+        body = PayrollCalcRequest()
     svc = PayrollService(db)
     return await svc.calculate_payroll(employee_id, payroll_date, body.allowances_aed)
 
@@ -123,9 +131,9 @@ async def calculate_payroll(
 @router.post("/payroll/batch")
 async def batch_payroll(
     business_id: UUID,
-    payroll_date: date = Query(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    payroll_date: Annotated[date, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     svc = PayrollService(db)
     return await svc.process_payroll_batch(business_id, payroll_date)
@@ -134,9 +142,9 @@ async def batch_payroll(
 @router.get("/payroll/summary")
 async def payroll_summary(
     business_id: UUID,
-    payroll_date: date = Query(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    payroll_date: Annotated[date, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     svc = PayrollService(db)
     return await svc.payroll_summary(business_id, payroll_date)

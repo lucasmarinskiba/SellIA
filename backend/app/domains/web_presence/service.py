@@ -11,8 +11,8 @@ and never gets rounded up into a pass.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 from urllib.parse import urlparse
 
 from sqlalchemy import select
@@ -28,10 +28,18 @@ logger = get_logger(__name__)
 #: Platforms known to block server-side fetches behind a login/bot wall. When
 #: one of these answers 401/403/429 we say the check could not be run instead
 #: of scoring it as a failure of the user's page.
-BOT_WALLED = {"instagram", "facebook", "linkedin", "amazon", "tiktok", "threads", "twitter"}
+BOT_WALLED = {
+    "instagram",
+    "facebook",
+    "linkedin",
+    "amazon",
+    "tiktok",
+    "threads",
+    "twitter",
+}
 
 
-def _host(url: Optional[str]) -> str:
+def _host(url: str | None) -> str:
     if not url:
         return ""
     return (urlparse(url).hostname or "").lower().removeprefix("www.")
@@ -45,7 +53,9 @@ def serialize_link(link: BusinessLink) -> dict[str, Any]:
         "url": link.url,
         "label": link.label,
         "is_primary": bool(link.is_primary),
-        "last_checked_at": link.last_checked_at.isoformat() if link.last_checked_at else None,
+        "last_checked_at": (
+            link.last_checked_at.isoformat() if link.last_checked_at else None
+        ),
         "http_status": link.http_status,
         "final_url": link.final_url,
         "response_ms": link.response_ms,
@@ -71,9 +81,9 @@ async def upsert_link(
     *,
     platform: str,
     url: str,
-    label: Optional[str] = None,
+    label: str | None = None,
     is_primary: bool = False,
-    business_id: Optional[uuid.UUID] = None,
+    business_id: uuid.UUID | None = None,
 ) -> BusinessLink:
     """Add or update one real link. The URL is normalized (and rejected if it is
     not a fetchable public http(s) URL) before it is ever stored, so the audit
@@ -139,7 +149,7 @@ async def audit_link(db: AsyncSession, link: BusinessLink) -> BusinessLink:
     """Fetch this exact URL and store what the page really contains."""
     result = await fetcher.fetch(link.url)
 
-    link.last_checked_at = datetime.now(timezone.utc)
+    link.last_checked_at = datetime.now(UTC)
     link.http_status = result.status
     link.final_url = result.final_url
     link.response_ms = result.elapsed_ms
@@ -163,8 +173,11 @@ async def audit_link(db: AsyncSession, link: BusinessLink) -> BusinessLink:
                     key=lambda i: analyzer.SEVERITY_ORDER.get(i["severity"], 9),
                 )
                 payload["issues"] = audit.issues
-            except Exception as e:  # noqa: BLE001 -- page audit still stands
-                logger.warning("site_files check failed for %s: %s", link.url[:120], str(e)[:200])
+            # page audit still stands
+            except Exception as e:  # noqa: BLE001
+                logger.warning(
+                    "site_files check failed for %s: %s", link.url[:120], str(e)[:200]
+                )
 
         link.audit = payload
         link.seo_score = analyzer.score_page(audit, result.elapsed_ms)
@@ -184,16 +197,18 @@ def _record_history(db: AsyncSession, link: BusinessLink) -> None:
     from .models import BusinessLinkAudit
 
     issues = (link.audit or {}).get("issues", []) if link.audit else []
-    db.add(BusinessLinkAudit(
-        link_id=link.id,
-        user_id=link.user_id,
-        checked_at=link.last_checked_at or datetime.now(timezone.utc),
-        http_status=link.http_status,
-        response_ms=link.response_ms,
-        seo_score=link.seo_score,
-        issues_total=len(issues),
-        issues_critical=sum(1 for i in issues if i.get("severity") == "critical"),
-    ))
+    db.add(
+        BusinessLinkAudit(
+            link_id=link.id,
+            user_id=link.user_id,
+            checked_at=link.last_checked_at or datetime.now(UTC),
+            http_status=link.http_status,
+            response_ms=link.response_ms,
+            seo_score=link.seo_score,
+            issues_total=len(issues),
+            issues_critical=sum(1 for i in issues if i.get("severity") == "critical"),
+        )
+    )
 
 
 async def audit_all(db: AsyncSession, user_id: uuid.UUID) -> list[BusinessLink]:
@@ -201,12 +216,13 @@ async def audit_all(db: AsyncSession, user_id: uuid.UUID) -> list[BusinessLink]:
     for link in links:
         try:
             await audit_link(db, link)
-        except Exception as e:  # noqa: BLE001 -- one bad URL must not sink the batch
+        # one bad URL must not sink the batch
+        except Exception as e:  # noqa: BLE001
             logger.warning("audit_link failed for %s: %s", link.url[:120], str(e)[:200])
     return await list_links(db, user_id)
 
 
-def _unverifiable(link: BusinessLink) -> Optional[str]:
+def _unverifiable(link: BusinessLink) -> str | None:
     """Why this link's page could not be read, if it could not be read."""
     if link.last_checked_at is None:
         return "Todavía no se analizó."
@@ -238,10 +254,14 @@ async def seo_report(db: AsyncSession, user_id: uuid.UUID) -> dict[str, Any]:
         entry = {
             "id": str(link.id),
             "platform": link.platform,
-            "kind": link.kind.value if isinstance(link.kind, LinkKind) else str(link.kind),
+            "kind": (
+                link.kind.value if isinstance(link.kind, LinkKind) else str(link.kind)
+            ),
             "url": link.url,
             "is_primary": bool(link.is_primary),
-            "checked_at": link.last_checked_at.isoformat() if link.last_checked_at else None,
+            "checked_at": (
+                link.last_checked_at.isoformat() if link.last_checked_at else None
+            ),
             "http_status": link.http_status,
             "response_ms": link.response_ms,
             "score": link.seo_score,
@@ -249,7 +269,9 @@ async def seo_report(db: AsyncSession, user_id: uuid.UUID) -> dict[str, Any]:
             "issues": (link.audit or {}).get("issues", []) if link.audit else [],
             "title": (link.audit or {}).get("title") if link.audit else None,
             "word_count": (link.audit or {}).get("word_count") if link.audit else None,
-            "json_ld_types": (link.audit or {}).get("json_ld_types", []) if link.audit else [],
+            "json_ld_types": (
+                (link.audit or {}).get("json_ld_types", []) if link.audit else []
+            ),
             "terms": (link.audit or {}).get("terms") if link.audit else None,
             "site_files": (link.audit or {}).get("site_files") if link.audit else None,
         }
@@ -259,8 +281,13 @@ async def seo_report(db: AsyncSession, user_id: uuid.UUID) -> dict[str, Any]:
         for issue in entry["issues"]:
             bucket = issue_totals.setdefault(
                 issue["key"],
-                {"key": issue["key"], "title": issue["title"], "severity": issue["severity"],
-                 "fix": issue["fix"], "pages": 0},
+                {
+                    "key": issue["key"],
+                    "title": issue["title"],
+                    "severity": issue["severity"],
+                    "fix": issue["fix"],
+                    "pages": 0,
+                },
             )
             bucket["pages"] += 1
 
@@ -277,7 +304,7 @@ async def seo_report(db: AsyncSession, user_id: uuid.UUID) -> dict[str, Any]:
         "priorities": priorities[:12],
         "duplicates": _find_duplicates(links),
         "history": await _score_history(db, user_id),
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
     }
 
 
@@ -301,33 +328,45 @@ def _find_duplicates(links: list[BusinessLink]) -> list[dict[str, Any]]:
     duplicates: list[dict[str, Any]] = []
     for value, urls in by_title.items():
         if len(urls) > 1:
-            duplicates.append({
-                "kind": "title",
-                "value": value[:120],
-                "urls": urls,
-                "fix": "Escribí un título distinto por página: si dos compiten por la misma "
-                       "búsqueda, Google elige una y descarta la otra.",
-            })
+            duplicates.append(
+                {
+                    "kind": "title",
+                    "value": value[:120],
+                    "urls": urls,
+                    "fix": "Escribí un título distinto por página: si dos compiten por la misma "
+                    "búsqueda, Google elige una y descarta la otra.",
+                }
+            )
     for value, urls in by_desc.items():
         if len(urls) > 1:
-            duplicates.append({
-                "kind": "description",
-                "value": value[:120],
-                "urls": urls,
-                "fix": "Dale a cada página su propia meta description, describiendo lo que esa "
-                       "página específica ofrece.",
-            })
+            duplicates.append(
+                {
+                    "kind": "description",
+                    "value": value[:120],
+                    "urls": urls,
+                    "fix": "Dale a cada página su propia meta description, describiendo lo que esa "
+                    "página específica ofrece.",
+                }
+            )
     return duplicates
 
 
-async def _score_history(db: AsyncSession, user_id: uuid.UUID, limit: int = 30) -> list[dict[str, Any]]:
+async def _score_history(
+    db: AsyncSession, user_id: uuid.UUID, limit: int = 30
+) -> list[dict[str, Any]]:
     """Average score per audit run, oldest first -- real progress over time."""
     from .models import BusinessLinkAudit
 
     result = await db.execute(
-        select(BusinessLinkAudit.checked_at, BusinessLinkAudit.seo_score,
-               BusinessLinkAudit.issues_critical)
-        .where(BusinessLinkAudit.user_id == user_id, BusinessLinkAudit.seo_score.isnot(None))
+        select(
+            BusinessLinkAudit.checked_at,
+            BusinessLinkAudit.seo_score,
+            BusinessLinkAudit.issues_critical,
+        )
+        .where(
+            BusinessLinkAudit.user_id == user_id,
+            BusinessLinkAudit.seo_score.isnot(None),
+        )
         .order_by(BusinessLinkAudit.checked_at.desc())
         .limit(limit * 4)
     )
@@ -387,16 +426,22 @@ async def authority_report(db: AsyncSession, user_id: uuid.UUID) -> dict[str, An
         )
         if linked_from_hub:
             connected += 1
-        profiles.append({
-            "id": str(link.id),
-            "platform": link.platform,
-            "kind": link.kind.value if isinstance(link.kind, LinkKind) else str(link.kind),
-            "url": link.url,
-            "linked_from_hub": linked_from_hub,
-            "declared_same_as": declared_same_as,
-            "links_back_to_hub": links_back,
-            "unverifiable_reason": blocked,
-        })
+        profiles.append(
+            {
+                "id": str(link.id),
+                "platform": link.platform,
+                "kind": (
+                    link.kind.value
+                    if isinstance(link.kind, LinkKind)
+                    else str(link.kind)
+                ),
+                "url": link.url,
+                "linked_from_hub": linked_from_hub,
+                "declared_same_as": declared_same_as,
+                "links_back_to_hub": links_back,
+                "unverifiable_reason": blocked,
+            }
+        )
 
     has_org_schema = any(
         t in ("Organization", "LocalBusiness", "Store", "OnlineStore")
@@ -409,8 +454,9 @@ async def authority_report(db: AsyncSession, user_id: uuid.UUID) -> dict[str, An
             "title": "Tenés un sitio propio como centro de tu marca",
             "passed": hub is not None and hub.kind == LinkKind.WEBSITE,
             "detail": (
-                f"Hub: {hub.url}" if hub else
-                "No hay ningún sitio propio cargado: sin un dominio propio, toda tu autoridad "
+                f"Hub: {hub.url}"
+                if hub
+                else "No hay ningún sitio propio cargado: sin un dominio propio, toda tu autoridad "
                 "se la queda la plataforma (Instagram, ML) y no tu marca."
             ),
         },
@@ -420,8 +466,8 @@ async def authority_report(db: AsyncSession, user_id: uuid.UUID) -> dict[str, An
             "passed": has_org_schema,
             "detail": (
                 "Google puede asociar tu marca como entidad."
-                if has_org_schema else
-                "Sin Organization/LocalBusiness en JSON-LD, Google no sabe que tu web, tus redes "
+                if has_org_schema
+                else "Sin Organization/LocalBusiness en JSON-LD, Google no sabe que tu web, tus redes "
                 "y tu tienda son el mismo negocio."
             ),
         },
@@ -431,8 +477,8 @@ async def authority_report(db: AsyncSession, user_id: uuid.UUID) -> dict[str, An
             "passed": bool(hub_same_as_hosts),
             "detail": (
                 f"Declara {len(hub_same_as_hosts)} perfil(es) como la misma entidad."
-                if hub_same_as_hosts else
-                "sameAs es el campo con el que se unifican marca, redes y tienda en un panel de "
+                if hub_same_as_hosts
+                else "sameAs es el campo con el que se unifican marca, redes y tienda en un panel de "
                 "conocimiento. No está."
             ),
         },
@@ -450,7 +496,7 @@ async def authority_report(db: AsyncSession, user_id: uuid.UUID) -> dict[str, An
         "profiles": profiles,
         "checks": checks,
         "score": round(passed / len(checks) * 100) if checks else 0,
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
     }
 
 
@@ -459,9 +505,9 @@ def build_structured_data(
     business_name: str,
     site_url: str,
     profile_urls: list[str],
-    description: Optional[str] = None,
-    city: Optional[str] = None,
-    country: Optional[str] = None,
+    description: str | None = None,
+    city: str | None = None,
+    country: str | None = None,
     has_physical_location: bool = False,
 ) -> dict[str, Any]:
     """The JSON-LD this account should actually paste into its site.

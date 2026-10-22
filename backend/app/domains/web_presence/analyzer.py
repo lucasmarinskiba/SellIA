@@ -16,13 +16,16 @@ for markup this simple.
 from __future__ import annotations
 
 import json
+import logging
 import re
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
-from typing import Any, Optional
+from typing import Any
 from urllib.parse import urljoin, urlparse
 
 from . import terms
+
+logger = logging.getLogger(__name__)
 
 SEVERITY_ORDER = {"critical": 0, "warning": 1, "info": 2}
 
@@ -33,11 +36,11 @@ DESC_MIN, DESC_MAX = 70, 160
 
 @dataclass
 class PageAudit:
-    title: Optional[str] = None
-    meta_description: Optional[str] = None
-    canonical: Optional[str] = None
-    robots: Optional[str] = None
-    lang: Optional[str] = None
+    title: str | None = None
+    meta_description: str | None = None
+    canonical: str | None = None
+    robots: str | None = None
+    lang: str | None = None
     has_viewport: bool = False
     h1: list[str] = field(default_factory=list)
     h2_count: int = 0
@@ -64,7 +67,9 @@ class PageAudit:
             "title": self.title,
             "title_length": len(self.title) if self.title else 0,
             "meta_description": self.meta_description,
-            "meta_description_length": len(self.meta_description) if self.meta_description else 0,
+            "meta_description_length": (
+                len(self.meta_description) if self.meta_description else 0
+            ),
             "canonical": self.canonical,
             "robots": self.robots,
             "lang": self.lang,
@@ -95,11 +100,11 @@ class _PageParser(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.audit = PageAudit()
-        self._skip_depth = 0            # inside <script>/<style>/<noscript>
+        self._skip_depth = 0  # inside <script>/<style>/<noscript>
         self._in_title = False
         self._in_ld_json = False
         self._ld_buffer: list[str] = []
-        self._heading: Optional[str] = None
+        self._heading: str | None = None
         self._text_parts: list[str] = []
         self.raw_links: list[str] = []
         #: H2/H3 text, kept (not just counted) so the term profile can weight
@@ -107,7 +112,7 @@ class _PageParser(HTMLParser):
         self.subheadings: list[str] = []
 
     # ── tags ──
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, Optional[str]]]) -> None:
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         a = {k.lower(): (v or "") for k, v in attrs}
 
         if tag in ("script", "style", "noscript"):
@@ -227,23 +232,27 @@ def _iter_ld_nodes(value: Any) -> list[dict[str, Any]]:
     return out
 
 
+def _strip_www(host: str) -> str:
+    return host.removeprefix("www.")
+
+
 def analyze(html: str, final_url: str) -> PageAudit:
     """Parse a real page body into a real audit."""
     parser = _PageParser()
     try:
         parser.feed(html)
         parser.close()
-    except Exception:  # noqa: BLE001 -- malformed markup must still yield what we got
-        pass
+    except Exception:
+        logger.exception("analyze: error ignorado")
 
     audit = parser.audit
     audit.is_https = final_url.lower().startswith("https://")
     audit.word_count = len([w for w in re.split(r"\s+", parser.text) if len(w) > 1])
 
-    base_host = (urlparse(final_url).hostname or "").lower().lstrip("www.")
+    base_host = _strip_www((urlparse(final_url).hostname or "").lower())
     hosts: list[str] = []
     for href in parser.raw_links:
-        host = (urlparse(urljoin(final_url, href)).hostname or "").lower().lstrip("www.")
+        host = _strip_www((urlparse(urljoin(final_url, href)).hostname or "").lower())
         if not host or host == base_host:
             audit.internal_links += 1
         else:
@@ -269,83 +278,157 @@ def _find_issues(a: PageAudit) -> list[dict[str, str]]:
     issues: list[dict[str, str]] = []
 
     def add(severity: str, key: str, title: str, detail: str, fix: str) -> None:
-        issues.append({"severity": severity, "key": key, "title": title, "detail": detail, "fix": fix})
+        issues.append(
+            {
+                "severity": severity,
+                "key": key,
+                "title": title,
+                "detail": detail,
+                "fix": fix,
+            }
+        )
 
     if not a.title:
-        add("critical", "title_missing", "Falta el <title>",
+        add(
+            "critical",
+            "title_missing",
+            "Falta el <title>",
             "La página no tiene título. Google lo usa como el enlace azul del resultado.",
-            "Agregá <title> con la keyword principal + la marca, entre 30 y 60 caracteres.")
+            "Agregá <title> con la keyword principal + la marca, entre 30 y 60 caracteres.",
+        )
     elif len(a.title) > TITLE_MAX:
-        add("warning", "title_long", "Título demasiado largo",
+        add(
+            "warning",
+            "title_long",
+            "Título demasiado largo",
             f"Tiene {len(a.title)} caracteres; Google corta cerca de {TITLE_MAX}.",
-            f"Recortalo a {TITLE_MAX} caracteres dejando la keyword al principio.")
+            f"Recortalo a {TITLE_MAX} caracteres dejando la keyword al principio.",
+        )
     elif len(a.title) < TITLE_MIN:
-        add("warning", "title_short", "Título demasiado corto",
+        add(
+            "warning",
+            "title_short",
+            "Título demasiado corto",
             f"Tiene {len(a.title)} caracteres: estás desperdiciando espacio en el resultado.",
-            f"Llevalo a entre {TITLE_MIN} y {TITLE_MAX} caracteres sumando el beneficio o la ciudad.")
+            f"Llevalo a entre {TITLE_MIN} y {TITLE_MAX} caracteres sumando el beneficio o la ciudad.",
+        )
 
     if not a.meta_description:
-        add("critical", "desc_missing", "Falta la meta description",
+        add(
+            "critical",
+            "desc_missing",
+            "Falta la meta description",
             "Sin meta description, Google arma el resumen con texto suelto de la página.",
-            f"Agregá <meta name=\"description\"> de {DESC_MIN}-{DESC_MAX} caracteres con la promesa y un CTA.")
+            f'Agregá <meta name="description"> de {DESC_MIN}-{DESC_MAX} caracteres con la promesa y un CTA.',
+        )
     elif len(a.meta_description) > DESC_MAX:
-        add("warning", "desc_long", "Meta description demasiado larga",
+        add(
+            "warning",
+            "desc_long",
+            "Meta description demasiado larga",
             f"Tiene {len(a.meta_description)} caracteres; se corta cerca de {DESC_MAX}.",
-            f"Recortala a {DESC_MAX} caracteres.")
+            f"Recortala a {DESC_MAX} caracteres.",
+        )
 
     if not a.h1:
-        add("critical", "h1_missing", "No hay H1",
+        add(
+            "critical",
+            "h1_missing",
+            "No hay H1",
             "La página no declara de qué trata con un encabezado principal.",
-            "Poné un solo <h1> con el tema principal de la página.")
+            "Poné un solo <h1> con el tema principal de la página.",
+        )
     elif len(a.h1) > 1:
-        add("warning", "h1_multiple", f"Hay {len(a.h1)} H1",
+        add(
+            "warning",
+            "h1_multiple",
+            f"Hay {len(a.h1)} H1",
             "Varios H1 diluyen cuál es el tema principal.",
-            "Dejá un único <h1> y bajá el resto a <h2>.")
+            "Dejá un único <h1> y bajá el resto a <h2>.",
+        )
 
     if a.robots and "noindex" in a.robots.lower():
-        add("critical", "noindex", "La página está bloqueada con noindex",
-            f"La meta robots dice \"{a.robots}\": Google no la va a mostrar nunca.",
-            "Sacá noindex de la meta robots si querés posicionar esta página.")
+        add(
+            "critical",
+            "noindex",
+            "La página está bloqueada con noindex",
+            f'La meta robots dice "{a.robots}": Google no la va a mostrar nunca.',
+            "Sacá noindex de la meta robots si querés posicionar esta página.",
+        )
 
     if not a.is_https:
-        add("critical", "no_https", "El sitio no usa HTTPS",
+        add(
+            "critical",
+            "no_https",
+            "El sitio no usa HTTPS",
             "HTTPS es señal de ranking y el navegador marca el sitio como no seguro.",
-            "Activá el certificado SSL (gratis con Let's Encrypt o en tu hosting).")
+            "Activá el certificado SSL (gratis con Let's Encrypt o en tu hosting).",
+        )
 
     if not a.canonical:
-        add("info", "canonical_missing", "Sin URL canónica",
+        add(
+            "info",
+            "canonical_missing",
+            "Sin URL canónica",
             "Sin canonical, la misma página con distintos parámetros compite consigo misma.",
-            "Agregá <link rel=\"canonical\" href=\"…\"> con la URL definitiva.")
+            'Agregá <link rel="canonical" href="…"> con la URL definitiva.',
+        )
 
     if not a.has_viewport:
-        add("critical", "no_viewport", "No declara viewport móvil",
+        add(
+            "critical",
+            "no_viewport",
+            "No declara viewport móvil",
             "Sin viewport la página se renderiza como escritorio en el celular, donde está la mayoría del tráfico.",
-            "Agregá <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">.")
+            'Agregá <meta name="viewport" content="width=device-width, initial-scale=1">.',
+        )
 
     if not a.json_ld_types:
-        add("warning", "no_schema", "Sin datos estructurados (JSON-LD)",
+        add(
+            "warning",
+            "no_schema",
+            "Sin datos estructurados (JSON-LD)",
             "No hay schema.org: se pierden estrellas, precio y stock en el resultado de búsqueda.",
-            "Agregá al menos Organization y, si vendés online, Product con precio y disponibilidad.")
+            "Agregá al menos Organization y, si vendés online, Product con precio y disponibilidad.",
+        )
     if a.json_ld_invalid:
-        add("warning", "schema_invalid", f"{a.json_ld_invalid} bloque(s) JSON-LD con error",
+        add(
+            "warning",
+            "schema_invalid",
+            f"{a.json_ld_invalid} bloque(s) JSON-LD con error",
             "El JSON no parsea, así que Google lo descarta entero.",
-            "Validá el bloque en search.google.com/test/rich-results.")
+            "Validá el bloque en search.google.com/test/rich-results.",
+        )
 
     if a.images_without_alt:
-        pct = round(a.images_without_alt / a.images_total * 100) if a.images_total else 0
-        add("warning", "img_alt", f"{a.images_without_alt} imágenes sin alt",
+        pct = (
+            round(a.images_without_alt / a.images_total * 100) if a.images_total else 0
+        )
+        add(
+            "warning",
+            "img_alt",
+            f"{a.images_without_alt} imágenes sin alt",
             f"{pct}% de las imágenes no tienen texto alternativo: no rankean en Google Imágenes ni son accesibles.",
-            "Escribí alt describiendo el producto (no \"foto1.jpg\").")
+            'Escribí alt describiendo el producto (no "foto1.jpg").',
+        )
 
     if not a.open_graph.get("og:title") or not a.open_graph.get("og:image"):
-        add("warning", "no_og", "Sin Open Graph completo",
+        add(
+            "warning",
+            "no_og",
+            "Sin Open Graph completo",
             "Cuando compartís el link en WhatsApp o Instagram no se ve título ni imagen.",
-            "Agregá og:title, og:description y og:image (1200×630).")
+            "Agregá og:title, og:description y og:image (1200×630).",
+        )
 
     if a.word_count < 300:
-        add("warning", "thin_content", "Contenido escaso",
+        add(
+            "warning",
+            "thin_content",
+            "Contenido escaso",
             f"Solo {a.word_count} palabras: a Google le sobra poco texto para entender el tema.",
-            "Sumá descripción real del producto/servicio, preguntas frecuentes y casos de uso.")
+            "Sumá descripción real del producto/servicio, preguntas frecuentes y casos de uso.",
+        )
 
     # Consistency between what the title promises and what the page says. This
     # is the one "keyword" check that needs no external data: the evidence is
@@ -353,28 +436,38 @@ def _find_issues(a: PageAudit) -> list[dict[str, str]]:
     missing_terms = (a.terms or {}).get("promised_not_delivered") or []
     if missing_terms and a.word_count >= 50:
         shown = ", ".join(missing_terms[:4])
-        add("warning", "title_not_in_body", "El título promete algo que la página no dice",
+        add(
+            "warning",
+            "title_not_in_body",
+            "El título promete algo que la página no dice",
             f"Tu título usa {shown}, pero esas palabras no aparecen en el texto de la página. "
             "Google contrasta título y contenido: si no coinciden, se queda con el contenido.",
             f"Escribí al menos un párrafo real sobre {shown}, o cambiá el título por lo que la "
-            "página realmente ofrece.")
+            "página realmente ofrece.",
+        )
 
     if not a.lang:
-        add("info", "no_lang", "Sin atributo lang",
+        add(
+            "info",
+            "no_lang",
+            "Sin atributo lang",
             "El <html> no declara idioma; afecta targeting por país e idioma.",
-            "Poné <html lang=\"es-AR\"> (o el que corresponda).")
+            'Poné <html lang="es-AR"> (o el que corresponda).',
+        )
 
     issues.sort(key=lambda i: SEVERITY_ORDER.get(i["severity"], 9))
     return issues
 
 
-def score_page(audit: PageAudit, response_ms: Optional[int] = None) -> float:
+def score_page(audit: PageAudit, response_ms: int | None = None) -> float:
     """0-100 from the real findings. Deductions are fixed per issue severity, so
     the same page always scores the same — this is a checklist result, not a
     simulation of what a ranking tool would say."""
     score = 100.0
     for issue in audit.issues:
-        score -= {"critical": 12.0, "warning": 5.0, "info": 2.0}.get(issue["severity"], 0.0)
+        score -= {"critical": 12.0, "warning": 5.0, "info": 2.0}.get(
+            issue["severity"], 0.0
+        )
     # Real measured latency, the one performance signal available without a
     # Lighthouse run. Slow servers genuinely hurt ranking.
     if response_ms is not None:

@@ -2,19 +2,22 @@
 
 import asyncio
 import logging
+import statistics
 import time
-import random
-from typing import Dict, List, Any, Optional, Callable, Coroutine
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-import statistics
+from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
 
 class LoadTestPhase(Enum):
     """Load test phases."""
+
     RAMP_UP = "ramp_up"  # Gradually increase load
     STEADY_STATE = "steady_state"  # Maintain constant load
     SPIKE = "spike"  # Sudden spike
@@ -25,16 +28,17 @@ class LoadTestPhase(Enum):
 @dataclass
 class RequestMetrics:
     """Metrics for a single request."""
+
     request_id: str
     endpoint: str
     method: str
     response_time_ms: float
     status_code: int
     success: bool
-    error_message: Optional[str] = None
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    error_message: str | None = None
+    timestamp: datetime = field(default_factory=utc_now)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "request_id": self.request_id,
             "endpoint": self.endpoint,
@@ -50,6 +54,7 @@ class RequestMetrics:
 @dataclass
 class LoadTestResult:
     """Results of a load test."""
+
     test_name: str
     total_requests: int
     successful_requests: int
@@ -66,9 +71,9 @@ class LoadTestResult:
     test_duration_seconds: float
     started_at: datetime
     completed_at: datetime
-    bottlenecks: List[str] = field(default_factory=list)
+    bottlenecks: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "test_name": self.test_name,
             "total_requests": self.total_requests,
@@ -118,13 +123,13 @@ class LoadTestRunner:
 
     def __init__(self):
         """Initialize load test runner."""
-        self.results: Dict[str, LoadTestResult] = {}
-        self.running_tests: Dict[str, bool] = {}
+        self.results: dict[str, LoadTestResult] = {}
+        self.running_tests: dict[str, bool] = {}
 
     async def run_load_test(
         self,
         config: LoadTestConfig,
-        request_generator: Callable[[], Dict[str, Any]],
+        request_generator: Callable[[], dict[str, Any]],
     ) -> LoadTestResult:
         """Run a load test."""
 
@@ -133,8 +138,8 @@ class LoadTestRunner:
         logger.info(f"  RPS: {config.requests_per_second}")
         logger.info(f"  Duration: {config.duration_seconds}s")
 
-        start_time = datetime.utcnow()
-        metrics: List[RequestMetrics] = []
+        start_time = utc_now()
+        metrics: list[RequestMetrics] = []
 
         # Create user tasks
         user_tasks = [
@@ -155,7 +160,7 @@ class LoadTestRunner:
                 asyncio.gather(*user_tasks),
                 timeout=config.duration_seconds + config.ramp_down_seconds + 5,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             pass
         finally:
             # Cancel remaining tasks
@@ -163,7 +168,7 @@ class LoadTestRunner:
                 if not task.done():
                     task.cancel()
 
-        end_time = datetime.utcnow()
+        end_time = utc_now()
         test_duration = (end_time - start_time).total_seconds()
 
         # Analyze results
@@ -186,29 +191,27 @@ class LoadTestRunner:
     async def _user_session(
         self,
         config: LoadTestConfig,
-        request_generator: Callable[[], Dict[str, Any]],
+        request_generator: Callable[[], dict[str, Any]],
         user_id: int,
-        metrics: List[RequestMetrics],
+        metrics: list[RequestMetrics],
     ) -> None:
         """Simulate a single user session."""
 
-        start_time = datetime.utcnow()
+        start_time = utc_now()
         end_time = start_time + timedelta(seconds=config.duration_seconds)
         request_interval = 1.0 / (config.requests_per_second / config.concurrent_users)
 
         # Ramp-up phase
         ramp_up_end = start_time + timedelta(seconds=config.ramp_up_seconds)
 
-        while datetime.utcnow() < end_time:
-            now = datetime.utcnow()
+        while utc_now() < end_time:
+            now = utc_now()
 
             # Ramp-up: gradually increase frequency
             if now < ramp_up_end:
-                phase = LoadTestPhase.RAMP_UP
                 progress = (now - start_time).total_seconds() / config.ramp_up_seconds
                 actual_interval = request_interval / max(progress, 0.1)
             else:
-                phase = LoadTestPhase.STEADY_STATE
                 actual_interval = request_interval
 
             # Send request
@@ -222,8 +225,8 @@ class LoadTestRunner:
 
                 metrics.append(response_time)
 
-            except Exception as e:
-                logger.error(f"Request error in user {user_id}: {e}")
+            except Exception:
+                logger.exception(f"Request error in user {user_id}")
 
             # Wait before next request
             await asyncio.sleep(actual_interval)
@@ -231,7 +234,7 @@ class LoadTestRunner:
     async def _send_request(
         self,
         config: LoadTestConfig,
-        request_data: Dict[str, Any],
+        request_data: dict[str, Any],
         user_id: int,
     ) -> RequestMetrics:
         """Send a single request."""
@@ -241,7 +244,7 @@ class LoadTestRunner:
         start_time = time.time()
 
         try:
-            result = await config.target_function(**request_data)
+            await config.target_function(**request_data)
             response_time_ms = (time.time() - start_time) * 1000
             status_code = 200
 
@@ -255,6 +258,7 @@ class LoadTestRunner:
             )
 
         except Exception as e:
+            logger.exception("_send_request: error inesperado")
             response_time_ms = (time.time() - start_time) * 1000
 
             return RequestMetrics(
@@ -270,7 +274,7 @@ class LoadTestRunner:
     def _analyze_results(
         self,
         config: LoadTestConfig,
-        metrics: List[RequestMetrics],
+        metrics: list[RequestMetrics],
         started_at: datetime,
         completed_at: datetime,
         test_duration: float,
@@ -324,8 +328,12 @@ class LoadTestRunner:
             max_response_time_ms=max(response_times),
             avg_response_time_ms=statistics.mean(response_times),
             median_response_time_ms=statistics.median(response_times),
-            p95_response_time_ms=sorted_times[p95_idx] if p95_idx < len(sorted_times) else 0,
-            p99_response_time_ms=sorted_times[p99_idx] if p99_idx < len(sorted_times) else 0,
+            p95_response_time_ms=(
+                sorted_times[p95_idx] if p95_idx < len(sorted_times) else 0
+            ),
+            p99_response_time_ms=(
+                sorted_times[p99_idx] if p99_idx < len(sorted_times) else 0
+            ),
             requests_per_second=rps,
             error_rate_percent=error_rate,
             concurrent_users=config.concurrent_users,
@@ -337,10 +345,10 @@ class LoadTestRunner:
 
     def _detect_bottlenecks(
         self,
-        response_times: List[float],
+        response_times: list[float],
         error_rate: float,
         rps: float,
-    ) -> List[str]:
+    ) -> list[str]:
         """Detect bottlenecks in load test results."""
 
         bottlenecks = []
@@ -366,7 +374,7 @@ class LoadTestRunner:
 
         return bottlenecks
 
-    def get_test_results(self, test_name: str) -> Optional[Dict[str, Any]]:
+    def get_test_results(self, test_name: str) -> dict[str, Any] | None:
         """Get results for a test."""
 
         if test_name not in self.results:
@@ -374,15 +382,12 @@ class LoadTestRunner:
 
         return self.results[test_name].to_dict()
 
-    def get_all_results(self) -> Dict[str, Dict[str, Any]]:
+    def get_all_results(self) -> dict[str, dict[str, Any]]:
         """Get all test results."""
 
-        return {
-            name: result.to_dict()
-            for name, result in self.results.items()
-        }
+        return {name: result.to_dict() for name, result in self.results.items()}
 
-    def compare_results(self, test_name_1: str, test_name_2: str) -> Dict[str, Any]:
+    def compare_results(self, test_name_1: str, test_name_2: str) -> dict[str, Any]:
         """Compare two test results."""
 
         result1 = self.results.get(test_name_1)
@@ -395,19 +400,26 @@ class LoadTestRunner:
             "test_1": test_name_1,
             "test_2": test_name_2,
             "avg_response_time_change_percent": (
-                (result2.avg_response_time_ms - result1.avg_response_time_ms) /
-                result1.avg_response_time_ms * 100
-                if result1.avg_response_time_ms > 0 else 0
+                (result2.avg_response_time_ms - result1.avg_response_time_ms)
+                / result1.avg_response_time_ms
+                * 100
+                if result1.avg_response_time_ms > 0
+                else 0
             ),
-            "error_rate_change_percent": result2.error_rate_percent - result1.error_rate_percent,
+            "error_rate_change_percent": result2.error_rate_percent
+            - result1.error_rate_percent,
             "throughput_change_percent": (
-                (result2.requests_per_second - result1.requests_per_second) /
-                result1.requests_per_second * 100
-                if result1.requests_per_second > 0 else 0
+                (result2.requests_per_second - result1.requests_per_second)
+                / result1.requests_per_second
+                * 100
+                if result1.requests_per_second > 0
+                else 0
             ),
             "p99_latency_change_percent": (
-                (result2.p99_response_time_ms - result1.p99_response_time_ms) /
-                result1.p99_response_time_ms * 100
-                if result1.p99_response_time_ms > 0 else 0
+                (result2.p99_response_time_ms - result1.p99_response_time_ms)
+                / result1.p99_response_time_ms
+                * 100
+                if result1.p99_response_time_ms > 0
+                else 0
             ),
         }

@@ -8,10 +8,20 @@ Pricing (2025-2026):
 Usado para voiceovers en videos y audio para Reels/ads.
 """
 
-from typing import Dict, Any, Optional
+import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
+
+from ..base import (
+    BaseProvider,
+    ContentQuality,
+    ContentType,
+    GenerationConfig,
+    GenerationResult,
+)
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -37,7 +47,7 @@ class ElevenLabsProvider(BaseProvider):
 
     name = "ElevenLabs"
     slug = "elevenlabs"
-    supports = [ContentType.AUDIO]
+    supports: ClassVar[list] = [ContentType.AUDIO]
 
     @property
     def is_available(self) -> bool:
@@ -46,10 +56,14 @@ class ElevenLabsProvider(BaseProvider):
     def estimate_cost(self, config: GenerationConfig) -> float:
         text = config.prompt
         char_count = len(text)
-        cost_per_1k = ELEVENLABS_COSTS["tts-premium"] if config.quality == ContentQuality.PREMIUM else ELEVENLABS_COSTS["tts-standard"]
+        cost_per_1k = (
+            ELEVENLABS_COSTS["tts-premium"]
+            if config.quality == ContentQuality.PREMIUM
+            else ELEVENLABS_COSTS["tts-standard"]
+        )
         return (char_count / 1000) * cost_per_1k
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return ELEVENLABS_COSTS
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
@@ -66,7 +80,9 @@ class ElevenLabsProvider(BaseProvider):
 
             text = config.prompt
             language = config.extra_params.get("language", "es")
-            voice_id = config.extra_params.get("voice_id", DEFAULT_VOICES.get(language, DEFAULT_VOICES["es"]))
+            voice_id = config.extra_params.get(
+                "voice_id", DEFAULT_VOICES.get(language, DEFAULT_VOICES["es"])
+            )
             model = config.extra_params.get("model", "eleven_multilingual_v2")
 
             # Generar audio
@@ -99,6 +115,7 @@ class ElevenLabsProvider(BaseProvider):
             )
 
         except Exception as e:
+            logger.exception("generate: error inesperado")
             return GenerationResult(
                 success=False,
                 error_message=str(e),

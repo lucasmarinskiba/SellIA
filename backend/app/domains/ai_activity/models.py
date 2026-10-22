@@ -17,20 +17,21 @@ in-memory bus which stays exactly as-is for its own purpose.
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Column, DateTime, ForeignKey, Index, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class AIActionLog(Base):
     """One real AI/automation action taken on behalf of a SellIA user."""
+
     __tablename__ = "ai_action_logs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -38,23 +39,43 @@ class AIActionLog(Base):
     # Always attributed to a real, authenticated SellIA account -- rows are
     # never written for anonymous/unscoped callers (see ai_activity/service.py:
     # log_ai_action() is a silent no-op without a user_id).
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     # Nullable: some actions happen before a user has created any business yet.
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=True, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
 
     # What performed the action -- actor_id matches a node id from the Brain
     # registry (app/core/brain/registry.py) when applicable, e.g.
     # "agent.expert.market_analyst" or "automation.check_abandoned_carts",
     # so the frontend can cross-reference back to the 337-node graph.
-    actor_type = Column(String(30), nullable=False)   # agent | automation | skill | workflow | brain | system
+    actor_type = Column(
+        String(30), nullable=False
+    )  # agent | automation | skill | workflow | brain | system
     actor_id = Column(String(160), nullable=True)
 
-    action = Column(String(80), nullable=False)        # short verb-based type, e.g. "workflow_executed"
-    summary = Column(Text, nullable=False)              # human-readable one-liner
-    payload = Column(JSONB, default=dict, nullable=False)  # structured details, e.g. {"execution_id": "..."}
-    status = Column(String(20), default="success", nullable=False)  # success | failed | skipped
+    action = Column(
+        String(80), nullable=False
+    )  # short verb-based type, e.g. "workflow_executed"
+    summary = Column(Text, nullable=False)  # human-readable one-liner
+    payload = Column(
+        JSONB, default=dict, nullable=False
+    )  # structured details, e.g. {"execution_id": "..."}
+    status = Column(
+        String(20), default="success", nullable=False
+    )  # success | failed | skipped
 
-    created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False, index=True)
+    created_at = Column(
+        DateTime(timezone=True), default=_utcnow, nullable=False, index=True
+    )
 
     __table_args__ = (
         Index("ix_ai_action_logs_user_created", "user_id", "created_at"),

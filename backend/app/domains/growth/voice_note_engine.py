@@ -9,13 +9,12 @@ This engine creates contextual, warm voice note scripts that:
 """
 
 import uuid
-from typing import Optional, Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logger import get_logger
 from app.domains.agents.ai_reply import generate_raw_ai_response
 from app.domains.outreach.service import FatigueScoringService
-from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -73,8 +72,8 @@ Responde SOLO el script, sin explicaciones."""
                 temperature=0.8,
             )
             return script or self._fallback_welcome(lead_name)
-        except Exception as e:
-            logger.error(f"Voice note generation failed: {e}")
+        except Exception:
+            logger.exception("Voice note generation failed")
             return self._fallback_welcome(lead_name)
 
     async def generate_value_voice_note(
@@ -113,8 +112,8 @@ Responde SOLO el script."""
                 max_tokens=300,
                 temperature=0.8,
             ) or self._fallback_value(lead_name, tip)
-        except Exception as e:
-            logger.error(f"Value voice note failed: {e}")
+        except Exception:
+            logger.exception("Value voice note failed")
             return self._fallback_value(lead_name, tip)
 
     async def generate_soft_close_voice_note(
@@ -153,8 +152,8 @@ Responde SOLO el script."""
                 max_tokens=300,
                 temperature=0.8,
             ) or self._fallback_close(lead_name)
-        except Exception as e:
-            logger.error(f"Close voice note failed: {e}")
+        except Exception:
+            logger.exception("Close voice note failed")
             return self._fallback_close(lead_name)
 
     async def generate_referral_voice_note(
@@ -192,8 +191,8 @@ Responde SOLO el script."""
                 max_tokens=300,
                 temperature=0.8,
             ) or self._fallback_referral(customer_name, code)
-        except Exception as e:
-            logger.error(f"Referral voice note failed: {e}")
+        except Exception:
+            logger.exception("Referral voice note failed")
             return self._fallback_referral(customer_name, code)
 
     def _fallback_welcome(self, name: str) -> str:

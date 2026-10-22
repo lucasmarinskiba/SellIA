@@ -5,10 +5,10 @@ Background job: Mercado Libre, Amazon, Shopify orders sync
 """
 
 import logging
+from typing import Any
+
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from typing import Dict, Any, Optional
-import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -40,14 +40,16 @@ class OrdersScheduler:
         access_token: str,
         ml_service,  # MercadoLibreAutomation instance
         interval_minutes: int = 5,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Agenda sync de órdenes Mercado Libre.
 
         Ejecuta automáticamente cada N minutos.
         """
 
-        logger.info(f"Adding ML sync job for seller {seller_id} (every {interval_minutes}min)")
+        logger.info(
+            f"Adding ML sync job for seller {seller_id} (every {interval_minutes}min)"
+        )
 
         job_id = f"ml_sync_{seller_id}"
 
@@ -71,7 +73,7 @@ class OrdersScheduler:
             }
 
         except Exception as e:
-            logger.error(f"Add ML sync job failed: {str(e)}")
+            logger.exception("Add ML sync job failed")
             return {"status": "error", "error": str(e)}
 
     async def add_amazon_sync(
@@ -80,7 +82,7 @@ class OrdersScheduler:
         mws_token: str,
         amazon_service,
         interval_minutes: int = 10,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Agenda sync de órdenes Amazon."""
 
         logger.info(f"Adding Amazon sync job for {seller_id}")
@@ -103,8 +105,8 @@ class OrdersScheduler:
                 "interval_minutes": interval_minutes,
             }
 
-        except Exception as e:
-            logger.error(f"Add Amazon sync job failed: {str(e)}")
+        except Exception:
+            logger.exception("Add Amazon sync job failed")
             return {"status": "error"}
 
     async def add_shopify_sync(
@@ -113,7 +115,7 @@ class OrdersScheduler:
         access_token: str,
         shopify_service,
         interval_minutes: int = 10,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Agenda sync de órdenes Shopify."""
 
         logger.info(f"Adding Shopify sync job for {store_url}")
@@ -136,11 +138,11 @@ class OrdersScheduler:
                 "interval_minutes": interval_minutes,
             }
 
-        except Exception as e:
-            logger.error(f"Add Shopify sync job failed: {str(e)}")
+        except Exception:
+            logger.exception("Add Shopify sync job failed")
             return {"status": "error"}
 
-    def remove_job(self, job_id: str) -> Dict[str, Any]:
+    def remove_job(self, job_id: str) -> dict[str, Any]:
         """Elimina job."""
 
         logger.info(f"Removing job {job_id}")
@@ -150,11 +152,11 @@ class OrdersScheduler:
             logger.info(f"Job {job_id} removed")
             return {"status": "success"}
 
-        except Exception as e:
-            logger.error(f"Remove job failed: {str(e)}")
+        except Exception:
+            logger.exception("Remove job failed")
             return {"status": "error"}
 
-    def list_jobs(self) -> Dict[str, Any]:
+    def list_jobs(self) -> dict[str, Any]:
         """Lista todos los jobs activos."""
 
         jobs = self.scheduler.get_jobs()
@@ -166,7 +168,9 @@ class OrdersScheduler:
                 {
                     "id": job.id,
                     "name": job.name,
-                    "next_run": job.next_run_time.isoformat() if job.next_run_time else None,
+                    "next_run": (
+                        job.next_run_time.isoformat() if job.next_run_time else None
+                    ),
                     "trigger": str(job.trigger),
                 }
                 for job in jobs
@@ -182,25 +186,25 @@ class OrdersScheduler:
             logger.info(f"Executing ML sync for {seller_id}")
             result = await ml_service.sync_orders()
             logger.info(f"ML sync complete: {result.get('orders_synced', 0)} orders")
-        except Exception as e:
-            logger.error(f"ML sync wrapper failed: {str(e)}")
+        except Exception:
+            logger.exception("ML sync wrapper failed")
 
     @staticmethod
     async def _sync_amazon_orders_wrapper(amazon_service, seller_id: str):
         """Wrapper para ejecutar Amazon sync."""
         try:
             logger.info(f"Executing Amazon sync for {seller_id}")
-            result = await amazon_service.sync_orders()
-            logger.info(f"Amazon sync complete")
-        except Exception as e:
-            logger.error(f"Amazon sync wrapper failed: {str(e)}")
+            await amazon_service.sync_orders()
+            logger.info("Amazon sync complete")
+        except Exception:
+            logger.exception("Amazon sync wrapper failed")
 
     @staticmethod
     async def _sync_shopify_orders_wrapper(shopify_service, store_url: str):
         """Wrapper para ejecutar Shopify sync."""
         try:
             logger.info(f"Executing Shopify sync for {store_url}")
-            result = await shopify_service.sync_orders()
-            logger.info(f"Shopify sync complete")
-        except Exception as e:
-            logger.error(f"Shopify sync wrapper failed: {str(e)}")
+            await shopify_service.sync_orders()
+            logger.info("Shopify sync complete")
+        except Exception:
+            logger.exception("Shopify sync wrapper failed")

@@ -12,22 +12,26 @@ Requiere: Ollama corriendo localmente con un modelo de visión cargado.
 
 import json
 import re
-from typing import List, Dict, Any, Optional
+from typing import Any
 
 from app.core.config import get_settings
 from app.core.logger import get_logger
+from app.domains.computer_use.prompts import (
+    COMPUTER_USE_SUMMARY_PROMPT,
+    COMPUTER_USE_SYSTEM_PROMPT,
+)
 from app.domains.computer_use.schemas import ComputerUseAction
-from app.domains.computer_use.prompts import COMPUTER_USE_SYSTEM_PROMPT, COMPUTER_USE_SUMMARY_PROMPT
+
 from .base import ComputerUseProvider
 
 logger = get_logger(__name__)
 
 # Recommended vision models for Ollama
 VISION_MODELS = [
-    "llava",          # General vision
-    "bakllava",       # Better performance
-    "moondream",      # Small and fast
-    "llava-phi3",     # Good balance
+    "llava",  # General vision
+    "bakllava",  # Better performance
+    "moondream",  # Small and fast
+    "llava-phi3",  # Good balance
 ]
 
 
@@ -40,7 +44,7 @@ class OllamaVisionProvider(ComputerUseProvider):
     provider_name = "ollama"
     supports_vision = True
 
-    def __init__(self, base_url: str = None, model: str = "llava"):
+    def __init__(self, base_url: str | None = None, model: str = "llava"):
         self.base_url = (base_url or get_settings().OLLAMA_BASE_URL).rstrip("/")
         self.model = model
         self.settings = get_settings()
@@ -49,7 +53,7 @@ class OllamaVisionProvider(ComputerUseProvider):
         self,
         prompt: str,
         image_base64: str,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Llama a Ollama /api/generate con imagen."""
         try:
             import aiohttp
@@ -65,22 +69,21 @@ class OllamaVisionProvider(ComputerUseProvider):
                 },
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    f"{self.base_url}/api/generate",
-                    json=payload,
-                    timeout=aiohttp.ClientTimeout(total=120),
-                ) as resp:
-                    if resp.status != 200:
-                        text = await resp.text()
-                        logger.error(f"Ollama returned {resp.status}: {text}")
-                        return None
-                    data = await resp.json()
+            async with aiohttp.ClientSession() as session, session.post(
+                f"{self.base_url}/api/generate",
+                json=payload,
+                timeout=aiohttp.ClientTimeout(total=120),
+            ) as resp:
+                if resp.status != 200:
+                    text = await resp.text()
+                    logger.error(f"Ollama returned {resp.status}: {text}")
+                    return None
+                data = await resp.json()
 
             return data.get("response", "")
 
-        except Exception as e:
-            logger.error(f"Ollama call failed: {e}")
+        except Exception:
+            logger.exception("Ollama call failed")
             return None
 
     def _parse_action(self, text: str) -> ComputerUseAction:
@@ -121,7 +124,10 @@ class OllamaVisionProvider(ComputerUseProvider):
             if coord_match:
                 return ComputerUseAction(
                     action_type="click",
-                    params={"x": int(coord_match.group(1)), "y": int(coord_match.group(2))},
+                    params={
+                        "x": int(coord_match.group(1)),
+                        "y": int(coord_match.group(2)),
+                    },
                     reason=text[:200],
                 )
 
@@ -159,15 +165,19 @@ class OllamaVisionProvider(ComputerUseProvider):
         }
         action_type = type_map.get(action_type, action_type)
 
-        return ComputerUseAction(action_type=action_type, params=params, reason=reason or f"Ollama {action_type}")
+        return ComputerUseAction(
+            action_type=action_type,
+            params=params,
+            reason=reason or f"Ollama {action_type}",
+        )
 
     async def decide_action(
         self,
         screenshot_bytes: bytes,
         task: str,
-        history: List[Dict[str, Any]] = None,
-        user_message: Optional[str] = None,
-        page_info: Optional[Dict[str, str]] = None,
+        history: list[dict[str, Any]] | None = None,
+        user_message: str | None = None,
+        page_info: dict[str, str] | None = None,
     ) -> ComputerUseAction:
         if history is None:
             history = []
@@ -184,7 +194,9 @@ class OllamaVisionProvider(ComputerUseProvider):
 
         page_context = ""
         if page_info:
-            page_context = f"URL: {page_info.get('url', '')}\nTitle: {page_info.get('title', '')}"
+            page_context = (
+                f"URL: {page_info.get('url', '')}\nTitle: {page_info.get('title', '')}"
+            )
             if page_info.get("elements_text"):
                 page_context += "\n" + page_info["elements_text"]
             if page_info.get("skill_brief"):
@@ -219,7 +231,7 @@ For done: {{"action_type": "done", "params": {{"summary": "Task completed"}}, "r
 
         return self._parse_action(response)
 
-    async def generate_summary(self, actions_log: List[Dict[str, Any]]) -> str:
+    async def generate_summary(self, actions_log: list[dict[str, Any]]) -> str:
         actions_text = "\n".join(
             f"Step {a.get('step_number', i+1)}: {a.get('action_type')}"
             for i, a in enumerate(actions_log)

@@ -9,13 +9,13 @@ Requiere: pip install anthropic
 API: https://docs.anthropic.com/en/docs/build-with-claude/computer-use
 """
 
-import json
-from typing import List, Dict, Any, Optional
+from typing import Any
 
 from app.core.config import get_settings
 from app.core.logger import get_logger
-from app.domains.computer_use.schemas import ComputerUseAction
 from app.domains.computer_use.prompts import COMPUTER_USE_SUMMARY_PROMPT
+from app.domains.computer_use.schemas import ComputerUseAction
+
 from .base import ComputerUseProvider
 
 logger = get_logger(__name__)
@@ -51,9 +51,12 @@ class AnthropicNativeProvider(ComputerUseProvider):
         if self._client is None:
             try:
                 from anthropic import AsyncAnthropic
+
                 self._client = AsyncAnthropic(api_key=self.api_key)
             except ImportError:
-                logger.error("anthropic package not installed. Run: pip install anthropic")
+                logger.error(
+                    "anthropic package not installed. Run: pip install anthropic"
+                )
                 raise
         return self._client
 
@@ -61,10 +64,10 @@ class AnthropicNativeProvider(ComputerUseProvider):
         self,
         screenshot_base64: str,
         task: str,
-        history: List[Dict[str, Any]],
-        user_message: Optional[str],
-        page_info: Optional[Dict[str, str]],
-    ) -> List[Dict[str, Any]]:
+        history: list[dict[str, Any]],
+        user_message: str | None,
+        page_info: dict[str, str] | None,
+    ) -> list[dict[str, Any]]:
         """Construye mensajes en formato nativo de Anthropic."""
         # Build context
         history_text = ""
@@ -96,24 +99,28 @@ Previous actions:
         # If there's history, add it as previous turns
         # For simplicity, we keep a single-turn approach with history in context
         # The Anthropic API handles multi-turn with tool_use/tool_result
-        messages.append({
-            "role": "user",
-            "content": [
-                {"type": "text", "text": content},
-                {
-                    "type": "image",
-                    "source": {
-                        "type": "base64",
-                        "media_type": "image/jpeg",
-                        "data": screenshot_base64,
+        messages.append(
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": content},
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": "image/jpeg",
+                            "data": screenshot_base64,
+                        },
                     },
-                },
-            ],
-        })
+                ],
+            }
+        )
 
         return messages
 
-    def _parse_tool_use(self, content_blocks: List[Dict[str, Any]]) -> ComputerUseAction:
+    def _parse_tool_use(
+        self, content_blocks: list[dict[str, Any]]
+    ) -> ComputerUseAction:
         """Parsea tool_use blocks de Anthropic a ComputerUseAction."""
         for block in content_blocks:
             if block.get("type") == "tool_use" and block.get("name") == "computer":
@@ -124,26 +131,36 @@ Previous actions:
 
                 # Map Anthropic actions to internal format
                 if action == "screenshot":
-                    return ComputerUseAction(action_type="screenshot", params={}, reason=reason)
+                    return ComputerUseAction(
+                        action_type="screenshot", params={}, reason=reason
+                    )
 
                 elif action in ("left_click", "click"):
                     coord = input_data.get("coordinate", [0, 0])
                     params = {"x": coord[0], "y": coord[1]}
-                    return ComputerUseAction(action_type="click", params=params, reason=reason)
+                    return ComputerUseAction(
+                        action_type="click", params=params, reason=reason
+                    )
 
                 elif action == "right_click":
                     coord = input_data.get("coordinate", [0, 0])
                     params = {"x": coord[0], "y": coord[1]}
-                    return ComputerUseAction(action_type="right_click", params=params, reason=reason)
+                    return ComputerUseAction(
+                        action_type="right_click", params=params, reason=reason
+                    )
 
                 elif action == "double_click":
                     coord = input_data.get("coordinate", [0, 0])
                     params = {"x": coord[0], "y": coord[1]}
-                    return ComputerUseAction(action_type="double_click", params=params, reason=reason)
+                    return ComputerUseAction(
+                        action_type="double_click", params=params, reason=reason
+                    )
 
                 elif action == "type":
                     params = {"text": input_data.get("text", "")}
-                    return ComputerUseAction(action_type="type", params=params, reason=reason)
+                    return ComputerUseAction(
+                        action_type="type", params=params, reason=reason
+                    )
 
                 elif action == "key":
                     # Map common keys
@@ -156,27 +173,44 @@ Previous actions:
                     key = input_data.get("text", "")
                     mapped = key_map.get(key, key)
                     params = {"text": mapped}
-                    return ComputerUseAction(action_type="type", params=params, reason=f"Key press: {mapped}")
+                    return ComputerUseAction(
+                        action_type="type", params=params, reason=f"Key press: {mapped}"
+                    )
 
                 elif action == "scroll":
                     coord = input_data.get("coordinate", [0, 0])
                     scroll_amount = input_data.get("scroll_amount", 3)
                     direction = "down" if scroll_amount > 0 else "up"
-                    params = {"direction": direction, "amount": abs(scroll_amount) * 100}
-                    return ComputerUseAction(action_type="scroll", params=params, reason=reason)
+                    params = {
+                        "direction": direction,
+                        "amount": abs(scroll_amount) * 100,
+                    }
+                    return ComputerUseAction(
+                        action_type="scroll", params=params, reason=reason
+                    )
 
                 elif action == "wait":
                     params = {"seconds": input_data.get("duration", 2)}
-                    return ComputerUseAction(action_type="wait", params=params, reason=reason)
+                    return ComputerUseAction(
+                        action_type="wait", params=params, reason=reason
+                    )
 
                 elif action == "cursor_position":
                     # Just take another screenshot
-                    return ComputerUseAction(action_type="screenshot", params={}, reason="Checking cursor position")
+                    return ComputerUseAction(
+                        action_type="screenshot",
+                        params={},
+                        reason="Checking cursor position",
+                    )
 
             elif block.get("type") == "text":
                 # Claude responded with text - might be done or error
                 text = block.get("text", "")
-                if "done" in text.lower() or "complete" in text.lower() or "finished" in text.lower():
+                if (
+                    "done" in text.lower()
+                    or "complete" in text.lower()
+                    or "finished" in text.lower()
+                ):
                     return ComputerUseAction(
                         action_type="done",
                         params={"summary": text[:500]},
@@ -185,7 +219,9 @@ Previous actions:
 
         # No tool use found - treat as done if it looks like completion
         text_content = " ".join(
-            block.get("text", "") for block in content_blocks if block.get("type") == "text"
+            block.get("text", "")
+            for block in content_blocks
+            if block.get("type") == "text"
         )
         if text_content and len(text_content) > 10:
             return ComputerUseAction(
@@ -204,9 +240,9 @@ Previous actions:
         self,
         screenshot_bytes: bytes,
         task: str,
-        history: List[Dict[str, Any]] = None,
-        user_message: Optional[str] = None,
-        page_info: Optional[Dict[str, str]] = None,
+        history: list[dict[str, Any]] | None = None,
+        user_message: str | None = None,
+        page_info: dict[str, str] | None = None,
     ) -> ComputerUseAction:
         if history is None:
             history = []
@@ -221,7 +257,9 @@ Previous actions:
             )
 
         screenshot_base64 = self._encode_image(screenshot_bytes)
-        messages = self._build_messages(screenshot_base64, task, history, user_message, page_info)
+        messages = self._build_messages(
+            screenshot_base64, task, history, user_message, page_info
+        )
 
         try:
             response = await client.messages.create(
@@ -233,8 +271,8 @@ Previous actions:
 
             return self._parse_tool_use(response.content)
 
-        except Exception as e:
-            logger.error(f"Anthropic native API failed: {e}")
+        except Exception:
+            logger.exception("Anthropic native API failed")
             # Fallback: try standard Anthropic via LangChain
             return await self._fallback_to_langchain(
                 screenshot_bytes, task, history, user_message, page_info
@@ -244,9 +282,9 @@ Previous actions:
         self,
         screenshot_bytes: bytes,
         task: str,
-        history: List[Dict[str, Any]],
-        user_message: Optional[str],
-        page_info: Optional[Dict[str, str]],
+        history: list[dict[str, Any]],
+        user_message: str | None,
+        page_info: dict[str, str] | None,
     ) -> ComputerUseAction:
         """Fallback al provider OpenAI-style cuando la API nativa falla."""
         logger.warning("Falling back to LangChain Anthropic provider")
@@ -256,11 +294,12 @@ Previous actions:
         provider = OpenAIVisionProvider(api_key=self.api_key, model=self.model)
         # Override to use Anthropic model
         from langchain_anthropic import ChatAnthropic
-        from langchain_core.messages import SystemMessage, HumanMessage
+        from langchain_core.messages import HumanMessage, SystemMessage
 
         screenshot_base64 = self._encode_image(screenshot_bytes)
 
         from app.domains.computer_use.prompts import COMPUTER_USE_SYSTEM_PROMPT
+
         system_prompt = COMPUTER_USE_SYSTEM_PROMPT
         messages = [SystemMessage(content=system_prompt)]
 
@@ -308,14 +347,14 @@ Previous actions:
             response = await llm.ainvoke(messages)
             return provider._parse_action(response.content)
         except Exception as e2:
-            logger.error(f"Anthropic fallback also failed: {e2}")
+            logger.exception("Anthropic fallback also failed")
             return ComputerUseAction(
                 action_type="error",
                 params={"message": f"Anthropic failed: {str(e2)[:200]}"},
                 reason="Both native and fallback failed",
             )
 
-    async def generate_summary(self, actions_log: List[Dict[str, Any]]) -> str:
+    async def generate_summary(self, actions_log: list[dict[str, Any]]) -> str:
         actions_text = "\n".join(
             f"Step {a.get('step_number', i+1)}: {a.get('action_type')} — {a.get('reason', '')}"
             for i, a in enumerate(actions_log)
@@ -331,6 +370,6 @@ Previous actions:
             )
             text_blocks = [b for b in response.content if b.type == "text"]
             return text_blocks[0].text if text_blocks else "Sesión completada."
-        except Exception as e:
-            logger.error(f"Summary generation failed: {e}")
+        except Exception:
+            logger.exception("Summary generation failed")
             return "Sesión completada."

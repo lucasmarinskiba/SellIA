@@ -8,14 +8,14 @@ Conversación fluida vía WhatsApp/DM.
 
 import logging
 import re
-from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any, ClassVar
 
+from app.core.clock import utc_now
 from app.domains.computer_use.services.calendar_integration import (
-    CalendarIntegrationService,
     CalendarEvent,
-    CalendarProvider,
+    CalendarIntegrationService,
     TimeSlot,
 )
 
@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 class SchedulingIntent(str, Enum):
     """Intención detectada en mensaje."""
+
     SCHEDULE_REQUEST = "schedule_request"  # "Quiero agendar una cita"
     PROVIDE_DATE = "provide_date"  # "Martes"
     PROVIDE_TIME = "provide_time"  # "3pm"
@@ -36,23 +37,27 @@ class SchedulingState:
 
     def __init__(self, customer_id: str):
         self.customer_id = customer_id
-        self.requested_at = datetime.utcnow()
-        self.preferred_date: Optional[datetime] = None
-        self.preferred_time: Optional[str] = None
+        self.requested_at = utc_now()
+        self.preferred_date: datetime | None = None
+        self.preferred_time: str | None = None
         self.duration_minutes: int = 60
-        self.available_slots: List[TimeSlot] = []
-        self.proposed_slot: Optional[TimeSlot] = None
+        self.available_slots: list[TimeSlot] = []
+        self.proposed_slot: TimeSlot | None = None
         self.confirmed: bool = False
-        self.event_id: Optional[str] = None
+        self.event_id: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "customer_id": self.customer_id,
             "requested_at": self.requested_at.isoformat(),
-            "preferred_date": self.preferred_date.isoformat() if self.preferred_date else None,
+            "preferred_date": (
+                self.preferred_date.isoformat() if self.preferred_date else None
+            ),
             "preferred_time": self.preferred_time,
             "duration_minutes": self.duration_minutes,
-            "proposed_slot": self.proposed_slot.to_dict() if self.proposed_slot else None,
+            "proposed_slot": (
+                self.proposed_slot.to_dict() if self.proposed_slot else None
+            ),
             "confirmed": self.confirmed,
             "event_id": self.event_id,
         }
@@ -62,30 +67,39 @@ class SchedulingOrchestrator:
     """Orquestador de scheduling vía mensajes."""
 
     # Keywords para detectar intención
-    SCHEDULE_KEYWORDS = {
-        "es": ["agendar", "cita", "horario", "fecha", "hora", "reunión", "llamada", "reservar"],
+    SCHEDULE_KEYWORDS: ClassVar[dict] = {
+        "es": [
+            "agendar",
+            "cita",
+            "horario",
+            "fecha",
+            "hora",
+            "reunión",
+            "llamada",
+            "reservar",
+        ],
         "en": ["schedule", "appointment", "time", "date", "meeting", "call", "book"],
     }
 
-    CONFIRM_KEYWORDS = {
+    CONFIRM_KEYWORDS: ClassVar[dict] = {
         "es": ["sí", "si", "perfecto", "ok", "dale", "excelente", "genial", "confirmo"],
         "en": ["yes", "ok", "perfect", "great", "confirm", "sounds good"],
     }
 
-    CANCEL_KEYWORDS = {
+    CANCEL_KEYWORDS: ClassVar[dict] = {
         "es": ["cancelar", "no puedo", "no", "después", "otro día"],
         "en": ["cancel", "no", "can't", "later", "another day"],
     }
 
     def __init__(self, calendar_service: CalendarIntegrationService):
         self.calendar_service = calendar_service
-        self.states: Dict[str, SchedulingState] = {}  # customer_id → state
+        self.states: dict[str, SchedulingState] = {}  # customer_id → state
 
     async def process_message(
         self,
         customer_id: str,
         message: str,
-    ) -> Tuple[SchedulingIntent, str, Optional[SchedulingState]]:
+    ) -> tuple[SchedulingIntent, str, SchedulingState | None]:
         """
         Procesa mensaje en contexto de scheduling.
 
@@ -175,29 +189,57 @@ class SchedulingOrchestrator:
         """Detecta intención en mensaje."""
         msg_lower = message.lower()
 
-        if any(kw in msg_lower for kw in self.SCHEDULE_KEYWORDS.get("es", []) + self.SCHEDULE_KEYWORDS.get("en", [])):
+        if any(
+            kw in msg_lower
+            for kw in self.SCHEDULE_KEYWORDS.get("es", [])
+            + self.SCHEDULE_KEYWORDS.get("en", [])
+        ):
             return SchedulingIntent.SCHEDULE_REQUEST
 
-        if any(kw in msg_lower for kw in self.CONFIRM_KEYWORDS.get("es", []) + self.CONFIRM_KEYWORDS.get("en", [])):
+        if any(
+            kw in msg_lower
+            for kw in self.CONFIRM_KEYWORDS.get("es", [])
+            + self.CONFIRM_KEYWORDS.get("en", [])
+        ):
             return SchedulingIntent.CONFIRM
 
-        if any(kw in msg_lower for kw in self.CANCEL_KEYWORDS.get("es", []) + self.CANCEL_KEYWORDS.get("en", [])):
+        if any(
+            kw in msg_lower
+            for kw in self.CANCEL_KEYWORDS.get("es", [])
+            + self.CANCEL_KEYWORDS.get("en", [])
+        ):
             return SchedulingIntent.CANCEL
 
         # Heurística: si es solo palabra corta = probablemente hora
-        if re.match(r"^\d{1,2}(:?[0-5][0-9])?\s*(am|pm|a\.m\.|p\.m\.)?$", msg_lower.strip()):
+        if re.match(
+            r"^\d{1,2}(:?[0-5][0-9])?\s*(am|pm|a\.m\.|p\.m\.)?$", msg_lower.strip()
+        ):
             return SchedulingIntent.PROVIDE_TIME
 
         # Palabras de día/fecha
-        if any(day in msg_lower for day in ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo", "monday", "tuesday", "wednesday"]):
+        if any(
+            day in msg_lower
+            for day in [
+                "lunes",
+                "martes",
+                "miércoles",
+                "jueves",
+                "viernes",
+                "sábado",
+                "domingo",
+                "monday",
+                "tuesday",
+                "wednesday",
+            ]
+        ):
             return SchedulingIntent.PROVIDE_DATE
 
         return SchedulingIntent.SCHEDULE_REQUEST
 
-    def _parse_date(self, message: str) -> Optional[datetime]:
+    def _parse_date(self, message: str) -> datetime | None:
         """Parsea fecha del mensaje."""
         msg_lower = message.lower()
-        today = datetime.utcnow().date()
+        today = utc_now().date()
 
         days_map = {
             "lunes": 0,
@@ -235,10 +277,12 @@ class SchedulingOrchestrator:
 
         return None
 
-    def _parse_time(self, message: str) -> Optional[str]:
+    def _parse_time(self, message: str) -> str | None:
         """Extrae hora del mensaje."""
         # Match: 10am, 3:30pm, 14:00, etc
-        match = re.search(r"(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)?", message.lower())
+        match = re.search(
+            r"(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)?", message.lower()
+        )
         if match:
             hour = match.group(1)
             minute = match.group(2) or "00"
@@ -248,7 +292,9 @@ class SchedulingOrchestrator:
 
         return None
 
-    def _find_matching_slot(self, slots: List[TimeSlot], time_str: str) -> Optional[TimeSlot]:
+    def _find_matching_slot(
+        self, slots: list[TimeSlot], time_str: str
+    ) -> TimeSlot | None:
         """Encuentra slot que match con hora proporcionada."""
         # Parse time_str to hour:minute format
         time_parts = re.match(r"(\d{1,2}):(\d{2})", time_str)
@@ -266,7 +312,7 @@ class SchedulingOrchestrator:
         # Si no hay match exacto, retornar primer slot disponible
         return slots[0] if slots else None
 
-    def _format_slot_options(self, slots: List[TimeSlot]) -> str:
+    def _format_slot_options(self, slots: list[TimeSlot]) -> str:
         """Formatea opciones de slot para mostrar."""
         options = []
         for i, slot in enumerate(slots[:5], 1):  # Max 5 opciones
@@ -295,14 +341,14 @@ class SchedulingOrchestrator:
 
         return f"{day_name} {dt.day} de {dt.strftime('%B')} a las {time_str}"
 
-    async def _create_event(self, state: SchedulingState) -> Tuple[bool, Optional[str]]:
+    async def _create_event(self, state: SchedulingState) -> tuple[bool, str | None]:
         """Crea evento en calendario."""
         if not state.proposed_slot:
             return False, None
 
         event = CalendarEvent(
             title="Cita de ventas",
-            description=f"Cita agendada vía mensajes",
+            description="Cita agendada vía mensajes",
             start=state.proposed_slot.start,
             end=state.proposed_slot.end,
             attendee_name=state.customer_id,

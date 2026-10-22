@@ -3,22 +3,28 @@ Marketplace Service
 """
 
 import uuid
-from typing import Optional, List
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func, and_
 
-from app.domains.marketplace.models import MarketplaceItem, MarketplacePurchase, MarketplaceCategory
+from sqlalchemy import and_, desc, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.domains.marketplace.models import (
+    MarketplaceCategory,
+    MarketplaceItem,
+    MarketplacePurchase,
+)
 
 
 async def list_items(
     db: AsyncSession,
-    category: Optional[MarketplaceCategory] = None,
-    search: Optional[str] = None,
+    category: MarketplaceCategory | None = None,
+    search: str | None = None,
     featured_only: bool = False,
     limit: int = 50,
     offset: int = 0,
-) -> List[MarketplaceItem]:
-    query = select(MarketplaceItem).where(MarketplaceItem.is_active == True, MarketplaceItem.is_approved == True)
+) -> list[MarketplaceItem]:
+    query = select(MarketplaceItem).where(
+        MarketplaceItem.is_active == True, MarketplaceItem.is_approved == True
+    )
     if category:
         query = query.where(MarketplaceItem.category == category)
     if featured_only:
@@ -30,18 +36,24 @@ async def list_items(
                 MarketplaceItem.description.ilike(f"%{search}%"),
             )
         )
-    query = query.order_by(desc(MarketplaceItem.is_featured), desc(MarketplaceItem.created_at))
+    query = query.order_by(
+        desc(MarketplaceItem.is_featured), desc(MarketplaceItem.created_at)
+    )
     query = query.limit(limit).offset(offset)
     result = await db.execute(query)
     return result.scalars().all()
 
 
-async def get_item(db: AsyncSession, item_id: uuid.UUID) -> Optional[MarketplaceItem]:
-    result = await db.execute(select(MarketplaceItem).where(MarketplaceItem.id == item_id))
+async def get_item(db: AsyncSession, item_id: uuid.UUID) -> MarketplaceItem | None:
+    result = await db.execute(
+        select(MarketplaceItem).where(MarketplaceItem.id == item_id)
+    )
     return result.scalar_one_or_none()
 
 
-async def create_item(db: AsyncSession, vendor_id: uuid.UUID, data: dict) -> MarketplaceItem:
+async def create_item(
+    db: AsyncSession, vendor_id: uuid.UUID, data: dict
+) -> MarketplaceItem:
     item = MarketplaceItem(vendor_id=vendor_id, **data)
     db.add(item)
     await db.commit()
@@ -49,7 +61,9 @@ async def create_item(db: AsyncSession, vendor_id: uuid.UUID, data: dict) -> Mar
     return item
 
 
-async def record_purchase(db: AsyncSession, buyer_id: uuid.UUID, item_id: uuid.UUID, price_paid: float) -> MarketplacePurchase:
+async def record_purchase(
+    db: AsyncSession, buyer_id: uuid.UUID, item_id: uuid.UUID, price_paid: float
+) -> MarketplacePurchase:
     purchase = MarketplacePurchase(
         buyer_id=buyer_id,
         item_id=item_id,
@@ -69,7 +83,9 @@ async def record_purchase(db: AsyncSession, buyer_id: uuid.UUID, item_id: uuid.U
     return purchase
 
 
-async def get_user_purchases(db: AsyncSession, user_id: uuid.UUID) -> List[MarketplacePurchase]:
+async def get_user_purchases(
+    db: AsyncSession, user_id: uuid.UUID
+) -> list[MarketplacePurchase]:
     result = await db.execute(
         select(MarketplacePurchase)
         .where(MarketplacePurchase.buyer_id == user_id)

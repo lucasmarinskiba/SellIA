@@ -1,18 +1,25 @@
 """Location inventory API endpoints."""
 
+import logging
+from typing import Annotated
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
-from uuid import UUID
-from pydantic import BaseModel
-from typing import Optional, List
 
-from app.core.database import get_db
 from app.core.business_access import get_owned_business, get_owned_location
+from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.domains.inventory.inventory_models import LowStockAlert
+from app.domains.inventory.inventory_service import (
+    FulfillmentRoutingService,
+    LocationInventoryService,
+)
 from app.domains.users.models import User
-from app.domains.inventory.inventory_service import LocationInventoryService, FulfillmentRoutingService
-from app.domains.inventory.inventory_models import LocationInventory, LowStockAlert
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="", tags=["inventory"])
 
@@ -32,8 +39,8 @@ class StockUpdateRequest(BaseModel):
     product_id: str
     quantity_change: int
     movement_type: str  # stock_in, stock_out, demo_checked, reorder, adjustment
-    reason: Optional[str] = None
-    staff_id: Optional[UUID] = None
+    reason: str | None = None
+    staff_id: UUID | None = None
 
 
 class DemoCheckRequest(BaseModel):
@@ -59,14 +66,16 @@ class OrderReservationRequest(BaseModel):
 @router.get("/locations/{location_id}/inventory")
 async def get_location_inventory(
     location_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Get all inventory at location."""
     await get_owned_location(db, location_id, current_user)
     try:
         inventory_list = await db.run_sync(
-            lambda sync_db: LocationInventoryService.get_location_inventory(location_id, sync_db)
+            lambda sync_db: LocationInventoryService.get_location_inventory(
+                location_id, sync_db
+            )
         )
 
         items = [
@@ -82,7 +91,9 @@ async def get_location_inventory(
                 "is_demo_unit": item.is_demo_unit,
                 "fulfillment_method": item.fulfillment_method.value,
                 "unit_price": float(item.unit_price),
-                "last_stock_check": item.last_stock_check.isoformat() if item.last_stock_check else None,
+                "last_stock_check": (
+                    item.last_stock_check.isoformat() if item.last_stock_check else None
+                ),
             }
             for item in inventory_list
         ]
@@ -90,9 +101,10 @@ async def get_location_inventory(
         return {
             "location_id": str(location_id),
             "total_items": len(items),
-            "inventory": items
+            "inventory": items,
         }
     except Exception as e:
+        logger.exception("get_location_inventory: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -100,18 +112,22 @@ async def get_location_inventory(
 async def get_product_stock(
     location_id: UUID,
     product_id: str,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Get stock level for specific product."""
     await get_owned_location(db, location_id, current_user)
     try:
         inventory = await db.run_sync(
-            lambda sync_db: LocationInventoryService.get_product_at_location(location_id, product_id, sync_db)
+            lambda sync_db: LocationInventoryService.get_product_at_location(
+                location_id, product_id, sync_db
+            )
         )
 
         if not inventory:
-            raise HTTPException(status_code=404, detail=f"Product {product_id} not found at location")
+            raise HTTPException(
+                status_code=404, detail=f"Product {product_id} not found at location"
+            )
 
         return {
             "location_id": str(location_id),
@@ -129,14 +145,15 @@ async def get_product_stock(
     except HTTPException:
         raise
     except Exception as e:
+        logger.exception("get_product_stock: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/inventory/update-stock")
 async def update_stock(
     request: StockUpdateRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Update stock level (restock, manual adjustment, demo usage)."""
     await get_owned_location(db, request.location_id, current_user)
@@ -149,11 +166,12 @@ async def update_stock(
                 movement_type=request.movement_type,
                 reason=request.reason,
                 staff_id=request.staff_id,
-                db=sync_db
+                db=sync_db,
             )
         )
         return result
     except Exception as e:
+        logger.exception("update_stock: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -161,44 +179,44 @@ async def update_stock(
 async def check_demo_stock(
     location_id: UUID,
     request: DemoCheckRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Check if product available for demo during visitor checkin."""
     await get_owned_location(db, location_id, current_user)
     if request.location_id != location_id:
-        raise HTTPException(status_code=400, detail="location_id del path y del body no coinciden")
+        raise HTTPException(
+            status_code=400, detail="location_id del path y del body no coinciden"
+        )
     try:
         result = await db.run_sync(
             lambda sync_db: LocationInventoryService.check_stock_for_demo(
                 location_id=request.location_id,
                 product_id=request.product_id,
                 checkin_id=request.checkin_id,
-                db=sync_db
+                db=sync_db,
             )
         )
         return result
     except Exception as e:
+        logger.exception("check_demo_stock: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/locations/{location_id}/stock-movements")
 async def get_stock_history(
     location_id: UUID,
-    product_id: Optional[str] = Query(None),
-    days: int = Query(30, ge=1, le=365),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    product_id: Annotated[str | None, Query()] = None,
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ) -> dict:
     """Get stock movement audit trail."""
     await get_owned_location(db, location_id, current_user)
     try:
         movements = await db.run_sync(
             lambda sync_db: LocationInventoryService.get_stock_movement_history(
-                location_id=location_id,
-                product_id=product_id,
-                days=days,
-                db=sync_db
+                location_id=location_id, product_id=product_id, days=days, db=sync_db
             )
         )
 
@@ -221,24 +239,28 @@ async def get_stock_history(
             "product_id": product_id,
             "period_days": days,
             "total_movements": len(history),
-            "movements": history
+            "movements": history,
         }
     except Exception as e:
+        logger.exception("get_stock_history: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/locations/{location_id}/low-stock-alerts")
 async def get_low_stock_alerts(
     location_id: UUID,
-    acknowledged: Optional[bool] = Query(None),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    acknowledged: Annotated[bool | None, Query()] = None,
 ) -> dict:
     """Get low-stock alerts for location."""
     await get_owned_location(db, location_id, current_user)
     try:
+
         def _load(db: Session) -> list:
-            query = db.query(LowStockAlert).filter(LowStockAlert.location_id == location_id)
+            query = db.query(LowStockAlert).filter(
+                LowStockAlert.location_id == location_id
+            )
 
             if acknowledged is not None:
                 query = query.filter(LowStockAlert.acknowledged == acknowledged)
@@ -265,17 +287,18 @@ async def get_low_stock_alerts(
         return {
             "location_id": str(location_id),
             "total_alerts": len(alert_list),
-            "alerts": alert_list
+            "alerts": alert_list,
         }
     except Exception as e:
+        logger.exception("get_low_stock_alerts: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/inventory/acknowledge-alert")
 async def acknowledge_alert(
     alert_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Mark low-stock alert as acknowledged."""
     alert = await db.get(LowStockAlert, alert_id)
@@ -285,21 +308,20 @@ async def acknowledge_alert(
     try:
         result = await db.run_sync(
             lambda sync_db: LocationInventoryService.acknowledge_low_stock_alert(
-                alert_id=alert_id,
-                staff_id=current_user.id,
-                db=sync_db
+                alert_id=alert_id, staff_id=current_user.id, db=sync_db
             )
         )
         return result
     except Exception as e:
+        logger.exception("acknowledge_alert: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/fulfillment/find-location")
 async def find_fulfillment_location(
     request: FulfillmentRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Find best location to fulfill online order."""
     await get_owned_business(db, request.business_id, current_user)
@@ -307,7 +329,11 @@ async def find_fulfillment_location(
         from app.domains.businesses.location_models import Location
 
         def _find(db: Session) -> dict:
-            locations = db.query(Location).filter(Location.business_id == request.business_id).all()
+            locations = (
+                db.query(Location)
+                .filter(Location.business_id == request.business_id)
+                .all()
+            )
 
             return FulfillmentRoutingService.find_best_fulfillment_location(
                 business_id=request.business_id,
@@ -315,21 +341,22 @@ async def find_fulfillment_location(
                 customer_lat=request.customer_lat,
                 customer_lng=request.customer_lng,
                 locations=locations,
-                db=db
+                db=db,
             )
 
         result = await db.run_sync(_find)
 
         return result
     except Exception as e:
+        logger.exception("find_fulfillment_location: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/orders/reserve-inventory")
 async def reserve_inventory(
     request: OrderReservationRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Reserve inventory for online order."""
     await get_owned_location(db, request.location_id, current_user)
@@ -340,11 +367,12 @@ async def reserve_inventory(
                 product_id=request.product_id,
                 quantity=request.quantity,
                 order_id=request.order_id,
-                db=sync_db
+                db=sync_db,
             )
         )
         return result
     except Exception as e:
+        logger.exception("reserve_inventory: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -353,8 +381,8 @@ async def mark_order_shipped(
     order_id: str,
     location_id: UUID,
     product_id: str,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Mark order as shipped from location."""
     await get_owned_location(db, location_id, current_user)
@@ -364,9 +392,10 @@ async def mark_order_shipped(
                 location_id=location_id,
                 product_id=product_id,
                 order_id=order_id,
-                db=sync_db
+                db=sync_db,
             )
         )
         return result
     except Exception as e:
+        logger.exception("mark_order_shipped: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

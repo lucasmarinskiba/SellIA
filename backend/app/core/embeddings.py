@@ -9,7 +9,6 @@ Embeddings are cached in Redis with TTL 24h.
 
 import hashlib
 import json
-from typing import Optional, List
 
 import httpx
 import redis.asyncio as redis
@@ -29,8 +28,8 @@ class EmbeddingService:
     """Generates text embeddings with Ollama primary + OpenAI fallback."""
 
     def __init__(self):
-        self._redis: Optional[redis.Redis] = None
-        self._http: Optional[httpx.AsyncClient] = None
+        self._redis: redis.Redis | None = None
+        self._http: httpx.AsyncClient | None = None
 
     async def _get_redis(self) -> redis.Redis:
         if self._redis is None:
@@ -49,7 +48,7 @@ class EmbeddingService:
         h = hashlib.sha256(text.encode("utf-8")).hexdigest()[:32]
         return f"emb:{h}"
 
-    async def _get_cached(self, text: str) -> Optional[List[float]]:
+    async def _get_cached(self, text: str) -> list[float] | None:
         r = await self._get_redis()
         key = self._cache_key(text)
         cached = await r.get(key)
@@ -60,12 +59,12 @@ class EmbeddingService:
                 return None
         return None
 
-    async def _set_cached(self, text: str, embedding: List[float]) -> None:
+    async def _set_cached(self, text: str, embedding: list[float]) -> None:
         r = await self._get_redis()
         key = self._cache_key(text)
         await r.setex(key, REDIS_TTL_SECONDS, json.dumps(embedding))
 
-    async def _embed_ollama(self, text: str) -> Optional[List[float]]:
+    async def _embed_ollama(self, text: str) -> list[float] | None:
         base_url = settings.OLLAMA_BASE_URL.rstrip("/")
         http = await self._get_http()
         try:
@@ -83,10 +82,10 @@ class EmbeddingService:
             )
             return None
         except Exception as e:
-            logger.warning(f"Ollama embedding failed: {e}")
+            logger.warning(f"Ollama embedding failed: {e}", exc_info=True)
             return None
 
-    async def _embed_openai(self, text: str) -> Optional[List[float]]:
+    async def _embed_openai(self, text: str) -> list[float] | None:
         api_key = settings.OPENAI_API_KEY
         if not api_key:
             logger.warning("OpenAI API key not configured for embeddings")
@@ -109,16 +108,15 @@ class EmbeddingService:
                 # by averaging adjacent pairs so it lives in the same space
                 # as the primary nomic-embed-text cache.
                 projected = [
-                    (embedding[i] + embedding[i + 1]) / 2.0
-                    for i in range(0, 1536, 2)
+                    (embedding[i] + embedding[i + 1]) / 2.0 for i in range(0, 1536, 2)
                 ]
                 return projected
             return embedding
         except Exception as e:
-            logger.warning(f"OpenAI embedding failed: {e}")
+            logger.warning(f"OpenAI embedding failed: {e}", exc_info=True)
             return None
 
-    async def embed_text(self, text: str) -> List[float]:
+    async def embed_text(self, text: str) -> list[float]:
         """Generate a 768-dim embedding for a single text."""
         cached = await self._get_cached(text)
         if cached is not None:
@@ -136,9 +134,9 @@ class EmbeddingService:
 
         raise RuntimeError("All embedding providers failed (Ollama and OpenAI)")
 
-    async def embed_batch(self, texts: List[str]) -> List[List[float]]:
+    async def embed_batch(self, texts: list[str]) -> list[list[float]]:
         """Generate embeddings for a batch of texts."""
-        results: List[List[float]] = []
+        results: list[list[float]] = []
         for text in texts:
             results.append(await self.embed_text(text))
         return results

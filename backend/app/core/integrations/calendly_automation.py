@@ -17,18 +17,18 @@ Rate Limit: 60 requests/minute
 """
 
 import logging
-import httpx
-import uuid
-from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 from enum import Enum
-import json
+from typing import Any
+
+import httpx
 
 logger = logging.getLogger(__name__)
 
 
 class CalendlyEventStatus(Enum):
     """Calendly event statuses."""
+
     SCHEDULED = "scheduled"
     CANCELLED = "cancelled"
     COMPLETED = "completed"
@@ -43,7 +43,7 @@ class CalendlyAutomation:
     def __init__(
         self,
         access_token: str,
-        webhook_uuid: Optional[str] = None,
+        webhook_uuid: str | None = None,
     ):
         """
         Initialize Calendly automation.
@@ -62,8 +62,8 @@ class CalendlyAutomation:
         self,
         webhook_url: str,
         user_uri: str,
-        scope: List[str] = None,
-    ) -> Optional[str]:
+        scope: list[str] | None = None,
+    ) -> str | None:
         """
         Register webhook subscription for user events.
 
@@ -107,7 +107,7 @@ class CalendlyAutomation:
             logger.error(f"Error registering webhook: {e}")
             return None
 
-    async def handle_webhook(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def handle_webhook(self, payload: dict[str, Any]) -> dict[str, Any]:
         """
         Process incoming Calendly webhook.
 
@@ -144,10 +144,10 @@ class CalendlyAutomation:
             return {"status": "success"}
 
         except Exception as e:
-            logger.error(f"Webhook processing error: {e}")
+            logger.exception("Webhook processing error")
             return {"status": "error", "message": str(e)}
 
-    async def _handle_event_created(self, event_data: Dict[str, Any]) -> None:
+    async def _handle_event_created(self, event_data: dict[str, Any]) -> None:
         """Handle new event scheduled."""
         invitee_email = event_data.get("email")
         event_time = event_data.get("start_time")
@@ -160,7 +160,7 @@ class CalendlyAutomation:
         # Schedule reminder email
         # TODO: Implement reminder scheduler
 
-    async def _handle_event_cancelled(self, event_data: Dict[str, Any]) -> None:
+    async def _handle_event_cancelled(self, event_data: dict[str, Any]) -> None:
         """Handle event cancellation."""
         invitee_email = event_data.get("email")
         reason = event_data.get("cancellation_reason")
@@ -172,7 +172,7 @@ class CalendlyAutomation:
 
     # ========== EVENT MANAGEMENT ==========
 
-    async def get_event_details(self, event_uuid: str) -> Optional[Dict[str, Any]]:
+    async def get_event_details(self, event_uuid: str) -> dict[str, Any] | None:
         """
         Fetch scheduled event details.
 
@@ -200,7 +200,7 @@ class CalendlyAutomation:
         user_uri: str,
         status: str = "scheduled",
         limit: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         List user's scheduled events.
 
@@ -235,7 +235,7 @@ class CalendlyAutomation:
     async def cancel_event(
         self,
         event_uuid: str,
-        reason: Optional[str] = None,
+        reason: str | None = None,
     ) -> bool:
         """
         Cancel a scheduled event.
@@ -297,11 +297,11 @@ class CalendlyAutomation:
             # Create Google Calendar event
             # (Implementation depends on google-auth-oauthlib library)
 
-            logger.info(f"Event synced to Google Calendar")
+            logger.info("Event synced to Google Calendar")
             return True
 
-        except Exception as e:
-            logger.error(f"Error syncing to Google Calendar: {e}")
+        except Exception:
+            logger.exception("Error syncing to Google Calendar")
             return False
 
     # ========== REMINDER AUTOMATION ==========
@@ -341,7 +341,7 @@ class CalendlyAutomation:
                 return False
 
             # Calculate reminder time
-            event_datetime = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
+            event_datetime = datetime.fromisoformat(start_time)
             reminder_time = event_datetime - timedelta(minutes=reminder_minutes_before)
 
             # Schedule task (implementation depends on task queue - Celery, APScheduler, etc)
@@ -349,13 +349,13 @@ class CalendlyAutomation:
 
             return True
 
-        except Exception as e:
-            logger.error(f"Error scheduling reminder: {e}")
+        except Exception:
+            logger.exception("Error scheduling reminder")
             return False
 
     # ========== ATTENDEE MANAGEMENT ==========
 
-    async def get_invitee_details(self, invitee_uuid: str) -> Optional[Dict[str, Any]]:
+    async def get_invitee_details(self, invitee_uuid: str) -> dict[str, Any] | None:
         """
         Fetch invitee details.
 
@@ -403,8 +403,8 @@ class CalendlyAutomation:
 
             return True
 
-        except Exception as e:
-            logger.error(f"Error sending confirmation: {e}")
+        except Exception:
+            logger.exception("Error sending confirmation")
             return False
 
     # ========== ANALYTICS & REPORTING ==========
@@ -413,7 +413,7 @@ class CalendlyAutomation:
         self,
         user_uri: str,
         days: int = 30,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get event statistics for user.
 
@@ -443,13 +443,13 @@ class CalendlyAutomation:
                 "period_days": days,
             }
 
-        except Exception as e:
-            logger.error(f"Error getting statistics: {e}")
+        except Exception:
+            logger.exception("Error getting statistics")
             return {}
 
     # ========== WEBHOOK MANAGEMENT ==========
 
-    async def list_webhooks(self, user_uri: str) -> List[Dict[str, Any]]:
+    async def list_webhooks(self, user_uri: str) -> list[dict[str, Any]]:
         """List all webhooks for user."""
         try:
             url = f"{self.CALENDLY_API}/webhook_subscriptions"

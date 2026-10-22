@@ -1,8 +1,7 @@
 """Bootstrap Growth — Start from 0 ventas scenario."""
 
 import logging
-from typing import Dict, List, Any
-from datetime import datetime, timedelta
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -11,23 +10,43 @@ class BootstrapGrowth:
     """Strategies for starting from zero."""
 
     # MVP loops
-    MVP_LOOPS = {
+    MVP_LOOPS: ClassVar[dict] = {
         "ecommerce": [
             {"week": 1, "action": "List 10 products", "target": "Initial feedstock"},
-            {"week": 2, "action": "Get first 5 sales", "target": "Proof of product-market fit"},
-            {"week": 3, "action": "Repeat winning product", "target": "Create first trend"},
+            {
+                "week": 2,
+                "action": "Get first 5 sales",
+                "target": "Proof of product-market fit",
+            },
+            {
+                "week": 3,
+                "action": "Repeat winning product",
+                "target": "Create first trend",
+            },
             {"week": 4, "action": "Add bundle offers", "target": "Increase AOV"},
         ],
         "service": [
-            {"week": 1, "action": "Package service offering", "target": "Clear value prop"},
-            {"week": 2, "action": "Get 3 paying customers", "target": "Initial traction"},
-            {"week": 3, "action": "Refine based on feedback", "target": "Optimize delivery"},
+            {
+                "week": 1,
+                "action": "Package service offering",
+                "target": "Clear value prop",
+            },
+            {
+                "week": 2,
+                "action": "Get 3 paying customers",
+                "target": "Initial traction",
+            },
+            {
+                "week": 3,
+                "action": "Refine based on feedback",
+                "target": "Optimize delivery",
+            },
             {"week": 4, "action": "Create case study", "target": "Social proof"},
         ],
     }
 
     # Early customer acquisition
-    EARLY_ACQUISITION_TACTICS = [
+    EARLY_ACQUISITION_TACTICS: ClassVar[list] = [
         {"channel": "personal_network", "effort": "1 hour", "expected_customers": 2},
         {"channel": "direct_email", "effort": "2 hours", "expected_customers": 1},
         {"channel": "community", "effort": "3 hours", "expected_customers": 3},
@@ -38,7 +57,7 @@ class BootstrapGrowth:
     def generate_bootstrap_plan(
         product_category: str,
         target_customers_month1: int = 50,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate 30-day bootstrap plan from 0 customers.
 
@@ -53,7 +72,9 @@ class BootstrapGrowth:
             }
         """
 
-        mvp_loop = BootstrapGrowth.MVP_LOOPS.get(product_category, BootstrapGrowth.MVP_LOOPS["ecommerce"])
+        mvp_loop = BootstrapGrowth.MVP_LOOPS.get(
+            product_category, BootstrapGrowth.MVP_LOOPS["ecommerce"]
+        )
 
         return {
             "product_category": product_category,
@@ -88,8 +109,8 @@ class BootstrapGrowth:
 
     @staticmethod
     def identify_early_adopters(
-        network_data: Dict[str, Any],
-    ) -> List[Dict[str, Any]]:
+        network_data: dict[str, Any],
+    ) -> list[dict[str, Any]]:
         """Identify who should be first customers."""
 
         characteristics = [
@@ -105,7 +126,7 @@ class BootstrapGrowth:
     @staticmethod
     def create_momentum_loops(
         current_users: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create repeatable acquisition loops."""
 
         return {
@@ -118,8 +139,8 @@ class BootstrapGrowth:
 
     @staticmethod
     def measure_early_success(
-        metrics: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        metrics: dict[str, Any],
+    ) -> dict[str, Any]:
         """Measure if bootstrap phase succeeded."""
 
         return {

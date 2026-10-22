@@ -8,15 +8,15 @@ Specialties:
 """
 
 import logging
-from typing import Dict, List, Any, Optional
 from enum import Enum
-from datetime import datetime
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
 
 class DisruptionType(str, Enum):
     """Types of disruption."""
+
     PERFORMANCE = "performance"  # Better at core job
     CONVENIENCE = "convenience"  # Easier/more accessible
     COST = "cost"  # Cheaper
@@ -27,7 +27,7 @@ class DisruptionType(str, Enum):
 class InnovationAgent:
     """Expert in innovation and product strategy."""
 
-    JOBS_FRAMEWORK = {
+    JOBS_FRAMEWORK: ClassVar[dict] = {
         "core_job": {
             "description": "Functional job customer is trying to accomplish",
             "examples": [
@@ -56,7 +56,7 @@ class InnovationAgent:
         },
     }
 
-    BLUE_OCEAN_STRATEGY = {
+    BLUE_OCEAN_STRATEGY: ClassVar[dict] = {
         "concept": "Create uncontested market space instead of competing in existing market",
         "framework": {
             "eliminate": {
@@ -83,7 +83,7 @@ class InnovationAgent:
         ],
     }
 
-    DESIGN_THINKING_PROCESS = {
+    DESIGN_THINKING_PROCESS: ClassVar[dict] = {
         "empathize": {
             "goal": "Understand user needs deeply",
             "methods": [
@@ -134,7 +134,7 @@ class InnovationAgent:
         },
     }
 
-    DISRUPTION_PATTERNS = {
+    DISRUPTION_PATTERNS: ClassVar[dict] = {
         DisruptionType.PERFORMANCE: {
             "description": "Dramatically improve performance on main job",
             "examples": [
@@ -202,7 +202,7 @@ class InnovationAgent:
         },
     }
 
-    TREND_ANALYSIS = {
+    TREND_ANALYSIS: ClassVar[dict] = {
         "macro_trends": [
             "Demographic shifts (aging population, urbanization)",
             "Economic trends (recession, income growth)",
@@ -226,9 +226,8 @@ class InnovationAgent:
 
     @staticmethod
     def analyze_jobs_to_be_done(
-        customer_segment: str,
-        situation: str
-    ) -> Dict[str, Any]:
+        customer_segment: str, situation: str
+    ) -> dict[str, Any]:
         """Analyze Jobs to Be Done for customer segment."""
         return {
             "customer_segment": customer_segment,
@@ -249,9 +248,8 @@ class InnovationAgent:
 
     @staticmethod
     def design_blue_ocean(
-        industry: str,
-        current_competition: List[str]
-    ) -> Dict[str, Any]:
+        industry: str, current_competition: list[str]
+    ) -> dict[str, Any]:
         """Design Blue Ocean strategy."""
         return {
             "industry": industry,
@@ -284,10 +282,10 @@ class InnovationAgent:
 
     @staticmethod
     def identify_market_opportunities(
-        trends: List[str],
-        customer_segments: List[str],
-        technology_landscape: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        trends: list[str],
+        customer_segments: list[str],
+        technology_landscape: dict[str, Any],
+    ) -> dict[str, Any]:
         """Identify market opportunities."""
         return {
             "macro_trends": trends,
@@ -308,7 +306,7 @@ class InnovationAgent:
         }
 
     @staticmethod
-    def innovation_workshop_guide() -> Dict[str, Any]:
+    def innovation_workshop_guide() -> dict[str, Any]:
         """Guide for running innovation workshop."""
         return {
             "duration": "Full day",
@@ -364,10 +362,8 @@ class InnovationAgent:
 
     @staticmethod
     def disruption_strategy(
-        current_product: str,
-        target_disruption_type: DisruptionType,
-        market: str
-    ) -> Dict[str, Any]:
+        current_product: str, target_disruption_type: DisruptionType, market: str
+    ) -> dict[str, Any]:
         """Develop disruption strategy."""
         disruption = InnovationAgent.DISRUPTION_PATTERNS.get(target_disruption_type, {})
 
@@ -387,7 +383,7 @@ class InnovationAgent:
         }
 
     @staticmethod
-    def ideation_techniques() -> Dict[str, List[str]]:
+    def ideation_techniques() -> dict[str, list[str]]:
         """Get ideation techniques and prompts."""
         return {
             "brainwriting": [
@@ -422,9 +418,9 @@ class InnovationAgent:
     @staticmethod
     def validate_innovation(
         idea_description: str,
-        market_data: Dict[str, Any],
-        company_capabilities: List[str]
-    ) -> Dict[str, Any]:
+        market_data: dict[str, Any],
+        company_capabilities: list[str],
+    ) -> dict[str, Any]:
         """Validate innovation idea."""
         return {
             "idea": idea_description,
@@ -439,10 +435,8 @@ class InnovationAgent:
 
     @staticmethod
     def product_roadmap_innovation(
-        current_product: str,
-        vision: str,
-        timeline_months: int
-    ) -> Dict[str, Any]:
+        current_product: str, vision: str, timeline_months: int
+    ) -> dict[str, Any]:
         """Create innovation-focused product roadmap."""
         return {
             "product": current_product,
@@ -473,9 +467,8 @@ class InnovationAgent:
 
     @staticmethod
     def trend_spotting_framework(
-        industry: str,
-        historical_data: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+        industry: str, historical_data: list[str] | None = None
+    ) -> dict[str, Any]:
         """Framework for spotting industry trends."""
         return {
             "industry": industry,

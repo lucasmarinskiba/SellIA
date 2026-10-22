@@ -1,9 +1,21 @@
 """Deal Intelligence models for Phase 27."""
 
-from datetime import datetime
 from uuid import uuid4
-from sqlalchemy import Column, String, DateTime, Boolean, Integer, Float, ForeignKey, Text, Index, JSON
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+
+from app.core.clock import utc_now
 from app.core.database import Base
 
 
@@ -13,7 +25,9 @@ class DealStakeholder(Base):
     __tablename__ = "deal_stakeholders"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)
+    deal_id = Column(
+        String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False
+    )
 
     # Person details
     person_id = Column(String(255), nullable=False)
@@ -23,7 +37,9 @@ class DealStakeholder(Base):
     company = Column(String(255))
 
     # Role in buying process
-    buyer_role = Column(String(50), default="influencer")  # economic_buyer, user_buyer, coach, blocker, influencer
+    buyer_role = Column(
+        String(50), default="influencer"
+    )  # economic_buyer, user_buyer, coach, blocker, influencer
     influence_level = Column(Integer, default=5)  # 1-10 scale
     engagement_score = Column(Float, default=0.0)  # 0-100
 
@@ -36,7 +52,7 @@ class DealStakeholder(Base):
 
     # Status
     status = Column(String(50), default="active")  # active, churned, dormant, prospect
-    identified_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    identified_at = Column(DateTime, default=utc_now, nullable=False)
 
     __table_args__ = (
         Index("idx_deal_stakeholders_deal", "deal_id"),
@@ -51,7 +67,12 @@ class DealProbabilityScore(Base):
     __tablename__ = "deal_probability_scores"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False, unique=True)
+    deal_id = Column(
+        String(255),
+        ForeignKey("deals.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
 
     # Predicted probability
     close_probability = Column(Float, nullable=False)  # 0-100
@@ -62,7 +83,7 @@ class DealProbabilityScore(Base):
 
     # Model metadata
     model_version = Column(String(50))
-    prediction_date = Column(DateTime, default=datetime.utcnow, nullable=False)
+    prediction_date = Column(DateTime, default=utc_now, nullable=False)
 
     # Confidence intervals
     probability_low = Column(Float)  # 90% CI lower bound
@@ -80,11 +101,15 @@ class DealHealthSnapshot(Base):
     __tablename__ = "deal_health_snapshots"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)
+    deal_id = Column(
+        String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False
+    )
 
     # Overall health
     health_score = Column(Integer, nullable=False)  # 0-100
-    health_status = Column(String(20), nullable=False)  # healthy, at_risk, critical, won, lost
+    health_status = Column(
+        String(20), nullable=False
+    )  # healthy, at_risk, critical, won, lost
 
     # Component scores
     engagement_health = Column(Integer)  # 0-100
@@ -102,7 +127,7 @@ class DealHealthSnapshot(Base):
     recommended_actions = Column(JSONB)  # [{action: str, priority: str}]
 
     # Metadata
-    snapshot_date = Column(DateTime, default=datetime.utcnow, nullable=False)
+    snapshot_date = Column(DateTime, default=utc_now, nullable=False)
 
     __table_args__ = (
         Index("idx_health_deal", "deal_id"),
@@ -117,11 +142,15 @@ class DealHealthAlert(Base):
     __tablename__ = "deal_health_alerts"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)
+    deal_id = Column(
+        String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False
+    )
     user_id = Column(String(255), ForeignKey("users.id", ondelete="CASCADE"))
 
     # Alert details
-    alert_type = Column(String(50), nullable=False)  # low_engagement, lost_momentum, buyer_churn, stalled
+    alert_type = Column(
+        String(50), nullable=False
+    )  # low_engagement, lost_momentum, buyer_churn, stalled
     severity = Column(String(20), nullable=False)  # info, warning, critical
     title = Column(String(255), nullable=False)
     description = Column(Text)
@@ -131,7 +160,7 @@ class DealHealthAlert(Base):
     action_type = Column(String(50))  # call, email, meeting, escalate
 
     # Alert lifecycle
-    triggered_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    triggered_at = Column(DateTime, default=utc_now, nullable=False)
     acknowledged_at = Column(DateTime)
     resolved_at = Column(DateTime)
     action_taken = Column(Boolean, default=False)
@@ -149,17 +178,21 @@ class StakeholderEngagementEvent(Base):
     __tablename__ = "stakeholder_engagement_events"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)
+    deal_id = Column(
+        String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False
+    )
     person_id = Column(String(255), nullable=False)
 
     # Event type
-    event_type = Column(String(50), nullable=False)  # email_open, email_click, call, meeting, message
+    event_type = Column(
+        String(50), nullable=False
+    )  # email_open, email_click, call, meeting, message
     engagement_value = Column(Integer, nullable=False)  # Points assigned
 
     # Event details
     event_details = Column(JSONB)  # {email_subject: "...", call_duration: 15}
 
-    event_timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    event_timestamp = Column(DateTime, default=utc_now, nullable=False)
 
     __table_args__ = (
         Index("idx_engagement_deal_person", "deal_id", "person_id"),
@@ -173,14 +206,17 @@ class ModelPredictionsCache(Base):
     __tablename__ = "model_predictions_cache"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False, unique=True)
+    deal_id = Column(
+        String(255),
+        ForeignKey("deals.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
 
     # Cached prediction
     prediction_json = Column(JSONB, nullable=False)  # Full prediction object
 
-    cache_created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    cache_created_at = Column(DateTime, default=utc_now, nullable=False)
     cache_expires_at = Column(DateTime, nullable=False)
 
-    __table_args__ = (
-        Index("idx_cache_expires", "cache_expires_at"),
-    )
+    __table_args__ = (Index("idx_cache_expires", "cache_expires_at"),)

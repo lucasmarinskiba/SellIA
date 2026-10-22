@@ -14,6 +14,7 @@ class _ORM(BaseModel):
 
 # ----------------------------- requests -----------------------------
 
+
 class BusinessProfileIn(BaseModel):
     """Shared context payload most agents accept."""
 
@@ -31,15 +32,15 @@ class DiagnosisIn(BusinessProfileIn):
     """Etapa 0 input. Every extra field is optional but each one raises the
     diagnosis from 'thin' toward 'solid' evidence quality."""
 
-    time_in_market: str | None = None            # e.g. "3 years"
-    monthly_revenue: str | None = None           # free-form, e.g. "~$40k"
+    time_in_market: str | None = None  # e.g. "3 years"
+    monthly_revenue: str | None = None  # free-form, e.g. "~$40k"
     gross_margin_pct: float | None = None
-    repeat_purchase_rate: str | None = None      # e.g. "18%"
-    pricing: list[str] = []                      # ["Bag 250g $12", "Wholesale $9/kg"]
-    channels: list[str] = []                     # ["own store", "Instagram", "2 wholesale accounts"]
-    differentiation_claims: list[str] = []       # what they currently tell customers
-    customer_quotes: list[str] = []              # verbatim review / feedback snippets
-    recent_marketing: list[str] = []             # what they've tried lately
+    repeat_purchase_rate: str | None = None  # e.g. "18%"
+    pricing: list[str] = []  # ["Bag 250g $12", "Wholesale $9/kg"]
+    channels: list[str] = []  # ["own store", "Instagram", "2 wholesale accounts"]
+    differentiation_claims: list[str] = []  # what they currently tell customers
+    customer_quotes: list[str] = []  # verbatim review / feedback snippets
+    recent_marketing: list[str] = []  # what they've tried lately
 
 
 class StageRunIn(BaseModel):
@@ -58,17 +59,21 @@ class CompetitorIn(BaseModel):
 class AutoBridgesIn(BaseModel):
     """Opt in to firing a bridge automatically when its stage completes."""
 
-    competitive: bool = False              # positioning -> competitive monitors + battlecards
-    assets: bool = False                   # brand identity -> content library
-    fomo: dict | None = None               # {"enabled": bool, "activate": bool}
-    competitors: list[CompetitorIn] = []   # optional; else falls back to profile.known_competitors
+    competitive: bool = False  # positioning -> competitive monitors + battlecards
+    assets: bool = False  # brand identity -> content library
+    fomo: dict | None = None  # {"enabled": bool, "activate": bool}
+    competitors: list[CompetitorIn] = (
+        []
+    )  # optional; else falls back to profile.known_competitors
 
 
 class ProgramCreateIn(BaseModel):
     name: str = "Brand Transformation"
     profile: BusinessProfileIn
     auto_bridges: AutoBridgesIn | None = None
-    with_default_automations: bool = True  # seed rediagnosis / consistency / gate-check / pulse
+    with_default_automations: bool = (
+        True  # seed rediagnosis / consistency / gate-check / pulse
+    )
 
 
 class AutomationIn(BaseModel):
@@ -80,16 +85,16 @@ class AutomationIn(BaseModel):
 class DeployCampaignsIn(BaseModel):
     """Turn a FOMO playbook's mechanisms into real fomo-domain campaigns."""
 
-    playbook_id: UUID | None = None   # default: latest playbook for the business
-    activate: bool = False            # create as draft (False) or activate now (True)
-    levers: list[str] = []            # optional filter; empty = all mapped mechanisms
-    dry_run: bool = False             # return the plan without creating anything
+    playbook_id: UUID | None = None  # default: latest playbook for the business
+    activate: bool = False  # create as draft (False) or activate now (True)
+    levers: list[str] = []  # optional filter; empty = all mapped mechanisms
+    dry_run: bool = False  # return the plan without creating anything
 
 
 class DeployCompetitiveIn(BaseModel):
     """Turn a positioning statement into competitive monitors + battlecards."""
 
-    statement_id: UUID | None = None      # default: latest positioning for the business
+    statement_id: UUID | None = None  # default: latest positioning for the business
     competitors: list[CompetitorIn] = []  # name + url (url required for a monitor)
     dry_run: bool = False
 
@@ -97,11 +102,12 @@ class DeployCompetitiveIn(BaseModel):
 class DeployAssetsIn(BaseModel):
     """Turn a brand identity into a voice template + draft copy assets."""
 
-    identity_id: UUID | None = None       # default: latest identity for the business
+    identity_id: UUID | None = None  # default: latest identity for the business
     dry_run: bool = False
 
 
 # ----------------------------- responses -----------------------------
+
 
 class DiagnosisOut(_ORM):
     id: UUID

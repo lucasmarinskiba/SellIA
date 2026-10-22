@@ -5,12 +5,12 @@ OAuth2 flow para usuarios.
 """
 
 import logging
-from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime, timedelta
-from google_auth_oauthlib.flow import Flow
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
+from typing import Any, ClassVar
+
 from google.api_core.exceptions import GoogleAPIError
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class GoogleCalendarConnector:
     """Conector real de Google Calendar API."""
 
-    SCOPES = ["https://www.googleapis.com/auth/calendar"]
+    SCOPES: ClassVar[list] = ["https://www.googleapis.com/auth/calendar"]
 
     def __init__(
         self,
@@ -57,14 +57,16 @@ class GoogleCalendarConnector:
         )
 
         flow.redirect_uri = self.redirect_uri
-        auth_url, state = flow.authorization_url(access_type="offline", prompt="consent")
+        auth_url, _state = flow.authorization_url(
+            access_type="offline", prompt="consent"
+        )
 
         return auth_url
 
     def get_credentials_from_code(
         self,
         auth_code: str,
-    ) -> Tuple[bool, Optional[Credentials]]:
+    ) -> tuple[bool, Credentials | None]:
         """
         Intercambia auth code por credenciales.
 
@@ -89,17 +91,17 @@ class GoogleCalendarConnector:
 
             return True, credentials
 
-        except Exception as e:
-            logger.error(f"Failed to get credentials: {e}")
+        except Exception:
+            logger.exception("Failed to get credentials")
             return False, None
 
     async def get_available_slots(
         self,
-        credentials: Dict[str, Any],
+        credentials: dict[str, Any],
         date: datetime,
         duration_minutes: int = 60,
-        working_hours: Tuple[int, int] = (9, 18),
-    ) -> List[Dict[str, Any]]:
+        working_hours: tuple[int, int] = (9, 18),
+    ) -> list[dict[str, Any]]:
         """
         Obtiene slots disponibles para fecha.
 
@@ -115,21 +117,33 @@ class GoogleCalendarConnector:
             end_time = datetime.combine(date.date(), (working_hours[1], 0))
 
             # Obtener eventos del día
-            events_result = service.events().list(
-                calendarId="primary",
-                timeMin=start_time.isoformat() + "Z",
-                timeMax=end_time.isoformat() + "Z",
-                singleEvents=True,
-                orderBy="startTime",
-            ).execute()
+            events_result = (
+                service.events()
+                .list(
+                    calendarId="primary",
+                    timeMin=start_time.isoformat() + "Z",
+                    timeMax=end_time.isoformat() + "Z",
+                    singleEvents=True,
+                    orderBy="startTime",
+                )
+                .execute()
+            )
 
             events = events_result.get("items", [])
 
             # Calcular slots libres
-            busy_times = [(
-                datetime.fromisoformat(e["start"].get("dateTime", "").replace("Z", "")),
-                datetime.fromisoformat(e["end"].get("dateTime", "").replace("Z", "")),
-            ) for e in events if "dateTime" in e["start"]]
+            busy_times = [
+                (
+                    datetime.fromisoformat(
+                        e["start"].get("dateTime", "").replace("Z", "")
+                    ),
+                    datetime.fromisoformat(
+                        e["end"].get("dateTime", "").replace("Z", "")
+                    ),
+                )
+                for e in events
+                if "dateTime" in e["start"]
+            ]
 
             slots = []
             current = start_time
@@ -138,16 +152,23 @@ class GoogleCalendarConnector:
                 # Verificar si slot está libre
                 is_free = True
                 for busy_start, busy_end in busy_times:
-                    if current < busy_end and current + timedelta(minutes=duration_minutes) > busy_start:
+                    if (
+                        current < busy_end
+                        and current + timedelta(minutes=duration_minutes) > busy_start
+                    ):
                         is_free = False
                         break
 
                 if is_free:
-                    slots.append({
-                        "start": current.isoformat(),
-                        "end": (current + timedelta(minutes=duration_minutes)).isoformat(),
-                        "duration_minutes": duration_minutes,
-                    })
+                    slots.append(
+                        {
+                            "start": current.isoformat(),
+                            "end": (
+                                current + timedelta(minutes=duration_minutes)
+                            ).isoformat(),
+                            "duration_minutes": duration_minutes,
+                        }
+                    )
 
                 current += timedelta(minutes=30)
 
@@ -158,20 +179,20 @@ class GoogleCalendarConnector:
         except GoogleAPIError as e:
             logger.error(f"Google Calendar API error: {e}")
             return []
-        except Exception as e:
-            logger.error(f"Error getting available slots: {e}")
+        except Exception:
+            logger.exception("Error getting available slots")
             return []
 
     async def create_event(
         self,
-        credentials: Dict[str, Any],
+        credentials: dict[str, Any],
         title: str,
         start: datetime,
         end: datetime,
         description: str = "",
-        attendee_email: Optional[str] = None,
-        meeting_url: Optional[str] = None,
-    ) -> Tuple[bool, Optional[str]]:
+        attendee_email: str | None = None,
+        meeting_url: str | None = None,
+    ) -> tuple[bool, str | None]:
         """
         Crea evento en Google Calendar.
 
@@ -204,12 +225,16 @@ class GoogleCalendarConnector:
                     "entryPoints": [{"entryPointType": "video", "uri": meeting_url}]
                 }
 
-            event_result = service.events().insert(
-                calendarId="primary",
-                body=event,
-                conferenceDataVersion=1,
-                sendNotifications=True,
-            ).execute()
+            event_result = (
+                service.events()
+                .insert(
+                    calendarId="primary",
+                    body=event,
+                    conferenceDataVersion=1,
+                    sendNotifications=True,
+                )
+                .execute()
+            )
 
             event_id = event_result.get("id")
 
@@ -220,13 +245,13 @@ class GoogleCalendarConnector:
         except GoogleAPIError as e:
             logger.error(f"Google Calendar API error: {e}")
             return False, None
-        except Exception as e:
-            logger.error(f"Error creating event: {e}")
+        except Exception:
+            logger.exception("Error creating event")
             return False, None
 
     async def delete_event(
         self,
-        credentials: Dict[str, Any],
+        credentials: dict[str, Any],
         event_id: str,
     ) -> bool:
         """Elimina evento de Google Calendar."""
@@ -243,8 +268,8 @@ class GoogleCalendarConnector:
         except GoogleAPIError as e:
             logger.error(f"Google Calendar API error: {e}")
             return False
-        except Exception as e:
-            logger.error(f"Error deleting event: {e}")
+        except Exception:
+            logger.exception("Error deleting event")
             return False
 
 

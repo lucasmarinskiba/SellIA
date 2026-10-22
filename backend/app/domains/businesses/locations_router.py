@@ -9,7 +9,7 @@ Endpoints:
 """
 
 import logging
-from typing import List
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
@@ -18,12 +18,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.domains.businesses.models import Business
-from app.domains.businesses.location_models import (
-    Location, LocationCreate, LocationResponse, LocationUpdate, LocationProfileResponse
-)
 from app.domains.businesses.localization import BusinessLocalizationService
+from app.domains.businesses.location_models import (
+    Location,
+    LocationCreate,
+    LocationProfileResponse,
+    LocationResponse,
+    LocationUpdate,
+)
+from app.domains.businesses.models import Business
+from app.domains.users.models import User
 
 logger = logging.getLogger(__name__)
 
@@ -36,33 +40,28 @@ router = APIRouter(tags=["locations"])
     status_code=status.HTTP_201_CREATED,
 )
 async def create_location(
-    business_id: UUID = Path(...),
+    business_id: Annotated[UUID, Path()],
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     location_data: LocationCreate = ...,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
 ) -> LocationResponse:
     """Create new physical location for business."""
 
     # Verify business ownership
     result = await db.execute(
         select(Business).where(
-            Business.id == business_id,
-            Business.user_id == current_user.id
+            Business.id == business_id, Business.user_id == current_user.id
         )
     )
     business = result.scalar_one_or_none()
 
     if not business:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Business not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Business not found"
         )
 
     # Create location
-    location = Location(
-        business_id=business_id,
-        **location_data.model_dump()
-    )
+    location = Location(business_id=business_id, **location_data.model_dump())
 
     db.add(location)
     await db.flush()
@@ -70,16 +69,19 @@ async def create_location(
     # Auto-detect localization model based on new location count
     all_locs_result = await db.execute(
         select(Location).where(
-            Location.business_id == business_id,
-            Location.is_active == True
+            Location.business_id == business_id, Location.is_active == True
         )
     )
     all_locations = all_locs_result.scalars().all()
 
-    detected_model = BusinessLocalizationService.detect_model(business, list(all_locations))
+    detected_model = BusinessLocalizationService.detect_model(
+        business, list(all_locations)
+    )
     if detected_model != business.localization_model:
         business.localization_model = detected_model
-        logger.info(f"Auto-updated business {business_id} localization to {detected_model}")
+        logger.info(
+            f"Auto-updated business {business_id} localization to {detected_model}"
+        )
 
     await db.commit()
     await db.refresh(location)
@@ -89,29 +91,27 @@ async def create_location(
 
 @router.get(
     "/businesses/{business_id}/locations",
-    response_model=List[LocationResponse],
+    response_model=list[LocationResponse],
 )
 async def list_locations(
-    business_id: UUID = Path(...),
-    active_only: bool = Query(True),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-) -> List[LocationResponse]:
+    business_id: Annotated[UUID, Path()],
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    active_only: Annotated[bool, Query()] = True,
+) -> list[LocationResponse]:
     """List all locations for a business."""
 
     # Verify business ownership
     result = await db.execute(
         select(Business).where(
-            Business.id == business_id,
-            Business.user_id == current_user.id
+            Business.id == business_id, Business.user_id == current_user.id
         )
     )
     business = result.scalar_one_or_none()
 
     if not business:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Business not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Business not found"
         )
 
     # Query locations
@@ -130,9 +130,9 @@ async def list_locations(
     response_model=LocationProfileResponse,
 )
 async def get_location(
-    location_id: UUID = Path(...),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    location_id: Annotated[UUID, Path()],
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> LocationProfileResponse:
     """Get location with traffic metrics."""
 
@@ -141,8 +141,7 @@ async def get_location(
 
     if not location:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Location not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Location not found"
         )
 
     # Verify user owns this location's business
@@ -153,8 +152,7 @@ async def get_location(
 
     if not business or business.user_id != current_user.id:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
         )
 
     location_resp = LocationResponse.model_validate(location)
@@ -166,10 +164,10 @@ async def get_location(
     response_model=LocationResponse,
 )
 async def update_location(
-    location_id: UUID = Path(...),
+    location_id: Annotated[UUID, Path()],
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     location_data: LocationUpdate = ...,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
 ) -> LocationResponse:
     """Update location details."""
 
@@ -178,8 +176,7 @@ async def update_location(
 
     if not location:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Location not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Location not found"
         )
 
     # Verify ownership
@@ -190,8 +187,7 @@ async def update_location(
 
     if not business or business.user_id != current_user.id:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
         )
 
     # Update fields
@@ -210,9 +206,9 @@ async def update_location(
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_location(
-    location_id: UUID = Path(...),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    location_id: Annotated[UUID, Path()],
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Soft-delete location (mark inactive)."""
 
@@ -221,8 +217,7 @@ async def delete_location(
 
     if not location:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Location not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Location not found"
         )
 
     # Verify ownership
@@ -233,8 +228,7 @@ async def delete_location(
 
     if not business or business.user_id != current_user.id:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
         )
 
     location.is_active = False

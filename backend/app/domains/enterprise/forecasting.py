@@ -18,17 +18,18 @@ forecasting_models.DealOutcome) -- deal scores and pipeline forecasts are
 recomputed on every call, which is more correct than a cache (Deal state
 changes constantly and a stale forecast is worse than a slower one).
 """
-from datetime import datetime, timezone
-from typing import Optional
-from uuid import UUID
-from dataclasses import asdict
 
-from sqlalchemy import select, func
+from dataclasses import asdict
+from datetime import UTC, datetime
+from uuid import UUID
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.crm.models import Deal, LeadStage
 from app.domains.enterprise.collaboration import DealComment
-from .deal_scorer import DealScorer, RevenueForecast, DealScoreFactors, RiskLevel
+
+from .deal_scorer import DealScoreFactors, DealScorer, RevenueForecast, RiskLevel
 
 # Maps the app's real pipeline stages onto DealScorer's weight buckets
 # (which were written with generic stage names). closed_lost intentionally
@@ -50,8 +51,12 @@ _STAGE_TO_SCORER_KEY = {
 # this module. Closed deals are excluded from forecasts/risk/funnel by
 # design (a closed deal isn't a forecast input anymore).
 _OPEN_STAGES = [
-    LeadStage.NEW_LEAD, LeadStage.CONTACTED, LeadStage.QUALIFIED,
-    LeadStage.PROPOSAL_SENT, LeadStage.NEGOTIATING, LeadStage.NURTURE,
+    LeadStage.NEW_LEAD,
+    LeadStage.CONTACTED,
+    LeadStage.QUALIFIED,
+    LeadStage.PROPOSAL_SENT,
+    LeadStage.NEGOTIATING,
+    LeadStage.NURTURE,
 ]
 
 
@@ -62,8 +67,12 @@ def _deal_to_factors_dict(deal: Deal, comment_count: int) -> dict:
     win-rate-by-segment table) -- defaulted honestly rather than invented;
     everything else here is real.
     """
-    now = datetime.now(timezone.utc)
-    updated_at = deal.updated_at if deal.updated_at.tzinfo else deal.updated_at.replace(tzinfo=timezone.utc)
+    now = datetime.now(UTC)
+    updated_at = (
+        deal.updated_at
+        if deal.updated_at.tzinfo
+        else deal.updated_at.replace(tzinfo=UTC)
+    )
     days_since_update = max((now - updated_at).days, 0)
 
     return {
@@ -72,9 +81,17 @@ def _deal_to_factors_dict(deal: Deal, comment_count: int) -> dict:
         "stage": _STAGE_TO_SCORER_KEY.get(deal.stage, "discovery"),
         "days_in_stage": days_since_update,
         "engagement_velocity": 0.0,  # no per-deal activity log to derive this from yet
-        "proposal_status": "sent" if deal.stage in (
-            LeadStage.PROPOSAL_SENT, LeadStage.NEGOTIATING, LeadStage.CLOSED_WON, LeadStage.CLOSED_LOST
-        ) else "not_sent",
+        "proposal_status": (
+            "sent"
+            if deal.stage
+            in (
+                LeadStage.PROPOSAL_SENT,
+                LeadStage.NEGOTIATING,
+                LeadStage.CLOSED_WON,
+                LeadStage.CLOSED_LOST,
+            )
+            else "not_sent"
+        ),
         "comment_count": comment_count,
         "last_activity_days": days_since_update,
         "value": float(deal.value) if deal.value is not None else 0.0,
@@ -82,9 +99,13 @@ def _deal_to_factors_dict(deal: Deal, comment_count: int) -> dict:
     }
 
 
-async def _fetch_open_deals_with_comments(business_id: UUID, db: AsyncSession) -> list[dict]:
+async def _fetch_open_deals_with_comments(
+    business_id: UUID, db: AsyncSession
+) -> list[dict]:
     result = await db.execute(
-        select(Deal).where(Deal.business_id == business_id, Deal.stage.in_(_OPEN_STAGES))
+        select(Deal).where(
+            Deal.business_id == business_id, Deal.stage.in_(_OPEN_STAGES)
+        )
     )
     deals = result.scalars().all()
     if not deals:
@@ -116,10 +137,14 @@ class ForecastingManager:
 
         for deal in deals:
             factors = DealScoreFactors(
-                stage=deal["stage"], days_in_stage=deal["days_in_stage"],
-                engagement_velocity=deal["engagement_velocity"], proposal_status=deal["proposal_status"],
-                comment_count=deal["comment_count"], last_activity_days=deal["last_activity_days"],
-                deal_value=deal["value"], historical_close_rate=deal["close_rate"],
+                stage=deal["stage"],
+                days_in_stage=deal["days_in_stage"],
+                engagement_velocity=deal["engagement_velocity"],
+                proposal_status=deal["proposal_status"],
+                comment_count=deal["comment_count"],
+                last_activity_days=deal["last_activity_days"],
+                deal_value=deal["value"],
+                historical_close_rate=deal["close_rate"],
             )
             score = self.scorer.score_deal(factors)
             score_dict = asdict(score)
@@ -127,18 +152,26 @@ class ForecastingManager:
             scores.append(score_dict)
 
             if score.risk_level in (RiskLevel.HIGH, RiskLevel.CRITICAL):
-                at_risk.append({
-                    "deal_id": deal["id"], "deal_name": deal["name"],
-                    "value": deal["value"], "win_probability": score.win_probability,
-                    "risk_level": score.risk_level.value,
-                    "risk_reason": self._get_risk_reason(deal, score),
-                    "suggested_action": self._get_suggested_action(deal, score),
-                })
+                at_risk.append(
+                    {
+                        "deal_id": deal["id"],
+                        "deal_name": deal["name"],
+                        "value": deal["value"],
+                        "win_probability": score.win_probability,
+                        "risk_level": score.risk_level.value,
+                        "risk_reason": self._get_risk_reason(deal, score),
+                        "suggested_action": self._get_suggested_action(deal, score),
+                    }
+                )
             if score.win_probability >= 0.7:
-                high_probability.append({
-                    "deal_id": deal["id"], "deal_name": deal["name"],
-                    "value": deal["value"], "win_probability": score.win_probability,
-                })
+                high_probability.append(
+                    {
+                        "deal_id": deal["id"],
+                        "deal_name": deal["name"],
+                        "value": deal["value"],
+                        "win_probability": score.win_probability,
+                    }
+                )
 
         return {
             "total_deals": len(deals),
@@ -149,22 +182,32 @@ class ForecastingManager:
             "high_probability_deals": high_probability,
         }
 
-    async def get_deal_score(self, business_id: UUID, deal_id: UUID, db: AsyncSession) -> Optional[dict]:
+    async def get_deal_score(
+        self, business_id: UUID, deal_id: UUID, db: AsyncSession
+    ) -> dict | None:
         """Score a single deal."""
-        result = await db.execute(select(Deal).where(Deal.id == deal_id, Deal.business_id == business_id))
+        result = await db.execute(
+            select(Deal).where(Deal.id == deal_id, Deal.business_id == business_id)
+        )
         deal = result.scalar_one_or_none()
         if not deal:
             return None
 
         count_result = await db.execute(
-            select(func.count(DealComment.id)).where(DealComment.deal_id == str(deal_id))
+            select(func.count(DealComment.id)).where(
+                DealComment.deal_id == str(deal_id)
+            )
         )
         deal_dict = _deal_to_factors_dict(deal, count_result.scalar() or 0)
         factors = DealScoreFactors(
-            stage=deal_dict["stage"], days_in_stage=deal_dict["days_in_stage"],
-            engagement_velocity=deal_dict["engagement_velocity"], proposal_status=deal_dict["proposal_status"],
-            comment_count=deal_dict["comment_count"], last_activity_days=deal_dict["last_activity_days"],
-            deal_value=deal_dict["value"], historical_close_rate=deal_dict["close_rate"],
+            stage=deal_dict["stage"],
+            days_in_stage=deal_dict["days_in_stage"],
+            engagement_velocity=deal_dict["engagement_velocity"],
+            proposal_status=deal_dict["proposal_status"],
+            comment_count=deal_dict["comment_count"],
+            last_activity_days=deal_dict["last_activity_days"],
+            deal_value=deal_dict["value"],
+            historical_close_rate=deal_dict["close_rate"],
         )
         score = self.scorer.score_deal(factors)
         return {
@@ -175,21 +218,30 @@ class ForecastingManager:
             "factors": score.ai_score_factors,
         }
 
-    async def forecast_revenue(self, business_id: UUID, db: AsyncSession, periods: list[int] = None) -> dict:
+    async def forecast_revenue(
+        self, business_id: UUID, db: AsyncSession, periods: list[int] | None = None
+    ) -> dict:
         """Revenue forecast for multiple day-ahead periods."""
         if periods is None:
             periods = [30, 60, 90]
         deals = await _fetch_open_deals_with_comments(business_id, db)
-        return {f"forecast_{p}d": self.forecaster.forecast_revenue(deals, p) for p in periods}
+        return {
+            f"forecast_{p}d": self.forecaster.forecast_revenue(deals, p)
+            for p in periods
+        }
 
     async def get_pipeline_forecast(self, business_id: UUID, db: AsyncSession) -> dict:
         """Pipeline snapshot with weighted forecast, broken down by stage."""
         deals = await _fetch_open_deals_with_comments(business_id, db)
         if not deals:
             return {
-                "timestamp": datetime.now(timezone.utc), "total_opportunities": 0,
-                "total_pipeline_value": 0.0, "weighted_forecast": 0.0,
-                "average_deal_size": 0.0, "average_days_in_pipeline": 0.0, "by_stage": {},
+                "timestamp": datetime.now(UTC),
+                "total_opportunities": 0,
+                "total_pipeline_value": 0.0,
+                "weighted_forecast": 0.0,
+                "average_deal_size": 0.0,
+                "average_days_in_pipeline": 0.0,
+                "by_stage": {},
             }
 
         by_stage: dict[str, dict] = {}
@@ -199,17 +251,24 @@ class ForecastingManager:
 
         for deal in deals:
             factors = DealScoreFactors(
-                stage=deal["stage"], days_in_stage=deal["days_in_stage"],
-                engagement_velocity=deal["engagement_velocity"], proposal_status=deal["proposal_status"],
-                comment_count=deal["comment_count"], last_activity_days=deal["last_activity_days"],
-                deal_value=deal["value"], historical_close_rate=deal["close_rate"],
+                stage=deal["stage"],
+                days_in_stage=deal["days_in_stage"],
+                engagement_velocity=deal["engagement_velocity"],
+                proposal_status=deal["proposal_status"],
+                comment_count=deal["comment_count"],
+                last_activity_days=deal["last_activity_days"],
+                deal_value=deal["value"],
+                historical_close_rate=deal["close_rate"],
             )
             score = self.scorer.score_deal(factors)
             total_value += deal["value"]
             weighted_total += deal["value"] * score.win_probability
             total_days += deal["days_in_stage"]
 
-            bucket = by_stage.setdefault(deal["stage"], {"count": 0, "value": 0.0, "weighted_value": 0.0, "probabilities": []})
+            bucket = by_stage.setdefault(
+                deal["stage"],
+                {"count": 0, "value": 0.0, "weighted_value": 0.0, "probabilities": []},
+            )
             bucket["count"] += 1
             bucket["value"] += deal["value"]
             bucket["weighted_value"] += deal["value"] * score.win_probability
@@ -217,10 +276,12 @@ class ForecastingManager:
 
         for stage_data in by_stage.values():
             probs = stage_data.pop("probabilities")
-            stage_data["avg_probability"] = (sum(probs) / len(probs)) * 100 if probs else 0.0
+            stage_data["avg_probability"] = (
+                (sum(probs) / len(probs)) * 100 if probs else 0.0
+            )
 
         return {
-            "timestamp": datetime.now(timezone.utc),
+            "timestamp": datetime.now(UTC),
             "total_opportunities": len(deals),
             "total_pipeline_value": total_value,
             "weighted_forecast": weighted_total,
@@ -229,7 +290,13 @@ class ForecastingManager:
             "by_stage": by_stage,
         }
 
-    async def project_revenue(self, business_id: UUID, db: AsyncSession, days_ahead: int, target_revenue: Optional[float]) -> dict:
+    async def project_revenue(
+        self,
+        business_id: UUID,
+        db: AsyncSession,
+        days_ahead: int,
+        target_revenue: float | None,
+    ) -> dict:
         """Best/likely/worst-case revenue projection for a period ahead."""
         deals = await _fetch_open_deals_with_comments(business_id, db)
         forecast = self.forecaster.forecast_revenue(deals, days_ahead)
@@ -247,7 +314,11 @@ class ForecastingManager:
 
         probability_of_target = None
         if target_revenue:
-            probability_of_target = min(100.0, max(0.0, (most_likely / target_revenue) * 100)) if target_revenue > 0 else 0.0
+            probability_of_target = (
+                min(100.0, max(0.0, (most_likely / target_revenue) * 100))
+                if target_revenue > 0
+                else 0.0
+            )
 
         return {
             "period": f"{days_ahead}d",
@@ -257,19 +328,36 @@ class ForecastingManager:
             "most_likely": most_likely,
             "worst_case": worst_case,
             "probability_of_target": probability_of_target,
-            "key_drivers": {"avg_deal_size": avg_deal_size, "pipeline_velocity": pipeline_velocity},
+            "key_drivers": {
+                "avg_deal_size": avg_deal_size,
+                "pipeline_velocity": pipeline_velocity,
+            },
         }
 
-    async def generate_scenarios(self, business_id: UUID, db: AsyncSession, days_ahead: int) -> list[dict]:
+    async def generate_scenarios(
+        self, business_id: UUID, db: AsyncSession, days_ahead: int
+    ) -> list[dict]:
         """Best/base/worst case scenario breakdown (same math as project_revenue, different shape)."""
         projection = await self.project_revenue(business_id, db, days_ahead, None)
         return [
-            {"name": "best_case", "projected_revenue": projection["best_case"], "probability": 25,
-             "assumptions": "All open deals close on schedule; no slippage"},
-            {"name": "most_likely", "projected_revenue": projection["most_likely"], "probability": 50,
-             "assumptions": "Deals close at their current scored win probability"},
-            {"name": "worst_case", "projected_revenue": projection["worst_case"], "probability": 25,
-             "assumptions": "High-risk deals slip or fall through"},
+            {
+                "name": "best_case",
+                "projected_revenue": projection["best_case"],
+                "probability": 25,
+                "assumptions": "All open deals close on schedule; no slippage",
+            },
+            {
+                "name": "most_likely",
+                "projected_revenue": projection["most_likely"],
+                "probability": 50,
+                "assumptions": "Deals close at their current scored win probability",
+            },
+            {
+                "name": "worst_case",
+                "projected_revenue": projection["worst_case"],
+                "probability": 25,
+                "assumptions": "High-risk deals slip or fall through",
+            },
         ]
 
     async def get_conversion_funnel(self, business_id: UUID, db: AsyncSession) -> dict:
@@ -293,10 +381,14 @@ class ForecastingManager:
 
         return funnel
 
-    async def identify_risk_opportunities(self, business_id: UUID, db: AsyncSession) -> dict:
+    async def identify_risk_opportunities(
+        self, business_id: UUID, db: AsyncSession
+    ) -> dict:
         """At-risk (high/critical score) and stalled (60+ days untouched) open deals."""
         analysis = await self.analyze_deals(business_id, db)
-        stalled = [d for d in analysis["at_risk_deals"] if "60+" in d.get("risk_reason", "")]
+        stalled = [
+            d for d in analysis["at_risk_deals"] if "60+" in d.get("risk_reason", "")
+        ]
         risk_value = sum(d["value"] for d in analysis["at_risk_deals"])
 
         return {
@@ -309,7 +401,9 @@ class ForecastingManager:
 
     async def get_at_risk_summary(self, business_id: UUID, db: AsyncSession) -> dict:
         analysis = await self.analyze_deals(business_id, db)
-        critical = [d for d in analysis["at_risk_deals"] if d["risk_level"] == "critical"]
+        critical = [
+            d for d in analysis["at_risk_deals"] if d["risk_level"] == "critical"
+        ]
         return {
             "total_at_risk": analysis["at_risk_count"],
             "critical_count": len(critical),
@@ -348,27 +442,37 @@ class DealOutcomeAnalyzer:
         deal_id: UUID,
         business_id: UUID,
         outcome: str,
-        final_value: Optional[float],
+        final_value: float | None,
         days_to_close: int,
         forecasted_probability: float,
-        win_loss_reason: Optional[str] = None,
+        win_loss_reason: str | None = None,
     ) -> dict:
         from .forecasting_models import DealOutcome
 
-        accuracy = 1.0 - abs(forecasted_probability - (1.0 if outcome == "won" else 0.0))
+        accuracy = 1.0 - abs(
+            forecasted_probability - (1.0 if outcome == "won" else 0.0)
+        )
         record = DealOutcome(
-            deal_id=deal_id, business_id=business_id, outcome=outcome,
-            final_value=final_value, days_to_close=days_to_close,
-            forecasted_probability=forecasted_probability, forecast_accuracy=accuracy,
+            deal_id=deal_id,
+            business_id=business_id,
+            outcome=outcome,
+            final_value=final_value,
+            days_to_close=days_to_close,
+            forecasted_probability=forecasted_probability,
+            forecast_accuracy=accuracy,
             win_loss_reason=win_loss_reason,
         )
         db.add(record)
         await db.commit()
         await db.refresh(record)
         return {
-            "deal_id": str(deal_id), "outcome": outcome, "final_value": final_value,
-            "days_to_close": days_to_close, "forecasted_probability": forecasted_probability,
-            "forecast_accuracy": accuracy, "win_loss_reason": win_loss_reason,
+            "deal_id": str(deal_id),
+            "outcome": outcome,
+            "final_value": final_value,
+            "days_to_close": days_to_close,
+            "forecasted_probability": forecasted_probability,
+            "forecast_accuracy": accuracy,
+            "win_loss_reason": win_loss_reason,
             "recorded_at": record.recorded_at.isoformat(),
         }
 
@@ -376,7 +480,9 @@ class DealOutcomeAnalyzer:
     async def get_accuracy_metrics(business_id: UUID, db: AsyncSession) -> dict:
         from .forecasting_models import DealOutcome
 
-        result = await db.execute(select(DealOutcome).where(DealOutcome.business_id == business_id))
+        result = await db.execute(
+            select(DealOutcome).where(DealOutcome.business_id == business_id)
+        )
         outcomes = result.scalars().all()
         if not outcomes:
             return {"total_outcomes": 0, "accuracy": 0, "won_count": 0, "lost_count": 0}
@@ -384,28 +490,46 @@ class DealOutcomeAnalyzer:
         won_count = sum(1 for o in outcomes if o.outcome == "won")
         return {
             "total_outcomes": len(outcomes),
-            "accuracy": float(sum(o.forecast_accuracy for o in outcomes) / len(outcomes)),
+            "accuracy": float(
+                sum(o.forecast_accuracy for o in outcomes) / len(outcomes)
+            ),
             "won_count": won_count,
             "lost_count": len(outcomes) - won_count,
             "win_rate": won_count / len(outcomes),
-            "avg_days_to_close": sum(o.days_to_close or 0 for o in outcomes) / len(outcomes),
+            "avg_days_to_close": sum(o.days_to_close or 0 for o in outcomes)
+            / len(outcomes),
         }
 
     @staticmethod
     async def get_win_loss_summary(business_id: UUID, db: AsyncSession) -> dict:
         from .forecasting_models import DealOutcome
 
-        result = await db.execute(select(DealOutcome).where(DealOutcome.business_id == business_id))
+        result = await db.execute(
+            select(DealOutcome).where(DealOutcome.business_id == business_id)
+        )
         outcomes = result.scalars().all()
 
-        won_reasons = [o.win_loss_reason for o in outcomes if o.outcome == "won" and o.win_loss_reason]
-        lost_reasons = [o.win_loss_reason for o in outcomes if o.outcome == "lost" and o.win_loss_reason]
+        won_reasons = [
+            o.win_loss_reason
+            for o in outcomes
+            if o.outcome == "won" and o.win_loss_reason
+        ]
+        lost_reasons = [
+            o.win_loss_reason
+            for o in outcomes
+            if o.outcome == "lost" and o.win_loss_reason
+        ]
 
         def top_reasons(reasons: list[str], top_n: int = 5) -> list[dict]:
             counts: dict[str, int] = {}
             for r in reasons:
                 counts[r] = counts.get(r, 0) + 1
-            return [{"reason": r, "count": c} for r, c in sorted(counts.items(), key=lambda x: x[1], reverse=True)[:top_n]]
+            return [
+                {"reason": r, "count": c}
+                for r, c in sorted(counts.items(), key=lambda x: x[1], reverse=True)[
+                    :top_n
+                ]
+            ]
 
         return {
             "top_win_reasons": top_reasons(won_reasons),

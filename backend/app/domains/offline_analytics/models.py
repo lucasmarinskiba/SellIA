@@ -1,33 +1,61 @@
 """Phase 5D: Offline Analytics & Re-engagement."""
+
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, DateTime, ForeignKey, Float, Boolean, Integer, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
+from datetime import UTC, datetime
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+)
+from sqlalchemy.dialects.postgresql import UUID
+
 from app.core.database import Base
 
 
 class OfflineToOnlineAttribution(Base):
     __tablename__ = "offline_to_online_attribution"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     # No ForeignKey: there is no `customers` table. The id is supplied by the caller (a user, lead or
     # contact), so it stays a plain indexed UUID instead of a constraint that can never be created.
     user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     first_online_channel = Column(String(50), nullable=True)
-    first_online_date = Column(DateTime(timezone.utc), nullable=True)
-    location_visited_id = Column(UUID(as_uuid=True), ForeignKey("location_profiles.id", ondelete="CASCADE"), nullable=True)
-    location_visit_date = Column(DateTime(timezone.utc), nullable=True)
-    post_visit_order_date = Column(DateTime(timezone.utc), nullable=True)
+    first_online_date = Column(DateTime(UTC), nullable=True)
+    location_visited_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("location_profiles.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    location_visit_date = Column(DateTime(UTC), nullable=True)
+    post_visit_order_date = Column(DateTime(UTC), nullable=True)
     post_visit_order_value = Column(Float, default=0)
     time_to_conversion_days = Column(Integer, default=0)
-    conversion_type = Column(String(50), nullable=False)  # online_to_offline, offline_to_online, full_loop
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    conversion_type = Column(
+        String(50), nullable=False
+    )  # online_to_offline, offline_to_online, full_loop
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 
 class OfflineAnalyticsMetrics(Base):
     __tablename__ = "offline_analytics_metrics"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
     total_foot_traffic = Column(Integer, default=0)
     unique_visitors = Column(Integer, default=0)
     total_conversions_offline = Column(Integer, default=0)
@@ -39,14 +67,23 @@ class OfflineAnalyticsMetrics(Base):
     full_loop_conversions = Column(Integer, default=0)
     peak_traffic_hour = Column(Integer, default=0)
     repeat_visitor_rate = Column(Float, default=0)
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class LocationFootTrafficHourly(Base):
     __tablename__ = "location_foot_traffic_hourly"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    location_id = Column(UUID(as_uuid=True), ForeignKey("location_profiles.id", ondelete="CASCADE"), nullable=False)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    location_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("location_profiles.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     hour_of_day = Column(Integer, nullable=False)  # 0-23
     day_of_week = Column(Integer, nullable=False)  # 0-6 (Monday-Sunday)
     avg_visitors = Column(Integer, default=0)
@@ -54,29 +91,53 @@ class LocationFootTrafficHourly(Base):
     total_visits_recorded = Column(Integer, default=0)
     avg_dwell_minutes = Column(Float, default=0)
     recorded_month = Column(String(50), nullable=False)
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class PostVisitSequence(Base):
     __tablename__ = "post_visit_sequences"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     sequence_name = Column(String(255), nullable=False)
-    location_id = Column(UUID(as_uuid=True), ForeignKey("location_profiles.id", ondelete="CASCADE"), nullable=True)
-    trigger_type = Column(String(50), nullable=False)  # post_visit, no_purchase_visit, high_dwell
+    location_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("location_profiles.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    trigger_type = Column(
+        String(50), nullable=False
+    )  # post_visit, no_purchase_visit, high_dwell
     is_active = Column(Boolean, default=True)
     email_count = Column(Integer, default=0)
     sms_count = Column(Integer, default=0)
     whatsapp_count = Column(Integer, default=0)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 
 class PostVisitSequenceExecution(Base):
     __tablename__ = "post_visit_sequence_executions"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    sequence_id = Column(UUID(as_uuid=True), ForeignKey("post_visit_sequences.id", ondelete="CASCADE"), nullable=False)
-    offline_conversion_id = Column(UUID(as_uuid=True), ForeignKey("offline_conversions.id", ondelete="CASCADE"), nullable=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    sequence_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("post_visit_sequences.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    offline_conversion_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("offline_conversions.id", ondelete="CASCADE"),
+        nullable=True,
+    )
     # No ForeignKey: there is no `customers` table. The id is supplied by the caller (a user, lead or
     # contact), so it stays a plain indexed UUID instead of a constraint that can never be created.
     user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
@@ -87,5 +148,5 @@ class PostVisitSequenceExecution(Base):
     engagement_count = Column(Integer, default=0)
     conversion_happened = Column(Boolean, default=False)
     conversion_value = Column(Float, default=0)
-    started_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    completed_at = Column(DateTime(timezone.utc), nullable=True)
+    started_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    completed_at = Column(DateTime(UTC), nullable=True)

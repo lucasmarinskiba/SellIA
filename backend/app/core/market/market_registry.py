@@ -11,9 +11,10 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
-from datetime import datetime
 from enum import Enum
+from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 class HealthStatus(str, Enum):
     """Status de salud de componente."""
+
     HEALTHY = "healthy"
     DEGRADED = "degraded"
     UNHEALTHY = "unhealthy"
@@ -33,40 +35,43 @@ class HealthStatus(str, Enum):
 @dataclass
 class MarketRegistryEntry:
     """Entrada en registry de mercado."""
+
     market_name: str
     industry: str
     supported: bool
     enabled: bool
-    loaded_agents: List[str]
-    available_rules: List[str]
+    loaded_agents: list[str]
+    available_rules: list[str]
     health_status: HealthStatus
-    last_updated: str = field(default_factory=lambda: datetime.utcnow().isoformat())
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    last_updated: str = field(default_factory=lambda: utc_now().isoformat())
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class AgentRegistryEntry:
     """Entrada en registry de agentes."""
+
     agent_name: str
     agent_role: str
     version: str
-    market_applicable: List[str]  # Mercados donde aplica
-    capabilities: List[str]
+    market_applicable: list[str]  # Mercados donde aplica
+    capabilities: list[str]
     status: str  # "loaded", "unloaded", "error"
-    last_loaded: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    last_loaded: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class RuleSetRegistryEntry:
     """Entrada en registry de rule sets."""
+
     rule_set_name: str
     industry: str
     version: str
-    market_applicable: List[str]
+    market_applicable: list[str]
     status: str  # "loaded", "unloaded", "error"
-    last_updated: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    last_updated: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -79,10 +84,10 @@ class MarketRegistry:
 
     def __init__(self):
         """Inicializa registry."""
-        self.markets: Dict[str, MarketRegistryEntry] = {}
-        self.agents: Dict[str, AgentRegistryEntry] = {}
-        self.rule_sets: Dict[str, RuleSetRegistryEntry] = {}
-        self.last_sync: Optional[str] = None
+        self.markets: dict[str, MarketRegistryEntry] = {}
+        self.agents: dict[str, AgentRegistryEntry] = {}
+        self.rule_sets: dict[str, RuleSetRegistryEntry] = {}
+        self.last_sync: str | None = None
 
     def register_market(
         self,
@@ -90,7 +95,7 @@ class MarketRegistry:
         industry: str,
         supported: bool = True,
         enabled: bool = True,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """Registra tipo de mercado.
 
@@ -120,9 +125,9 @@ class MarketRegistry:
         agent_name: str,
         agent_role: str,
         version: str,
-        market_applicable: List[str],
-        capabilities: List[str],
-        metadata: Optional[Dict[str, Any]] = None,
+        market_applicable: list[str],
+        capabilities: list[str],
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """Registra agente.
 
@@ -148,9 +153,11 @@ class MarketRegistry:
 
         # Actualiza markets con este agente
         for market in market_applicable:
-            if market in self.markets:
-                if agent_name not in self.markets[market].loaded_agents:
-                    self.markets[market].loaded_agents.append(agent_name)
+            if (
+                market in self.markets
+                and agent_name not in self.markets[market].loaded_agents
+            ):
+                self.markets[market].loaded_agents.append(agent_name)
 
         logger.info(f"Registered agent: {agent_name} (v{version})")
 
@@ -159,8 +166,8 @@ class MarketRegistry:
         rule_set_name: str,
         industry: str,
         version: str,
-        market_applicable: List[str],
-        metadata: Optional[Dict[str, Any]] = None,
+        market_applicable: list[str],
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """Registra rule set.
 
@@ -184,25 +191,27 @@ class MarketRegistry:
 
         # Actualiza markets con este rule set
         for market in market_applicable:
-            if market in self.markets:
-                if rule_set_name not in self.markets[market].available_rules:
-                    self.markets[market].available_rules.append(rule_set_name)
+            if (
+                market in self.markets
+                and rule_set_name not in self.markets[market].available_rules
+            ):
+                self.markets[market].available_rules.append(rule_set_name)
 
         logger.info(f"Registered rule set: {rule_set_name} (v{version})")
 
-    def get_market(self, market_name: str) -> Optional[MarketRegistryEntry]:
+    def get_market(self, market_name: str) -> MarketRegistryEntry | None:
         """Obtiene entrada de mercado."""
         return self.markets.get(market_name)
 
-    def get_agent(self, agent_name: str) -> Optional[AgentRegistryEntry]:
+    def get_agent(self, agent_name: str) -> AgentRegistryEntry | None:
         """Obtiene entrada de agente."""
         return self.agents.get(agent_name)
 
-    def get_rule_set(self, rule_set_name: str) -> Optional[RuleSetRegistryEntry]:
+    def get_rule_set(self, rule_set_name: str) -> RuleSetRegistryEntry | None:
         """Obtiene entrada de rule set."""
         return self.rule_sets.get(rule_set_name)
 
-    def get_agents_for_market(self, market_name: str) -> List[AgentRegistryEntry]:
+    def get_agents_for_market(self, market_name: str) -> list[AgentRegistryEntry]:
         """Obtiene agentes disponibles para mercado.
 
         Args:
@@ -221,7 +230,7 @@ class MarketRegistry:
             if agent_name in self.agents
         ]
 
-    def get_rule_sets_for_market(self, market_name: str) -> List[RuleSetRegistryEntry]:
+    def get_rule_sets_for_market(self, market_name: str) -> list[RuleSetRegistryEntry]:
         """Obtiene rule sets disponibles para mercado.
 
         Args:
@@ -240,7 +249,7 @@ class MarketRegistry:
             if rule_name in self.rule_sets
         ]
 
-    def get_agents_by_capability(self, capability: str) -> List[AgentRegistryEntry]:
+    def get_agents_by_capability(self, capability: str) -> list[AgentRegistryEntry]:
         """Obtiene agentes con capacidad específica.
 
         Args:
@@ -250,11 +259,12 @@ class MarketRegistry:
             Agentes con esa capacidad
         """
         return [
-            agent for agent in self.agents.values()
-            if capability in agent.capabilities
+            agent for agent in self.agents.values() if capability in agent.capabilities
         ]
 
-    def mark_agent_loaded(self, agent_name: str, last_loaded: Optional[str] = None) -> None:
+    def mark_agent_loaded(
+        self, agent_name: str, last_loaded: str | None = None
+    ) -> None:
         """Marca agente como cargado.
 
         Args:
@@ -263,9 +273,7 @@ class MarketRegistry:
         """
         if agent_name in self.agents:
             self.agents[agent_name].status = "loaded"
-            self.agents[agent_name].last_loaded = (
-                last_loaded or datetime.utcnow().isoformat()
-            )
+            self.agents[agent_name].last_loaded = last_loaded or utc_now().isoformat()
 
     def mark_agent_error(self, agent_name: str, error_msg: str) -> None:
         """Marca agente con error.
@@ -282,7 +290,7 @@ class MarketRegistry:
         """Marca rule set como cargado."""
         if rule_set_name in self.rule_sets:
             self.rule_sets[rule_set_name].status = "loaded"
-            self.rule_sets[rule_set_name].last_updated = datetime.utcnow().isoformat()
+            self.rule_sets[rule_set_name].last_updated = utc_now().isoformat()
 
     def check_market_health(self, market_name: str) -> HealthStatus:
         """Verifica salud de mercado.
@@ -326,34 +334,29 @@ class MarketRegistry:
             status = self.check_market_health(market_name)
             self.markets[market_name].health_status = status
 
-    def get_all_markets(self) -> List[MarketRegistryEntry]:
+    def get_all_markets(self) -> list[MarketRegistryEntry]:
         """Obtiene todos los mercados."""
         return list(self.markets.values())
 
-    def get_all_agents(self) -> List[AgentRegistryEntry]:
+    def get_all_agents(self) -> list[AgentRegistryEntry]:
         """Obtiene todos los agentes."""
         return list(self.agents.values())
 
-    def get_all_rule_sets(self) -> List[RuleSetRegistryEntry]:
+    def get_all_rule_sets(self) -> list[RuleSetRegistryEntry]:
         """Obtiene todos los rule sets."""
         return list(self.rule_sets.values())
 
-    def get_registry_summary(self) -> Dict[str, Any]:
+    def get_registry_summary(self) -> dict[str, Any]:
         """Obtiene resumen del registry.
 
         Returns:
             Resumen con conteos y status
         """
         markets_healthy = sum(
-            1 for m in self.markets.values()
-            if m.health_status == HealthStatus.HEALTHY
+            1 for m in self.markets.values() if m.health_status == HealthStatus.HEALTHY
         )
-        agents_loaded = sum(
-            1 for a in self.agents.values() if a.status == "loaded"
-        )
-        agents_error = sum(
-            1 for a in self.agents.values() if a.status == "error"
-        )
+        agents_loaded = sum(1 for a in self.agents.values() if a.status == "loaded")
+        agents_error = sum(1 for a in self.agents.values() if a.status == "error")
 
         return {
             "markets": {
@@ -368,14 +371,13 @@ class MarketRegistry:
             "rule_sets": {
                 "total": len(self.rule_sets),
                 "loaded": sum(
-                    1 for rs in self.rule_sets.values()
-                    if rs.status == "loaded"
+                    1 for rs in self.rule_sets.values() if rs.status == "loaded"
                 ),
             },
             "last_sync": self.last_sync,
         }
 
-    def export_registry(self) -> Dict[str, Any]:
+    def export_registry(self) -> dict[str, Any]:
         """Exporta registry completo.
 
         Returns:

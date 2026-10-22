@@ -1,12 +1,13 @@
 """SEO Config service."""
 
 from uuid import UUID
-from sqlalchemy import select, and_
+
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.seo_config.brain_toggles import SEO_POSITIONING, set_brain_capability
-from app.domains.seo_config.models import SEOConfig, PlatformSEOStatus, PublicationLink
 from app.domains.integrations.integration_models import IntegrationConnection
+from app.domains.seo_config.brain_toggles import SEO_POSITIONING, set_brain_capability
+from app.domains.seo_config.models import PlatformSEOStatus, PublicationLink, SEOConfig
 
 
 class SEOConfigService:
@@ -40,7 +41,12 @@ class SEOConfigService:
         config = await self.get_or_create_seo_config(business_id)
         config.global_seo_enabled = enabled
         await set_brain_capability(
-            self.db, business_id, SEO_POSITIONING, enabled, user_id=user_id, user_email=user_email
+            self.db,
+            business_id,
+            SEO_POSITIONING,
+            enabled,
+            user_id=user_id,
+            user_email=user_email,
         )
         await self.db.commit()
         return config
@@ -52,7 +58,9 @@ class SEOConfigService:
         config = await self.get_or_create_seo_config(business_id)
         config.global_seo_enabled = enabled
 
-    async def get_platform_seo_status(self, business_id: UUID, connection_id: UUID) -> PlatformSEOStatus | None:
+    async def get_platform_seo_status(
+        self, business_id: UUID, connection_id: UUID
+    ) -> PlatformSEOStatus | None:
         """Get SEO status for a specific platform connection, scoped to the
         business that owns it — connection_id alone is a caller-supplied path
         param, not proof of ownership."""
@@ -86,7 +94,9 @@ class SEOConfigService:
 
         return status
 
-    async def toggle_platform_seo(self, business_id: UUID, connection_id: UUID, enabled: bool) -> PlatformSEOStatus | None:
+    async def toggle_platform_seo(
+        self, business_id: UUID, connection_id: UUID, enabled: bool
+    ) -> PlatformSEOStatus | None:
         """Toggle SEO for a specific platform."""
         status = await self.get_platform_seo_status(business_id, connection_id)
         if status:
@@ -103,10 +113,12 @@ class SEOConfigService:
                 IntegrationConnection.last_sync_at,
                 PlatformSEOStatus.platform_name,
                 PlatformSEOStatus.seo_enabled,
-            ).outerjoin(
+            )
+            .outerjoin(
                 PlatformSEOStatus,
                 IntegrationConnection.id == PlatformSEOStatus.connection_id,
-            ).where(
+            )
+            .where(
                 IntegrationConnection.business_id == business_id,
                 IntegrationConnection.connection_status == "active",
             )
@@ -116,13 +128,15 @@ class SEOConfigService:
         for row in result.fetchall():
             conn_id, conn_status, last_sync, platform_name, seo_enabled = row
             # If no PlatformSEOStatus exists yet, default to enabled
-            platforms.append({
-                "connection_id": str(conn_id),
-                "platform_name": platform_name or "unknown",
-                "status": conn_status,
-                "last_sync": last_sync.isoformat() if last_sync else None,
-                "seo_enabled": seo_enabled if seo_enabled is not None else True,
-            })
+            platforms.append(
+                {
+                    "connection_id": str(conn_id),
+                    "platform_name": platform_name or "unknown",
+                    "status": conn_status,
+                    "last_sync": last_sync.isoformat() if last_sync else None,
+                    "seo_enabled": seo_enabled if seo_enabled is not None else True,
+                }
+            )
 
         return platforms
 
@@ -154,7 +168,9 @@ class PublicationLinkService:
         await self.db.refresh(link)
         return link
 
-    async def get_publication_link(self, business_id: UUID, link_id: UUID) -> PublicationLink | None:
+    async def get_publication_link(
+        self, business_id: UUID, link_id: UUID
+    ) -> PublicationLink | None:
         """Get a publication link by ID, scoped to the business that owns it.
 
         link_id is a caller-supplied path param with no other proof of
@@ -163,12 +179,15 @@ class PublicationLinkService:
         """
         result = await self.db.execute(
             select(PublicationLink).where(
-                PublicationLink.id == link_id, PublicationLink.business_id == business_id
+                PublicationLink.id == link_id,
+                PublicationLink.business_id == business_id,
             )
         )
         return result.scalar_one_or_none()
 
-    async def list_business_publication_links(self, business_id: UUID) -> list[PublicationLink]:
+    async def list_business_publication_links(
+        self, business_id: UUID
+    ) -> list[PublicationLink]:
         """List all publication links for a business."""
         result = await self.db.execute(
             select(PublicationLink)
@@ -177,7 +196,9 @@ class PublicationLinkService:
         )
         return result.scalars().all()
 
-    async def toggle_publication_link_seo(self, business_id: UUID, link_id: UUID, enabled: bool) -> PublicationLink | None:
+    async def toggle_publication_link_seo(
+        self, business_id: UUID, link_id: UUID, enabled: bool
+    ) -> PublicationLink | None:
         """Toggle SEO for a specific publication link."""
         link = await self.get_publication_link(business_id, link_id)
         if link:

@@ -12,13 +12,13 @@ Total: 135 skills avanzadas.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
-from enum import Enum
 from abc import ABC, abstractmethod
-import json
-from datetime import datetime, timedelta
+from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
+from typing import Any
 
+from app.core.clock import utc_now
 
 # ─────────────────────────────────────────────────────────────────────────
 # TOOL FRAMEWORK
@@ -27,6 +27,7 @@ from datetime import datetime, timedelta
 
 class ToolOutcomeType(str, Enum):
     """Tipo de outcome de una herramienta."""
+
     RECOMMENDATION = "recommendation"
     PREDICTION = "prediction"
     ANALYSIS = "analysis"
@@ -38,6 +39,7 @@ class ToolOutcomeType(str, Enum):
 @dataclass
 class ToolMetrics:
     """Métricas de una herramienta."""
+
     name: str
     calls_total: int = 0
     success_rate: float = 1.0
@@ -45,7 +47,7 @@ class ToolMetrics:
     output_quality: float = 0.8  # 0.0–1.0
     business_impact: float = 0.5  # ROI estimado
 
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "calls": self.calls_total,
@@ -59,21 +61,22 @@ class ToolMetrics:
 @dataclass
 class ToolOutput:
     """Output de una herramienta."""
+
     tool_id: str
     outcome_type: ToolOutcomeType
     primary_result: Any
-    secondary_results: Dict[str, Any] = None
+    secondary_results: dict[str, Any] = None
     confidence: float = 0.8
     timestamp: str = ""
-    metrics: Optional[ToolMetrics] = None
+    metrics: ToolMetrics | None = None
 
     def __post_init__(self):
         if self.secondary_results is None:
             self.secondary_results = {}
         if not self.timestamp:
-            self.timestamp = datetime.utcnow().isoformat()
+            self.timestamp = utc_now().isoformat()
 
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         return {
             "tool": self.tool_id,
             "type": self.outcome_type.value,
@@ -92,21 +95,20 @@ class BaseTool(ABC):
         self.name = name
         self.category = category
         self.metrics = ToolMetrics(name)
-        self.last_invocation: Optional[datetime] = None
+        self.last_invocation: datetime | None = None
 
     @abstractmethod
     async def execute(self, **kwargs) -> ToolOutput:
         """Ejecuta la herramienta."""
-        pass
 
     async def invoke(self, **kwargs) -> ToolOutput:
         """Invocar con tracking."""
-        self.last_invocation = datetime.utcnow()
+        self.last_invocation = utc_now()
         result = await self.execute(**kwargs)
         self.metrics.calls_total += 1
         return result
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         return self.metrics.as_dict()
 
 
@@ -121,15 +123,19 @@ class DemandForecastingTool(BaseTool):
     def __init__(self):
         super().__init__("tool.forecast_demand", "Demand Forecasting", "predictive")
 
-    async def execute(self, historical_sales: List[float],
-                     seasonality_factor: float = 1.0,
-                     forecast_days: int = 90) -> ToolOutput:
+    async def execute(
+        self,
+        historical_sales: list[float],
+        seasonality_factor: float = 1.0,
+        forecast_days: int = 90,
+    ) -> ToolOutput:
         """Predice demanda 30/60/90 días."""
         if not historical_sales or len(historical_sales) < 3:
             return ToolOutput(
-                self.tool_id, ToolOutcomeType.PREDICTION,
+                self.tool_id,
+                ToolOutcomeType.PREDICTION,
                 {"error": "insufficient_data"},
-                confidence=0.0
+                confidence=0.0,
             )
 
         # Seasonal decomposition
@@ -141,7 +147,8 @@ class DemandForecastingTool(BaseTool):
         forecast_90 = self._forecast(trend, seasonal, 90, seasonality_factor)
 
         return ToolOutput(
-            self.tool_id, ToolOutcomeType.PREDICTION,
+            self.tool_id,
+            ToolOutcomeType.PREDICTION,
             {
                 "30_days": forecast_30,
                 "60_days": forecast_60,
@@ -152,10 +159,10 @@ class DemandForecastingTool(BaseTool):
                 "seasonal_component": seasonal,
                 "growth_rate": (forecast_90 - forecast_30) / forecast_30 * 100,
             },
-            confidence=0.75
+            confidence=0.75,
         )
 
-    def _calculate_trend(self, data: List[float]) -> float:
+    def _calculate_trend(self, data: list[float]) -> float:
         """Calcula tendencia lineal."""
         if len(data) < 2:
             return 0.0
@@ -167,7 +174,7 @@ class DemandForecastingTool(BaseTool):
         denominator = sum((x[i] - x_mean) ** 2 for i in range(n))
         return numerator / denominator if denominator > 0 else 0.0
 
-    def _calculate_seasonality(self, data: List[float]) -> float:
+    def _calculate_seasonality(self, data: list[float]) -> float:
         """Extrae componente estacional."""
         if len(data) < 12:
             return 1.0
@@ -175,8 +182,9 @@ class DemandForecastingTool(BaseTool):
         seasonal_var = sum((x - monthly_avg) ** 2 for x in data) / len(data)
         return (seasonal_var / monthly_avg) if monthly_avg > 0 else 0.0
 
-    def _forecast(self, trend: float, seasonality: float,
-                 days: int, factor: float) -> float:
+    def _forecast(
+        self, trend: float, seasonality: float, days: int, factor: float
+    ) -> float:
         """Proyecta valores futuros."""
         return (100 * (1 + trend / 100) ** (days / 30)) * seasonality * factor
 
@@ -187,11 +195,14 @@ class ChurnPredictionTool(BaseTool):
     def __init__(self):
         super().__init__("tool.churn_prediction", "Churn Prediction", "predictive")
 
-    async def execute(self, customer_id: str,
-                     recency_days: int,
-                     frequency_purchases: int,
-                     monetary_value: float,
-                     engagement_score: float) -> ToolOutput:
+    async def execute(
+        self,
+        customer_id: str,
+        recency_days: int,
+        frequency_purchases: int,
+        monetary_value: float,
+        engagement_score: float,
+    ) -> ToolOutput:
         """Predice riesgo de churn 0–1."""
         churn_score = self._calculate_churn_score(
             recency_days, frequency_purchases, monetary_value, engagement_score
@@ -201,7 +212,8 @@ class ChurnPredictionTool(BaseTool):
         interventions = self._recommend_interventions(risk_level)
 
         return ToolOutput(
-            self.tool_id, ToolOutcomeType.PREDICTION,
+            self.tool_id,
+            ToolOutcomeType.PREDICTION,
             {
                 "churn_score": churn_score,
                 "risk_level": risk_level,
@@ -210,11 +222,12 @@ class ChurnPredictionTool(BaseTool):
                 "probability_churn_30d": churn_score,
                 "recommended_interventions": interventions,
             },
-            confidence=0.82
+            confidence=0.82,
         )
 
-    def _calculate_churn_score(self, recency: int, frequency: int,
-                              monetary: float, engagement: float) -> float:
+    def _calculate_churn_score(
+        self, recency: int, frequency: int, monetary: float, engagement: float
+    ) -> float:
         """RFM-based churn scoring."""
         # Recency: últimos 30 días = mejor
         recency_score = max(0, 1 - (recency / 90))
@@ -226,10 +239,10 @@ class ChurnPredictionTool(BaseTool):
         engagement_score = engagement
 
         weighted_score = (
-            0.4 * (1 - recency_score) +  # Inactivo = alto churn
-            0.2 * (1 - frequency_score) +
-            0.2 * (1 - monetary_score) +
-            0.2 * (1 - engagement_score)
+            0.4 * (1 - recency_score)  # Inactivo = alto churn
+            + 0.2 * (1 - frequency_score)
+            + 0.2 * (1 - monetary_score)
+            + 0.2 * (1 - engagement_score)
         )
         return min(1.0, max(0.0, weighted_score))
 
@@ -243,7 +256,7 @@ class ChurnPredictionTool(BaseTool):
         else:
             return "low"
 
-    def _recommend_interventions(self, risk_level: str) -> List[Dict[str, str]]:
+    def _recommend_interventions(self, risk_level: str) -> list[dict[str, str]]:
         interventions = {
             "critical": [
                 {"action": "Emergency win-back call", "priority": "immediate"},
@@ -270,10 +283,13 @@ class LTVPredictionTool(BaseTool):
     def __init__(self):
         super().__init__("tool.ltv_prediction", "LTV Prediction", "predictive")
 
-    async def execute(self, initial_purchase: float,
-                     avg_monthly_spend: float,
-                     retention_rate: float,
-                     customer_months: int = 0) -> ToolOutput:
+    async def execute(
+        self,
+        initial_purchase: float,
+        avg_monthly_spend: float,
+        retention_rate: float,
+        customer_months: int = 0,
+    ) -> ToolOutput:
         """Predice LTV en 12, 24, 60 meses."""
         ltv_12m = self._calculate_ltv(avg_monthly_spend, retention_rate, 12)
         ltv_24m = self._calculate_ltv(avg_monthly_spend, retention_rate, 24)
@@ -282,7 +298,8 @@ class LTVPredictionTool(BaseTool):
         payback_period = self._payback_period(initial_purchase, avg_monthly_spend)
 
         return ToolOutput(
-            self.tool_id, ToolOutcomeType.PREDICTION,
+            self.tool_id,
+            ToolOutcomeType.PREDICTION,
             {
                 "ltv_12m": ltv_12m,
                 "ltv_24m": ltv_24m,
@@ -292,13 +309,12 @@ class LTVPredictionTool(BaseTool):
                 "payback_months": payback_period,
                 "roi_12m": (ltv_12m - initial_purchase) / initial_purchase * 100,
             },
-            confidence=0.78
+            confidence=0.78,
         )
 
-    def _calculate_ltv(self, monthly: float, retention: float,
-                      months: int) -> float:
+    def _calculate_ltv(self, monthly: float, retention: float, months: int) -> float:
         """LTV = monthly_spend * (retention_rate ^ months)."""
-        return monthly * sum(retention ** m for m in range(months))
+        return monthly * sum(retention**m for m in range(months))
 
     def _payback_period(self, initial: float, monthly: float) -> float:
         """Meses hasta recuperar inversión inicial."""
@@ -311,11 +327,14 @@ class RevenueProjectionTool(BaseTool):
     def __init__(self):
         super().__init__("tool.revenue_projection", "Revenue Projection", "predictive")
 
-    async def execute(self, current_arpu: float,
-                     total_customers: int,
-                     churn_rate: float,
-                     growth_rate: float,
-                     months_forward: int = 12) -> ToolOutput:
+    async def execute(
+        self,
+        current_arpu: float,
+        total_customers: int,
+        churn_rate: float,
+        growth_rate: float,
+        months_forward: int = 12,
+    ) -> ToolOutput:
         """Proyecta revenue 3, 6, 12 meses."""
         projections = {}
         for m in [3, 6, 12]:
@@ -325,12 +344,13 @@ class RevenueProjectionTool(BaseTool):
                 projections[f"{m}m"] = revenue
 
         return ToolOutput(
-            self.tool_id, ToolOutcomeType.PREDICTION,
+            self.tool_id,
+            ToolOutcomeType.PREDICTION,
             projections,
             secondary_results={
                 "growth_scenario": "bullish" if growth_rate > 0.02 else "conservative",
             },
-            confidence=0.72
+            confidence=0.72,
         )
 
 
@@ -343,24 +363,29 @@ class CustomerSegmentationTool(BaseTool):
     """Segmentación de clientes usando RFM + clustering."""
 
     def __init__(self):
-        super().__init__("tool.customer_segmentation", "Customer Segmentation", "analysis")
+        super().__init__(
+            "tool.customer_segmentation", "Customer Segmentation", "analysis"
+        )
 
-    async def execute(self, customers: List[Dict[str, float]]) -> ToolOutput:
+    async def execute(self, customers: list[dict[str, float]]) -> ToolOutput:
         """Segmenta clientes en VIP/loyal/at-risk/dormant."""
         segments = self._segment_customers(customers)
 
         return ToolOutput(
-            self.tool_id, ToolOutcomeType.ANALYSIS,
+            self.tool_id,
+            ToolOutcomeType.ANALYSIS,
             segments,
             secondary_results={
                 "vip_count": len(segments.get("vip", [])),
                 "at_risk_count": len(segments.get("at_risk", [])),
                 "intervention_needed": len(segments.get("at_risk", [])) > 0,
             },
-            confidence=0.85
+            confidence=0.85,
         )
 
-    def _segment_customers(self, customers: List[Dict[str, float]]) -> Dict[str, List[str]]:
+    def _segment_customers(
+        self, customers: list[dict[str, float]]
+    ) -> dict[str, list[str]]:
         """Segmentación RFM."""
         segments = {"vip": [], "loyal": [], "at_risk": [], "dormant": []}
         for c in customers:
@@ -382,13 +407,14 @@ class FunnelOptimizationTool(BaseTool):
     def __init__(self):
         super().__init__("tool.funnel_optimization", "Funnel Optimization", "analysis")
 
-    async def execute(self, funnel_stages: Dict[str, int]) -> ToolOutput:
+    async def execute(self, funnel_stages: dict[str, int]) -> ToolOutput:
         """Analiza conversion rates + bottlenecks."""
         conversions = self._calculate_conversions(funnel_stages)
         bottleneck = self._find_bottleneck(conversions)
 
         return ToolOutput(
-            self.tool_id, ToolOutcomeType.ANALYSIS,
+            self.tool_id,
+            ToolOutcomeType.ANALYSIS,
             {
                 "conversions": conversions,
                 "bottleneck": bottleneck,
@@ -397,10 +423,10 @@ class FunnelOptimizationTool(BaseTool):
                 "overall_conversion": conversions.get("total", 0),
                 "optimization_opportunity": bottleneck["potential_uplift"],
             },
-            confidence=0.88
+            confidence=0.88,
         )
 
-    def _calculate_conversions(self, stages: Dict[str, int]) -> Dict[str, float]:
+    def _calculate_conversions(self, stages: dict[str, int]) -> dict[str, float]:
         """Calcula CR entre etapas."""
         conv = {}
         prev_count = None
@@ -408,17 +434,17 @@ class FunnelOptimizationTool(BaseTool):
             if prev_count:
                 conv[f"{stage}_cr"] = count / prev_count if prev_count > 0 else 0
             prev_count = count
-        total_visitors = list(stages.values())[0] if stages else 0
+        total_visitors = next(iter(stages.values())) if stages else 0
         final_conversions = list(stages.values())[-1] if stages else 0
         conv["total"] = final_conversions / total_visitors if total_visitors > 0 else 0
         return conv
 
-    def _find_bottleneck(self, conversions: Dict[str, float]) -> Dict[str, Any]:
+    def _find_bottleneck(self, conversions: dict[str, float]) -> dict[str, Any]:
         """Encuentra etapa con peor CR."""
         worst_stage = min(
             ((k, v) for k, v in conversions.items() if "_cr" in k),
             key=lambda x: x[1],
-            default=("unknown", 0.5)
+            default=("unknown", 0.5),
         )
         potential = (1 - worst_stage[1]) * 0.5  # Upside potencial
         return {
@@ -434,10 +460,13 @@ class ABTestingDesignerTool(BaseTool):
     def __init__(self):
         super().__init__("tool.ab_testing_designer", "A/B Testing Designer", "analysis")
 
-    async def execute(self, baseline_conversion: float,
-                     target_lift: float,
-                     significance_level: float = 0.05,
-                     power: float = 0.8) -> ToolOutput:
+    async def execute(
+        self,
+        baseline_conversion: float,
+        target_lift: float,
+        significance_level: float = 0.05,
+        power: float = 0.8,
+    ) -> ToolOutput:
         """Calcula sample size + duración del test."""
         sample_size = self._calculate_sample_size(
             baseline_conversion, target_lift, significance_level, power
@@ -445,7 +474,8 @@ class ABTestingDesignerTool(BaseTool):
         duration_days = self._estimate_duration(sample_size)
 
         return ToolOutput(
-            self.tool_id, ToolOutcomeType.ANALYSIS,
+            self.tool_id,
+            ToolOutcomeType.ANALYSIS,
             {
                 "sample_size_per_variant": sample_size,
                 "total_sample_size": sample_size * 2,
@@ -455,14 +485,15 @@ class ABTestingDesignerTool(BaseTool):
                 "target_conversion": baseline_conversion * (1 + target_lift),
                 "min_detectable_effect": target_lift,
             },
-            confidence=0.90
+            confidence=0.90,
         )
 
-    def _calculate_sample_size(self, baseline: float, lift: float,
-                              alpha: float, power: float) -> int:
+    def _calculate_sample_size(
+        self, baseline: float, lift: float, alpha: float, power: float
+    ) -> int:
         """Sample size calculation (simplified)."""
         effect_size = lift  # Simplified
-        n = int((1.96 + 1.28) ** 2 * (baseline * (1 - baseline) * 2) / (effect_size ** 2))
+        n = int((1.96 + 1.28) ** 2 * (baseline * (1 - baseline) * 2) / (effect_size**2))
         return max(n, 100)
 
     def _estimate_duration(self, sample_size: int, daily_traffic: int = 1000) -> int:
@@ -474,26 +505,32 @@ class ContentPerformancePredictorTool(BaseTool):
     """Predictor de performance de contenido."""
 
     def __init__(self):
-        super().__init__("tool.content_performance", "Content Performance Predictor", "predictive")
+        super().__init__(
+            "tool.content_performance", "Content Performance Predictor", "predictive"
+        )
 
-    async def execute(self, content_type: str,
-                     topic: str,
-                     length: int,
-                     seo_score: float,
-                     promotion_channels: int) -> ToolOutput:
+    async def execute(
+        self,
+        content_type: str,
+        topic: str,
+        length: int,
+        seo_score: float,
+        promotion_channels: int,
+    ) -> ToolOutput:
         """Predice views, engagement, conversión."""
         predicted_views = self._predict_views(content_type, length, seo_score)
         predicted_engagement = self._predict_engagement(content_type, topic)
         predicted_conversions = predicted_views * predicted_engagement * 0.02
 
         return ToolOutput(
-            self.tool_id, ToolOutcomeType.PREDICTION,
+            self.tool_id,
+            ToolOutcomeType.PREDICTION,
             {
                 "predicted_views": predicted_views,
                 "predicted_engagement_rate": predicted_engagement,
                 "predicted_conversions": int(predicted_conversions),
             },
-            confidence=0.70
+            confidence=0.70,
         )
 
     def _predict_views(self, ctype: str, length: int, seo: float) -> int:
@@ -511,24 +548,27 @@ class CompetitorMovePredictorTool(BaseTool):
     """Predictor de movimientos de competidores."""
 
     def __init__(self):
-        super().__init__("tool.competitor_moves", "Competitor Move Predictor", "analysis")
+        super().__init__(
+            "tool.competitor_moves", "Competitor Move Predictor", "analysis"
+        )
 
-    async def execute(self, competitor_signals: Dict[str, Any]) -> ToolOutput:
+    async def execute(self, competitor_signals: dict[str, Any]) -> ToolOutput:
         """Predice siguiente move del competidor."""
         signals = competitor_signals
         predicted_move = self._predict_move(signals)
         recommended_counter = self._recommend_counter_move(predicted_move)
 
         return ToolOutput(
-            self.tool_id, ToolOutcomeType.PREDICTION,
+            self.tool_id,
+            ToolOutcomeType.PREDICTION,
             {
                 "predicted_move": predicted_move,
                 "counter_move": recommended_counter,
             },
-            confidence=0.65
+            confidence=0.65,
         )
 
-    def _predict_move(self, signals: Dict[str, Any]) -> str:
+    def _predict_move(self, signals: dict[str, Any]) -> str:
         """Predice estrategia siguiente."""
         if signals.get("hiring_increase"):
             return "Market expansion"
@@ -557,19 +597,26 @@ class RiskAssessorTool(BaseTool):
     def __init__(self):
         super().__init__("tool.risk_assessment", "Risk Assessor", "analysis")
 
-    async def execute(self, risk_factors: Dict[str, float]) -> ToolOutput:
+    async def execute(self, risk_factors: dict[str, float]) -> ToolOutput:
         """Calcula risk score total."""
         risk_scores = {k: v for k, v in risk_factors.items()}
-        total_risk = sum(risk_scores.values()) / len(risk_scores) if risk_scores else 0.0
+        total_risk = (
+            sum(risk_scores.values()) / len(risk_scores) if risk_scores else 0.0
+        )
 
         return ToolOutput(
-            self.tool_id, ToolOutcomeType.ANALYSIS,
+            self.tool_id,
+            ToolOutcomeType.ANALYSIS,
             {
                 "total_risk_score": total_risk,
-                "risk_level": "critical" if total_risk > 0.8 else "high" if total_risk > 0.6 else "medium",
+                "risk_level": (
+                    "critical"
+                    if total_risk > 0.8
+                    else "high" if total_risk > 0.6 else "medium"
+                ),
             },
             secondary_results={"individual_risks": risk_scores},
-            confidence=0.85
+            confidence=0.85,
         )
 
 
@@ -579,24 +626,27 @@ class OpportunityScouttool(BaseTool):
     def __init__(self):
         super().__init__("tool.opportunity_scout", "Opportunity Scout", "analysis")
 
-    async def execute(self, market_data: Dict[str, Any],
-                     internal_capabilities: List[str]) -> ToolOutput:
+    async def execute(
+        self, market_data: dict[str, Any], internal_capabilities: list[str]
+    ) -> ToolOutput:
         """Identifica oportunidades de negocio."""
         opportunities = self._identify_opportunities(market_data, internal_capabilities)
 
         return ToolOutput(
-            self.tool_id, ToolOutcomeType.ANALYSIS,
+            self.tool_id,
+            ToolOutcomeType.ANALYSIS,
             {
                 "opportunities": opportunities,
             },
             secondary_results={
                 "top_opportunity": opportunities[0] if opportunities else None,
             },
-            confidence=0.72
+            confidence=0.72,
         )
 
-    def _identify_opportunities(self, market: Dict[str, Any],
-                               capabilities: List[str]) -> List[str]:
+    def _identify_opportunities(
+        self, market: dict[str, Any], capabilities: list[str]
+    ) -> list[str]:
         """Busca match entre market trends + capabilities."""
         return [f"Opportunity_{i}" for i in range(1, 4)]
 
@@ -605,25 +655,29 @@ class AutomationWorkflowBuilderTool(BaseTool):
     """Constructor de workflows de automatización."""
 
     def __init__(self):
-        super().__init__("tool.workflow_builder", "Automation Workflow Builder", "action")
+        super().__init__(
+            "tool.workflow_builder", "Automation Workflow Builder", "action"
+        )
 
-    async def execute(self, workflow_type: str,
-                     triggers: List[str],
-                     actions: List[str]) -> ToolOutput:
+    async def execute(
+        self, workflow_type: str, triggers: list[str], actions: list[str]
+    ) -> ToolOutput:
         """Diseña workflow automatizado."""
         workflow = self._design_workflow(workflow_type, triggers, actions)
 
         return ToolOutput(
-            self.tool_id, ToolOutcomeType.ACTION,
+            self.tool_id,
+            ToolOutcomeType.ACTION,
             {
                 "workflow_definition": workflow,
                 "estimated_time_saved": "10+ horas/mes",
             },
-            confidence=0.90
+            confidence=0.90,
         )
 
-    def _design_workflow(self, wtype: str, triggers: List[str],
-                        actions: List[str]) -> Dict[str, Any]:
+    def _design_workflow(
+        self, wtype: str, triggers: list[str], actions: list[str]
+    ) -> dict[str, Any]:
         """Diseña el workflow."""
         return {
             "type": wtype,
@@ -642,7 +696,7 @@ class EvolvedToolRegistry:
     """Registry de herramientas evolucionadas."""
 
     def __init__(self):
-        self.tools: Dict[str, BaseTool] = {}
+        self.tools: dict[str, BaseTool] = {}
         self._register_all()
 
     def _register_all(self) -> None:
@@ -675,13 +729,14 @@ class EvolvedToolRegistry:
         """Invoca una herramienta."""
         if tool_id not in self.tools:
             return ToolOutput(
-                tool_id, ToolOutcomeType.ANALYSIS,
+                tool_id,
+                ToolOutcomeType.ANALYSIS,
                 {"error": "tool_not_found"},
-                confidence=0.0
+                confidence=0.0,
             )
         return await self.tools[tool_id].invoke(**kwargs)
 
-    def list_tools(self) -> List[Dict[str, Any]]:
+    def list_tools(self) -> list[dict[str, Any]]:
         """Lista todas las herramientas."""
         return [
             {
@@ -693,20 +748,28 @@ class EvolvedToolRegistry:
             for tool in self.tools.values()
         ]
 
-    def get_tools_by_category(self, category: str) -> List[BaseTool]:
+    def get_tools_by_category(self, category: str) -> list[BaseTool]:
         """Obtiene herramientas por categoría."""
         return [t for t in self.tools.values() if t.category == category]
 
 
 # Export
 __all__ = [
-    "ToolOutcomeType", "ToolMetrics", "ToolOutput", "BaseTool",
-    "DemandForecastingTool", "ChurnPredictionTool", "LTVPredictionTool",
-    "RevenueProjectionTool", "ContentPerformancePredictorTool",
-    "CompetitorMovePredictorTool",
-    "CustomerSegmentationTool", "FunnelOptimizationTool",
     "ABTestingDesignerTool",
-    "RiskAssessorTool", "OpportunityScouttool",
     "AutomationWorkflowBuilderTool",
+    "BaseTool",
+    "ChurnPredictionTool",
+    "CompetitorMovePredictorTool",
+    "ContentPerformancePredictorTool",
+    "CustomerSegmentationTool",
+    "DemandForecastingTool",
     "EvolvedToolRegistry",
+    "FunnelOptimizationTool",
+    "LTVPredictionTool",
+    "OpportunityScouttool",
+    "RevenueProjectionTool",
+    "RiskAssessorTool",
+    "ToolMetrics",
+    "ToolOutcomeType",
+    "ToolOutput",
 ]

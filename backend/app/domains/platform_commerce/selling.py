@@ -87,7 +87,10 @@ async def answer_buyers(db: AsyncSession, business_id: uuid.UUID) -> dict[str, A
 
 
 async def pending_questions(
-    db: AsyncSession, business_id: uuid.UUID, platform: str, limit: int = 25,
+    db: AsyncSession,
+    business_id: uuid.UUID,
+    platform: str,
+    limit: int = 25,
 ) -> list[dict[str, Any]]:
     """Buyers on this platform whose last message never got an answer.
 
@@ -95,12 +98,18 @@ async def pending_questions(
     a question on a listing is someone with their wallet already out.
     """
     from app.domains.channels.models import (
-        ChannelConnection, Conversation, Message, MessageDirection,
+        ChannelConnection,
+        Conversation,
+        Message,
+        MessageDirection,
     )
 
     result = await db.execute(
         select(Conversation, ChannelConnection)
-        .join(ChannelConnection, Conversation.channel_connection_id == ChannelConnection.id)
+        .join(
+            ChannelConnection,
+            Conversation.channel_connection_id == ChannelConnection.id,
+        )
         .where(
             Conversation.business_id == business_id,
             Conversation.is_active.is_(True),
@@ -112,7 +121,9 @@ async def pending_questions(
     pending: list[dict[str, Any]] = []
     for conversation, channel in result.all():
         channel_platform = (
-            channel.platform.value if hasattr(channel.platform, "value") else str(channel.platform)
+            channel.platform.value
+            if hasattr(channel.platform, "value")
+            else str(channel.platform)
         )
         if channel_platform != platform:
             continue
@@ -126,12 +137,16 @@ async def pending_questions(
         if not rows or rows[-1].direction != MessageDirection.INBOUND:
             continue  # answered, or nothing asked
 
-        pending.append({
-            "conversation_id": str(conversation.id),
-            "name": conversation.lead_name or "comprador",
-            "question": (rows[-1].content or "")[:300],
-            "asked_at": rows[-1].created_at.isoformat() if rows[-1].created_at else None,
-        })
+        pending.append(
+            {
+                "conversation_id": str(conversation.id),
+                "name": conversation.lead_name or "comprador",
+                "question": (rows[-1].content or "")[:300],
+                "asked_at": (
+                    rows[-1].created_at.isoformat() if rows[-1].created_at else None
+                ),
+            }
+        )
         if len(pending) >= limit:
             break
 
@@ -139,7 +154,9 @@ async def pending_questions(
 
 
 async def answer_pending(
-    db: AsyncSession, business_id: uuid.UUID, platform: str,
+    db: AsyncSession,
+    business_id: uuid.UUID,
+    platform: str,
 ) -> dict[str, Any]:
     """Have the AI answer every open question on this platform, for real.
 
@@ -164,15 +181,22 @@ async def answer_pending(
     last_error: str | None = None
     for item in open_questions:
         try:
-            conversation = await db.get(Conversation, uuid.UUID(item["conversation_id"]))
+            conversation = await db.get(
+                Conversation, uuid.UUID(item["conversation_id"])
+            )
             if conversation is None:
                 continue
             reply = await generate_ai_response(
-                db, conversation, "captador", business_id,
+                db,
+                conversation,
+                "captador",
+                business_id,
             )
             if not reply:
                 failed += 1
-                last_error = "la IA no devolvió respuesta (revisá el saldo del proveedor)"
+                last_error = (
+                    "la IA no devolvió respuesta (revisá el saldo del proveedor)"
+                )
                 continue
             await send_outbound_message(
                 db,
@@ -181,8 +205,13 @@ async def answer_pending(
                 generated_by="ai",
             )
             answered += 1
-        except Exception as e:  # noqa: BLE001 -- one buyer must not sink the batch
-            logger.warning("answer_pending failed for %s: %s", item["conversation_id"], str(e)[:200])
+        # one buyer must not sink the batch
+        except Exception as e:  # noqa: BLE001
+            logger.warning(
+                "answer_pending failed for %s: %s",
+                item["conversation_id"],
+                str(e)[:200],
+            )
             last_error = str(e)[:200]
             failed += 1
 
@@ -204,7 +233,9 @@ async def answer_pending(
 
 
 async def sync_orders(
-    db: AsyncSession, business_id: uuid.UUID, platform: str,
+    db: AsyncSession,
+    business_id: uuid.UUID,
+    platform: str,
 ) -> dict[str, Any]:
     from app.domains.channels.models import ChannelConnection
 
@@ -221,8 +252,10 @@ async def sync_orders(
     )
     channel = next(
         (
-            c for c in result.scalars().all()
-            if (c.platform.value if hasattr(c.platform, "value") else str(c.platform)) == platform
+            c
+            for c in result.scalars().all()
+            if (c.platform.value if hasattr(c.platform, "value") else str(c.platform))
+            == platform
         ),
         None,
     )
@@ -230,12 +263,18 @@ async def sync_orders(
         raise ActionNotAvailable(f"No tenés {platform} conectado.")
 
     return await sync.sync_platform_orders(
-        db, business_id, platform, channel.credentials or {}, channel.settings or {},
+        db,
+        business_id,
+        platform,
+        channel.credentials or {},
+        channel.settings or {},
     )
 
 
 async def publish_catalog(
-    db: AsyncSession, business_id: uuid.UUID, platform: str,
+    db: AsyncSession,
+    business_id: uuid.UUID,
+    platform: str,
 ) -> dict[str, Any]:
     """Push the account's real products to the platform.
 
@@ -258,8 +297,10 @@ async def publish_catalog(
     )
     channel = next(
         (
-            c for c in result.scalars().all()
-            if (c.platform.value if hasattr(c.platform, "value") else str(c.platform)) == platform
+            c
+            for c in result.scalars().all()
+            if (c.platform.value if hasattr(c.platform, "value") else str(c.platform))
+            == platform
         ),
         None,
     )
@@ -283,7 +324,9 @@ async def publish_catalog(
             "No tenés productos cargados en SellIA todavía, así que no hay nada que publicar."
         )
 
-    connector = get_connector(ChannelPlatform(platform), channel.credentials or {}, channel.settings or {})
+    connector = get_connector(
+        ChannelPlatform(platform), channel.credentials or {}, channel.settings or {}
+    )
     pushed, failed = 0, 0
     last_error: str | None = None
 
@@ -292,13 +335,18 @@ async def publish_catalog(
             if hasattr(connector, "push_catalog_item"):
                 await connector.push_catalog_item(product)
             else:
-                await connector.sync_products_to_tiktok([{  # type: ignore[attr-defined]
-                    "id": str(product.id),
-                    "name": product.name,
-                    "price": float(product.price or 0),
-                }])
+                await connector.sync_products_to_tiktok(
+                    [
+                        {  # type: ignore[attr-defined]
+                            "id": str(product.id),
+                            "name": product.name,
+                            "price": float(product.price or 0),
+                        }
+                    ]
+                )
             pushed += 1
-        except Exception as e:  # noqa: BLE001 -- one product must not sink the batch
+        # one product must not sink the batch
+        except Exception as e:  # noqa: BLE001
             logger.warning("publish_catalog: %s failed: %s", product.id, str(e)[:200])
             last_error = str(e)[:200]
             failed += 1

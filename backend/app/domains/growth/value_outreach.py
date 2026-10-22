@@ -5,20 +5,21 @@ before any sales ask. Warms up cold leads through education.
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Any, List
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logger import get_logger
+from app.domains.agents.ai_reply import generate_raw_ai_response
 from app.domains.growth.models import (
-    ValueSequence, ValueSequenceEnrollment,
-    InboundLead, NurturingStage,
+    InboundLead,
+    NurturingStage,
+    ValueSequence,
+    ValueSequenceEnrollment,
 )
 from app.domains.outreach.service import FatigueScoringService
-from app.domains.agents.ai_reply import generate_raw_ai_response
-from app.core.logger import get_logger
-from app.core.events import event_bus
 
 logger = get_logger(__name__)
 
@@ -40,7 +41,7 @@ class ValueFirstOutreach:
         message_count: int = 3,
         total_duration_days: int = 7,
         target_segment: str = "cold",
-        campaign_id: uuid.UUID = None,
+        campaign_id: uuid.UUID | None = None,
     ) -> ValueSequence:
         """Create an AI-generated educational value sequence."""
         messages = await self._generate_sequence_messages(
@@ -60,7 +61,9 @@ class ValueFirstOutreach:
         self.db.add(sequence)
         await self.db.commit()
         await self.db.refresh(sequence)
-        logger.info(f"Created value sequence {sequence.id} ({message_count} messages) for business {business_id}")
+        logger.info(
+            f"Created value sequence {sequence.id} ({message_count} messages) for business {business_id}"
+        )
         return sequence
 
     async def _generate_sequence_messages(
@@ -69,7 +72,7 @@ class ValueFirstOutreach:
         topic: str,
         message_count: int,
         total_duration_days: int,
-    ) -> List[dict]:
+    ) -> list[dict]:
         """Generate AI-powered educational messages."""
         avg_delay = (total_duration_days * 24) // message_count
 
@@ -120,13 +123,16 @@ NO uses frases genéricas como "espero que estés bien". Sé directo y valioso."
                 temperature=0.75,
             )
             import json
+
             parsed = json.loads(response or "{}")
             return parsed.get("messages", [])
-        except Exception as e:
-            logger.error(f"Failed to generate sequence messages: {e}")
+        except Exception:
+            logger.exception("Failed to generate sequence messages")
             return self._fallback_messages(topic, message_count, avg_delay)
 
-    def _fallback_messages(self, topic: str, count: int, delay_hours: int) -> List[dict]:
+    def _fallback_messages(
+        self, topic: str, count: int, delay_hours: int
+    ) -> list[dict]:
         """Fallback messages if AI generation fails."""
         messages = [
             {
@@ -162,7 +168,7 @@ NO uses frases genéricas como "espero que estés bien". Sé directo y valioso."
         self,
         sequence_id: uuid.UUID,
         conversation_id: uuid.UUID,
-        inbound_lead_id: uuid.UUID = None,
+        inbound_lead_id: uuid.UUID | None = None,
     ) -> ValueSequenceEnrollment:
         """Enroll a lead in a value sequence."""
         sequence = await self._get_sequence(sequence_id)
@@ -191,7 +197,9 @@ NO uses frases genéricas como "espero que estés bien". Sé directo y valioso."
 
         await self.db.commit()
         await self.db.refresh(enrollment)
-        logger.info(f"Enrolled conversation {conversation_id} in sequence {sequence_id}")
+        logger.info(
+            f"Enrolled conversation {conversation_id} in sequence {sequence_id}"
+        )
         return enrollment
 
     async def send_next_message(self, enrollment_id: uuid.UUID) -> dict[str, Any]:
@@ -207,12 +215,16 @@ NO uses frases genéricas como "espero que estés bien". Sé directo y valioso."
         next_step = enrollment.current_step + 1
         if next_step > sequence.message_count:
             enrollment.status = "completed"
-            enrollment.completed_at = datetime.now(timezone.utc)
+            enrollment.completed_at = datetime.now(UTC)
             sequence.times_completed += 1
             await self.db.commit()
             return {"status": "completed"}
 
-        message_data = sequence.messages[next_step - 1] if next_step <= len(sequence.messages) else None
+        message_data = (
+            sequence.messages[next_step - 1]
+            if next_step <= len(sequence.messages)
+            else None
+        )
         if not message_data:
             return {"status": "error", "reason": "no_message_data"}
 
@@ -225,6 +237,7 @@ NO uses frases genéricas como "espero que estés bien". Sé directo y valioso."
 
         # Send message
         from app.domains.channels.services import send_outbound_message
+
         try:
             await send_outbound_message(
                 self.db,
@@ -233,16 +246,18 @@ NO uses frases genéricas como "espero que estés bien". Sé directo y valioso."
                 content_type="text",
             )
         except Exception as e:
-            logger.error(f"Failed to send value message: {e}")
+            logger.exception("Failed to send value message")
             return {"status": "error", "reason": str(e)}
 
         # Update enrollment
         enrollment.current_step = next_step
         enrollment.messages_sent += 1
-        enrollment.last_engagement_at = datetime.now(timezone.utc)
+        enrollment.last_engagement_at = datetime.now(UTC)
         await self.db.commit()
 
-        logger.info(f"Sent value message {next_step}/{sequence.message_count} to enrollment {enrollment_id}")
+        logger.info(
+            f"Sent value message {next_step}/{sequence.message_count} to enrollment {enrollment_id}"
+        )
         return {"status": "sent", "step": next_step, "total": sequence.message_count}
 
     async def nurture_cold_leads(
@@ -254,11 +269,15 @@ NO uses frases genéricas como "espero que estés bien". Sé directo y valioso."
         """Auto-enroll cold leads and send next messages."""
         # Find cold leads without active enrollment
         result = await self.db.execute(
-            select(InboundLead).where(
+            select(InboundLead)
+            .where(
                 InboundLead.business_id == business_id,
-                InboundLead.nurturing_stage.in_([NurturingStage.NEW, NurturingStage.AWARENESS]),
+                InboundLead.nurturing_stage.in_(
+                    [NurturingStage.NEW, NurturingStage.AWARENESS]
+                ),
                 InboundLead.is_active == True,
-            ).limit(max_leads)
+            )
+            .limit(max_leads)
         )
         cold_leads = result.scalars().all()
 
@@ -289,8 +308,8 @@ NO uses frases genéricas como "espero que estés bien". Sé directo y valioso."
                 if result.get("status") == "sent":
                     messages_sent += 1
 
-            except Exception as e:
-                logger.error(f"Failed to nurture lead {lead.id}: {e}")
+            except Exception:
+                logger.exception(f"Failed to nurture lead {lead.id}")
 
         return {"enrolled": enrolled, "messages_sent": messages_sent}
 
@@ -325,8 +344,12 @@ NO uses frases genéricas como "espero que estés bien". Sé directo y valioso."
         )
         converted = converted_result.scalar() or 0
 
-        completion_rate = (completed / total_enrollments * 100) if total_enrollments > 0 else 0
-        conversion_rate = (converted / total_enrollments * 100) if total_enrollments > 0 else 0
+        completion_rate = (
+            (completed / total_enrollments * 100) if total_enrollments > 0 else 0
+        )
+        conversion_rate = (
+            (converted / total_enrollments * 100) if total_enrollments > 0 else 0
+        )
 
         return {
             "sequence_id": str(sequence_id),
@@ -341,7 +364,7 @@ NO uses frases genéricas como "espero que estés bien". Sé directo y valioso."
 
     # ========== Helpers ==========
 
-    async def _get_sequence(self, sequence_id: uuid.UUID) -> Optional[ValueSequence]:
+    async def _get_sequence(self, sequence_id: uuid.UUID) -> ValueSequence | None:
         result = await self.db.execute(
             select(ValueSequence).where(ValueSequence.id == sequence_id)
         )

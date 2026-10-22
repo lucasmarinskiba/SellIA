@@ -4,10 +4,14 @@ Pricing: ~$0.005/generation
 Strengths: Ads, headlines, social captions, quick marketing copy
 """
 
-from typing import Dict, Any
+import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
+
+from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -17,7 +21,7 @@ class CopyAIProvider(BaseProvider):
 
     name = "Copy.ai"
     slug = "copyai"
-    supports = [ContentType.COPY]
+    supports: ClassVar[list] = [ContentType.COPY]
 
     @property
     def is_available(self) -> bool:
@@ -26,12 +30,14 @@ class CopyAIProvider(BaseProvider):
     def estimate_cost(self, config: GenerationConfig) -> float:
         return 0.005
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {"copyai-generation": 0.005}
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         if not self.is_available:
-            return GenerationResult(success=False, error_message="COPYAI_API_KEY no configurada")
+            return GenerationResult(
+                success=False, error_message="COPYAI_API_KEY no configurada"
+            )
 
         try:
             import aiohttp
@@ -47,17 +53,22 @@ class CopyAIProvider(BaseProvider):
                 "language": config.extra_params.get("language", "es"),
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    "https://api.copy.ai/api/generate",
-                    headers=headers,
-                    json=payload,
-                ) as resp:
-                    data = await resp.json()
+            async with aiohttp.ClientSession() as session, session.post(
+                "https://api.copy.ai/api/generate",
+                headers=headers,
+                json=payload,
+            ) as resp:
+                data = await resp.json()
 
-            text = data.get("data", {}).get("text") if isinstance(data.get("data"), dict) else data.get("text")
+            text = (
+                data.get("data", {}).get("text")
+                if isinstance(data.get("data"), dict)
+                else data.get("text")
+            )
             if not text:
-                return GenerationResult(success=False, error_message="Copy.ai no devolvió texto")
+                return GenerationResult(
+                    success=False, error_message="Copy.ai no devolvió texto"
+                )
 
             return GenerationResult(
                 success=True,
@@ -69,4 +80,5 @@ class CopyAIProvider(BaseProvider):
             )
 
         except Exception as e:
+            logger.exception("generate: error inesperado")
             return GenerationResult(success=False, error_message=str(e))

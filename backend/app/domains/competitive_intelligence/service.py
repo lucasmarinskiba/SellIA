@@ -1,14 +1,16 @@
 """Phase 4: Competitive Intelligence Service - Market Analysis & Price Optimization."""
-from typing import List, Dict, Optional
+
+from datetime import UTC, datetime
 from uuid import UUID
-from datetime import datetime, timezone
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+
 from app.domains.competitive_intelligence.models import (
-    CompetitorProfile,
-    PriceOptimization,
-    MarketAnalysis,
     CompetitiveIntelligenceFeed,
+    CompetitorProfile,
+    MarketAnalysis,
+    PriceOptimization,
 )
 
 
@@ -19,11 +21,11 @@ class CompetitiveIntelligenceService:
         business_id: UUID,
         competitor_name: str,
         industry: str,
-        market_segment: str = None,
-        price_point: float = None,
-        strength_areas: List[str] = None,
-        weakness_areas: List[str] = None,
-        feature_set: List[str] = None,
+        market_segment: str | None = None,
+        price_point: float | None = None,
+        strength_areas: list[str] | None = None,
+        weakness_areas: list[str] | None = None,
+        feature_set: list[str] | None = None,
     ) -> dict:
         """Register/update competitor profile."""
         result = await db.execute(
@@ -47,7 +49,7 @@ class CompetitiveIntelligenceService:
         competitor.strength_areas = strength_areas or []
         competitor.weakness_areas = weakness_areas or []
         competitor.feature_set = feature_set or []
-        competitor.last_analyzed_at = datetime.now(timezone.utc)
+        competitor.last_analyzed_at = datetime.now(UTC)
 
         # Simple threat scoring: pricing aggression + feature count
         threat_score = 50
@@ -74,7 +76,7 @@ class CompetitiveIntelligenceService:
         business_id: UUID,
         product_id: UUID,
         current_price: float,
-        competitor_prices: List[float] = None,
+        competitor_prices: list[float] | None = None,
         target_margin: float = 0.4,
         market_position: str = "competitive",
     ) -> dict:
@@ -107,10 +109,16 @@ class CompetitiveIntelligenceService:
         confidence = 0.7 if competitor_prices else 0.5
 
         # Impact estimation
-        price_change_pct = (suggested_price - current_price) / current_price if current_price > 0 else 0
+        price_change_pct = (
+            (suggested_price - current_price) / current_price
+            if current_price > 0
+            else 0
+        )
         estimated_demand_impact = elasticity * price_change_pct
         estimated_revenue_impact = price_change_pct + estimated_demand_impact
-        estimated_margin_impact = price_change_pct  # margin improves as price goes up (assuming fixed costs)
+        estimated_margin_impact = (
+            price_change_pct  # margin improves as price goes up (assuming fixed costs)
+        )
 
         # Store optimization record
         optimization = PriceOptimization(
@@ -149,7 +157,7 @@ class CompetitiveIntelligenceService:
     async def get_competitive_landscape(
         db: AsyncSession,
         business_id: UUID,
-        market_segment: str = None,
+        market_segment: str | None = None,
     ) -> dict:
         """Analyze competitive landscape for market segment."""
         # Get all competitors for business
@@ -171,11 +179,16 @@ class CompetitiveIntelligenceService:
             }
 
         # Calculate market metrics
-        avg_price = sum([c.price_point for c in competitors if c.price_point]) / len(
-            [c for c in competitors if c.price_point]
-        ) if any(c.price_point for c in competitors) else 0
+        avg_price = (
+            sum([c.price_point for c in competitors if c.price_point])
+            / len([c for c in competitors if c.price_point])
+            if any(c.price_point for c in competitors)
+            else 0
+        )
 
-        avg_threat = sum([c.competitive_threat_score for c in competitors]) / len(competitors)
+        avg_threat = sum([c.competitive_threat_score for c in competitors]) / len(
+            competitors
+        )
 
         return {
             "market_segment": market_segment or "all",
@@ -189,7 +202,9 @@ class CompetitiveIntelligenceService:
                     "price": c.price_point,
                     "strengths": c.strength_areas[:3],
                 }
-                for c in sorted(competitors, key=lambda x: x.competitive_threat_score, reverse=True)[:3]
+                for c in sorted(
+                    competitors, key=lambda x: x.competitive_threat_score, reverse=True
+                )[:3]
             ],
         }
 
@@ -201,9 +216,7 @@ class CompetitiveIntelligenceService:
         """Identify gaps and opportunities in market."""
         # Get all analysis records
         result = await db.execute(
-            select(MarketAnalysis).where(
-                MarketAnalysis.business_id == business_id
-            )
+            select(MarketAnalysis).where(MarketAnalysis.business_id == business_id)
         )
         analyses = result.scalars().all()
 
@@ -212,22 +225,35 @@ class CompetitiveIntelligenceService:
 
         for analysis in analyses:
             if analysis.positioning_score < 40:
-                opportunities.append(f"Poor positioning in {analysis.market_segment}: consider differentiation")
+                opportunities.append(
+                    f"Poor positioning in {analysis.market_segment}: consider differentiation"
+                )
 
             if analysis.competitive_intensity > 70:
-                threats.append(f"High competition in {analysis.market_segment}: consider niche focus")
+                threats.append(
+                    f"High competition in {analysis.market_segment}: consider niche focus"
+                )
 
             if analysis.market_growth_rate > 0.2:
-                opportunities.append(f"Fast-growing market: {analysis.market_segment} - expand aggressively")
+                opportunities.append(
+                    f"Fast-growing market: {analysis.market_segment} - expand aggressively"
+                )
 
-            if analysis.your_current_market_share < 0.05 and analysis.num_competitors > 10:
-                opportunities.append(f"Consolidation opportunity: {analysis.market_segment} is fragmented")
+            if (
+                analysis.your_current_market_share < 0.05
+                and analysis.num_competitors > 10
+            ):
+                opportunities.append(
+                    f"Consolidation opportunity: {analysis.market_segment} is fragmented"
+                )
 
         return {
             "business_id": business_id,
             "opportunities": opportunities[:5],
             "threats": threats[:5],
-            "top_priority": opportunities[0] if opportunities else "Monitor competitive landscape",
+            "top_priority": (
+                opportunities[0] if opportunities else "Monitor competitive landscape"
+            ),
         }
 
     @staticmethod
@@ -237,9 +263,9 @@ class CompetitiveIntelligenceService:
         feed_type: str,
         competitor_name: str,
         event_title: str,
-        event_description: str = None,
+        event_description: str | None = None,
         threat_level: str = "medium",
-        source_url: str = None,
+        source_url: str | None = None,
     ) -> dict:
         """Log competitive intelligence event."""
         feed = CompetitiveIntelligenceFeed(
@@ -254,11 +280,17 @@ class CompetitiveIntelligenceService:
 
         # Auto-suggest response based on threat
         if threat_level == "critical":
-            feed.recommended_response = "Immediate executive review and response strategy"
+            feed.recommended_response = (
+                "Immediate executive review and response strategy"
+            )
         elif threat_level == "high":
-            feed.recommended_response = "Competitive analysis and counter-strategy within 48h"
+            feed.recommended_response = (
+                "Competitive analysis and counter-strategy within 48h"
+            )
         elif threat_level == "medium":
-            feed.recommended_response = "Monitor and assess impact on pricing/positioning"
+            feed.recommended_response = (
+                "Monitor and assess impact on pricing/positioning"
+            )
 
         # Relevance scoring
         if feed_type in ["pricing_change", "feature_launch"]:
@@ -306,7 +338,7 @@ class CompetitiveIntelligenceService:
         critical_items = critical_count.scalar() or 0
 
         # Get price optimizations awaiting implementation
-        impl_result = await db.execute(
+        await db.execute(
             select(PriceOptimization).where(
                 (PriceOptimization.business_id == business_id)
                 & (~PriceOptimization.is_implemented)
@@ -323,10 +355,18 @@ class CompetitiveIntelligenceService:
                     "type": f.feed_type,
                     "title": f.event_title,
                     "threat_level": f.threat_level,
-                    "date": f.event_date.isoformat() if f.event_date else f.created_at.isoformat(),
+                    "date": (
+                        f.event_date.isoformat()
+                        if f.event_date
+                        else f.created_at.isoformat()
+                    ),
                 }
                 for f in recent_feeds[:5]
             ],
             "pending_price_optimizations": len(pending_optimizations),
-            "recommendation": "Review critical alerts and implement recommended price optimizations" if critical_items > 0 else "Market stable - monitor for changes",
+            "recommendation": (
+                "Review critical alerts and implement recommended price optimizations"
+                if critical_items > 0
+                else "Market stable - monitor for changes"
+            ),
         }

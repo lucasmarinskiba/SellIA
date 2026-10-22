@@ -11,9 +11,11 @@ tokens limitado). Es aditivo: no rompe ningún provider existente.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
 from urllib.parse import urlparse
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -22,9 +24,9 @@ class SkillDomain:
 
     key: str
     title: str
-    keywords: List[str]            # disparadores en la tarea/URL
-    principles: List[str]          # reglas accionables, una línea cada una
-    platforms: List[str] = field(default_factory=list)
+    keywords: list[str]  # disparadores en la tarea/URL
+    principles: list[str]  # reglas accionables, una línea cada una
+    platforms: list[str] = field(default_factory=list)
 
 
 # ── Estrategias de venta ────────────────────────────────────────────────
@@ -32,9 +34,23 @@ SALES_STRATEGY = SkillDomain(
     key="sales_strategy",
     title="Estrategia de Ventas",
     keywords=[
-        "venta", "vender", "lead", "prospecto", "cliente", "cierre", "deal",
-        "objecion", "objeción", "seguimiento", "follow", "crm", "pipeline",
-        "cotizacion", "cotización", "presupuesto", "negocio",
+        "venta",
+        "vender",
+        "lead",
+        "prospecto",
+        "cliente",
+        "cierre",
+        "deal",
+        "objecion",
+        "objeción",
+        "seguimiento",
+        "follow",
+        "crm",
+        "pipeline",
+        "cotizacion",
+        "cotización",
+        "presupuesto",
+        "negocio",
     ],
     principles=[
         "Califica con BANT: Budget, Authority, Need, Timeline antes de invertir esfuerzo.",
@@ -53,10 +69,29 @@ CONTENT_CREATOR = SkillDomain(
     key="content_creator",
     title="Creación de Contenido",
     keywords=[
-        "post", "publicacion", "publicación", "contenido", "copy", "caption",
-        "reel", "story", "historia", "video", "guion", "guión", "creativo",
-        "banner", "diseño", "diseno", "carrusel", "hashtag", "blog", "articulo",
-        "artículo", "email", "newsletter",
+        "post",
+        "publicacion",
+        "publicación",
+        "contenido",
+        "copy",
+        "caption",
+        "reel",
+        "story",
+        "historia",
+        "video",
+        "guion",
+        "guión",
+        "creativo",
+        "banner",
+        "diseño",
+        "diseno",
+        "carrusel",
+        "hashtag",
+        "blog",
+        "articulo",
+        "artículo",
+        "email",
+        "newsletter",
     ],
     principles=[
         "Engancha en los primeros 3 segundos / primera línea o pierdes al lector.",
@@ -75,9 +110,20 @@ SOCIAL_MEDIA = SkillDomain(
     key="social_media",
     title="Gestión de Redes Sociales",
     keywords=[
-        "instagram", "facebook", "tiktok", "social", "red social", "perfil",
-        "seguidores", "dm", "mensaje directo", "comentario", "engagement",
-        "programar", "calendario", "comunidad",
+        "instagram",
+        "facebook",
+        "tiktok",
+        "social",
+        "red social",
+        "perfil",
+        "seguidores",
+        "dm",
+        "mensaje directo",
+        "comentario",
+        "engagement",
+        "programar",
+        "calendario",
+        "comunidad",
     ],
     principles=[
         "Optimiza el perfil primero: foto, bio con propuesta de valor y link.",
@@ -95,10 +141,28 @@ ADS_MANAGEMENT = SkillDomain(
     key="ads_management",
     title="Gestión de Publicidad (Ads)",
     keywords=[
-        "ads", "anuncio", "anuncios", "campaña", "campana", "publicidad",
-        "meta ads", "google ads", "tiktok ads", "presupuesto diario", "puja",
-        "roas", "cpa", "cpc", "ctr", "conversion", "conversión", "pixel",
-        "audiencia", "segmentacion", "segmentación", "retargeting",
+        "ads",
+        "anuncio",
+        "anuncios",
+        "campaña",
+        "campana",
+        "publicidad",
+        "meta ads",
+        "google ads",
+        "tiktok ads",
+        "presupuesto diario",
+        "puja",
+        "roas",
+        "cpa",
+        "cpc",
+        "ctr",
+        "conversion",
+        "conversión",
+        "pixel",
+        "audiencia",
+        "segmentacion",
+        "segmentación",
+        "retargeting",
     ],
     principles=[
         "Define el objetivo de campaña antes de crear: tráfico, leads o ventas.",
@@ -118,10 +182,25 @@ SALES_PLATFORMS = SkillDomain(
     key="sales_platforms",
     title="Plataformas de Venta / E-commerce",
     keywords=[
-        "shopify", "mercadolibre", "mercado libre", "amazon", "hotmart",
-        "tienda", "producto", "catalogo", "catálogo", "publicacion",
-        "stock", "inventario", "precio", "envio", "envío", "checkout",
-        "orden", "pedido", "marketplace",
+        "shopify",
+        "mercadolibre",
+        "mercado libre",
+        "amazon",
+        "hotmart",
+        "tienda",
+        "producto",
+        "catalogo",
+        "catálogo",
+        "publicacion",
+        "stock",
+        "inventario",
+        "precio",
+        "envio",
+        "envío",
+        "checkout",
+        "orden",
+        "pedido",
+        "marketplace",
     ],
     principles=[
         "Título con keyword + beneficio; las primeras palabras pesan en el buscador.",
@@ -140,9 +219,21 @@ TOOL_HANDLING = SkillDomain(
     key="tool_handling",
     title="Manejo de Herramientas Web",
     keywords=[
-        "canva", "formulario", "form", "dashboard", "panel", "exportar",
-        "descargar", "subir", "configurar", "ajustes", "integrar", "conectar",
-        "automatizar", "automatizacion", "automatización",
+        "canva",
+        "formulario",
+        "form",
+        "dashboard",
+        "panel",
+        "exportar",
+        "descargar",
+        "subir",
+        "configurar",
+        "ajustes",
+        "integrar",
+        "conectar",
+        "automatizar",
+        "automatizacion",
+        "automatización",
     ],
     principles=[
         "Prefiere acciones DOM-precisas (click_selector/click_text/fill) a adivinar píxeles.",
@@ -160,10 +251,22 @@ PROSPECTING = SkillDomain(
     key="prospecting",
     title="Prospección / SDR",
     keywords=[
-        "prospectar", "prospeccion", "prospección", "buscar clientes",
-        "generar leads", "lead gen", "sdr", "lista de", "directorio",
-        "linkedin", "scraping de contactos", "base de datos de clientes",
-        "nicho", "buyer persona", "publico objetivo", "público objetivo",
+        "prospectar",
+        "prospeccion",
+        "prospección",
+        "buscar clientes",
+        "generar leads",
+        "lead gen",
+        "sdr",
+        "lista de",
+        "directorio",
+        "linkedin",
+        "scraping de contactos",
+        "base de datos de clientes",
+        "nicho",
+        "buyer persona",
+        "publico objetivo",
+        "público objetivo",
     ],
     principles=[
         "Define el ICP (perfil de cliente ideal) antes de prospectar: sector, tamaño, dolor.",
@@ -180,10 +283,23 @@ OUTREACH = SkillDomain(
     key="outreach",
     title="Outreach en Frío",
     keywords=[
-        "outreach", "cold email", "correo en frio", "correo en frío",
-        "mensaje en frio", "mensaje en frío", "primer contacto", "secuencia",
-        "cadencia", "plantilla de mensaje", "asunto", "subject", "dm frio",
-        "dm frío", "invitacion", "invitación", "networking",
+        "outreach",
+        "cold email",
+        "correo en frio",
+        "correo en frío",
+        "mensaje en frio",
+        "mensaje en frío",
+        "primer contacto",
+        "secuencia",
+        "cadencia",
+        "plantilla de mensaje",
+        "asunto",
+        "subject",
+        "dm frio",
+        "dm frío",
+        "invitacion",
+        "invitación",
+        "networking",
     ],
     principles=[
         "Asunto corto y curioso; decide si abren o no (4-7 palabras).",
@@ -200,10 +316,24 @@ NEGOTIATION = SkillDomain(
     key="negotiation",
     title="Negociación y Cierre",
     keywords=[
-        "negociar", "negociacion", "negociación", "descuento", "precio",
-        "pricing", "propuesta", "cotizar", "cotizacion", "cotización",
-        "cerrar", "cierre", "contrato", "objecion de precio", "regateo",
-        "condiciones", "terminos", "términos",
+        "negociar",
+        "negociacion",
+        "negociación",
+        "descuento",
+        "precio",
+        "pricing",
+        "propuesta",
+        "cotizar",
+        "cotizacion",
+        "cotización",
+        "cerrar",
+        "cierre",
+        "contrato",
+        "objecion de precio",
+        "regateo",
+        "condiciones",
+        "terminos",
+        "términos",
     ],
     principles=[
         "Ancla alto: presenta primero el valor y el precio lista, luego ajustá.",
@@ -221,10 +351,26 @@ CUSTOMER_SUCCESS = SkillDomain(
     key="customer_success",
     title="Customer Success / Retención",
     keywords=[
-        "retencion", "retención", "fidelizar", "fidelizacion", "fidelización",
-        "postventa", "post venta", "soporte", "onboarding", "upsell",
-        "cross sell", "cross-sell", "renovacion", "renovación", "churn",
-        "reseña", "review", "testimonio", "nps", "recompra",
+        "retencion",
+        "retención",
+        "fidelizar",
+        "fidelizacion",
+        "fidelización",
+        "postventa",
+        "post venta",
+        "soporte",
+        "onboarding",
+        "upsell",
+        "cross sell",
+        "cross-sell",
+        "renovacion",
+        "renovación",
+        "churn",
+        "reseña",
+        "review",
+        "testimonio",
+        "nps",
+        "recompra",
     ],
     principles=[
         "El primer valor rápido (quick win) define si el cliente se queda.",
@@ -241,10 +387,22 @@ MARKET_INTEL = SkillDomain(
     key="market_intel",
     title="Inteligencia de Mercado",
     keywords=[
-        "competencia", "competidor", "competidores", "benchmark", "mercado",
-        "research", "investigacion", "investigación", "analisis de mercado",
-        "análisis de mercado", "precios de la competencia", "tendencia",
-        "tendencias", "demanda", "comparar", "espionaje",
+        "competencia",
+        "competidor",
+        "competidores",
+        "benchmark",
+        "mercado",
+        "research",
+        "investigacion",
+        "investigación",
+        "analisis de mercado",
+        "análisis de mercado",
+        "precios de la competencia",
+        "tendencia",
+        "tendencias",
+        "demanda",
+        "comparar",
+        "espionaje",
     ],
     principles=[
         "Mapeá 3-5 competidores: oferta, precio, propuesta de valor, reseñas.",
@@ -261,9 +419,20 @@ SEO_MARKETING = SkillDomain(
     key="seo_marketing",
     title="SEO y Marketing de Contenidos",
     keywords=[
-        "seo", "posicionamiento", "keyword", "palabra clave", "ranking",
-        "google", "blog", "trafico organico", "tráfico orgánico",
-        "meta description", "backlink", "indexar", "serp", "contenido evergreen",
+        "seo",
+        "posicionamiento",
+        "keyword",
+        "palabra clave",
+        "ranking",
+        "google",
+        "blog",
+        "trafico organico",
+        "tráfico orgánico",
+        "meta description",
+        "backlink",
+        "indexar",
+        "serp",
+        "contenido evergreen",
     ],
     principles=[
         "Una keyword principal por página, alineada con la intención de búsqueda.",
@@ -280,10 +449,25 @@ ANALYTICS = SkillDomain(
     key="analytics",
     title="Analítica y Reporting",
     keywords=[
-        "reporte", "reporting", "informe", "metrica", "métrica", "metricas",
-        "métricas", "kpi", "dashboard de ventas", "conversion", "conversión",
-        "embudo", "funnel", "analytics", "estadistica", "estadística",
-        "resultados", "performance", "roi",
+        "reporte",
+        "reporting",
+        "informe",
+        "metrica",
+        "métrica",
+        "metricas",
+        "métricas",
+        "kpi",
+        "dashboard de ventas",
+        "conversion",
+        "conversión",
+        "embudo",
+        "funnel",
+        "analytics",
+        "estadistica",
+        "estadística",
+        "resultados",
+        "performance",
+        "roi",
     ],
     principles=[
         "Define la métrica norte (revenue/leads) y mide todo contra ella.",
@@ -300,10 +484,23 @@ CRM_OPS = SkillDomain(
     key="crm_ops",
     title="CRM / Operaciones de Datos",
     keywords=[
-        "crm", "cargar datos", "actualizar registro", "pipeline", "etapa",
-        "estado del lead", "data entry", "planilla", "spreadsheet", "hoja de calculo",
-        "hoja de cálculo", "importar", "exportar contactos", "limpiar datos",
-        "deduplicar", "etiquetar", "tag",
+        "crm",
+        "cargar datos",
+        "actualizar registro",
+        "pipeline",
+        "etapa",
+        "estado del lead",
+        "data entry",
+        "planilla",
+        "spreadsheet",
+        "hoja de calculo",
+        "hoja de cálculo",
+        "importar",
+        "exportar contactos",
+        "limpiar datos",
+        "deduplicar",
+        "etiquetar",
+        "tag",
     ],
     principles=[
         "Datos limpios = decisiones limpias; deduplica y normaliza al cargar.",
@@ -321,10 +518,27 @@ CRYPTO = SkillDomain(
     key="crypto",
     title="Criptomonedas / Blockchain",
     keywords=[
-        "cripto", "crypto", "bitcoin", "btc", "ethereum", "eth", "blockchain",
-        "altcoin", "stablecoin", "defi", "wallet", "billetera", "exchange",
-        "binance", "coinbase", "on-chain", "onchain", "staking", "token",
-        "nft", "web3",
+        "cripto",
+        "crypto",
+        "bitcoin",
+        "btc",
+        "ethereum",
+        "eth",
+        "blockchain",
+        "altcoin",
+        "stablecoin",
+        "defi",
+        "wallet",
+        "billetera",
+        "exchange",
+        "binance",
+        "coinbase",
+        "on-chain",
+        "onchain",
+        "staking",
+        "token",
+        "nft",
+        "web3",
     ],
     principles=[
         "Educa, no asesores: explica conceptos; nunca des recomendaciones personalizadas de compra/venta.",
@@ -342,9 +556,26 @@ STOCK_MARKET = SkillDomain(
     key="stock_market",
     title="Bolsa de Valores / Acciones",
     keywords=[
-        "accion", "acción", "acciones", "bolsa", "stock", "equity", "etf",
-        "indice", "índice", "sp500", "s&p", "nasdaq", "dividendo", "broker",
-        "merval", "cedear", "ipo", "ticker", "portafolio", "cartera",
+        "accion",
+        "acción",
+        "acciones",
+        "bolsa",
+        "stock",
+        "equity",
+        "etf",
+        "indice",
+        "índice",
+        "sp500",
+        "s&p",
+        "nasdaq",
+        "dividendo",
+        "broker",
+        "merval",
+        "cedear",
+        "ipo",
+        "ticker",
+        "portafolio",
+        "cartera",
     ],
     principles=[
         "Educa sobre instrumentos (acción, ETF, índice); no des consejos de inversión personalizados.",
@@ -362,11 +593,31 @@ MARKET_ANALYSIS = SkillDomain(
     key="market_analysis",
     title="Estilos de Análisis de Mercado",
     keywords=[
-        "analisis tecnico", "análisis técnico", "analisis fundamental",
-        "análisis fundamental", "velas", "candlestick", "soporte", "resistencia",
-        "tendencia", "rsi", "macd", "media movil", "media móvil", "fibonacci",
-        "valuacion", "valuación", "per", "pe ratio", "flujo de caja", "dcf",
-        "sentimiento", "cuantitativo", "quant", "macro", "on-chain",
+        "analisis tecnico",
+        "análisis técnico",
+        "analisis fundamental",
+        "análisis fundamental",
+        "velas",
+        "candlestick",
+        "soporte",
+        "resistencia",
+        "tendencia",
+        "rsi",
+        "macd",
+        "media movil",
+        "media móvil",
+        "fibonacci",
+        "valuacion",
+        "valuación",
+        "per",
+        "pe ratio",
+        "flujo de caja",
+        "dcf",
+        "sentimiento",
+        "cuantitativo",
+        "quant",
+        "macro",
+        "on-chain",
     ],
     principles=[
         "Análisis técnico: precio/volumen, tendencias, soportes/resistencias, indicadores (RSI, MACD, medias).",
@@ -384,10 +635,27 @@ FINANCIAL_MARKETS = SkillDomain(
     key="financial_markets",
     title="Mercados Financieros",
     keywords=[
-        "forex", "divisa", "divisas", "fx", "bono", "bonos", "renta fija",
-        "commodity", "commodities", "materias primas", "oro", "petroleo",
-        "petróleo", "tasa de interes", "tasa de interés", "inflacion",
-        "inflación", "tipo de cambio", "futuros", "derivados", "liquidez",
+        "forex",
+        "divisa",
+        "divisas",
+        "fx",
+        "bono",
+        "bonos",
+        "renta fija",
+        "commodity",
+        "commodities",
+        "materias primas",
+        "oro",
+        "petroleo",
+        "petróleo",
+        "tasa de interes",
+        "tasa de interés",
+        "inflacion",
+        "inflación",
+        "tipo de cambio",
+        "futuros",
+        "derivados",
+        "liquidez",
     ],
     principles=[
         "Clases de activo: renta variable, renta fija, divisas, commodities y derivados — perfiles de riesgo distintos.",
@@ -405,10 +673,27 @@ REAL_ESTATE = SkillDomain(
     key="real_estate",
     title="Mercado Inmobiliario",
     keywords=[
-        "inmueble", "inmobiliario", "propiedad", "propiedades", "real estate",
-        "alquiler", "renta", "departamento", "casa", "terreno", "hipoteca",
-        "tasacion", "tasación", "valuacion inmueble", "cap rate", "roi inmobiliario",
-        "flipping", "metro cuadrado", "m2", "plusvalia", "plusvalía",
+        "inmueble",
+        "inmobiliario",
+        "propiedad",
+        "propiedades",
+        "real estate",
+        "alquiler",
+        "renta",
+        "departamento",
+        "casa",
+        "terreno",
+        "hipoteca",
+        "tasacion",
+        "tasación",
+        "valuacion inmueble",
+        "cap rate",
+        "roi inmobiliario",
+        "flipping",
+        "metro cuadrado",
+        "m2",
+        "plusvalia",
+        "plusvalía",
     ],
     principles=[
         "Ubicación manda: zona, servicios y desarrollo futuro pesan más que el inmueble en sí.",
@@ -426,10 +711,21 @@ TRADING_PLATFORMS = SkillDomain(
     key="trading_platforms",
     title="Plataformas de Trading / Inversión",
     keywords=[
-        "binance", "coinbase", "kraken", "tradingview", "metatrader",
-        "interactive brokers", "etoro", "broker", "exchange cripto",
-        "panel de trading", "orderbook", "libro de ordenes", "libro de órdenes",
-        "grafico de precios", "gráfico de precios",
+        "binance",
+        "coinbase",
+        "kraken",
+        "tradingview",
+        "metatrader",
+        "interactive brokers",
+        "etoro",
+        "broker",
+        "exchange cripto",
+        "panel de trading",
+        "orderbook",
+        "libro de ordenes",
+        "libro de órdenes",
+        "grafico de precios",
+        "gráfico de precios",
     ],
     principles=[
         "Modo SOLO LECTURA: navega, lee precios, gráficos y datos públicos; reporta al usuario.",
@@ -446,10 +742,23 @@ RISK_MANAGEMENT = SkillDomain(
     key="risk_management",
     title="Gestión de Riesgo de Trading",
     keywords=[
-        "gestion de riesgo", "gestión de riesgo", "money management", "stop loss",
-        "stop-loss", "take profit", "take-profit", "tamaño de posicion",
-        "tamaño de posición", "position sizing", "drawdown", "ratio riesgo beneficio",
-        "risk reward", "r multiple", "apalancamiento", "diversificar", "kelly",
+        "gestion de riesgo",
+        "gestión de riesgo",
+        "money management",
+        "stop loss",
+        "stop-loss",
+        "take profit",
+        "take-profit",
+        "tamaño de posicion",
+        "tamaño de posición",
+        "position sizing",
+        "drawdown",
+        "ratio riesgo beneficio",
+        "risk reward",
+        "r multiple",
+        "apalancamiento",
+        "diversificar",
+        "kelly",
     ],
     principles=[
         "Define el riesgo por operación antes de entrar; regla común: no arriesgar más del 1-2% del capital.",
@@ -468,11 +777,28 @@ BUSINESS_MODELS = SkillDomain(
     key="business_models",
     title="Modelos de Negocio",
     keywords=[
-        "modelo de negocio", "business model", "saas", "suscripcion",
-        "suscripción", "marketplace", "dropshipping", "franquicia",
-        "ecommerce", "afiliados", "freemium", "membresia", "membresía",
-        "unit economics", "ltv", "cac", "mrr", "arr", "monetizar", "monetizacion",
-        "monetización", "escalar negocio",
+        "modelo de negocio",
+        "business model",
+        "saas",
+        "suscripcion",
+        "suscripción",
+        "marketplace",
+        "dropshipping",
+        "franquicia",
+        "ecommerce",
+        "afiliados",
+        "freemium",
+        "membresia",
+        "membresía",
+        "unit economics",
+        "ltv",
+        "cac",
+        "mrr",
+        "arr",
+        "monetizar",
+        "monetizacion",
+        "monetización",
+        "escalar negocio",
     ],
     principles=[
         "Elige el modelo según margen, recurrencia y costo de adquisición: SaaS, marketplace, e-commerce, afiliados, franquicia.",
@@ -486,7 +812,7 @@ BUSINESS_MODELS = SkillDomain(
 )
 
 
-SKILL_DOMAINS: Dict[str, SkillDomain] = {
+SKILL_DOMAINS: dict[str, SkillDomain] = {
     d.key: d
     for d in (
         SALES_STRATEGY,
@@ -515,7 +841,7 @@ SKILL_DOMAINS: Dict[str, SkillDomain] = {
 }
 
 # Rol de equipo de ventas que cada skill reemplaza (introspección/marketing).
-SALES_TEAM_ROLES: Dict[str, str] = {
+SALES_TEAM_ROLES: dict[str, str] = {
     "prospecting": "SDR / Generador de leads",
     "outreach": "Representante de desarrollo (cold outreach)",
     "sales_strategy": "Ejecutivo de cuenta",
@@ -541,7 +867,7 @@ SALES_TEAM_ROLES: Dict[str, str] = {
 }
 
 # Mapa dominio-URL → skill de plataforma (para activar por la URL actual).
-_DOMAIN_HINTS: Dict[str, str] = {
+_DOMAIN_HINTS: dict[str, str] = {
     "instagram.com": "social_media",
     "facebook.com": "social_media",
     "tiktok.com": "social_media",
@@ -576,23 +902,24 @@ _DOMAIN_HINTS: Dict[str, str] = {
 }
 
 
-def _domain_of(url: Optional[str]) -> str:
+def _domain_of(url: str | None) -> str:
     if not url:
         return ""
     try:
         return (urlparse(url).hostname or "").lower()
     except Exception:
+        logger.exception("_domain_of: error inesperado")
         return ""
 
 
-def detect_skill_domains(task: str, url: Optional[str] = None) -> List[SkillDomain]:
+def detect_skill_domains(task: str, url: str | None = None) -> list[SkillDomain]:
     """Selecciona los dominios de skill relevantes para la tarea + URL.
 
     Siempre incluye Estrategia de Ventas (es un agente vendedor) y los
     dominios cuyos keywords aparecen en la tarea o que coinciden con la URL.
     """
     text = (task or "").lower()
-    selected: List[str] = ["sales_strategy"]
+    selected: list[str] = ["sales_strategy"]
 
     for key, domain in SKILL_DOMAINS.items():
         if key in selected:
@@ -615,7 +942,7 @@ def detect_skill_domains(task: str, url: Optional[str] = None) -> List[SkillDoma
 
 def build_skill_brief(
     task: str,
-    url: Optional[str] = None,
+    url: str | None = None,
     max_domains: int = 5,
     principles_per_domain: int = 4,
 ) -> str:
@@ -628,7 +955,7 @@ def build_skill_brief(
         return ""
 
     domains = domains[:max_domains]
-    lines: List[str] = ["Expert sales-agent knowledge (apply where relevant):"]
+    lines: list[str] = ["Expert sales-agent knowledge (apply where relevant):"]
     for d in domains:
         lines.append(f"[{d.title}]")
         for p in d.principles[:principles_per_domain]:
@@ -636,7 +963,7 @@ def build_skill_brief(
     return "\n".join(lines)
 
 
-def list_platform_skills() -> Dict[str, List[str]]:
+def list_platform_skills() -> dict[str, list[str]]:
     """Lista las plataformas cubiertas por cada dominio de skill (introspección)."""
     return {
         key: list(domain.platforms)
@@ -645,7 +972,7 @@ def list_platform_skills() -> Dict[str, List[str]]:
     }
 
 
-def list_sales_team_roles() -> List[Dict[str, object]]:
+def list_sales_team_roles() -> list[dict[str, object]]:
     """Lista las skills como roles de un equipo de ventas (introspección/UI).
 
     Devuelve, por cada dominio, el rol humano equivalente y cuántos

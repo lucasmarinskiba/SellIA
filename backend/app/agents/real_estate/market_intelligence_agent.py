@@ -2,8 +2,10 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
 from datetime import datetime
+from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -25,19 +27,21 @@ class MarketReport:
     buyer_demand_level: str  # high, moderate, low
     supply_demand_ratio: float
     recommended_pricing_strategy: str
-    top_selling_features: List[str] = field(default_factory=list)
-    market_headwinds: List[str] = field(default_factory=list)
-    opportunities: List[str] = field(default_factory=list)
+    top_selling_features: list[str] = field(default_factory=list)
+    market_headwinds: list[str] = field(default_factory=list)
+    opportunities: list[str] = field(default_factory=list)
 
 
 class MarketIntelligenceAgent:
     """Provide market insights and competitive analysis."""
 
     def __init__(self):
-        self.market_reports: Dict[str, MarketReport] = {}
-        self.competitor_tracking: Dict[str, List[Dict[str, Any]]] = {}
+        self.market_reports: dict[str, MarketReport] = {}
+        self.competitor_tracking: dict[str, list[dict[str, Any]]] = {}
 
-    def generate_market_report(self, location: str, market_data: Dict[str, Any]) -> MarketReport:
+    def generate_market_report(
+        self, location: str, market_data: dict[str, Any]
+    ) -> MarketReport:
         """Generate comprehensive market analysis report."""
         # Extract key metrics
         median_price = market_data.get("median_price", 300000)
@@ -48,20 +52,26 @@ class MarketIntelligenceAgent:
         price_momentum = market_data.get("yoy_price_change", 0)
 
         # Determine market conditions
-        market_temperature = self._determine_market_temperature(active_listings, sold_30_days, avg_dom)
+        market_temperature = self._determine_market_temperature(
+            active_listings, sold_30_days, avg_dom
+        )
         price_trend = self._determine_price_trend(price_momentum)
         buyer_demand = self._assess_buyer_demand(sold_30_days, active_listings)
-        supply_demand = self._calculate_supply_demand_ratio(active_listings, sold_30_days)
+        supply_demand = self._calculate_supply_demand_ratio(
+            active_listings, sold_30_days
+        )
 
         # Get market insights
         top_features = self._identify_top_selling_features(market_data)
         headwinds = self._identify_market_headwinds(market_data)
         opportunities = self._identify_opportunities(market_data)
-        pricing_strategy = self._recommend_pricing_strategy(market_temperature, price_trend)
+        pricing_strategy = self._recommend_pricing_strategy(
+            market_temperature, price_trend
+        )
 
         report = MarketReport(
             market_area=location,
-            report_date=datetime.utcnow(),
+            report_date=utc_now(),
             median_price=median_price,
             average_price_per_sqft=avg_price_sqft,
             active_listings=active_listings,
@@ -79,11 +89,15 @@ class MarketIntelligenceAgent:
         )
 
         self.market_reports[location] = report
-        logger.info(f"Generated market report for {location}: {market_temperature} market")
+        logger.info(
+            f"Generated market report for {location}: {market_temperature} market"
+        )
 
         return report
 
-    def _determine_market_temperature(self, active_listings: int, sold_30_days: int, avg_dom: int) -> str:
+    def _determine_market_temperature(
+        self, active_listings: int, sold_30_days: int, avg_dom: int
+    ) -> str:
         """Determine market temperature (hot/warm/cool/cold)."""
         if sold_30_days > 25 and avg_dom < 15 and active_listings < 80:
             return "hot"
@@ -112,14 +126,16 @@ class MarketIntelligenceAgent:
         else:
             return "low"
 
-    def _calculate_supply_demand_ratio(self, active_listings: int, sold_30_days: int) -> float:
+    def _calculate_supply_demand_ratio(
+        self, active_listings: int, sold_30_days: int
+    ) -> float:
         """Calculate months of supply (inventory/sales rate)."""
         if sold_30_days == 0:
             return 999.0
         monthly_sales_rate = sold_30_days / 1
         return active_listings / monthly_sales_rate
 
-    def _identify_top_selling_features(self, market_data: Dict[str, Any]) -> List[str]:
+    def _identify_top_selling_features(self, market_data: dict[str, Any]) -> list[str]:
         """Identify top-selling property features in market."""
         features = []
         if market_data.get("high_demand_features"):
@@ -134,7 +150,7 @@ class MarketIntelligenceAgent:
             ]
         return features
 
-    def _identify_market_headwinds(self, market_data: Dict[str, Any]) -> List[str]:
+    def _identify_market_headwinds(self, market_data: dict[str, Any]) -> list[str]:
         """Identify market challenges/headwinds."""
         headwinds = []
         if market_data.get("high_inventory"):
@@ -145,7 +161,7 @@ class MarketIntelligenceAgent:
             headwinds.append("Economic uncertainty impacting demand")
         return headwinds
 
-    def _identify_opportunities(self, market_data: Dict[str, Any]) -> List[str]:
+    def _identify_opportunities(self, market_data: dict[str, Any]) -> list[str]:
         """Identify market opportunities."""
         opportunities = []
         if market_data.get("low_inventory"):
@@ -167,7 +183,9 @@ class MarketIntelligenceAgent:
         else:
             return "balanced"
 
-    def analyze_neighborhood(self, address: str, neighborhood_data: Dict[str, Any]) -> Dict[str, Any]:
+    def analyze_neighborhood(
+        self, address: str, neighborhood_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Analyze neighborhood characteristics."""
         return {
             "address": address,
@@ -180,7 +198,7 @@ class MarketIntelligenceAgent:
             "desirability_score": self._calculate_desirability(neighborhood_data),
         }
 
-    def _calculate_desirability(self, neighborhood_data: Dict[str, Any]) -> float:
+    def _calculate_desirability(self, neighborhood_data: dict[str, Any]) -> float:
         """Calculate neighborhood desirability (0-100)."""
         score = 50.0
         if neighborhood_data.get("walkability_score", 0) > 70:
@@ -193,17 +211,23 @@ class MarketIntelligenceAgent:
             score += 10
         return min(score, 100.0)
 
-    def track_competitor(self, competitor_id: str, property_data: Dict[str, Any]) -> None:
+    def track_competitor(
+        self, competitor_id: str, property_data: dict[str, Any]
+    ) -> None:
         """Track competitor property listings."""
         if competitor_id not in self.competitor_tracking:
             self.competitor_tracking[competitor_id] = []
 
-        self.competitor_tracking[competitor_id].append({
-            "timestamp": datetime.utcnow(),
-            "property_data": property_data,
-        })
+        self.competitor_tracking[competitor_id].append(
+            {
+                "timestamp": utc_now(),
+                "property_data": property_data,
+            }
+        )
 
-    def analyze_competition(self, market_area: str, property_type: str) -> Dict[str, Any]:
+    def analyze_competition(
+        self, market_area: str, property_type: str
+    ) -> dict[str, Any]:
         """Analyze competitive landscape."""
         return {
             "market_area": market_area,
@@ -217,6 +241,6 @@ class MarketIntelligenceAgent:
             "market_positioning": "You are positioned at median price point",
         }
 
-    def get_market_report(self, location: str) -> Optional[MarketReport]:
+    def get_market_report(self, location: str) -> MarketReport | None:
         """Retrieve market report for location."""
         return self.market_reports.get(location)

@@ -7,13 +7,15 @@ if it fails -- an import must never block on a classification error.
 """
 
 import json
+import logging
 import uuid
-from typing import Optional, Tuple
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.catalogs.models import CatalogItemType
 from app.domains.agents.ai_reply import generate_raw_ai_response
+from app.domains.catalogs.models import CatalogItemType
+
+logger = logging.getLogger(__name__)
 
 
 async def classify_catalog_item(
@@ -21,7 +23,7 @@ async def classify_catalog_item(
     business_id: uuid.UUID,
     name: str,
     description: str = "",
-) -> Tuple[CatalogItemType, Optional[str], float]:
+) -> tuple[CatalogItemType, str | None, float]:
     """Classify a product/service by name+description.
 
     Returns:
@@ -66,6 +68,7 @@ Clasificá este ítem:"""
 
         return item_type, category, confidence
     except Exception:
+        logger.exception("classify_catalog_item: error inesperado")
         return CatalogItemType.GOOD, None, 0.0
 
 

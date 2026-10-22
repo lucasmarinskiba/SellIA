@@ -5,11 +5,9 @@ Customizable per business model, location type, funnel stage.
 """
 
 from enum import Enum
-from typing import Optional
-from uuid import UUID
+from typing import ClassVar
 
 from app.domains.businesses.location_models import LocationType
-from app.domains.proximity.proximity_engine import ProximityTriggerConfig
 
 
 class MessageTemplate(Enum):
@@ -45,7 +43,7 @@ class LocationMessageTemplateService:
     """Generate and manage location-based messages."""
 
     # SMS Templates (160 chars max per SMS)
-    SMS_TEMPLATES = {
+    SMS_TEMPLATES: ClassVar[dict] = {
         MessageTemplate.SHOWROOM_NEARBY_SMS: (
             "🏢 {business_name} showroom está a {distance}km de ti! "
             "Visita hoy y obtén 10% off. {location_name}\n"
@@ -86,7 +84,7 @@ class LocationMessageTemplateService:
     }
 
     # Email Templates (full format)
-    EMAIL_TEMPLATES = {
+    EMAIL_TEMPLATES: ClassVar[dict] = {
         MessageTemplate.SHOWROOM_NEARBY_EMAIL: {
             "subject": "¡{business_name} showroom a {distance}km! Visitá hoy",
             "body": (
@@ -97,7 +95,7 @@ class LocationMessageTemplateService:
                 "<p><strong>🎁 Oferta especial:</strong> 10% off en tu primera visita</p>\n\n"
                 "<p><a href='{maps_url}'>Ver en Google Maps</a></p>\n"
                 "<p><a href='{booking_link}'>Reservar visita guiada</a></p>"
-            )
+            ),
         },
         MessageTemplate.POST_TOUR_FOLLOW_UP: {
             "subject": "Propuesta personalizada post-visita",
@@ -112,7 +110,7 @@ class LocationMessageTemplateService:
                 "<li>Timeline: {delivery_timeline}</li>"
                 "</ul>\n\n"
                 "<p><a href='{proposal_link}'>Ver propuesta completa</a></p>"
-            )
+            ),
         },
         MessageTemplate.POST_DEMO_PROPOSAL: {
             "subject": "Tu plan personalizado para {product_name}",
@@ -127,20 +125,19 @@ class LocationMessageTemplateService:
                 "<li>Go-live: {implementation_timeline}</li>"
                 "</ul>\n\n"
                 "<p><a href='{proposal_link}'>Revisar propuesta</a></p>"
-            )
-        }
+            ),
+        },
     }
 
     @staticmethod
-    def get_template(
-        template_key: MessageTemplate,
-        channel: str = "sms"
-    ) -> Optional[str]:
+    def get_template(template_key: MessageTemplate, channel: str = "sms") -> str | None:
         """Get message template for given type and channel."""
         if channel == "sms":
             return LocationMessageTemplateService.SMS_TEMPLATES.get(template_key)
         elif channel in ("email", "whatsapp"):
-            template_data = LocationMessageTemplateService.EMAIL_TEMPLATES.get(template_key)
+            template_data = LocationMessageTemplateService.EMAIL_TEMPLATES.get(
+                template_key
+            )
             if template_data:
                 return template_data.get("body")
         return None
@@ -149,8 +146,8 @@ class LocationMessageTemplateService:
     def render_template(
         template_key: MessageTemplate,
         channel: str = "sms",
-        variables: Optional[dict[str, str]] = None
-    ) -> Optional[str]:
+        variables: dict[str, str] | None = None,
+    ) -> str | None:
         """Render message template with variables substituted.
 
         Args:
@@ -179,28 +176,34 @@ class LocationMessageTemplateService:
 
     @staticmethod
     def get_default_template_for_strategy(
-        strategy: str,
-        location_type: LocationType,
-        channel: str = "sms"
-    ) -> Optional[MessageTemplate]:
+        strategy: str, location_type: LocationType, channel: str = "sms"
+    ) -> MessageTemplate | None:
         """Recommend template based on localization strategy + location type."""
 
         mapping = {
             # E-Commerce + Showroom
             ("QR_INVITE", LocationType.SHOWROOM): MessageTemplate.SHOWROOM_NEARBY_SMS,
-
             # Retail
-            ("FOOT_TRAFFIC", LocationType.RETAIL_STORE): MessageTemplate.WALK_BY_OFFER_SMS,
-
+            (
+                "FOOT_TRAFFIC",
+                LocationType.RETAIL_STORE,
+            ): MessageTemplate.WALK_BY_OFFER_SMS,
             # B2B
-            ("TOUR_SCHEDULING", LocationType.FACTORY): MessageTemplate.FACTORY_TOUR_EMAIL,
-            ("TOUR_SCHEDULING", LocationType.OFFICE): MessageTemplate.FACTORY_TOUR_EMAIL,
-
+            (
+                "TOUR_SCHEDULING",
+                LocationType.FACTORY,
+            ): MessageTemplate.FACTORY_TOUR_EMAIL,
+            (
+                "TOUR_SCHEDULING",
+                LocationType.OFFICE,
+            ): MessageTemplate.FACTORY_TOUR_EMAIL,
             # SaaS
             ("DEMO_BOOKING", LocationType.OFFICE): MessageTemplate.OFFICE_DEMO_EMAIL,
-
             # Services
-            ("SERVICE_DISPATCH", LocationType.SERVICE_CENTER): MessageTemplate.SERVICE_AVAILABLE,
+            (
+                "SERVICE_DISPATCH",
+                LocationType.SERVICE_CENTER,
+            ): MessageTemplate.SERVICE_AVAILABLE,
         }
 
         return mapping.get((strategy, location_type))
@@ -211,7 +214,8 @@ class LocationMessageTemplateService:
         template = LocationMessageTemplateService.SMS_TEMPLATES.get(template_key) or ""
 
         import re
-        placeholders = re.findall(r'\{(\w+)\}', template)
+
+        placeholders = re.findall(r"\{(\w+)\}", template)
 
         return list(set(placeholders))
 
@@ -224,7 +228,7 @@ class LocationMessageTemplateService:
         hours: str,
         open_time: str,
         close_time: str,
-        maps_url: str
+        maps_url: str,
     ) -> dict[str, str]:
         """Build context variables for location-based template."""
         return {
@@ -243,7 +247,7 @@ class LocationMessageTemplateService:
         visitor_name: str,
         visitor_email: str,
         visitor_phone: str,
-        customer_stage: str = "lead"  # lead, prospect, qualified, customer
+        customer_stage: str = "lead",  # lead, prospect, qualified, customer
     ) -> dict[str, str]:
         """Build context variables for visitor/customer."""
         return {
@@ -257,7 +261,7 @@ class LocationMessageTemplateService:
     def build_offer_context(
         offer_percentage: int = 10,
         offer_type: str = "discount",  # discount, free_shipping, bundled
-        offer_expiry: str = "today"
+        offer_expiry: str = "today",
     ) -> dict[str, str]:
         """Build offer-specific variables."""
         if offer_type == "discount":

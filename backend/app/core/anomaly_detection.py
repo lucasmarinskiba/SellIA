@@ -4,17 +4,16 @@ Login Anomaly Detection
 Detecta logins anómalos usando z-score simple.
 """
 
-import uuid
 import math
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Dict, Any
+import uuid
+from datetime import UTC, datetime, timedelta
 
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
 
-from app.domains.security.models import UserLoginLog, LoginAnomaly
 from app.core.geo_service import haversine_distance
 from app.core.logger import get_logger
+from app.domains.security.models import LoginAnomaly, UserLoginLog
 
 logger = get_logger(__name__)
 
@@ -23,10 +22,10 @@ async def analyze_login_anomaly(
     db: AsyncSession,
     user_id: uuid.UUID,
     ip: str,
-    country: Optional[str],
-    device_fingerprint: Optional[str],
+    country: str | None,
+    device_fingerprint: str | None,
     timestamp: datetime,
-) -> tuple[float, Optional[str]]:
+) -> tuple[float, str | None]:
     """
     Analiza si un login es anómalo.
 
@@ -43,15 +42,19 @@ async def analyze_login_anomaly(
         ll1, ll2 = last_logins[:2]
         if ll1.latitude and ll1.longitude and ll2.latitude and ll2.longitude:
             dist_km = haversine_distance(
-                ll1.latitude, ll1.longitude,
-                ll2.latitude, ll2.longitude,
+                ll1.latitude,
+                ll1.longitude,
+                ll2.latitude,
+                ll2.longitude,
             )
             time_diff_hours = (ll2.created_at - ll1.created_at).total_seconds() / 3600
             if time_diff_hours > 0:
                 speed_kmh = dist_km / time_diff_hours
                 if speed_kmh > 800:  # Imposible viajar > 800 km/h
                     scores.append(0.95)
-                    reasons.append(f"Velocidad imposible: {speed_kmh:.0f} km/h desde {ll1.country} a {ll2.country}")
+                    reasons.append(
+                        f"Velocidad imposible: {speed_kmh:.0f} km/h desde {ll1.country} a {ll2.country}"
+                    )
 
     # 2. Horario inusual
     hour_score = await _check_unusual_hour(db, user_id, timestamp)
@@ -66,8 +69,14 @@ async def analyze_login_anomaly(
         reasons.append(f"Login desde país nuevo: {country}")
 
     # 4. Múltiples dispositivos
-    recent_devices = {ll.device_fingerprint for ll in last_logins if ll.device_fingerprint}
-    if device_fingerprint and device_fingerprint not in recent_devices and len(recent_devices) >= 2:
+    recent_devices = {
+        ll.device_fingerprint for ll in last_logins if ll.device_fingerprint
+    }
+    if (
+        device_fingerprint
+        and device_fingerprint not in recent_devices
+        and len(recent_devices) >= 2
+    ):
         scores.append(0.5)
         reasons.append("Nuevo dispositivo en sesión reciente")
 
@@ -81,24 +90,27 @@ async def analyze_login_anomaly(
 
 
 async def _get_recent_logins(db: AsyncSession, user_id: uuid.UUID, hours: int = 2):
-    since = datetime.now(timezone.utc) - timedelta(hours=hours)
+    since = datetime.now(UTC) - timedelta(hours=hours)
     result = await db.execute(
-        select(UserLoginLog).where(
+        select(UserLoginLog)
+        .where(
             UserLoginLog.user_id == user_id,
             UserLoginLog.success == True,
             UserLoginLog.created_at >= since,
-        ).order_by(UserLoginLog.created_at.desc())
+        )
+        .order_by(UserLoginLog.created_at.desc())
     )
     return list(result.scalars().all())
 
 
-async def _check_unusual_hour(db: AsyncSession, user_id: uuid.UUID, timestamp: datetime) -> float:
+async def _check_unusual_hour(
+    db: AsyncSession, user_id: uuid.UUID, timestamp: datetime
+) -> float:
     """Detecta si el horario de login es inusual para el usuario."""
     # Get user's typical login hours (last 30 days)
-    since = datetime.now(timezone.utc) - timedelta(days=30)
+    since = datetime.now(UTC) - timedelta(days=30)
     result = await db.execute(
-        select(func.extract('hour', UserLoginLog.created_at))
-        .where(
+        select(func.extract("hour", UserLoginLog.created_at)).where(
             UserLoginLog.user_id == user_id,
             UserLoginLog.success == True,
             UserLoginLog.created_at >= since,
@@ -123,9 +135,9 @@ async def record_anomaly(
     anomaly_type: str,
     description: str,
     score: float,
-    ip: Optional[str] = None,
-    device_fingerprint: Optional[str] = None,
-    country: Optional[str] = None,
+    ip: str | None = None,
+    device_fingerprint: str | None = None,
+    country: str | None = None,
 ) -> LoginAnomaly:
     """Registra una anomalía detectada."""
     anomaly = LoginAnomaly(
@@ -141,5 +153,7 @@ async def record_anomaly(
     await db.commit()
     await db.refresh(anomaly)
 
-    logger.warning(f"Login anomaly detected for user {user_id}: {anomaly_type} (score {score:.2f})")
+    logger.warning(
+        f"Login anomaly detected for user {user_id}: {anomaly_type} (score {score:.2f})"
+    )
     return anomaly

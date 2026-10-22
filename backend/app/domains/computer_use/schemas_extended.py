@@ -1,18 +1,19 @@
 """Computer Use Agents — Schemas Extendidos"""
 
 from datetime import datetime
-from typing import Optional, Any, List
+from typing import Any
 from uuid import UUID
-from pydantic import BaseModel, Field, HttpUrl, ConfigDict
 
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 
 # ========== Templates ==========
 
+
 class ComputerUseTemplateCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
-    description: Optional[str] = Field(None, max_length=1000)
+    description: str | None = Field(None, max_length=1000)
     task_description: str = Field(..., min_length=1, max_length=2000)
-    start_url: Optional[str] = Field(None, max_length=2048)
+    start_url: str | None = Field(None, max_length=2048)
     tags: list[str] = Field(default_factory=list)
     is_public: bool = False
 
@@ -21,9 +22,9 @@ class ComputerUseTemplateResponse(BaseModel):
     id: UUID
     user_id: UUID
     name: str
-    description: Optional[str]
+    description: str | None
     task_description: str
-    start_url: Optional[str]
+    start_url: str | None
     tags: list[str]
     is_public: bool
     usage_count: int
@@ -40,10 +41,11 @@ class ComputerUseTemplateListResponse(BaseModel):
 
 # ========== Scheduled Tasks ==========
 
+
 class ComputerUseScheduledTaskCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
     task_description: str = Field(..., min_length=1, max_length=2000)
-    start_url: Optional[str] = Field(None, max_length=2048)
+    start_url: str | None = Field(None, max_length=2048)
     cron_expression: str = Field(..., min_length=1, max_length=100)
     timezone: str = "America/Argentina/Buenos_Aires"
     provider: str = "auto"
@@ -55,14 +57,14 @@ class ComputerUseScheduledTaskResponse(BaseModel):
     user_id: UUID
     name: str
     task_description: str
-    start_url: Optional[str]
+    start_url: str | None
     cron_expression: str
     timezone: str
     provider: str
     is_active: bool
     max_steps: int
-    last_run_at: Optional[datetime]
-    last_session_id: Optional[UUID]
+    last_run_at: datetime | None
+    last_session_id: UUID | None
     total_runs: int
     success_count: int
     fail_count: int
@@ -79,11 +81,12 @@ class ComputerUseScheduledTaskListResponse(BaseModel):
 
 # ========== Annotations ==========
 
+
 class ComputerUseAnnotationCreate(BaseModel):
     step_number: int = Field(..., ge=1)
     content: str = Field(..., min_length=1, max_length=2000)
-    x_coordinate: Optional[int] = None
-    y_coordinate: Optional[int] = None
+    x_coordinate: int | None = None
+    y_coordinate: int | None = None
     color: str = "#f59e0b"
 
 
@@ -93,8 +96,8 @@ class ComputerUseAnnotationResponse(BaseModel):
     step_number: int
     user_id: UUID
     content: str
-    x_coordinate: Optional[int]
-    y_coordinate: Optional[int]
+    x_coordinate: int | None
+    y_coordinate: int | None
     color: str
     created_at: datetime
 
@@ -103,16 +106,17 @@ class ComputerUseAnnotationResponse(BaseModel):
 
 # ========== Browser Profiles ==========
 
+
 class ComputerUseBrowserProfileCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
     viewport_width: int = 1280
     viewport_height: int = 720
-    user_agent: Optional[str] = None
+    user_agent: str | None = None
     locale: str = "es-ES"
     timezone_id: str = "America/Argentina/Buenos_Aires"
     cookies: list[dict] = Field(default_factory=list)
     local_storage: dict[str, Any] = Field(default_factory=dict)
-    geolocation: Optional[dict[str, float]] = None
+    geolocation: dict[str, float] | None = None
     is_default: bool = False
 
 
@@ -122,12 +126,12 @@ class ComputerUseBrowserProfileResponse(BaseModel):
     name: str
     viewport_width: int
     viewport_height: int
-    user_agent: Optional[str]
+    user_agent: str | None
     locale: str
     timezone_id: str
     cookies: list[dict]
     local_storage: dict[str, Any]
-    geolocation: Optional[dict[str, float]]
+    geolocation: dict[str, float] | None
     is_default: bool
     created_at: datetime
 
@@ -136,14 +140,15 @@ class ComputerUseBrowserProfileResponse(BaseModel):
 
 # ========== Proxy Configs ==========
 
+
 class ComputerUseProxyConfigCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
     proxy_type: str = Field("http", pattern="^(http|https|socks5)$")
     host: str = Field(..., min_length=1, max_length=255)
     port: int = Field(..., ge=1, le=65535)
-    username: Optional[str] = None
-    password: Optional[str] = None
-    rotation_url: Optional[str] = None
+    username: str | None = None
+    password: str | None = None
+    rotation_url: str | None = None
 
 
 class ComputerUseProxyConfigResponse(BaseModel):
@@ -153,10 +158,10 @@ class ComputerUseProxyConfigResponse(BaseModel):
     proxy_type: str
     host: str
     port: int
-    username: Optional[str]
-    rotation_url: Optional[str]
+    username: str | None
+    rotation_url: str | None
     is_active: bool
-    last_used_at: Optional[datetime]
+    last_used_at: datetime | None
     use_count: int
     created_at: datetime
 
@@ -165,22 +170,23 @@ class ComputerUseProxyConfigResponse(BaseModel):
 
 # ========== Session Sharing ==========
 
+
 class ComputerUseSessionShareCreate(BaseModel):
-    shared_with_email: Optional[str] = None
-    shared_with_user_id: Optional[UUID] = None
+    shared_with_email: str | None = None
+    shared_with_user_id: UUID | None = None
     permission: str = Field("view", pattern="^(view|comment|control)$")
-    expires_days: Optional[int] = Field(None, ge=1, le=365)
+    expires_days: int | None = Field(None, ge=1, le=365)
 
 
 class ComputerUseSessionShareResponse(BaseModel):
     id: UUID
     session_id: UUID
     shared_by_user_id: UUID
-    shared_with_user_id: Optional[UUID]
-    shared_with_email: Optional[str]
+    shared_with_user_id: UUID | None
+    shared_with_email: str | None
     permission: str
     token: str
-    expires_at: Optional[datetime]
+    expires_at: datetime | None
     is_active: bool
     created_at: datetime
 
@@ -188,6 +194,7 @@ class ComputerUseSessionShareResponse(BaseModel):
 
 
 # ========== Batch Jobs ==========
+
 
 class ComputerUseBatchJobCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
@@ -213,13 +220,14 @@ class ComputerUseBatchJobResponse(BaseModel):
     total_count: int
     results_summary: dict[str, Any]
     created_at: datetime
-    started_at: Optional[datetime]
-    completed_at: Optional[datetime]
+    started_at: datetime | None
+    completed_at: datetime | None
 
     model_config = ConfigDict(from_attributes=True)
 
 
 # ========== Session Tags ==========
+
 
 class ComputerUseSessionTagCreate(BaseModel):
     tag: str = Field(..., min_length=1, max_length=50)
@@ -237,6 +245,7 @@ class ComputerUseSessionTagResponse(BaseModel):
 
 
 # ========== Webhooks ==========
+
 
 class ComputerUseSessionBookmarkCreate(BaseModel):
     step_number: int = Field(..., ge=1)
@@ -277,7 +286,7 @@ class ComputerUseWebhookCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
     url: HttpUrl
     events: list[str] = Field(default_factory=list)
-    secret: Optional[str] = None
+    secret: str | None = None
 
 
 class ComputerUseWebhookResponse(BaseModel):
@@ -287,8 +296,8 @@ class ComputerUseWebhookResponse(BaseModel):
     url: str
     events: list[str]
     is_active: bool
-    last_triggered_at: Optional[datetime]
-    last_status_code: Optional[int]
+    last_triggered_at: datetime | None
+    last_status_code: int | None
     failure_count: int
     created_at: datetime
 
@@ -297,20 +306,21 @@ class ComputerUseWebhookResponse(BaseModel):
 
 # ========== Export / Replay ==========
 
+
 class ComputerUseExportRequest(BaseModel):
     format: str = Field("pdf", pattern="^(pdf|csv|json)$")
     include_screenshots: bool = True
-    step_range: Optional[tuple[int, int]] = None  # (start, end)
+    step_range: tuple[int, int] | None = None  # (start, end)
 
 
 class ComputerUseReplayStep(BaseModel):
     step_number: int
-    screenshot_url: Optional[str]
+    screenshot_url: str | None
     action_type: str
     action_params: dict[str, Any]
-    reason: Optional[str]
-    execution_result: Optional[str]
-    execution_ms: Optional[int]
+    reason: str | None
+    execution_result: str | None
+    execution_ms: int | None
     annotations: list[ComputerUseAnnotationResponse] = Field(default_factory=list)
 
 
@@ -324,36 +334,38 @@ class ComputerUseReplayResponse(BaseModel):
 
 # ========== Analytics ==========
 
+
 class ComputerUseAnalyticsSummary(BaseModel):
     total_sessions: int
     completed_sessions: int
     failed_sessions: int
     stopped_sessions: int
     avg_steps_per_session: float
-    avg_session_duration_seconds: Optional[float]
-    most_used_provider: Optional[str]
-    most_common_action: Optional[str]
+    avg_session_duration_seconds: float | None
+    most_used_provider: str | None
+    most_common_action: str | None
     sessions_today: int
     sessions_this_week: int
     sessions_this_month: int
 
 
 class ComputerUseSessionFilter(BaseModel):
-    status: Optional[str] = None
-    tag: Optional[str] = None
-    provider: Optional[str] = None
-    date_from: Optional[datetime] = None
-    date_to: Optional[datetime] = None
-    search: Optional[str] = None
+    status: str | None = None
+    tag: str | None = None
+    provider: str | None = None
+    date_from: datetime | None = None
+    date_to: datetime | None = None
+    search: str | None = None
 
 
 # ========== Import Schemas (whitelist para evitar mass assignment) ==========
 
+
 class ComputerUseTemplateImport(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
-    description: Optional[str] = Field(None, max_length=1000)
+    description: str | None = Field(None, max_length=1000)
     task_description: str = Field(..., min_length=1, max_length=2000)
-    start_url: Optional[str] = Field(None, max_length=2048)
+    start_url: str | None = Field(None, max_length=2048)
     tags: list[str] = Field(default_factory=list)
     is_public: bool = False
 
@@ -362,12 +374,12 @@ class ComputerUseBrowserProfileImport(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
     viewport_width: int = 1280
     viewport_height: int = 720
-    user_agent: Optional[str] = Field(None, max_length=500)
+    user_agent: str | None = Field(None, max_length=500)
     locale: str = "es-ES"
     timezone_id: str = "America/Argentina/Buenos_Aires"
     cookies: list[Any] = Field(default_factory=list)
     local_storage: dict[str, Any] = Field(default_factory=dict)
-    geolocation: Optional[dict[str, Any]] = None
+    geolocation: dict[str, Any] | None = None
     is_default: bool = False
 
 
@@ -376,9 +388,9 @@ class ComputerUseProxyConfigImport(BaseModel):
     proxy_type: str = "http"
     host: str = Field(..., max_length=255)
     port: int = Field(..., ge=1, le=65535)
-    username: Optional[str] = Field(None, max_length=255)
-    password_encrypted: Optional[str] = Field(None, max_length=500)
-    rotation_url: Optional[str] = Field(None, max_length=2048)
+    username: str | None = Field(None, max_length=255)
+    password_encrypted: str | None = Field(None, max_length=500)
+    rotation_url: str | None = Field(None, max_length=2048)
     is_active: bool = True
 
 
@@ -386,5 +398,5 @@ class ComputerUseWebhookImport(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
     url: str = Field(..., max_length=2048)
     events: list[str] = Field(default_factory=list)
-    secret: Optional[str] = Field(None, max_length=255)
+    secret: str | None = Field(None, max_length=255)
     is_active: bool = True

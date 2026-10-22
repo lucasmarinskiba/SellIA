@@ -2,8 +2,10 @@
 
 import logging
 import uuid
-from typing import Any, Dict, Optional
-from datetime import datetime, timedelta
+from datetime import timedelta
+from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -12,17 +14,23 @@ class ContractGeneratorAgent:
     """Generate purchase agreements and contracts."""
 
     def __init__(self):
-        self.contracts: Dict[str, Dict[str, Any]] = {}
+        self.contracts: dict[str, dict[str, Any]] = {}
 
-    def generate_purchase_agreement(self, property_id: str, buyer_id: str, terms: Dict[str, Any], region: str = "Argentina") -> Dict[str, Any]:
+    def generate_purchase_agreement(
+        self,
+        property_id: str,
+        buyer_id: str,
+        terms: dict[str, Any],
+        region: str = "Argentina",
+    ) -> dict[str, Any]:
         """Generate purchase agreement based on offer terms."""
         # Random suffix guards against two contracts generated in the same second.
-        contract_id = f"PA_{property_id}_{buyer_id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
+        contract_id = f"PA_{property_id}_{buyer_id}_{utc_now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
 
         agreement = {
             "contract_id": contract_id,
             "type": "Purchase Agreement",
-            "date_created": datetime.utcnow().isoformat(),
+            "date_created": utc_now().isoformat(),
             "property_id": property_id,
             "buyer_id": buyer_id,
             "region": region,
@@ -33,8 +41,12 @@ class ContractGeneratorAgent:
                 "inspection_period_days": terms.get("inspection_period_days", 10),
                 "appraisal_contingency": terms.get("appraisal_contingency", True),
                 "financing_contingency": terms.get("financing_contingency", True),
-                "close_date": terms.get("close_date", datetime.utcnow() + timedelta(days=45)).isoformat(),
-                "possession_date": terms.get("possession_date", datetime.utcnow() + timedelta(days=45)).isoformat(),
+                "close_date": terms.get(
+                    "close_date", utc_now() + timedelta(days=45)
+                ).isoformat(),
+                "possession_date": terms.get(
+                    "possession_date", utc_now() + timedelta(days=45)
+                ).isoformat(),
             },
             "sections": self._generate_contract_sections(terms, region),
             "status": "draft",
@@ -45,7 +57,9 @@ class ContractGeneratorAgent:
 
         return agreement
 
-    def _generate_contract_sections(self, terms: Dict[str, Any], region: str) -> Dict[str, str]:
+    def _generate_contract_sections(
+        self, terms: dict[str, Any], region: str
+    ) -> dict[str, str]:
         """Generate standard contract sections."""
         sections = {}
 
@@ -195,14 +209,14 @@ class ContractGeneratorAgent:
         Buyer shall notify of any financing issues within 30 days.
         """
 
-    def finalize_contract(self, contract_id: str) -> Optional[Dict[str, Any]]:
+    def finalize_contract(self, contract_id: str) -> dict[str, Any] | None:
         """Finalize contract for execution."""
         if contract_id not in self.contracts:
             return None
 
         contract = self.contracts[contract_id]
         contract["status"] = "ready_for_execution"
-        contract["finalized_date"] = datetime.utcnow().isoformat()
+        contract["finalized_date"] = utc_now().isoformat()
 
         logger.info(f"Finalized contract: {contract_id}")
 
@@ -213,7 +227,7 @@ class ContractGeneratorAgent:
             "next_step": "Schedule closing and prepare for signatures",
         }
 
-    def get_contract(self, contract_id: str) -> Optional[Dict[str, Any]]:
+    def get_contract(self, contract_id: str) -> dict[str, Any] | None:
         """Retrieve contract."""
         return self.contracts.get(contract_id)
 

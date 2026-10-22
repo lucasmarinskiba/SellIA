@@ -1,7 +1,10 @@
-from dataclasses import dataclass, asdict
-from typing import Optional, Any, Callable
-from enum import Enum
+import logging
 import uuid
+from collections.abc import Callable
+from dataclasses import dataclass
+from enum import Enum
+
+logger = logging.getLogger(__name__)
 
 
 class ActionType(str, Enum):
@@ -29,9 +32,9 @@ class WorkflowStep:
     id: str
     action_type: ActionType
     config: dict
-    description: Optional[str] = None
-    next_step_id: Optional[str] = None
-    error_step_id: Optional[str] = None
+    description: str | None = None
+    next_step_id: str | None = None
+    error_step_id: str | None = None
 
 
 @dataclass
@@ -45,7 +48,7 @@ class Workflow:
     id: str
     user_id: str
     name: str
-    description: Optional[str]
+    description: str | None
     trigger: WorkflowTrigger
     steps: list[WorkflowStep]
     is_active: bool
@@ -75,7 +78,7 @@ class WorkflowEngine:
         name: str,
         trigger: WorkflowTrigger,
         steps: list[WorkflowStep],
-        description: Optional[str] = None,
+        description: str | None = None,
     ) -> Workflow:
         """Create automation workflow."""
         workflow_id = str(uuid.uuid4())
@@ -95,7 +98,7 @@ class WorkflowEngine:
     def execute_workflow(self, workflow_id: str, context: dict) -> dict:
         """Execute workflow with given context."""
         if workflow_id not in self.workflows:
-            return {'success': False, 'error': 'Workflow not found'}
+            return {"success": False, "error": "Workflow not found"}
 
         workflow = self.workflows[workflow_id]
         execution_id = str(uuid.uuid4())
@@ -107,32 +110,35 @@ class WorkflowEngine:
             while current_step:
                 action_func = self.actions.get(current_step.action_type)
                 if not action_func:
-                    results.append({'step_id': current_step.id, 'status': 'skipped'})
+                    results.append({"step_id": current_step.id, "status": "skipped"})
                     break
 
                 result = action_func(current_step, context)
-                results.append({'step_id': current_step.id, 'status': result.get('status')})
+                results.append(
+                    {"step_id": current_step.id, "status": result.get("status")}
+                )
 
-                if not result.get('success') and current_step.error_step_id:
+                if not result.get("success") and current_step.error_step_id:
                     current_step = self._find_step(workflow, current_step.error_step_id)
                 else:
                     current_step = self._find_step(workflow, current_step.next_step_id)
 
             self.executions[execution_id] = {
-                'workflow_id': workflow_id,
-                'status': 'completed',
-                'results': results,
+                "workflow_id": workflow_id,
+                "status": "completed",
+                "results": results,
             }
 
             return {
-                'success': True,
-                'execution_id': execution_id,
-                'results': results,
+                "success": True,
+                "execution_id": execution_id,
+                "results": results,
             }
         except Exception as e:
+            logger.exception("execute_workflow: error inesperado")
             return {
-                'success': False,
-                'error': str(e),
+                "success": False,
+                "error": str(e),
             }
 
     def _send_email(self, step: WorkflowStep, context: dict) -> dict:
@@ -140,99 +146,108 @@ class WorkflowEngine:
         try:
             config = step.config
             return {
-                'success': True,
-                'status': 'sent',
-                'to': config.get('to'),
+                "success": True,
+                "status": "sent",
+                "to": config.get("to"),
             }
         except Exception as e:
-            return {'success': False, 'status': 'failed', 'error': str(e)}
+            logger.exception("_send_email: error inesperado")
+            return {"success": False, "status": "failed", "error": str(e)}
 
     def _send_sms(self, step: WorkflowStep, context: dict) -> dict:
         """Send SMS action."""
         try:
             config = step.config
             return {
-                'success': True,
-                'status': 'sent',
-                'to': config.get('phone'),
+                "success": True,
+                "status": "sent",
+                "to": config.get("phone"),
             }
         except Exception as e:
-            return {'success': False, 'status': 'failed', 'error': str(e)}
+            logger.exception("_send_sms: error inesperado")
+            return {"success": False, "status": "failed", "error": str(e)}
 
     def _create_task(self, step: WorkflowStep, context: dict) -> dict:
         """Create task action."""
         try:
-            config = step.config
             return {
-                'success': True,
-                'status': 'created',
-                'task_id': str(uuid.uuid4()),
+                "success": True,
+                "status": "created",
+                "task_id": str(uuid.uuid4()),
             }
         except Exception as e:
-            return {'success': False, 'status': 'failed', 'error': str(e)}
+            logger.exception("_create_task: error inesperado")
+            return {"success": False, "status": "failed", "error": str(e)}
 
     def _update_field(self, step: WorkflowStep, context: dict) -> dict:
         """Update field action."""
         try:
             config = step.config
             return {
-                'success': True,
-                'status': 'updated',
-                'field': config.get('field'),
+                "success": True,
+                "status": "updated",
+                "field": config.get("field"),
             }
         except Exception as e:
-            return {'success': False, 'status': 'failed', 'error': str(e)}
+            logger.exception("_update_field: error inesperado")
+            return {"success": False, "status": "failed", "error": str(e)}
 
     def _call_webhook(self, step: WorkflowStep, context: dict) -> dict:
         """Call webhook action."""
         try:
             config = step.config
             return {
-                'success': True,
-                'status': 'called',
-                'url': config.get('url'),
+                "success": True,
+                "status": "called",
+                "url": config.get("url"),
             }
         except Exception as e:
-            return {'success': False, 'status': 'failed', 'error': str(e)}
+            logger.exception("_call_webhook: error inesperado")
+            return {"success": False, "status": "failed", "error": str(e)}
 
     def _wait(self, step: WorkflowStep, context: dict) -> dict:
         """Wait action."""
         try:
             config = step.config
             return {
-                'success': True,
-                'status': 'waited',
-                'duration': config.get('duration'),
+                "success": True,
+                "status": "waited",
+                "duration": config.get("duration"),
             }
         except Exception as e:
-            return {'success': False, 'status': 'failed', 'error': str(e)}
+            logger.exception("_wait: error inesperado")
+            return {"success": False, "status": "failed", "error": str(e)}
 
     def _conditional(self, step: WorkflowStep, context: dict) -> dict:
         """Conditional logic."""
         try:
             config = step.config
-            condition = config.get('condition')
+            config.get("condition")
             # Placeholder: actual condition evaluation
             return {
-                'success': True,
-                'status': 'evaluated',
+                "success": True,
+                "status": "evaluated",
             }
         except Exception as e:
-            return {'success': False, 'status': 'failed', 'error': str(e)}
+            logger.exception("_conditional: error inesperado")
+            return {"success": False, "status": "failed", "error": str(e)}
 
     def _loop(self, step: WorkflowStep, context: dict) -> dict:
         """Loop action."""
         try:
             config = step.config
             return {
-                'success': True,
-                'status': 'looped',
-                'iterations': config.get('iterations', 1),
+                "success": True,
+                "status": "looped",
+                "iterations": config.get("iterations", 1),
             }
         except Exception as e:
-            return {'success': False, 'status': 'failed', 'error': str(e)}
+            logger.exception("_loop: error inesperado")
+            return {"success": False, "status": "failed", "error": str(e)}
 
-    def _find_step(self, workflow: Workflow, step_id: Optional[str]) -> Optional[WorkflowStep]:
+    def _find_step(
+        self, workflow: Workflow, step_id: str | None
+    ) -> WorkflowStep | None:
         """Find step by ID."""
         if not step_id:
             return None
@@ -241,7 +256,7 @@ class WorkflowEngine:
                 return step
         return None
 
-    def get_workflow(self, workflow_id: str) -> Optional[Workflow]:
+    def get_workflow(self, workflow_id: str) -> Workflow | None:
         """Get workflow details."""
         return self.workflows.get(workflow_id)
 

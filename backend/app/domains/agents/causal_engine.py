@@ -4,21 +4,21 @@ Identifies root causes of failed deals, detects objection patterns across
 conversations, and generates data-driven pitch recommendations.
 """
 
-import uuid
 import json
-from typing import Dict, Any, Optional, List
-from datetime import datetime, timezone, timedelta
+import uuid
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from pydantic import BaseModel, Field
-from sqlalchemy import select, func, and_
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
 from app.domains.agents.ai_reply import generate_raw_ai_response
-from app.domains.agents.models_causal import ObjectionPattern as ObjectionPatternModel
 from app.domains.agents.models_causal import CausalAnalysis as CausalAnalysisModel
-from app.domains.channels.models import Conversation, Message
+from app.domains.agents.models_causal import ObjectionPattern as ObjectionPatternModel
 from app.domains.agents.prompt_optimizer import ConversationOutcome
+from app.domains.channels.models import Conversation, Message
 
 logger = get_logger(__name__)
 
@@ -27,10 +27,11 @@ logger = get_logger(__name__)
 # Pydantic Structured Output Models
 # ------------------------------------------------------------------
 
+
 class CausalAnalysis(BaseModel):
     surface_reason: str
     root_cause: str
-    contributing_factors: List[str] = Field(default_factory=list)
+    contributing_factors: list[str] = Field(default_factory=list)
     recommended_fix: str
     confidence: float = Field(ge=0.0, le=1.0)
 
@@ -41,7 +42,7 @@ class ObjectionPattern(BaseModel):
     root_cause: str
     frequency_percent: float
     overcome_rate: float
-    affected_segments: List[str] = Field(default_factory=list)
+    affected_segments: list[str] = Field(default_factory=list)
     recommended_response: str
 
 
@@ -53,16 +54,17 @@ class Recommendation(BaseModel):
 
 
 class PatternsWrapper(BaseModel):
-    patterns: List[ObjectionPattern] = Field(default_factory=list)
+    patterns: list[ObjectionPattern] = Field(default_factory=list)
 
 
 class RecommendationsWrapper(BaseModel):
-    recommendations: List[Recommendation] = Field(default_factory=list)
+    recommendations: list[Recommendation] = Field(default_factory=list)
 
 
 # ------------------------------------------------------------------
 # CausalAnalyzer
 # ------------------------------------------------------------------
+
 
 class CausalAnalyzer:
     """Analyzes sales conversations to find root causes and patterns."""
@@ -77,7 +79,7 @@ class CausalAnalyzer:
     async def analyze_failed_deal(
         self,
         conversation_id: uuid.UUID,
-    ) -> Optional[CausalAnalysis]:
+    ) -> CausalAnalysis | None:
         """For lost deals, identifies root cause:
 
         - "El cliente rechazó porque el precio era alto RELATIVO a su percepción de valor"
@@ -97,13 +99,13 @@ class CausalAnalyzer:
             "Eres un experto en análisis causal de ventas. Tu trabajo es identificar la "
             "CAUSA RAÍZ de por qué falló una conversación de ventas, NO solo el síntoma.\n\n"
             "Devuelve SOLO un JSON válido con esta estructura exacta:\n"
-            '{\n'
+            "{\n"
             '  "surface_reason": "Lo que dijo el cliente (síntoma)",\n'
             '  "root_cause": "La verdadera causa raíz del rechazo",\n'
             '  "contributing_factors": ["factor 1", "factor 2"],\n'
             '  "recommended_fix": "Qué debería hacerse diferente la próxima vez",\n'
             '  "confidence": 0.85\n'
-            '}\n\n'
+            "}\n\n"
             "Reglas:\n"
             "- surface_reason: la objeción superficial del cliente.\n"
             "- root_cause: el verdadero motivo (ej: falta de percepción de valor, no urgencia).\n"
@@ -135,7 +137,7 @@ class CausalAnalyzer:
             result = _parse_json_response(response, CausalAnalysis)
             return result
         except Exception as e:
-            logger.warning(f"Causal analysis generation failed: {e}")
+            logger.warning(f"Causal analysis generation failed: {e}", exc_info=True)
             return None
 
     async def save_causal_analysis(
@@ -170,7 +172,7 @@ class CausalAnalyzer:
         self,
         business_id: uuid.UUID,
         days: int = 30,
-    ) -> List[ObjectionPattern]:
+    ) -> list[ObjectionPattern]:
         """Aggregates across conversations:
 
         - Pattern: "Precio alto" → Cause: "Falta de comunicación de valor"
@@ -178,7 +180,7 @@ class CausalAnalyzer:
         - Pattern: "Lo voy a pensar" → Cause: "Falta de urgencia/scarcity"
           → Frequency: 31% → Overcome rate: 8%
         """
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
 
         # Get all conversations with outcomes in the period
         result = await self.db.execute(
@@ -214,9 +216,9 @@ class CausalAnalyzer:
             "Eres un analista de datos de ventas. Analiza los resultados de conversaciones "
             "y detecta patrones de objeciones recurrentes.\n\n"
             "Devuelve SOLO un JSON válido con esta estructura exacta:\n"
-            '{\n'
+            "{\n"
             '  "patterns": [\n'
-            '    {\n'
+            "    {\n"
             '      "pattern_name": "Nombre corto del patrón",\n'
             '      "objection_text": "Texto típico de la objeción",\n'
             '      "root_cause": "Causa raíz identificada",\n'
@@ -224,9 +226,9 @@ class CausalAnalyzer:
             '      "overcome_rate": 15.0,\n'
             '      "affected_segments": ["segmento1", "segmento2"],\n'
             '      "recommended_response": "Cómo responder recomendado"\n'
-            '    }\n'
-            '  ]\n'
-            '}\n\n'
+            "    }\n"
+            "  ]\n"
+            "}\n\n"
             "Reglas:\n"
             "- frequency_percent: porcentaje estimado de conversaciones afectadas.\n"
             "- overcome_rate: porcentaje estimado en que la objeción fue superada.\n"
@@ -262,14 +264,14 @@ class CausalAnalyzer:
                 return parsed.patterns
             return []
         except Exception as e:
-            logger.warning(f"Objection pattern detection failed: {e}")
+            logger.warning(f"Objection pattern detection failed: {e}", exc_info=True)
             return []
 
     async def sync_objection_patterns(
         self,
         business_id: uuid.UUID,
-        patterns: List[ObjectionPattern],
-    ) -> List[ObjectionPatternModel]:
+        patterns: list[ObjectionPattern],
+    ) -> list[ObjectionPatternModel]:
         """Upsert detected objection patterns into the database."""
         saved = []
         for pattern in patterns:
@@ -291,7 +293,7 @@ class CausalAnalyzer:
                 existing.overcome_rate = pattern.overcome_rate
                 existing.affected_segments = pattern.affected_segments
                 existing.recommended_response = pattern.recommended_response
-                existing.updated_at = datetime.now(timezone.utc)
+                existing.updated_at = datetime.now(UTC)
                 saved.append(existing)
             else:
                 record = ObjectionPatternModel(
@@ -313,7 +315,9 @@ class CausalAnalyzer:
         for record in saved:
             await self.db.refresh(record)
 
-        logger.info(f"Synced {len(saved)} objection patterns for business {business_id}")
+        logger.info(
+            f"Synced {len(saved)} objection patterns for business {business_id}"
+        )
         return saved
 
     # ------------------------------------------------------------------
@@ -323,7 +327,7 @@ class CausalAnalyzer:
     async def generate_pitch_recommendations(
         self,
         business_id: uuid.UUID,
-    ) -> List[Recommendation]:
+    ) -> list[Recommendation]:
         """Based on causal analysis:
 
         - "Para segmento X, enfatizar Y en los primeros 3 mensajes"
@@ -370,16 +374,16 @@ class CausalAnalyzer:
             "Eres un estratega de ventas senior. Basado en los análisis causales y patrones "
             "de objeciones, genera recomendaciones concretas para mejorar los pitches.\n\n"
             "Devuelve SOLO un JSON válido con esta estructura exacta:\n"
-            '{\n'
+            "{\n"
             '  "recommendations": [\n'
-            '    {\n'
+            "    {\n"
             '      "segment": "Segmento o situación objetivo",\n'
             '      "insight": "Insight clave descubierto",\n'
             '      "recommended_action": "Acción concreta y específica",\n'
             '      "priority": "high"\n'
-            '    }\n'
-            '  ]\n'
-            '}\n\n'
+            "    }\n"
+            "  ]\n"
+            "}\n\n"
             "Reglas:\n"
             "- segment: a quién o en qué situación aplica.\n"
             "- insight: qué descubrimiento causal justifica la recomendación.\n"
@@ -411,7 +415,9 @@ class CausalAnalyzer:
                 return parsed.recommendations
             return []
         except Exception as e:
-            logger.warning(f"Pitch recommendation generation failed: {e}")
+            logger.warning(
+                f"Pitch recommendation generation failed: {e}", exc_info=True
+            )
             return []
 
     # ------------------------------------------------------------------
@@ -421,7 +427,7 @@ class CausalAnalyzer:
     async def _build_transcript(
         self,
         conversation_id: uuid.UUID,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Build a text transcript from conversation messages."""
         result = await self.db.execute(
             select(Message)
@@ -441,7 +447,7 @@ class CausalAnalyzer:
     async def _get_outcome(
         self,
         conversation_id: uuid.UUID,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Get the recorded outcome for a conversation."""
         result = await self.db.execute(
             select(ConversationOutcome.outcome)
@@ -457,8 +463,7 @@ class CausalAnalyzer:
     ) -> uuid.UUID:
         """Resolve business_id from a conversation."""
         result = await self.db.execute(
-            select(Conversation.business_id)
-            .where(Conversation.id == conversation_id)
+            select(Conversation.business_id).where(Conversation.id == conversation_id)
         )
         business_id = result.scalar_one_or_none()
         return business_id or uuid.UUID("00000000-0000-0000-0000-000000000000")
@@ -468,7 +473,8 @@ class CausalAnalyzer:
 # JSON parsing helper
 # ------------------------------------------------------------------
 
-def _parse_json_response(text: str, model_class) -> Optional[Any]:
+
+def _parse_json_response(text: str, model_class) -> Any | None:
     """Robustly parse a JSON response into a Pydantic model."""
     text = text.strip()
 
@@ -477,7 +483,7 @@ def _parse_json_response(text: str, model_class) -> Optional[Any]:
         data = json.loads(text)
         return model_class.model_validate(data)
     except Exception:
-        pass
+        logger.exception("_parse_json_response: error inesperado")
 
     # Try markdown code blocks
     if "```json" in text:
@@ -487,7 +493,7 @@ def _parse_json_response(text: str, model_class) -> Optional[Any]:
             data = json.loads(text[start:end].strip())
             return model_class.model_validate(data)
         except Exception:
-            pass
+            logger.exception("_parse_json_response: error inesperado")
 
     if "```" in text:
         try:
@@ -496,7 +502,7 @@ def _parse_json_response(text: str, model_class) -> Optional[Any]:
             data = json.loads(text[start:end].strip())
             return model_class.model_validate(data)
         except Exception:
-            pass
+            logger.exception("_parse_json_response: error inesperado")
 
     # Try JSON between braces
     try:
@@ -505,7 +511,7 @@ def _parse_json_response(text: str, model_class) -> Optional[Any]:
         data = json.loads(text[start:end])
         return model_class.model_validate(data)
     except Exception:
-        pass
+        logger.exception("_parse_json_response: error inesperado")
 
     logger.warning(f"Could not parse JSON response into {model_class.__name__}")
     return None

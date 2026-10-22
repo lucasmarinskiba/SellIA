@@ -1,11 +1,12 @@
 """Bulk import listings from platforms → auto-create publication links + FOMO."""
 
 from uuid import UUID
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.seo_config.models import PublicationLink
 from app.domains.seo_config.fomo_generator import PublicationFOMOGenerator
+from app.domains.seo_config.models import PublicationLink
 
 logger = get_logger(__name__)
 
@@ -67,8 +68,8 @@ class BulkListingImporter:
                     if fomo:
                         fomo_generated += 1
 
-            except Exception as e:
-                logger.error(f"Failed to import listing {listing.get('url')}: {str(e)[:100]}")
+            except Exception:
+                logger.exception(f"Failed to import listing {listing.get('url')}")
                 failed += 1
 
         await self.db.commit()

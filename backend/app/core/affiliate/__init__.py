@@ -1,49 +1,53 @@
 """Affiliate Engine — Hotmart, Amazon, Mercado Libre, Beacons integration."""
 
+from .affiliate_automation import (
+    AffiliateAutomationOrchestrator,
+    AutomationTask,
+    PlatformAutomationAdapter,
+)
 from .affiliate_platform_analyzer import (
-    HotmartAnalyzer,
-    MercadoLibreAnalyzer,
+    AffiliateProductScore,
     AmazonAnalyzer,
     BeaconsAnalyzer,
-    AffiliateProductScore,
+    HotmartAnalyzer,
+    MercadoLibreAnalyzer,
     PlatformComparator,
 )
 from .affiliate_sales_methods import (
     AFFILIATE_METHODS,
-    get_methods_by_category,
     get_best_methods_for_product,
     get_fastest_methods,
+    get_methods_by_category,
 )
-from .affiliate_automation import (
-    AffiliateAutomationOrchestrator,
-    PlatformAutomationAdapter,
-    AutomationTask,
+from .affiliate_strategy_engine import AffiliateStrategy, AffiliateStrategyEngine
+from .commission_tracker import (
+    AffiliateCommission,
+    AffiliatePerformance,
+    CommissionTracker,
 )
-from .affiliate_strategy_engine import AffiliateStrategyEngine, AffiliateStrategy
-from .commission_tracker import CommissionTracker, AffiliateCommission, AffiliatePerformance
 
 __all__ = [
+    # Sales methods
+    "AFFILIATE_METHODS",
+    # Automation
+    "AffiliateAutomationOrchestrator",
+    "AffiliateCommission",
+    "AffiliatePerformance",
+    "AffiliateProductScore",
+    "AffiliateStrategy",
+    # Strategy
+    "AffiliateStrategyEngine",
+    "AmazonAnalyzer",
+    "AutomationTask",
+    "BeaconsAnalyzer",
+    # Tracking
+    "CommissionTracker",
     # Platform analyzers
     "HotmartAnalyzer",
     "MercadoLibreAnalyzer",
-    "AmazonAnalyzer",
-    "BeaconsAnalyzer",
-    "AffiliateProductScore",
+    "PlatformAutomationAdapter",
     "PlatformComparator",
-    # Sales methods
-    "AFFILIATE_METHODS",
-    "get_methods_by_category",
     "get_best_methods_for_product",
     "get_fastest_methods",
-    # Automation
-    "AffiliateAutomationOrchestrator",
-    "PlatformAutomationAdapter",
-    "AutomationTask",
-    # Strategy
-    "AffiliateStrategyEngine",
-    "AffiliateStrategy",
-    # Tracking
-    "CommissionTracker",
-    "AffiliateCommission",
-    "AffiliatePerformance",
+    "get_methods_by_category",
 ]

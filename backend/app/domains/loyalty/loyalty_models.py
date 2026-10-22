@@ -1,12 +1,21 @@
 """Loyalty program models — customer retention + rewards."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from decimal import Decimal
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Decimal, Enum as SQLEnum, Index, Boolean, Float
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Decimal,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+)
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -14,6 +23,7 @@ from app.core.database import Base
 
 class MembershipTier(str, Enum):
     """Loyalty program membership tier."""
+
     BRONZE = "bronze"
     SILVER = "silver"
     GOLD = "gold"
@@ -22,6 +32,7 @@ class MembershipTier(str, Enum):
 
 class RewardType(str, Enum):
     """Reward redemption type."""
+
     DISCOUNT_PERCENTAGE = "discount_percentage"
     DISCOUNT_FIXED = "discount_fixed"
     FREE_PRODUCT = "free_product"
@@ -31,10 +42,17 @@ class RewardType(str, Enum):
 
 class LoyaltyProgram(Base):
     """Business loyalty program configuration."""
+
     __tablename__ = "loyalty_programs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
 
     # Program config
     name = Column(String(255), nullable=False)
@@ -42,7 +60,9 @@ class LoyaltyProgram(Base):
     is_active = Column(Boolean, default=True)
 
     # Points system
-    points_per_dollar = Column(Decimal(4, 2), default=Decimal("1.0"))  # 1 point = $1 spent
+    points_per_dollar = Column(
+        Decimal(4, 2), default=Decimal("1.0")
+    )  # 1 point = $1 spent
     points_expiration_days = Column(Integer, nullable=True)  # None = never expire
 
     # Tier thresholds (lifetime spent)
@@ -66,27 +86,37 @@ class LoyaltyProgram(Base):
     require_account_to_earn = Column(Boolean, default=True)
     send_point_reminders = Column(Boolean, default=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     business = relationship("Business", foreign_keys=[business_id])
 
 
 class LoyaltyMember(Base):
     """Customer loyalty program enrollment."""
+
     __tablename__ = "loyalty_members"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     # No ForeignKey: there is no `customers` table. The id is supplied by the caller (a user, lead or
     # contact), so it stays a plain indexed UUID instead of a constraint that can never be created.
     customer_id = Column(UUID(as_uuid=True), nullable=False, index=True)
-    loyalty_program_id = Column(UUID(as_uuid=True), ForeignKey("loyalty_programs.id", ondelete="CASCADE"), nullable=False)
+    loyalty_program_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("loyalty_programs.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     # Membership
     member_number = Column(String(50), nullable=False, unique=True)  # Membership ID
     current_tier = Column(SQLEnum(MembershipTier), default=MembershipTier.BRONZE)
-    tier_since = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    tier_since = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     # Points
     lifetime_points_earned = Column(Integer, default=0)
@@ -97,7 +127,7 @@ class LoyaltyMember(Base):
     lifetime_spend = Column(Decimal(12, 2), default=0)
     total_purchases = Column(Integer, default=0)
     avg_purchase_value = Column(Decimal(10, 2), default=0)
-    last_purchase_date = Column(DateTime(timezone.utc), nullable=True)
+    last_purchase_date = Column(DateTime(UTC), nullable=True)
     days_since_purchase = Column(Integer, nullable=True)  # For churn detection
 
     # Engagement
@@ -107,11 +137,11 @@ class LoyaltyMember(Base):
 
     # Status
     is_active = Column(Boolean, default=True)
-    enrollment_date = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    enrollment_date = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
     churn_risk = Column(Boolean, default=False)  # ML flag for at-risk customers
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     customer = relationship("Customer", foreign_keys=[customer_id])
     loyalty_program = relationship("LoyaltyProgram", foreign_keys=[loyalty_program_id])
@@ -124,11 +154,21 @@ class LoyaltyMember(Base):
 
 class LoyaltyReward(Base):
     """Reward offer in loyalty program."""
+
     __tablename__ = "loyalty_rewards"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    loyalty_program_id = Column(UUID(as_uuid=True), ForeignKey("loyalty_programs.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False)
+    loyalty_program_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("loyalty_programs.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     # Reward details
     reward_name = Column(String(255), nullable=False)
@@ -139,7 +179,9 @@ class LoyaltyReward(Base):
     points_required = Column(Integer, nullable=False)
 
     # Value
-    discount_percentage = Column(Decimal(5, 2), nullable=True)  # For discount_percentage
+    discount_percentage = Column(
+        Decimal(5, 2), nullable=True
+    )  # For discount_percentage
     discount_fixed_amount = Column(Decimal(10, 2), nullable=True)  # For discount_fixed
     product_name = Column(String(255), nullable=True)  # For free_product
 
@@ -150,39 +192,55 @@ class LoyaltyReward(Base):
     redemptions_count = Column(Integer, default=0)
 
     # Dates
-    valid_from = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    valid_until = Column(DateTime(timezone.utc), nullable=True)
+    valid_from = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    valid_until = Column(DateTime(UTC), nullable=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     loyalty_program = relationship("LoyaltyProgram", foreign_keys=[loyalty_program_id])
 
-    __table_args__ = (
-        Index("idx_program_active", "loyalty_program_id", "is_active"),
-    )
+    __table_args__ = (Index("idx_program_active", "loyalty_program_id", "is_active"),)
 
 
 class LoyaltyTransaction(Base):
     """Point earning/redemption transaction."""
+
     __tablename__ = "loyalty_transactions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    loyalty_member_id = Column(UUID(as_uuid=True), ForeignKey("loyalty_members.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False)
+    loyalty_member_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("loyalty_members.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     # Transaction
-    transaction_type = Column(String(20), nullable=False)  # earn, redeem, bonus, expiration, transfer
-    points_change = Column(Integer, nullable=False)  # Positive for earn, negative for redeem
+    transaction_type = Column(
+        String(20), nullable=False
+    )  # earn, redeem, bonus, expiration, transfer
+    points_change = Column(
+        Integer, nullable=False
+    )  # Positive for earn, negative for redeem
     balance_before = Column(Integer, nullable=False)
     balance_after = Column(Integer, nullable=False)
 
     # Reference
     order_id = Column(String(255), nullable=True)  # For purchase-based earning
-    reward_id = Column(UUID(as_uuid=True), ForeignKey("loyalty_rewards.id", ondelete="SET NULL"), nullable=True)  # For redemption
+    reward_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("loyalty_rewards.id", ondelete="SET NULL"),
+        nullable=True,
+    )  # For redemption
     description = Column(String(255), nullable=True)
 
     # Dates
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC), index=True)
 
     member = relationship("LoyaltyMember", foreign_keys=[loyalty_member_id])
     reward = relationship("LoyaltyReward", foreign_keys=[reward_id])
@@ -195,10 +253,16 @@ class LoyaltyTransaction(Base):
 
 class LoyaltyMetrics(Base):
     """Aggregate loyalty program metrics."""
+
     __tablename__ = "loyalty_metrics"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, unique=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
 
     # Date
     date = Column(String(10), nullable=False)  # YYYY-MM-DD
@@ -221,19 +285,21 @@ class LoyaltyMetrics(Base):
     avg_points_per_member = Column(Decimal(8, 2), default=0)
 
     # Engagement
-    reward_redemption_rate = Column(Decimal(5, 2), default=0)  # % of members with redemption
+    reward_redemption_rate = Column(
+        Decimal(5, 2), default=0
+    )  # % of members with redemption
     avg_redemptions_per_member = Column(Decimal(5, 2), default=0)
     referral_count = Column(Integer, default=0)
 
     # Revenue impact
     member_revenue_month = Column(Decimal(12, 2), default=0)
     non_member_revenue_month = Column(Decimal(12, 2), default=0)
-    member_vs_nonmember_aov = Column(Decimal(8, 2), nullable=True)  # Member AOV / NonMember AOV ratio
+    member_vs_nonmember_aov = Column(
+        Decimal(8, 2), nullable=True
+    )  # Member AOV / NonMember AOV ratio
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     business = relationship("Business", foreign_keys=[business_id])
 
-    __table_args__ = (
-        Index("idx_business_date", "business_id", "date"),
-    )
+    __table_args__ = (Index("idx_business_date", "business_id", "date"),)

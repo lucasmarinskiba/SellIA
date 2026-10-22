@@ -4,13 +4,13 @@ Mapea cada herramienta al plan mínimo requerido, su categoría,
 costo estimado, y metadatos para el router y la UI.
 """
 
-from typing import Dict, List, Set
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass
 class ToolInfo:
     """Metadatos de una herramienta de IA generativa."""
+
     slug: str
     name: str
     category: str  # image, video, audio, copy, design, presentation
@@ -27,7 +27,7 @@ class ToolInfo:
 # REGISTRO DE HERRAMIENTAS (26 herramientas)
 # ============================================================================
 
-TOOL_REGISTRY: Dict[str, ToolInfo] = {
+TOOL_REGISTRY: dict[str, ToolInfo] = {
     # === FREE TIER (9 herramientas) ===
     "chatgpt": ToolInfo(
         slug="chatgpt",
@@ -128,7 +128,6 @@ TOOL_REGISTRY: Dict[str, ToolInfo] = {
         requires_api_key=False,
         fallback_tool="kimi",
     ),
-
     # === STARTER TIER (+6 herramientas = 15 total) ===
     "dalle3": ToolInfo(
         slug="dalle3",
@@ -207,7 +206,6 @@ TOOL_REGISTRY: Dict[str, ToolInfo] = {
         requires_api_key=True,
         fallback_tool="",
     ),
-
     # === PRO TIER (+6 herramientas = 21 total) ===
     "midjourney": ToolInfo(
         slug="midjourney",
@@ -275,7 +273,6 @@ TOOL_REGISTRY: Dict[str, ToolInfo] = {
         requires_api_key=True,
         fallback_tool="beautifulai",
     ),
-
     # === ENTERPRISE TIER (+7 herramientas = 26 total) ===
     "seedance": ToolInfo(
         slug="seedance",
@@ -372,44 +369,97 @@ TOOL_REGISTRY: Dict[str, ToolInfo] = {
 # MAPEO POR PLAN
 # ============================================================================
 
-PLAN_CONTENT_TOOLS: Dict[str, List[str]] = {
+PLAN_CONTENT_TOOLS: dict[str, list[str]] = {
     "free": [
-        "chatgpt", "canva", "capcut", "ideogram",
-        "replicate_flux_schnell", "fal_flux_pro", "gpt_image_mini",
-        "kimi", "ollama",
+        "chatgpt",
+        "canva",
+        "capcut",
+        "ideogram",
+        "replicate_flux_schnell",
+        "fal_flux_pro",
+        "gpt_image_mini",
+        "kimi",
+        "ollama",
     ],
     "starter": [
         # Hereda todo de free
-        "chatgpt", "canva", "capcut", "ideogram",
-        "replicate_flux_schnell", "fal_flux_pro", "gpt_image_mini",
-        "kimi", "ollama",
+        "chatgpt",
+        "canva",
+        "capcut",
+        "ideogram",
+        "replicate_flux_schnell",
+        "fal_flux_pro",
+        "gpt_image_mini",
+        "kimi",
+        "ollama",
         # Nuevas
-        "dalle3", "leonardo", "photoroom", "opusclip",
-        "copyai", "jasper", "beautifulai",
+        "dalle3",
+        "leonardo",
+        "photoroom",
+        "opusclip",
+        "copyai",
+        "jasper",
+        "beautifulai",
     ],
     "pro": [
         # Hereda todo de starter
-        "chatgpt", "canva", "capcut", "ideogram",
-        "replicate_flux_schnell", "fal_flux_pro", "gpt_image_mini",
-        "kimi", "ollama",
-        "dalle3", "leonardo", "photoroom", "opusclip",
-        "copyai", "jasper", "beautifulai",
+        "chatgpt",
+        "canva",
+        "capcut",
+        "ideogram",
+        "replicate_flux_schnell",
+        "fal_flux_pro",
+        "gpt_image_mini",
+        "kimi",
+        "ollama",
+        "dalle3",
+        "leonardo",
+        "photoroom",
+        "opusclip",
+        "copyai",
+        "jasper",
+        "beautifulai",
         # Nuevas
-        "midjourney", "runway", "heygen", "pika",
-        "elevenlabs", "gamma",
+        "midjourney",
+        "runway",
+        "heygen",
+        "pika",
+        "elevenlabs",
+        "gamma",
     ],
     "enterprise": [
         # Hereda todo de pro
-        "chatgpt", "canva", "capcut", "ideogram",
-        "replicate_flux_schnell", "fal_flux_pro", "gpt_image_mini",
-        "kimi", "ollama",
-        "dalle3", "leonardo", "photoroom", "opusclip",
-        "copyai", "jasper", "beautifulai",
-        "midjourney", "runway", "heygen", "pika",
-        "elevenlabs", "gamma",
+        "chatgpt",
+        "canva",
+        "capcut",
+        "ideogram",
+        "replicate_flux_schnell",
+        "fal_flux_pro",
+        "gpt_image_mini",
+        "kimi",
+        "ollama",
+        "dalle3",
+        "leonardo",
+        "photoroom",
+        "opusclip",
+        "copyai",
+        "jasper",
+        "beautifulai",
+        "midjourney",
+        "runway",
+        "heygen",
+        "pika",
+        "elevenlabs",
+        "gamma",
         # Nuevas
-        "seedance", "kling", "sora", "sd35",
-        "adcreative", "writesonic", "luma", "custom_api",
+        "seedance",
+        "kling",
+        "sora",
+        "sd35",
+        "adcreative",
+        "writesonic",
+        "luma",
+        "custom_api",
     ],
 }
 
@@ -418,7 +468,8 @@ PLAN_CONTENT_TOOLS: Dict[str, List[str]] = {
 # FUNCIONES DE UTILIDAD
 # ============================================================================
 
-def get_tools_for_plan(plan_tier: str) -> List[str]:
+
+def get_tools_for_plan(plan_tier: str) -> list[str]:
     """Retorna lista de slugs de herramientas disponibles para un plan."""
     return PLAN_CONTENT_TOOLS.get(plan_tier, PLAN_CONTENT_TOOLS["free"])
 
@@ -434,11 +485,12 @@ def is_tool_allowed(tool_slug: str, plan_tier: str) -> bool:
     return tool_slug in allowed
 
 
-def get_tools_by_category(plan_tier: str, category: str) -> List[ToolInfo]:
+def get_tools_by_category(plan_tier: str, category: str) -> list[ToolInfo]:
     """Filtra herramientas por categoría para un plan."""
     allowed_slugs = set(get_tools_for_plan(plan_tier))
     return [
-        tool for slug, tool in TOOL_REGISTRY.items()
+        tool
+        for slug, tool in TOOL_REGISTRY.items()
         if slug in allowed_slugs and tool.category == category
     ]
 
@@ -482,7 +534,7 @@ def get_plan_upgrade_message(tool_slug: str, current_plan: str) -> str:
     )
 
 
-def get_tools_pricing_table() -> Dict[str, Dict]:
+def get_tools_pricing_table() -> dict[str, dict]:
     """Genera tabla de precios para la UI."""
     table = {}
     for slug, tool in TOOL_REGISTRY.items():
@@ -496,7 +548,7 @@ def get_tools_pricing_table() -> Dict[str, Dict]:
     return table
 
 
-def get_plan_comparison() -> Dict[str, Dict]:
+def get_plan_comparison() -> dict[str, dict]:
     """Genera comparación de planes para la UI."""
     comparison = {}
     for plan in ["free", "starter", "pro", "enterprise"]:

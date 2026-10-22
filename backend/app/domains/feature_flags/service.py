@@ -6,10 +6,9 @@ plan-gating, and instant kill-switches.
 """
 
 import hashlib
-from typing import Optional, List
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
 
@@ -28,8 +27,8 @@ class FeatureFlagService:
     async def is_enabled(
         db: AsyncSession,
         flag_name: str,
-        user_id: Optional[str] = None,
-        plan_id: Optional[str] = None,
+        user_id: str | None = None,
+        plan_id: str | None = None,
         default: bool = False,
     ) -> bool:
         """
@@ -58,25 +57,30 @@ class FeatureFlagService:
         if flag.enabled_plans and plan_id and plan_id not in flag.enabled_plans:
             return False
 
-        if flag.user_id_allowlist and user_id:
-            if user_id in flag.user_id_allowlist:
-                return True
+        if (flag.user_id_allowlist and user_id) and user_id in flag.user_id_allowlist:
+            return True
 
         if flag.rollout_percentage >= 100:
             return True
 
         if user_id:
             # Deterministic rollout based on user ID hash
-            hash_val = int(hashlib.md5(f"{flag_name}:{user_id}".encode(), usedforsecurity=False).hexdigest(), 16)
+            hash_val = int(
+                hashlib.md5(
+                    f"{flag_name}:{user_id}".encode(), usedforsecurity=False
+                ).hexdigest(),
+                16,
+            )
             user_bucket = hash_val % 100
             return user_bucket < flag.rollout_percentage
 
         return flag.rollout_percentage >= 50  # Default for anonymous
 
     @staticmethod
-    async def get_all_flags(db: AsyncSession) -> List[dict]:
+    async def get_all_flags(db: AsyncSession) -> list[dict]:
         """Return all feature flags (for admin UI)."""
         from app.domains.feature_flags.models import FeatureFlag
+
         result = await db.execute(select(FeatureFlag))
         flags = result.scalars().all()
         return [
@@ -95,8 +99,8 @@ class FeatureFlagService:
 async def flag_enabled(
     db: AsyncSession,
     flag_name: str,
-    user_id: Optional[str] = None,
-    plan_id: Optional[str] = None,
+    user_id: str | None = None,
+    plan_id: str | None = None,
     default: bool = False,
 ) -> bool:
     return await FeatureFlagService.is_enabled(db, flag_name, user_id, plan_id, default)

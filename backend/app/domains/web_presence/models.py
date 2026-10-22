@@ -19,10 +19,18 @@ from __future__ import annotations
 
 import enum
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import (
-    Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String, UniqueConstraint,
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
@@ -30,8 +38,8 @@ from app.core.database import Base
 
 
 class LinkKind(str, enum.Enum):
-    WEBSITE = "website"          # su web propia / landing / blog
-    SOCIAL = "social"            # perfil de red social
+    WEBSITE = "website"  # su web propia / landing / blog
+    SOCIAL = "social"  # perfil de red social
     MARKETPLACE = "marketplace"  # tienda o publicación en un marketplace
     OTHER = "other"
 
@@ -69,7 +77,10 @@ class BusinessLink(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     business_id = Column(UUID(as_uuid=True), nullable=True, index=True)
 
@@ -85,8 +96,8 @@ class BusinessLink(Base):
     # ── last REAL fetch of this URL (all NULL until it has been audited) ──
     last_checked_at = Column(DateTime(timezone=True), nullable=True)
     http_status = Column(Integer, nullable=True)
-    final_url = Column(String(1024), nullable=True)      # after redirects
-    response_ms = Column(Integer, nullable=True)         # measured, not estimated
+    final_url = Column(String(1024), nullable=True)  # after redirects
+    response_ms = Column(Integer, nullable=True)  # measured, not estimated
     content_bytes = Column(Integer, nullable=True)
     fetch_error = Column(String(300), nullable=True)
 
@@ -96,11 +107,11 @@ class BusinessLink(Base):
     #: 0-100, computed by analyzer.score_page from the audit above.
     seo_score = Column(Float, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     updated_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
 
@@ -125,7 +136,7 @@ class BusinessLinkAudit(Base):
     )
     user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     checked_at = Column(
-        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
     )
     http_status = Column(Integer, nullable=True)
     response_ms = Column(Integer, nullable=True)

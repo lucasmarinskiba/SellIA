@@ -1,9 +1,21 @@
 """Phase X8: Auto-Marketing & Growth Agent - SellIA Self-Promotion System."""
-import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, Text, JSON, Enum
-from app.db.models import Base
+
 import enum
+import uuid
+from datetime import UTC, datetime
+
+from sqlalchemy import (
+    JSON,
+    Column,
+    DateTime,
+    Enum,
+    Float,
+    Integer,
+    String,
+    Text,
+)
+
+from app.db.models import Base
 
 
 class MarketingChannel(str, enum.Enum):
@@ -81,7 +93,7 @@ class AutoMarketingContent(Base):
     engagement_rate = Column(Float, default=0)  # engagement / impressions
     conversion_rate = Column(Float, default=0)  # conversions / clicks
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 
 class CustomerSuccessStory(Base):
@@ -97,7 +109,9 @@ class CustomerSuccessStory(Base):
     # Results (before/after)
     problem_statement = Column(Text)  # What problem did they have?
     solution_applied = Column(Text)  # How SellIA helped
-    result_metrics = Column(JSON)  # {sales_increase: "150%", time_saved: "20 hours/week"}
+    result_metrics = Column(
+        JSON
+    )  # {sales_increase: "150%", time_saved: "20 hours/week"}
     result_summary = Column(String(300))  # Punchy summary
 
     # Content variants
@@ -111,7 +125,7 @@ class CustomerSuccessStory(Base):
     total_impressions = Column(Integer, default=0)
     total_conversions = Column(Integer, default=0)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 
 class GrowthHackingExperiment(Base):
@@ -120,7 +134,9 @@ class GrowthHackingExperiment(Base):
 
     # Experiment definition
     hypothesis = Column(Text)  # "If we post testimonials, engagement will increase 40%"
-    tactic = Column(String(100))  # "customer_testimonials", "short_form_video", "influencer_collab"
+    tactic = Column(
+        String(100)
+    )  # "customer_testimonials", "short_form_video", "influencer_collab"
     channel = Column(Enum(MarketingChannel))
     variant_a = Column(Text)  # Control version
     variant_b = Column(Text)  # Test version
@@ -141,7 +157,7 @@ class GrowthHackingExperiment(Base):
     conversion_lift = Column(Float)  # % improvement
     statistical_significance = Column(Float)  # Confidence level
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 
 class InfluencerCollaboration(Base):
@@ -168,7 +184,7 @@ class InfluencerCollaboration(Base):
     conversions = Column(Integer, default=0)
     roi = Column(Float, default=0)  # Revenue / investment
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 
 class GrowthMetrics(Base):
@@ -197,4 +213,4 @@ class GrowthMetrics(Base):
     trend_vs_yesterday = Column(Float)  # % change
     trend_vs_week_ago = Column(Float)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))

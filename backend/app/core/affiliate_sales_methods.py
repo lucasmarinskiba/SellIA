@@ -22,15 +22,15 @@ Status: 800L comprehensive method library
 """
 
 import logging
-from typing import Dict, List, Any, Optional
 from enum import Enum
-from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 class MethodCategory(Enum):
     """Affiliate method categories."""
+
     EMAIL = "email"
     CONTENT = "content"
     PAID_ADS = "paid_ads"
@@ -40,6 +40,7 @@ class MethodCategory(Enum):
 
 class Difficulty(Enum):
     """Implementation difficulty."""
+
     BEGINNER = "beginner"
     INTERMEDIATE = "intermediate"
     ADVANCED = "advanced"
@@ -53,15 +54,15 @@ class AffiliateMethod:
         self.name = name
         self.category = category
         self.description = description
-        self.steps: List[str] = []
+        self.steps: list[str] = []
         self.timeline: str = ""
         self.monthly_income: int = 0
         self.difficulty: Difficulty = Difficulty.BEGINNER
-        self.required_resources: List[str] = []
-        self.success_metrics: List[str] = []
+        self.required_resources: list[str] = []
+        self.success_metrics: list[str] = []
         self.startup_cost: int = 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "name": self.name,
@@ -81,7 +82,7 @@ class EmailMethods:
     """Email-based affiliate methods."""
 
     @staticmethod
-    def cold_email_sequences() -> Dict[str, Any]:
+    def cold_email_sequences() -> dict[str, Any]:
         """5-email drip sequences to cold prospects."""
         return {
             "name": "Cold Email Sequences",
@@ -99,12 +100,20 @@ class EmailMethods:
             "timeline": "1-2 months",
             "monthly_income": 15000,
             "difficulty": "intermediate",
-            "resources": ["Email platform (Mailchimp, ConvertKit)", "Prospect list", "Time to write"],
-            "metrics": ["Open rate (20-40%)", "Click rate (5-10%)", "Conversion rate (1-3%)"],
+            "resources": [
+                "Email platform (Mailchimp, ConvertKit)",
+                "Prospect list",
+                "Time to write",
+            ],
+            "metrics": [
+                "Open rate (20-40%)",
+                "Click rate (5-10%)",
+                "Conversion rate (1-3%)",
+            ],
         }
 
     @staticmethod
-    def newsletter_recommendations() -> Dict[str, Any]:
+    def newsletter_recommendations() -> dict[str, Any]:
         """Subtle product recommendations in newsletters."""
         return {
             "name": "Newsletter Recommendations",
@@ -122,13 +131,22 @@ class EmailMethods:
             "timeline": "2-3 months to first sales",
             "monthly_income": 25000,
             "difficulty": "intermediate",
-            "resources": ["Newsletter platform", "Email list (500+)", "Content creation time"],
-            "metrics": ["List growth rate", "Open rate (30-50%)", "Click-through rate", "Affiliate revenue"],
+            "resources": [
+                "Newsletter platform",
+                "Email list (500+)",
+                "Content creation time",
+            ],
+            "metrics": [
+                "List growth rate",
+                "Open rate (30-50%)",
+                "Click-through rate",
+                "Affiliate revenue",
+            ],
             "startup_cost": 0,
         }
 
     @staticmethod
-    def segmented_campaigns() -> Dict[str, Any]:
+    def segmented_campaigns() -> dict[str, Any]:
         """Segment audience, send targeted campaigns."""
         return {
             "name": "Segmented Email Campaigns",
@@ -146,12 +164,20 @@ class EmailMethods:
             "timeline": "1-2 months",
             "monthly_income": 30000,
             "difficulty": "advanced",
-            "resources": ["Email platform with segmentation", "List 1000+", "Automation setup time"],
-            "metrics": ["Segment-specific conversion rates", "Revenue per segment", "ROI"],
+            "resources": [
+                "Email platform with segmentation",
+                "List 1000+",
+                "Automation setup time",
+            ],
+            "metrics": [
+                "Segment-specific conversion rates",
+                "Revenue per segment",
+                "ROI",
+            ],
         }
 
     @staticmethod
-    def solo_ads() -> Dict[str, Any]:
+    def solo_ads() -> dict[str, Any]:
         """Buy email list access, send affiliate promotions."""
         return {
             "name": "Solo Ads",
@@ -170,12 +196,17 @@ class EmailMethods:
             "monthly_income": 10000,
             "difficulty": "beginner",
             "resources": ["$500-2000 budget", "Affiliate link", "Email copy"],
-            "metrics": ["Cost per email sent", "Conversion rate", "ROI", "Breakeven analysis"],
+            "metrics": [
+                "Cost per email sent",
+                "Conversion rate",
+                "ROI",
+                "Breakeven analysis",
+            ],
             "startup_cost": 500,
         }
 
     @staticmethod
-    def retargeting_campaigns() -> Dict[str, Any]:
+    def retargeting_campaigns() -> dict[str, Any]:
         """Pixel tracking, retarget interested visitors."""
         return {
             "name": "Email Retargeting",
@@ -193,8 +224,17 @@ class EmailMethods:
             "timeline": "1-2 months",
             "monthly_income": 20000,
             "difficulty": "intermediate",
-            "resources": ["Email platform (Klaviyo, ConvertKit+)", "Website", "Traffic"],
-            "metrics": ["Pixel fire rate", "Retargeting reach", "Conversion rate", "Revenue"],
+            "resources": [
+                "Email platform (Klaviyo, ConvertKit+)",
+                "Website",
+                "Traffic",
+            ],
+            "metrics": [
+                "Pixel fire rate",
+                "Retargeting reach",
+                "Conversion rate",
+                "Revenue",
+            ],
         }
 
 
@@ -202,7 +242,7 @@ class ContentMethods:
     """Content-based affiliate methods."""
 
     @staticmethod
-    def blog_reviews() -> Dict[str, Any]:
+    def blog_reviews() -> dict[str, Any]:
         """Detailed blog reviews ranked by Google."""
         return {
             "name": "Blog Product Reviews",
@@ -222,11 +262,16 @@ class ContentMethods:
             "monthly_income": 35000,
             "difficulty": "intermediate",
             "resources": ["Blog/website", "SEO knowledge", "Time to write & optimize"],
-            "metrics": ["Google ranking position", "Organic traffic", "Conversion rate", "Revenue"],
+            "metrics": [
+                "Google ranking position",
+                "Organic traffic",
+                "Conversion rate",
+                "Revenue",
+            ],
         }
 
     @staticmethod
-    def youtube_channel() -> Dict[str, Any]:
+    def youtube_channel() -> dict[str, Any]:
         """YouTube channel with reviews, tutorials, unboxings."""
         return {
             "name": "YouTube Channel",
@@ -245,12 +290,21 @@ class ContentMethods:
             "timeline": "6-12 months to $1000+/month",
             "monthly_income": 50000,
             "difficulty": "advanced",
-            "resources": ["Camera/phone", "Editing software", "Consistent time commitment"],
-            "metrics": ["Subscriber growth", "Views per video", "Watch time", "Click-through rate on links"],
+            "resources": [
+                "Camera/phone",
+                "Editing software",
+                "Consistent time commitment",
+            ],
+            "metrics": [
+                "Subscriber growth",
+                "Views per video",
+                "Watch time",
+                "Click-through rate on links",
+            ],
         }
 
     @staticmethod
-    def tiktok_instagram() -> Dict[str, Any]:
+    def tiktok_instagram() -> dict[str, Any]:
         """TikTok & Instagram with trending content."""
         return {
             "name": "TikTok & Instagram Reels",
@@ -270,11 +324,16 @@ class ContentMethods:
             "monthly_income": 15000,
             "difficulty": "beginner",
             "resources": ["Phone camera", "Content ideas", "Consistency"],
-            "metrics": ["Follower growth", "Video views", "Engagement rate", "Bio link clicks"],
+            "metrics": [
+                "Follower growth",
+                "Video views",
+                "Engagement rate",
+                "Bio link clicks",
+            ],
         }
 
     @staticmethod
-    def podcast_sponsorships() -> Dict[str, Any]:
+    def podcast_sponsorships() -> dict[str, Any]:
         """Podcast host reads & sponsorships."""
         return {
             "name": "Podcast Sponsorships",
@@ -293,13 +352,22 @@ class ContentMethods:
             "timeline": "1-2 months",
             "monthly_income": 20000,
             "difficulty": "intermediate",
-            "resources": ["$500-2000 per podcast", "Affiliate product", "Tracking setup"],
-            "metrics": ["Cost per sponsor", "Conversion rate by podcast", "ROI", "Total revenue"],
+            "resources": [
+                "$500-2000 per podcast",
+                "Affiliate product",
+                "Tracking setup",
+            ],
+            "metrics": [
+                "Cost per sponsor",
+                "Conversion rate by podcast",
+                "ROI",
+                "Total revenue",
+            ],
             "startup_cost": 500,
         }
 
     @staticmethod
-    def twitter_reddit() -> Dict[str, Any]:
+    def twitter_reddit() -> dict[str, Any]:
         """Twitter & Reddit niche communities."""
         return {
             "name": "Twitter & Reddit Community",
@@ -318,12 +386,21 @@ class ContentMethods:
             "timeline": "3-4 months",
             "monthly_income": 12000,
             "difficulty": "intermediate",
-            "resources": ["Daily time commitment", "Community knowledge", "Authenticity"],
-            "metrics": ["Community karma/reputation", "Recommendations made", "Conversions", "Revenue"],
+            "resources": [
+                "Daily time commitment",
+                "Community knowledge",
+                "Authenticity",
+            ],
+            "metrics": [
+                "Community karma/reputation",
+                "Recommendations made",
+                "Conversions",
+                "Revenue",
+            ],
         }
 
     @staticmethod
-    def medium_substack() -> Dict[str, Any]:
+    def medium_substack() -> dict[str, Any]:
         """Long-form content on Medium & Substack."""
         return {
             "name": "Medium & Substack Essays",
@@ -343,11 +420,16 @@ class ContentMethods:
             "monthly_income": 18000,
             "difficulty": "intermediate",
             "resources": ["Writing skills", "Niche expertise", "Time to write"],
-            "metrics": ["Subscriber growth", "Open rate (Substack)", "Click rate", "Revenue"],
+            "metrics": [
+                "Subscriber growth",
+                "Open rate (Substack)",
+                "Click rate",
+                "Revenue",
+            ],
         }
 
     @staticmethod
-    def case_studies() -> Dict[str, Any]:
+    def case_studies() -> dict[str, Any]:
         """Detailed before/after case studies."""
         return {
             "name": "Case Studies & Results",
@@ -367,11 +449,16 @@ class ContentMethods:
             "monthly_income": 25000,
             "difficulty": "intermediate",
             "resources": ["Product access", "Documentation", "Writing ability"],
-            "metrics": ["Case study views", "Credibility perception", "Conversion rate", "Revenue"],
+            "metrics": [
+                "Case study views",
+                "Credibility perception",
+                "Conversion rate",
+                "Revenue",
+            ],
         }
 
     @staticmethod
-    def webinars() -> Dict[str, Any]:
+    def webinars() -> dict[str, Any]:
         """Live webinars with affiliate pitch."""
         return {
             "name": "Webinars",
@@ -390,8 +477,17 @@ class ContentMethods:
             "timeline": "1-2 months",
             "monthly_income": 22000,
             "difficulty": "advanced",
-            "resources": ["Webinar platform (Zoom, Demio)", "Audience (500+)", "Pitch skills"],
-            "metrics": ["Webinar attendance", "Conversion rate", "Average deal value", "Revenue"],
+            "resources": [
+                "Webinar platform (Zoom, Demio)",
+                "Audience (500+)",
+                "Pitch skills",
+            ],
+            "metrics": [
+                "Webinar attendance",
+                "Conversion rate",
+                "Average deal value",
+                "Revenue",
+            ],
         }
 
 
@@ -399,7 +495,7 @@ class PaidAdsMethods:
     """Paid advertising affiliate methods."""
 
     @staticmethod
-    def google_ads() -> Dict[str, Any]:
+    def google_ads() -> dict[str, Any]:
         """Google Search & Shopping ads."""
         return {
             "name": "Google Ads (Search & Shopping)",
@@ -419,13 +515,24 @@ class PaidAdsMethods:
             "timeline": "Immediate results (may take 1-2 weeks to optimize)",
             "monthly_income": 30000,
             "difficulty": "advanced",
-            "resources": ["$1000-5000 monthly budget", "Landing page", "Ad copy skills", "Analytics"],
-            "metrics": ["Cost per click", "Conversion rate", "Cost per acquisition", "ROAS", "Revenue"],
+            "resources": [
+                "$1000-5000 monthly budget",
+                "Landing page",
+                "Ad copy skills",
+                "Analytics",
+            ],
+            "metrics": [
+                "Cost per click",
+                "Conversion rate",
+                "Cost per acquisition",
+                "ROAS",
+                "Revenue",
+            ],
             "startup_cost": 1000,
         }
 
     @staticmethod
-    def facebook_instagram_ads() -> Dict[str, Any]:
+    def facebook_instagram_ads() -> dict[str, Any]:
         """Facebook & Instagram retargeting & lookalike ads."""
         return {
             "name": "Facebook & Instagram Ads",
@@ -451,7 +558,7 @@ class PaidAdsMethods:
         }
 
     @staticmethod
-    def tiktok_ads() -> Dict[str, Any]:
+    def tiktok_ads() -> dict[str, Any]:
         """TikTok ads with UGC-style creative."""
         return {
             "name": "TikTok Ads",
@@ -472,12 +579,17 @@ class PaidAdsMethods:
             "monthly_income": 20000,
             "difficulty": "intermediate",
             "resources": ["$300-1000 budget", "Video creation", "Tracking setup"],
-            "metrics": ["Cost per click", "Video completion rate", "Conversion rate", "ROAS"],
+            "metrics": [
+                "Cost per click",
+                "Video completion rate",
+                "Conversion rate",
+                "ROAS",
+            ],
             "startup_cost": 300,
         }
 
     @staticmethod
-    def pinterest_ads() -> Dict[str, Any]:
+    def pinterest_ads() -> dict[str, Any]:
         """Pinterest Ads for viral pins."""
         return {
             "name": "Pinterest Ads",
@@ -498,12 +610,17 @@ class PaidAdsMethods:
             "monthly_income": 18000,
             "difficulty": "intermediate",
             "resources": ["$500+ budget", "Pin design skills", "Affiliate link"],
-            "metrics": ["Pin impressions", "Click rate", "Cost per save", "Conversion rate"],
+            "metrics": [
+                "Pin impressions",
+                "Click rate",
+                "Cost per save",
+                "Conversion rate",
+            ],
             "startup_cost": 500,
         }
 
     @staticmethod
-    def outbrain_taboola() -> Dict[str, Any]:
+    def outbrain_taboola() -> dict[str, Any]:
         """Native ad platforms for high volume."""
         return {
             "name": "Outbrain & Taboola (Native Ads)",
@@ -529,7 +646,7 @@ class PaidAdsMethods:
         }
 
     @staticmethod
-    def affiliate_network_ads() -> Dict[str, Any]:
+    def affiliate_network_ads() -> dict[str, Any]:
         """Affiliate networks with built-in ads."""
         return {
             "name": "Affiliate Network Ad Platforms",
@@ -549,7 +666,12 @@ class PaidAdsMethods:
             "monthly_income": 22000,
             "difficulty": "advanced",
             "resources": ["$500+ budget", "Ad network account", "Traffic source"],
-            "metrics": ["Cost per click", "Conversion rate", "Cost per acquisition", "Profit per offer"],
+            "metrics": [
+                "Cost per click",
+                "Conversion rate",
+                "Cost per acquisition",
+                "Profit per offer",
+            ],
             "startup_cost": 500,
         }
 
@@ -558,7 +680,7 @@ class PartnershipMethods:
     """Joint venture & partnership methods."""
 
     @staticmethod
-    def jv_partnerships() -> Dict[str, Any]:
+    def jv_partnerships() -> dict[str, Any]:
         """Joint venture with other creators/businesses."""
         return {
             "name": "JV Partnerships",
@@ -578,11 +700,16 @@ class PartnershipMethods:
             "monthly_income": 20000,
             "difficulty": "intermediate",
             "resources": ["Partner relationships", "Email list or audience"],
-            "metrics": ["Partners acquired", "Total reach", "Conversion rate per partner", "Revenue split"],
+            "metrics": [
+                "Partners acquired",
+                "Total reach",
+                "Conversion rate per partner",
+                "Revenue split",
+            ],
         }
 
     @staticmethod
-    def bundle_deals() -> Dict[str, Any]:
+    def bundle_deals() -> dict[str, Any]:
         """Bundle complementary products for higher AOV."""
         return {
             "name": "Product Bundles",
@@ -602,11 +729,16 @@ class PartnershipMethods:
             "monthly_income": 35000,
             "difficulty": "advanced",
             "resources": ["Product relationships", "Landing page", "Marketing reach"],
-            "metrics": ["Bundle price", "Individual product commissions", "Total revenue per sale", "Conversion rate"],
+            "metrics": [
+                "Bundle price",
+                "Individual product commissions",
+                "Total revenue per sale",
+                "Conversion rate",
+            ],
         }
 
     @staticmethod
-    def white_label_integration() -> Dict[str, Any]:
+    def white_label_integration() -> dict[str, Any]:
         """Integrate affiliate product into own offering."""
         return {
             "name": "White-Label Integration",
@@ -626,11 +758,15 @@ class PartnershipMethods:
             "monthly_income": 40000,
             "difficulty": "expert",
             "resources": ["Own product", "Integration capability", "Customer base"],
-            "metrics": ["Adoption rate of integrated product", "Lifetime value lift", "Affiliate revenue per customer"],
+            "metrics": [
+                "Adoption rate of integrated product",
+                "Lifetime value lift",
+                "Affiliate revenue per customer",
+            ],
         }
 
     @staticmethod
-    def influencer_partnerships() -> Dict[str, Any]:
+    def influencer_partnerships() -> dict[str, Any]:
         """Pay influencers to promote affiliate products."""
         return {
             "name": "Influencer Partnerships",
@@ -650,12 +786,17 @@ class PartnershipMethods:
             "monthly_income": 35000,
             "difficulty": "intermediate",
             "resources": ["$500-5000 per influencer", "Affiliate tracking setup"],
-            "metrics": ["Cost per influencer", "Reach per influencer", "Conversion rate", "ROI per influencer"],
+            "metrics": [
+                "Cost per influencer",
+                "Reach per influencer",
+                "Conversion rate",
+                "ROI per influencer",
+            ],
             "startup_cost": 1000,
         }
 
     @staticmethod
-    def cross_promotions() -> Dict[str, Any]:
+    def cross_promotions() -> dict[str, Any]:
         """Cross-promote complementary affiliate products."""
         return {
             "name": "Cross-Promotions",
@@ -667,7 +808,7 @@ class PartnershipMethods:
                 "Email your list about product A, mention product B as complement",
                 "Natural bundle: solves bigger problem together",
                 "Earn commissions from both",
-                "Create \"solution stack\" content (how tools work together)",
+                'Create "solution stack" content (how tools work together)',
                 "Highest relevance = highest conversion",
                 "Customers see you as solution architect, not salesperson",
             ],
@@ -675,7 +816,11 @@ class PartnershipMethods:
             "monthly_income": 25000,
             "difficulty": "intermediate",
             "resources": ["Email list", "Audience", "Product knowledge"],
-            "metrics": ["Complementary product adoption", "AOV increase", "Revenue per customer"],
+            "metrics": [
+                "Complementary product adoption",
+                "AOV increase",
+                "Revenue per customer",
+            ],
         }
 
 
@@ -683,7 +828,7 @@ class OrganicMethods:
     """Organic growth affiliate methods."""
 
     @staticmethod
-    def seo_long_tail() -> Dict[str, Any]:
+    def seo_long_tail() -> dict[str, Any]:
         """SEO for long-tail product keywords."""
         return {
             "name": "SEO & Long-Tail Keywords",
@@ -703,11 +848,16 @@ class OrganicMethods:
             "monthly_income": 45000,
             "difficulty": "intermediate",
             "resources": ["Website", "SEO knowledge", "Time to create content"],
-            "metrics": ["Keyword rankings", "Organic traffic", "CTR from search", "Conversion rate"],
+            "metrics": [
+                "Keyword rankings",
+                "Organic traffic",
+                "CTR from search",
+                "Conversion rate",
+            ],
         }
 
     @staticmethod
-    def forum_marketing() -> Dict[str, Any]:
+    def forum_marketing() -> dict[str, Any]:
         """Build authority in niche forums."""
         return {
             "name": "Forum Marketing (StackOverflow, Quora, etc.)",
@@ -726,12 +876,20 @@ class OrganicMethods:
             "timeline": "2-4 months to revenue",
             "monthly_income": 16000,
             "difficulty": "intermediate",
-            "resources": ["Niche expertise", "Time to answer questions", "Daily commitment"],
-            "metrics": ["Question answers", "Answer upvotes/followers", "Conversion rate from answers"],
+            "resources": [
+                "Niche expertise",
+                "Time to answer questions",
+                "Daily commitment",
+            ],
+            "metrics": [
+                "Question answers",
+                "Answer upvotes/followers",
+                "Conversion rate from answers",
+            ],
         }
 
     @staticmethod
-    def quora_strategy() -> Dict[str, Any]:
+    def quora_strategy() -> dict[str, Any]:
         """Quora answers strategy (huge passive income)."""
         return {
             "name": "Quora Strategy",
@@ -751,11 +909,16 @@ class OrganicMethods:
             "monthly_income": 20000,
             "difficulty": "beginner",
             "resources": ["Writing ability", "Niche expertise"],
-            "metrics": ["Answer views", "Upvotes/followers", "CTR on affiliate links", "Revenue from Quora + affiliates"],
+            "metrics": [
+                "Answer views",
+                "Upvotes/followers",
+                "CTR on affiliate links",
+                "Revenue from Quora + affiliates",
+            ],
         }
 
     @staticmethod
-    def community_building() -> Dict[str, Any]:
+    def community_building() -> dict[str, Any]:
         """Build own community, recommend affiliates inside."""
         return {
             "name": "Community Building",
@@ -774,12 +937,21 @@ class OrganicMethods:
             "timeline": "6-12 months to 5k members",
             "monthly_income": 30000,
             "difficulty": "advanced",
-            "resources": ["Community building skills", "Time to moderate", "Marketing reach to grow"],
-            "metrics": ["Community size", "Engagement rate", "Product recommendations", "Conversion rate"],
+            "resources": [
+                "Community building skills",
+                "Time to moderate",
+                "Marketing reach to grow",
+            ],
+            "metrics": [
+                "Community size",
+                "Engagement rate",
+                "Product recommendations",
+                "Conversion rate",
+            ],
         }
 
     @staticmethod
-    def facebook_groups() -> Dict[str, Any]:
+    def facebook_groups() -> dict[str, Any]:
         """Facebook group authority & affiliate sales."""
         return {
             "name": "Facebook Groups",
@@ -799,11 +971,16 @@ class OrganicMethods:
             "monthly_income": 20000,
             "difficulty": "intermediate",
             "resources": ["Group building skills", "Niche expertise", "Time to engage"],
-            "metrics": ["Group members", "Post engagement", "Recommendations made", "Affiliate conversions"],
+            "metrics": [
+                "Group members",
+                "Post engagement",
+                "Recommendations made",
+                "Affiliate conversions",
+            ],
         }
 
     @staticmethod
-    def discord_community() -> Dict[str, Any]:
+    def discord_community() -> dict[str, Any]:
         """Discord community monetization."""
         return {
             "name": "Discord Community",
@@ -824,7 +1001,12 @@ class OrganicMethods:
             "monthly_income": 18000,
             "difficulty": "intermediate",
             "resources": ["Community building", "Daily presence", "Marketing to grow"],
-            "metrics": ["Server members", "Channel activity", "Recommendations", "Conversion rate"],
+            "metrics": [
+                "Server members",
+                "Channel activity",
+                "Recommendations",
+                "Conversion rate",
+            ],
         }
 
 
@@ -832,7 +1014,7 @@ class AffiliateMethodsLibrary:
     """Comprehensive library of all affiliate methods."""
 
     def __init__(self):
-        self.methods: Dict[str, Dict[str, Any]] = {}
+        self.methods: dict[str, dict[str, Any]] = {}
         self._load_methods()
 
     def _load_methods(self) -> None:
@@ -877,19 +1059,19 @@ class AffiliateMethodsLibrary:
         self.methods["facebook_groups"] = OrganicMethods.facebook_groups()
         self.methods["discord"] = OrganicMethods.discord_community()
 
-    def get_method(self, method_id: str) -> Optional[Dict[str, Any]]:
+    def get_method(self, method_id: str) -> dict[str, Any] | None:
         """Get method by ID."""
         return self.methods.get(method_id)
 
-    def list_all_methods(self) -> List[Dict[str, Any]]:
+    def list_all_methods(self) -> list[dict[str, Any]]:
         """List all methods."""
         return list(self.methods.values())
 
-    def get_methods_by_category(self, category: str) -> List[Dict[str, Any]]:
+    def get_methods_by_category(self, category: str) -> list[dict[str, Any]]:
         """Get methods by category."""
         return [m for m in self.methods.values() if m.get("category") == category]
 
-    def get_quick_start_methods(self) -> List[Dict[str, Any]]:
+    def get_quick_start_methods(self) -> list[dict[str, Any]]:
         """Get easiest methods to start with."""
         easy_methods = [
             "newsletter",
@@ -900,12 +1082,12 @@ class AffiliateMethodsLibrary:
         ]
         return [self.methods[m] for m in easy_methods if m in self.methods]
 
-    def get_high_income_methods(self) -> List[Dict[str, Any]]:
+    def get_high_income_methods(self) -> list[dict[str, Any]]:
         """Get methods with highest income potential."""
         methods = sorted(
             self.list_all_methods(),
             key=lambda m: int(m.get("monthly_income", 0)),
-            reverse=True
+            reverse=True,
         )
         return methods[:10]  # Top 10
 
@@ -914,13 +1096,13 @@ class AffiliateMethodsLibrary:
 # FACTORY FUNCTIONS
 # ============================================================================
 
+
 def create_methods_library() -> AffiliateMethodsLibrary:
     """Factory to create methods library."""
     return AffiliateMethodsLibrary()
 
 
 if __name__ == "__main__":
-    import json
 
     library = create_methods_library()
 

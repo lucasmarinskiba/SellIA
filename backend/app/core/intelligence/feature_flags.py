@@ -4,15 +4,14 @@ Feature Flags Engine
 Gestiona feature flags con despliegue gradual por plan de suscripción.
 """
 
-import uuid
 import hashlib
-from typing import List, Optional
+import uuid
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.feedback.models import FeatureFlag
 from app.core.logger import get_logger
+from app.domains.feedback.models import FeatureFlag
 
 logger = get_logger(__name__)
 
@@ -21,14 +20,16 @@ async def can_use_feature(
     db: AsyncSession,
     feature_name: str,
     user_plan: str,
-    user_id: Optional[uuid.UUID] = None,
+    user_id: uuid.UUID | None = None,
 ) -> bool:
     """
     Verifica si un usuario puede usar una feature basada en su plan
     y el rollout percentage del feature flag.
     """
     result = await db.execute(
-        select(FeatureFlag).where(FeatureFlag.name == feature_name, FeatureFlag.is_active == True)
+        select(FeatureFlag).where(
+            FeatureFlag.name == feature_name, FeatureFlag.is_active == True
+        )
     )
     flag = result.scalar_one_or_none()
     if not flag:
@@ -47,7 +48,12 @@ async def can_use_feature(
         return True
 
     if user_id:
-        hash_val = int(hashlib.md5(f"{feature_name}:{user_id}".encode(), usedforsecurity=False).hexdigest(), 16)
+        hash_val = int(
+            hashlib.md5(
+                f"{feature_name}:{user_id}".encode(), usedforsecurity=False
+            ).hexdigest(),
+            16,
+        )
         user_percentile = hash_val % 100
         return user_percentile < flag.rollout_percentage
 
@@ -57,12 +63,10 @@ async def can_use_feature(
 async def list_available_features(
     db: AsyncSession,
     user_plan: str,
-    user_id: Optional[uuid.UUID] = None,
-) -> List[FeatureFlag]:
+    user_id: uuid.UUID | None = None,
+) -> list[FeatureFlag]:
     """Lista todas las features disponibles para un usuario."""
-    result = await db.execute(
-        select(FeatureFlag).where(FeatureFlag.is_active == True)
-    )
+    result = await db.execute(select(FeatureFlag).where(FeatureFlag.is_active == True))
     flags = result.scalars().all()
 
     available = []

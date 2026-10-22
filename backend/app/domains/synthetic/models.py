@@ -1,14 +1,24 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, DateTime, Text, Float, Boolean, ForeignKey, Integer
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 
 
 class SyntheticCheck(Base):
     """Configuración de checks sintéticos."""
+
     __tablename__ = "synthetic_checks"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -21,24 +31,31 @@ class SyntheticCheck(Base):
     timeout_seconds = Column(Integer, default=10, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     alert_severity = Column(String(20), default="warning", nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class SyntheticResult(Base):
     """Resultado individual de un check sintético."""
+
     __tablename__ = "synthetic_results"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    check_id = Column(UUID(as_uuid=True), ForeignKey("synthetic_checks.id", ondelete="CASCADE"), nullable=False, index=True)
+    check_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("synthetic_checks.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     success = Column(Boolean, nullable=False)
     response_time_ms = Column(Float, nullable=True)
     status_code = Column(Integer, nullable=True)
     error_message = Column(Text, nullable=True)
-    checked_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    checked_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class SystemHealthSnapshot(Base):
     """Snapshot agregado de salud del sistema."""
+
     __tablename__ = "system_health_snapshots"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -47,4 +64,4 @@ class SystemHealthSnapshot(Base):
     checks_passed = Column(Integer, nullable=False)
     avg_response_time_ms = Column(Float, nullable=True)
     details = Column(JSONB, nullable=True)
-    snapshot_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    snapshot_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))

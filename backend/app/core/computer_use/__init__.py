@@ -18,12 +18,10 @@ Status: PRODUCTION READY
 """
 
 import logging
-from typing import Optional, Dict, Any, List
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 logger = logging.getLogger(__name__)
@@ -34,7 +32,9 @@ logger = logging.getLogger(__name__)
 
 __version__ = "2.0.0"
 __author__ = "Sales Automation Team"
-__description__ = "Production-ready Computer Use Orchestrator for multi-platform sales automation"
+__description__ = (
+    "Production-ready Computer Use Orchestrator for multi-platform sales automation"
+)
 __status__ = "PRODUCTION"
 
 # ============================================================================
@@ -43,56 +43,54 @@ __status__ = "PRODUCTION"
 
 try:
     from .computer_use_orchestrator_v2 import (
-        ComputerUseOrchestrator,
-        BrowserSession,
         Action,
         ActionResult,
         ActionType,
-        PlatformType,
-        StrategyType,
-        WorkflowExecution,
-        LeadData,
-        OrderData,
-        VisionEngine,
         BrowserAutomationUtils,
+        BrowserSession,
+        ComputerUseOrchestrator,
         ErrorHandler,
         LeadCaptureEngine,
+        LeadData,
+        OrderData,
+        PlatformType,
+        StrategyType,
+        VisionEngine,
+        WorkflowExecution,
     )
-
-    from .platform_handlers import (
-        MercadoLibreComputerUseHandler,
-        ShopifyComputerUseHandler,
-        FacebookComputerUseHandler,
-        WhatsAppComputerUseHandler,
-        EmailComputerUseHandler,
-        PlatformHandlerFactory,
-    )
-
-    from .lead_capture_and_intelligence import (
-        WebFormFiller,
-        DirectoryScraper,
-        MessageLeadExtractor,
-        LeadEnricher,
-        EnrichedLead,
-        LeadScore,
-    )
-
     from .integration_and_workflows import (
-        WorkflowOrchestrator,
-        ProspectingWorkflow,
-        SellingWorkflow,
         NurturingWorkflow,
+        ProspectingWorkflow,
         RetentionWorkflow,
-        WorkflowPhase,
+        SellingWorkflow,
         WorkflowConfig,
+        WorkflowOrchestrator,
+        WorkflowPhase,
+    )
+    from .lead_capture_and_intelligence import (
+        DirectoryScraper,
+        EnrichedLead,
+        LeadEnricher,
+        LeadScore,
+        MessageLeadExtractor,
+        WebFormFiller,
+    )
+    from .platform_handlers import (
+        EmailComputerUseHandler,
+        FacebookComputerUseHandler,
+        MercadoLibreComputerUseHandler,
+        PlatformHandlerFactory,
+        ShopifyComputerUseHandler,
+        WhatsAppComputerUseHandler,
     )
 
 except ImportError as e:
-    logger.warning(f"Could not import all modules: {str(e)}")
+    logger.warning(f"Could not import all modules: {e!s}")
 
 # ============================================================================
 # CONVENIENCE FUNCTIONS
 # ============================================================================
+
 
 async def create_orchestrator() -> ComputerUseOrchestrator:
     """
@@ -108,7 +106,7 @@ async def create_orchestrator() -> ComputerUseOrchestrator:
 
 
 async def create_workflow_orchestrator(
-    computer_use_orchestrator: Optional[ComputerUseOrchestrator] = None,
+    computer_use_orchestrator: ComputerUseOrchestrator | None = None,
 ) -> WorkflowOrchestrator:
     """
     Crea orquestador de workflows (prospecting → selling → nurturing → retention).
@@ -164,8 +162,22 @@ MEDIUM_BUSINESS_CONFIG = {
 }
 
 ENTERPRISE_CONFIG = {
-    "platforms": ["mercado_libre", "shopify", "facebook", "whatsapp", "email", "linkedin"],
-    "strategies": ["post_product", "respond_inquiry", "negotiate_deal", "close_sale", "capture_lead", "send_campaign"],
+    "platforms": [
+        "mercado_libre",
+        "shopify",
+        "facebook",
+        "whatsapp",
+        "email",
+        "linkedin",
+    ],
+    "strategies": [
+        "post_product",
+        "respond_inquiry",
+        "negotiate_deal",
+        "close_sale",
+        "capture_lead",
+        "send_campaign",
+    ],
     "daily_limits": {
         "listings": 200,
         "responses": 1000,
@@ -192,60 +204,49 @@ logger.info(f"Status: {__status__}")
 # ============================================================================
 
 __all__ = [
-    # Main classes
-    "ComputerUseOrchestrator",
-    "WorkflowOrchestrator",
-
-    # Workflows
-    "ProspectingWorkflow",
-    "SellingWorkflow",
-    "NurturingWorkflow",
-    "RetentionWorkflow",
-
-    # Platform handlers
-    "MercadoLibreComputerUseHandler",
-    "ShopifyComputerUseHandler",
-    "FacebookComputerUseHandler",
-    "WhatsAppComputerUseHandler",
-    "EmailComputerUseHandler",
-
-    # Lead management
-    "LeadEnricher",
-    "EnrichedLead",
-
-    # Data structures
+    "ENTERPRISE_CONFIG",
+    "MEDIUM_BUSINESS_CONFIG",
+    "MINIMAL_CONFIG",
+    "SMALL_BUSINESS_CONFIG",
     "Action",
     "ActionResult",
-    "WorkflowExecution",
-    "LeadData",
-    "OrderData",
-
-    # Enums
     "ActionType",
-    "PlatformType",
-    "StrategyType",
-    "WorkflowPhase",
-
-    # Utilities
-    "VisionEngine",
     "BrowserAutomationUtils",
+    "BrowserSession",
+    "ComputerUseOrchestrator",
+    "DirectoryScraper",
+    "EmailComputerUseHandler",
+    "EnrichedLead",
     "ErrorHandler",
-
-    # Functions
-    "create_orchestrator",
-    "create_workflow_orchestrator",
-
-    # Metadata
-    "__version__",
+    "FacebookComputerUseHandler",
+    "LeadCaptureEngine",
+    "LeadData",
+    "LeadEnricher",
+    "LeadScore",
+    "MercadoLibreComputerUseHandler",
+    "MessageLeadExtractor",
+    "NurturingWorkflow",
+    "OrderData",
+    "PlatformHandlerFactory",
+    "PlatformType",
+    "ProspectingWorkflow",
+    "RetentionWorkflow",
+    "SellingWorkflow",
+    "ShopifyComputerUseHandler",
+    "StrategyType",
+    "VisionEngine",
+    "WebFormFiller",
+    "WhatsAppComputerUseHandler",
+    "WorkflowConfig",
+    "WorkflowExecution",
+    "WorkflowOrchestrator",
+    "WorkflowPhase",
     "__author__",
     "__description__",
     "__status__",
-
-    # Config templates
-    "MINIMAL_CONFIG",
-    "SMALL_BUSINESS_CONFIG",
-    "MEDIUM_BUSINESS_CONFIG",
-    "ENTERPRISE_CONFIG",
+    "__version__",
+    "create_orchestrator",
+    "create_workflow_orchestrator",
 ]
 
 

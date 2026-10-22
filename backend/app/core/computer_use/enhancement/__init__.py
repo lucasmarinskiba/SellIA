@@ -26,12 +26,11 @@ Status: PRODUCTION READY - Listo para automatizar cualquier plataforma sin fallo
 """
 
 import logging
-from typing import Dict, Any
+from typing import Any
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 logger = logging.getLogger(__name__)
@@ -51,106 +50,105 @@ __status__ = "PRODUCTION"
 
 try:
     # Platform Handlers
-    from .platform_handlers import (
-        MercadoLibrePlatformHandler,
-        ShopifyPlatformHandler,
-        FacebookPlatformHandler,
-        WhatsAppPlatformHandler,
-        EmailPlatformHandler,
-        PlatformHandlerFactory,
-        PlatformMetadata,
-        PageLoadEvent,
-        InteractionResult,
-    )
-
-    # Error Recovery
-    from .error_recovery import (
-        ErrorDetector,
-        ErrorRecoveryManager,
-        ResilientAction,
-        ErrorCategory,
-        RecoveryStrategy,
-        ErrorEvent,
-        RecoveryAttempt,
-        CircuitBreakerState,
-    )
-
     # Action Verification
     from .action_verification import (
-        VerificationCoordinator,
-        FormSubmissionVerifier,
         FileUploadVerifier,
-        PaymentVerifier,
+        FormSubmissionVerifier,
         MessageDeliveryVerifier,
         NavigationVerifier,
+        PaymentVerifier,
+        VerificationCoordinator,
         VerificationResult,
-        VerificationType,
         VerificationStatus,
-    )
-
-    # Interaction Patterns
-    from .interaction_patterns import (
-        InteractionPatternLibrary,
-        LoginPattern,
-        SearchPattern,
-        FormFillPattern,
-        PaginationPattern,
-        ModalHandlingPattern,
-        UploadPattern,
-        PatternResult,
+        VerificationType,
     )
 
     # Data Extraction
     from .data_extraction import (
-        UniversalDataExtractor,
-        StructuredDataExtractor,
-        SemiStructuredDataExtractor,
-        UnstructuredDataExtractor,
-        MetadataExtractor,
-        DataValidator,
-        ExtractionRule,
-        ExtractionResult,
         DataType,
+        DataValidator,
+        ExtractionResult,
+        ExtractionRule,
         ExtractionStrategy,
+        MetadataExtractor,
+        SemiStructuredDataExtractor,
+        StructuredDataExtractor,
+        UniversalDataExtractor,
+        UnstructuredDataExtractor,
     )
 
-    # Resilience Patterns
-    from .resilience_patterns import (
-        CircuitBreaker,
-        CircuitBreakerConfig,
+    # Error Recovery
+    from .error_recovery import (
         CircuitBreakerState,
-        BulkheadManager,
-        BulkheadPartition,
-        FallbackStrategy,
-        TimeoutPolicy,
-        ThrottlingPolicy,
-        ChaosMonkey,
-        ResilienceCoordinator,
+        ErrorCategory,
+        ErrorDetector,
+        ErrorEvent,
+        ErrorRecoveryManager,
+        RecoveryAttempt,
+        RecoveryStrategy,
+        ResilientAction,
+    )
+
+    # Interaction Patterns
+    from .interaction_patterns import (
+        FormFillPattern,
+        InteractionPatternLibrary,
+        LoginPattern,
+        ModalHandlingPattern,
+        PaginationPattern,
+        PatternResult,
+        SearchPattern,
+        UploadPattern,
     )
 
     # Monitoring & Stats
     from .monitoring_stats import (
-        MetricsCollector,
-        ErrorTracker,
+        Alert,
         AlertManager,
-        PerformanceReporter,
+        AlertSeverity,
+        ErrorTracker,
+        MetricPoint,
+        MetricsCollector,
+        MetricType,
         MonitoringDashboard,
         PerformanceMetrics,
-        Alert,
-        MetricPoint,
-        MetricType,
-        AlertSeverity,
+        PerformanceReporter,
+    )
+    from .platform_handlers import (
+        EmailPlatformHandler,
+        FacebookPlatformHandler,
+        InteractionResult,
+        MercadoLibrePlatformHandler,
+        PageLoadEvent,
+        PlatformHandlerFactory,
+        PlatformMetadata,
+        ShopifyPlatformHandler,
+        WhatsAppPlatformHandler,
+    )
+
+    # Resilience Patterns
+    from .resilience_patterns import (
+        BulkheadManager,
+        BulkheadPartition,
+        ChaosMonkey,
+        CircuitBreaker,
+        CircuitBreakerConfig,
+        FallbackStrategy,
+        ResilienceCoordinator,
+        ThrottlingPolicy,
+        TimeoutPolicy,
     )
 
 except ImportError as e:
-    logger.warning(f"Could not import all enhancement modules: {str(e)}")
+    logger.warning(f"Could not import all enhancement modules: {e!s}")
 
 
 # ============================================================================
 # CONVENIENCE INITIALIZERS
 # ============================================================================
 
-async def create_enhancement_system(computer_use_engine) -> Dict[str, Any]:
+
+async def create_enhancement_system(computer_use_engine) -> dict[str, Any]:
     """
     Crear sistema de mejora completo.
 
@@ -161,22 +159,16 @@ async def create_enhancement_system(computer_use_engine) -> Dict[str, Any]:
     system = {
         # Handlers
         "platform_factory": PlatformHandlerFactory(computer_use_engine),
-
         # Error handling
         "error_recovery": ErrorRecoveryManager(computer_use_engine),
-
         # Verification
         "verification": VerificationCoordinator(computer_use_engine),
-
         # Patterns
         "patterns": InteractionPatternLibrary(computer_use_engine),
-
         # Extraction
         "extraction": UniversalDataExtractor(computer_use_engine),
-
         # Resilience
         "resilience": ResilienceCoordinator(),
-
         # Monitoring
         "metrics": MetricsCollector(),
         "errors": ErrorTracker(),
@@ -187,10 +179,7 @@ async def create_enhancement_system(computer_use_engine) -> Dict[str, Any]:
     reporter = PerformanceReporter(system["metrics"], system["errors"])
     system["reporter"] = reporter
     system["dashboard"] = MonitoringDashboard(
-        system["metrics"],
-        system["errors"],
-        system["alerts"],
-        reporter
+        system["metrics"], system["errors"], system["alerts"], reporter
     )
 
     logger.info("Enhancement System initialized successfully")
@@ -202,69 +191,73 @@ async def create_enhancement_system(computer_use_engine) -> Dict[str, Any]:
 # ============================================================================
 
 __all__ = [
-    # Version
-    "__version__",
+    "Alert",
+    "AlertManager",
+    "AlertSeverity",
+    "BulkheadManager",
+    "BulkheadPartition",
+    "ChaosMonkey",
+    "CircuitBreaker",
+    "CircuitBreakerConfig",
+    "CircuitBreakerState",
+    "DataType",
+    "DataValidator",
+    "EmailPlatformHandler",
+    "ErrorCategory",
+    "ErrorDetector",
+    "ErrorEvent",
+    "ErrorRecoveryManager",
+    "ErrorTracker",
+    "ExtractionResult",
+    "ExtractionRule",
+    "ExtractionStrategy",
+    "FacebookPlatformHandler",
+    "FallbackStrategy",
+    "FileUploadVerifier",
+    "FormFillPattern",
+    "FormSubmissionVerifier",
+    "InteractionPatternLibrary",
+    "InteractionResult",
+    "LoginPattern",
+    "MercadoLibrePlatformHandler",
+    "MessageDeliveryVerifier",
+    "MetadataExtractor",
+    "MetricPoint",
+    "MetricType",
+    "MetricsCollector",
+    "ModalHandlingPattern",
+    "MonitoringDashboard",
+    "NavigationVerifier",
+    "PageLoadEvent",
+    "PaginationPattern",
+    "PatternResult",
+    "PaymentVerifier",
+    "PerformanceMetrics",
+    "PerformanceReporter",
+    "PlatformHandlerFactory",
+    "PlatformMetadata",
+    "RecoveryAttempt",
+    "RecoveryStrategy",
+    "ResilienceCoordinator",
+    "ResilientAction",
+    "SearchPattern",
+    "SemiStructuredDataExtractor",
+    "ShopifyPlatformHandler",
+    "StructuredDataExtractor",
+    "ThrottlingPolicy",
+    "TimeoutPolicy",
+    "UniversalDataExtractor",
+    "UnstructuredDataExtractor",
+    "UploadPattern",
+    "VerificationCoordinator",
+    "VerificationResult",
+    "VerificationStatus",
+    "VerificationType",
+    "WhatsAppPlatformHandler",
     "__author__",
     "__description__",
     "__status__",
-
-    # Platform Handlers
-    "MercadoLibrePlatformHandler",
-    "ShopifyPlatformHandler",
-    "FacebookPlatformHandler",
-    "WhatsAppPlatformHandler",
-    "EmailPlatformHandler",
-    "PlatformHandlerFactory",
-
-    # Error Recovery
-    "ErrorRecoveryManager",
-    "ErrorDetector",
-    "ResilientAction",
-    "ErrorCategory",
-    "RecoveryStrategy",
-
-    # Action Verification
-    "VerificationCoordinator",
-    "FormSubmissionVerifier",
-    "FileUploadVerifier",
-    "PaymentVerifier",
-    "MessageDeliveryVerifier",
-    "NavigationVerifier",
-
-    # Interaction Patterns
-    "InteractionPatternLibrary",
-    "LoginPattern",
-    "SearchPattern",
-    "FormFillPattern",
-    "PaginationPattern",
-    "ModalHandlingPattern",
-    "UploadPattern",
-
-    # Data Extraction
-    "UniversalDataExtractor",
-    "StructuredDataExtractor",
-    "SemiStructuredDataExtractor",
-    "UnstructuredDataExtractor",
-    "ExtractionRule",
-    "ExtractionResult",
-
-    # Resilience
-    "ResilienceCoordinator",
-    "CircuitBreaker",
-    "BulkheadManager",
-    "FallbackStrategy",
-    "TimeoutPolicy",
-    "ThrottlingPolicy",
-    "ChaosMonkey",
-
-    # Monitoring
-    "MetricsCollector",
-    "ErrorTracker",
-    "AlertManager",
-    "PerformanceReporter",
-    "MonitoringDashboard",
-
-    # Initialization
+    "__version__",
     "create_enhancement_system",
 ]
 

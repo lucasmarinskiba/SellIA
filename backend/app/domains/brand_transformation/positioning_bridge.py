@@ -16,7 +16,6 @@ a competitor with only a name is reported as skipped.
 from __future__ import annotations
 
 import uuid
-from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,12 +28,27 @@ logger = get_logger(__name__)
 def _battlecard_from(statement: PositioningStatement, competitor: str) -> dict:
     matrix = statement.alternatives_matrix or []
     match = next(
-        (m for m in matrix if isinstance(m, dict) and competitor.lower() in str(m.get("alternative", "")).lower()),
+        (
+            m
+            for m in matrix
+            if isinstance(m, dict)
+            and competitor.lower() in str(m.get("alternative", "")).lower()
+        ),
         None,
     )
-    our_strengths = [a.get("attribute") for a in (statement.attribute_value_proof or []) if isinstance(a, dict) and a.get("attribute")]
-    their_strengths = [match["what_customer_keeps"]] if match and match.get("what_customer_keeps") else []
-    their_weaknesses = [match["what_they_lose"]] if match and match.get("what_they_lose") else []
+    our_strengths = [
+        a.get("attribute")
+        for a in (statement.attribute_value_proof or [])
+        if isinstance(a, dict) and a.get("attribute")
+    ]
+    their_strengths = (
+        [match["what_customer_keeps"]]
+        if match and match.get("what_customer_keeps")
+        else []
+    )
+    their_weaknesses = (
+        [match["what_they_lose"]] if match and match.get("what_they_lose") else []
+    )
     notes_bits = [
         f"Enemy: {(statement.enemy_analysis or {}).get('enemy') or statement.the_enemy}",
         f"Our position: {statement.positioning_statement or statement.one_liner}",
@@ -61,9 +75,20 @@ def build_plan(statement: PositioningStatement, competitors: list[dict] | None) 
         if not name:
             continue
         if not url:
-            skipped.append({"competitor": name, "reason": "no URL — monitor requires one; battlecard only"})
+            skipped.append(
+                {
+                    "competitor": name,
+                    "reason": "no URL — monitor requires one; battlecard only",
+                }
+            )
         else:
-            monitors.append({"competitor_name": name, "competitor_url": url, "products_to_track": c.get("products") or []})
+            monitors.append(
+                {
+                    "competitor_name": name,
+                    "competitor_url": url,
+                    "products_to_track": c.get("products") or [],
+                }
+            )
         battlecards.append(_battlecard_from(statement, name))
     return {
         "statement_id": str(statement.id),
@@ -79,7 +104,9 @@ class PositioningBridge:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def preview(self, statement: PositioningStatement, competitors: list[dict] | None) -> dict:
+    async def preview(
+        self, statement: PositioningStatement, competitors: list[dict] | None
+    ) -> dict:
         return build_plan(statement, competitors)
 
     async def deploy(
@@ -98,7 +125,9 @@ class PositioningBridge:
 
         # monitors
         try:
-            from app.domains.competitive.intelligence_engine import CompetitiveIntelligenceEngine
+            from app.domains.competitive.intelligence_engine import (
+                CompetitiveIntelligenceEngine,
+            )
 
             engine = CompetitiveIntelligenceEngine(self.db)
             for m in plan["monitors"]:
@@ -109,13 +138,20 @@ class PositioningBridge:
                         competitor_name=m["competitor_name"],
                         products_to_track=m["products_to_track"],
                     )
-                    created.append({"competitor": m["competitor_name"], "monitor_id": str(mon.id)})
+                    created.append(
+                        {"competitor": m["competitor_name"], "monitor_id": str(mon.id)}
+                    )
                 except Exception as e:  # noqa: BLE001
                     try:
                         await self.db.rollback()
-                    except Exception:  # noqa: BLE001
-                        pass
-                    created.append({"competitor": m["competitor_name"], "monitor_error": str(e)[:160]})
+                    except Exception:
+                        logger.exception("deploy: error ignorado")
+                    created.append(
+                        {
+                            "competitor": m["competitor_name"],
+                            "monitor_error": str(e)[:160],
+                        }
+                    )
         except Exception as e:  # noqa: BLE001
             plan["monitor_error"] = f"competitive domain unavailable: {str(e)[:160]}"
 
@@ -123,31 +159,53 @@ class PositioningBridge:
         try:
             from app.domains.competitive.service import create_battlecard
 
-            by_name: dict[str, dict] = {c["competitor"]: c for c in created if "competitor" in c}
+            by_name: dict[str, dict] = {
+                c["competitor"]: c for c in created if "competitor" in c
+            }
             for b in plan["battlecards"]:
                 try:
-                    card = await create_battlecard(self.db, owner_user_id, {**b, "competitor_url": next(
-                        (m["competitor_url"] for m in plan["monitors"] if m["competitor_name"] == b["competitor_name"]), None,
-                    )})
-                    entry = by_name.setdefault(b["competitor_name"], {"competitor": b["competitor_name"]})
+                    card = await create_battlecard(
+                        self.db,
+                        owner_user_id,
+                        {
+                            **b,
+                            "competitor_url": next(
+                                (
+                                    m["competitor_url"]
+                                    for m in plan["monitors"]
+                                    if m["competitor_name"] == b["competitor_name"]
+                                ),
+                                None,
+                            ),
+                        },
+                    )
+                    entry = by_name.setdefault(
+                        b["competitor_name"], {"competitor": b["competitor_name"]}
+                    )
                     entry["battlecard_id"] = str(card.id)
                 except Exception as e:  # noqa: BLE001
                     try:
                         await self.db.rollback()
-                    except Exception:  # noqa: BLE001
-                        pass
-                    by_name.setdefault(b["competitor_name"], {"competitor": b["competitor_name"]})["battlecard_error"] = str(e)[:160]
+                    except Exception:
+                        logger.exception("deploy: error ignorado")
+                    by_name.setdefault(
+                        b["competitor_name"], {"competitor": b["competitor_name"]}
+                    )["battlecard_error"] = str(e)[:160]
             created = list(by_name.values())
         except Exception as e:  # noqa: BLE001
             plan["battlecard_error"] = f"battlecard service unavailable: {str(e)[:160]}"
 
         try:
-            statement.deployed_competitive = (statement.deployed_competitive or []) + created
+            statement.deployed_competitive = (
+                statement.deployed_competitive or []
+            ) + created
             await self.db.commit()
         except Exception as e:  # noqa: BLE001
             await self.db.rollback()
             plan["writeback_error"] = str(e)[:160]
 
         plan["deployed"] = created
-        plan["created_count"] = sum(1 for c in created if c.get("monitor_id") or c.get("battlecard_id"))
+        plan["created_count"] = sum(
+            1 for c in created if c.get("monitor_id") or c.get("battlecard_id")
+        )
         return plan

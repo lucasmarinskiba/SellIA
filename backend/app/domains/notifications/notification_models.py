@@ -1,18 +1,27 @@
 """Notifications & alerts models."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Index, Boolean, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 
 
 class NotificationChannel(str, Enum):
     """Notification delivery channels."""
+
     EMAIL = "email"
     SMS = "sms"
     WHATSAPP = "whatsapp"
@@ -22,6 +31,7 @@ class NotificationChannel(str, Enum):
 
 class AlertType(str, Enum):
     """Alert trigger types."""
+
     DEAL_CLOSING = "deal_closing"
     CHURN_RISK = "churn_risk"
     LOW_INVENTORY = "low_inventory"
@@ -34,6 +44,7 @@ class AlertType(str, Enum):
 
 class AlertPriority(str, Enum):
     """Alert priority levels."""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -42,11 +53,22 @@ class AlertPriority(str, Enum):
 
 class NotificationPreference(Base):
     """User notification preferences."""
+
     __tablename__ = "notification_preferences"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Channel preferences
     email_enabled = Column(Boolean, default=True)
@@ -66,25 +88,38 @@ class NotificationPreference(Base):
 
     # Quiet hours
     quiet_hours_start = Column(String(5), nullable=True)  # "22:00"
-    quiet_hours_end = Column(String(5), nullable=True)    # "08:00"
+    quiet_hours_end = Column(String(5), nullable=True)  # "08:00"
     quiet_weekends = Column(Boolean, default=False)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
-    __table_args__ = (
-        Index("idx_user_business", "user_id", "business_id"),
-    )
+    __table_args__ = (Index("idx_user_business", "user_id", "business_id"),)
 
 
 class NotificationLog(Base):
     """Notification delivery log."""
+
     __tablename__ = "notification_logs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    alert_rule_id = Column(UUID(as_uuid=True), ForeignKey("alert_rules.id", ondelete="SET NULL"), nullable=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    alert_rule_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("alert_rules.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     # Alert metadata
     alert_type = Column(String(50), nullable=False)
@@ -95,16 +130,20 @@ class NotificationLog(Base):
     # Delivery details
     channel = Column(String(50), nullable=False)  # NotificationChannel value
     recipient = Column(String(255), nullable=False)  # email/phone/user_id
-    delivery_status = Column(String(20), default="pending")  # pending, sent, failed, read
+    delivery_status = Column(
+        String(20), default="pending"
+    )  # pending, sent, failed, read
     delivery_attempts = Column(Integer, default=0)
-    last_attempt_at = Column(DateTime(timezone.utc), nullable=True)
+    last_attempt_at = Column(DateTime(UTC), nullable=True)
     error_message = Column(Text, nullable=True)
 
     # Engagement
-    read_at = Column(DateTime(timezone.utc), nullable=True)
-    action_taken = Column(String(100), nullable=True)  # e.g., "viewed_deal", "contacted_customer"
+    read_at = Column(DateTime(UTC), nullable=True)
+    action_taken = Column(
+        String(100), nullable=True
+    )  # e.g., "viewed_deal", "contacted_customer"
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC), index=True)
 
     __table_args__ = (
         Index("idx_user_status", "user_id", "delivery_status"),
@@ -115,10 +154,16 @@ class NotificationLog(Base):
 
 class AlertTemplate(Base):
     """Reusable alert message templates."""
+
     __tablename__ = "alert_templates"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Template metadata
     name = Column(String(255), nullable=False)
@@ -134,25 +179,31 @@ class AlertTemplate(Base):
     in_app_body = Column(Text, nullable=False)
 
     # Template variables documentation
-    variables = Column(JSONB, nullable=True)  # {"customer_name": "string", "amount": "currency"}
+    variables = Column(
+        JSONB, nullable=True
+    )  # {"customer_name": "string", "amount": "currency"}
 
     # System / user-defined
     is_system = Column(Boolean, default=False)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
-    __table_args__ = (
-        Index("idx_business_type", "business_id", "alert_type"),
-    )
+    __table_args__ = (Index("idx_business_type", "business_id", "alert_type"),)
 
 
 class NotificationMetrics(Base):
     """Notification delivery metrics."""
+
     __tablename__ = "notification_metrics"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Delivery stats
     total_notifications = Column(Integer, default=0)
@@ -174,11 +225,11 @@ class NotificationMetrics(Base):
     click_through_rate_pct = Column(Integer, default=0)
 
     # Alert type breakdown
-    alert_type_breakdown = Column(JSONB, nullable=True)  # {"deal_closing": 45, "churn_risk": 12, ...}
+    alert_type_breakdown = Column(
+        JSONB, nullable=True
+    )  # {"deal_closing": 45, "churn_risk": 12, ...}
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
-    __table_args__ = (
-        Index("idx_business_date", "business_id", "created_at"),
-    )
+    __table_args__ = (Index("idx_business_date", "business_id", "created_at"),)

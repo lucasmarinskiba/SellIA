@@ -6,8 +6,8 @@ Monitors: API latency, error rate, payment success, order processing, integratio
 """
 
 import logging
-from typing import Dict, Any
 import os
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -27,12 +27,15 @@ class ProductionMonitoring:
         if self.pagerduty_enabled:
             self._init_pagerduty()
 
-        logger.info(f"Monitoring: Datadog={self.datadog_enabled}, Sentry={self.sentry_enabled}, PagerDuty={self.pagerduty_enabled}")
+        logger.info(
+            f"Monitoring: Datadog={self.datadog_enabled}, Sentry={self.sentry_enabled}, PagerDuty={self.pagerduty_enabled}"
+        )
 
     def _init_datadog(self):
         """Initialize Datadog APM + metrics."""
         try:
-            from datadog import initialize, statsd
+            # sonda de disponibilidad
+            from datadog import initialize, statsd  # noqa: F401
             from ddtrace import patch_all
 
             patch_all()
@@ -64,7 +67,7 @@ class ProductionMonitoring:
         """Initialize PagerDuty alerts."""
         logger.info("✓ PagerDuty alerts configured")
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Full system health check."""
         checks = {
             "api_server": await self._check_api(),
@@ -82,68 +85,73 @@ class ProductionMonitoring:
         return {
             "status": "healthy" if all_healthy else "degraded",
             "checks": checks,
-            "timestamp": str(__import__("datetime").datetime.utcnow()),
+            "timestamp": str(__import__("datetime").utc_now()),
         }
 
-    async def _check_api(self) -> Dict[str, Any]:
+    async def _check_api(self) -> dict[str, Any]:
         """Check API server health."""
         return {"status": "healthy", "latency_ms": 45, "requests_per_second": 120}
 
-    async def _check_database(self) -> Dict[str, Any]:
+    async def _check_database(self) -> dict[str, Any]:
         """Check database connection."""
         return {"status": "healthy", "response_time_ms": 12, "connections": 8}
 
-    async def _check_stripe(self) -> Dict[str, Any]:
+    async def _check_stripe(self) -> dict[str, Any]:
         """Check Stripe API."""
         return {"status": "healthy", "last_sync": "now", "pending_payments": 3}
 
-    async def _check_mercado_libre(self) -> Dict[str, Any]:
+    async def _check_mercado_libre(self) -> dict[str, Any]:
         """Check Mercado Libre sync."""
         return {"status": "healthy", "last_sync": "5min", "pending_orders": 12}
 
-    async def _check_whatsapp(self) -> Dict[str, Any]:
+    async def _check_whatsapp(self) -> dict[str, Any]:
         """Check WhatsApp integration."""
         return {"status": "healthy", "messages_queued": 5, "response_time": "2s"}
 
-    async def _check_google_calendar(self) -> Dict[str, Any]:
+    async def _check_google_calendar(self) -> dict[str, Any]:
         """Check Google Calendar sync."""
         return {"status": "healthy", "last_sync": "1min", "next_event": "2h"}
 
-    async def _check_shipping(self) -> Dict[str, Any]:
+    async def _check_shipping(self) -> dict[str, Any]:
         """Check shipping labels generation."""
         return {"status": "healthy", "pending_labels": 2, "success_rate": "99.8%"}
 
-    async def _check_feed_ia(self) -> Dict[str, Any]:
+    async def _check_feed_ia(self) -> dict[str, Any]:
         """Check FeedIA content generation."""
         return {"status": "healthy", "pending_content": 4, "publish_queue": "ok"}
 
-    async def track_metric(self, metric_name: str, value: float, tags: Dict[str, str] = None):
+    async def track_metric(
+        self, metric_name: str, value: float, tags: dict[str, str] | None = None
+    ):
         """Send metric to Datadog."""
         if self.datadog_enabled:
             try:
                 from datadog import statsd
-                statsd.gauge(metric_name, value, tags=tags or {})
-            except Exception as e:
-                logger.error(f"Failed to track metric: {e}")
 
-    async def report_error(self, error: Exception, context: Dict[str, Any] = None):
+                statsd.gauge(metric_name, value, tags=tags or {})
+            except Exception:
+                logger.exception("Failed to track metric")
+
+    async def report_error(
+        self, error: Exception, context: dict[str, Any] | None = None
+    ):
         """Report error to Sentry."""
         if self.sentry_enabled:
             try:
                 import sentry_sdk
+
                 sentry_sdk.capture_exception(error, extra=context or {})
-            except Exception as e:
-                logger.error(f"Failed to report error: {e}")
+            except Exception:
+                logger.exception("Failed to report error")
 
     async def trigger_alert(self, severity: str, message: str):
         """Trigger PagerDuty alert."""
         if self.pagerduty_enabled:
             try:
-                import pdpyras
                 # Implementar con PagerDuty API
                 logger.info(f"Alert triggered ({severity}): {message}")
-            except Exception as e:
-                logger.error(f"Failed to trigger alert: {e}")
+            except Exception:
+                logger.exception("Failed to trigger alert")
 
 
 # Singleton

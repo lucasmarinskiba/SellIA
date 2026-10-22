@@ -2,16 +2,19 @@
 Endpoint seguro para subida de archivos con escaneo antivirus.
 """
 
+import asyncio
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status, Request
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from fastapi_limiter.depends import RateLimiter
 
-from app.core.file_scanner import file_scanner, ScanResult
 from app.core.deps import get_current_active_user
+from app.core.file_scanner import file_scanner
+from app.core.fileio import write_file
 from app.domains.users.models import User
 
 router = APIRouter()
@@ -29,12 +32,12 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 )
 async def upload_file(
     request: Request,
-    file: UploadFile = File(...),
-    current_user: User = Depends(get_current_active_user),
+    file: Annotated[UploadFile, File(...)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """
     Endpoint seguro para subida de archivos.
-    
+
     Validaciones:
     - Extensión en whitelist
     - MIME type verificado
@@ -47,17 +50,24 @@ async def upload_file(
 
     if not scan_result.clean:
         # Loguear intento de subida maliciosa
-        from app.middleware.security_logging import security_logger
         import json
-        security_logger.warning(json.dumps({
-            "event": "MALICIOUS_UPLOAD_BLOCKED",
-            "user_id": str(current_user.id),
-            "filename": file.filename,
-            "ip": getattr(request.state, "client_ip", "unknown"),
-            "reason": scan_result.message,
-            "details": scan_result.details,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }, ensure_ascii=False))
+
+        from app.middleware.security_logging import security_logger
+
+        security_logger.warning(
+            json.dumps(
+                {
+                    "event": "MALICIOUS_UPLOAD_BLOCKED",
+                    "user_id": str(current_user.id),
+                    "filename": file.filename,
+                    "ip": getattr(request.state, "client_ip", "unknown"),
+                    "reason": scan_result.message,
+                    "details": scan_result.details,
+                    "timestamp": datetime.now(UTC).isoformat(),
+                },
+                ensure_ascii=False,
+            )
+        )
 
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -75,30 +85,47 @@ async def upload_file(
 
     # Generar nombre único y seguro
     safe_ext = Path(file.filename or "").suffix.lower()
-    if safe_ext not in {".jpg", ".jpeg", ".png", ".webp", ".gif", ".pdf", ".txt", ".csv", ".xlsx", ".docx"}:
+    if safe_ext not in {
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".webp",
+        ".gif",
+        ".pdf",
+        ".txt",
+        ".csv",
+        ".xlsx",
+        ".docx",
+    }:
         safe_ext = ".bin"
 
     unique_name = f"{uuid.uuid4().hex}_{file_hash[:16]}{safe_ext}"
     file_path = UPLOAD_DIR / unique_name
 
     # Guardar archivo
-    with open(file_path, "wb") as f:
-        f.write(content)
+    await asyncio.to_thread(write_file, file_path, "wb", data=content)
 
     # Loguear subida exitosa
-    from app.middleware.security_logging import security_logger
     import json
-    security_logger.info(json.dumps({
-        "event": "FILE_UPLOAD_SUCCESS",
-        "user_id": str(current_user.id),
-        "filename": file.filename,
-        "stored_as": unique_name,
-        "sha256": file_hash,
-        "size": len(content),
-        "ip": getattr(request.state, "client_ip", "unknown"),
-        "scan_result": scan_result.message,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    }, ensure_ascii=False))
+
+    from app.middleware.security_logging import security_logger
+
+    security_logger.info(
+        json.dumps(
+            {
+                "event": "FILE_UPLOAD_SUCCESS",
+                "user_id": str(current_user.id),
+                "filename": file.filename,
+                "stored_as": unique_name,
+                "sha256": file_hash,
+                "size": len(content),
+                "ip": getattr(request.state, "client_ip", "unknown"),
+                "scan_result": scan_result.message,
+                "timestamp": datetime.now(UTC).isoformat(),
+            },
+            ensure_ascii=False,
+        )
+    )
 
     return {
         "success": True,
@@ -112,7 +139,10 @@ async def upload_file(
 
 
 @router.get("/upload/download/{filename}")
-async def download_file(filename: str, current_user: User = Depends(get_current_active_user)):
+async def download_file(
+    filename: str,
+    current_user: Annotated[User, Depends(get_current_active_user)],
+):
     """
     Descarga un archivo previamente subido.
     Valida que el nombre no contenga path traversal.
@@ -127,6 +157,7 @@ async def download_file(filename: str, current_user: User = Depends(get_current_
         raise HTTPException(status_code=404, detail="Archivo no encontrado")
 
     from fastapi.responses import FileResponse
+
     return FileResponse(
         path=file_path,
         filename=safe_name,

@@ -1,10 +1,12 @@
 """Property Analyzer Agent — Valuation, comps, investment potential."""
 
 import logging
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
-from datetime import datetime
 import statistics
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -17,15 +19,15 @@ class PropertyAnalysis:
     estimated_value: float
     value_confidence: float  # 0-1
     price_per_sqft: float
-    estimated_annual_rent: Optional[float] = None
-    cap_rate: Optional[float] = None  # For investment
-    cash_on_cash_return: Optional[float] = None
+    estimated_annual_rent: float | None = None
+    cap_rate: float | None = None  # For investment
+    cash_on_cash_return: float | None = None
     appreciation_potential: str = "moderate"
     investment_score: float = 0.0
     condition_assessment: str = "average"
-    major_repairs_needed: List[str] = field(default_factory=list)
-    recommendations: List[str] = field(default_factory=list)
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    major_repairs_needed: list[str] = field(default_factory=list)
+    recommendations: list[str] = field(default_factory=list)
+    created_at: datetime = field(default_factory=utc_now)
 
 
 @dataclass
@@ -48,10 +50,12 @@ class PropertyAnalyzerAgent:
     """Analyze properties for valuation and investment potential."""
 
     def __init__(self):
-        self.comparables_database: List[Comparable] = []
-        self.analysis_history: Dict[str, PropertyAnalysis] = {}
+        self.comparables_database: list[Comparable] = []
+        self.analysis_history: dict[str, PropertyAnalysis] = {}
 
-    def analyze_property(self, property_data: Dict[str, Any], comps: Optional[List[Comparable]] = None) -> PropertyAnalysis:
+    def analyze_property(
+        self, property_data: dict[str, Any], comps: list[Comparable] | None = None
+    ) -> PropertyAnalysis:
         """Perform comprehensive property analysis."""
         property_id = property_data.get("property_id", "unknown")
 
@@ -68,8 +72,12 @@ class PropertyAnalyzerAgent:
         cap_rate = None
         cash_on_cash = None
         if annual_rent:
-            cap_rate = (annual_rent / estimated_value) * 100 if estimated_value > 0 else 0
-            down_payment = property_data.get("down_payment_amount", estimated_value * 0.2)
+            cap_rate = (
+                (annual_rent / estimated_value) * 100 if estimated_value > 0 else 0
+            )
+            down_payment = property_data.get(
+                "down_payment_amount", estimated_value * 0.2
+            )
             cash_on_cash = (annual_rent / down_payment) * 100 if down_payment > 0 else 0
 
         # Condition assessment
@@ -87,7 +95,9 @@ class PropertyAnalyzerAgent:
         )
 
         # Recommendations
-        recommendations = self._generate_recommendations(property_data, estimated_value, condition, repairs)
+        recommendations = self._generate_recommendations(
+            property_data, estimated_value, condition, repairs
+        )
 
         analysis = PropertyAnalysis(
             property_id=property_id,
@@ -105,11 +115,15 @@ class PropertyAnalyzerAgent:
         )
 
         self.analysis_history[property_id] = analysis
-        logger.info(f"Analyzed property {property_id}: ${estimated_value:,.0f} (confidence: {value_confidence:.0%})")
+        logger.info(
+            f"Analyzed property {property_id}: ${estimated_value:,.0f} (confidence: {value_confidence:.0%})"
+        )
 
         return analysis
 
-    def _estimate_value(self, property_data: Dict[str, Any], comps: List[Comparable]) -> float:
+    def _estimate_value(
+        self, property_data: dict[str, Any], comps: list[Comparable]
+    ) -> float:
         """Estimate property value using comparable sales."""
         if not comps:
             # Fallback: use asking price or estimate from sqft
@@ -127,12 +141,13 @@ class PropertyAnalyzerAgent:
 
         # Calculate weighted average price per sqft
         total_weight = sum(c.similarity_score for c in top_comps)
-        weighted_price_per_sqft = sum(
-            (c.price_per_sqft * c.similarity_score) for c in top_comps
-        ) / total_weight
+        weighted_price_per_sqft = (
+            sum((c.price_per_sqft * c.similarity_score) for c in top_comps)
+            / total_weight
+        )
 
         # Adjust for time (appreciation/depreciation)
-        months_since_sale = [(datetime.utcnow() - c.sale_date).days // 30 for c in top_comps]
+        months_since_sale = [(utc_now() - c.sale_date).days // 30 for c in top_comps]
         avg_months = statistics.mean(months_since_sale)
 
         # Assume 3% annual appreciation
@@ -143,7 +158,9 @@ class PropertyAnalyzerAgent:
 
         return estimated_value
 
-    def _calculate_confidence(self, property_data: Dict[str, Any], comps: List[Comparable]) -> float:
+    def _calculate_confidence(
+        self, property_data: dict[str, Any], comps: list[Comparable]
+    ) -> float:
         """Calculate confidence level of valuation (0-1)."""
         confidence = 0.5
 
@@ -156,7 +173,7 @@ class PropertyAnalyzerAgent:
             confidence += 0.05
 
         # Recent sales = higher confidence
-        recent_comps = [c for c in comps if (datetime.utcnow() - c.sale_date).days <= 90]
+        recent_comps = [c for c in comps if (utc_now() - c.sale_date).days <= 90]
         if len(recent_comps) >= 3:
             confidence += 0.15
         elif len(recent_comps) >= 1:
@@ -168,7 +185,7 @@ class PropertyAnalyzerAgent:
 
         return min(confidence, 1.0)
 
-    def _assess_condition(self, property_data: Dict[str, Any]) -> str:
+    def _assess_condition(self, property_data: dict[str, Any]) -> str:
         """Assess overall property condition."""
         reported_condition = property_data.get("condition", "average").lower()
 
@@ -181,11 +198,11 @@ class PropertyAnalyzerAgent:
         else:
             return "poor"
 
-    def _identify_needed_repairs(self, property_data: Dict[str, Any]) -> List[str]:
+    def _identify_needed_repairs(self, property_data: dict[str, Any]) -> list[str]:
         """Identify major repairs from property data."""
         repairs = []
         year_built = property_data.get("year_built", 0)
-        current_year = datetime.utcnow().year
+        current_year = utc_now().year
         property_age = current_year - year_built
 
         # Age-based assessment
@@ -207,18 +224,22 @@ class PropertyAnalyzerAgent:
 
         return repairs
 
-    def _estimate_appreciation_potential(self, property_data: Dict[str, Any], comps: List[Comparable]) -> str:
+    def _estimate_appreciation_potential(
+        self, property_data: dict[str, Any], comps: list[Comparable]
+    ) -> str:
         """Estimate future appreciation potential."""
         # Check market trend
         if comps:
-            recent_comps = [c for c in comps if (datetime.utcnow() - c.sale_date).days <= 180]
-            old_comps = [c for c in comps if (datetime.utcnow() - c.sale_date).days > 180]
+            recent_comps = [c for c in comps if (utc_now() - c.sale_date).days <= 180]
+            old_comps = [c for c in comps if (utc_now() - c.sale_date).days > 180]
 
             if recent_comps and old_comps:
                 recent_price = statistics.mean([c.price_per_sqft for c in recent_comps])
                 old_price = statistics.mean([c.price_per_sqft for c in old_comps])
 
-                price_change = (recent_price - old_price) / old_price if old_price > 0 else 0
+                price_change = (
+                    (recent_price - old_price) / old_price if old_price > 0 else 0
+                )
 
                 if price_change > 0.05:
                     return "high"
@@ -239,7 +260,11 @@ class PropertyAnalyzerAgent:
             return "low"
 
     def _calculate_investment_score(
-        self, property_data: Dict[str, Any], value: float, cap_rate: Optional[float], condition: str
+        self,
+        property_data: dict[str, Any],
+        value: float,
+        cap_rate: float | None,
+        condition: str,
     ) -> float:
         """Calculate investment score (0-100)."""
         score = 50.0
@@ -270,8 +295,12 @@ class PropertyAnalyzerAgent:
         return min(max(score, 0.0), 100.0)
 
     def _generate_recommendations(
-        self, property_data: Dict[str, Any], value: float, condition: str, repairs: List[str]
-    ) -> List[str]:
+        self,
+        property_data: dict[str, Any],
+        value: float,
+        condition: str,
+        repairs: list[str],
+    ) -> list[str]:
         """Generate recommendations."""
         recommendations = []
 
@@ -279,9 +308,11 @@ class PropertyAnalyzerAgent:
 
         # Price recommendation
         if asking_price > value * 1.1:
-            recommendations.append(f"Price appears high - consider offer around ${value * 0.95:,.0f}")
+            recommendations.append(
+                f"Price appears high - consider offer around ${value * 0.95:,.0f}"
+            )
         elif asking_price < value * 0.9:
-            recommendations.append(f"Price looks favorable - good value at asking price")
+            recommendations.append("Price looks favorable - good value at asking price")
 
         # Condition-based
         if condition in ["fair", "poor"]:
@@ -291,20 +322,28 @@ class PropertyAnalyzerAgent:
         # Market timing
         days_on_market = property_data.get("days_on_market", 0)
         if days_on_market > 90:
-            recommendations.append("Property on market >90 days - negotiate aggressively")
+            recommendations.append(
+                "Property on market >90 days - negotiate aggressively"
+            )
         elif days_on_market < 7:
             recommendations.append("Hot property - be prepared for multiple offers")
 
         # Investment-specific
-        if property_data.get("is_investment_property"):
-            if property_data.get("estimated_annual_rent", 0) > 0:
-                recommendations.append("Strong rental potential - consider as investment")
+        if (
+            property_data.get("is_investment_property")
+            and property_data.get("estimated_annual_rent", 0) > 0
+        ):
+            recommendations.append("Strong rental potential - consider as investment")
 
         return recommendations
 
-    def compare_properties(self, property_ids: List[str]) -> Dict[str, Any]:
+    def compare_properties(self, property_ids: list[str]) -> dict[str, Any]:
         """Compare multiple properties."""
-        analyses = [self.analysis_history.get(pid) for pid in property_ids if pid in self.analysis_history]
+        analyses = [
+            self.analysis_history.get(pid)
+            for pid in property_ids
+            if pid in self.analysis_history
+        ]
 
         if not analyses:
             return {"error": "No analyses found"}
@@ -321,7 +360,9 @@ class PropertyAnalyzerAgent:
                 for a in analyses
             ],
             "best_value": min(analyses, key=lambda a: a.price_per_sqft).property_id,
-            "best_investment": max(analyses, key=lambda a: a.investment_score).property_id if any(
-                a.investment_score for a in analyses
-            ) else None,
+            "best_investment": (
+                max(analyses, key=lambda a: a.investment_score).property_id
+                if any(a.investment_score for a in analyses)
+                else None
+            ),
         }

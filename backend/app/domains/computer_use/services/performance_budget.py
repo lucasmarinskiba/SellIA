@@ -6,9 +6,10 @@ paso, y stale states.
 """
 
 import time
-from typing import Optional, Dict, Any, Callable
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 from app.core.logger import get_logger
 
@@ -43,14 +44,14 @@ class BudgetConfig:
 class PerformanceBudget:
     """Monitor de performance budget para sesiones de Computer Use."""
 
-    def __init__(self, config: Optional[BudgetConfig] = None):
+    def __init__(self, config: BudgetConfig | None = None):
         self.config = config or BudgetConfig()
         self._alerts: list[PerformanceAlert] = []
-        self._session_start: Optional[float] = None
-        self._step_start: Optional[float] = None
+        self._session_start: float | None = None
+        self._step_start: float | None = None
         self._stale_count = 0
         self._total_retries = 0
-        self._on_alert: Optional[Callable[[PerformanceAlert], None]] = None
+        self._on_alert: Callable[[PerformanceAlert], None] | None = None
 
     def set_alert_handler(self, handler: Callable[[PerformanceAlert], None]) -> None:
         """Registra un callback para recibir alertas."""
@@ -142,10 +143,10 @@ class PerformanceBudget:
         if self._on_alert:
             try:
                 self._on_alert(alert)
-            except Exception as e:
-                logger.error(f"Alert handler error: {e}")
+            except Exception:
+                logger.exception("Alert handler error")
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """Retorna resumen del performance budget."""
         duration = time.time() - self._session_start if self._session_start else 0
         return {
@@ -153,10 +154,17 @@ class PerformanceBudget:
             "alerts_triggered": len(self._alerts),
             "alerts_by_level": {
                 "info": sum(1 for a in self._alerts if a.level == AlertLevel.INFO),
-                "warning": sum(1 for a in self._alerts if a.level == AlertLevel.WARNING),
-                "critical": sum(1 for a in self._alerts if a.level == AlertLevel.CRITICAL),
+                "warning": sum(
+                    1 for a in self._alerts if a.level == AlertLevel.WARNING
+                ),
+                "critical": sum(
+                    1 for a in self._alerts if a.level == AlertLevel.CRITICAL
+                ),
             },
             "stale_count": self._stale_count,
             "total_retries": self._total_retries,
-            "within_budget": len([a for a in self._alerts if a.level == AlertLevel.CRITICAL]) == 0,
+            "within_budget": len(
+                [a for a in self._alerts if a.level == AlertLevel.CRITICAL]
+            )
+            == 0,
         }

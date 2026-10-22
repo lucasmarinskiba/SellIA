@@ -3,18 +3,17 @@
 Detects customer emotions from messages and adapts AI tone accordingly.
 """
 
-import uuid
-import json
 import hashlib
-from datetime import datetime, timezone
-from typing import List, Optional
+import json
+import uuid
+from typing import ClassVar
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.agents.schemas_intelligence import EmotionResult
 from app.domains.agents.models_emotion import EmotionDetection
+from app.domains.agents.schemas_intelligence import EmotionResult
 
 logger = get_logger(__name__)
 
@@ -27,9 +26,9 @@ class EmotionDetector:
         db: AsyncSession,
         business_id: uuid.UUID,
         message: str,
-        conversation_history: Optional[List[str]] = None,
-        message_id: Optional[uuid.UUID] = None,
-        conversation_id: Optional[uuid.UUID] = None,
+        conversation_history: list[str] | None = None,
+        message_id: uuid.UUID | None = None,
+        conversation_id: uuid.UUID | None = None,
     ) -> EmotionResult:
         """
         Analyze the emotion of a customer message using the cheapest LLM.
@@ -40,11 +39,14 @@ class EmotionDetector:
             {"msg": message, "hist_len": len(conversation_history or [])},
             sort_keys=True,
         )
-        cache_key = f"sellia:emotion:{hashlib.sha256(cache_key_data.encode()).hexdigest()[:32]}"
+        cache_key = (
+            f"sellia:emotion:{hashlib.sha256(cache_key_data.encode()).hexdigest()[:32]}"
+        )
 
         # Try cache first
         try:
             import redis.asyncio as redis
+
             from app.core.config import get_settings
 
             settings = get_settings()
@@ -58,7 +60,7 @@ class EmotionDetector:
                 return EmotionResult(**data)
             await redis_client.close()
         except Exception as e:
-            logger.warning(f"Redis cache miss/error for emotion: {e}")
+            logger.warning(f"Redis cache miss/error for emotion: {e}", exc_info=True)
 
         # Build prompt
         history_text = ""
@@ -93,8 +95,8 @@ class EmotionDetector:
                 max_tokens=300,
                 temperature=0.2,
             )
-        except Exception as e:
-            logger.error(f"Emotion LLM detection failed: {e}")
+        except Exception:
+            logger.exception("Emotion LLM detection failed")
             raw = None
 
         # Parse response
@@ -129,23 +131,22 @@ class EmotionDetector:
                     triggers=triggers,
                 )
             except Exception as e:
-                logger.warning(f"Failed to parse emotion JSON: {e}")
+                logger.warning(f"Failed to parse emotion JSON: {e}", exc_info=True)
 
         # Cache for 1 hour
         try:
             import redis.asyncio as redis
+
             from app.core.config import get_settings
 
             settings = get_settings()
             redis_client = redis.from_url(
                 settings.REDIS_URL, encoding="utf-8", decode_responses=True
             )
-            await redis_client.setex(
-                cache_key, 3600, result.model_dump_json()
-            )
+            await redis_client.setex(cache_key, 3600, result.model_dump_json())
             await redis_client.close()
         except Exception as e:
-            logger.warning(f"Failed to cache emotion result: {e}")
+            logger.warning(f"Failed to cache emotion result: {e}", exc_info=True)
 
         # Persist to DB if we have conversation_id
         if conversation_id and message_id:
@@ -160,7 +161,9 @@ class EmotionDetector:
                 db.add(detection)
                 await db.commit()
             except Exception as e:
-                logger.warning(f"Failed to persist emotion detection: {e}")
+                logger.warning(
+                    f"Failed to persist emotion detection: {e}", exc_info=True
+                )
                 await db.rollback()
 
         return result
@@ -169,7 +172,7 @@ class EmotionDetector:
 class ToneAdapter:
     """Adapts system prompt tone based on detected emotion."""
 
-    _TONE_INSTRUCTIONS = {
+    _TONE_INSTRUCTIONS: ClassVar[dict] = {
         "angry": (
             "Sé calmado, empático, reconoce su frustración, "
             "ofrece solución concreta inmediata."
@@ -184,12 +187,8 @@ class ToneAdapter:
         "doubtful": (
             "Sé paciente, ofrece pruebas sociales, garantías, casos de éxito, FAQs."
         ),
-        "hurried": (
-            "Sé conciso, ve al grano, ofrece resumen bullet points."
-        ),
-        "happy": (
-            "Sé cálido, agradece, refuerza decisión, cross-sell suave."
-        ),
+        "hurried": ("Sé conciso, ve al grano, ofrece resumen bullet points."),
+        "happy": ("Sé cálido, agradece, refuerza decisión, cross-sell suave."),
         "neutral": "",
     }
 
@@ -213,7 +212,7 @@ class EmotionTimeline:
     async def get_emotion_timeline(
         db: AsyncSession,
         conversation_id: uuid.UUID,
-    ) -> List[EmotionDetection]:
+    ) -> list[EmotionDetection]:
         """Return all emotion snapshots for a conversation, ordered by time."""
         result = await db.execute(
             select(EmotionDetection)

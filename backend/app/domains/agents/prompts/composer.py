@@ -4,9 +4,7 @@ Allows auto-pilot agents (captador, vendedor, etc.) to reason and communicate
 using the frameworks, philosophy, and style of any expert personality.
 """
 
-from typing import Optional
 from app.domains.agents.prompts import AGENT_PROMPTS
-
 
 # Auto-pilot functional slugs that can be composed with expert voices
 FUNCTIONAL_SLUGS = {"captador", "cualificador", "vendedor", "post-venta"}
@@ -14,9 +12,9 @@ FUNCTIONAL_SLUGS = {"captador", "cualificador", "vendedor", "post-venta"}
 
 def compose_system_prompt(
     base_slug: str,
-    voice_slug: Optional[str] = None,
-    business_context: dict = None,
-    custom_instructions: str = None,
+    voice_slug: str | None = None,
+    business_context: dict | None = None,
+    custom_instructions: str | None = None,
 ) -> str:
     """
     Compose a system prompt that layers an expert's voice over a functional role.
@@ -71,7 +69,9 @@ Eres el agente funcional '{base_slug}' que piensa, razona y comunica con la voz 
     return _finalize_prompt(composed, business_context, custom_instructions)
 
 
-def _finalize_prompt(base_text: str, business_context: dict, custom_instructions: str) -> str:
+def _finalize_prompt(
+    base_text: str, business_context: dict, custom_instructions: str
+) -> str:
     """Append business context and custom instructions to any prompt."""
     context_block = ""
     if business_context:
@@ -85,14 +85,18 @@ def _finalize_prompt(base_text: str, business_context: dict, custom_instructions
         if business_context.get("description"):
             ctx_parts.append(f"Description: {business_context['description']}")
         if business_context.get("catalog_summary"):
-            ctx_parts.append(f"Products/Services:\n{business_context['catalog_summary']}")
+            ctx_parts.append(
+                f"Products/Services:\n{business_context['catalog_summary']}"
+            )
         if ctx_parts:
             context_block = "\n\nBUSINESS CONTEXT:\n" + "\n".join(ctx_parts)
 
     # Business-type-specific prompt adaptation
     adaptation = ""
     if business_context and business_context.get("prompt_adaptation"):
-        adaptation = f"\n\nBUSINESS TYPE ADAPTATION:\n{business_context['prompt_adaptation']}"
+        adaptation = (
+            f"\n\nBUSINESS TYPE ADAPTATION:\n{business_context['prompt_adaptation']}"
+        )
 
     custom = ""
     if custom_instructions:

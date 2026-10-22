@@ -10,19 +10,21 @@ Soporta:
 6. Custom templates con personalización
 """
 
+import html
 import logging
 import os
-from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 from enum import Enum
-from datetime import datetime
-import html
+from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
 
 class EmailProvider(Enum):
     """Proveedores de email soportados."""
+
     SENDGRID = "sendgrid"
     AWS_SES = "aws_ses"
     SMTP = "smtp"
@@ -30,6 +32,7 @@ class EmailProvider(Enum):
 
 class EmailTemplate(Enum):
     """Templates predefinidas."""
+
     ORDER_CONFIRMATION = "order_confirmation"
     SHIPMENT_NOTIFICATION = "shipment_notification"
     DELIVERY_CONFIRMATION = "delivery_confirmation"
@@ -42,26 +45,28 @@ class EmailTemplate(Enum):
 @dataclass
 class EmailRecipient:
     """Destinatario de email."""
+
     email: str
-    name: Optional[str] = None
-    variables: Dict[str, Any] = None
+    name: str | None = None
+    variables: dict[str, Any] = None
 
 
 @dataclass
 class EmailMessage:
     """Estructura de email."""
-    to: List[EmailRecipient]
+
+    to: list[EmailRecipient]
     subject: str
     html_content: str
-    text_content: Optional[str] = None
+    text_content: str | None = None
     from_email: str = "noreply@sellia.ai"
     from_name: str = "SellIA"
-    reply_to: Optional[str] = None
-    cc: Optional[List[str]] = None
-    bcc: Optional[List[str]] = None
-    attachments: Optional[List[Dict[str, str]]] = None
-    template_id: Optional[str] = None
-    metadata: Optional[Dict[str, str]] = None
+    reply_to: str | None = None
+    cc: list[str] | None = None
+    bcc: list[str] | None = None
+    attachments: list[dict[str, str]] | None = None
+    template_id: str | None = None
+    metadata: dict[str, str] | None = None
 
 
 class EmailTemplateEngine:
@@ -70,7 +75,7 @@ class EmailTemplateEngine:
     def __init__(self):
         self.templates = self._load_templates()
 
-    def _load_templates(self) -> Dict[EmailTemplate, str]:
+    def _load_templates(self) -> dict[EmailTemplate, str]:
         """Carga templates predefinidas."""
         return {
             EmailTemplate.ORDER_CONFIRMATION: self._template_order_confirmation(),
@@ -272,14 +277,17 @@ class EmailTemplateEngine:
         </html>
         """
 
-    def render(self, template: EmailTemplate, variables: Dict[str, Any]) -> str:
+    def render(self, template: EmailTemplate, variables: dict[str, Any]) -> str:
         """Renderiza template con variables."""
         html_content = self.templates.get(template)
         if not html_content:
             raise ValueError(f"Template {template.value} not found")
 
         # Escape HTML en valores de usuario
-        safe_vars = {k: html.escape(str(v)) if isinstance(v, str) else v for k, v in variables.items()}
+        safe_vars = {
+            k: html.escape(str(v)) if isinstance(v, str) else v
+            for k, v in variables.items()
+        }
 
         # Render simple template (puede mejorarse con Jinja2)
         result = html_content
@@ -311,6 +319,7 @@ class EmailService:
         """Inicializa SendGrid."""
         try:
             from sendgrid import SendGridAPIClient
+
             api_key = os.getenv("SENDGRID_API_KEY")
             if not api_key:
                 raise ValueError("SENDGRID_API_KEY not configured")
@@ -324,7 +333,10 @@ class EmailService:
         """Inicializa AWS SES."""
         try:
             import boto3
-            self.ses_client = boto3.client("ses", region_name=os.getenv("AWS_REGION", "us-east-1"))
+
+            self.ses_client = boto3.client(
+                "ses", region_name=os.getenv("AWS_REGION", "us-east-1")
+            )
             logger.info("AWS SES initialized")
         except ImportError:
             logger.error("boto3 package not installed")
@@ -345,11 +357,11 @@ class EmailService:
         customer_email: str,
         customer_name: str,
         order_id: str,
-        products: List[Dict[str, Any]],
+        products: list[dict[str, Any]],
         total_amount: float,
         currency: str = "USD",
-        shipping_address: Dict[str, str] = None,
-    ) -> Dict[str, Any]:
+        shipping_address: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         """Envía confirmación de orden."""
 
         products_html = self._render_products_html(products)
@@ -358,7 +370,7 @@ class EmailService:
         variables = {
             "customer_name": customer_name,
             "order_id": order_id,
-            "order_date": datetime.utcnow().strftime("%d/%m/%Y"),
+            "order_date": utc_now().strftime("%d/%m/%Y"),
             "total_amount": f"{total_amount:.2f}",
             "currency": currency,
             "products_html": products_html,
@@ -368,7 +380,9 @@ class EmailService:
             "shipping_country": shipping_addr.get("country", ""),
         }
 
-        html_content = self.template_engine.render(EmailTemplate.ORDER_CONFIRMATION, variables)
+        html_content = self.template_engine.render(
+            EmailTemplate.ORDER_CONFIRMATION, variables
+        )
 
         message = EmailMessage(
             to=[EmailRecipient(email=customer_email, name=customer_name)],
@@ -387,9 +401,9 @@ class EmailService:
         tracking_number: str,
         carrier_name: str,
         estimated_delivery: str,
-        products: List[Dict[str, Any]],
-        tracking_url: str = None,
-    ) -> Dict[str, Any]:
+        products: list[dict[str, Any]],
+        tracking_url: str | None = None,
+    ) -> dict[str, Any]:
         """Envía notificación de envío."""
 
         products_html = self._render_products_html(products)
@@ -405,13 +419,19 @@ class EmailService:
             "tracking_url": tracking_url,
         }
 
-        html_content = self.template_engine.render(EmailTemplate.SHIPMENT_NOTIFICATION, variables)
+        html_content = self.template_engine.render(
+            EmailTemplate.SHIPMENT_NOTIFICATION, variables
+        )
 
         message = EmailMessage(
             to=[EmailRecipient(email=customer_email, name=customer_name)],
             subject=f"Tu Pedido Ha Sido Despachado - Seguimiento: {tracking_number}",
             html_content=html_content,
-            metadata={"order_id": order_id, "tracking_number": tracking_number, "type": "shipment"},
+            metadata={
+                "order_id": order_id,
+                "tracking_number": tracking_number,
+                "type": "shipment",
+            },
         )
 
         return await self.send(message)
@@ -424,8 +444,8 @@ class EmailService:
         amount: float,
         currency: str,
         failure_reason: str,
-        retry_url: str = None,
-    ) -> Dict[str, Any]:
+        retry_url: str | None = None,
+    ) -> dict[str, Any]:
         """Envía alerta de pago rechazado."""
 
         retry_url = retry_url or f"https://checkout.sellia.ai/{order_id}"
@@ -439,7 +459,9 @@ class EmailService:
             "retry_payment_url": retry_url,
         }
 
-        html_content = self.template_engine.render(EmailTemplate.PAYMENT_FAILED, variables)
+        html_content = self.template_engine.render(
+            EmailTemplate.PAYMENT_FAILED, variables
+        )
 
         message = EmailMessage(
             to=[EmailRecipient(email=customer_email, name=customer_name)],
@@ -459,7 +481,7 @@ class EmailService:
         currency: str,
         refund_reason: str,
         refund_eta: str = "3-5 días hábiles",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Envía notificación de reembolso."""
 
         variables = {
@@ -471,21 +493,29 @@ class EmailService:
             "refund_eta": refund_eta,
         }
 
-        html_content = self.template_engine.render(EmailTemplate.REFUND_NOTIFICATION, variables)
+        html_content = self.template_engine.render(
+            EmailTemplate.REFUND_NOTIFICATION, variables
+        )
 
         message = EmailMessage(
             to=[EmailRecipient(email=customer_email, name=customer_name)],
             subject=f"✅ Reembolso Aprobado - ${refund_amount:.2f}",
             html_content=html_content,
-            metadata={"order_id": order_id, "type": "refund", "amount": str(refund_amount)},
+            metadata={
+                "order_id": order_id,
+                "type": "refund",
+                "amount": str(refund_amount),
+            },
         )
 
         return await self.send(message)
 
-    async def send(self, message: EmailMessage) -> Dict[str, Any]:
+    async def send(self, message: EmailMessage) -> dict[str, Any]:
         """Envía email genérico."""
 
-        logger.info(f"Sending email to {[r.email for r in message.to]}: {message.subject}")
+        logger.info(
+            f"Sending email to {[r.email for r in message.to]}: {message.subject}"
+        )
 
         try:
             if self.provider == EmailProvider.SENDGRID:
@@ -495,16 +525,16 @@ class EmailService:
             elif self.provider == EmailProvider.SMTP:
                 return await self._send_smtp(message)
         except Exception as e:
-            logger.error(f"Failed to send email: {str(e)}")
+            logger.exception("Failed to send email")
             return {"status": "error", "error": str(e)}
 
-    async def _send_sendgrid(self, message: EmailMessage) -> Dict[str, Any]:
+    async def _send_sendgrid(self, message: EmailMessage) -> dict[str, Any]:
         """Envía via SendGrid."""
         if not self.sendgrid_client:
             return {"status": "error", "error": "SendGrid not configured"}
 
         try:
-            from sendgrid.helpers.mail import Mail, Email, To, Content
+            from sendgrid.helpers.mail import Content, Email, Mail, To
 
             mail = Mail(
                 from_email=Email(message.from_email, message.from_name),
@@ -530,10 +560,10 @@ class EmailService:
             }
 
         except Exception as e:
-            logger.error(f"SendGrid error: {str(e)}")
+            logger.exception("SendGrid error")
             return {"status": "error", "error": str(e)}
 
-    async def _send_ses(self, message: EmailMessage) -> Dict[str, Any]:
+    async def _send_ses(self, message: EmailMessage) -> dict[str, Any]:
         """Envía via AWS SES."""
         if not self.ses_client:
             return {"status": "error", "error": "AWS SES not configured"}
@@ -561,15 +591,16 @@ class EmailService:
             }
 
         except Exception as e:
-            logger.error(f"AWS SES error: {str(e)}")
+            logger.exception("AWS SES error")
             return {"status": "error", "error": str(e)}
 
-    async def _send_smtp(self, message: EmailMessage) -> Dict[str, Any]:
+    async def _send_smtp(self, message: EmailMessage) -> dict[str, Any]:
         """Envía via SMTP."""
         try:
-            import aiosmtplib
-            from email.mime.text import MIMEText
             from email.mime.multipart import MIMEMultipart
+            from email.mime.text import MIMEText
+
+            import aiosmtplib
 
             msg = MIMEMultipart("alternative")
             msg["Subject"] = message.subject
@@ -585,17 +616,19 @@ class EmailService:
                 port=self.smtp_config["port"],
             ) as smtp:
                 if self.smtp_config["user"]:
-                    await smtp.login(self.smtp_config["user"], self.smtp_config["password"])
+                    await smtp.login(
+                        self.smtp_config["user"], self.smtp_config["password"]
+                    )
 
                 await smtp.send_message(msg)
 
             return {"status": "success", "message": "Email sent via SMTP"}
 
         except Exception as e:
-            logger.error(f"SMTP error: {str(e)}")
+            logger.exception("SMTP error")
             return {"status": "error", "error": str(e)}
 
-    def _render_products_html(self, products: List[Dict[str, Any]]) -> str:
+    def _render_products_html(self, products: list[dict[str, Any]]) -> str:
         """Renderiza lista de productos en HTML."""
         html = "<ul>"
         for product in products:

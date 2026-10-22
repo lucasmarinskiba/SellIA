@@ -3,8 +3,7 @@ Engagement Optimizer — Hooks, CTAs, follow-ups, timing optimization.
 """
 
 import logging
-from typing import Dict, List, Any
-from datetime import datetime, timedelta
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -12,14 +11,17 @@ logger = logging.getLogger(__name__)
 class EngagementOptimizer:
     """Optimizes engagement metrics."""
 
-    HOOK_TEMPLATES = {
-        "question": ["Wait, you're asking the real questions", "This deserves a proper answer"],
+    HOOK_TEMPLATES: ClassVar[dict] = {
+        "question": [
+            "Wait, you're asking the real questions",
+            "This deserves a proper answer",
+        ],
         "observation": ["Plot twist:", "Here's the thing:", "This is so true because"],
         "challenge": ["Challenge accepted!", "Let's break this down"],
         "story": ["There's actually a story here:", "Funny you mention this"],
     }
 
-    CTA_STYLES = {
+    CTA_STYLES: ClassVar[dict] = {
         "question": "What would help most?",
         "book": "Learn more → [link]",
         "video": "Watch explanation → [link]",
@@ -28,9 +30,11 @@ class EngagementOptimizer:
     }
 
     @staticmethod
-    def craft_hook(comment_text: str, intent: str) -> Dict[str, Any]:
+    def craft_hook(comment_text: str, intent: str) -> dict[str, Any]:
         """Craft attention-grabbing opening."""
-        hook_options = EngagementOptimizer.HOOK_TEMPLATES.get(intent, ["Interesting take"])
+        hook_options = EngagementOptimizer.HOOK_TEMPLATES.get(
+            intent, ["Interesting take"]
+        )
         hook = hook_options[0]  # Simplified
 
         return {
@@ -40,7 +44,7 @@ class EngagementOptimizer:
         }
 
     @staticmethod
-    def craft_cta(response_type: str) -> Dict[str, Any]:
+    def craft_cta(response_type: str) -> dict[str, Any]:
         """Create natural call-to-action."""
         cta_text = EngagementOptimizer.CTA_STYLES.get(response_type, "Learn more")
 
@@ -51,7 +55,7 @@ class EngagementOptimizer:
         }
 
     @staticmethod
-    def suggest_followup(context: Dict[str, Any]) -> Dict[str, Any]:
+    def suggest_followup(context: dict[str, Any]) -> dict[str, Any]:
         """Suggest follow-up timing and strategy."""
         return {
             "suggested_delay": "24 hours",
@@ -60,7 +64,7 @@ class EngagementOptimizer:
         }
 
     @staticmethod
-    def calculate_best_response_time(audience_timezone: str) -> Dict[str, Any]:
+    def calculate_best_response_time(audience_timezone: str) -> dict[str, Any]:
         """Calculate optimal response timing."""
         optimal_hours = {
             "influencer": (9, 11, 20, 21),  # Morning + evening
@@ -75,7 +79,7 @@ class EngagementOptimizer:
         }
 
     @staticmethod
-    def optimize_response_length(intent: str, audience_type: str) -> Dict[str, Any]:
+    def optimize_response_length(intent: str, audience_type: str) -> dict[str, Any]:
         """Recommend response length."""
         lengths = {
             ("question", "decision_maker"): "150-200 words",
@@ -83,7 +87,11 @@ class EngagementOptimizer:
             ("criticism", "any"): "100-150 words",
         }
 
-        key = (intent, audience_type) if (intent, audience_type) in lengths else (intent, "any")
+        key = (
+            (intent, audience_type)
+            if (intent, audience_type) in lengths
+            else (intent, "any")
+        )
         length = lengths.get(key, "100-150 words")
 
         return {

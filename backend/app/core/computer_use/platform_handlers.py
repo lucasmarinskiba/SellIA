@@ -11,13 +11,11 @@ Cada handler encapsula la lógica específica de plataforma para:
 Usa Computer Use + visión para no depender de APIs (escalabilidad infinita).
 """
 
-import logging
 import asyncio
-import re
-from typing import Dict, List, Any, Optional, Tuple
-from datetime import datetime
-from abc import ABC, abstractmethod
-from dataclasses import asdict
+import logging
+from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +23,7 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 # MERCADO LIBRE HANDLER — Marketplace LATAM Leader
 # ============================================================================
+
 
 class MercadoLibreComputerUseHandler:
     """
@@ -75,14 +74,16 @@ class MercadoLibreComputerUseHandler:
             await self.browser_utils.click_by_vision("Login button or Continue button")
 
             # 5. Espera dashboard
-            await self.browser_utils.wait_for_element("Seller dashboard or Account page", timeout=15)
+            await self.browser_utils.wait_for_element(
+                "Seller dashboard or Account page", timeout=15
+            )
 
             logger.info("Mercado Libre authentication successful")
             self.is_authenticated = True
             return True
 
-        except Exception as e:
-            logger.error(f"Mercado Libre auth failed: {str(e)}")
+        except Exception:
+            logger.exception("Mercado Libre auth failed")
             return False
 
     async def post_product(
@@ -92,9 +93,9 @@ class MercadoLibreComputerUseHandler:
         price: float,
         quantity: int,
         category: str,
-        photos: List[str] = None,
+        photos: list[str] | None = None,
         shipping_method: str = "standard",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Publica producto en Mercado Libre.
 
@@ -115,7 +116,7 @@ class MercadoLibreComputerUseHandler:
             "duration_seconds": 5.3,
         }
         """
-        start_time = datetime.utcnow()
+        start_time = utc_now()
 
         try:
             logger.info(f"Posting product to Mercado Libre: {name}")
@@ -128,7 +129,9 @@ class MercadoLibreComputerUseHandler:
             # await computer_use.navigate(f"{self.base_url}/mylogin/seller")
 
             # Busca botón "Crear publicación" o "Vender"
-            await self.browser_utils.click_by_vision("Vender button or Create listing button")
+            await self.browser_utils.click_by_vision(
+                "Vender button or Create listing button"
+            )
 
             # 2. Selecciona categoría
             await self.browser_utils.wait_for_element("Category selector", timeout=10)
@@ -146,23 +149,29 @@ class MercadoLibreComputerUseHandler:
             # 5. Sube fotos
             if photos:
                 for i, photo_path in enumerate(photos[:10]):  # Máximo 10 fotos
-                    await self.browser_utils.click_by_vision("Upload photo button or Add photo")
+                    await self.browser_utils.click_by_vision(
+                        "Upload photo button or Add photo"
+                    )
                     # En producción: upload file via Computer Use
                     logger.info(f"Uploading photo {i+1}/{len(photos)}")
                     await asyncio.sleep(2)  # Espera upload
 
             # 6. Selecciona método envío
-            await self.browser_utils.click_by_vision("Shipping method dropdown or Envío")
+            await self.browser_utils.click_by_vision(
+                "Shipping method dropdown or Envío"
+            )
             await self.browser_utils.click_by_vision(f"Shipping: {shipping_method}")
 
             # 7. Publica
-            await self.browser_utils.click_by_vision("Publish button or Publicar button", )
+            await self.browser_utils.click_by_vision(
+                "Publish button or Publicar button",
+            )
             await self.browser_utils.wait_for_element(
                 "Success message or Product published confirmation",
                 timeout=15,
             )
 
-            duration = (datetime.utcnow() - start_time).total_seconds()
+            duration = (utc_now() - start_time).total_seconds()
             logger.info(f"Product posted successfully in {duration:.1f}s")
 
             return {
@@ -173,8 +182,8 @@ class MercadoLibreComputerUseHandler:
             }
 
         except Exception as e:
-            duration = (datetime.utcnow() - start_time).total_seconds()
-            logger.error(f"Failed to post product: {str(e)}")
+            duration = (utc_now() - start_time).total_seconds()
+            logger.exception("Failed to post product")
             return {
                 "success": False,
                 "product_name": name,
@@ -182,7 +191,7 @@ class MercadoLibreComputerUseHandler:
                 "duration_seconds": duration,
             }
 
-    async def respond_to_questions(self) -> List[Dict[str, Any]]:
+    async def respond_to_questions(self) -> list[dict[str, Any]]:
         """
         Monitorea sección de preguntas y responde automáticamente.
 
@@ -204,7 +213,9 @@ class MercadoLibreComputerUseHandler:
             # await computer_use.navigate(f"{self.base_url}/mylogin/questions")
 
             # 2. Espera lista de preguntas
-            await self.browser_utils.wait_for_element("Questions list or Preguntas section", timeout=10)
+            await self.browser_utils.wait_for_element(
+                "Questions list or Preguntas section", timeout=10
+            )
 
             # 3. Extrae preguntas sin respuesta
             questions = []
@@ -221,29 +232,35 @@ class MercadoLibreComputerUseHandler:
                     await self.browser_utils.click_by_vision(f"Question {i+1}")
 
                     # Lee pregunta completa
-                    screenshot = await self.browser_utils.screenshot_and_analyze()
+                    await self.browser_utils.screenshot_and_analyze()
 
                     # Genera respuesta (aquí se integraría LLM)
                     response_text = "Hola! Gracias por tu pregunta. "
                     # En producción: response_text = await llm.generate_response(question)
 
                     # Escribe respuesta
-                    await self.browser_utils.click_by_vision("Response textarea or Responder")
-                    await self.browser_utils.type_in_field("Response field", response_text)
+                    await self.browser_utils.click_by_vision(
+                        "Response textarea or Responder"
+                    )
+                    await self.browser_utils.type_in_field(
+                        "Response field", response_text
+                    )
 
                     # Publica
-                    await self.browser_utils.click_by_vision("Publish response button or Responder button")
+                    await self.browser_utils.click_by_vision(
+                        "Publish response button or Responder button"
+                    )
 
                     logger.info(f"Responded to question {i+1}")
 
-                except Exception as e:
-                    logger.error(f"Error responding to question: {str(e)}")
+                except Exception:
+                    logger.exception("Error responding to question")
 
             logger.info(f"Responded to {len(questions)} questions")
             return questions
 
-        except Exception as e:
-            logger.error(f"Error checking questions: {str(e)}")
+        except Exception:
+            logger.exception("Error checking questions")
             return []
 
     async def handle_purchase_and_shipping(self, order_id: str) -> bool:
@@ -269,13 +286,19 @@ class MercadoLibreComputerUseHandler:
             await self.browser_utils.click_by_vision(f"Order {order_id} or Click order")
 
             # 3. Confirma pago
-            await self.browser_utils.click_by_vision("Confirm payment button or Confirmar pago")
+            await self.browser_utils.click_by_vision(
+                "Confirm payment button or Confirmar pago"
+            )
 
             # 4. Genera envío
-            await self.browser_utils.click_by_vision("Generate shipping label or Generar envío")
+            await self.browser_utils.click_by_vision(
+                "Generate shipping label or Generar envío"
+            )
 
             # 5. Espera shipping label
-            await self.browser_utils.wait_for_element("Shipping label generated", timeout=10)
+            await self.browser_utils.wait_for_element(
+                "Shipping label generated", timeout=10
+            )
 
             # 6. Notifica comprador
             await self.browser_utils.click_by_vision("Notify buyer button")
@@ -283,14 +306,15 @@ class MercadoLibreComputerUseHandler:
             logger.info(f"Purchase handled successfully: {order_id}")
             return True
 
-        except Exception as e:
-            logger.error(f"Error handling purchase: {str(e)}")
+        except Exception:
+            logger.exception("Error handling purchase")
             return False
 
 
 # ============================================================================
 # SHOPIFY HANDLER — Owned E-Commerce Store
 # ============================================================================
+
 
 class ShopifyComputerUseHandler:
     """
@@ -340,20 +364,25 @@ class ShopifyComputerUseHandler:
             await asyncio.sleep(2)
             screenshot = await self.browser_utils.screenshot_and_analyze()
 
-            if "2fa" in str(screenshot).lower() or "two-factor" in str(screenshot).lower():
+            if (
+                "2fa" in str(screenshot).lower()
+                or "two-factor" in str(screenshot).lower()
+            ):
                 logger.info("2FA required, waiting for manual confirmation")
                 # En producción, escalará a usuario
                 return False
 
             # 5. Verifica acceso
-            await self.browser_utils.wait_for_element("Shopify dashboard or Products page", timeout=10)
+            await self.browser_utils.wait_for_element(
+                "Shopify dashboard or Products page", timeout=10
+            )
 
             logger.info("Shopify authentication successful")
             self.is_authenticated = True
             return True
 
-        except Exception as e:
-            logger.error(f"Shopify auth failed: {str(e)}")
+        except Exception:
+            logger.exception("Shopify auth failed")
             return False
 
     async def create_product(
@@ -363,8 +392,8 @@ class ShopifyComputerUseHandler:
         price: float,
         sku: str,
         quantity: int,
-        photos: List[str] = None,
-    ) -> Dict[str, Any]:
+        photos: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Crea producto en Shopify.
 
@@ -394,11 +423,15 @@ class ShopifyComputerUseHandler:
             await self.browser_utils.screenshot_and_analyze()
 
             # 2. Busca "Add product" o "Create"
-            await self.browser_utils.click_by_vision("Add product button or Create product")
+            await self.browser_utils.click_by_vision(
+                "Add product button or Create product"
+            )
 
             # 3. Rellena información
             await self.browser_utils.type_in_field("Product title field", name)
-            await self.browser_utils.type_in_field("Product description field", description)
+            await self.browser_utils.type_in_field(
+                "Product description field", description
+            )
 
             # 4. Rellena pricing
             await self.browser_utils.click_by_vision("Pricing section or Price")
@@ -418,13 +451,15 @@ class ShopifyComputerUseHandler:
 
             # 7. Guarda
             await self.browser_utils.click_by_vision("Save product button or Save")
-            await self.browser_utils.wait_for_element("Product saved or Success message", timeout=15)
+            await self.browser_utils.wait_for_element(
+                "Product saved or Success message", timeout=15
+            )
 
             logger.info(f"Shopify product created: {name}")
             return {"success": True, "product_name": name}
 
         except Exception as e:
-            logger.error(f"Failed to create Shopify product: {str(e)}")
+            logger.exception("Failed to create Shopify product")
             return {"success": False, "error": str(e)}
 
     async def update_inventory(self, sku: str, new_quantity: int) -> bool:
@@ -459,8 +494,8 @@ class ShopifyComputerUseHandler:
             logger.info(f"Inventory updated for SKU {sku}")
             return True
 
-        except Exception as e:
-            logger.error(f"Error updating inventory: {str(e)}")
+        except Exception:
+            logger.exception("Error updating inventory")
             return False
 
     async def process_order(self, order_number: str) -> bool:
@@ -490,19 +525,22 @@ class ShopifyComputerUseHandler:
 
             # 4. Fulfillment
             await self.browser_utils.click_by_vision("Fulfill order button")
-            await self.browser_utils.click_by_vision("Confirm fulfillment or Create shipment")
+            await self.browser_utils.click_by_vision(
+                "Confirm fulfillment or Create shipment"
+            )
 
             logger.info(f"Order processed: {order_number}")
             return True
 
-        except Exception as e:
-            logger.error(f"Error processing order: {str(e)}")
+        except Exception:
+            logger.exception("Error processing order")
             return False
 
 
 # ============================================================================
 # FACEBOOK HANDLER — Marketplace + Messenger
 # ============================================================================
+
 
 class FacebookComputerUseHandler:
     """
@@ -533,14 +571,16 @@ class FacebookComputerUseHandler:
 
             # Login
             await self.browser_utils.click_by_vision("Log In button")
-            await self.browser_utils.wait_for_element("Facebook feed or Home", timeout=10)
+            await self.browser_utils.wait_for_element(
+                "Facebook feed or Home", timeout=10
+            )
 
             logger.info("Facebook authentication successful")
             self.is_authenticated = True
             return True
 
-        except Exception as e:
-            logger.error(f"Facebook auth failed: {str(e)}")
+        except Exception:
+            logger.exception("Facebook auth failed")
             return False
 
     async def post_to_marketplace(
@@ -549,9 +589,9 @@ class FacebookComputerUseHandler:
         description: str,
         price: float,
         category: str,
-        photos: List[str] = None,
-        location: str = None,
-    ) -> Dict[str, Any]:
+        photos: list[str] | None = None,
+        location: str | None = None,
+    ) -> dict[str, Any]:
         """
         Publica en Facebook Marketplace.
 
@@ -574,7 +614,9 @@ class FacebookComputerUseHandler:
             await self.browser_utils.click_by_vision("Marketplace icon or Marketplace")
 
             # 2. Busca "Sell something"
-            await self.browser_utils.click_by_vision("Sell something button or Create new listing")
+            await self.browser_utils.click_by_vision(
+                "Sell something button or Create new listing"
+            )
 
             # 3. Rellena campos
             await self.browser_utils.type_in_field("Item name field", title)
@@ -603,10 +645,10 @@ class FacebookComputerUseHandler:
             return {"success": True, "title": title}
 
         except Exception as e:
-            logger.error(f"Error posting to Facebook: {str(e)}")
+            logger.exception("Error posting to Facebook")
             return {"success": False, "error": str(e)}
 
-    async def monitor_and_respond_inquiries(self) -> List[Dict[str, Any]]:
+    async def monitor_and_respond_inquiries(self) -> list[dict[str, Any]]:
         """
         Monitorea Messenger inquiries y responde.
 
@@ -635,7 +677,9 @@ class FacebookComputerUseHandler:
 
             # 4. Responde cada uno
             for msg in messages:
-                await self.browser_utils.click_by_vision(f"Message from {msg.get('sender')}")
+                await self.browser_utils.click_by_vision(
+                    f"Message from {msg.get('sender')}"
+                )
 
                 # Genera respuesta
                 response = "Thanks for your interest!"
@@ -647,14 +691,15 @@ class FacebookComputerUseHandler:
 
             return messages
 
-        except Exception as e:
-            logger.error(f"Error checking messages: {str(e)}")
+        except Exception:
+            logger.exception("Error checking messages")
             return []
 
 
 # ============================================================================
 # WHATSAPP HANDLER — Direct Messaging
 # ============================================================================
+
 
 class WhatsAppComputerUseHandler:
     """
@@ -695,14 +740,16 @@ class WhatsAppComputerUseHandler:
             logger.info("Waiting for authentication...")
 
             # 3. Espera autenticación (puede tardar)
-            await self.browser_utils.wait_for_element("Chat list or Conversations", timeout=60)
+            await self.browser_utils.wait_for_element(
+                "Chat list or Conversations", timeout=60
+            )
 
             logger.info("WhatsApp Web authenticated")
             self.is_authenticated = True
             return True
 
-        except Exception as e:
-            logger.error(f"WhatsApp auth failed: {str(e)}")
+        except Exception:
+            logger.exception("WhatsApp auth failed")
             return False
 
     async def send_message(self, phone_number: str, message: str) -> bool:
@@ -725,7 +772,9 @@ class WhatsAppComputerUseHandler:
             await self.browser_utils.click_by_vision("New chat button or Search")
 
             # 2. Ingresa teléfono
-            await self.browser_utils.type_in_field("Search or phone field", phone_number)
+            await self.browser_utils.type_in_field(
+                "Search or phone field", phone_number
+            )
 
             # 3. Selecciona contacto
             await self.browser_utils.click_by_vision(f"Contact {phone_number}")
@@ -739,14 +788,14 @@ class WhatsAppComputerUseHandler:
             logger.info(f"Message sent to {phone_number}")
             return True
 
-        except Exception as e:
-            logger.error(f"Error sending WhatsApp message: {str(e)}")
+        except Exception:
+            logger.exception("Error sending WhatsApp message")
             return False
 
     async def send_product_catalog(
         self,
         phone_number: str,
-        products: List[Dict[str, Any]],
+        products: list[dict[str, Any]],
     ) -> bool:
         """
         Envía catálogo de productos formateado.
@@ -778,8 +827,8 @@ class WhatsAppComputerUseHandler:
             # Envía
             return await self.send_message(phone_number, catalog)
 
-        except Exception as e:
-            logger.error(f"Error sending catalog: {str(e)}")
+        except Exception:
+            logger.exception("Error sending catalog")
             return False
 
     async def lead_qualification_sequence(self, phone_number: str) -> bool:
@@ -813,14 +862,15 @@ class WhatsAppComputerUseHandler:
             logger.info(f"Lead qualification sequence completed: {phone_number}")
             return True
 
-        except Exception as e:
-            logger.error(f"Error in qualification sequence: {str(e)}")
+        except Exception:
+            logger.exception("Error in qualification sequence")
             return False
 
 
 # ============================================================================
 # EMAIL HANDLER — Gmail / Outlook
 # ============================================================================
+
 
 class EmailComputerUseHandler:
     """
@@ -846,9 +896,9 @@ class EmailComputerUseHandler:
 
             # 1. Navega a login
             if self.email_service == "gmail":
-                url = "https://mail.google.com"
+                pass
             else:
-                url = "https://outlook.office.com"
+                pass
 
             await self.browser_utils.screenshot_and_analyze()
 
@@ -864,8 +914,8 @@ class EmailComputerUseHandler:
             self.is_authenticated = True
             return True
 
-        except Exception as e:
-            logger.error(f"Email auth failed: {str(e)}")
+        except Exception:
+            logger.exception("Email auth failed")
             return False
 
     async def send_campaign_email(
@@ -873,7 +923,7 @@ class EmailComputerUseHandler:
         recipient: str,
         subject: str,
         body: str,
-        attachments: List[str] = None,
+        attachments: list[str] | None = None,
     ) -> bool:
         """
         Envía email individual.
@@ -918,15 +968,15 @@ class EmailComputerUseHandler:
             logger.info(f"Email sent to {recipient}")
             return True
 
-        except Exception as e:
-            logger.error(f"Error sending email: {str(e)}")
+        except Exception:
+            logger.exception("Error sending email")
             return False
 
     async def send_nurture_sequence(
         self,
         recipient: str,
         sequence_name: str,
-        emails: List[Dict[str, str]],
+        emails: list[dict[str, str]],
     ) -> int:
         """
         Envía secuencia de nutrición (3-5 emails espaciados en el tiempo).
@@ -961,17 +1011,20 @@ class EmailComputerUseHandler:
                 if success:
                     sent_count += 1
 
-            logger.info(f"Nurture sequence completed: {sent_count}/{len(emails)} emails sent")
+            logger.info(
+                f"Nurture sequence completed: {sent_count}/{len(emails)} emails sent"
+            )
             return sent_count
 
-        except Exception as e:
-            logger.error(f"Error in nurture sequence: {str(e)}")
+        except Exception:
+            logger.exception("Error in nurture sequence")
             return 0
 
 
 # ============================================================================
 # HANDLER FACTORY
 # ============================================================================
+
 
 class PlatformHandlerFactory:
     """Factory para crear handlers de plataforma."""

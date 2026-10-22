@@ -1,7 +1,10 @@
 """WhatsApp Business connector — Mensajes automáticos."""
 
-import aiohttp, logging
-from typing import Dict, List, Any
+import logging
+from typing import Any
+
+import aiohttp
+
 from .base_connector import BaseConnector, ConnectorType
 
 logger = logging.getLogger(__name__)
@@ -10,7 +13,7 @@ logger = logging.getLogger(__name__)
 class WhatsAppConnector(BaseConnector):
     """WhatsApp Business API integration."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         super().__init__("whatsapp", ConnectorType.MESSAGING, config)
         self.base_url = "https://graph.instagram.com/v18.0"
         self.access_token = config.get("access_token")
@@ -20,16 +23,18 @@ class WhatsAppConnector(BaseConnector):
         try:
             async with aiohttp.ClientSession() as session:
                 url = f"{self.base_url}/{self.phone_number_id}"
-                async with session.get(url, params={"access_token": self.access_token}) as resp:
+                async with session.get(
+                    url, params={"access_token": self.access_token}
+                ) as resp:
                     if resp.status == 200:
                         self.authenticated = True
                         return True
                     return False
-        except Exception as e:
-            logger.error(f"WhatsApp auth failed: {str(e)}")
+        except Exception:
+            logger.exception("WhatsApp auth failed")
             return False
 
-    async def send_message(self, recipient: str, message: str) -> Dict[str, Any]:
+    async def send_message(self, recipient: str, message: str) -> dict[str, Any]:
         """Envía mensaje WhatsApp."""
         try:
             payload = {
@@ -41,27 +46,34 @@ class WhatsAppConnector(BaseConnector):
 
             async with aiohttp.ClientSession() as session:
                 url = f"{self.base_url}/{self.phone_number_id}/messages"
-                async with session.post(url, json=payload, params={"access_token": self.access_token}) as resp:
+                async with session.post(
+                    url, json=payload, params={"access_token": self.access_token}
+                ) as resp:
                     if resp.status == 200:
                         data = await resp.json()
-                        logger.info(f"WhatsApp message sent: {data.get('messages', [{}])[0].get('id')}")
-                        return {"status": "sent", "message_id": data.get("messages", [{}])[0].get("id")}
+                        logger.info(
+                            f"WhatsApp message sent: {data.get('messages', [{}])[0].get('id')}"
+                        )
+                        return {
+                            "status": "sent",
+                            "message_id": data.get("messages", [{}])[0].get("id"),
+                        }
                     return {"status": "error"}
         except Exception as e:
-            logger.error(f"Error sending WhatsApp message: {str(e)}")
+            logger.exception("Error sending WhatsApp message")
             return {"status": "error", "error": str(e)}
 
-    async def list_products(self) -> List[Dict[str, Any]]:
+    async def list_products(self) -> list[dict[str, Any]]:
         return []
-    
-    async def create_listing(self, product: Dict[str, Any]) -> Dict[str, Any]:
+
+    async def create_listing(self, product: dict[str, Any]) -> dict[str, Any]:
         return {"status": "not_applicable"}
-    
-    async def get_orders(self) -> List[Dict[str, Any]]:
+
+    async def get_orders(self) -> list[dict[str, Any]]:
         return []
-    
-    async def create_campaign(self, campaign: Dict[str, Any]) -> Dict[str, Any]:
+
+    async def create_campaign(self, campaign: dict[str, Any]) -> dict[str, Any]:
         return {"status": "not_applicable"}
-    
-    async def get_metrics(self) -> Dict[str, Any]:
+
+    async def get_metrics(self) -> dict[str, Any]:
         return {}

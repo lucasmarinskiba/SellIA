@@ -25,7 +25,7 @@ the gap out loud.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import func, select
@@ -66,7 +66,9 @@ async def _attribution_started_at(db: AsyncSession, conversation_ids: list[Any])
         return None
 
 
-async def _members(db: AsyncSession, business_id: uuid.UUID) -> dict[uuid.UUID, dict[str, Any]]:
+async def _members(
+    db: AsyncSession, business_id: uuid.UUID
+) -> dict[uuid.UUID, dict[str, Any]]:
     """Everyone who can act on this business: the owner plus its members."""
     from app.domains.businesses.models import Business
     from app.domains.users.models import User
@@ -109,12 +111,14 @@ async def _members(db: AsyncSession, business_id: uuid.UUID) -> dict[uuid.UUID, 
     return people
 
 
-async def board(db: AsyncSession, business_id: uuid.UUID, days: int = 30) -> dict[str, Any]:
+async def board(
+    db: AsyncSession, business_id: uuid.UUID, days: int = 30
+) -> dict[str, Any]:
     """One row per person, with the denominators and the gaps stated."""
     from app.domains.channels.models import Conversation, Message, MessageDirection
     from app.domains.data_science.stats import MIN_TO_READ, median
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     since = now - timedelta(days=days)
     people = await _members(db, business_id)
     if not people:
@@ -153,8 +157,10 @@ async def board(db: AsyncSession, business_id: uuid.UUID, days: int = 30) -> dic
     if conversations:
         msg_result = await db.execute(
             select(
-                Message.conversation_id, Message.direction,
-                Message.extra_data, Message.created_at,
+                Message.conversation_id,
+                Message.direction,
+                Message.extra_data,
+                Message.created_at,
             )
             .where(
                 Message.conversation_id.in_(list(conversations)),
@@ -196,7 +202,9 @@ async def board(db: AsyncSession, business_id: uuid.UUID, days: int = 30) -> dic
         from app.domains.crm.models import Deal
 
         deal_result = await db.execute(
-            select(Deal.assigned_to_user_id, Deal.status).where(Deal.business_id == business_id)
+            select(Deal.assigned_to_user_id, Deal.status).where(
+                Deal.business_id == business_id
+            )
         )
         for assignee, deal_status in deal_result.all():
             key = str(assignee) if assignee else None
@@ -214,25 +222,32 @@ async def board(db: AsyncSession, business_id: uuid.UUID, days: int = 30) -> dic
         latencies = bucket.pop("latencies")
         conv_ids = bucket.pop("conversation_ids")
         med = median(latencies)
-        rows.append({
-            **bucket,
-            "conversations": len(conv_ids),
-            "median_first_reply_minutes": round(med, 1) if med is not None else None,
-            "first_reply_sample": len(latencies),
-            # A median over two replies is not a speed; the UI greys it out.
-            "speed_is_readable": len(latencies) >= MIN_TO_READ,
-        })
+        rows.append(
+            {
+                **bucket,
+                "conversations": len(conv_ids),
+                "median_first_reply_minutes": (
+                    round(med, 1) if med is not None else None
+                ),
+                "first_reply_sample": len(latencies),
+                # A median over two replies is not a speed; the UI greys it out.
+                "speed_is_readable": len(latencies) >= MIN_TO_READ,
+            }
+        )
 
     rows.sort(key=lambda row: (-row["replies"], row["name"].lower()))
 
     waiting = sum(
-        1 for extra in conversations.values()
+        1
+        for extra in conversations.values()
         if isinstance(extra, dict) and extra.get("awaiting_human")
     )
 
     gaps: list[str] = [
-        "La facturación no se reparte por persona: las órdenes guardan la conversación, "
-        "no quién la cerró. Repartir plata entre integrantes sería inventarlo.",
+        (
+            "La facturación no se reparte por persona: las órdenes guardan la conversación, "
+            "no quién la cerró. Repartir plata entre integrantes sería inventarlo."
+        ),
     ]
     if unattributed_replies:
         gaps.append(
@@ -268,7 +283,9 @@ async def board(db: AsyncSession, business_id: uuid.UUID, days: int = 30) -> dic
         "unattributed_replies": unattributed_replies,
         "conversations_waiting": waiting,
         "gaps": gaps,
-        "attribution_since": started_at.date().isoformat() if started_at is not None else None,
+        "attribution_since": (
+            started_at.date().isoformat() if started_at is not None else None
+        ),
         "period_days": days,
         "generated_at": now.isoformat(),
     }

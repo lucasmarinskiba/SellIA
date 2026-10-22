@@ -5,17 +5,19 @@ and tracks conversion rates end-to-end.
 """
 
 import uuid
-from datetime import datetime, timezone
-from typing import Optional, Any
+from typing import Any
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.growth.models import LeadMagnet, LeadMagnetFormat, InboundLead, InboundLeadSource
-from app.domains.agents.ai_reply import generate_raw_ai_response
-from app.domains.outreach.service import FatigueScoringService
-from app.core.logger import get_logger
 from app.core.events import event_bus
+from app.core.logger import get_logger
+from app.domains.agents.ai_reply import generate_raw_ai_response
+from app.domains.growth.models import (
+    LeadMagnet,
+    LeadMagnetFormat,
+)
+from app.domains.outreach.service import FatigueScoringService
 
 logger = get_logger(__name__)
 
@@ -35,13 +37,17 @@ class LeadMagnetEngine:
         topic: str,
         magnet_format: LeadMagnetFormat = LeadMagnetFormat.CHEAT_SHEET,
         target_audience: str = "",
-        campaign_id: uuid.UUID = None,
+        campaign_id: uuid.UUID | None = None,
     ) -> LeadMagnet:
         """Generate a complete lead magnet with AI."""
         # Generate content
-        content = await self._generate_content(business_id, topic, magnet_format, target_audience)
+        content = await self._generate_content(
+            business_id, topic, magnet_format, target_audience
+        )
         landing_copy = await self._generate_landing_copy(business_id, topic, content)
-        delivery_msg = await self._generate_delivery_message(business_id, topic, magnet_format)
+        delivery_msg = await self._generate_delivery_message(
+            business_id, topic, magnet_format
+        )
 
         magnet = LeadMagnet(
             business_id=business_id,
@@ -65,7 +71,9 @@ class LeadMagnetEngine:
         self.db.add(magnet)
         await self.db.commit()
         await self.db.refresh(magnet)
-        logger.info(f"Generated lead magnet {magnet.id} ({magnet_format.value}) for business {business_id}")
+        logger.info(
+            f"Generated lead magnet {magnet.id} ({magnet_format.value}) for business {business_id}"
+        )
         return magnet
 
     async def _generate_content(
@@ -127,20 +135,31 @@ El lead magnet debe:
                 temperature=0.8,
             )
             import json
+
             parsed = json.loads(response or "{}")
             return parsed
-        except Exception as e:
-            logger.error(f"Failed to generate lead magnet content: {e}")
+        except Exception:
+            logger.exception("Failed to generate lead magnet content")
             return {
                 "title": f"Guía gratuita: {topic}",
                 "description": f"Descubre cómo resolver {topic} con esta guía práctica.",
-                "sections": ["Introducción", "Los 5 pasos clave", "Checklist de acción"],
-                "key_takeaways": ["Aprende la estrategia paso a paso", "Evita errores comunes", "Aplica inmediatamente"],
+                "sections": [
+                    "Introducción",
+                    "Los 5 pasos clave",
+                    "Checklist de acción",
+                ],
+                "key_takeaways": [
+                    "Aprende la estrategia paso a paso",
+                    "Evita errores comunes",
+                    "Aplica inmediatamente",
+                ],
                 "preview_text": f"En esta guía descubrirás los secretos para dominar {topic}.",
                 "cta": "Descarga gratis ahora",
             }
 
-    async def _generate_landing_copy(self, business_id: uuid.UUID, topic: str, content: dict) -> str:
+    async def _generate_landing_copy(
+        self, business_id: uuid.UUID, topic: str, content: dict
+    ) -> str:
         """Generate conversion-optimized landing page copy."""
         system_prompt = "Eres un copywriter experto en landing pages. Escribes copy que convierte visitantes en leads."
         user_prompt = f"""Escribe el copy de una landing page para un lead magnet gratuito sobre: {topic}
@@ -158,19 +177,24 @@ Incluye:
 Máximo 200 palabras. Tono: conversacional, urgencia suave, sin ser agresivo."""
 
         try:
-            return await generate_raw_ai_response(
-                db=self.db,
-                business_id=business_id,
-                system_prompt=system_prompt,
-                user_prompt=user_prompt,
-                max_tokens=800,
-                temperature=0.7,
-            ) or ""
-        except Exception as e:
-            logger.error(f"Failed to generate landing copy: {e}")
+            return (
+                await generate_raw_ai_response(
+                    db=self.db,
+                    business_id=business_id,
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    max_tokens=800,
+                    temperature=0.7,
+                )
+                or ""
+            )
+        except Exception:
+            logger.exception("Failed to generate landing copy")
             return ""
 
-    async def _generate_delivery_message(self, business_id: uuid.UUID, topic: str, magnet_format: LeadMagnetFormat) -> str:
+    async def _generate_delivery_message(
+        self, business_id: uuid.UUID, topic: str, magnet_format: LeadMagnetFormat
+    ) -> str:
         """Generate the auto-delivery DM message."""
         system_prompt = "Eres un experto en mensajes de WhatsApp/Instagram DM. Escribes mensajes cortos, personales, que generan valor inmediato."
         user_prompt = f"""Escribe un mensaje de DM para entregar un lead magnet gratuito sobre: {topic}
@@ -186,16 +210,19 @@ Ejemplo de tono: "¡Hola [nombre]! Aquí tienes la guía que pediste. Espero que
 """
 
         try:
-            return await generate_raw_ai_response(
-                db=self.db,
-                business_id=business_id,
-                system_prompt=system_prompt,
-                user_prompt=user_prompt,
-                max_tokens=400,
-                temperature=0.7,
-            ) or ""
-        except Exception as e:
-            logger.error(f"Failed to generate delivery message: {e}")
+            return (
+                await generate_raw_ai_response(
+                    db=self.db,
+                    business_id=business_id,
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    max_tokens=400,
+                    temperature=0.7,
+                )
+                or ""
+            )
+        except Exception:
+            logger.exception("Failed to generate delivery message")
             return f"¡Hola! Aquí tienes la guía sobre {topic} que solicitaste. Espero que te sea de gran ayuda."
 
     # ========== Delivery ==========
@@ -220,6 +247,7 @@ Ejemplo de tono: "¡Hola [nombre]! Aquí tienes la guía que pediste. Espero que
 
         # Send message
         from app.domains.channels.services import send_outbound_message
+
         message_text = magnet.delivery_message or f"¡Hola! Aquí tienes: {magnet.title}"
 
         try:
@@ -230,7 +258,7 @@ Ejemplo de tono: "¡Hola [nombre]! Aquí tienes la guía que pediste. Espero que
                 content_type="text",
             )
         except Exception as e:
-            logger.error(f"Failed to send lead magnet message: {e}")
+            logger.exception("Failed to send lead magnet message")
             return {"status": "error", "reason": str(e)}
 
         # Update metrics
@@ -238,13 +266,18 @@ Ejemplo de tono: "¡Hola [nombre]! Aquí tienes la guía que pediste. Espero que
         await self.db.commit()
 
         # Emit event
-        await event_bus.emit("lead_magnet.delivered", {
-            "business_id": str(magnet.business_id),
-            "magnet_id": str(magnet_id),
-            "conversation_id": str(conversation_id),
-        })
+        await event_bus.emit(
+            "lead_magnet.delivered",
+            {
+                "business_id": str(magnet.business_id),
+                "magnet_id": str(magnet_id),
+                "conversation_id": str(conversation_id),
+            },
+        )
 
-        logger.info(f"Delivered lead magnet {magnet_id} to conversation {conversation_id}")
+        logger.info(
+            f"Delivered lead magnet {magnet_id} to conversation {conversation_id}"
+        )
         return {"status": "delivered", "magnet_id": str(magnet_id)}
 
     async def track_conversion(
@@ -259,17 +292,22 @@ Ejemplo de tono: "¡Hola [nombre]! Aquí tienes la guía que pediste. Espero que
 
         magnet.times_converted += 1
         if magnet.times_delivered > 0:
-            magnet.conversion_rate = (magnet.times_converted / magnet.times_delivered) * 100
+            magnet.conversion_rate = (
+                magnet.times_converted / magnet.times_delivered
+            ) * 100
 
         await self.db.commit()
         await self.db.refresh(magnet)
 
         # Emit event
-        await event_bus.emit("lead_magnet.converted", {
-            "business_id": str(magnet.business_id),
-            "magnet_id": str(magnet_id),
-            "conversation_id": str(conversation_id),
-        })
+        await event_bus.emit(
+            "lead_magnet.converted",
+            {
+                "business_id": str(magnet.business_id),
+                "magnet_id": str(magnet_id),
+                "conversation_id": str(conversation_id),
+            },
+        )
 
         return magnet
 
@@ -293,13 +331,18 @@ Ejemplo de tono: "¡Hola [nombre]! Aquí tienes la guía que pediste. Espero que
             "is_active": magnet.is_active,
         }
 
-    async def get_top_performing_magnets(self, business_id: uuid.UUID, limit: int = 5) -> list:
+    async def get_top_performing_magnets(
+        self, business_id: uuid.UUID, limit: int = 5
+    ) -> list:
         """Get top performing lead magnets by conversion rate."""
         result = await self.db.execute(
-            select(LeadMagnet).where(
+            select(LeadMagnet)
+            .where(
                 LeadMagnet.business_id == business_id,
                 LeadMagnet.is_active == True,
-            ).order_by(desc(LeadMagnet.conversion_rate)).limit(limit)
+            )
+            .order_by(desc(LeadMagnet.conversion_rate))
+            .limit(limit)
         )
         magnets = result.scalars().all()
         return [
@@ -315,7 +358,7 @@ Ejemplo de tono: "¡Hola [nombre]! Aquí tienes la guía que pediste. Espero que
 
     # ========== Helpers ==========
 
-    async def _get_magnet(self, magnet_id: uuid.UUID) -> Optional[LeadMagnet]:
+    async def _get_magnet(self, magnet_id: uuid.UUID) -> LeadMagnet | None:
         result = await self.db.execute(
             select(LeadMagnet).where(LeadMagnet.id == magnet_id)
         )

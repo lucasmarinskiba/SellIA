@@ -1,8 +1,7 @@
 """Retention Flywheel — Onboarding, activation, habit loops, win-backs."""
 
 import logging
-from typing import Dict, List, Any
-from datetime import datetime, timedelta
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +10,7 @@ class RetentionFlywheel:
     """Maximize retention through flywheel."""
 
     # Onboarding stages
-    ONBOARDING_STAGES = {
+    ONBOARDING_STAGES: ClassVar[dict] = {
         "welcome": {"duration_hours": 1, "goal": "First impression"},
         "setup": {"duration_hours": 2, "goal": "Configure basics"},
         "first_action": {"duration_hours": 1, "goal": "First win"},
@@ -19,7 +18,7 @@ class RetentionFlywheel:
     }
 
     # Activation triggers
-    ACTIVATION_TRIGGERS = {
+    ACTIVATION_TRIGGERS: ClassVar[dict] = {
         "first_successful_outcome": 0.3,  # 30% conversion
         "shared_with_friend": 0.25,  # 25% conversion
         "customized_settings": 0.4,  # 40% conversion
@@ -29,7 +28,7 @@ class RetentionFlywheel:
     @staticmethod
     def design_onboarding_flow(
         product_type: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Design optimal onboarding sequence."""
 
         flows = {
@@ -51,8 +50,8 @@ class RetentionFlywheel:
 
     @staticmethod
     def identify_activation_moment(
-        user_actions: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        user_actions: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """Identify when user becomes activated."""
 
         activation_actions = [
@@ -84,7 +83,7 @@ class RetentionFlywheel:
         trigger: str,
         action: str,
         reward: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Design habit loop (from Nir Eyal's Hooked)."""
 
         return {
@@ -106,7 +105,7 @@ class RetentionFlywheel:
     def predict_churn_risk(
         days_since_last_action: int,
         engagement_score: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Predict if user is at risk of churning."""
 
         churn_risk = 0
@@ -126,7 +125,11 @@ class RetentionFlywheel:
 
         return {
             "churn_risk": round(min(1.0, churn_risk), 2),
-            "risk_level": "critical" if churn_risk > 0.6 else "high" if churn_risk > 0.3 else "low",
+            "risk_level": (
+                "critical"
+                if churn_risk > 0.6
+                else "high" if churn_risk > 0.3 else "low"
+            ),
             "days_inactive": days_since_last_action,
             "engagement_score": engagement_score,
             "recommended_actions": actions,
@@ -135,7 +138,7 @@ class RetentionFlywheel:
     @staticmethod
     def design_winback_campaign(
         inactive_users: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Design win-back campaign for inactive users."""
 
         return {
@@ -166,7 +169,7 @@ class RetentionFlywheel:
     def calculate_lifetime_value(
         monthly_revenue_per_user: float,
         monthly_churn_rate: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate customer LTV."""
 
         months = 1 / monthly_churn_rate if monthly_churn_rate > 0 else 120
@@ -178,7 +181,11 @@ class RetentionFlywheel:
             "monthly_churn_rate": round(monthly_churn_rate * 100, 1),
             "average_lifetime_months": round(months, 1),
             "lifetime_value": round(ltv, 2),
-            "implication": "Focus on retention" if monthly_churn_rate > 0.15 else "Acquisition leverage",
+            "implication": (
+                "Focus on retention"
+                if monthly_churn_rate > 0.15
+                else "Acquisition leverage"
+            ),
         }
 
     @staticmethod
@@ -187,7 +194,7 @@ class RetentionFlywheel:
         retained_week_1: int,
         retained_week_4: int,
         retention_improvement: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Measure effectiveness of retention initiatives."""
 
         return {
@@ -196,5 +203,9 @@ class RetentionFlywheel:
             "week_4_retention": round(retained_week_4 / cohort_size * 100, 1),
             "improvement_from_baseline": round(retention_improvement * 100, 1),
             "ltv_impact": f"+{round(retention_improvement * 15, 1)}%",  # Rough estimate
-            "recommendation": "Scale retention initiatives" if retention_improvement > 0.1 else "Test more variations",
+            "recommendation": (
+                "Scale retention initiatives"
+                if retention_improvement > 0.1
+                else "Test more variations"
+            ),
         }

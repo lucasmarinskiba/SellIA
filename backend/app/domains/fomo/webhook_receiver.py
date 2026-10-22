@@ -1,12 +1,13 @@
 """FOMO Webhook Receiver - Ingest real-time events from customer websites"""
 
-from datetime import datetime
-from typing import Dict, List, Any, Optional
-from enum import Enum
 import hashlib
 import hmac
-import json
+from datetime import datetime
 from decimal import Decimal
+from enum import Enum
+from typing import Any
+
+from app.core.clock import utc_now
 
 
 class WebhookEventType(str, Enum):
@@ -28,28 +29,24 @@ class WebhookPayload:
     """Validate and parse incoming webhook payloads"""
 
     @staticmethod
-    def validate_signature(
-        payload: str,
-        signature: str,
-        secret: str
-    ) -> bool:
+    def validate_signature(payload: str, signature: str, secret: str) -> bool:
         """Verify webhook signature (HMAC-SHA256)"""
         expected = hmac.new(
-            secret.encode(),
-            payload.encode(),
-            hashlib.sha256
+            secret.encode(), payload.encode(), hashlib.sha256
         ).hexdigest()
         return hmac.compare_digest(signature, expected)
 
     @staticmethod
-    def parse_event(data: Dict[str, Any]) -> Dict[str, Any]:
+    def parse_event(data: dict[str, Any]) -> dict[str, Any]:
         """Parse and normalize webhook event"""
         return {
             "event_type": data.get("type"),
             "campaign_id": data.get("campaign_id"),
             "user_id": data.get("user_id"),
             "session_id": data.get("session_id"),
-            "timestamp": datetime.fromisoformat(data.get("timestamp", datetime.utcnow().isoformat())),
+            "timestamp": datetime.fromisoformat(
+                data.get("timestamp", utc_now().isoformat())
+            ),
             "data": {
                 "product_id": data.get("product_id"),
                 "product_name": data.get("product_name"),
@@ -63,7 +60,7 @@ class WebhookPayload:
                 "ip_address": data.get("ip_address"),
                 "user_agent": data.get("user_agent"),
                 "custom_data": data.get("custom_data", {}),
-            }
+            },
         }
 
 
@@ -71,7 +68,7 @@ class WebhookProcessor:
     """Process incoming FOMO webhook events"""
 
     @staticmethod
-    async def process_visitor_arrived(event: Dict[str, Any]) -> Dict[str, Any]:
+    async def process_visitor_arrived(event: dict[str, Any]) -> dict[str, Any]:
         """Handle visitor.arrived event"""
         return {
             "event_id": event.get("session_id"),
@@ -84,11 +81,11 @@ class WebhookProcessor:
             "analytics": {
                 "impressions": 1,
                 "timestamp": event.get("timestamp"),
-            }
+            },
         }
 
     @staticmethod
-    async def process_purchase_completed(event: Dict[str, Any]) -> Dict[str, Any]:
+    async def process_purchase_completed(event: dict[str, Any]) -> dict[str, Any]:
         """Handle purchase.completed event - trigger purchase notification widget"""
         data = event.get("data", {})
         return {
@@ -109,11 +106,11 @@ class WebhookProcessor:
                 "conversions": 1,
                 "revenue": float(data.get("order_value", 0)),
                 "timestamp": event.get("timestamp"),
-            }
+            },
         }
 
     @staticmethod
-    async def process_cart_abandoned(event: Dict[str, Any]) -> Dict[str, Any]:
+    async def process_cart_abandoned(event: dict[str, Any]) -> dict[str, Any]:
         """Handle cart.abandoned event - trigger recovery automations"""
         data = event.get("data", {})
         return {
@@ -149,11 +146,11 @@ class WebhookProcessor:
                     "channel": "sms",
                     "template": "cart_abandoned_3_final_discount",
                 },
-            ]
+            ],
         }
 
     @staticmethod
-    async def process_cart_recovered(event: Dict[str, Any]) -> Dict[str, Any]:
+    async def process_cart_recovered(event: dict[str, Any]) -> dict[str, Any]:
         """Handle cart.recovered event - celebrate recovery"""
         data = event.get("data", {})
         return {
@@ -165,13 +162,15 @@ class WebhookProcessor:
             "analytics": {
                 "conversions": 1,
                 "revenue": float(data.get("order_value", 0)),
-                "recovery_source": data.get("recovery_source", "unknown"),  # email/sms/direct
+                "recovery_source": data.get(
+                    "recovery_source", "unknown"
+                ),  # email/sms/direct
                 "timestamp": event.get("timestamp"),
-            }
+            },
         }
 
     @staticmethod
-    async def process_page_viewed(event: Dict[str, Any]) -> Dict[str, Any]:
+    async def process_page_viewed(event: dict[str, Any]) -> dict[str, Any]:
         """Handle page.viewed event"""
         data = event.get("data", {})
         return {
@@ -184,11 +183,11 @@ class WebhookProcessor:
             "analytics": {
                 "impressions": 1,
                 "timestamp": event.get("timestamp"),
-            }
+            },
         }
 
     @staticmethod
-    async def process_checkout_completed(event: Dict[str, Any]) -> Dict[str, Any]:
+    async def process_checkout_completed(event: dict[str, Any]) -> dict[str, Any]:
         """Handle checkout.completed event"""
         data = event.get("data", {})
         return {
@@ -202,7 +201,7 @@ class WebhookProcessor:
                 "revenue": float(data.get("order_value", 0)),
                 "average_order_value": float(data.get("order_value", 0)),
                 "timestamp": event.get("timestamp"),
-            }
+            },
         }
 
 
@@ -210,7 +209,7 @@ class WebhookQuota:
     """Rate limiting for webhooks"""
 
     @staticmethod
-    def get_quota_limits(plan_tier: str) -> Dict[str, int]:
+    def get_quota_limits(plan_tier: str) -> dict[str, int]:
         """Get webhook quota limits by plan tier"""
         limits = {
             "starter": {
@@ -247,7 +246,7 @@ class WebhookQuota:
         plan_tier: str,
         events_today: int,
         events_this_minute: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Check if webhook quota exceeded"""
         limits = WebhookQuota.get_quota_limits(plan_tier)
 
@@ -256,7 +255,11 @@ class WebhookQuota:
 
         return {
             "allowed": not (daily_exceeded or minute_exceeded),
-            "reason": "daily_limit" if daily_exceeded else ("minute_limit" if minute_exceeded else None),
+            "reason": (
+                "daily_limit"
+                if daily_exceeded
+                else ("minute_limit" if minute_exceeded else None)
+            ),
             "current_daily": events_today,
             "limit_daily": limits["events_per_day"],
             "current_minute": events_this_minute,
@@ -268,14 +271,34 @@ class WebhookRetry:
     """Retry logic for failed webhook deliveries"""
 
     @staticmethod
-    def get_retry_schedule() -> List[Dict[str, Any]]:
+    def get_retry_schedule() -> list[dict[str, Any]]:
         """Get exponential backoff retry schedule"""
         return [
-            {"attempt": 1, "delay_seconds": 5, "description": "First retry after 5 seconds"},
-            {"attempt": 2, "delay_seconds": 30, "description": "Second retry after 30 seconds"},
-            {"attempt": 3, "delay_seconds": 300, "description": "Third retry after 5 minutes"},
-            {"attempt": 4, "delay_seconds": 1800, "description": "Fourth retry after 30 minutes"},
-            {"attempt": 5, "delay_seconds": 3600, "description": "Fifth retry after 1 hour"},
+            {
+                "attempt": 1,
+                "delay_seconds": 5,
+                "description": "First retry after 5 seconds",
+            },
+            {
+                "attempt": 2,
+                "delay_seconds": 30,
+                "description": "Second retry after 30 seconds",
+            },
+            {
+                "attempt": 3,
+                "delay_seconds": 300,
+                "description": "Third retry after 5 minutes",
+            },
+            {
+                "attempt": 4,
+                "delay_seconds": 1800,
+                "description": "Fourth retry after 30 minutes",
+            },
+            {
+                "attempt": 5,
+                "delay_seconds": 3600,
+                "description": "Fifth retry after 1 hour",
+            },
         ]
 
     @staticmethod

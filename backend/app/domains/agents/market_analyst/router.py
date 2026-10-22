@@ -8,14 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.agents.market_analyst import service as market_service
 from app.domains.agents.market_analyst.schemas import (
     MarketAnalysisJobCreate,
     MarketAnalysisJobOut,
-    MarketAnalysisJobDetailOut,
     MarketReportOut,
 )
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/market-analyst", tags=["market-analyst"])
 
@@ -25,7 +24,9 @@ async def get_db():
         yield session
 
 
-@router.post("/analyze", response_model=MarketAnalysisJobOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/analyze", response_model=MarketAnalysisJobOut, status_code=status.HTTP_201_CREATED
+)
 async def start_analysis(
     data: MarketAnalysisJobCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -34,7 +35,9 @@ async def start_analysis(
     """Inicia un análisis de mercado para el negocio del usuario."""
     # Se asume que el primer negocio del usuario es el activo; ajustar si se requiere otro criterio
     from sqlalchemy import select
+
     from app.domains.businesses.models import Business
+
     result = await db.execute(
         select(Business).where(Business.user_id == current_user.id).limit(1)
     )
@@ -58,7 +61,9 @@ async def list_jobs(
 ):
     """Lista los jobs de análisis de mercado del negocio."""
     from sqlalchemy import select
+
     from app.domains.businesses.models import Business
+
     result = await db.execute(
         select(Business).where(Business.user_id == current_user.id).limit(1)
     )

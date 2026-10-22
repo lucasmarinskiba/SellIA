@@ -5,15 +5,16 @@ Genera respuestas automáticas para tickets de soporte basándose en FAQ y Knowl
 Si la confianza es baja, sugiere escalar a humano.
 """
 
+import logging
 import uuid
-from typing import Optional, Tuple
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.support.service import SupportService
-from app.domains.support.kb_search import search_kb_and_faq
 from app.domains.agents.ai_reply import generate_raw_ai_response
+from app.domains.support.kb_search import search_kb_and_faq
+from app.domains.support.service import SupportService
 
+logger = logging.getLogger(__name__)
 
 CONFIDENCE_THRESHOLD = 0.75
 MAX_AI_MESSAGES_BEFORE_ESCALATE = 2
@@ -25,8 +26,8 @@ async def generate_ai_response(
     ticket_title: str,
     ticket_description: str,
     conversation_history: list[dict],
-    user_id: Optional[uuid.UUID] = None,
-) -> Tuple[Optional[str], float]:
+    user_id: uuid.UUID | None = None,
+) -> tuple[str | None, float]:
     """
     Genera una respuesta AI para un ticket de soporte.
 
@@ -37,7 +38,9 @@ async def generate_ai_response(
         (response_text, confidence) — confidence 0.0 means "escalate to human"
     """
     # 1. Search FAQ and KB for relevant content
-    kb_results = await search_kb_and_faq(db, business_id, ticket_title + " " + ticket_description)
+    kb_results = await search_kb_and_faq(
+        db, business_id, ticket_title + " " + ticket_description
+    )
 
     context = ""
     if kb_results:
@@ -98,16 +101,21 @@ Provide a helpful response. If you cannot help, respond with exactly "ESCALATE".
         # Quality Gate check
         if user_id:
             try:
-                from app.domains.consumo.service import get_or_create_quality_gate_config
+                from app.domains.consumo.service import (
+                    get_or_create_quality_gate_config,
+                )
+
                 qg = await get_or_create_quality_gate_config(db, user_id)
                 if qg.enabled and confidence < qg.min_confidence_threshold:
                     # Store as draft suggestion but don't send to user
                     return None, confidence
             except Exception:
-                pass  # If quality gate fails, proceed normally
+                logger.exception("generate_ai_response: error inesperado")
+                # If quality gate fails, proceed normally
 
         return response.strip(), confidence
     except Exception:
+        logger.exception("generate_ai_response: error inesperado")
         return None, 0.0
 
 
@@ -128,7 +136,7 @@ async def should_escalate(
     user_msgs = [m for m in messages if m.sender_type.value == "user"]
     ai_msgs = [m for m in messages if m.sender_type.value == "ai"]
 
-    if len(ai_msgs) >= MAX_AI_MESSAGES_BEFORE_ESCALATE and len(user_msgs) > len(ai_msgs):
-        return True
-
-    return False
+    return bool(
+        len(ai_msgs) >= MAX_AI_MESSAGES_BEFORE_ESCALATE
+        and len(user_msgs) > len(ai_msgs)
+    )

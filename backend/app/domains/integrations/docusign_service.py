@@ -1,10 +1,8 @@
 """Docusign integration for contract automation."""
 
-import httpx
 import logging
-from typing import Optional, Dict, Any, List
 from datetime import datetime
-import base64
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +10,9 @@ logger = logging.getLogger(__name__)
 class DocusignService:
     """Docusign eSignature integration."""
 
-    def __init__(self, account_id: str, api_key: str, base_uri: str = "https://demo.docusign.net"):
+    def __init__(
+        self, account_id: str, api_key: str, base_uri: str = "https://demo.docusign.net"
+    ):
         """
         Initialize Docusign service.
 
@@ -45,7 +45,7 @@ class DocusignService:
         payment_terms: str,
         company_name: str,
         signing_deadline_days: int = 7,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Send contract to recipient for e-signature.
 
@@ -64,7 +64,7 @@ class DocusignService:
         """
         try:
             # Build envelope request
-            envelope_data = {
+            {
                 "emailSubject": f"Contract for Signature: {contract_name}",
                 "emailBlurb": f"Please review and sign the agreement for {company_name}. Annual value: ${annual_price:,.0f}.",
                 "documents": [
@@ -106,15 +106,17 @@ class DocusignService:
                 "status": "sent",
                 "recipient_email": recipient_email,
                 "signing_link": f"https://demo.docusign.net/signing/envelope/{datetime.now().timestamp()}",
-                "created_at": datetime.utcnow().isoformat(),
-                "deadline": (datetime.utcnow() + timedelta(days=signing_deadline_days)).isoformat(),
+                "created_at": utc_now().isoformat(),
+                "deadline": (
+                    utc_now() + timedelta(days=signing_deadline_days)
+                ).isoformat(),
             }
 
-        except Exception as e:
-            logger.error(f"Docusign send failed: {e}")
+        except Exception:
+            logger.exception("Docusign send failed")
             return None
 
-    async def get_signature_status(self, envelope_id: str) -> Optional[Dict[str, Any]]:
+    async def get_signature_status(self, envelope_id: str) -> dict[str, Any] | None:
         """Get signature status of envelope."""
         try:
             # In production, GET from Docusign API
@@ -124,7 +126,7 @@ class DocusignService:
             return {
                 "envelope_id": envelope_id,
                 "status": "signed",  # signed, sent, delivered, declined
-                "signed_at": datetime.utcnow().isoformat(),
+                "signed_at": utc_now().isoformat(),
                 "signers": [
                     {
                         "email": "john@company.com",
@@ -134,11 +136,11 @@ class DocusignService:
                 ],
             }
 
-        except Exception as e:
-            logger.error(f"Docusign status check failed: {e}")
+        except Exception:
+            logger.exception("Docusign status check failed")
             return None
 
-    async def download_signed_document(self, envelope_id: str) -> Optional[bytes]:
+    async def download_signed_document(self, envelope_id: str) -> bytes | None:
         """Download signed PDF from Docusign."""
         try:
             # In production, GET document from Docusign API
@@ -146,9 +148,11 @@ class DocusignService:
             logger.info(f"Downloading signed document: {envelope_id}")
             return b"PDF_CONTENT_HERE"
 
-        except Exception as e:
-            logger.error(f"Docusign download failed: {e}")
+        except Exception:
+            logger.exception("Docusign download failed")
             return None
 
 
 from datetime import timedelta
+
+from app.core.clock import utc_now

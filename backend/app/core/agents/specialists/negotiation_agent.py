@@ -10,15 +10,15 @@ Specialties:
 """
 
 import logging
-from typing import Dict, List, Any, Optional, Tuple
 from enum import Enum
-from datetime import datetime
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
 
 class NegotiationType(str, Enum):
     """Types of negotiations."""
+
     CUSTOMER_SALES = "customer_sales"  # Negotiating with customer to close deal
     SUPPLIER = "supplier"  # Negotiating with supplier for better terms
     EMPLOYMENT = "employment"  # Salary, benefits negotiations
@@ -29,6 +29,7 @@ class NegotiationType(str, Enum):
 
 class NegotiationPhase(str, Enum):
     """Phases of negotiation."""
+
     PREPARATION = "preparation"
     OPENING = "opening"
     INFORMATION_EXCHANGE = "information_exchange"
@@ -40,7 +41,7 @@ class NegotiationPhase(str, Enum):
 class NegotiationAgent:
     """Expert in negotiation strategy and tactics."""
 
-    NEGOTIATION_FRAMEWORKS = {
+    NEGOTIATION_FRAMEWORKS: ClassVar[dict] = {
         "batna": {
             "name": "BATNA (Best Alternative to Negotiated Agreement)",
             "description": "Your best option if negotiation fails",
@@ -59,7 +60,6 @@ class NegotiationAgent:
             ],
             "example": "If supplier won't reduce price: find alternative supplier",
         },
-
         "anchoring": {
             "name": "Anchoring",
             "description": "First number mentioned influences final price",
@@ -77,7 +77,6 @@ class NegotiationAgent:
                 "Suggest midpoint if both anchors reasonable",
             ],
         },
-
         "zone_of_possible_agreement": {
             "name": "ZOPA (Zone of Possible Agreement)",
             "description": "Range where both parties can agree",
@@ -90,7 +89,6 @@ class NegotiationAgent:
             },
             "strategy": "Expand ZOPA by finding shared interests",
         },
-
         "win_win": {
             "name": "Win-Win (Integrative) Negotiation",
             "description": "Create value for both parties",
@@ -108,7 +106,6 @@ class NegotiationAgent:
             ],
             "example": "Buyer wants lower price, seller wants volume - offer volume discount",
         },
-
         "concessions": {
             "name": "Concessions Strategy",
             "description": "How to make and request concessions",
@@ -132,7 +129,7 @@ class NegotiationAgent:
         },
     }
 
-    NEGOTIATION_TACTICS = {
+    NEGOTIATION_TACTICS: ClassVar[dict] = {
         "information_gathering": {
             "description": "Understand other party's position",
             "questions": [
@@ -150,7 +147,6 @@ class NegotiationAgent:
                 "References and past deals",
             ],
         },
-
         "active_listening": {
             "description": "Understand what's really important",
             "techniques": [
@@ -167,7 +163,6 @@ class NegotiationAgent:
                 "Avoid misunderstandings",
             ],
         },
-
         "patience": {
             "description": "Don't rush or get emotional",
             "tactics": [
@@ -179,7 +174,6 @@ class NegotiationAgent:
             ],
             "psychological_edge": "Rushed party accepts worse terms",
         },
-
         "bracketing": {
             "description": "Stay flexible within range",
             "approach": [
@@ -190,7 +184,6 @@ class NegotiationAgent:
             ],
             "example": "Buy price minimum $50K, goal $55K, anchor at $60K, move down gradually",
         },
-
         "flinching": {
             "description": "React with surprise to proposal",
             "when_to_use": "When other party makes unreasonable ask",
@@ -202,7 +195,6 @@ class NegotiationAgent:
             ],
             "risk": "Overuse makes you lose credibility",
         },
-
         "nibbling": {
             "description": "Ask for small additional items",
             "when_to_use": "At end of negotiation when deal nearly done",
@@ -216,7 +208,7 @@ class NegotiationAgent:
         },
     }
 
-    NEGOTIATION_SCENARIOS = {
+    NEGOTIATION_SCENARIOS: ClassVar[dict] = {
         NegotiationType.CUSTOMER_SALES: {
             "goal": "Close deal at best price/terms",
             "key_variables": [
@@ -239,7 +231,6 @@ class NegotiationAgent:
                 "Alternative close: 'Monthly or annual billing?'",
             ],
         },
-
         NegotiationType.SUPPLIER: {
             "goal": "Get best price and terms from supplier",
             "leverage": [
@@ -264,7 +255,6 @@ class NegotiationAgent:
                 "Know their other customers",
             ],
         },
-
         NegotiationType.EMPLOYMENT: {
             "goal": "Get best compensation package",
             "negotiable_items": [
@@ -291,7 +281,6 @@ class NegotiationAgent:
                 "Get offer in writing",
             ],
         },
-
         NegotiationType.PARTNERSHIP: {
             "goal": "Establish clear terms and mutual benefits",
             "key_terms": [
@@ -312,7 +301,7 @@ class NegotiationAgent:
         },
     }
 
-    DEAL_STRUCTURES = {
+    DEAL_STRUCTURES: ClassVar[dict] = {
         "straight_transaction": {
             "description": "Simple buy/sell agreement",
             "terms": [
@@ -349,10 +338,8 @@ class NegotiationAgent:
 
     @staticmethod
     def prepare_negotiation(
-        negotiation_type: NegotiationType,
-        other_party: str,
-        objective: str
-    ) -> Dict[str, Any]:
+        negotiation_type: NegotiationType, other_party: str, objective: str
+    ) -> dict[str, Any]:
         """Prepare for negotiation."""
         preparation = {
             "negotiation_type": negotiation_type.value,
@@ -385,11 +372,11 @@ class NegotiationAgent:
 
     @staticmethod
     def analyze_negotiation_position(
-        current_offer: Dict[str, Any],
-        must_haves: List[str],
-        nice_to_haves: List[str],
-        batna_value: float
-    ) -> Dict[str, Any]:
+        current_offer: dict[str, Any],
+        must_haves: list[str],
+        nice_to_haves: list[str],
+        batna_value: float,
+    ) -> dict[str, Any]:
         """Analyze your negotiation position."""
         analysis = {
             "current_offer": current_offer,
@@ -407,10 +394,8 @@ class NegotiationAgent:
 
     @staticmethod
     def create_offer(
-        base_value: float,
-        margin: float,
-        anchor_strategy: str = "high"
-    ) -> Dict[str, Any]:
+        base_value: float, margin: float, anchor_strategy: str = "high"
+    ) -> dict[str, Any]:
         """Create opening offer."""
         if anchor_strategy == "high":
             # For selling, anchor high
@@ -431,9 +416,8 @@ class NegotiationAgent:
 
     @staticmethod
     def handle_objection(
-        objection: str,
-        your_position: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        objection: str, your_position: dict[str, Any]
+    ) -> dict[str, Any]:
         """Handle objection in negotiation."""
         strategies = {
             "price_objection": {
@@ -468,10 +452,8 @@ class NegotiationAgent:
 
     @staticmethod
     def build_deal_structure(
-        base_transaction_value: float,
-        timeline_months: int,
-        key_terms: List[str]
-    ) -> Dict[str, Any]:
+        base_transaction_value: float, timeline_months: int, key_terms: list[str]
+    ) -> dict[str, Any]:
         """Build optimized deal structure."""
         return {
             "base_value": base_transaction_value,
@@ -492,7 +474,9 @@ class NegotiationAgent:
                 },
                 {
                     "name": "Milestone-based",
-                    "milestones": [f"Milestone {i+1}" for i in range(timeline_months // 3)],
+                    "milestones": [
+                        f"Milestone {i+1}" for i in range(timeline_months // 3)
+                    ],
                     "pro": "Aligns incentives",
                     "con": "Tied to performance",
                 },
@@ -503,14 +487,14 @@ class NegotiationAgent:
         }
 
     @staticmethod
-    def get_negotiation_framework(negotiation_type: NegotiationType) -> Dict[str, Any]:
+    def get_negotiation_framework(negotiation_type: NegotiationType) -> dict[str, Any]:
         """Get framework for negotiation type."""
         return NegotiationAgent.NEGOTIATION_SCENARIOS.get(negotiation_type, {})
 
     @staticmethod
     def negotiation_checklist(
-        negotiation_type: NegotiationType
-    ) -> Dict[str, List[str]]:
+        negotiation_type: NegotiationType,
+    ) -> dict[str, list[str]]:
         """Get pre-negotiation checklist."""
         return {
             "research": [
@@ -543,7 +527,7 @@ class NegotiationAgent:
         }
 
     @staticmethod
-    def closing_strategies() -> Dict[str, Dict[str, Any]]:
+    def closing_strategies() -> dict[str, dict[str, Any]]:
         """Get deal closing strategies."""
         return {
             "summary_close": {

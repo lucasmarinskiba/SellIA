@@ -10,9 +10,9 @@ Priority order for the numbers:
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,11 +26,11 @@ from app.domains.ad_budget.models import (
 
 logger = get_logger(__name__)
 
-ZERO = Decimal("0")
+ZERO = Decimal(0)
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _roas(revenue: Decimal, spend: Decimal) -> Decimal:
@@ -43,14 +43,18 @@ class AdPerformanceService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def gather(self, business_id: uuid.UUID, channel: AdChannel, window_days: int) -> dict[str, Any]:
+    async def gather(
+        self, business_id: uuid.UUID, channel: AdChannel, window_days: int
+    ) -> dict[str, Any]:
         end = _utcnow()
         start = end - timedelta(days=window_days)
         recent_start = end - timedelta(days=max(1, window_days // 3))
 
         data = await self._from_connector(channel, start, end, recent_start)
         if data is None:
-            data = await self._from_ledger_and_orders(business_id, channel, start, end, recent_start)
+            data = await self._from_ledger_and_orders(
+                business_id, channel, start, end, recent_start
+            )
 
         data["window_start"] = start
         data["window_end"] = end
@@ -65,7 +69,7 @@ class AdPerformanceService:
     # ------------------------------------------------------------------
     async def _from_connector(
         self, channel: AdChannel, start: datetime, end: datetime, recent_start: datetime
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         if not channel.channel_connection_id or not channel.campaign_refs:
             return None
         try:
@@ -111,7 +115,9 @@ class AdPerformanceService:
                 "recent_revenue": None,
             }
         except Exception as e:  # noqa: BLE001
-            logger.warning("ad_budget: connector insights failed for channel %s: %s", channel.id, e)
+            logger.warning(
+                "ad_budget: connector insights failed for channel %s: %s", channel.id, e
+            )
             return None
 
     # ------------------------------------------------------------------
@@ -124,9 +130,15 @@ class AdPerformanceService:
         recent_start: datetime,
     ) -> dict[str, Any]:
         spend = await self._ledger_spend(business_id, channel.platform, start, end)
-        recent_spend = await self._ledger_spend(business_id, channel.platform, recent_start, end)
-        revenue, conversions = await self._attributed_revenue(business_id, channel, start, end)
-        recent_revenue, _ = await self._attributed_revenue(business_id, channel, recent_start, end)
+        recent_spend = await self._ledger_spend(
+            business_id, channel.platform, recent_start, end
+        )
+        revenue, conversions = await self._attributed_revenue(
+            business_id, channel, start, end
+        )
+        recent_revenue, _ = await self._attributed_revenue(
+            business_id, channel, recent_start, end
+        )
         return {
             "source": "ledger",
             "spend": spend,
@@ -151,7 +163,9 @@ class AdPerformanceService:
 
             subtype = LEDGER_SUBTYPE_BY_PLATFORM.get(platform, "ad_spend_other")
             res = await self.db.execute(
-                select(func.coalesce(func.sum(JournalLine.debit - JournalLine.credit), 0))
+                select(
+                    func.coalesce(func.sum(JournalLine.debit - JournalLine.credit), 0)
+                )
                 .join(JournalEntry, JournalEntry.id == JournalLine.entry_id)
                 .join(LedgerAccount, LedgerAccount.id == JournalLine.account_id)
                 .where(
@@ -172,7 +186,9 @@ class AdPerformanceService:
     ) -> tuple[Decimal, int]:
         from app.domains.orders.models import Order, PaymentStatus
 
-        matches = [m for m in (channel.attribution_match or []) if m] or [channel.platform]
+        matches = [m for m in (channel.attribution_match or []) if m] or [
+            channel.platform
+        ]
         like_clauses = []
         for m in matches:
             pat = f"%{m}%"
@@ -227,7 +243,7 @@ class AdPerformanceService:
 
     async def latest_snapshot(
         self, channel_id: uuid.UUID
-    ) -> Optional[AdPerformanceSnapshot]:
+    ) -> AdPerformanceSnapshot | None:
         res = await self.db.execute(
             select(AdPerformanceSnapshot)
             .where(AdPerformanceSnapshot.ad_channel_id == channel_id)
@@ -268,7 +284,11 @@ def _extract_conversion_value(insights: dict[str, Any]) -> Decimal:
     if cv:
         return Decimal(str(cv))
     for action in insights.get("action_values", []) or []:
-        if action.get("action_type") in ("purchase", "omni_purchase", "offsite_conversion.fb_pixel_purchase"):
+        if action.get("action_type") in (
+            "purchase",
+            "omni_purchase",
+            "offsite_conversion.fb_pixel_purchase",
+        ):
             return Decimal(str(action.get("value", 0) or 0))
     return ZERO
 
@@ -279,6 +299,11 @@ def _extract_conversions(insights: dict[str, Any]) -> int:
         return int(c)
     total = 0
     for action in insights.get("actions", []) or []:
-        if action.get("action_type") in ("purchase", "omni_purchase", "lead", "offsite_conversion.fb_pixel_purchase"):
+        if action.get("action_type") in (
+            "purchase",
+            "omni_purchase",
+            "lead",
+            "offsite_conversion.fb_pixel_purchase",
+        ):
             total += int(float(action.get("value", 0) or 0))
     return total

@@ -5,15 +5,16 @@ Se ejecuta después de ThreatIntelMiddleware para poder bloquear
 IPs detectadas como amenazas.
 """
 
+from datetime import UTC, datetime
+
 from fastapi import Request
+from sqlalchemy import select
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
-from datetime import datetime, timezone
-from sqlalchemy import select
 
 from app.core.database import AsyncSessionLocal
-from app.domains.security.models import BlockedIP
 from app.core.logger import get_logger
+from app.domains.security.models import BlockedIP
 
 logger = get_logger(__name__)
 
@@ -38,13 +39,15 @@ class IPBlocklistMiddleware(BaseHTTPMiddleware):
 
             if blocked:
                 # Verificar si el bloqueo tiene fecha de expiración
-                if blocked.blocked_until and blocked.blocked_until < datetime.now(timezone.utc):
+                if blocked.blocked_until and blocked.blocked_until < datetime.now(UTC):
                     # Desbloquear automáticamente
                     await db.delete(blocked)
                     await db.commit()
                     logger.info(f"Auto-unblocked IP {client_ip}")
                 else:
-                    logger.warning(f"Blocked request from {client_ip}: {blocked.reason}")
+                    logger.warning(
+                        f"Blocked request from {client_ip}: {blocked.reason}"
+                    )
                     return JSONResponse(
                         status_code=403,
                         content={"detail": "IP bloqueada por seguridad"},

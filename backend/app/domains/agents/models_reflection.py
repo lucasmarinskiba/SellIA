@@ -1,10 +1,10 @@
 """Reflection and Chain-of-Thought Models"""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Text, DateTime, Integer
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Column, DateTime, Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 
@@ -24,7 +24,7 @@ class AgentReflection(Base):
     score = Column(Integer, nullable=True)  # self-assessment 0-100
     created_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
 
@@ -36,8 +36,10 @@ class ChainOfThoughtLog(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     conversation_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     message_id = Column(UUID(as_uuid=True), nullable=True, index=True)
-    thought_steps = Column(JSONB, default=list)  # [{step_number, thought, action, observation}, ...]
+    thought_steps = Column(
+        JSONB, default=list
+    )  # [{step_number, thought, action, observation}, ...]
     created_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )

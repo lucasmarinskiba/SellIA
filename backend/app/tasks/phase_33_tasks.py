@@ -1,22 +1,25 @@
 """Phase 33 Celery Tasks - Async operations for multi-platform automation."""
 
-from celery import shared_task
-from datetime import datetime, timedelta
-from sqlalchemy.orm import Session
-from typing import List
+import logging
+from datetime import timedelta
 
+from celery import shared_task
+
+from app.core.clock import utc_now
 from app.database import SessionLocal
 from app.domains.enterprise.platform_integration import (
-    PlatformSyncEngine,
     DynamicPricingEngine,
     Platform,
+    PlatformSyncEngine,
 )
 from app.models.platform_integration import (
-    Product,
-    PlatformListing,
-    SellerMetrics,
     Order,
+    PlatformListing,
+    Product,
+    SellerMetrics,
 )
+
+logger = logging.getLogger(__name__)
 
 
 @shared_task(bind=True, max_retries=3)
@@ -32,12 +35,16 @@ def sync_inventory_task(self, product_id: str):
             return {"status": "error", "message": "Product not found"}
 
         # Calculate reserved inventory (orders in last 24h, not yet fulfilled)
-        twenty_four_hours_ago = datetime.utcnow() - timedelta(hours=24)
-        recent_orders = db.query(Order).filter(
-            Order.product_id == product_id,
-            Order.created_at >= twenty_four_hours_ago,
-            Order.order_status != "delivered",
-        ).all()
+        twenty_four_hours_ago = utc_now() - timedelta(hours=24)
+        recent_orders = (
+            db.query(Order)
+            .filter(
+                Order.product_id == product_id,
+                Order.created_at >= twenty_four_hours_ago,
+                Order.order_status != "delivered",
+            )
+            .all()
+        )
 
         reserved = sum(o.quantity for o in recent_orders)
         available = max(0, product.stock_total - reserved)
@@ -53,17 +60,18 @@ def sync_inventory_task(self, product_id: str):
             "reserved": reserved,
             "available": available,
             "sync_results": results,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
     except Exception as exc:
         # Retry with exponential backoff
-        raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
+        logger.exception("sync_inventory_task: error inesperado")
+        raise self.retry(exc=exc, countdown=60 * (2**self.request.retries))
     finally:
         db.close()
 
 
 @shared_task(bind=True, max_retries=2)
-def reprice_products_task(self, platform: str = None):
+def reprice_products_task(self, platform: str | None = None):
     """
     Reprice all products based on competitor prices.
     Runs every 2-4 hours to optimize prices dynamically.
@@ -77,14 +85,16 @@ def reprice_products_task(self, platform: str = None):
             else [Platform.MERCADO_LIBRE, Platform.AMAZON, Platform.HOTMART]
         )
 
-        pricing_engine = DynamicPricingEngine(db)
+        DynamicPricingEngine(db)
         results = {}
 
         for plat in platforms:
             # Get all listings for platform
-            listings = db.query(PlatformListing).filter(
-                PlatformListing.platform == plat.value
-            ).all()
+            listings = (
+                db.query(PlatformListing)
+                .filter(PlatformListing.platform == plat.value)
+                .all()
+            )
 
             repriced = 0
             for listing in listings:
@@ -97,7 +107,7 @@ def reprice_products_task(self, platform: str = None):
             results[plat.value] = {
                 "listings_repriced": repriced,
                 "total_listings": len(listings),
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": utc_now().isoformat(),
             }
 
         db.commit()
@@ -108,6 +118,7 @@ def reprice_products_task(self, platform: str = None):
             "message": f"Repriced products across {len(platforms)} platforms",
         }
     except Exception as exc:
+        logger.exception("reprice_products_task: error inesperado")
         raise self.retry(exc=exc, countdown=60)
     finally:
         db.close()
@@ -139,16 +150,20 @@ def update_seller_metrics_task():
                 # Calculate metrics
                 active = len([l for l in listings if l.status == "active"])
                 bestseller = len([l for l in listings if l.best_seller_rank == 1])
-                top_5 = len([l for l in listings if l.best_seller_rank and l.best_seller_rank <= 5])
+                top_5 = len(
+                    [
+                        l
+                        for l in listings
+                        if l.best_seller_rank and l.best_seller_rank <= 5
+                    ]
+                )
                 avg_rating = (
-                    sum(l.rating for l in listings) / len(listings)
-                    if listings
-                    else 0
+                    sum(l.rating for l in listings) / len(listings) if listings else 0
                 )
                 total_reviews = sum(l.rating_count for l in listings)
 
                 # Get orders for this seller/platform (last 24h)
-                last_24h = datetime.utcnow() - timedelta(hours=24)
+                last_24h = utc_now() - timedelta(hours=24)
                 orders = (
                     db.query(Order)
                     .join(PlatformListing, Order.listing_id == PlatformListing.id)
@@ -173,7 +188,7 @@ def update_seller_metrics_task():
                 metric = SellerMetrics(
                     seller_id=seller_id,
                     platform=platform,
-                    metric_date=datetime.utcnow().date(),
+                    metric_date=utc_now().date(),
                     active_listings=active,
                     bestseller_count=bestseller,
                     top_5_count=top_5,
@@ -191,9 +206,10 @@ def update_seller_metrics_task():
         return {
             "status": "success",
             "message": "Seller metrics updated for all sellers",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
     except Exception as e:
+        logger.exception("update_seller_metrics_task: error inesperado")
         db.rollback()
         return {"status": "error", "message": str(e)}
     finally:
@@ -209,8 +225,8 @@ def generate_review_requests_task():
     db = SessionLocal()
     try:
         # Get delivered orders from 2-7 days ago (optimal review request window)
-        two_days_ago = datetime.utcnow() - timedelta(days=2)
-        seven_days_ago = datetime.utcnow() - timedelta(days=7)
+        two_days_ago = utc_now() - timedelta(days=2)
+        seven_days_ago = utc_now() - timedelta(days=7)
 
         orders = (
             db.query(Order)
@@ -230,17 +246,18 @@ def generate_review_requests_task():
                     "order_id": order.id,
                     "buyer_id": order.buyer_id,
                     "platform": order.platform,
-                    "message": f"We'd love your feedback on your recent purchase! Leave a review and help others.",
-                    "created_at": datetime.utcnow().isoformat(),
+                    "message": "We'd love your feedback on your recent purchase! Leave a review and help others.",
+                    "created_at": utc_now().isoformat(),
                 }
             )
 
         return {
             "status": "success",
             "review_requests_generated": len(requests),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
     except Exception as e:
+        logger.exception("generate_review_requests_task: error inesperado")
         return {"status": "error", "message": str(e)}
     finally:
         db.close()

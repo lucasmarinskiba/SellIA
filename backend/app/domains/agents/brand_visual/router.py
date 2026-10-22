@@ -1,5 +1,6 @@
 """Brand Visual Agent API Router"""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -8,22 +9,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.agents.brand_visual.schemas import (
     BrandKitGenerateRequest,
     BrandKitJobResponse,
-    BrandAssetResponse,
 )
 from app.domains.agents.brand_visual.service import BrandVisualService
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/agents/brand-visual", tags=["brand-visual"])
 
 
-@router.post("/generate", response_model=BrandKitJobResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/generate", response_model=BrandKitJobResponse, status_code=status.HTTP_201_CREATED
+)
 async def generate_brand_kit(
     req: BrandKitGenerateRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = BrandVisualService(db)
     job = await service.generate_brand_kit(
@@ -38,8 +40,8 @@ async def generate_brand_kit(
 @router.get("/kits", response_model=list[BrandKitJobResponse])
 async def list_kits(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = BrandVisualService(db)
     return await service.list_kits(business_id)
@@ -48,8 +50,8 @@ async def list_kits(
 @router.get("/kits/{job_id}", response_model=BrandKitJobResponse)
 async def get_kit(
     job_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = BrandVisualService(db)
     job = await service.get_brand_kit(job_id)
@@ -61,8 +63,8 @@ async def get_kit(
 @router.get("/kits/{job_id}/download")
 async def download_kit(
     job_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = BrandVisualService(db)
     job = await service.get_brand_kit(job_id)

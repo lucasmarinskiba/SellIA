@@ -24,15 +24,13 @@ Características:
 Líneas: 800+ código
 """
 
-import logging
 import asyncio
+import logging
 import re
-import json
-from typing import Dict, List, Any, Optional, Tuple, Union
-from datetime import datetime, timedelta
-from dataclasses import dataclass, asdict, field
-from enum import Enum
 import time
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +39,11 @@ logger = logging.getLogger(__name__)
 # DATA STRUCTURES
 # ============================================================================
 
+
 @dataclass
 class PlatformMetadata:
     """Metadatos específicos de plataforma."""
+
     platform_name: str
     base_url: str
     region: str = "global"
@@ -51,38 +51,41 @@ class PlatformMetadata:
     timeout_ms: int = 30000
     retry_count: int = 3
     backoff_base: float = 2.0
-    custom_headers: Dict[str, str] = field(default_factory=dict)
+    custom_headers: dict[str, str] = field(default_factory=dict)
     auth_method: str = "session"  # session, oauth, api_key, custom
 
 
 @dataclass
 class PageLoadEvent:
     """Evento de carga de página."""
+
     url: str
     timestamp: datetime
     load_time_ms: int
     status_code: int = 200
-    javascript_errors: List[str] = field(default_factory=list)
+    javascript_errors: list[str] = field(default_factory=list)
     elements_loaded: int = 0
 
 
 @dataclass
 class InteractionResult:
     """Resultado de una interacción con la plataforma."""
+
     success: bool
     action: str
     platform: str
     timestamp: datetime
     response_time_ms: int
-    data_extracted: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
+    data_extracted: dict[str, Any] | None = None
+    error: str | None = None
     retry_count: int = 0
-    http_status: Optional[int] = None
+    http_status: int | None = None
 
 
 # ============================================================================
 # MERCADO LIBRE HANDLER — Marketplace LATAM
 # ============================================================================
+
 
 class MercadoLibrePlatformHandler:
     """
@@ -111,12 +114,12 @@ class MercadoLibrePlatformHandler:
     async def search_products(
         self,
         query: str,
-        category: Optional[str] = None,
-        price_min: Optional[float] = None,
-        price_max: Optional[float] = None,
+        category: str | None = None,
+        price_min: float | None = None,
+        price_max: float | None = None,
         page: int = 1,
-        sort: str = "relevance"
-    ) -> Dict[str, Any]:
+        sort: str = "relevance",
+    ) -> dict[str, Any]:
         """
         Búsqueda de productos con filtros avanzados.
 
@@ -156,19 +159,14 @@ class MercadoLibrePlatformHandler:
                 "results": results,
                 "result_count": len(results),
                 "load_time_ms": load_time,
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
 
         except Exception as e:
-            logger.error(f"ML search failed: {str(e)}", exc_info=True)
-            return {
-                "success": False,
-                "error": str(e),
-                "query": query,
-                "page": page
-            }
+            logger.exception("ML search failed")
+            return {"success": False, "error": str(e), "query": query, "page": page}
 
-    async def get_item_details(self, item_id: str) -> Dict[str, Any]:
+    async def get_item_details(self, item_id: str) -> dict[str, Any]:
         """
         Obtener detalles completos de un item.
 
@@ -183,7 +181,7 @@ class MercadoLibrePlatformHandler:
             url = f"{self.metadata.base_url}/items/{item_id}"
             start_time = time.time()
 
-            response = await self._navigate_with_retry(url)
+            await self._navigate_with_retry(url)
             load_time = int((time.time() - start_time) * 1000)
 
             # Extraer información estructurada
@@ -192,29 +190,25 @@ class MercadoLibrePlatformHandler:
                 "title": await self._extract_text("item title"),
                 "price": await self._extract_price(),
                 "availability": await self._extract_availability(),
-                "description": await self._extract_text("item description", max_length=1000),
+                "description": await self._extract_text(
+                    "item description", max_length=1000
+                ),
                 "images": await self._extract_image_urls(),
                 "seller_info": await self._extract_seller_info(),
                 "ratings": await self._extract_ratings(),
                 "shipping_info": await self._extract_shipping_info(),
                 "load_time_ms": load_time,
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
 
-            return {
-                "success": True,
-                "data": details
-            }
+            return {"success": True, "data": details}
 
         except Exception as e:
-            logger.error(f"Failed to get ML item details {item_id}: {str(e)}")
+            logger.exception(f"Failed to get ML item details {item_id}")
             return {"success": False, "error": str(e)}
 
     async def _navigate_with_retry(
-        self,
-        url: str,
-        params: Optional[Dict] = None,
-        max_retries: int = 5
+        self, url: str, params: dict | None = None, max_retries: int = 5
     ) -> str:
         """Navegar con retry inteligente."""
         for attempt in range(max_retries):
@@ -238,18 +232,18 @@ class MercadoLibrePlatformHandler:
                 if response and len(response) > 100:
                     return response
 
-                raise Exception("Empty response")
+                raise RuntimeError("Empty response")
 
             except Exception as e:
-                wait_time = (2 ** attempt) + (0.1 * attempt)  # Backoff exponencial
-                logger.warning(f"Attempt {attempt+1}/{max_retries} failed: {str(e)}")
+                wait_time = (2**attempt) + (0.1 * attempt)  # Backoff exponencial
+                logger.warning(f"Attempt {attempt+1}/{max_retries} failed: {e!s}")
 
                 if attempt < max_retries - 1:
                     await asyncio.sleep(wait_time)
                 else:
                     raise
 
-    async def _extract_search_results(self, html_content: str) -> List[Dict]:
+    async def _extract_search_results(self, html_content: str) -> list[dict]:
         """Extraer resultados de búsqueda del HTML."""
         results = []
         try:
@@ -262,21 +256,22 @@ class MercadoLibrePlatformHandler:
                 if item:
                     results.append(item)
 
-        except Exception as e:
-            logger.error(f"Error extracting search results: {str(e)}")
+        except Exception:
+            logger.exception("Error extracting search results")
 
         return results
 
-    async def _parse_item_element(self, html: str) -> Optional[Dict]:
+    async def _parse_item_element(self, html: str) -> dict | None:
         """Parsear un elemento de item."""
         try:
             item = {
                 "id": re.search(r'data-item-id="([^"]+)"', html),
                 "title": re.search(r'title="([^"]+)"', html),
-                "price": re.search(r'[$$¢]?[\d,.]+', html),
+                "price": re.search(r"[$$¢]?[\d,.]+", html),
             }
             return {k: v.group(1) if v else None for k, v in item.items()}
         except Exception:
+            logger.exception("_parse_item_element: error inesperado")
             return None
 
     async def _extract_text(self, selector: str, max_length: int = 500) -> str:
@@ -286,82 +281,106 @@ class MercadoLibrePlatformHandler:
             text = await self.computer_use.read_highlighted_text()
             return text[:max_length] if text else ""
         except Exception as e:
-            logger.debug(f"Error extracting text '{selector}': {str(e)}")
+            logger.debug(f"Error extracting text '{selector}': {e!s}", exc_info=True)
             return ""
 
-    async def _extract_price(self) -> Optional[float]:
+    async def _extract_price(self) -> float | None:
         """Extraer precio."""
         try:
             price_text = await self._extract_text("price element")
             # Parsear número de precio
-            match = re.search(r'[\d.,]+', price_text.replace(".", "").replace(",", "."))
+            match = re.search(r"[\d.,]+", price_text.replace(".", "").replace(",", "."))
             if match:
                 return float(match.group())
         except Exception:
-            pass
+            logger.exception("_extract_price: error inesperado")
         return None
 
-    async def _extract_availability(self) -> Dict[str, Any]:
+    async def _extract_availability(self) -> dict[str, Any]:
         """Extraer disponibilidad."""
         try:
             availability_text = await self._extract_text("availability indicator")
             return {
                 "in_stock": "stock" in availability_text.lower(),
-                "quantity": int(re.search(r'\d+', availability_text).group()) if re.search(r'\d+', availability_text) else 1,
-                "text": availability_text
+                "quantity": (
+                    int(re.search(r"\d+", availability_text).group())
+                    if re.search(r"\d+", availability_text)
+                    else 1
+                ),
+                "text": availability_text,
             }
         except Exception:
+            logger.exception("_extract_availability: error inesperado")
             return {"in_stock": True, "quantity": 1}
 
-    async def _extract_image_urls(self) -> List[str]:
+    async def _extract_image_urls(self) -> list[str]:
         """Extraer URLs de imágenes."""
         images = []
         try:
             # En producción: parsear DOM para <img> tags
             pass
         except Exception:
-            pass
+            logger.exception("_extract_image_urls: error inesperado")
         return images
 
-    async def _extract_seller_info(self) -> Dict[str, Any]:
+    async def _extract_seller_info(self) -> dict[str, Any]:
         """Extraer información del vendedor."""
         try:
             return {
                 "name": await self._extract_text("seller name"),
                 "rating": await self._extract_text("seller rating"),
                 "location": await self._extract_text("seller location"),
-                "sales_count": int(re.search(r'\d+', await self._extract_text("sales count")) or [0]).group() if await self._extract_text("sales count") else 0
+                "sales_count": (
+                    int(
+                        re.search(r"\d+", await self._extract_text("sales count"))
+                        or [0]
+                    ).group()
+                    if await self._extract_text("sales count")
+                    else 0
+                ),
             }
         except Exception:
+            logger.exception("_extract_seller_info: error inesperado")
             return {}
 
-    async def _extract_ratings(self) -> Dict[str, Any]:
+    async def _extract_ratings(self) -> dict[str, Any]:
         """Extraer ratings y reviews."""
         try:
             return {
                 "average": float(await self._extract_text("average rating")),
-                "review_count": int(re.search(r'\d+', await self._extract_text("review count")) or [0]).group() if await self._extract_text("review count") else 0,
-                "distribution": {}
+                "review_count": (
+                    int(
+                        re.search(r"\d+", await self._extract_text("review count"))
+                        or [0]
+                    ).group()
+                    if await self._extract_text("review count")
+                    else 0
+                ),
+                "distribution": {},
             }
         except Exception:
+            logger.exception("_extract_ratings: error inesperado")
             return {"average": 0, "review_count": 0}
 
-    async def _extract_shipping_info(self) -> Dict[str, Any]:
+    async def _extract_shipping_info(self) -> dict[str, Any]:
         """Extraer información de envío."""
         try:
             return {
-                "free_shipping": "gratis" in (await self._extract_text("shipping info")).lower(),
+                "free_shipping": "gratis"
+                in (await self._extract_text("shipping info")).lower(),
                 "cost": None,
                 "time": await self._extract_text("shipping time"),
-                "zones": []
+                "zones": [],
             }
         except Exception:
+            logger.exception("_extract_shipping_info: error inesperado")
             return {}
 
 
 # ============================================================================
 # SHOPIFY HANDLER — E-Commerce SaaS
 # ============================================================================
+
 
 class ShopifyPlatformHandler:
     """
@@ -382,7 +401,7 @@ class ShopifyPlatformHandler:
             platform_name="shopify",
             base_url=store_url,
             timeout_ms=35000,
-            auth_method="oauth"
+            auth_method="oauth",
         )
 
     async def create_product(
@@ -391,9 +410,9 @@ class ShopifyPlatformHandler:
         description: str,
         price: float,
         sku: str,
-        images: List[str],
-        category: Optional[str] = None
-    ) -> Dict[str, Any]:
+        images: list[str],
+        category: str | None = None,
+    ) -> dict[str, Any]:
         """Crear nuevo producto en Shopify."""
         try:
             # Navegar a crear producto
@@ -414,19 +433,15 @@ class ShopifyPlatformHandler:
             return {
                 "success": True,
                 "product_name": name,
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
 
         except Exception as e:
-            logger.error(f"Failed to create Shopify product: {str(e)}")
+            logger.exception("Failed to create Shopify product")
             return {"success": False, "error": str(e)}
 
     async def _fill_product_form(
-        self,
-        name: str,
-        description: str,
-        price: float,
-        sku: str
+        self, name: str, description: str, price: float, sku: str
     ) -> None:
         """Rellenar formulario de producto."""
         try:
@@ -434,7 +449,9 @@ class ShopifyPlatformHandler:
             await self.computer_use.type_in_field("Product name", name)
 
             # Descripción
-            await self.computer_use.type_in_field("Description", description, multiline=True)
+            await self.computer_use.type_in_field(
+                "Description", description, multiline=True
+            )
 
             # Precio
             await self.computer_use.type_in_field("Price", str(price))
@@ -443,10 +460,10 @@ class ShopifyPlatformHandler:
             await self.computer_use.type_in_field("SKU", sku)
 
         except Exception as e:
-            logger.error(f"Error filling product form: {str(e)}")
+            logger.error(f"Error filling product form: {e!s}")
             raise
 
-    async def _upload_product_images(self, image_urls: List[str]) -> None:
+    async def _upload_product_images(self, image_urls: list[str]) -> None:
         """Subir imágenes de producto."""
         try:
             for url in image_urls:
@@ -458,13 +475,14 @@ class ShopifyPlatformHandler:
                 await asyncio.sleep(1)
 
         except Exception as e:
-            logger.error(f"Error uploading images: {str(e)}")
+            logger.error(f"Error uploading images: {e!s}")
             raise
 
 
 # ============================================================================
 # FACEBOOK MARKETPLACE HANDLER
 # ============================================================================
+
 
 class FacebookPlatformHandler:
     """
@@ -483,7 +501,7 @@ class FacebookPlatformHandler:
             platform_name="facebook",
             base_url="https://www.facebook.com",
             timeout_ms=45000,
-            auth_method="session"
+            auth_method="session",
         )
 
     async def list_item(
@@ -493,16 +511,20 @@ class FacebookPlatformHandler:
         price: float,
         category: str,
         condition: str = "used",
-        images: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+        images: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Publicar item en Facebook Marketplace."""
         try:
-            await self.computer_use.navigate("https://www.facebook.com/marketplace/create")
+            await self.computer_use.navigate(
+                "https://www.facebook.com/marketplace/create"
+            )
             await asyncio.sleep(2)
 
             # Rellenar formulario
             await self.computer_use.type_in_field("Item title", title)
-            await self.computer_use.type_in_field("Description", description, multiline=True)
+            await self.computer_use.type_in_field(
+                "Description", description, multiline=True
+            )
             await self.computer_use.select_dropdown("Category", category)
             await self.computer_use.type_in_field("Price", str(price))
             await self.computer_use.select_dropdown("Condition", condition)
@@ -519,17 +541,18 @@ class FacebookPlatformHandler:
                 "success": True,
                 "item_title": title,
                 "platform": "facebook_marketplace",
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
 
         except Exception as e:
-            logger.error(f"Facebook listing failed: {str(e)}")
+            logger.exception("Facebook listing failed")
             return {"success": False, "error": str(e)}
 
 
 # ============================================================================
 # WHATSAPP HANDLER
 # ============================================================================
+
 
 class WhatsAppPlatformHandler:
     """
@@ -547,16 +570,13 @@ class WhatsAppPlatformHandler:
         self.metadata = PlatformMetadata(
             platform_name="whatsapp",
             base_url="https://web.whatsapp.com",
-            timeout_ms=25000
+            timeout_ms=25000,
         )
         self.message_queue = []
 
     async def send_message(
-        self,
-        phone_number: str,
-        message: str,
-        wait_for_read: bool = False
-    ) -> Dict[str, Any]:
+        self, phone_number: str, message: str, wait_for_read: bool = False
+    ) -> dict[str, Any]:
         """Enviar mensaje por WhatsApp."""
         try:
             # Navegar a conversación
@@ -575,24 +595,26 @@ class WhatsAppPlatformHandler:
                 "success": True,
                 "recipient": phone_number,
                 "message_sent": True,
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
 
         except Exception as e:
-            logger.error(f"WhatsApp send failed: {str(e)}")
+            logger.exception("WhatsApp send failed")
             return {"success": False, "error": str(e)}
 
     async def queue_message(self, phone: str, message: str) -> None:
         """Encolar mensaje para envío posterior."""
-        self.message_queue.append({
-            "phone": phone,
-            "message": message,
-            "queued_at": datetime.now(),
-            "retry_count": 0
-        })
+        self.message_queue.append(
+            {
+                "phone": phone,
+                "message": message,
+                "queued_at": datetime.now(),
+                "retry_count": 0,
+            }
+        )
         logger.info(f"Message queued for {phone}")
 
-    async def process_message_queue(self) -> Dict[str, Any]:
+    async def process_message_queue(self) -> dict[str, Any]:
         """Procesar cola de mensajes."""
         results = {"sent": 0, "failed": 0, "timestamp": datetime.now().isoformat()}
 
@@ -608,8 +630,8 @@ class WhatsAppPlatformHandler:
                         self.message_queue.remove(item)
                         results["failed"] += 1
 
-            except Exception as e:
-                logger.error(f"Queue processing error: {str(e)}")
+            except Exception:
+                logger.exception("Queue processing error")
                 item["retry_count"] += 1
                 if item["retry_count"] >= 3:
                     self.message_queue.remove(item)
@@ -623,6 +645,7 @@ class WhatsAppPlatformHandler:
 # ============================================================================
 # EMAIL HANDLER — Gmail, Outlook, SMTP
 # ============================================================================
+
 
 class EmailPlatformHandler:
     """
@@ -642,7 +665,7 @@ class EmailPlatformHandler:
         self.metadata = PlatformMetadata(
             platform_name=f"email_{provider}",
             base_url=self._get_provider_url(),
-            timeout_ms=20000
+            timeout_ms=20000,
         )
 
     def _get_provider_url(self) -> str:
@@ -659,8 +682,8 @@ class EmailPlatformHandler:
         subject: str,
         body: str,
         html: bool = False,
-        attachments: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+        attachments: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Enviar email."""
         try:
             if self.provider == "gmail":
@@ -671,7 +694,7 @@ class EmailPlatformHandler:
                 return {"success": False, "error": "Unknown email provider"}
 
         except Exception as e:
-            logger.error(f"Email send failed: {str(e)}")
+            logger.exception("Email send failed")
             return {"success": False, "error": str(e)}
 
     async def _send_gmail(
@@ -680,8 +703,8 @@ class EmailPlatformHandler:
         subject: str,
         body: str,
         html: bool,
-        attachments: Optional[List[str]]
-    ) -> Dict[str, Any]:
+        attachments: list[str] | None,
+    ) -> dict[str, Any]:
         """Enviar via Gmail Web."""
         try:
             # Navegar a compose
@@ -705,11 +728,11 @@ class EmailPlatformHandler:
                 "success": True,
                 "to": to,
                 "subject": subject,
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
 
         except Exception as e:
-            logger.error(f"Gmail send failed: {str(e)}")
+            logger.exception("Gmail send failed")
             return {"success": False, "error": str(e)}
 
     async def _send_outlook(
@@ -718,11 +741,13 @@ class EmailPlatformHandler:
         subject: str,
         body: str,
         html: bool,
-        attachments: Optional[List[str]]
-    ) -> Dict[str, Any]:
+        attachments: list[str] | None,
+    ) -> dict[str, Any]:
         """Enviar via Outlook Web."""
         try:
-            await self.computer_use.navigate("https://outlook.office.com/mail/deeplink/compose")
+            await self.computer_use.navigate(
+                "https://outlook.office.com/mail/deeplink/compose"
+            )
             await asyncio.sleep(2)
 
             await self.computer_use.type_in_field("To field", to)
@@ -740,17 +765,18 @@ class EmailPlatformHandler:
                 "to": to,
                 "subject": subject,
                 "provider": "outlook",
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
 
         except Exception as e:
-            logger.error(f"Outlook send failed: {str(e)}")
+            logger.exception("Outlook send failed")
             return {"success": False, "error": str(e)}
 
 
 # ============================================================================
 # PLATFORM HANDLER FACTORY
 # ============================================================================
+
 
 class PlatformHandlerFactory:
     """Factory para crear handlers específicos de plataforma."""
@@ -759,25 +785,33 @@ class PlatformHandlerFactory:
         self.computer_use = computer_use_engine
         self._handlers = {}
 
-    def get_handler(self, platform: str, **kwargs) -> Union[
-        MercadoLibrePlatformHandler,
-        ShopifyPlatformHandler,
-        FacebookPlatformHandler,
-        WhatsAppPlatformHandler,
-        EmailPlatformHandler
-    ]:
+    def get_handler(
+        self, platform: str, **kwargs
+    ) -> (
+        MercadoLibrePlatformHandler
+        | ShopifyPlatformHandler
+        | FacebookPlatformHandler
+        | WhatsAppPlatformHandler
+        | EmailPlatformHandler
+    ):
         """Obtener o crear handler para plataforma."""
         if platform not in self._handlers:
             if platform == "mercado_libre":
-                self._handlers[platform] = MercadoLibrePlatformHandler(self.computer_use)
+                self._handlers[platform] = MercadoLibrePlatformHandler(
+                    self.computer_use
+                )
             elif platform == "shopify":
-                self._handlers[platform] = ShopifyPlatformHandler(self.computer_use, kwargs.get("store_url"))
+                self._handlers[platform] = ShopifyPlatformHandler(
+                    self.computer_use, kwargs.get("store_url")
+                )
             elif platform == "facebook":
                 self._handlers[platform] = FacebookPlatformHandler(self.computer_use)
             elif platform == "whatsapp":
                 self._handlers[platform] = WhatsAppPlatformHandler(self.computer_use)
             elif platform == "email":
-                self._handlers[platform] = EmailPlatformHandler(self.computer_use, kwargs.get("provider", "gmail"))
+                self._handlers[platform] = EmailPlatformHandler(
+                    self.computer_use, kwargs.get("provider", "gmail")
+                )
             else:
                 raise ValueError(f"Unknown platform: {platform}")
 
@@ -785,13 +819,13 @@ class PlatformHandlerFactory:
 
 
 __all__ = [
-    "MercadoLibrePlatformHandler",
-    "ShopifyPlatformHandler",
-    "FacebookPlatformHandler",
-    "WhatsAppPlatformHandler",
     "EmailPlatformHandler",
+    "FacebookPlatformHandler",
+    "InteractionResult",
+    "MercadoLibrePlatformHandler",
+    "PageLoadEvent",
     "PlatformHandlerFactory",
     "PlatformMetadata",
-    "PageLoadEvent",
-    "InteractionResult",
+    "ShopifyPlatformHandler",
+    "WhatsAppPlatformHandler",
 ]

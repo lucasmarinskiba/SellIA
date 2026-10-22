@@ -3,20 +3,28 @@
 Servicios para crear, ejecutar y monitorear misiones cross-plataforma.
 """
 
+import logging
 import uuid
-from datetime import datetime
-from typing import List, Optional, Dict, Any
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, desc
+from typing import Any
 
-from .models import Mission, MissionStep, BusinessDiagnostic
+from sqlalchemy import desc, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.clock import utc_now
+
+from .diagnostic_engine import run_diagnostic
+from .models import BusinessDiagnostic, Mission, MissionStep
+from .playbook_library import get_playbook, list_playbooks
 from .schemas import (
-    MissionCreate, MissionRead, MissionUpdate,
-    MissionStepUpdate, BusinessDiagnosticCreate, BusinessDiagnosticRead,
+    BusinessDiagnosticRead,
+    MissionCreate,
+    MissionRead,
+    MissionStepUpdate,
+    MissionUpdate,
     PlaybookRead,
 )
-from .playbook_library import get_playbook, list_playbooks, get_recommended_playbooks
-from .diagnostic_engine import run_diagnostic
+
+logger = logging.getLogger(__name__)
 
 
 class MissionService:
@@ -31,7 +39,7 @@ class MissionService:
         self,
         user_id: uuid.UUID,
         playbook_slug: str,
-        business_id: Optional[uuid.UUID] = None,
+        business_id: uuid.UUID | None = None,
         auto_approve_low_impact: bool = True,
     ) -> MissionRead:
         """Crear una misión a partir de un playbook."""
@@ -121,7 +129,9 @@ class MissionService:
         await self.db.refresh(mission)
         return MissionRead.model_validate(mission)
 
-    async def get(self, mission_id: uuid.UUID, user_id: uuid.UUID) -> Optional[MissionRead]:
+    async def get(
+        self, mission_id: uuid.UUID, user_id: uuid.UUID
+    ) -> MissionRead | None:
         """Obtener una misión por ID (con verificación de ownership)."""
         result = await self.db.execute(
             select(Mission).where(Mission.id == mission_id, Mission.user_id == user_id)
@@ -134,13 +144,17 @@ class MissionService:
     async def list_by_user(
         self,
         user_id: uuid.UUID,
-        status: Optional[str] = None,
-        category: Optional[str] = None,
+        status: str | None = None,
+        category: str | None = None,
         limit: int = 50,
         offset: int = 0,
-    ) -> List[MissionRead]:
+    ) -> list[MissionRead]:
         """Listar misiones de un usuario."""
-        query = select(Mission).where(Mission.user_id == user_id).order_by(desc(Mission.created_at))
+        query = (
+            select(Mission)
+            .where(Mission.user_id == user_id)
+            .order_by(desc(Mission.created_at))
+        )
         if status:
             query = query.where(Mission.status == status)
         if category:
@@ -151,7 +165,9 @@ class MissionService:
         missions = result.scalars().all()
         return [MissionRead.model_validate(m) for m in missions]
 
-    async def update(self, mission_id: uuid.UUID, user_id: uuid.UUID, data: MissionUpdate) -> Optional[MissionRead]:
+    async def update(
+        self, mission_id: uuid.UUID, user_id: uuid.UUID, data: MissionUpdate
+    ) -> MissionRead | None:
         """Actualizar una misión."""
         result = await self.db.execute(
             select(Mission).where(Mission.id == mission_id, Mission.user_id == user_id)
@@ -168,7 +184,9 @@ class MissionService:
         await self.db.refresh(mission)
         return MissionRead.model_validate(mission)
 
-    async def approve(self, mission_id: uuid.UUID, user_id: uuid.UUID, approve_all_steps: bool = False) -> Optional[MissionRead]:
+    async def approve(
+        self, mission_id: uuid.UUID, user_id: uuid.UUID, approve_all_steps: bool = False
+    ) -> MissionRead | None:
         """Aprobar una misión propuesta."""
         result = await self.db.execute(
             select(Mission).where(Mission.id == mission_id, Mission.user_id == user_id)
@@ -178,7 +196,7 @@ class MissionService:
             return None
 
         mission.status = "approved"
-        mission.approved_at = datetime.utcnow()
+        mission.approved_at = utc_now()
 
         if approve_all_steps:
             for step in mission.steps:
@@ -188,23 +206,31 @@ class MissionService:
         await self.db.refresh(mission)
         return MissionRead.model_validate(mission)
 
-    async def start(self, mission_id: uuid.UUID, user_id: uuid.UUID) -> Optional[MissionRead]:
+    async def start(
+        self, mission_id: uuid.UUID, user_id: uuid.UUID
+    ) -> MissionRead | None:
         """Iniciar una misión aprobada."""
         result = await self.db.execute(
-            select(Mission).where(Mission.id == mission_id, Mission.user_id == user_id, Mission.status == "approved")
+            select(Mission).where(
+                Mission.id == mission_id,
+                Mission.user_id == user_id,
+                Mission.status == "approved",
+            )
         )
         mission = result.scalar_one_or_none()
         if not mission:
             return None
 
         mission.status = "running"
-        mission.started_at = datetime.utcnow()
+        mission.started_at = utc_now()
 
         # Marcar primer paso ejecutable como running
         for step in mission.steps:
-            if step.status == "pending" and (not step.requires_approval or step.approved_by_user):
+            if step.status == "pending" and (
+                not step.requires_approval or step.approved_by_user
+            ):
                 step.status = "running"
-                step.started_at = datetime.utcnow()
+                step.started_at = utc_now()
                 break
 
         await self.db.commit()
@@ -217,12 +243,16 @@ class MissionService:
         step_id: uuid.UUID,
         user_id: uuid.UUID,
         data: MissionStepUpdate,
-    ) -> Optional[MissionRead]:
+    ) -> MissionRead | None:
         """Actualizar el estado de un paso y avanzar al siguiente si corresponde."""
         result = await self.db.execute(
             select(MissionStep)
             .join(Mission)
-            .where(MissionStep.id == step_id, Mission.id == mission_id, Mission.user_id == user_id)
+            .where(
+                MissionStep.id == step_id,
+                Mission.id == mission_id,
+                Mission.user_id == user_id,
+            )
         )
         step = result.scalar_one_or_none()
         if not step:
@@ -234,7 +264,7 @@ class MissionService:
 
         # Si el paso se completó, avanzar al siguiente
         if data.status == "completed":
-            step.completed_at = datetime.utcnow()
+            step.completed_at = utc_now()
             await self._advance_to_next_step(step.mission)
 
         # Si el paso falló, marcar misión como failed
@@ -251,7 +281,7 @@ class MissionService:
         all_completed = all(s.status in ("completed", "skipped") for s in mission.steps)
         if all_completed:
             mission.status = "completed"
-            mission.completed_at = datetime.utcnow()
+            mission.completed_at = utc_now()
             return
 
         # Buscar siguiente paso pendiente
@@ -261,7 +291,7 @@ class MissionService:
                     step.status = "waiting_approval"
                 else:
                     step.status = "running"
-                    step.started_at = datetime.utcnow()
+                    step.started_at = utc_now()
                 break
 
     # ─── Diagnósticos ──────────────────────────────────────────────────────────
@@ -269,23 +299,32 @@ class MissionService:
     async def run_diagnostic(
         self,
         user_id: uuid.UUID,
-        business_id: Optional[uuid.UUID],
-        business_metrics: Dict[str, Any],
-    ) -> List[BusinessDiagnosticRead]:
+        business_id: uuid.UUID | None,
+        business_metrics: dict[str, Any],
+    ) -> list[BusinessDiagnosticRead]:
         """Ejecutar diagnóstico completo y guardar resultados."""
         # Load business context for context-aware diagnostics
         context = {}
         try:
             from app.domains.business_context.models import BusinessContext as BCModel
+
             result = await self.db.execute(
-                select(BCModel).where(BCModel.user_id == user_id, BCModel.business_id == business_id)
+                select(BCModel).where(
+                    BCModel.user_id == user_id, BCModel.business_id == business_id
+                )
             )
             bc = result.scalar_one_or_none()
             if bc:
                 context = {
-                    "business_type": bc.business_type.value if bc.business_type else None,
-                    "geographic_reach": bc.geographic_reach.value if bc.geographic_reach else None,
-                    "presence_type": bc.presence_type.value if bc.presence_type else None,
+                    "business_type": (
+                        bc.business_type.value if bc.business_type else None
+                    ),
+                    "geographic_reach": (
+                        bc.geographic_reach.value if bc.geographic_reach else None
+                    ),
+                    "presence_type": (
+                        bc.presence_type.value if bc.presence_type else None
+                    ),
                     "channels_configured": bc.channels_configured or {},
                     "ads_configured": bc.ads_configured or {},
                     "shipping_configured": bc.shipping_configured or {},
@@ -295,7 +334,7 @@ class MissionService:
                     "has_physical_location": bc.has_physical_location,
                 }
         except Exception:
-            pass
+            logger.exception("run_diagnostic: error inesperado")
 
         diagnostics_data = run_diagnostic(business_metrics, context)
 
@@ -305,7 +344,7 @@ class MissionService:
                 id=uuid.uuid4(),
                 user_id=user_id,
                 business_id=business_id,
-                diagnostic_date=datetime.utcnow(),
+                diagnostic_date=utc_now(),
                 category=diag_data.category,
                 severity=diag_data.severity,
                 finding=diag_data.finding,
@@ -323,10 +362,10 @@ class MissionService:
     async def list_diagnostics(
         self,
         user_id: uuid.UUID,
-        business_id: Optional[uuid.UUID] = None,
-        is_resolved: Optional[bool] = None,
+        business_id: uuid.UUID | None = None,
+        is_resolved: bool | None = None,
         limit: int = 100,
-    ) -> List[BusinessDiagnosticRead]:
+    ) -> list[BusinessDiagnosticRead]:
         """Listar diagnósticos de un usuario/negocio."""
         query = select(BusinessDiagnostic).where(BusinessDiagnostic.user_id == user_id)
         if business_id:
@@ -339,7 +378,9 @@ class MissionService:
         diagnostics = result.scalars().all()
         return [BusinessDiagnosticRead.model_validate(d) for d in diagnostics]
 
-    async def resolve_diagnostic(self, diagnostic_id: uuid.UUID, user_id: uuid.UUID) -> bool:
+    async def resolve_diagnostic(
+        self, diagnostic_id: uuid.UUID, user_id: uuid.UUID
+    ) -> bool:
         """Marcar un diagnóstico como resuelto."""
         result = await self.db.execute(
             select(BusinessDiagnostic).where(
@@ -351,16 +392,16 @@ class MissionService:
         if not diag:
             return False
         diag.is_resolved = True
-        diag.resolved_at = datetime.utcnow()
+        diag.resolved_at = utc_now()
         await self.db.commit()
         return True
 
     # ─── Playbooks ─────────────────────────────────────────────────────────────
 
-    async def list_playbooks(self, category: Optional[str] = None) -> List[PlaybookRead]:
+    async def list_playbooks(self, category: str | None = None) -> list[PlaybookRead]:
         """Listar playbooks disponibles."""
         return list_playbooks(category)
 
-    async def get_playbook(self, slug: str) -> Optional[PlaybookRead]:
+    async def get_playbook(self, slug: str) -> PlaybookRead | None:
         """Obtener un playbook por slug."""
         return get_playbook(slug)

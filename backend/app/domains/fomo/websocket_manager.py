@@ -4,23 +4,21 @@ Connects landing visitors, dashboard users, admin panel
 """
 
 import asyncio
-import json
-from typing import Dict, Set
-from datetime import datetime, timezone
+import logging
+from datetime import UTC, datetime
 from uuid import UUID
 
-from fastapi import WebSocket, WebSocketDisconnect, APIRouter
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from app.core.database import AsyncSessionLocal
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
 class ConnectionManager:
     def __init__(self):
-        self.landing_connections: Set[WebSocket] = set()
-        self.dashboard_connections: Dict[str, WebSocket] = {}
+        self.landing_connections: set[WebSocket] = set()
+        self.dashboard_connections: dict[str, WebSocket] = {}
         self.metrics = {
             "total_visitors": 15340,
             "seats_taken": 47,
@@ -49,18 +47,24 @@ class ConnectionManager:
         for conn in self.landing_connections:
             try:
                 await conn.send_json(data)
-            except:
+            except Exception:
+                logger.exception("broadcast_landing: error inesperado")
                 dead.add(conn)
         for c in dead:
             self.landing_connections.discard(c)
 
-    async def broadcast_dashboard(self, data: dict, user_id: str = None):
-        targets = {user_id: self.dashboard_connections[user_id]} if user_id else self.dashboard_connections
+    async def broadcast_dashboard(self, data: dict, user_id: str | None = None):
+        targets = (
+            {user_id: self.dashboard_connections[user_id]}
+            if user_id
+            else self.dashboard_connections
+        )
         dead = set()
         for uid, conn in targets.items():
             try:
                 await conn.send_json(data)
-            except:
+            except Exception:
+                logger.exception("broadcast_dashboard: error inesperado")
                 dead.add(uid)
         for uid in dead:
             self.dashboard_connections.pop(uid, None)
@@ -101,7 +105,7 @@ async def generate_proof_events():
                 "user_name": f"{name} ({city})",
                 "metric": event_template["metric"],
                 "amount": event_template["amount"],
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "seats_taken": manager.metrics["seats_taken"],
                 "total_revenue": manager.metrics["total_revenue"],
             }
@@ -113,6 +117,7 @@ async def generate_proof_events():
             await manager.broadcast_all(proof_event)
 
         except Exception as e:
+            logger.exception("generate_proof_events: error inesperado")
             print(f"Error: {e}")
 
 
@@ -121,7 +126,7 @@ async def websocket_landing_proof(websocket: WebSocket):
     await manager.connect_landing(websocket)
     try:
         while True:
-            data = await websocket.receive_text()
+            await websocket.receive_text()
     except WebSocketDisconnect:
         await manager.disconnect_landing(websocket)
 
@@ -131,7 +136,7 @@ async def websocket_dashboard(websocket: WebSocket, user_id: str):
     await manager.connect_dashboard(websocket, user_id)
     try:
         while True:
-            data = await websocket.receive_json()
+            await websocket.receive_json()
     except WebSocketDisconnect:
         await manager.disconnect_dashboard(user_id)
 
@@ -149,7 +154,7 @@ async def trigger_manual_proof_event(
         "user_name": user_name,
         "metric": metric,
         "amount": amount,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "seats_taken": manager.metrics["seats_taken"],
         "total_revenue": manager.metrics["total_revenue"],
     }

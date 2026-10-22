@@ -10,8 +10,8 @@ does it step aside for a human.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -34,7 +34,7 @@ FOCUS_LABELS: dict[str, str] = {
 }
 
 
-def _clean_hours(value: Any) -> Optional[dict[str, int]]:
+def _clean_hours(value: Any) -> dict[str, int] | None:
     """Validate the active-hours window, or store nothing.
 
     A half-filled or out-of-range window would silence the bot at hours the
@@ -58,7 +58,7 @@ def _clean_hours(value: Any) -> Optional[dict[str, int]]:
 
 async def get_bot(
     db: AsyncSession, business_id: uuid.UUID, platform: str
-) -> Optional[PlatformBot]:
+) -> PlatformBot | None:
     result = await db.execute(
         select(PlatformBot).where(
             PlatformBot.business_id == business_id,
@@ -100,7 +100,9 @@ async def upsert_bot(
         if field == "focus" and value is not None:
             bot.focus = BotFocus(value)
         elif field == "handoff_keywords" and value is not None:
-            bot.handoff_keywords = [str(w).strip().lower() for w in value if str(w).strip()]
+            bot.handoff_keywords = [
+                str(w).strip().lower() for w in value if str(w).strip()
+            ]
         elif field == "active_hours":
             bot.active_hours = _clean_hours(value)
         else:
@@ -117,7 +119,10 @@ async def platform_stats(
     """Real traffic per platform: how much came in, how much the AI answered,
     and how much is still waiting. Counted from messages, not claimed."""
     from app.domains.channels.models import (
-        ChannelConnection, Conversation, Message, MessageDirection,
+        ChannelConnection,
+        Conversation,
+        Message,
+        MessageDirection,
     )
 
     if not business_ids:
@@ -125,7 +130,10 @@ async def platform_stats(
 
     result = await db.execute(
         select(Conversation.id, ChannelConnection.platform)
-        .join(ChannelConnection, Conversation.channel_connection_id == ChannelConnection.id)
+        .join(
+            ChannelConnection,
+            Conversation.channel_connection_id == ChannelConnection.id,
+        )
         .where(Conversation.business_id.in_(business_ids))
     )
     conv_platform = {
@@ -136,7 +144,12 @@ async def platform_stats(
         return {}
 
     messages = await db.execute(
-        select(Message.conversation_id, Message.direction, Message.extra_data, Message.created_at)
+        select(
+            Message.conversation_id,
+            Message.direction,
+            Message.extra_data,
+            Message.created_at,
+        )
         .where(Message.conversation_id.in_(list(conv_platform)))
         .order_by(Message.created_at.asc())
     )
@@ -148,10 +161,16 @@ async def platform_stats(
         platform = conv_platform.get(conv_id)
         if platform is None:
             continue
-        bucket = stats.setdefault(platform, {
-            "conversations": 0, "inbound": 0, "ai_replies": 0,
-            "human_replies": 0, "waiting": 0,
-        })
+        bucket = stats.setdefault(
+            platform,
+            {
+                "conversations": 0,
+                "inbound": 0,
+                "ai_replies": 0,
+                "human_replies": 0,
+                "waiting": 0,
+            },
+        )
         if direction == MessageDirection.INBOUND:
             bucket["inbound"] += 1
         else:
@@ -162,10 +181,16 @@ async def platform_stats(
         last_direction[conv_id] = direction
 
     for conv_id, platform in conv_platform.items():
-        bucket = stats.setdefault(platform, {
-            "conversations": 0, "inbound": 0, "ai_replies": 0,
-            "human_replies": 0, "waiting": 0,
-        })
+        bucket = stats.setdefault(
+            platform,
+            {
+                "conversations": 0,
+                "inbound": 0,
+                "ai_replies": 0,
+                "human_replies": 0,
+                "waiting": 0,
+            },
+        )
         bucket["conversations"] += 1
         if last_direction.get(conv_id) == MessageDirection.INBOUND:
             bucket["waiting"] += 1
@@ -190,7 +215,10 @@ async def platform_performance(
     is unknown is not attributed to anyone.
     """
     from app.domains.channels.models import (
-        ChannelConnection, Conversation, Message, MessageDirection,
+        ChannelConnection,
+        Conversation,
+        Message,
+        MessageDirection,
     )
     from app.domains.data_science.stats import MIN_TO_READ, Proportion, median
     from app.domains.orders.models import Order
@@ -200,7 +228,10 @@ async def platform_performance(
 
     convs = await db.execute(
         select(Conversation.id, ChannelConnection.platform, Conversation.extra_data)
-        .join(ChannelConnection, Conversation.channel_connection_id == ChannelConnection.id)
+        .join(
+            ChannelConnection,
+            Conversation.channel_connection_id == ChannelConnection.id,
+        )
         .where(Conversation.business_id.in_(business_ids))
     )
     rows = convs.all()
@@ -221,7 +252,12 @@ async def platform_performance(
             held_reasons[name][reason] = held_reasons[name].get(reason, 0) + 1
 
     messages = await db.execute(
-        select(Message.conversation_id, Message.direction, Message.extra_data, Message.created_at)
+        select(
+            Message.conversation_id,
+            Message.direction,
+            Message.extra_data,
+            Message.created_at,
+        )
         .where(Message.conversation_id.in_(list(platform_of)))
         .order_by(Message.created_at.asc())
     )
@@ -234,15 +270,18 @@ async def platform_performance(
         if direction == MessageDirection.INBOUND:
             first_inbound.setdefault(conv_id, created)
             asked.add(conv_id)
-        elif isinstance(extra, dict) and str(extra.get("generated_by") or "").startswith("ai"):
+        elif isinstance(extra, dict) and str(
+            extra.get("generated_by") or ""
+        ).startswith("ai"):
             ai_touched.add(conv_id)
             if conv_id in first_inbound:
                 first_ai.setdefault(conv_id, created)
 
     # Orders attributed to a conversation the bot answered in.
     orders = await db.execute(
-        select(Order.conversation_id, Order.total_amount, Order.currency, Order.status)
-        .where(Order.business_id.in_(business_ids), Order.is_active.is_(True))
+        select(
+            Order.conversation_id, Order.total_amount, Order.currency, Order.status
+        ).where(Order.business_id.in_(business_ids), Order.is_active.is_(True))
     )
     revenue: dict[str, dict[str, float]] = {}
     order_counts: dict[str, int] = {}
@@ -280,7 +319,10 @@ async def platform_performance(
             "latency_sample": len(latencies),
             "held_for_human": held.get(name, 0),
             "held_reasons": sorted(
-                ({"reason": reason, "count": count} for reason, count in held_reasons.get(name, {}).items()),
+                (
+                    {"reason": reason, "count": count}
+                    for reason, count in held_reasons.get(name, {}).items()
+                ),
                 key=lambda item: -item["count"],
             )[:4],
             "orders_after_ai": order_counts.get(name, 0),
@@ -316,39 +358,55 @@ async def overview(db: AsyncSession, business_ids: list[uuid.UUID]) -> dict[str,
     bots: list[dict[str, Any]] = []
     seen: set[str] = set()
     for channel in connections.scalars().all():
-        platform = channel.platform.value if hasattr(channel.platform, "value") else str(channel.platform)
+        platform = (
+            channel.platform.value
+            if hasattr(channel.platform, "value")
+            else str(channel.platform)
+        )
         if platform in seen:
             continue
         seen.add(platform)
 
         bot = await get_bot(db, channel.business_id, platform)
-        config = serialize(bot) if bot else {
-            "platform": platform,
-            "enabled": False,
-            "personality_slug": None,
-            "focus": BotFocus.AUTO.value,
-            "focus_label": FOCUS_LABELS[BotFocus.AUTO.value],
-            "custom_instructions": None,
-            "handoff_keywords": [],
-            "max_ai_replies": None,
-            "active_hours": None,
-            "after_hours_message": None,
-            "escalate_on_frustration": False,
-            "hold_on_policy_violation": True,
-            "updated_at": None,
-        }
-        bots.append({
-            **config,
-            "configured": bot is not None,
-            "stats": stats.get(platform, {
-                "conversations": 0, "inbound": 0, "ai_replies": 0,
-                "human_replies": 0, "waiting": 0,
-            }),
-            # The rules this platform imposes, shown so the seller can see what
-            # the bot is being held to instead of guessing.
-            "playbook": playbooks.describe(platform),
-            "performance": performance.get(platform),
-        })
+        config = (
+            serialize(bot)
+            if bot
+            else {
+                "platform": platform,
+                "enabled": False,
+                "personality_slug": None,
+                "focus": BotFocus.AUTO.value,
+                "focus_label": FOCUS_LABELS[BotFocus.AUTO.value],
+                "custom_instructions": None,
+                "handoff_keywords": [],
+                "max_ai_replies": None,
+                "active_hours": None,
+                "after_hours_message": None,
+                "escalate_on_frustration": False,
+                "hold_on_policy_violation": True,
+                "updated_at": None,
+            }
+        )
+        bots.append(
+            {
+                **config,
+                "configured": bot is not None,
+                "stats": stats.get(
+                    platform,
+                    {
+                        "conversations": 0,
+                        "inbound": 0,
+                        "ai_replies": 0,
+                        "human_replies": 0,
+                        "waiting": 0,
+                    },
+                ),
+                # The rules this platform imposes, shown so the seller can see what
+                # the bot is being held to instead of guessing.
+                "playbook": playbooks.describe(platform),
+                "performance": performance.get(platform),
+            }
+        )
 
     return {
         "bots": sorted(bots, key=lambda b: b["platform"]),
@@ -356,7 +414,7 @@ async def overview(db: AsyncSession, business_ids: list[uuid.UUID]) -> dict[str,
         "focus_options": [
             {"value": value, "label": label} for value, label in FOCUS_LABELS.items()
         ],
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
     }
 
 
@@ -399,7 +457,11 @@ async def test_reply(
     from .brief import build_brief, check_hours, vet_reply
 
     bot = await get_bot(db, business_id, platform)
-    focus = (bot.focus.value if bot and isinstance(bot.focus, BotFocus) else BotFocus.AUTO.value)
+    focus = (
+        bot.focus.value
+        if bot and isinstance(bot.focus, BotFocus)
+        else BotFocus.AUTO.value
+    )
 
     # The same brief the live path builds: platform rules plus the seller's
     # configured languages, banned topics and voice. Testing with a different
@@ -420,13 +482,18 @@ async def test_reply(
         reply = await generate_ai_response(
             db=db,
             conversation=draft,
-            personality_slug=(bot.personality_slug if bot and bot.personality_slug else DEFAULT_PERSONALITY),
+            personality_slug=(
+                bot.personality_slug
+                if bot and bot.personality_slug
+                else DEFAULT_PERSONALITY
+            ),
             business_id=business_id,
             custom_prompt=f"{brief.prompt}\n\nMensaje del comprador: {question}",
             force_stage=None if focus == BotFocus.AUTO.value else focus,
             max_tokens=500,
         )
-    except Exception as e:  # noqa: BLE001 -- a failed generation is a real answer
+    # a failed generation is a real answer
+    except Exception as e:  # noqa: BLE001
         logger.warning("chatbot test failed for %s: %s", platform, str(e)[:200])
         return {"ok": False, "reason": str(e)[:200], "brief_sources": brief.sources}
 
@@ -454,7 +521,9 @@ async def test_reply(
     # Run the same vetting the live path runs, and report it: a preview that
     # hides the fact that the reply would have been held is a lie.
     verdict = vet_reply(
-        platform, reply, hold_on_violation=bool(bot.hold_on_policy_violation) if bot else True
+        platform,
+        reply,
+        hold_on_violation=bool(bot.hold_on_policy_violation) if bot else True,
     )
     return {
         "ok": True,

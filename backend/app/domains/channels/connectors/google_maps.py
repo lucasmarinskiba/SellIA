@@ -4,11 +4,11 @@ Monitors: review sentiment, Q&A responses, directions clicks, local insights.
 """
 
 import logging
-from typing import Any, Optional
 from datetime import datetime
+from typing import Any
 
-from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.connectors.base import BaseChannelConnector
+from app.domains.channels.schemas import WebhookPayload
 
 logger = logging.getLogger(__name__)
 
@@ -28,15 +28,12 @@ class GoogleMapsConnector(BaseChannelConnector):
         return bool(self.api_key and self.place_id)
 
     async def send_message(
-        self,
-        recipient_id: str,
-        content: str,
-        content_type: str = "text"
+        self, recipient_id: str, content: str, content_type: str = "text"
     ) -> dict[str, Any]:
         """Google Maps doesn't support sending messages."""
         return {
             "status": "unsupported",
-            "message": "Google Maps connector is for monitoring location, not messaging"
+            "message": "Google Maps connector is for monitoring location, not messaging",
         }
 
     async def parse_webhook(self, raw_payload: dict[str, Any]) -> WebhookPayload:
@@ -53,14 +50,11 @@ class GoogleMapsConnector(BaseChannelConnector):
             sender_name=author,
             message_content=content,
             message_type="review" if event_type == "review" else "notification",
-            metadata=raw_payload
+            metadata=raw_payload,
         )
 
     async def get_location_reviews(
-        self,
-        place_id: str,
-        limit: int = 10,
-        sort_by: str = "recent"
+        self, place_id: str, limit: int = 10, sort_by: str = "recent"
     ) -> dict[str, Any]:
         """Fetch recent reviews for location from Google Maps.
 
@@ -75,7 +69,9 @@ class GoogleMapsConnector(BaseChannelConnector):
         # In real implementation: call Google Maps Places API
         # GET https://maps.googleapis.com/maps/api/place/details/json
 
-        logger.info(f"Fetching {limit} reviews for place {place_id}, sorted by {sort_by}")
+        logger.info(
+            f"Fetching {limit} reviews for place {place_id}, sorted by {sort_by}"
+        )
 
         # Mock data
         reviews = [
@@ -84,15 +80,15 @@ class GoogleMapsConnector(BaseChannelConnector):
                 "rating": 5,
                 "content": "Great showroom, helpful staff!",
                 "posted_at": "2 days ago",
-                "helpful_count": 3
+                "helpful_count": 3,
             },
             {
                 "author": "Maria G.",
                 "rating": 4,
                 "content": "Good products, bit pricey",
                 "posted_at": "1 week ago",
-                "helpful_count": 1
-            }
+                "helpful_count": 1,
+            },
         ]
 
         return {
@@ -100,13 +96,10 @@ class GoogleMapsConnector(BaseChannelConnector):
             "place_id": place_id,
             "reviews_count": len(reviews),
             "average_rating": 4.5,
-            "reviews": reviews[:limit]
+            "reviews": reviews[:limit],
         }
 
-    async def get_location_insights(
-        self,
-        place_id: str
-    ) -> dict[str, Any]:
+    async def get_location_insights(self, place_id: str) -> dict[str, Any]:
         """Get location performance metrics from Google Maps.
 
         Includes: views, directions requests, phone calls, website clicks.
@@ -122,28 +115,21 @@ class GoogleMapsConnector(BaseChannelConnector):
                 "views": {
                     "total": 1250,
                     "trend": "+15%",
-                    "by_source": {
-                        "search": 750,
-                        "maps": 400,
-                        "mobile": 100
-                    }
+                    "by_source": {"search": 750, "maps": 400, "mobile": 100},
                 },
                 "actions": {
                     "directions": 45,
                     "phone_calls": 12,
                     "website_clicks": 23,
-                    "message_clicks": 5
+                    "message_clicks": 5,
                 },
                 "peak_hours": ["12:00-13:00", "18:00-19:00"],
-                "popular_days": ["Friday", "Saturday"]
-            }
+                "popular_days": ["Friday", "Saturday"],
+            },
         }
 
     async def respond_to_review(
-        self,
-        place_id: str,
-        review_id: str,
-        response_content: str
+        self, place_id: str, review_id: str, response_content: str
     ) -> dict[str, Any]:
         """Respond to customer review on Google Maps.
 
@@ -164,14 +150,15 @@ class GoogleMapsConnector(BaseChannelConnector):
             "place_id": place_id,
             "review_id": review_id,
             "response_posted": True,
-            "response_content": response_content[:100] + "..." if len(response_content) > 100 else response_content
+            "response_content": (
+                response_content[:100] + "..."
+                if len(response_content) > 100
+                else response_content
+            ),
         }
 
     async def respond_to_qa(
-        self,
-        place_id: str,
-        question_id: str,
-        answer_content: str
+        self, place_id: str, question_id: str, answer_content: str
     ) -> dict[str, Any]:
         """Answer customer question on Google Maps Q&A.
 
@@ -192,13 +179,14 @@ class GoogleMapsConnector(BaseChannelConnector):
             "place_id": place_id,
             "question_id": question_id,
             "answer_posted": True,
-            "answer_content": answer_content[:100] + "..." if len(answer_content) > 100 else answer_content
+            "answer_content": (
+                answer_content[:100] + "..."
+                if len(answer_content) > 100
+                else answer_content
+            ),
         }
 
-    async def get_directions_data(
-        self,
-        place_id: str
-    ) -> dict[str, Any]:
+    async def get_directions_data(self, place_id: str) -> dict[str, Any]:
         """Get directions requests and traffic patterns to location.
 
         Helps understand: when customers search directions, from where, which routes.
@@ -213,24 +201,17 @@ class GoogleMapsConnector(BaseChannelConnector):
             "directions_requests": {
                 "total": 120,
                 "trend": "+20%",
-                "by_transport": {
-                    "driving": 80,
-                    "transit": 25,
-                    "walking": 15
-                },
-                "avg_distance_km": 4.5
+                "by_transport": {"driving": 80, "transit": 25, "walking": 15},
+                "avg_distance_km": 4.5,
             },
             "common_origins": [
                 {"location": "Downtown", "count": 35},
                 {"location": "Airport", "count": 28},
-                {"location": "Shopping Mall", "count": 22}
-            ]
+                {"location": "Shopping Mall", "count": 22},
+            ],
         }
 
-    async def track_location_visibility(
-        self,
-        place_id: str
-    ) -> dict[str, Any]:
+    async def track_location_visibility(self, place_id: str) -> dict[str, Any]:
         """Track local SEO metrics: search visibility, ranking.
 
         Monitors: appearance in local search results, Knowledge Panel, map ranking.
@@ -246,24 +227,19 @@ class GoogleMapsConnector(BaseChannelConnector):
                 "search_results": {
                     "position": 1,
                     "category": "Showroom",
-                    "city": "Buenos Aires"
+                    "city": "Buenos Aires",
                 },
                 "knowledge_panel": {
                     "visible": True,
                     "rating": 4.5,
-                    "reviews_count": 42
+                    "reviews_count": 42,
                 },
-                "map_rankings": {
-                    "showroom": 1,
-                    "retail_store": 3,
-                    "electronics": 5
-                }
-            }
+                "map_rankings": {"showroom": 1, "retail_store": 3, "electronics": 5},
+            },
         }
 
     async def bulk_update_hours(
-        self,
-        locations: list[dict[str, Any]]
+        self, locations: list[dict[str, Any]]
     ) -> dict[str, Any]:
         """Batch update hours for multiple locations.
 
@@ -292,13 +268,11 @@ class GoogleMapsConnector(BaseChannelConnector):
             "status": "success" if error_count == 0 else "partial",
             "total_locations": len(locations),
             "success": success_count,
-            "failed": error_count
+            "failed": error_count,
         }
 
     async def sync_opening_hours(
-        self,
-        place_id: str,
-        hours_json: dict[str, Any]
+        self, place_id: str, hours_json: dict[str, Any]
     ) -> dict[str, Any]:
         """Sync opening hours to Google Maps.
 
@@ -317,5 +291,5 @@ class GoogleMapsConnector(BaseChannelConnector):
             "status": "success",
             "place_id": place_id,
             "hours_synced": True,
-            "last_updated": datetime.now().isoformat()
+            "last_updated": datetime.now().isoformat(),
         }

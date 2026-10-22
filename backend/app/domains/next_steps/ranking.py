@@ -14,8 +14,8 @@ with the denominator. A ranking over two orders says so instead of crowning a
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,10 +28,10 @@ logger = get_logger(__name__)
 MIN_FOR_RANKING = 5
 
 
-def _aware(value: Optional[datetime]) -> Optional[datetime]:
+def _aware(value: datetime | None) -> datetime | None:
     if value is None:
         return None
-    return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+    return value if value.tzinfo else value.replace(tzinfo=UTC)
 
 
 def _item_lines(items: Any) -> list[tuple[str, int, float]]:
@@ -69,7 +69,7 @@ async def business_ranking(
     from app.domains.businesses.models import Business
     from app.domains.orders.models import Order, PaymentStatus
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     since = now - timedelta(days=days)
 
     biz = await db.execute(select(Business.id).where(Business.user_id == user.id))
@@ -129,12 +129,16 @@ async def business_ranking(
                 product_orders[name] += 1
                 seen_in_order.add(name)
 
-        key = (order.customer_email or "").strip().lower() or (order.customer_phone or "").strip()
+        key = (order.customer_email or "").strip().lower() or (
+            order.customer_phone or ""
+        ).strip()
         if key:
             customer_revenue[(key, currency)] += float(order.total_amount or 0)
             customer_orders[key] += 1
             customer_label[key] = (
-                mask_name(order.customer_name) or mask_email(order.customer_email) or "cliente"
+                mask_name(order.customer_name)
+                or mask_email(order.customer_email)
+                or "cliente"
             )
             created = _aware(order.created_at)
             if created and (key not in customer_last or created > customer_last[key]):
@@ -147,7 +151,7 @@ async def business_ranking(
             platform_paid[platform] += 1
 
     def group_by_currency(
-        values: dict[tuple[str, str], float]
+        values: dict[tuple[str, str], float],
     ) -> dict[str, dict[str, float]]:
         grouped: dict[str, dict[str, float]] = defaultdict(dict)
         for (name, currency), amount in values.items():
@@ -175,8 +179,12 @@ async def business_ranking(
                 "label": customer_label[key],
                 "orders": count,
                 "revenue": customer_money.get(key, {}),
-                "last_purchase": customer_last[key].isoformat() if key in customer_last else None,
-                "days_since": (now - customer_last[key]).days if key in customer_last else None,
+                "last_purchase": (
+                    customer_last[key].isoformat() if key in customer_last else None
+                ),
+                "days_since": (
+                    (now - customer_last[key]).days if key in customer_last else None
+                ),
             }
             for key, count in customer_orders.items()
         ),
@@ -219,7 +227,9 @@ async def business_ranking(
     }
 
 
-async def attention_queue(db: AsyncSession, user: Any, limit: int = 25) -> dict[str, Any]:
+async def attention_queue(
+    db: AsyncSession, user: Any, limit: int = 25
+) -> dict[str, Any]:
     """Open conversations, ordered by who has been waiting and what is at stake.
 
     The order is explained per row rather than hidden in a score: a seller
@@ -227,11 +237,14 @@ async def attention_queue(db: AsyncSession, user: Any, limit: int = 25) -> dict[
     """
     from app.domains.businesses.models import Business
     from app.domains.channels.models import (
-        ChannelConnection, Conversation, Message, MessageDirection,
+        ChannelConnection,
+        Conversation,
+        Message,
+        MessageDirection,
     )
     from app.domains.orders.models import Order
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     biz = await db.execute(select(Business.id).where(Business.user_id == user.id))
     business_ids = [row[0] for row in biz.all()]
     if not business_ids:
@@ -244,8 +257,13 @@ async def attention_queue(db: AsyncSession, user: Any, limit: int = 25) -> dict[
             Conversation.extra_data,
             ChannelConnection.platform,
         )
-        .join(ChannelConnection, Conversation.channel_connection_id == ChannelConnection.id)
-        .where(Conversation.business_id.in_(business_ids), Conversation.is_active.is_(True))
+        .join(
+            ChannelConnection,
+            Conversation.channel_connection_id == ChannelConnection.id,
+        )
+        .where(
+            Conversation.business_id.in_(business_ids), Conversation.is_active.is_(True)
+        )
     )
     rows = convs.all()
     if not rows:
@@ -261,7 +279,12 @@ async def attention_queue(db: AsyncSession, user: Any, limit: int = 25) -> dict[
     }
 
     messages = await db.execute(
-        select(Message.conversation_id, Message.direction, Message.content, Message.created_at)
+        select(
+            Message.conversation_id,
+            Message.direction,
+            Message.content,
+            Message.created_at,
+        )
         .where(Message.conversation_id.in_(list(info)))
         .order_by(Message.created_at.asc())
     )
@@ -278,8 +301,9 @@ async def attention_queue(db: AsyncSession, user: Any, limit: int = 25) -> dict[
 
     # Past purchases, to tell a returning customer from a stranger.
     orders = await db.execute(
-        select(Order.conversation_id, Order.total_amount, Order.currency)
-        .where(Order.business_id.in_(business_ids), Order.is_active.is_(True))
+        select(Order.conversation_id, Order.total_amount, Order.currency).where(
+            Order.business_id.in_(business_ids), Order.is_active.is_(True)
+        )
     )
     spent: dict[Any, dict[str, float]] = defaultdict(lambda: defaultdict(float))
     for conv_id, amount, currency in orders.all():
@@ -288,7 +312,17 @@ async def attention_queue(db: AsyncSession, user: Any, limit: int = 25) -> dict[
 
     #: Words that mean the buyer is at the decision, not browsing. Deliberately
     #: few and literal — a long list of "intent keywords" would be guesswork.
-    BUYING_SIGNALS = ("precio", "cuánto", "cuanto", "sale", "stock", "disponible", "envío", "envio", "comprar")
+    BUYING_SIGNALS = (
+        "precio",
+        "cuánto",
+        "cuanto",
+        "sale",
+        "stock",
+        "disponible",
+        "envío",
+        "envio",
+        "comprar",
+    )
 
     items: list[dict[str, Any]] = []
     for conv_id, meta in info.items():
@@ -305,26 +339,31 @@ async def attention_queue(db: AsyncSession, user: Any, limit: int = 25) -> dict[
             reasons.append("preguntó por precio, stock o envío")
         if spent.get(conv_id):
             amounts = " · ".join(
-                f"{round(total)} {currency}" for currency, total in spent[conv_id].items()
+                f"{round(total)} {currency}"
+                for currency, total in spent[conv_id].items()
             )
             reasons.append(f"ya te compró por {amounts}")
         if meta["extra"].get("awaiting_human"):
-            reasons.append(f"marcada para una persona: {meta['extra'].get('handoff_reason') or 'sin motivo'}")
+            reasons.append(
+                f"marcada para una persona: {meta['extra'].get('handoff_reason') or 'sin motivo'}"
+            )
         if inbound_count.get(conv_id, 0) > 2:
             reasons.append(f"escribió {inbound_count[conv_id]} veces")
 
-        items.append({
-            "conversation_id": str(conv_id),
-            "platform": meta["platform"],
-            "who": meta["lead_name"] or "sin nombre",
-            "last_message": (content or "")[:180],
-            "waiting_hours": hours,
-            "asked_to_buy": asked_to_buy,
-            "is_customer": bool(spent.get(conv_id)),
-            "spent": {k: round(v, 2) for k, v in spent.get(conv_id, {}).items()},
-            "awaiting_human": bool(meta["extra"].get("awaiting_human")),
-            "reasons": reasons,
-        })
+        items.append(
+            {
+                "conversation_id": str(conv_id),
+                "platform": meta["platform"],
+                "who": meta["lead_name"] or "sin nombre",
+                "last_message": (content or "")[:180],
+                "waiting_hours": hours,
+                "asked_to_buy": asked_to_buy,
+                "is_customer": bool(spent.get(conv_id)),
+                "spent": {k: round(v, 2) for k, v in spent.get(conv_id, {}).items()},
+                "awaiting_human": bool(meta["extra"].get("awaiting_human")),
+                "reasons": reasons,
+            }
+        )
 
     # Ordered by what is at stake, then by how long they have waited. Both are
     # facts; neither is a predicted probability of closing.

@@ -1,12 +1,13 @@
 """50 Retention Prompts — Customer experience, engagement, churn prevention, loyalty, upsell, NPS."""
 
 from dataclasses import dataclass
-from typing import Dict, Any, List
 from enum import Enum
+from typing import Any
 
 
 class RetentionStrategy(str, Enum):
     """Types of retention strategies."""
+
     CUSTOMER_EXPERIENCE = "Customer Experience"
     ENGAGEMENT = "Engagement"
     CHURN_PREVENTION = "Churn Prevention"
@@ -22,18 +23,19 @@ class RetentionStrategy(str, Enum):
 @dataclass
 class RetentionPromptTemplate:
     """Structure for a retention prompt."""
+
     id: str
     name: str
     strategy: str
     business_context: str
     prompt_text: str
-    variables: List[str]
-    example_input: Dict[str, Any]
+    variables: list[str]
+    example_input: dict[str, Any]
     example_output: str
-    success_metrics: List[str]
-    industry_variations: Dict[str, str]
-    best_practices: List[str]
-    tags: List[str]
+    success_metrics: list[str]
+    industry_variations: dict[str, str]
+    best_practices: list[str]
+    tags: list[str]
 
 
 class RetentionPrompts:
@@ -274,27 +276,81 @@ Example iteration:
 - Fix: Add guided "first workflow" scenario (10 min)
 - Result: 72% Week 1 retention (+12 points)
 - Action: Standardize guided workflows for all customers""",
-            variables=["product_name", "success_metric", "customer_type", "customer_goal",
-                      "time_to_first_value", "biggest_barrier", "objective_1", "objective_2",
-                      "objective_3", "preob_timeline", "preob_goal", "preob_email_1",
-                      "preob_email_1_send", "preob_email_2", "preob_email_2_send", "preob_optional",
-                      "gs_video_duration", "gs_video_focus", "setup_checklist_items",
-                      "faq_concerns", "preob_success_signal", "day1_achievement", "day1_milestone",
-                      "day2_milestone", "day3_milestone", "feature_1_to_teach", "feature_1_value",
-                      "feature_2_to_teach", "feature_2_value", "feature_3_to_teach", "feature_3_value",
-                      "recommended_model", "reason", "chat_availability", "email_availability",
-                      "sm_involvement", "proactive_timeline", "d1_completion_target",
-                      "time_to_first_success_target", "sentiment_target", "week2_features",
-                      "week3_features", "week4_features", "in_app_training", "video_count",
-                      "video_duration", "doc_pages", "live_training_frequency", "habit_1",
-                      "habit_1_frequency", "habit_2", "habit_2_frequency", "habit_3",
-                      "habit_3_frequency", "milestone_w2", "milestone_w3", "milestone_w4",
-                      "optimization_focus", "advanced_features", "integration_setup",
-                      "outcome_metric", "outcome_target", "celebration_trigger",
-                      "d1_activation_target", "w1_retention_target", "m1_retention_target",
-                      "dau_m2_target", "core_features_adoption_target", "self_serve_target",
-                      "advanced_feature_adoption_target", "outcome_timeline", "nps_target",
-                      "ttv_target"],
+            variables=[
+                "product_name",
+                "success_metric",
+                "customer_type",
+                "customer_goal",
+                "time_to_first_value",
+                "biggest_barrier",
+                "objective_1",
+                "objective_2",
+                "objective_3",
+                "preob_timeline",
+                "preob_goal",
+                "preob_email_1",
+                "preob_email_1_send",
+                "preob_email_2",
+                "preob_email_2_send",
+                "preob_optional",
+                "gs_video_duration",
+                "gs_video_focus",
+                "setup_checklist_items",
+                "faq_concerns",
+                "preob_success_signal",
+                "day1_achievement",
+                "day1_milestone",
+                "day2_milestone",
+                "day3_milestone",
+                "feature_1_to_teach",
+                "feature_1_value",
+                "feature_2_to_teach",
+                "feature_2_value",
+                "feature_3_to_teach",
+                "feature_3_value",
+                "recommended_model",
+                "reason",
+                "chat_availability",
+                "email_availability",
+                "sm_involvement",
+                "proactive_timeline",
+                "d1_completion_target",
+                "time_to_first_success_target",
+                "sentiment_target",
+                "week2_features",
+                "week3_features",
+                "week4_features",
+                "in_app_training",
+                "video_count",
+                "video_duration",
+                "doc_pages",
+                "live_training_frequency",
+                "habit_1",
+                "habit_1_frequency",
+                "habit_2",
+                "habit_2_frequency",
+                "habit_3",
+                "habit_3_frequency",
+                "milestone_w2",
+                "milestone_w3",
+                "milestone_w4",
+                "optimization_focus",
+                "advanced_features",
+                "integration_setup",
+                "outcome_metric",
+                "outcome_target",
+                "celebration_trigger",
+                "d1_activation_target",
+                "w1_retention_target",
+                "m1_retention_target",
+                "dau_m2_target",
+                "core_features_adoption_target",
+                "self_serve_target",
+                "advanced_feature_adoption_target",
+                "outcome_timeline",
+                "nps_target",
+                "ttv_target",
+            ],
             example_input={
                 "product_name": "TaskFlow",
                 "success_metric": "First project created and tracked for 2 weeks",
@@ -343,7 +399,7 @@ Example iteration:
                 "habit_3_frequency": "Friday afternoon 1-pager",
                 "outcome_metric": "On-time delivery rate",
                 "outcome_target": "30% → 65% (heading to 95%)",
-                "celebration_trigger": "When first on-time delivery is 100%"
+                "celebration_trigger": "When first on-time delivery is 100%",
             },
             example_output="""TASKFLOW ONBOARDING FRAMEWORK
 
@@ -598,21 +654,27 @@ Business outcome:
                 "Month 1 retention: 85%+ of customers still active",
                 "Time to first success: <2 hours",
                 "NPS post-onboarding: 45+ (vs. baseline 30)",
-                "Customer success metric: Achieve target outcome by 30 days"
+                "Customer success metric: Achieve target outcome by 30 days",
             ],
             industry_variations={
                 "SaaS": "ROI-focused, integration-heavy, feature progression",
                 "Real Estate": "Deal-focused, market context, agent-specific workflows",
-                "Services": "Project-focused, team coordination, client delivery"
+                "Services": "Project-focused, team coordination, client delivery",
             },
             best_practices=[
                 "First success within 2 hours — not 2 days",
                 "Celebrate early wins — reinforce that it's working",
                 "Make support proactive — don't wait for customers to ask",
                 "Connect every step to business outcome — not just features",
-                "Build daily habit in Week 2 — consistency drives retention"
+                "Build daily habit in Week 2 — consistency drives retention",
             ],
-            tags=["onboarding", "customer-experience", "activation", "retention", "engagement"]
+            tags=[
+                "onboarding",
+                "customer-experience",
+                "activation",
+                "retention",
+                "engagement",
+            ],
         )
 
     @staticmethod
@@ -866,13 +928,35 @@ Use saves to inform:
 - Pricing strategy (how flexible should we be?)
 - Support model (when does dedicated support prevent churn?)
 - Onboarding changes (could better onboarding prevent this?)""",
-            variables=["product_name", "current_churn_rate", "monthly_churn_mrr", "churn_reason_1",
-                      "churn_reason_2", "churn_reason_3", "peak_churn_month", "peak_churn_reason",
-                      "baseline_dau", "warning_dau", "surge_trigger", "inactivity_days",
-                      "baseline_integrations", "warning_integrations", "success_metric", "timeline",
-                      "reduction_percent", "baseline_nps", "warning_nps", "save_rate",
-                      "target_churn_rate", "early_retention", "mid_retention", "mature_retention",
-                      "retention_target", "expected_mrr_impact", "expected_mrr_impact_q1"],
+            variables=[
+                "product_name",
+                "current_churn_rate",
+                "monthly_churn_mrr",
+                "churn_reason_1",
+                "churn_reason_2",
+                "churn_reason_3",
+                "peak_churn_month",
+                "peak_churn_reason",
+                "baseline_dau",
+                "warning_dau",
+                "surge_trigger",
+                "inactivity_days",
+                "baseline_integrations",
+                "warning_integrations",
+                "success_metric",
+                "timeline",
+                "reduction_percent",
+                "baseline_nps",
+                "warning_nps",
+                "save_rate",
+                "target_churn_rate",
+                "early_retention",
+                "mid_retention",
+                "mature_retention",
+                "retention_target",
+                "expected_mrr_impact",
+                "expected_mrr_impact_q1",
+            ],
             example_input={
                 "product_name": "TaskFlow",
                 "current_churn_rate": "5",
@@ -892,7 +976,7 @@ Use saves to inform:
                 "target_churn_rate": "3",
                 "early_retention": "70",
                 "mid_retention": "85",
-                "mature_retention": "90"
+                "mature_retention": "90",
             },
             example_output="""TASKFLOW CHURN PREVENTION SYSTEM
 
@@ -1070,25 +1154,31 @@ That's $300k+ in retained revenue. Here's the investment needed: [X]"
                 "Churn prediction accuracy: 80%+ of flagged customers actually churn",
                 "Save rate: 50%+ of critical risk customers successfully retained",
                 "Churn reduction: From 5% → 3% within 12 months",
-                "Revenue retention: Save $300k+ in annual MRR through interventions"
+                "Revenue retention: Save $300k+ in annual MRR through interventions",
             ],
             industry_variations={
                 "SaaS": "Feature gaps, pricing, implementation complexity",
                 "Real Estate": "Market shifts, deal pipeline, competitive pressure",
-                "Services": "Project completion, client satisfaction, team capacity"
+                "Services": "Project completion, client satisfaction, team capacity",
             },
             best_practices=[
                 "Predict early — act before customer is ready to leave",
                 "Automate detection — don't wait for manual review",
                 "Personalize interventions — generic saves rarely work",
                 "Track save rate — measure what works vs. what doesn't",
-                "Fix root causes — interventions are band-aids without root cause fix"
+                "Fix root causes — interventions are band-aids without root cause fix",
             ],
-            tags=["churn-prevention", "retention", "customer-success", "prediction", "engagement"]
+            tags=[
+                "churn-prevention",
+                "retention",
+                "customer-success",
+                "prediction",
+                "engagement",
+            ],
         )
 
     @staticmethod
-    def get_all_retention_prompts() -> Dict[str, RetentionPromptTemplate]:
+    def get_all_retention_prompts() -> dict[str, RetentionPromptTemplate]:
         """Return all 50 retention prompts indexed by ID."""
         return {
             "retention_001": RetentionPrompts.onboarding_optimization_framework(),

@@ -22,14 +22,23 @@ trying Ollama/OpenAI and logging three warnings on every LLM call.
 
 import time
 import uuid
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text, delete, func, select
-from sqlalchemy.dialects.postgresql import UUID
 from pgvector.sqlalchemy import Vector
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    delete,
+    func,
+    select,
+)
+from sqlalchemy.dialects.postgresql import UUID
 
-from app.core.database import Base, AsyncSessionLocal
+from app.core.database import AsyncSessionLocal, Base
 from app.core.embeddings import embedding_service
 from app.core.logger import get_logger
 
@@ -37,7 +46,9 @@ logger = get_logger(__name__)
 
 DEFAULT_THRESHOLD = 0.92
 DEFAULT_TTL_SECONDS = 86400  # 24h
-UNAVAILABLE_BACKOFF_SECONDS = 600  # 10 min without retrying embeddings after they all failed
+UNAVAILABLE_BACKOFF_SECONDS = (
+    600  # 10 min without retrying embeddings after they all failed
+)
 
 
 class SemanticCacheEmbedding(Base):
@@ -47,7 +58,10 @@ class SemanticCacheEmbedding(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id = Column(
-        UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     query_text = Column(Text, nullable=False)
     query_embedding = Column(Vector(768), nullable=False)
@@ -55,11 +69,11 @@ class SemanticCacheEmbedding(Base):
     model_used = Column(String(100), nullable=False, default="unknown")
     hit_count = Column(Integer, default=0, nullable=False)
     created_at = Column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True
     )
     last_accessed = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
 
@@ -68,31 +82,35 @@ class SemanticCache:
 
     def __init__(self, ttl_seconds: int = DEFAULT_TTL_SECONDS):
         self.ttl = ttl_seconds
-        self._unavailable_until = 0.0  # time.monotonic() deadline while embeddings are down
+        self._unavailable_until = (
+            0.0  # time.monotonic() deadline while embeddings are down
+        )
 
-    async def _embed(self, query: str) -> Optional[list[float]]:
+    async def _embed(self, query: str) -> list[float] | None:
         """The query's embedding, or None when no provider can produce one (backs off)."""
         if time.monotonic() < self._unavailable_until:
             return None
         try:
             return await embedding_service.embed_text(query)
-        except Exception as e:  # noqa: BLE001 -- the cache must never break an LLM call
+        # the cache must never break an LLM call
+        except Exception as e:  # noqa: BLE001
             self._unavailable_until = time.monotonic() + UNAVAILABLE_BACKOFF_SECONDS
             logger.info(
                 "Semantic cache paused for %ss: no embedding provider available (%s)",
-                UNAVAILABLE_BACKOFF_SECONDS, str(e)[:100],
+                UNAVAILABLE_BACKOFF_SECONDS,
+                str(e)[:100],
             )
             return None
 
     def _cutoff(self) -> datetime:
-        return datetime.now(timezone.utc) - timedelta(seconds=self.ttl)
+        return datetime.now(UTC) - timedelta(seconds=self.ttl)
 
     async def get_similar(
         self,
         query: str,
-        business_id: Optional[uuid.UUID] = None,
+        business_id: uuid.UUID | None = None,
         threshold: float = DEFAULT_THRESHOLD,
-    ) -> Optional[str]:
+    ) -> str | None:
         """A semantically similar cached response of THIS business, not older than the TTL."""
         if business_id is None:
             return None
@@ -104,15 +122,20 @@ class SemanticCache:
             stmt = (
                 select(
                     SemanticCacheEmbedding,
-                    (1 - SemanticCacheEmbedding.query_embedding.cosine_distance(embedding)).label(
-                        "similarity"
-                    ),
+                    (
+                        1
+                        - SemanticCacheEmbedding.query_embedding.cosine_distance(
+                            embedding
+                        )
+                    ).label("similarity"),
                 )
                 .where(
                     SemanticCacheEmbedding.business_id == business_id,
                     SemanticCacheEmbedding.created_at >= self._cutoff(),
                 )
-                .order_by(SemanticCacheEmbedding.query_embedding.cosine_distance(embedding))
+                .order_by(
+                    SemanticCacheEmbedding.query_embedding.cosine_distance(embedding)
+                )
                 .limit(1)
             )
             result = await db.execute(stmt)
@@ -127,7 +150,7 @@ class SemanticCache:
 
             if similarity >= threshold:
                 match.hit_count += 1
-                match.last_accessed = datetime.now(timezone.utc)
+                match.last_accessed = datetime.now(UTC)
                 await db.commit()
                 logger.info(f"Semantic cache HIT (similarity={similarity:.3f})")
                 return match.response_text
@@ -139,7 +162,7 @@ class SemanticCache:
         query: str,
         response: str,
         model_used: str = "unknown",
-        business_id: Optional[uuid.UUID] = None,
+        business_id: uuid.UUID | None = None,
     ) -> None:
         """Cache a query/response pair of ``business_id`` with its embedding."""
         if business_id is None:
@@ -171,21 +194,29 @@ class SemanticCache:
     # Aliases used by llm_provider.py
     # ------------------------------------------------------------------
 
-    async def get(self, prompt: str, business_id: Optional[uuid.UUID] = None) -> Optional[str]:
+    async def get(
+        self, prompt: str, business_id: uuid.UUID | None = None
+    ) -> str | None:
         """Alias for get_similar with default threshold."""
-        return await self.get_similar(prompt, business_id=business_id, threshold=DEFAULT_THRESHOLD)
+        return await self.get_similar(
+            prompt, business_id=business_id, threshold=DEFAULT_THRESHOLD
+        )
 
     async def set(
         self,
         prompt: str,
         response: str,
-        ttl: Optional[int] = None,
-        business_id: Optional[uuid.UUID] = None,
+        ttl: int | None = None,
+        business_id: uuid.UUID | None = None,
     ) -> None:
         """Alias for store (ttl is ignored; the cache-wide TTL applies)."""
-        await self.store(prompt, response, model_used="unknown", business_id=business_id)
+        await self.store(
+            prompt, response, model_used="unknown", business_id=business_id
+        )
 
-    async def invalidate(self, pattern: str = "", business_id: Optional[uuid.UUID] = None) -> int:
+    async def invalidate(
+        self, pattern: str = "", business_id: uuid.UUID | None = None
+    ) -> int:
         """Invalidate cached entries whose query_text contains the pattern (one business, or all)."""
         async with AsyncSessionLocal() as db:
             stmt = select(SemanticCacheEmbedding).where(
@@ -202,9 +233,7 @@ class SemanticCache:
     async def stats(self) -> dict:
         """Return basic cache stats."""
         async with AsyncSessionLocal() as db:
-            count_result = await db.execute(
-                func.count(SemanticCacheEmbedding.id)
-            )
+            count_result = await db.execute(func.count(SemanticCacheEmbedding.id))
             total = count_result.scalar() or 0
             return {
                 "cached_prompts": total,

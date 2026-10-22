@@ -8,8 +8,9 @@ Mayor inteligencia, reasoning profundo, adaptación a contexto real.
 """
 
 import logging
+from typing import Any
+
 import anthropic
-from typing import Dict, List, Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -25,9 +26,9 @@ class LLMReasoningLayer:
 
     async def reason_about_situation(
         self,
-        situation: Dict[str, Any],
+        situation: dict[str, Any],
         knowledge_context: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Claude razona profundamente sobre situación específica.
 
@@ -76,7 +77,11 @@ Responde en JSON estructurado con análisis, recomendaciones, confianza.
                 import re
 
                 json_match = re.search(r"\{.*\}", response_text, re.DOTALL)
-                analysis = json.loads(json_match.group(0)) if json_match else {"reasoning": response_text}
+                analysis = (
+                    json.loads(json_match.group(0))
+                    if json_match
+                    else {"reasoning": response_text}
+                )
 
             return {
                 "status": "success",
@@ -86,15 +91,15 @@ Responde en JSON estructurado con análisis, recomendaciones, confianza.
             }
 
         except Exception as e:
-            logger.error(f"Claude reasoning failed: {str(e)}")
+            logger.exception("Claude reasoning failed")
             return {"status": "error", "error": str(e)}
 
     async def generate_copy(
         self,
-        product: Dict[str, Any],
+        product: dict[str, Any],
         style: str,
         audience: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Claude genera copy persuasivo REAL para vender producto.
         """
@@ -139,19 +144,23 @@ Responde en JSON con copy estructurado.
                 copy = json.loads(response_text)
             except json.JSONDecodeError:
                 json_match = re.search(r"\{.*\}", response_text, re.DOTALL)
-                copy = json.loads(json_match.group(0)) if json_match else {"copy": response_text}
+                copy = (
+                    json.loads(json_match.group(0))
+                    if json_match
+                    else {"copy": response_text}
+                )
 
             return {"status": "success", "copy": copy}
 
-        except Exception as e:
-            logger.error(f"Copy generation failed: {str(e)}")
+        except Exception:
+            logger.exception("Copy generation failed")
             return {"status": "error"}
 
     async def analyze_buyer_psychology(
         self,
-        buyer_profile: Dict[str, Any],
-        product: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        buyer_profile: dict[str, Any],
+        product: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Claude analiza psicología del buyer + recomienza estrategia personalizada.
         """
@@ -191,19 +200,23 @@ Responde con estrategia de venta PERSONALIZADA.
                 strategy = json.loads(response_text)
             except json.JSONDecodeError:
                 json_match = re.search(r"\{.*\}", response_text, re.DOTALL)
-                strategy = json.loads(json_match.group(0)) if json_match else {"strategy": response_text}
+                strategy = (
+                    json.loads(json_match.group(0))
+                    if json_match
+                    else {"strategy": response_text}
+                )
 
             return {"status": "success", "strategy": strategy}
 
-        except Exception as e:
-            logger.error(f"Psychology analysis failed: {str(e)}")
+        except Exception:
+            logger.exception("Psychology analysis failed")
             return {"status": "error"}
 
     async def negotiate_with_buyer(
         self,
         buyer_message: str,
-        negotiation_state: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        negotiation_state: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Claude sugiere siguiente move en negociación.
         """
@@ -240,14 +253,14 @@ Responde con recomendación estratégica.
             response_text = message.content[0].text
             return {"status": "success", "recommendation": response_text}
 
-        except Exception as e:
-            logger.error(f"Negotiation suggestion failed: {str(e)}")
+        except Exception:
+            logger.exception("Negotiation suggestion failed")
             return {"status": "error"}
 
     async def evaluate_market_opportunity(
         self,
-        market_data: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        market_data: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Claude evalúa oportunidad de mercado.
         """
@@ -284,17 +297,21 @@ Responde con evaluación profesional.
                 evaluation = json.loads(response_text)
             except json.JSONDecodeError:
                 json_match = re.search(r"\{.*\}", response_text, re.DOTALL)
-                evaluation = json.loads(json_match.group(0)) if json_match else {"evaluation": response_text}
+                evaluation = (
+                    json.loads(json_match.group(0))
+                    if json_match
+                    else {"evaluation": response_text}
+                )
 
             return {"status": "success", "evaluation": evaluation}
 
-        except Exception as e:
-            logger.error(f"Market evaluation failed: {str(e)}")
+        except Exception:
+            logger.exception("Market evaluation failed")
             return {"status": "error"}
 
     # ========== FORMATTING HELPERS ==========
 
-    def _format_situation(self, situation: Dict[str, Any]) -> str:
+    def _format_situation(self, situation: dict[str, Any]) -> str:
         return f"""
 Plataforma: {situation.get('platform')}
 Acción: {situation.get('action_type')}
@@ -302,7 +319,7 @@ Contexto: {situation.get('context', {})}
 Tiempo: {situation.get('timestamp', 'now')}
 """
 
-    def _format_buyer(self, buyer: Dict[str, Any]) -> str:
+    def _format_buyer(self, buyer: dict[str, Any]) -> str:
         return f"""
 Tipo: {buyer.get('type')}
 Budget: {buyer.get('budget')}
@@ -311,7 +328,7 @@ Objecciones: {buyer.get('objections', [])}
 Comportamiento previo: {buyer.get('history', [])}
 """
 
-    def _format_product(self, product: Dict[str, Any]) -> str:
+    def _format_product(self, product: dict[str, Any]) -> str:
         return f"""
 Nombre: {product.get('name')}
 Precio: {product.get('price')}
@@ -320,7 +337,7 @@ Categoría: {product.get('category')}
 Competencia precio: {product.get('competitor_price')}
 """
 
-    def _format_market(self, market: Dict[str, Any]) -> str:
+    def _format_market(self, market: dict[str, Any]) -> str:
         return f"""
 Demanda: {market.get('demand')}
 Competencia: {market.get('competitors', 0)} jugadores

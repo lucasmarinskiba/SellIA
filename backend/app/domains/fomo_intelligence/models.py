@@ -11,10 +11,23 @@ Regla de integridad: toda aplicación de estrategia debe declarar
 (el dato real capturado en ese momento). Sin eso, no se registra:
 FOMO fabricado destruye confianza y viola la estrategia de Transparencia.
 """
-import uuid
+
 import enum
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, Text, JSON, Enum
+import uuid
+from datetime import UTC, datetime
+
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    Float,
+    Integer,
+    String,
+    Text,
+)
+
 from app.db.models import Base
 
 
@@ -27,6 +40,7 @@ class FOMOStrategyType(str, enum.Enum):
 
 class FOMOStrategyApplication(Base):
     """Un uso concreto de una estrategia FOMO, con el dato real que la respalda."""
+
     __tablename__ = "fomo_strategy_applications"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -34,10 +48,16 @@ class FOMOStrategyApplication(Base):
     strategy_type = Column(Enum(FOMOStrategyType), nullable=False, index=True)
 
     # Contexto de aplicación
-    target_type = Column(String(50), nullable=False)  # product, campaign, cohort, landing_page
+    target_type = Column(
+        String(50), nullable=False
+    )  # product, campaign, cohort, landing_page
     target_id = Column(String(36), nullable=False, index=True)
-    channel = Column(String(50), nullable=True)  # instagram, email, whatsapp, landing_page
-    personality_target = Column(String(50), nullable=True)  # de X9: pragmatist, impulse_buyer, etc
+    channel = Column(
+        String(50), nullable=True
+    )  # instagram, email, whatsapp, landing_page
+    personality_target = Column(
+        String(50), nullable=True
+    )  # de X9: pragmatist, impulse_buyer, etc
 
     # Integridad del dato: obligatorio declarar la fuente real
     real_data_source = Column(String(200), nullable=False)
@@ -48,11 +68,12 @@ class FOMOStrategyApplication(Base):
     # Mensaje generado a partir del dato real
     generated_message = Column(Text, nullable=True)
 
-    applied_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    applied_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class FOMOStrategyOutcome(Base):
     """Resultado medido de una aplicación de estrategia (impresiones -> conversión)."""
+
     __tablename__ = "fomo_strategy_outcomes"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -66,23 +87,32 @@ class FOMOStrategyOutcome(Base):
     # Señal de confianza: si el usuario reporta la FOMO como genuina o forzada
     perceived_as_genuine = Column(Boolean, nullable=True)
 
-    measured_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    measured_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class FOMOStrategyIntelligence(Base):
     """Conocimiento agregado: qué estrategia funciona mejor para qué segmento."""
+
     __tablename__ = "fomo_strategy_intelligence"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     strategy_type = Column(Enum(FOMOStrategyType), nullable=False, index=True)
-    personality_type = Column(String(50), nullable=True, index=True)  # null = agregado general
+    personality_type = Column(
+        String(50), nullable=True, index=True
+    )  # null = agregado general
 
     sample_size = Column(Integer, default=0)
     total_impressions = Column(Integer, default=0)
     total_conversions = Column(Integer, default=0)
     avg_conversion_rate = Column(Float, default=0.0)
     trust_score = Column(Float, default=0.0)  # % perceived_as_genuine=True
-    confidence_level = Column(String(20), default="low")  # low, medium, high (según sample_size)
+    confidence_level = Column(
+        String(20), default="low"
+    )  # low, medium, high (según sample_size)
 
     recommendation = Column(Text, nullable=True)
-    last_updated = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    last_updated = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )

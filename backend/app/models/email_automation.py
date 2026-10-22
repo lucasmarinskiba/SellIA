@@ -1,9 +1,21 @@
 """Email Automation models for Phase 28."""
 
-from datetime import datetime
 from uuid import uuid4
-from sqlalchemy import Column, String, DateTime, Boolean, Integer, Float, ForeignKey, Text, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import UUID
+
+from app.core.clock import utc_now
 from app.core.database import Base
 
 
@@ -25,7 +37,7 @@ class SendTimePrediction(Base):
 
     # Model
     model_version = Column(String(50))
-    prediction_date = Column(DateTime, default=datetime.utcnow, nullable=False)
+    prediction_date = Column(DateTime, default=utc_now, nullable=False)
 
     # If sent, track actual result
     actual_send_time = Column(DateTime)
@@ -65,14 +77,16 @@ class ProposalDraft(Base):
     __tablename__ = "proposal_drafts"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)
+    deal_id = Column(
+        String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False
+    )
 
     html_content = Column(Text, nullable=False)
     word_count = Column(Integer)
 
     # Generation
     generation_method = Column(String(50))  # claude_opus, template
-    generated_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    generated_at = Column(DateTime, default=utc_now, nullable=False)
 
     # Usage
     sent_to = Column(String(255))
@@ -95,10 +109,14 @@ class ProposalView(Base):
     __tablename__ = "proposal_views"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    draft_id = Column(UUID(as_uuid=True), ForeignKey("proposal_drafts.id", ondelete="CASCADE"), nullable=False)
+    draft_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("proposal_drafts.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     viewed_by = Column(String(255), nullable=False)
-    viewed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    viewed_at = Column(DateTime, default=utc_now, nullable=False)
     duration_seconds = Column(Integer)
     pages_viewed = Column(Integer)
 
@@ -114,14 +132,16 @@ class CompetitorMention(Base):
     __tablename__ = "competitor_mentions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)
+    deal_id = Column(
+        String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False
+    )
     person_id = Column(String(255), nullable=False)
 
     competitor_name = Column(String(255), nullable=False)
     source = Column(String(50))  # email, call_transcript, message
     context = Column(Text)
 
-    detected_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    detected_at = Column(DateTime, default=utc_now, nullable=False)
     confidence = Column(Float)  # 0-1
 
     __table_args__ = (
@@ -136,7 +156,11 @@ class CompetitorResponse(Base):
     __tablename__ = "competitor_responses"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    mention_id = Column(UUID(as_uuid=True), ForeignKey("competitor_mentions.id", ondelete="CASCADE"), nullable=False)
+    mention_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("competitor_mentions.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     response_type = Column(String(50))  # ai_generated, template, manual
     response_text = Column(Text)

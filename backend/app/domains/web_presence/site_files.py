@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 from urllib.parse import urljoin, urlparse
 
 from app.core.logger import get_logger
@@ -31,16 +31,16 @@ _LOC_RE = re.compile(r"<loc>\s*([^<\s]+)\s*</loc>", re.IGNORECASE)
 class SiteFiles:
     origin: str
     robots_found: bool = False
-    robots_url: Optional[str] = None
-    robots_status: Optional[int] = None
+    robots_url: str | None = None
+    robots_status: int | None = None
     blocks_this_page: bool = False
-    blocking_rule: Optional[str] = None
+    blocking_rule: str | None = None
     sitemaps_declared: list[str] = field(default_factory=list)
-    sitemap_checked: Optional[str] = None
+    sitemap_checked: str | None = None
     sitemap_found: bool = False
     sitemap_is_index: bool = False
     sitemap_url_count: int = 0
-    contains_this_page: Optional[bool] = None
+    contains_this_page: bool | None = None
     notes: list[str] = field(default_factory=list)
 
     def as_dict(self) -> dict[str, Any]:
@@ -87,10 +87,10 @@ def _parse_robots(body: str) -> tuple[list[tuple[str, str]], list[str]]:
     return rules, sitemaps
 
 
-def _path_blocked(rules: list[tuple[str, str]], path: str) -> Optional[str]:
+def _path_blocked(rules: list[tuple[str, str]], path: str) -> str | None:
     """Standard longest-match resolution: the most specific rule wins, and an
     Allow of equal length beats a Disallow."""
-    best: Optional[tuple[int, str, str]] = None
+    best: tuple[int, str, str] | None = None
     for directive, value in rules:
         if value == "":
             # `Disallow:` with an empty value means "allow everything".
@@ -98,7 +98,11 @@ def _path_blocked(rules: list[tuple[str, str]], path: str) -> Optional[str]:
         pattern = value.rstrip("*")
         if path.startswith(pattern):
             length = len(pattern)
-            if best is None or length > best[0] or (length == best[0] and directive == "allow"):
+            if (
+                best is None
+                or length > best[0]
+                or (length == best[0] and directive == "allow")
+            ):
                 best = (length, directive, value)
     if best and best[1] == "disallow":
         return f"Disallow: {best[2]}"
@@ -136,7 +140,11 @@ async def check(page_url: str) -> SiteFiles:
         )
 
     # The sitemap robots.txt declares, or the conventional location.
-    candidate = result.sitemaps_declared[0] if result.sitemaps_declared else urljoin(origin, "/sitemap.xml")
+    candidate = (
+        result.sitemaps_declared[0]
+        if result.sitemaps_declared
+        else urljoin(origin, "/sitemap.xml")
+    )
     result.sitemap_checked = candidate
     sitemap = await fetcher.fetch(candidate)
 
@@ -154,7 +162,9 @@ async def check(page_url: str) -> SiteFiles:
             if locs:
                 child = await fetcher.fetch(locs[0])
                 if child.ok:
-                    child_locs = _LOC_RE.findall(child.content)[:MAX_SITEMAP_URLS_SCANNED]
+                    child_locs = _LOC_RE.findall(child.content)[
+                        :MAX_SITEMAP_URLS_SCANNED
+                    ]
                     result.sitemap_url_count = len(child_locs)
                     locs = child_locs
 
@@ -175,40 +185,48 @@ def issues_from(files: SiteFiles) -> list[dict[str, str]]:
     issues: list[dict[str, str]] = []
 
     if files.blocks_this_page:
-        issues.append({
-            "severity": "critical",
-            "key": "robots_blocks",
-            "title": "robots.txt bloquea esta página",
-            "detail": f"La regla «{files.blocking_rule}» le prohíbe a Google rastrear esta URL. "
-                      "Todo el resto del SEO de esta página es irrelevante mientras siga así.",
-            "fix": "Sacá o acotá esa regla en robots.txt para que la URL quede permitida.",
-        })
+        issues.append(
+            {
+                "severity": "critical",
+                "key": "robots_blocks",
+                "title": "robots.txt bloquea esta página",
+                "detail": f"La regla «{files.blocking_rule}» le prohíbe a Google rastrear esta URL. "
+                "Todo el resto del SEO de esta página es irrelevante mientras siga así.",
+                "fix": "Sacá o acotá esa regla en robots.txt para que la URL quede permitida.",
+            }
+        )
 
     if not files.sitemap_found:
-        issues.append({
-            "severity": "warning",
-            "key": "no_sitemap",
-            "title": "Sin sitemap.xml",
-            "detail": "No se encontró un sitemap en robots.txt ni en /sitemap.xml.",
-            "fix": "Publicá un sitemap.xml con tus páginas y productos, y declaralo en robots.txt "
-                   "con una línea «Sitemap: https://tudominio.com/sitemap.xml».",
-        })
+        issues.append(
+            {
+                "severity": "warning",
+                "key": "no_sitemap",
+                "title": "Sin sitemap.xml",
+                "detail": "No se encontró un sitemap en robots.txt ni en /sitemap.xml.",
+                "fix": "Publicá un sitemap.xml con tus páginas y productos, y declaralo en robots.txt "
+                "con una línea «Sitemap: https://tudominio.com/sitemap.xml».",
+            }
+        )
     elif files.contains_this_page is False:
-        issues.append({
-            "severity": "warning",
-            "key": "not_in_sitemap",
-            "title": "Esta página no está en el sitemap",
-            "detail": f"El sitemap tiene {files.sitemap_url_count} URLs y ésta no está entre ellas.",
-            "fix": "Agregá esta URL al sitemap para que Google la descubra sin depender de enlaces.",
-        })
+        issues.append(
+            {
+                "severity": "warning",
+                "key": "not_in_sitemap",
+                "title": "Esta página no está en el sitemap",
+                "detail": f"El sitemap tiene {files.sitemap_url_count} URLs y ésta no está entre ellas.",
+                "fix": "Agregá esta URL al sitemap para que Google la descubra sin depender de enlaces.",
+            }
+        )
 
     if files.robots_found and not files.sitemaps_declared:
-        issues.append({
-            "severity": "info",
-            "key": "sitemap_not_declared",
-            "title": "robots.txt no declara el sitemap",
-            "detail": "El sitemap existe o podría existir, pero robots.txt no lo anuncia.",
-            "fix": "Sumá la línea «Sitemap: https://tudominio.com/sitemap.xml» a robots.txt.",
-        })
+        issues.append(
+            {
+                "severity": "info",
+                "key": "sitemap_not_declared",
+                "title": "robots.txt no declara el sitemap",
+                "detail": "El sitemap existe o podría existir, pero robots.txt no lo anuncia.",
+                "fix": "Sumá la línea «Sitemap: https://tudominio.com/sitemap.xml» a robots.txt.",
+            }
+        )
 
     return issues

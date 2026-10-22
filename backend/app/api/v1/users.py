@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,7 +13,9 @@ router = APIRouter()
 
 
 @router.get("/me", response_model=UserResponse)
-async def read_current_user(current_user: User = Depends(get_current_user)):
+async def read_current_user(
+    current_user: Annotated[User, Depends(get_current_user)],
+):
     return current_user
 
 
@@ -22,8 +26,8 @@ class UpdateMeRequest(BaseModel):
 @router.patch("/me")
 async def update_current_user(
     data: UpdateMeRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Update the signed-in user's own profile.
 
@@ -40,4 +44,8 @@ async def update_current_user(
     current_user.full_name = name
     await db.commit()
     await db.refresh(current_user)
-    return {"id": str(current_user.id), "full_name": current_user.full_name, "email": current_user.email}
+    return {
+        "id": str(current_user.id),
+        "full_name": current_user.full_name,
+        "email": current_user.email,
+    }

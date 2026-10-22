@@ -1,22 +1,22 @@
 """Auto-Responder Pilot Agent Router"""
 
-from typing import Annotated, Optional
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.agents.auto_responder import service as ar_service
 from app.domains.agents.auto_responder.schemas import (
     AutoResponderRuleCreate,
-    AutoResponderRuleUpdate,
     AutoResponderRuleOut,
+    AutoResponderRuleUpdate,
     AutoResponderStatsOut,
     AutoResponseLogOut,
 )
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/auto-responder", tags=["auto-responder"])
 
@@ -26,7 +26,9 @@ async def get_db():
         yield session
 
 
-@router.post("/rules", response_model=AutoResponderRuleOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/rules", response_model=AutoResponderRuleOut, status_code=status.HTTP_201_CREATED
+)
 async def create_rule(
     data: AutoResponderRuleCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -57,7 +59,9 @@ async def update_rule(
 ):
     """Update an auto-responder rule."""
     try:
-        rule = await ar_service.update_rule(db, rule_id, data.model_dump(exclude_unset=True))
+        rule = await ar_service.update_rule(
+            db, rule_id, data.model_dump(exclude_unset=True)
+        )
         return rule
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
@@ -72,8 +76,9 @@ async def delete_rule(
     """Delete an auto-responder rule."""
     deleted = await ar_service.delete_rule(db, rule_id)
     if not deleted:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Regla no encontrada")
-    return None
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Regla no encontrada"
+        )
 
 
 @router.get("/stats", response_model=AutoResponderStatsOut)

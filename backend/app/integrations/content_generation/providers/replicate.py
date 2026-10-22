@@ -11,11 +11,26 @@ Este es nuestro proveedor de bajo costo para drafts y alta volumetría.
 
 import asyncio
 import io
-from typing import Dict, Any, Optional
+import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
-from ..utils import compress_image, smart_quality_for_size, get_image_size_kb, download_url
+
+from ..base import (
+    BaseProvider,
+    ContentQuality,
+    ContentType,
+    GenerationConfig,
+    GenerationResult,
+)
+from ..utils import (
+    compress_image,
+    download_url,
+    get_image_size_kb,
+    smart_quality_for_size,
+)
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -50,7 +65,7 @@ class ReplicateProvider(BaseProvider):
 
     name = "Replicate"
     slug = "replicate"
-    supports = [ContentType.IMAGE, ContentType.VIDEO]
+    supports: ClassVar[list] = [ContentType.IMAGE, ContentType.VIDEO]
 
     @property
     def is_available(self) -> bool:
@@ -58,7 +73,9 @@ class ReplicateProvider(BaseProvider):
 
     def estimate_cost(self, config: GenerationConfig) -> float:
         if config.content_type == ContentType.IMAGE:
-            model_config = REPLICATE_MODELS.get(config.quality, REPLICATE_MODELS[ContentQuality.STANDARD])
+            model_config = REPLICATE_MODELS.get(
+                config.quality, REPLICATE_MODELS[ContentQuality.STANDARD]
+            )
             return model_config["cost_per_image"] * config.num_variations
         elif config.content_type == ContentType.VIDEO:
             # Video en Replicate: ~$0.03-0.05/segundo
@@ -66,7 +83,7 @@ class ReplicateProvider(BaseProvider):
             return 0.04 * duration * config.num_variations
         return 0.0
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {
             "flux-schnell": 0.015,
             "flux-dev": 0.025,
@@ -98,13 +115,18 @@ class ReplicateProvider(BaseProvider):
                 )
 
         except Exception as e:
+            logger.exception("generate: error inesperado")
             return GenerationResult(
                 success=False,
                 error_message=str(e),
             )
 
-    async def _generate_image(self, client, config: GenerationConfig) -> GenerationResult:
-        model_config = REPLICATE_MODELS.get(config.quality, REPLICATE_MODELS[ContentQuality.STANDARD])
+    async def _generate_image(
+        self, client, config: GenerationConfig
+    ) -> GenerationResult:
+        model_config = REPLICATE_MODELS.get(
+            config.quality, REPLICATE_MODELS[ContentQuality.STANDARD]
+        )
 
         input_params = {
             "prompt": config.prompt,
@@ -143,7 +165,9 @@ class ReplicateProvider(BaseProvider):
         # Replicate devuelve lista de URLs
         urls = output if isinstance(output, list) else [output]
         if not urls:
-            return GenerationResult(success=False, error_message="Replicate devolvió resultado vacío")
+            return GenerationResult(
+                success=False, error_message="Replicate devolvió resultado vacío"
+            )
 
         # Descargar y comprimir primera imagen
         image_bytes = await download_url(urls[0])
@@ -158,6 +182,7 @@ class ReplicateProvider(BaseProvider):
                 max_dimension=2048,
             )
             from PIL import Image as PILImage
+
             img = PILImage.open(io.BytesIO(compressed))
             width, height = img.size
 
@@ -176,7 +201,9 @@ class ReplicateProvider(BaseProvider):
             },
         )
 
-    async def _generate_video(self, client, config: GenerationConfig) -> GenerationResult:
+    async def _generate_video(
+        self, client, config: GenerationConfig
+    ) -> GenerationResult:
         """Genera video usando modelos de video en Replicate."""
         # Modelo de video recomendado en Replicate
         video_models = {
@@ -203,7 +230,9 @@ class ReplicateProvider(BaseProvider):
 
         urls = output if isinstance(output, list) else [output]
         if not urls:
-            return GenerationResult(success=False, error_message="Replicate devolvió video vacío")
+            return GenerationResult(
+                success=False, error_message="Replicate devolvió video vacío"
+            )
 
         cost = 0.04 * duration  # aproximado
 

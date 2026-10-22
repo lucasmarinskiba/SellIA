@@ -3,16 +3,18 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime, timedelta, timezone
-from decimal import Decimal, ROUND_HALF_UP
-from typing import Optional
+from datetime import UTC, date, datetime, timedelta
+from decimal import Decimal
 
-import numpy as np
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.cashflow.types import CashFlowAssumptions, CashFlowForecast, CashFlowPoint
+from app.domains.cashflow.types import (
+    CashFlowAssumptions,
+    CashFlowForecast,
+    CashFlowPoint,
+)
 from app.domains.forecasting.service import ForecastingService
 from app.domains.ledger.models import JournalEntry, LedgerAccount
 from app.domains.orders.models import Order
@@ -73,7 +75,7 @@ class CashFlowService:
         cumul_balance = assumptions.beginning_balance
         min_balance = cumul_balance
         min_date = start_date
-        cumul_tax_reserve = Decimal("0")
+        cumul_tax_reserve = Decimal(0)
 
         for i, p in enumerate(points_data[:horizon_days]):
             target_date = start_date + timedelta(days=i)
@@ -92,7 +94,9 @@ class CashFlowService:
 
             # Profit and tax provision (accrual, not paid yet)
             profit_before_tax = revenue - cogs - opex
-            tax_prov = profit_before_tax * tax_rate if profit_before_tax > 0 else Decimal("0")
+            tax_prov = (
+                profit_before_tax * tax_rate if profit_before_tax > 0 else Decimal(0)
+            )
             cumul_tax_reserve += tax_prov
 
             # Operating cash flow: revenue - cogs - opex (tax paid lazily, quarterly)
@@ -107,11 +111,9 @@ class CashFlowService:
                 min_date = target_date
 
             # Confidence intervals scale from forecast quantiles
-            inflow_q10 = prior_revenue  # same regardless
             ocf_q10 = q10 - cogs - opex
             balance_q10 = cumul_balance + (ocf_q10 - ocf)
 
-            inflow_q90 = prior_revenue
             ocf_q90 = q90 - cogs - opex
             balance_q90 = cumul_balance + (ocf_q90 - ocf)
 
@@ -133,7 +135,9 @@ class CashFlowService:
         # Compute runway (days until zero if negative burn)
         runway = None
         if cumul_balance < 0:
-            daily_burn = (cumul_balance - assumptions.beginning_balance) / max(1, len(points))
+            daily_burn = (cumul_balance - assumptions.beginning_balance) / max(
+                1, len(points)
+            )
             if daily_burn < 0:
                 runway = int(-cumul_balance / daily_burn)
 
@@ -149,7 +153,7 @@ class CashFlowService:
             min_balance_date=min_date,
             runway_days=runway,
             assumptions=assumptions,
-            computed_at=datetime.now(timezone.utc),
+            computed_at=datetime.now(UTC),
         )
 
     async def _get_cash_balance(self, business_id: uuid.UUID) -> Decimal:
@@ -163,13 +167,14 @@ class CashFlowService:
         )
         cash_accts = rows.scalars().all()
         if not cash_accts:
-            return Decimal("0")
+            return Decimal(0)
 
-        total = Decimal("0")
+        total = Decimal(0)
         for acct in cash_accts:
             balance_row = await self.db.execute(
-                select(func.sum(JournalEntry.debit_amount - JournalEntry.credit_amount))
-                .where(JournalEntry.account_id == acct.id)
+                select(
+                    func.sum(JournalEntry.debit_amount - JournalEntry.credit_amount)
+                ).where(JournalEntry.account_id == acct.id)
             )
             bal = balance_row.scalar() or 0
             total += Decimal(str(bal))
@@ -195,4 +200,4 @@ class CashFlowService:
         self, order_stream: dict[date, Decimal], target_date: date
     ) -> Decimal:
         """Return revenue from orders on that date."""
-        return order_stream.get(target_date, Decimal("0"))
+        return order_stream.get(target_date, Decimal(0))

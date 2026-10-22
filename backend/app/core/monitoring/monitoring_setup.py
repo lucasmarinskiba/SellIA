@@ -10,21 +10,23 @@ Integraciones:
 
 import logging
 import time
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable, Any
-from datetime import datetime
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
 
 # ========== DATADOG SETUP ==========
 
+
 def setup_datadog():
     """Configura Datadog para APM + metrics."""
 
     try:
-        from datadog import initialize, api
-        from datadog.api import metrics
+        from datadog import api, initialize  # noqa: F401 - sonda de disponibilidad
+        from datadog.api import metrics  # noqa: F401 - sonda de disponibilidad
 
         options = {
             "api_key": "DATADOG_API_KEY",
@@ -40,7 +42,7 @@ def setup_datadog():
         return False
 
 
-def track_metric(metric_name: str, value: float, tags: list = None):
+def track_metric(metric_name: str, value: float, tags: list | None = None):
     """
     Envía métrica a Datadog.
 
@@ -58,11 +60,12 @@ def track_metric(metric_name: str, value: float, tags: list = None):
             tags=tags or [],
         )
 
-    except Exception as e:
-        logger.error(f"Datadog metric failed: {str(e)}")
+    except Exception:
+        logger.exception("Datadog metric failed")
 
 
 # ========== SENTRY SETUP ==========
+
 
 def setup_sentry():
     """Configura Sentry para error tracking."""
@@ -86,7 +89,7 @@ def setup_sentry():
         return False
 
 
-def track_exception(exc: Exception, extra: dict = None):
+def track_exception(exc: Exception, extra: dict | None = None):
     """
     Reporta excepción a Sentry.
 
@@ -104,11 +107,12 @@ def track_exception(exc: Exception, extra: dict = None):
                 for key, value in extra.items():
                     scope.set_extra(key, value)
 
-    except Exception as e:
-        logger.error(f"Sentry tracking failed: {str(e)}")
+    except Exception:
+        logger.exception("Sentry tracking failed")
 
 
 # ========== PERFORMANCE MONITORING ==========
+
 
 def monitor_performance(func: Callable) -> Callable:
     """
@@ -130,8 +134,10 @@ def monitor_performance(func: Callable) -> Callable:
             result = await func(*args, **kwargs)
 
             latency = (time.time() - start_time) * 1000  # ms
-            track_metric(f"sellias.function.latency", latency, tags=[f"function:{func_name}"])
-            track_metric(f"sellias.function.success", 1, tags=[f"function:{func_name}"])
+            track_metric(
+                "sellias.function.latency", latency, tags=[f"function:{func_name}"]
+            )
+            track_metric("sellias.function.success", 1, tags=[f"function:{func_name}"])
 
             if latency > 1000:  # Si > 1 segundo
                 logger.warning(f"{func_name} took {latency:.0f}ms")
@@ -139,7 +145,7 @@ def monitor_performance(func: Callable) -> Callable:
             return result
 
         except Exception as e:
-            track_metric(f"sellias.function.error", 1, tags=[f"function:{func_name}"])
+            track_metric("sellias.function.error", 1, tags=[f"function:{func_name}"])
             track_exception(e, extra={"function": func_name})
             raise
 
@@ -152,8 +158,10 @@ def monitor_performance(func: Callable) -> Callable:
             result = func(*args, **kwargs)
 
             latency = (time.time() - start_time) * 1000
-            track_metric(f"sellias.function.latency", latency, tags=[f"function:{func_name}"])
-            track_metric(f"sellias.function.success", 1, tags=[f"function:{func_name}"])
+            track_metric(
+                "sellias.function.latency", latency, tags=[f"function:{func_name}"]
+            )
+            track_metric("sellias.function.success", 1, tags=[f"function:{func_name}"])
 
             if latency > 1000:
                 logger.warning(f"{func_name} took {latency:.0f}ms")
@@ -161,12 +169,13 @@ def monitor_performance(func: Callable) -> Callable:
             return result
 
         except Exception as e:
-            track_metric(f"sellias.function.error", 1, tags=[f"function:{func_name}"])
+            track_metric("sellias.function.error", 1, tags=[f"function:{func_name}"])
             track_exception(e, extra={"function": func_name})
             raise
 
     # Detectar async/sync
     import asyncio
+
     if asyncio.iscoroutinefunction(func):
         return async_wrapper
     else:
@@ -175,10 +184,13 @@ def monitor_performance(func: Callable) -> Callable:
 
 # ========== ALERTS ==========
 
+
 class AlertManager:
     """Maneja alertas via Slack + PagerDuty."""
 
-    def __init__(self, slack_webhook: str = None, pagerduty_token: str = None):
+    def __init__(
+        self, slack_webhook: str | None = None, pagerduty_token: str | None = None
+    ):
         self.slack_webhook = slack_webhook
         self.pagerduty_token = pagerduty_token
 
@@ -248,10 +260,11 @@ class AlertManager:
             }
 
             import httpx
+
             try:
                 await httpx.AsyncClient().post(self.slack_webhook, json=payload)
-            except Exception as e:
-                logger.error(f"Slack alert failed: {str(e)}")
+            except Exception:
+                logger.exception("Slack alert failed")
 
         # PagerDuty (si critical)
         if level == "critical" and self.pagerduty_token:
@@ -279,25 +292,27 @@ class AlertManager:
                 "https://events.pagerduty.com/v2/enqueue",
                 json=payload,
             )
-        except Exception as e:
-            logger.error(f"PagerDuty trigger failed: {str(e)}")
+        except Exception:
+            logger.exception("PagerDuty trigger failed")
 
 
 # ========== HEALTH CHECK ==========
+
 
 async def health_check_database() -> bool:
     """Verifica database connectivity."""
 
     try:
         from sqlalchemy import text
+
         from app.core.database import get_db
 
         async with get_db() as db:
             await db.execute(text("SELECT 1"))
         return True
 
-    except Exception as e:
-        logger.error(f"Database health check failed: {str(e)}")
+    except Exception:
+        logger.exception("Database health check failed")
         return False
 
 
@@ -306,11 +321,12 @@ async def health_check_stripe() -> bool:
 
     try:
         import stripe
+
         stripe.Account.retrieve()
         return True
 
-    except Exception as e:
-        logger.error(f"Stripe health check failed: {str(e)}")
+    except Exception:
+        logger.exception("Stripe health check failed")
         return False
 
 
@@ -319,12 +335,13 @@ async def health_check_mercadolibre() -> bool:
 
     try:
         import httpx
+
         async with httpx.AsyncClient() as client:
             resp = await client.get("https://api.mercadolibre.com/sites/MLA")
             return resp.status_code == 200
 
-    except Exception as e:
-        logger.error(f"ML health check failed: {str(e)}")
+    except Exception:
+        logger.exception("ML health check failed")
         return False
 
 
@@ -335,11 +352,12 @@ async def health_check_all() -> dict:
         "database": await health_check_database(),
         "stripe": await health_check_stripe(),
         "mercadolibre": await health_check_mercadolibre(),
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     }
 
 
 # ========== SETUP FUNCTION ==========
+
 
 def setup_monitoring():
     """Inicializa todo monitoring."""

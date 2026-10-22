@@ -1,10 +1,10 @@
 """Business Document RAG Models"""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Integer, DateTime, Text, ForeignKey, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import UserDefinedType
 
@@ -25,6 +25,7 @@ class Vector(UserDefinedType):
             if value is None:
                 return None
             return f"[{','.join(str(v) for v in value)}]"
+
         return process
 
     def result_processor(self, dialect, coltype):
@@ -38,6 +39,7 @@ class Vector(UserDefinedType):
             if isinstance(value, list):
                 return [float(v) for v in value]
             return value
+
         return process
 
 
@@ -55,17 +57,19 @@ class BusinessDocument(Base):
     file_path = Column(String(500), nullable=False)
     file_type = Column(String(50), nullable=False)  # pdf, txt, docx, csv
     file_size = Column(Integer, nullable=False, default=0)
-    status = Column(String(20), nullable=False, default="processing")  # processing, ready, error
+    status = Column(
+        String(20), nullable=False, default="processing"
+    )  # processing, ready, error
     chunk_count = Column(Integer, nullable=False, default=0)
     extra_data = Column(JSONB, default=dict, nullable=False)
     created_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     updated_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
     chunks = relationship(
@@ -94,11 +98,9 @@ class DocumentChunk(Base):
     chunk_metadata = Column(JSONB, default=dict, nullable=False)
     created_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
     document = relationship("BusinessDocument", back_populates="chunks")
 
-    __table_args__ = (
-        Index("ix_document_chunks_business_id_embedding", "business_id"),
-    )
+    __table_args__ = (Index("ix_document_chunks_business_id_embedding", "business_id"),)

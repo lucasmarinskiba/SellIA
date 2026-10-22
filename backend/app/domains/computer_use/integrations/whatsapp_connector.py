@@ -4,7 +4,7 @@ Usa Meta WhatsApp Business API para enviar mensajes.
 """
 
 import logging
-from typing import Optional, Dict, Any, Tuple
+
 import httpx
 
 logger = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class WhatsAppConnector:
         self,
         recipient_phone: str,
         message: str,
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """
         Envía mensaje de texto vía WhatsApp.
 
@@ -63,8 +63,8 @@ class WhatsAppConnector:
         except httpx.HTTPError as e:
             logger.error(f"WhatsApp API error: {e}")
             return False, None
-        except Exception as e:
-            logger.error(f"Error sending WhatsApp message: {e}")
+        except Exception:
+            logger.exception("Error sending WhatsApp message")
             return False, None
 
     async def send_template_message(
@@ -72,8 +72,8 @@ class WhatsAppConnector:
         recipient_phone: str,
         template_name: str,
         template_language: str = "en",
-        parameters: Optional[list] = None,
-    ) -> Tuple[bool, Optional[str]]:
+        parameters: list | None = None,
+    ) -> tuple[bool, str | None]:
         """
         Envía mensaje usando template pre-aprobado.
 
@@ -112,8 +112,8 @@ class WhatsAppConnector:
         except httpx.HTTPError as e:
             logger.error(f"WhatsApp API error: {e}")
             return False, None
-        except Exception as e:
-            logger.error(f"Error sending template: {e}")
+        except Exception:
+            logger.exception("Error sending template")
             return False, None
 
     async def send_media_message(
@@ -121,8 +121,8 @@ class WhatsAppConnector:
         recipient_phone: str,
         media_type: str,  # image, video, document, audio
         media_url: str,
-        caption: Optional[str] = None,
-    ) -> Tuple[bool, Optional[str]]:
+        caption: str | None = None,
+    ) -> tuple[bool, str | None]:
         """
         Envía media (image, video, documento).
 
@@ -160,8 +160,8 @@ class WhatsAppConnector:
         except httpx.HTTPError as e:
             logger.error(f"WhatsApp API error: {e}")
             return False, None
-        except Exception as e:
-            logger.error(f"Error sending media: {e}")
+        except Exception:
+            logger.exception("Error sending media")
             return False, None
 
     async def mark_message_read(self, message_id: str) -> bool:
@@ -178,8 +178,8 @@ class WhatsAppConnector:
 
             return True
 
-        except Exception as e:
-            logger.error(f"Error marking message as read: {e}")
+        except Exception:
+            logger.exception("Error marking message as read")
             return False
 
     async def close(self):

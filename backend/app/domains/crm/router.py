@@ -1,49 +1,63 @@
 """CRM API Router"""
 
+import logging
+from datetime import UTC, datetime
+from typing import Annotated
 from uuid import UUID
-from typing import Optional
 
-from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
-from app.domains.users.models import User
-from app.domains.crm.models import Pipeline, Deal, LeadScore, LeadStage
-from app.domains.crm.schemas import (
-    PipelineCreate, PipelineUpdate, PipelineResponse,
-    DealCreate, DealUpdate, DealResponse, MoveDealRequest,
-    LeadScoreResponse, CRMSummaryResponse,
-)
 from app.domains.channels.models import Conversation, Message
+from app.domains.crm.models import Deal, LeadScore, LeadStage, Pipeline
+from app.domains.crm.schemas import (
+    CRMSummaryResponse,
+    DealCreate,
+    DealResponse,
+    DealUpdate,
+    LeadScoreResponse,
+    MoveDealRequest,
+    PipelineCreate,
+    PipelineResponse,
+    PipelineUpdate,
+)
+from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/crm", tags=["crm"])
 
 
 # ========== Pipelines ==========
 
+
 @router.get("/pipelines", response_model=list[PipelineResponse])
 async def list_pipelines(
-    business_id: UUID = Query(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
-        select(Pipeline).where(
+        select(Pipeline)
+        .where(
             Pipeline.business_id == business_id,
             Pipeline.is_active == True,
-        ).order_by(Pipeline.is_default.desc(), Pipeline.created_at)
+        )
+        .order_by(Pipeline.is_default.desc(), Pipeline.created_at)
     )
     return result.scalars().all()
 
 
-@router.post("/pipelines", response_model=PipelineResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/pipelines", response_model=PipelineResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_pipeline(
     data: PipelineCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     pipeline = Pipeline(**data.model_dump())
     db.add(pipeline)
@@ -56,8 +70,8 @@ async def create_pipeline(
 async def update_pipeline(
     pipeline_id: UUID,
     data: PipelineUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(select(Pipeline).where(Pipeline.id == pipeline_id))
     pipeline = result.scalar_one_or_none()
@@ -73,8 +87,8 @@ async def update_pipeline(
 @router.delete("/pipelines/{pipeline_id}")
 async def delete_pipeline(
     pipeline_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(select(Pipeline).where(Pipeline.id == pipeline_id))
     pipeline = result.scalar_one_or_none()
@@ -87,14 +101,15 @@ async def delete_pipeline(
 
 # ========== Deals ==========
 
+
 @router.get("/deals", response_model=list[DealResponse])
 async def list_deals(
-    business_id: UUID = Query(...),
-    stage: Optional[str] = None,
-    pipeline_id: Optional[UUID] = None,
-    search: Optional[str] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    stage: str | None = None,
+    pipeline_id: UUID | None = None,
+    search: str | None = None,
 ):
     query = select(Deal).where(
         Deal.business_id == business_id,
@@ -108,23 +123,25 @@ async def list_deals(
         query = query.where(
             Deal.title.ilike(f"%{search}%") | Deal.contact_name.ilike(f"%{search}%")
         )
-    result = await db.execute(query.order_by(desc(Deal.priority), desc(Deal.updated_at)))
+    result = await db.execute(
+        query.order_by(desc(Deal.priority), desc(Deal.updated_at))
+    )
     return result.scalars().all()
 
 
 @router.post("/deals", response_model=DealResponse, status_code=status.HTTP_201_CREATED)
 async def create_deal(
     data: DealCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     deal_data = data.model_dump()
 
     # Auto-generate title/description from conversation if not provided
     if data.conversation_id and (not data.title or not data.description):
         try:
-            from app.domains.channels.models import Conversation, Message
             from app.domains.agents.ai_reply import generate_ai_response
+            from app.domains.channels.models import Conversation, Message
 
             result = await db.execute(
                 select(Conversation).where(Conversation.id == data.conversation_id)
@@ -133,15 +150,18 @@ async def create_deal(
             if conversation:
                 # Get last messages for context
                 result = await db.execute(
-                    select(Message).where(
-                        Message.conversation_id == conversation.id
-                    ).order_by(Message.created_at.desc()).limit(10)
+                    select(Message)
+                    .where(Message.conversation_id == conversation.id)
+                    .order_by(Message.created_at.desc())
+                    .limit(10)
                 )
                 messages = list(reversed(result.scalars().all()))
-                conversation_summary = "\n".join([
-                    f"{'Lead' if m.direction.value == 'inbound' else 'Agent'}: {m.content[:200]}"
-                    for m in messages
-                ])
+                conversation_summary = "\n".join(
+                    [
+                        f"{'Lead' if m.direction.value == 'inbound' else 'Agent'}: {m.content[:200]}"
+                        for m in messages
+                    ]
+                )
 
                 custom_prompt = f"""Based on this conversation summary, write:
 1. A concise deal title (max 8 words) describing the opportunity
@@ -178,7 +198,9 @@ DESCRIPTION: <deal description>"""
                     if desc_match and not data.description:
                         deal_data["description"] = desc_match
         except Exception as e:
+            logger.exception("create_deal: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Deal AI generation error: {e}")
 
     deal = Deal(**deal_data)
@@ -206,15 +228,18 @@ async def _generate_close_reason_if_missing(db, deal, business_id):
             return
 
         result = await db.execute(
-            select(Message).where(
-                Message.conversation_id == conversation.id
-            ).order_by(Message.created_at.desc()).limit(15)
+            select(Message)
+            .where(Message.conversation_id == conversation.id)
+            .order_by(Message.created_at.desc())
+            .limit(15)
         )
         messages = list(reversed(result.scalars().all()))
-        conversation_summary = "\n".join([
-            f"{'Lead' if m.direction.value == 'inbound' else 'Agent'}: {m.content[:250]}"
-            for m in messages
-        ])
+        conversation_summary = "\n".join(
+            [
+                f"{'Lead' if m.direction.value == 'inbound' else 'Agent'}: {m.content[:250]}"
+                for m in messages
+            ]
+        )
 
         outcome = "GANADO" if deal.stage == LeadStage.CLOSED_WON else "PERDIDO"
         custom_prompt = f"""Analiza esta conversación y genera un brief de cierre profesional.
@@ -242,7 +267,9 @@ Genera UNA SOLA ORACIÓN que explique por qué se cerró este deal. Sé objetivo
             deal.close_reason = ai_response.strip()
             await db.commit()
     except Exception as e:
+        logger.exception("_generate_close_reason_if_missing: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).error(f"Close reason generation error: {e}")
 
 
@@ -250,8 +277,8 @@ Genera UNA SOLA ORACIÓN que explique por qué se cerró este deal. Sé objetivo
 async def update_deal(
     deal_id: UUID,
     data: DealUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(select(Deal).where(Deal.id == deal_id))
     deal = result.scalar_one_or_none()
@@ -264,14 +291,17 @@ async def update_deal(
     if "stage" in update_data:
         new_stage = update_data["stage"]
         if new_stage in (LeadStage.CLOSED_WON.value, LeadStage.CLOSED_LOST.value):
-            update_data["actual_close_date"] = datetime.now(timezone.utc)
+            update_data["actual_close_date"] = datetime.now(UTC)
 
     for field, value in update_data.items():
         setattr(deal, field, value)
     await db.commit()
 
     # Auto-generate close reason if deal is now closed and lacks one
-    if deal.stage in (LeadStage.CLOSED_WON, LeadStage.CLOSED_LOST) and not deal.close_reason:
+    if (
+        deal.stage in (LeadStage.CLOSED_WON, LeadStage.CLOSED_LOST)
+        and not deal.close_reason
+    ):
         await _generate_close_reason_if_missing(db, deal, deal.business_id)
         await db.refresh(deal)
 
@@ -283,8 +313,8 @@ async def update_deal(
 async def move_deal(
     deal_id: UUID,
     data: MoveDealRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(select(Deal).where(Deal.id == deal_id))
     deal = result.scalar_one_or_none()
@@ -296,23 +326,31 @@ async def move_deal(
         deal.stage_order = data.order
 
     if data.stage in (LeadStage.CLOSED_WON.value, LeadStage.CLOSED_LOST.value):
-        deal.actual_close_date = datetime.now(timezone.utc)
+        deal.actual_close_date = datetime.now(UTC)
 
     await db.commit()
 
     # Auto-generate close reason if deal is now closed and lacks one
-    if deal.stage in (LeadStage.CLOSED_WON, LeadStage.CLOSED_LOST) and not deal.close_reason:
+    if (
+        deal.stage in (LeadStage.CLOSED_WON, LeadStage.CLOSED_LOST)
+        and not deal.close_reason
+    ):
         await _generate_close_reason_if_missing(db, deal, deal.business_id)
         await db.refresh(deal)
 
     # Auto-generate proposal when reaching PROPOSAL_SENT
-    if data.stage == LeadStage.PROPOSAL_SENT.value and not deal.extra_data.get("proposal"):
+    if data.stage == LeadStage.PROPOSAL_SENT.value and not deal.extra_data.get(
+        "proposal"
+    ):
         try:
             from app.domains.crm.proposals import generate_deal_proposal
+
             await generate_deal_proposal(db, deal, deal.business_id)
             await db.refresh(deal)
         except Exception as e:
+            logger.exception("move_deal: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Auto-proposal generation error: {e}")
 
     await db.refresh(deal)
@@ -322,8 +360,8 @@ async def move_deal(
 @router.post("/deals/{deal_id}/generate-proposal", response_model=DealResponse)
 async def generate_proposal_endpoint(
     deal_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Generate an AI-powered proposal for a deal."""
     result = await db.execute(select(Deal).where(Deal.id == deal_id))
@@ -345,8 +383,8 @@ async def generate_proposal_endpoint(
 @router.post("/deals/{deal_id}/pricing-recommendation", response_model=DealResponse)
 async def pricing_recommendation_endpoint(
     deal_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Generate a pricing strategy recommendation for a deal."""
     result = await db.execute(select(Deal).where(Deal.id == deal_id))
@@ -358,7 +396,9 @@ async def pricing_recommendation_endpoint(
 
     recommendation = await generate_pricing_recommendation(db, deal, deal.business_id)
     if not recommendation:
-        raise HTTPException(status_code=500, detail="No se pudo generar la recomendación de precios")
+        raise HTTPException(
+            status_code=500, detail="No se pudo generar la recomendación de precios"
+        )
 
     await db.commit()
     await db.refresh(deal)
@@ -368,8 +408,8 @@ async def pricing_recommendation_endpoint(
 @router.post("/deals/{deal_id}/assign-recommendation")
 async def assign_recommendation_endpoint(
     deal_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Get AI-powered deal assignment and handling strategy recommendation."""
     result = await db.execute(select(Deal).where(Deal.id == deal_id))
@@ -380,20 +420,25 @@ async def assign_recommendation_endpoint(
     conversation_summary = "Sin conversación disponible."
     if deal.conversation_id:
         msg_result = await db.execute(
-            select(Message).where(
-                Message.conversation_id == deal.conversation_id
-            ).order_by(Message.created_at.desc()).limit(10)
+            select(Message)
+            .where(Message.conversation_id == deal.conversation_id)
+            .order_by(Message.created_at.desc())
+            .limit(10)
         )
         messages = list(reversed(msg_result.scalars().all()))
-        conversation_summary = "\n".join([
-            f"{'Lead' if m.direction.value == 'inbound' else 'Agent'}: {m.content[:200]}"
-            for m in messages
-        ])
+        conversation_summary = "\n".join(
+            [
+                f"{'Lead' if m.direction.value == 'inbound' else 'Agent'}: {m.content[:200]}"
+                for m in messages
+            ]
+        )
 
     from app.domains.agents.ai_reply import generate_raw_ai_response
     from app.domains.agents.prompts import compose_system_prompt
 
-    system_prompt = compose_system_prompt(base_slug="sales-manager", voice_slug="hormozi")
+    system_prompt = compose_system_prompt(
+        base_slug="sales-manager", voice_slug="hormozi"
+    )
     user_prompt = f"""Recomienda una estrategia de asignación y manejo para este deal.
 
 DEAL: {deal.title}
@@ -421,7 +466,9 @@ ESTIMATED_CLOSE: <estimación de días para cerrar>"""
     )
 
     if not ai_response:
-        raise HTTPException(status_code=500, detail="No se pudo generar la recomendación")
+        raise HTTPException(
+            status_code=500, detail="No se pudo generar la recomendación"
+        )
 
     # Parse and store
     recommendation = {
@@ -430,7 +477,7 @@ ESTIMATED_CLOSE: <estimación de días para cerrar>"""
         "next_action": "",
         "estimated_close": "",
         "raw": ai_response,
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
     }
 
     current_key = None
@@ -464,8 +511,8 @@ ESTIMATED_CLOSE: <estimación de días para cerrar>"""
 @router.delete("/deals/{deal_id}")
 async def delete_deal(
     deal_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(select(Deal).where(Deal.id == deal_id))
     deal = result.scalar_one_or_none()
@@ -478,13 +525,14 @@ async def delete_deal(
 
 # ========== Lead Scores ==========
 
+
 @router.get("/lead-scores", response_model=list[LeadScoreResponse])
 async def list_lead_scores(
-    business_id: UUID = Query(...),
-    classification: Optional[str] = None,
-    min_score: Optional[int] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    classification: str | None = None,
+    min_score: int | None = None,
 ):
     query = select(LeadScore).where(LeadScore.business_id == business_id)
     if classification:
@@ -498,8 +546,8 @@ async def list_lead_scores(
 @router.get("/lead-scores/{conversation_id}", response_model=LeadScoreResponse)
 async def get_lead_score(
     conversation_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(LeadScore).where(LeadScore.conversation_id == conversation_id)
@@ -512,11 +560,12 @@ async def get_lead_score(
 
 # ========== Summary ==========
 
+
 @router.get("/summary", response_model=CRMSummaryResponse)
 async def get_crm_summary(
-    business_id: UUID = Query(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     # Deals stats
     deals_result = await db.execute(
@@ -542,9 +591,21 @@ async def get_crm_summary(
     avg_deal_value = (total_value / total_deals) if total_deals > 0 else 0.0
 
     # Lead classifications
-    hot = await db.execute(select(func.count(LeadScore.id)).where(LeadScore.business_id == business_id, LeadScore.classification == "hot"))
-    warm = await db.execute(select(func.count(LeadScore.id)).where(LeadScore.business_id == business_id, LeadScore.classification == "warm"))
-    cold = await db.execute(select(func.count(LeadScore.id)).where(LeadScore.business_id == business_id, LeadScore.classification == "cold"))
+    hot = await db.execute(
+        select(func.count(LeadScore.id)).where(
+            LeadScore.business_id == business_id, LeadScore.classification == "hot"
+        )
+    )
+    warm = await db.execute(
+        select(func.count(LeadScore.id)).where(
+            LeadScore.business_id == business_id, LeadScore.classification == "warm"
+        )
+    )
+    cold = await db.execute(
+        select(func.count(LeadScore.id)).where(
+            LeadScore.business_id == business_id, LeadScore.classification == "cold"
+        )
+    )
 
     return CRMSummaryResponse(
         total_deals=total_deals,

@@ -7,17 +7,21 @@ Endpoints:
 - GET /order/:id: Estado orden
 """
 
-from fastapi import APIRouter, HTTPException, Request, Depends
-from pydantic import BaseModel
-from typing import Optional
-from datetime import datetime
-import logging
 import json
+import logging
+from typing import Annotated
 
-from app.core.integrations.stripe_payment import StripePaymentProcessor, StripeWebhookHandler
-from app.core.integrations.sendgrid_email import EmailService
-from app.core.database.models import get_db, Order, Account
+from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
+
+from app.core.clock import utc_now
+from app.core.database.models import Order, get_db
+from app.core.integrations.sendgrid_email import EmailService
+from app.core.integrations.stripe_payment import (
+    StripePaymentProcessor,
+    StripeWebhookHandler,
+)
 
 router = APIRouter(prefix="/api/v1/payments", tags=["payments"])
 logger = logging.getLogger(__name__)
@@ -36,7 +40,10 @@ class CheckoutRequest(BaseModel):
 
 
 @router.post("/create-checkout")
-async def create_checkout(request: CheckoutRequest, db: Session = Depends(get_db)):
+async def create_checkout(
+    request: CheckoutRequest,
+    db: Annotated[Session, Depends(get_db)],
+):
     """
     Crea checkout Stripe.
 
@@ -44,20 +51,24 @@ async def create_checkout(request: CheckoutRequest, db: Session = Depends(get_db
     """
 
     try:
-        logger.info(f"Creando checkout para {request.customer_email}, ${request.amount_usd}")
+        logger.info(
+            f"Creando checkout para {request.customer_email}, ${request.amount_usd}"
+        )
 
         # Crear checkout Stripe
         checkout = StripePaymentProcessor.create_checkout_session(
             customer_email=request.customer_email,
             product_name=request.product_name,
             amount_usd=request.amount_usd,
-            order_id=f"order_{datetime.utcnow().timestamp()}",
+            order_id=f"order_{utc_now().timestamp()}",
             success_url=request.success_url,
             cancel_url=request.cancel_url,
         )
 
         if checkout["status"] != "session_created":
-            raise HTTPException(status_code=400, detail=checkout.get("message", "Checkout failed"))
+            raise HTTPException(
+                status_code=400, detail=checkout.get("message", "Checkout failed")
+            )
 
         # Guardar orden en DB
         order = Order(
@@ -93,12 +104,15 @@ async def create_checkout(request: CheckoutRequest, db: Session = Depends(get_db
         }
 
     except Exception as e:
-        logger.error(f"Error creating checkout: {str(e)}")
+        logger.exception("Error creating checkout")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/webhook/stripe")
-async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
+async def stripe_webhook(
+    request: Request,
+    db: Annotated[Session, Depends(get_db)],
+):
     """
     Webhook Stripe → Confirma pago → Actualiza DB → Envía email.
     """
@@ -121,7 +135,10 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         result = StripeWebhookHandler.handle_webhook(event)
 
         # Si pago exitoso → Actualizar orden en DB
-        if result["status"] == "processed" and result.get("event") == "payment_succeeded":
+        if (
+            result["status"] == "processed"
+            and result.get("event") == "payment_succeeded"
+        ):
             order_id = result.get("order_id")
 
             # Actualizar orden
@@ -129,7 +146,7 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
             if order:
                 order.payment_status = "confirmed"
                 order.status = "paid"
-                order.completed_at = datetime.utcnow()
+                order.completed_at = utc_now()
                 db.commit()
 
                 logger.info(f"Order {order_id} marked as paid")
@@ -150,12 +167,15 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         return {"status": "webhook_processed"}
 
     except Exception as e:
-        logger.error(f"Error processing webhook: {str(e)}")
+        logger.exception("Error processing webhook")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/order/{order_id}")
-async def get_order(order_id: str, db: Session = Depends(get_db)):
+async def get_order(
+    order_id: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Obtiene estado orden."""
 
     order = db.query(Order).filter(Order.id == order_id).first()

@@ -1,11 +1,13 @@
 """Phase 18: Autonomous Lead Generation Agent Endpoints."""
 
-from fastapi import APIRouter, Query, Body, HTTPException
-from typing import Dict, Any
 import logging
+from typing import Any
+
+from fastapi import APIRouter, Body, HTTPException, Query
 
 from app.domains.agents.lead_generation_agent import (
-    LeadGenerationAgent, ProductDescriptor, LeadSourceType
+    LeadGenerationAgent,
+    ProductDescriptor,
 )
 
 router = APIRouter(tags=["lead-generation-agent"])
@@ -24,10 +26,12 @@ async def create_lead_campaign(
     target_audience: str = Query(...),
     price_range: str = Query(...),
     unique_selling_point: str = Query(...),
-    delivery_model: str = Query(..., description="online, offline, hybrid, hybrid_on_demand"),
+    delivery_model: str = Query(
+        ..., description="online, offline, hybrid, hybrid_on_demand"
+    ),
     geographic_scope: str = Query(...),
     leads_target: int = Query(50, ge=10, le=500),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Create autonomous lead generation campaign for user's product/service."""
 
     try:
@@ -39,7 +43,7 @@ async def create_lead_campaign(
             price_range=price_range,
             unique_selling_point=unique_selling_point,
             delivery_model=delivery_model,
-            geographic_scope=geographic_scope
+            geographic_scope=geographic_scope,
         )
 
         campaign = agent.create_campaign(user_id, product, leads_target)
@@ -51,15 +55,15 @@ async def create_lead_campaign(
             "product": {
                 "name": product.name,
                 "category": product.category,
-                "delivery_model": product.delivery_model
+                "delivery_model": product.delivery_model,
             },
             "sources": [s.value for s in campaign.sources],
             "leads_target": leads_target,
-            "message": f"Campaign created. Will generate leads from {len(campaign.sources)} sources."
+            "message": f"Campaign created. Will generate leads from {len(campaign.sources)} sources.",
         }
 
     except Exception as e:
-        logger.error(f"Campaign creation failed: {e}")
+        logger.exception("Campaign creation failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -67,7 +71,7 @@ async def create_lead_campaign(
 async def generate_leads(
     campaign_id: str,
     limit: int = Query(50, ge=10, le=200),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Generate leads for campaign."""
 
     try:
@@ -80,7 +84,9 @@ async def generate_leads(
             "campaign_id": campaign_id,
             "total_generated": len(leads),
             "qualified_leads": qualified,
-            "qualification_rate": f"{(qualified / len(leads) * 100):.1f}%" if leads else "0%",
+            "qualification_rate": (
+                f"{(qualified / len(leads) * 100):.1f}%" if leads else "0%"
+            ),
             "leads_sample": [
                 {
                     "lead_id": l.lead_id,
@@ -90,19 +96,19 @@ async def generate_leads(
                     "location": l.prospect_location,
                     "fit_score": f"{l.fit_score:.2f}",
                     "source": l.source.value,
-                    "contact_method": l.contact_method
+                    "contact_method": l.contact_method,
                 }
                 for l in leads[:10]
-            ]
+            ],
         }
 
     except Exception as e:
-        logger.error(f"Lead generation failed: {e}")
+        logger.exception("Lead generation failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/lead-agent/campaign/{campaign_id}/stats")
-async def get_campaign_stats(campaign_id: str) -> Dict[str, Any]:
+async def get_campaign_stats(campaign_id: str) -> dict[str, Any]:
     """Get campaign statistics."""
 
     try:
@@ -111,13 +117,10 @@ async def get_campaign_stats(campaign_id: str) -> Dict[str, Any]:
         if not stats:
             raise HTTPException(status_code=404, detail="Campaign not found")
 
-        return {
-            "status": "success",
-            "campaign": stats
-        }
+        return {"status": "success", "campaign": stats}
 
     except Exception as e:
-        logger.error(f"Stats retrieval failed: {e}")
+        logger.exception("Stats retrieval failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -125,7 +128,7 @@ async def get_campaign_stats(campaign_id: str) -> Dict[str, Any]:
 async def get_qualified_leads(
     campaign_id: str,
     min_fit_score: float = Query(0.7, ge=0.0, le=1.0),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get qualified leads from campaign."""
 
     try:
@@ -148,14 +151,14 @@ async def get_qualified_leads(
                     "reason_fit": l.reason_fit,
                     "source": l.source.value,
                     "contact_method": l.contact_method,
-                    "keywords_matched": l.keywords_matched
+                    "keywords_matched": l.keywords_matched,
                 }
                 for l in leads
-            ]
+            ],
         }
 
     except Exception as e:
-        logger.error(f"Leads retrieval failed: {e}")
+        logger.exception("Leads retrieval failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -163,7 +166,7 @@ async def get_qualified_leads(
 async def schedule_continuous_generation(
     campaign_id: str,
     frequency_hours: int = Query(24, ge=1, le=720),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Schedule continuous automatic lead generation."""
 
     try:
@@ -174,11 +177,11 @@ async def schedule_continuous_generation(
             "campaign_id": campaign_id,
             "frequency_hours": frequency_hours,
             "message": f"Lead generation scheduled every {frequency_hours} hours",
-            "next_run": result.get("next_run")
+            "next_run": result.get("next_run"),
         }
 
     except Exception as e:
-        logger.error(f"Scheduling failed: {e}")
+        logger.exception("Scheduling failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -186,7 +189,7 @@ async def schedule_continuous_generation(
 async def export_leads(
     campaign_id: str,
     format: str = Query("json", regex="^(csv|json)$"),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Export leads in specified format for outreach."""
 
     try:
@@ -196,11 +199,11 @@ async def export_leads(
             "status": "success",
             "campaign_id": campaign_id,
             "format": format,
-            "data": result.get("data") or result.get("leads")
+            "data": result.get("data") or result.get("leads"),
         }
 
     except Exception as e:
-        logger.error(f"Export failed: {e}")
+        logger.exception("Export failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -209,7 +212,7 @@ async def quick_start_campaign(
     user_id: str = Query(...),
     product_description: str = Body(..., description="What do you sell/offer?"),
     target_market: str = Body(..., description="Who are your customers?"),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Quick-start: Create campaign from minimal info."""
 
     try:
@@ -222,7 +225,7 @@ async def quick_start_campaign(
             price_range="Varies",
             unique_selling_point="Quality and reliability",
             delivery_model="hybrid",
-            geographic_scope="Local"
+            geographic_scope="Local",
         )
 
         campaign = agent.create_campaign(user_id, product, leads_target=100)
@@ -236,19 +239,19 @@ async def quick_start_campaign(
                 "Review qualified leads above",
                 "Contact leads using suggested method",
                 "Track responses in dashboard",
-                "Leads will refresh every 24 hours"
+                "Leads will refresh every 24 hours",
             ],
             "leads_preview": [
                 {
                     "name": l.prospect_name,
                     "email": l.prospect_email,
                     "fit_score": f"{l.fit_score:.2f}",
-                    "contact_method": l.contact_method
+                    "contact_method": l.contact_method,
                 }
                 for l in leads[:5]
-            ]
+            ],
         }
 
     except Exception as e:
-        logger.error(f"Quick start failed: {e}")
+        logger.exception("Quick start failed")
         raise HTTPException(status_code=500, detail=str(e))

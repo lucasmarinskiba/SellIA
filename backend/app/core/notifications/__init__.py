@@ -1,28 +1,27 @@
 """Notifications module — Email, SMS, push notifications."""
 
 from .email_service import (
-    EmailService,
-    EmailProvider,
-    EmailTemplate,
     EmailMessage,
+    EmailProvider,
     EmailRecipient,
+    EmailService,
+    EmailTemplate,
 )
-
 from .sms_service import (
-    SMSService,
-    SMSProvider,
-    SMSTemplate,
     SMSMessage,
+    SMSProvider,
+    SMSService,
+    SMSTemplate,
 )
 
 __all__ = [
-    "EmailService",
-    "EmailProvider",
-    "EmailTemplate",
     "EmailMessage",
+    "EmailProvider",
     "EmailRecipient",
-    "SMSService",
-    "SMSProvider",
-    "SMSTemplate",
+    "EmailService",
+    "EmailTemplate",
     "SMSMessage",
+    "SMSProvider",
+    "SMSService",
+    "SMSTemplate",
 ]

@@ -3,15 +3,16 @@ Phase 9: Revenue Intelligence
 Deal forecasting, churn prevention, expansion scoring.
 """
 
-from fastapi import APIRouter, HTTPException, Query, Depends
-from typing import Optional, Dict, Any, List
-from datetime import datetime
 import logging
+from typing import Any
 
+from fastapi import APIRouter, HTTPException, Query
+
+from app.core.clock import utc_now
 from app.domains.revenue_intelligence.revenue_models import (
-    RevenueForecaster,
     ChurnPredictor,
     ExpansionScorer,
+    RevenueForecaster,
 )
 
 router = APIRouter(tags=["revenue-intelligence"])
@@ -36,7 +37,7 @@ async def forecast_deal_close(
     calls: int = Query(0, ge=0),
     demo_attended: bool = Query(False),
     proposal_sent: bool = Query(False),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Predict deal close probability using:
     - Current stage (qualification → proposal → negotiation → closing)
@@ -73,12 +74,16 @@ async def forecast_deal_close(
                 "key_drivers": forecast.key_drivers,
                 "risk_factors": forecast.risk_factors,
                 "recommendation": (
-                    "PUSH TO CLOSE" if forecast.close_probability > 0.7
-                    else "NURTURE" if forecast.close_probability > 0.4
-                    else "REASSESS FIT"
+                    "PUSH TO CLOSE"
+                    if forecast.close_probability > 0.7
+                    else (
+                        "NURTURE"
+                        if forecast.close_probability > 0.4
+                        else "REASSESS FIT"
+                    )
                 ),
             },
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "@context": "https://schema.org",
             "@type": "Dataset",
             "name": "Deal Close Forecast",
@@ -86,13 +91,13 @@ async def forecast_deal_close(
 
     except Exception as e:
         logger.exception("Forecast failed")
-        raise HTTPException(status_code=500, detail=f"Forecast error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Forecast error: {e!s}")
 
 
 @router.post("/intelligence/forecast-revenue")
 async def forecast_revenue(
-    deals: List[Dict[str, Any]],
-) -> Dict[str, Any]:
+    deals: list[dict[str, Any]],
+) -> dict[str, Any]:
     """
     Aggregate revenue forecast by pipeline stage.
 
@@ -130,12 +135,12 @@ async def forecast_revenue(
                 "weighted_forecast_usd": round(forecast["weighted_forecast"], 2),
                 "forecast_confidence": "Medium - based on stage and engagement",
             },
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
     except Exception as e:
         logger.exception("Revenue forecast failed")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {e!s}")
 
 
 @router.post("/intelligence/predict-churn")
@@ -148,8 +153,8 @@ async def predict_churn(
     feature_adoption_percent: float = Query(50, ge=0, le=100),
     monthly_active_users: int = Query(1, ge=1),
     data_growth_percent: float = Query(10, ge=-100, le=1000),
-    nps_score: Optional[float] = Query(None, ge=-100, le=100),
-) -> Dict[str, Any]:
+    nps_score: float | None = Query(None, ge=-100, le=100),
+) -> dict[str, Any]:
     """
     Predict customer churn risk from engagement and usage signals.
 
@@ -199,32 +204,36 @@ async def predict_churn(
                         "Business review call",
                     ]
                     if forecast.churn_probability > 0.7
-                    else [
-                        "Check-in call",
-                        "Feature training",
-                        "Usage optimization",
-                    ]
-                    if forecast.churn_probability > 0.4
-                    else ["Monitor engagement", "Quarterly business review"]
+                    else (
+                        [
+                            "Check-in call",
+                            "Feature training",
+                            "Usage optimization",
+                        ]
+                        if forecast.churn_probability > 0.4
+                        else ["Monitor engagement", "Quarterly business review"]
+                    )
                 ),
             },
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
     except Exception as e:
         logger.exception("Churn prediction failed")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {e!s}")
 
 
 @router.post("/intelligence/score-expansion")
 async def score_expansion(
     customer_id: str = Query(...),
-    current_tier: str = Query("professional", regex="^(starter|professional|enterprise)$"),
+    current_tier: str = Query(
+        "professional", regex="^(starter|professional|enterprise)$"
+    ),
     monthly_active_users: int = Query(10, ge=1),
     feature_adoption_percent: float = Query(50, ge=0, le=100),
     annual_revenue_with_us: float = Query(..., gt=0),
     industry_benchmark_spending: float = Query(..., gt=0),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Score expansion/upsell opportunity for a customer.
 
@@ -259,21 +268,23 @@ async def score_expansion(
                 "approach": (
                     "IMMEDIATE UPSELL"
                     if score.expansion_probability > 0.8
-                    else "PITCH NEXT QUARTER"
-                    if score.expansion_probability > 0.6
-                    else "Monitor growth"
+                    else (
+                        "PITCH NEXT QUARTER"
+                        if score.expansion_probability > 0.6
+                        else "Monitor growth"
+                    )
                 ),
             },
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
     except Exception as e:
         logger.exception("Expansion scoring failed")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {e!s}")
 
 
 @router.get("/intelligence/health-dashboard")
-async def customer_health_dashboard() -> Dict[str, Any]:
+async def customer_health_dashboard() -> dict[str, Any]:
     """
     Aggregate view of all revenue intelligence metrics.
     Shows pipeline health, churn risks, expansion opportunities.
@@ -322,5 +333,5 @@ async def customer_health_dashboard() -> Dict[str, Any]:
             "Expansion pipeline worth $450k waiting to be activated",
             "Average deal cycle: 21 days (target: 14 days)",
         ],
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     }

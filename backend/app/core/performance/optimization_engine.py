@@ -4,9 +4,10 @@ Performance Optimization Engine — 10x faster, 10x more sales.
 Caching, database optimization, async operations, batch processing.
 """
 
-import logging
-from typing import Dict, Any, Optional
 import hashlib
+import logging
+import time
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,7 @@ class OptimizationEngine:
     """Optimiza cada fase venta para máximo throughput."""
 
     # Cache tiers
-    CACHE_TTL = {
+    CACHE_TTL: ClassVar[dict] = {
         "market_analysis": 3600,  # 1h (market no cambia rápido)
         "strategy": 1800,  # 30min (tácticas re-evaluate frecuente)
         "persuasion_copy": 600,  # 10min (copy optimiza cada testing)
@@ -24,7 +25,7 @@ class OptimizationEngine:
     }
 
     @staticmethod
-    def cache_key(prefix: str, data: Dict[str, Any]) -> str:
+    def cache_key(prefix: str, data: dict[str, Any]) -> str:
         """Genera cache key determinístico."""
 
         data_str = str(sorted(data.items()))
@@ -32,7 +33,7 @@ class OptimizationEngine:
         return f"{prefix}:{hash_digest}"
 
     @staticmethod
-    async def get_cached(cache, key: str, ttl: int) -> Optional[Dict[str, Any]]:
+    async def get_cached(cache, key: str, ttl: int) -> dict[str, Any] | None:
         """Obtiene de cache, si existe y no expiró."""
 
         # TODO: Implementar con Redis
@@ -43,14 +44,13 @@ class OptimizationEngine:
         return None
 
     @staticmethod
-    async def set_cached(cache, key: str, value: Dict[str, Any], ttl: int):
+    async def set_cached(cache, key: str, value: dict[str, Any], ttl: int):
         """Guarda en cache con TTL."""
 
         # TODO: await cache.set(key, value, ex=ttl)
-        pass
 
     # Database optimization
-    DB_INDEXES = {
+    DB_INDEXES: ClassVar[dict] = {
         "orders": ["account_id", "customer_email", "created_at", "status"],
         "leads": ["account_id", "email", "score", "created_at"],
         "email_logs": ["account_id", "to_email", "sent_at"],
@@ -60,7 +60,7 @@ class OptimizationEngine:
 
     # Batch operations
     @staticmethod
-    def batch_size_config() -> Dict[str, int]:
+    def batch_size_config() -> dict[str, int]:
         """Configuración batch para máximo throughput."""
 
         return {
@@ -71,7 +71,7 @@ class OptimizationEngine:
         }
 
     # Query optimization
-    OPTIMIZED_QUERIES = {
+    OPTIMIZED_QUERIES: ClassVar[dict] = {
         "get_leads_for_campaign": """
             SELECT id, email, score
             FROM leads
@@ -98,7 +98,7 @@ class ConversionRateOptimizer:
         variant_a: str,
         variant_b: str,
         hypothesis: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Crea A/B test automático.
 
@@ -116,7 +116,7 @@ class ConversionRateOptimizer:
         }
 
     @staticmethod
-    def personalize_offer(buyer: Dict[str, Any]) -> Dict[str, Any]:
+    def personalize_offer(buyer: dict[str, Any]) -> dict[str, Any]:
         """Personaliza oferta basada en buyer profile."""
 
         # Buyer types
@@ -146,7 +146,7 @@ class ConversionRateOptimizer:
             }
 
     @staticmethod
-    def optimize_email_send_time(buyer: Dict[str, Any]) -> str:
+    def optimize_email_send_time(buyer: dict[str, Any]) -> str:
         """Calcula mejor momento enviar email."""
 
         # Heurístico: envía cuando buyer suele estar activo
@@ -163,8 +163,8 @@ class ConversionRateOptimizer:
 
     @staticmethod
     def dynamic_pricing_optimization(
-        product: Dict[str, Any],
-        buyer: Dict[str, Any],
+        product: dict[str, Any],
+        buyer: dict[str, Any],
     ) -> float:
         """Optimiza precio por buyer (price discrimination legal)."""
 

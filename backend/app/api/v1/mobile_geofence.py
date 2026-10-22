@@ -1,18 +1,22 @@
 """Mobile geofence API — auto check-in + nearby locations."""
 
+import logging
+from typing import Annotated
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
-from uuid import UUID
-from pydantic import BaseModel
-from typing import Optional
 
 from app.core.business_access import get_owned_business
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.domains.locations.geofence_service import GeofenceTriggerService
 from app.domains.businesses.location_models import Location
+from app.domains.locations.geofence_service import GeofenceTriggerService
+from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/mobile", tags=["mobile-geofence"])
 
@@ -24,21 +28,21 @@ router = APIRouter(prefix="/api/v1/mobile", tags=["mobile-geofence"])
 class GeolocationPayload(BaseModel):
     latitude: float
     longitude: float
-    accuracy_meters: Optional[float] = None
+    accuracy_meters: float | None = None
 
 
 class GeofenceCheckRequest(BaseModel):
     latitude: float
     longitude: float
     business_id: UUID
-    accuracy_meters: Optional[float] = None
+    accuracy_meters: float | None = None
 
 
 @router.post("/geofence/check")
 async def check_geofence(
     request: GeofenceCheckRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Check if user in geofence. Auto check-in if enabled.
 
@@ -48,7 +52,9 @@ async def check_geofence(
 
     def _check(db: Session) -> dict:
         # Get location records (assuming locations stored in Location table)
-        locations = db.query(Location).filter(Location.business_id == request.business_id).all()
+        locations = (
+            db.query(Location).filter(Location.business_id == request.business_id).all()
+        )
 
         return GeofenceTriggerService.check_geofence_triggers(
             user_id=current_user.id,
@@ -56,7 +62,7 @@ async def check_geofence(
             user_lng=request.longitude,
             business_id=request.business_id,
             locations=locations,
-            db=db
+            db=db,
         )
 
     try:
@@ -69,23 +75,26 @@ async def check_geofence(
             "checkin_id": result.get("checkin_id"),
             "distance_km": result.get("distance_km"),
             "message": result.get("message"),
-            "error": result.get("error")
+            "error": result.get("error"),
         }
     except Exception as e:
+        logger.exception("check_geofence: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/locations/nearby")
 async def get_nearby_locations(
     request: GeofenceCheckRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """List locations within 500m radius."""
     await get_owned_business(db, request.business_id, current_user)
 
     def _load(db: Session) -> list:
-        return db.query(Location).filter(Location.business_id == request.business_id).all()
+        return (
+            db.query(Location).filter(Location.business_id == request.business_id).all()
+        )
 
     try:
         locations = await db.run_sync(_load)
@@ -95,28 +104,29 @@ async def get_nearby_locations(
             user_lng=request.longitude,
             business_id=request.business_id,
             locations=locations,
-            radius_km=0.5
+            radius_km=0.5,
         )
 
         return {
             "user_location": {
                 "latitude": request.latitude,
                 "longitude": request.longitude,
-                "accuracy_meters": request.accuracy_meters
+                "accuracy_meters": request.accuracy_meters,
             },
             "nearby_locations": nearby,
-            "count": len(nearby)
+            "count": len(nearby),
         }
     except Exception as e:
+        logger.exception("get_nearby_locations: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/geofence/subscribe")
 async def subscribe_to_geofence(
     business_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     radius_km: float = 0.5,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Enable background geofence monitoring (iOS/Android).
 
@@ -133,15 +143,17 @@ async def subscribe_to_geofence(
 
         geofences = []
         for loc in locations:
-            geofences.append({
-                "id": str(loc.id),
-                "name": loc.name,
-                "latitude": loc.latitude,
-                "longitude": loc.longitude,
-                "radius_meters": int(radius_km * 1000),
-                "trigger_on_enter": True,
-                "trigger_on_exit": False
-            })
+            geofences.append(
+                {
+                    "id": str(loc.id),
+                    "name": loc.name,
+                    "latitude": loc.latitude,
+                    "longitude": loc.longitude,
+                    "radius_meters": int(radius_km * 1000),
+                    "trigger_on_enter": True,
+                    "trigger_on_exit": False,
+                }
+            )
 
         return {
             "subscription_active": True,
@@ -149,7 +161,8 @@ async def subscribe_to_geofence(
             "geofences": geofences,
             "polling_interval_seconds": 30,
             "background_enabled": True,
-            "note": "iOS requires location permission 'Always'. Android requires 'Allow all the time'."
+            "note": "iOS requires location permission 'Always'. Android requires 'Allow all the time'.",
         }
     except Exception as e:
+        logger.exception("subscribe_to_geofence: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

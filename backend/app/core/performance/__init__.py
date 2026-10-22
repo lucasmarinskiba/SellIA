@@ -20,48 +20,47 @@ Modules:
 13. testing_suite: Load testing, chaos engineering, performance regression
 """
 
-from .database_optimizer import DatabaseOptimizer, IndexType, QueryPriority, SlowQuery
-from .cache_layer import CacheLayer, CacheKeyBuilder, RedisCache, LocalCache
-from .async_jobs import AsyncJobQueue, Job, JobStatus, JobPriority
-from .monitoring import PerformanceMonitor, PerformanceMetric, BottleneckAlert
-from .load_testing import LoadTestRunner, LoadTestConfig, LoadTestResult
-
-from .query_optimizer import QueryOptimizer
-from .latency_reducer import LatencyReducer
-from .scalability_engine import ScalabilityEngine
-from .ml_pipelines import MLPipelines
-from .data_layer import DataLayer
 from .api_design import APIDesign
+from .async_jobs import AsyncJobQueue, Job, JobPriority, JobStatus
+from .cache_layer import CacheKeyBuilder, CacheLayer, LocalCache, RedisCache
+from .data_layer import DataLayer
+from .database_optimizer import DatabaseOptimizer, IndexType, QueryPriority, SlowQuery
+from .latency_reducer import LatencyReducer
+from .load_testing import LoadTestConfig, LoadTestResult, LoadTestRunner
+from .ml_pipelines import MLPipelines
+from .monitoring import BottleneckAlert, PerformanceMetric, PerformanceMonitor
 from .monitoring_stack import MonitoringStack
+from .query_optimizer import QueryOptimizer
+from .scalability_engine import ScalabilityEngine
 from .testing_suite import TestingSuite
 
 __all__ = [
+    "APIDesign",
+    "AsyncJobQueue",
+    "BottleneckAlert",
+    "CacheKeyBuilder",
+    "CacheLayer",
+    "DataLayer",
     # Phase 8 modules
     "DatabaseOptimizer",
     "IndexType",
-    "QueryPriority",
-    "SlowQuery",
-    "CacheLayer",
-    "CacheKeyBuilder",
-    "RedisCache",
-    "LocalCache",
-    "AsyncJobQueue",
     "Job",
-    "JobStatus",
     "JobPriority",
-    "PerformanceMonitor",
-    "PerformanceMetric",
-    "BottleneckAlert",
-    "LoadTestRunner",
+    "JobStatus",
+    "LatencyReducer",
     "LoadTestConfig",
     "LoadTestResult",
+    "LoadTestRunner",
+    "LocalCache",
+    "MLPipelines",
+    "MonitoringStack",
+    "PerformanceMetric",
+    "PerformanceMonitor",
     # Existing modules
     "QueryOptimizer",
-    "LatencyReducer",
+    "QueryPriority",
+    "RedisCache",
     "ScalabilityEngine",
-    "MLPipelines",
-    "DataLayer",
-    "APIDesign",
-    "MonitoringStack",
+    "SlowQuery",
     "TestingSuite",
 ]

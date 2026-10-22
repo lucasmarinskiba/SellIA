@@ -20,16 +20,19 @@ Market/Industry Context:
 """
 
 import logging
-from typing import Dict, List, Any, Optional, Tuple
-from enum import Enum
 from dataclasses import dataclass, field
 from datetime import datetime
+from enum import Enum
+from typing import Any, ClassVar
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
 
 class ToneType(str, Enum):
     """10 core tone types"""
+
     FORMAL = "formal"
     CASUAL = "casual"
     FRIENDLY = "friendly"
@@ -44,6 +47,7 @@ class ToneType(str, Enum):
 
 class Market(str, Enum):
     """Market regions"""
+
     LATIN_AMERICA = "es_MX"  # Mexico
     SPAIN = "es_ES"
     ARGENTINA = "es_AR"
@@ -53,6 +57,7 @@ class Market(str, Enum):
 
 class Industry(str, Enum):
     """Industry types"""
+
     REAL_ESTATE = "real_estate"
     SAAS = "saas"
     ECOMMERCE = "ecommerce"
@@ -63,6 +68,7 @@ class Industry(str, Enum):
 @dataclass
 class ToneProfile:
     """Definition of a tone"""
+
     tone_type: ToneType
     market: Market
     industry: Industry
@@ -74,8 +80,8 @@ class ToneProfile:
     emoji_density: float  # 0.0 (none) to 1.0 (heavy)
 
     # Vocabulary patterns
-    vocabulary_markers: List[str] = field(default_factory=list)
-    forbidden_words: List[str] = field(default_factory=list)
+    vocabulary_markers: list[str] = field(default_factory=list)
+    forbidden_words: list[str] = field(default_factory=list)
 
     # Sentence structure
     avg_sentence_length: int = 12  # Average words per sentence
@@ -83,14 +89,14 @@ class ToneProfile:
     use_exclamation: bool = False
 
     # Greeting/closing patterns
-    greeting_templates: List[str] = field(default_factory=list)
-    closing_templates: List[str] = field(default_factory=list)
+    greeting_templates: list[str] = field(default_factory=list)
+    closing_templates: list[str] = field(default_factory=list)
 
     # Emoji preferences
-    preferred_emojis: List[str] = field(default_factory=list)
+    preferred_emojis: list[str] = field(default_factory=list)
 
     # Created metadata
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utc_now)
     confidence_score: float = 0.8
 
 
@@ -98,7 +104,7 @@ class ToneEngine:
     """Manages communication tones across markets and industries."""
 
     # FORMAL TONE — Professional, structured, business
-    FORMAL_PROFILES = {
+    FORMAL_PROFILES: ClassVar[dict] = {
         Market.LATIN_AMERICA: ToneProfile(
             tone_type=ToneType.FORMAL,
             market=Market.LATIN_AMERICA,
@@ -108,8 +114,12 @@ class ToneEngine:
             humor_appropriate=False,
             emoji_density=0.0,
             vocabulary_markers=[
-                "le presentamos", "cordialmente", "con gusto",
-                "profesional", "confidencial", "propiedad premium"
+                "le presentamos",
+                "cordialmente",
+                "con gusto",
+                "profesional",
+                "confidencial",
+                "propiedad premium",
             ],
             forbidden_words=["hey", "dude", "lol", "jaja"],
             avg_sentence_length=16,
@@ -130,7 +140,7 @@ class ToneEngine:
     }
 
     # CASUAL TONE — Relaxed, conversational, approachable
-    CASUAL_PROFILES = {
+    CASUAL_PROFILES: ClassVar[dict] = {
         Market.USA: ToneProfile(
             tone_type=ToneType.CASUAL,
             market=Market.USA,
@@ -140,8 +150,14 @@ class ToneEngine:
             humor_appropriate=True,
             emoji_density=0.3,
             vocabulary_markers=[
-                "hey", "cool", "awesome", "totally", "basically",
-                "super easy", "no problem", "what's up"
+                "hey",
+                "cool",
+                "awesome",
+                "totally",
+                "basically",
+                "super easy",
+                "no problem",
+                "what's up",
             ],
             forbidden_words=["endeavor", "facilitate", "pursuant"],
             avg_sentence_length=10,
@@ -164,7 +180,7 @@ class ToneEngine:
     }
 
     # FRIENDLY TONE — Warm, personable, emotionally engaging
-    FRIENDLY_PROFILES = {
+    FRIENDLY_PROFILES: ClassVar[dict] = {
         Market.LATIN_AMERICA: ToneProfile(
             tone_type=ToneType.FRIENDLY,
             market=Market.LATIN_AMERICA,
@@ -174,8 +190,12 @@ class ToneEngine:
             humor_appropriate=True,
             emoji_density=0.4,
             vocabulary_markers=[
-                "con cariño", "para ti", "querido/a", "amigo/a",
-                "te encantará", "seguro que te gusta"
+                "con cariño",
+                "para ti",
+                "querido/a",
+                "amigo/a",
+                "te encantará",
+                "seguro que te gusta",
             ],
             forbidden_words=["indiferente", "insignificante"],
             avg_sentence_length=11,
@@ -196,7 +216,7 @@ class ToneEngine:
     }
 
     # PROFESSIONAL TONE — Business-focused, credible, expert
-    PROFESSIONAL_PROFILES = {
+    PROFESSIONAL_PROFILES: ClassVar[dict] = {
         Market.USA: ToneProfile(
             tone_type=ToneType.PROFESSIONAL,
             market=Market.USA,
@@ -206,8 +226,13 @@ class ToneEngine:
             humor_appropriate=False,
             emoji_density=0.05,
             vocabulary_markers=[
-                "streamline", "optimize", "leverage", "stakeholder",
-                "innovative", "scalable", "enterprise-grade"
+                "streamline",
+                "optimize",
+                "leverage",
+                "stakeholder",
+                "innovative",
+                "scalable",
+                "enterprise-grade",
             ],
             forbidden_words=["gonna", "kinda", "thingy"],
             avg_sentence_length=14,
@@ -228,7 +253,7 @@ class ToneEngine:
     }
 
     # CHEEKY TONE — Playful, witty, bold
-    CHEEKY_PROFILES = {
+    CHEEKY_PROFILES: ClassVar[dict] = {
         Market.USA: ToneProfile(
             tone_type=ToneType.CHEEKY,
             market=Market.USA,
@@ -238,8 +263,14 @@ class ToneEngine:
             humor_appropriate=True,
             emoji_density=0.6,
             vocabulary_markers=[
-                "literally", "honestly", "plot twist", "ngl",
-                "same energy", "no cap", "periodt", "vibes"
+                "literally",
+                "honestly",
+                "plot twist",
+                "ngl",
+                "same energy",
+                "no cap",
+                "periodt",
+                "vibes",
             ],
             forbidden_words=["boring", "forgettable"],
             avg_sentence_length=9,
@@ -260,7 +291,7 @@ class ToneEngine:
     }
 
     # EDUCATIONAL TONE — Informative, teaching-focused
-    EDUCATIONAL_PROFILES = {
+    EDUCATIONAL_PROFILES: ClassVar[dict] = {
         Market.USA: ToneProfile(
             tone_type=ToneType.EDUCATIONAL,
             market=Market.USA,
@@ -270,8 +301,13 @@ class ToneEngine:
             humor_appropriate=True,
             emoji_density=0.2,
             vocabulary_markers=[
-                "let's learn", "here's how", "important to understand",
-                "key points", "breakdown", "pro tip", "best practice"
+                "let's learn",
+                "here's how",
+                "important to understand",
+                "key points",
+                "breakdown",
+                "pro tip",
+                "best practice",
             ],
             forbidden_words=["you wouldn't understand"],
             avg_sentence_length=13,
@@ -292,7 +328,7 @@ class ToneEngine:
     }
 
     # URGENT TONE — Time-sensitive, action-oriented
-    URGENT_PROFILES = {
+    URGENT_PROFILES: ClassVar[dict] = {
         Market.USA: ToneProfile(
             tone_type=ToneType.URGENT,
             market=Market.USA,
@@ -302,8 +338,13 @@ class ToneEngine:
             humor_appropriate=False,
             emoji_density=0.3,
             vocabulary_markers=[
-                "immediately", "don't miss out", "limited time",
-                "act now", "today only", "last chance", "hurry"
+                "immediately",
+                "don't miss out",
+                "limited time",
+                "act now",
+                "today only",
+                "last chance",
+                "hurry",
             ],
             forbidden_words=["maybe", "eventually", "later"],
             avg_sentence_length=8,
@@ -324,7 +365,7 @@ class ToneEngine:
     }
 
     # LUXE TONE — Premium, exclusive, aspirational
-    LUXE_PROFILES = {
+    LUXE_PROFILES: ClassVar[dict] = {
         Market.LATIN_AMERICA: ToneProfile(
             tone_type=ToneType.LUXE,
             market=Market.LATIN_AMERICA,
@@ -334,8 +375,13 @@ class ToneEngine:
             humor_appropriate=False,
             emoji_density=0.1,
             vocabulary_markers=[
-                "exquisito", "exclusivo", "elegancia", "prestigio",
-                "obra maestra", "incomparable", "distinguido"
+                "exquisito",
+                "exclusivo",
+                "elegancia",
+                "prestigio",
+                "obra maestra",
+                "incomparable",
+                "distinguido",
             ],
             forbidden_words=["barato", "ordinario"],
             avg_sentence_length=15,
@@ -356,7 +402,7 @@ class ToneEngine:
     }
 
     # DISCOUNT TONE — Value-focused, deal-oriented
-    DISCOUNT_PROFILES = {
+    DISCOUNT_PROFILES: ClassVar[dict] = {
         Market.USA: ToneProfile(
             tone_type=ToneType.DISCOUNT,
             market=Market.USA,
@@ -366,8 +412,14 @@ class ToneEngine:
             humor_appropriate=True,
             emoji_density=0.4,
             vocabulary_markers=[
-                "save", "deal", "unbeatable", "value", "steal",
-                "bargain", "score", "bang for your buck"
+                "save",
+                "deal",
+                "unbeatable",
+                "value",
+                "steal",
+                "bargain",
+                "score",
+                "bang for your buck",
             ],
             forbidden_words=["premium pricing"],
             avg_sentence_length=10,
@@ -388,7 +440,7 @@ class ToneEngine:
     }
 
     # EMPATHETIC TONE — Understanding, supportive, listening
-    EMPATHETIC_PROFILES = {
+    EMPATHETIC_PROFILES: ClassVar[dict] = {
         Market.LATIN_AMERICA: ToneProfile(
             tone_type=ToneType.EMPATHETIC,
             market=Market.LATIN_AMERICA,
@@ -398,8 +450,12 @@ class ToneEngine:
             humor_appropriate=False,
             emoji_density=0.2,
             vocabulary_markers=[
-                "entiendo", "comprendo", "te acompañamos", "sentimos",
-                "estamos aquí para ti", "te escuchamos"
+                "entiendo",
+                "comprendo",
+                "te acompañamos",
+                "sentimos",
+                "estamos aquí para ti",
+                "te escuchamos",
             ],
             forbidden_words=["tu culpa"],
             avg_sentence_length=12,
@@ -420,7 +476,7 @@ class ToneEngine:
     }
 
     # Registry of all tone profiles
-    TONE_REGISTRY: Dict[Tuple[ToneType, Market, Industry], ToneProfile] = {}
+    TONE_REGISTRY: ClassVar[dict[tuple[ToneType, Market, Industry], ToneProfile]] = {}
 
     def __init__(self):
         """Initialize tone engine with all profiles"""
@@ -460,7 +516,7 @@ class ToneEngine:
         tone_type: ToneType,
         market: Market,
         industry: Industry,
-    ) -> Optional[ToneProfile]:
+    ) -> ToneProfile | None:
         """
         Get tone profile by type, market, and industry.
         Falls back to available profiles if exact match not found.
@@ -533,7 +589,7 @@ class ToneEngine:
         self,
         message: str,
         tone_profile: ToneProfile,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Apply tone profile to message.
 
@@ -562,7 +618,9 @@ class ToneEngine:
                 }
                 if word.lower() in formal_alternatives:
                     toned_words.append(formal_alternatives[word.lower()])
-                    modifications.append(f"'{word}' → '{formal_alternatives[word.lower()]}'")
+                    modifications.append(
+                        f"'{word}' → '{formal_alternatives[word.lower()]}'"
+                    )
                 else:
                     toned_words.append(word)
             else:
@@ -584,18 +642,20 @@ class ToneEngine:
             "modifications": modifications,
         }
 
-    def get_all_tones(self) -> List[Dict[str, Any]]:
+    def get_all_tones(self) -> list[dict[str, Any]]:
         """Get all available tones"""
         tones = []
         seen = set()
         for profile in self.TONE_REGISTRY.values():
             if profile.tone_type.value not in seen:
-                tones.append({
-                    "tone": profile.tone_type.value,
-                    "formality": profile.formality_level,
-                    "energy": profile.energy_level,
-                    "humor_appropriate": profile.humor_appropriate,
-                })
+                tones.append(
+                    {
+                        "tone": profile.tone_type.value,
+                        "formality": profile.formality_level,
+                        "energy": profile.energy_level,
+                        "humor_appropriate": profile.humor_appropriate,
+                    }
+                )
                 seen.add(profile.tone_type.value)
         return tones
 
@@ -618,11 +678,15 @@ class ToneEngine:
         text_lower = text.lower()
 
         # Vocabulary match
-        vocabulary_matches = sum(1 for marker in tone_profile.vocabulary_markers if marker in text_lower)
+        vocabulary_matches = sum(
+            1 for marker in tone_profile.vocabulary_markers if marker in text_lower
+        )
         score += min(vocabulary_matches * 0.05, 0.3)
 
         # Forbidden words
-        forbidden_count = sum(1 for word in tone_profile.forbidden_words if word in text_lower)
+        forbidden_count = sum(
+            1 for word in tone_profile.forbidden_words if word in text_lower
+        )
         score -= min(forbidden_count * 0.1, 0.2)
 
         # Sentence length check
@@ -637,9 +701,12 @@ class ToneEngine:
 
         # Emoji check
         emoji_count = sum(1 for char in text if ord(char) > 127)
-        if tone_profile.emoji_density > 0.3 and emoji_count > 0:
-            score += 0.1
-        elif tone_profile.emoji_density < 0.1 and emoji_count == 0:
+        if (
+            tone_profile.emoji_density > 0.3
+            and emoji_count > 0
+            or tone_profile.emoji_density < 0.1
+            and emoji_count == 0
+        ):
             score += 0.1
 
         return min(max(score, 0.0), 1.0)

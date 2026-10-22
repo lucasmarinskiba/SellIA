@@ -4,7 +4,7 @@ Envía mensajes directos en Instagram (similar a WhatsApp pero en IG).
 """
 
 import logging
-from typing import Optional, Tuple
+
 import httpx
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ class InstagramConnector:
         self,
         recipient_id: str,
         message: str,
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """Envía texto por DM en Instagram."""
         try:
             url = f"{self.BASE_URL}/{self.API_VERSION}/{self.business_account_id}/messages"
@@ -51,8 +51,8 @@ class InstagramConnector:
 
             return True, message_id
 
-        except Exception as e:
-            logger.error(f"Error sending Instagram message: {e}")
+        except Exception:
+            logger.exception("Error sending Instagram message")
             return False, None
 
     async def send_media_message(
@@ -60,7 +60,7 @@ class InstagramConnector:
         recipient_id: str,
         media_type: str,  # image, video
         media_url: str,
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """Envía media por DM."""
         try:
             url = f"{self.BASE_URL}/{self.API_VERSION}/{self.business_account_id}/messages"
@@ -82,8 +82,8 @@ class InstagramConnector:
 
             return True, message_id
 
-        except Exception as e:
-            logger.error(f"Error sending Instagram media: {e}")
+        except Exception:
+            logger.exception("Error sending Instagram media")
             return False, None
 
     async def close(self):

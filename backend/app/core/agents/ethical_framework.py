@@ -10,15 +10,15 @@ Prevents:
 """
 
 import logging
-from typing import Dict, List, Any, Tuple
 from enum import Enum
-from datetime import datetime
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
 
 class DarkPatternType(str, Enum):
     """Types of dark patterns."""
+
     FALSE_URGENCY = "false_urgency"  # Artificial time pressure
     FAKE_SCARCITY = "fake_scarcity"  # Fake limited availability
     MISDIRECTION = "misdirection"  # Hidden important info
@@ -33,41 +33,58 @@ class EthicalFramework:
     """Enforces ethical boundaries in sales."""
 
     # Dark pattern keywords
-    DARK_PATTERN_INDICATORS = {
+    DARK_PATTERN_INDICATORS: ClassVar[dict] = {
         DarkPatternType.FALSE_URGENCY: {
             "keywords": [
-                "hurry", "last chance", "today only", "act now",
-                "before it's gone", "ends tonight", "limited time",
-                "don't miss out", "expires", "rush",
+                "hurry",
+                "last chance",
+                "today only",
+                "act now",
+                "before it's gone",
+                "ends tonight",
+                "limited time",
+                "don't miss out",
+                "expires",
+                "rush",
             ],
             "severity": "high",
         },
         DarkPatternType.FAKE_SCARCITY: {
             "keywords": [
-                "only 3 left", "running out", "limited spots",
-                "exclusive access", "only for today", "one time offer",
-                "while supplies last", "almost sold out",
+                "only 3 left",
+                "running out",
+                "limited spots",
+                "exclusive access",
+                "only for today",
+                "one time offer",
+                "while supplies last",
+                "almost sold out",
             ],
             "severity": "high",
         },
         DarkPatternType.CONFIRMSHAMING: {
             "keywords": [
-                "I don't want to save money", "Click here to lose",
-                "Yes, make me poor", "No, I prefer to fail",
+                "I don't want to save money",
+                "Click here to lose",
+                "Yes, make me poor",
+                "No, I prefer to fail",
             ],
             "severity": "critical",
         },
         DarkPatternType.FORCED_CONTINUATION: {
             "keywords": [
-                "auto-renew", "cancellation fee", "requires calling",
-                "buried cancel button", "no easy cancel",
+                "auto-renew",
+                "cancellation fee",
+                "requires calling",
+                "buried cancel button",
+                "no easy cancel",
             ],
             "severity": "high",
         },
     }
 
     # Manipulation triggers
-    MANIPULATION_TRIGGERS = {
+    MANIPULATION_TRIGGERS: ClassVar[dict] = {
         "fear_based": ["fail", "lose", "miss", "never", "desperate"],
         "obligation": ["should", "must", "have to", "owe"],
         "guilt": ["shameful", "irresponsible", "negligent"],
@@ -75,7 +92,7 @@ class EthicalFramework:
     }
 
     @staticmethod
-    def detect_dark_patterns(message: str) -> Dict[str, Any]:
+    def detect_dark_patterns(message: str) -> dict[str, Any]:
         """
         Detect dark patterns in message.
 
@@ -91,17 +108,22 @@ class EthicalFramework:
         patterns_found = []
         message_lower = message.lower()
 
-        for pattern_type, pattern_data in EthicalFramework.DARK_PATTERN_INDICATORS.items():
+        for (
+            pattern_type,
+            pattern_data,
+        ) in EthicalFramework.DARK_PATTERN_INDICATORS.items():
             keywords = pattern_data["keywords"]
             matches = [kw for kw in keywords if kw.lower() in message_lower]
 
             if matches:
-                patterns_found.append({
-                    "pattern_type": pattern_type.value,
-                    "severity": pattern_data["severity"],
-                    "matched_keywords": matches,
-                    "count": len(matches),
-                })
+                patterns_found.append(
+                    {
+                        "pattern_type": pattern_type.value,
+                        "severity": pattern_data["severity"],
+                        "matched_keywords": matches,
+                        "count": len(matches),
+                    }
+                )
 
         # Assess safety
         max_severity = max([p["severity"] for p in patterns_found], default="low")
@@ -137,7 +159,7 @@ class EthicalFramework:
         }
 
     @staticmethod
-    def check_fomo_abuse(message: str, user_context: Dict[str, Any]) -> Dict[str, Any]:
+    def check_fomo_abuse(message: str, user_context: dict[str, Any]) -> dict[str, Any]:
         """
         Check if message exploits FOMO (fear of missing out) abusively.
 
@@ -151,8 +173,14 @@ class EthicalFramework:
         """
 
         fomo_keywords = [
-            "exclusive", "limited", "last chance", "only", "now",
-            "trending", "everyone's doing", "don't miss",
+            "exclusive",
+            "limited",
+            "last chance",
+            "only",
+            "now",
+            "trending",
+            "everyone's doing",
+            "don't miss",
         ]
 
         message_lower = message.lower()
@@ -174,7 +202,10 @@ class EthicalFramework:
             legitimate_fomo = True
 
         # 2. Product actually selling out + inventory verified
-        if "selling out" in message_lower and user_context.get("inventory_level", 100) < 10:
+        if (
+            "selling out" in message_lower
+            and user_context.get("inventory_level", 100) < 10
+        ):
             legitimate_fomo = True
 
         # 3. Promotional offer has real end date + verified
@@ -200,7 +231,7 @@ class EthicalFramework:
         }
 
     @staticmethod
-    def validate_scarcity(claim: str, product_data: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_scarcity(claim: str, product_data: dict[str, Any]) -> dict[str, Any]:
         """
         Validate if scarcity claim is real.
 
@@ -228,10 +259,14 @@ class EthicalFramework:
         if actual_inventory is not None:
             if actual_inventory <= threshold:
                 verified = True
-                recommendation = f"Claim is verified: {actual_inventory} units available"
+                recommendation = (
+                    f"Claim is verified: {actual_inventory} units available"
+                )
             else:
                 verified = False
-                recommendation = f"Claim is FALSE: {actual_inventory} units available (not limited)"
+                recommendation = (
+                    f"Claim is FALSE: {actual_inventory} units available (not limited)"
+                )
         else:
             verified = False
             recommendation = "Cannot verify scarcity: no inventory data"
@@ -248,9 +283,9 @@ class EthicalFramework:
 
     @staticmethod
     def validate_testimonials(
-        testimonials: List[Dict[str, Any]],
-        product_data: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        testimonials: list[dict[str, Any]],
+        product_data: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Validate testimonials for authenticity.
 
@@ -283,11 +318,20 @@ class EthicalFramework:
             review_text = testimonial.get("text", "").lower()
 
             # Red flags for fake reviews
-            fake_review_indicators = [
-                ("I", review_text.count("I") < 2),  # Few personal pronouns = less authentic
+            [
+                (
+                    "I",
+                    review_text.count("I") < 2,
+                ),  # Few personal pronouns = less authentic
                 ("actually", "actually" in review_text or "really" in review_text),
-                ("specific detail", len(review_text.split()) > 200),  # Too generic or too long
-                ("natural language", "highly recommend" not in review_text and "best" not in review_text),
+                (
+                    "specific detail",
+                    len(review_text.split()) > 200,
+                ),  # Too generic or too long
+                (
+                    "natural language",
+                    "highly recommend" not in review_text and "best" not in review_text,
+                ),
             ]
 
             # Very short reviews are suspicious
@@ -297,12 +341,16 @@ class EthicalFramework:
             # All-caps words suggest enthusiasm but may be fake
             caps_words = [w for w in review_text.split() if w.isupper() and len(w) > 2]
             if len(caps_words) > 3:
-                review_check["warnings"].append("Excessive all-caps (may indicate fake)")
+                review_check["warnings"].append(
+                    "Excessive all-caps (may indicate fake)"
+                )
 
             # Check 3: Conflicts of interest
             reviewer_role = testimonial.get("reviewer_role", "customer")
             if reviewer_role in ["affiliate", "partner", "employee"]:
-                review_check["warnings"].append(f"Conflict of interest: {reviewer_role}")
+                review_check["warnings"].append(
+                    f"Conflict of interest: {reviewer_role}"
+                )
                 if not testimonial.get("conflict_disclosed", False):
                     review_check["flags"].append("Conflict of interest NOT disclosed")
                     review_check["valid"] = False
@@ -317,7 +365,8 @@ class EthicalFramework:
                 if claim_type == "performance":
                     expected_range = product_data.get("performance_range")
                     if expected_range and (
-                        claim_value < expected_range[0] or claim_value > expected_range[1]
+                        claim_value < expected_range[0]
+                        or claim_value > expected_range[1]
                     ):
                         review_check["warnings"].append(
                             f"Claim '{claim_type}={claim_value}' outside expected range"
@@ -335,13 +384,14 @@ class EthicalFramework:
             "flagged": flagged_count,
             "validation_results": validation_results,
             "recommendation": (
-                "Safe to use" if valid_count >= len(testimonials) * 0.8
+                "Safe to use"
+                if valid_count >= len(testimonials) * 0.8
                 else "Filter out flagged testimonials"
             ),
         }
 
     @staticmethod
-    def check_pricing_honesty(pricing: Dict[str, Any]) -> Dict[str, Any]:
+    def check_pricing_honesty(pricing: dict[str, Any]) -> dict[str, Any]:
         """
         Check for hidden fees and pricing dishonesty.
 
@@ -373,20 +423,26 @@ class EthicalFramework:
         for fee_key, fee_name in fee_types.items():
             fee_amount = pricing.get(fee_key, 0)
             if fee_amount > 0:
-                all_fees.append({
-                    "name": fee_name,
-                    "amount": fee_amount,
-                    "disclosed": pricing.get(f"{fee_key}_disclosed", False),
-                })
+                all_fees.append(
+                    {
+                        "name": fee_name,
+                        "amount": fee_amount,
+                        "disclosed": pricing.get(f"{fee_key}_disclosed", False),
+                    }
+                )
 
                 if not pricing.get(f"{fee_key}_disclosed", False):
                     undisclosed_fees.append(fee_name)
 
         total_cost = base_price + sum(f["amount"] for f in all_fees)
-        price_honest = len(undisclosed_fees) == 0 and pricing.get("final_price_clear", False)
+        price_honest = len(undisclosed_fees) == 0 and pricing.get(
+            "final_price_clear", False
+        )
 
         # Calculate percentage markup from hidden fees
-        markup_percentage = ((total_cost - base_price) / base_price * 100) if base_price > 0 else 0
+        markup_percentage = (
+            ((total_cost - base_price) / base_price * 100) if base_price > 0 else 0
+        )
 
         return {
             "base_price": base_price,
@@ -397,7 +453,8 @@ class EthicalFramework:
             "fees_disclosed": len(undisclosed_fees) == 0,
             "price_honest": price_honest,
             "recommendation": (
-                "Pricing is honest" if price_honest
+                "Pricing is honest"
+                if price_honest
                 else f"Disclose these fees: {', '.join(undisclosed_fees)}"
             ),
             "transparency_score": 100 - (len(undisclosed_fees) * 20),
@@ -406,9 +463,9 @@ class EthicalFramework:
     @staticmethod
     def ethical_score(
         message: str,
-        product_data: Dict[str, Any],
-        user_context: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        product_data: dict[str, Any],
+        user_context: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Overall ethical score (0-100).
 
@@ -429,7 +486,12 @@ class EthicalFramework:
         dp_penalty = severity_weight.get(dark_pattern_result["max_severity"], 0)
         score += dp_penalty * 0.30
         if not dark_pattern_result["safe_to_send"]:
-            issues.extend([f"Dark pattern: {p['pattern_type']}" for p in dark_pattern_result["patterns_detected"]])
+            issues.extend(
+                [
+                    f"Dark pattern: {p['pattern_type']}"
+                    for p in dark_pattern_result["patterns_detected"]
+                ]
+            )
 
         # FOMO abuse check
         fomo_result = EthicalFramework.check_fomo_abuse(message, user_context)
@@ -439,7 +501,9 @@ class EthicalFramework:
 
         # Scarcity honesty
         scarcity_result = EthicalFramework.validate_scarcity(message, product_data)
-        if scarcity_result.get("scarcity_claimed") and not scarcity_result.get("scarcity_verified"):
+        if scarcity_result.get("scarcity_claimed") and not scarcity_result.get(
+            "scarcity_verified"
+        ):
             score -= 25 * 0.20
             issues.append("False scarcity claim")
 
@@ -451,11 +515,15 @@ class EthicalFramework:
             )
             fake_testimonials = testimonial_result["flagged"]
             if fake_testimonials > 0:
-                score -= (fake_testimonials / len(product_data["testimonials"]) * 25) * 0.15
+                score -= (
+                    fake_testimonials / len(product_data["testimonials"]) * 25
+                ) * 0.15
                 issues.append(f"{fake_testimonials} flagged testimonials")
 
         # Pricing honesty
-        pricing_result = EthicalFramework.check_pricing_honesty(product_data.get("pricing", {}))
+        pricing_result = EthicalFramework.check_pricing_honesty(
+            product_data.get("pricing", {})
+        )
         score += (pricing_result["transparency_score"] - 100) * 0.15
         if not pricing_result["price_honest"]:
             issues.append(f"Hidden fees: {', '.join(pricing_result['hidden_fees'])}")
@@ -468,7 +536,8 @@ class EthicalFramework:
             "issues": issues,
             "issue_count": len(issues),
             "recommendation": (
-                "Ethical to send" if score >= 70
+                "Ethical to send"
+                if score >= 70
                 else f"Address issues before sending: {'; '.join(issues[:3])}"
             ),
             "dark_patterns": dark_pattern_result["patterns_detected"],

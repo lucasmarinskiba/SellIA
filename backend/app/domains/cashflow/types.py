@@ -3,22 +3,23 @@
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Optional
 
 
 @dataclass
 class CashFlowAssumptions:
     """Input assumptions for cash projection."""
+
     avg_payment_delay_days: int  # days after sale before cash received
     cogs_pct_revenue: Decimal  # cost of goods as % of revenue
     opex_daily: Decimal  # fixed daily operating expense
     tax_rate: Decimal = Decimal("0.21")  # Argentina default
-    beginning_balance: Decimal = Decimal("0")
+    beginning_balance: Decimal = Decimal(0)
 
 
 @dataclass
 class CashFlowPoint:
     """Day-level cash forecast point."""
+
     date: date
     revenue_forecast: Decimal
     cogs_forecast: Decimal
@@ -35,6 +36,7 @@ class CashFlowPoint:
 @dataclass
 class CashFlowForecast:
     """Complete cash projection for a horizon."""
+
     business_id: str
     start_date: date
     horizon_days: int
@@ -44,6 +46,6 @@ class CashFlowForecast:
     min_balance: Decimal
     max_balance: Decimal
     min_balance_date: date
-    runway_days: Optional[int]  # days until zero if negative burn
+    runway_days: int | None  # days until zero if negative burn
     assumptions: CashFlowAssumptions
     computed_at: datetime

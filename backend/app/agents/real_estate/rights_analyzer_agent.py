@@ -2,9 +2,9 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
 from datetime import datetime
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -22,10 +22,12 @@ class DerechosPiso:
 
     superficie_construida: float  # Built area in sqm
     superficie_util: float  # Usable area
-    uso_exclusivo: List[str] = field(default_factory=list)  # Exclusive use areas
-    mejoras_permitidas: List[str] = field(default_factory=list)  # Allowed improvements
-    restricciones_disposicion: List[str] = field(default_factory=list)  # Disposition restrictions
-    deuda_expensas: Optional[float] = None  # Outstanding HOA fees
+    uso_exclusivo: list[str] = field(default_factory=list)  # Exclusive use areas
+    mejoras_permitidas: list[str] = field(default_factory=list)  # Allowed improvements
+    restricciones_disposicion: list[str] = field(
+        default_factory=list
+    )  # Disposition restrictions
+    deuda_expensas: float | None = None  # Outstanding HOA fees
     porcentaje_condominio: float = 0.0  # Condominium percentage
     pueden_alquilar: bool = True
     pueden_hipotecar: bool = True
@@ -39,13 +41,15 @@ class DerechosConstruction:
     densidad_permitida: float  # Maximum density
     altura_maxima: float  # Max height in meters
     ocupacion_planta: float  # Floor occupancy percentage
-    setbacks: Dict[str, float] = field(default_factory=dict)  # Building setbacks
-    usos_permitidos: List[str] = field(default_factory=list)  # Permitted uses
-    restricciones_zonificacion: List[str] = field(default_factory=list)  # Zoning restrictions
+    setbacks: dict[str, float] = field(default_factory=dict)  # Building setbacks
+    usos_permitidos: list[str] = field(default_factory=list)  # Permitted uses
+    restricciones_zonificacion: list[str] = field(
+        default_factory=list
+    )  # Zoning restrictions
     posibilidad_ampliacion: bool = False
-    altura_actual: Optional[float] = None
-    densidad_actual: Optional[float] = None
-    potencial_construccion_adicional: Optional[float] = None  # Additional buildable sqm
+    altura_actual: float | None = None
+    densidad_actual: float | None = None
+    potencial_construccion_adicional: float | None = None  # Additional buildable sqm
 
 
 @dataclass
@@ -55,12 +59,14 @@ class DerechosSuelo:
     area_total: float  # Total land area in sqm
     area_construccion: float  # Buildable area
     derechos_minerales: bool = False  # Mineral rights
-    derechos_agua: Optional[str] = None  # Water rights type
-    derechos_agricolas: Optional[str] = None  # Agricultural rights
-    servidumbres: List[str] = field(default_factory=list)  # Easements
-    limitaciones_naturales: List[str] = field(default_factory=list)  # Natural limitations
-    riesgo_ambiental: Optional[str] = None  # Environmental risk level
-    pendiente_terreno: Optional[float] = None  # Slope percentage
+    derechos_agua: str | None = None  # Water rights type
+    derechos_agricolas: str | None = None  # Agricultural rights
+    servidumbres: list[str] = field(default_factory=list)  # Easements
+    limitaciones_naturales: list[str] = field(
+        default_factory=list
+    )  # Natural limitations
+    riesgo_ambiental: str | None = None  # Environmental risk level
+    pendiente_terreno: float | None = None  # Slope percentage
 
 
 @dataclass
@@ -69,12 +75,16 @@ class DerechosHerencia:
 
     tipo_sucesion: str  # Type of succession (testada/intestada)
     numero_herederos: int
-    reparto_porcentajes: Dict[str, float] = field(default_factory=dict)  # Heir percentages
-    conflictos_pendientes: List[str] = field(default_factory=list)  # Outstanding conflicts
+    reparto_porcentajes: dict[str, float] = field(
+        default_factory=dict
+    )  # Heir percentages
+    conflictos_pendientes: list[str] = field(
+        default_factory=list
+    )  # Outstanding conflicts
     impuestos_herencia: float = 0.0  # Inheritance taxes owed
     proceso_legalizacion: bool = False  # Legalization in progress
-    documentos_requeridos: List[str] = field(default_factory=list)  # Required documents
-    fecha_defuncion: Optional[datetime] = None
+    documentos_requeridos: list[str] = field(default_factory=list)  # Required documents
+    fecha_defuncion: datetime | None = None
     testamento_disponible: bool = False
     status_legalizacion: str = "pendiente"  # pending/in_progress/complete
 
@@ -83,10 +93,12 @@ class RightsAnalyzerAgent:
     """Analyze property rights (piso, construcción, suelo, herencias)."""
 
     def __init__(self):
-        self.analyses: Dict[str, Dict[str, Any]] = {}
-        self.compliance_issues: Dict[str, List[str]] = {}
+        self.analyses: dict[str, dict[str, Any]] = {}
+        self.compliance_issues: dict[str, list[str]] = {}
 
-    def analyze_property_rights(self, property_data: Dict[str, Any], region: str = "Argentina") -> Dict[str, Any]:
+    def analyze_property_rights(
+        self, property_data: dict[str, Any], region: str = "Argentina"
+    ) -> dict[str, Any]:
         """Comprehensive rights analysis for property."""
         property_id = property_data.get("property_id", "unknown")
 
@@ -104,40 +116,62 @@ class RightsAnalyzerAgent:
 
         # Analyze based on property type and data
         if self._is_apartment_or_unit(property_data):
-            rights_analysis["derechos_piso"] = self._analyze_derechos_piso(property_data, region)
+            rights_analysis["derechos_piso"] = self._analyze_derechos_piso(
+                property_data, region
+            )
 
-        rights_analysis["derechos_construccion"] = self._analyze_derechos_construccion(property_data, region)
-        rights_analysis["derechos_suelo"] = self._analyze_derechos_suelo(property_data, region)
+        rights_analysis["derechos_construccion"] = self._analyze_derechos_construccion(
+            property_data, region
+        )
+        rights_analysis["derechos_suelo"] = self._analyze_derechos_suelo(
+            property_data, region
+        )
 
         # Check for inheritance issues
         if property_data.get("in_inheritance_process"):
-            rights_analysis["derechos_herencia"] = self._analyze_derechos_herencia(property_data, region)
+            rights_analysis["derechos_herencia"] = self._analyze_derechos_herencia(
+                property_data, region
+            )
 
         # Assess overall risk
         critical_issues = []
-        if rights_analysis["derechos_piso"]:
-            if rights_analysis["derechos_piso"].deuda_expensas and rights_analysis["derechos_piso"].deuda_expensas > 0:
-                critical_issues.append(f"Outstanding HOA fees: ${rights_analysis['derechos_piso'].deuda_expensas:,.0f}")
+        if rights_analysis["derechos_piso"] and (
+            rights_analysis["derechos_piso"].deuda_expensas
+            and rights_analysis["derechos_piso"].deuda_expensas > 0
+        ):
+            critical_issues.append(
+                f"Outstanding HOA fees: ${rights_analysis['derechos_piso'].deuda_expensas:,.0f}"
+            )
 
-        if rights_analysis["derechos_herencia"]:
-            if rights_analysis["derechos_herencia"].conflictos_pendientes:
-                critical_issues.extend(rights_analysis["derechos_herencia"].conflictos_pendientes)
+        if (
+            rights_analysis["derechos_herencia"]
+            and rights_analysis["derechos_herencia"].conflictos_pendientes
+        ):
+            critical_issues.extend(
+                rights_analysis["derechos_herencia"].conflictos_pendientes
+            )
 
         rights_analysis["critical_issues"] = critical_issues
         rights_analysis["overall_risk_level"] = self._assess_risk_level(rights_analysis)
-        rights_analysis["recommendations"] = self._generate_rights_recommendations(rights_analysis)
+        rights_analysis["recommendations"] = self._generate_rights_recommendations(
+            rights_analysis
+        )
 
         self.analyses[property_id] = rights_analysis
-        logger.info(f"Rights analysis for {property_id}: risk_level={rights_analysis['overall_risk_level']}")
+        logger.info(
+            f"Rights analysis for {property_id}: risk_level={rights_analysis['overall_risk_level']}"
+        )
 
         return rights_analysis
 
-    def _is_apartment_or_unit(self, property_data: Dict[str, Any]) -> bool:
+    def _is_apartment_or_unit(self, property_data: dict[str, Any]) -> bool:
         """Check if property is apartment/condo unit."""
         property_type = property_data.get("property_type", "").lower()
         return any(t in property_type for t in ["apartment", "condo", "unit", "piso"])
 
-    def _analyze_derechos_piso(self, property_data: Dict[str, Any], region: str) -> DerechosPiso:
+    def _analyze_derechos_piso(
+        self, property_data: dict[str, Any], region: str
+    ) -> DerechosPiso:
         """Analyze apartment/unit rights."""
         derechos = DerechosPiso(
             superficie_construida=property_data.get("built_area", 0),
@@ -159,7 +193,9 @@ class RightsAnalyzerAgent:
 
         return derechos
 
-    def _analyze_derechos_construccion(self, property_data: Dict[str, Any], region: str) -> DerechosConstruction:
+    def _analyze_derechos_construccion(
+        self, property_data: dict[str, Any], region: str
+    ) -> DerechosConstruction:
         """Analyze construction rights."""
         derechos = DerechosConstruction(
             densidad_permitida=property_data.get("max_density", 0),
@@ -171,12 +207,16 @@ class RightsAnalyzerAgent:
             posibilidad_ampliacion=property_data.get("can_expand", False),
             altura_actual=property_data.get("current_height"),
             densidad_actual=property_data.get("current_density"),
-            potencial_construccion_adicional=property_data.get("additional_buildable_sqm"),
+            potencial_construccion_adicional=property_data.get(
+                "additional_buildable_sqm"
+            ),
         )
 
         return derechos
 
-    def _analyze_derechos_suelo(self, property_data: Dict[str, Any], region: str) -> DerechosSuelo:
+    def _analyze_derechos_suelo(
+        self, property_data: dict[str, Any], region: str
+    ) -> DerechosSuelo:
         """Analyze land rights."""
         derechos = DerechosSuelo(
             area_total=property_data.get("land_area", 0),
@@ -192,7 +232,9 @@ class RightsAnalyzerAgent:
 
         return derechos
 
-    def _analyze_derechos_herencia(self, property_data: Dict[str, Any], region: str) -> DerechosHerencia:
+    def _analyze_derechos_herencia(
+        self, property_data: dict[str, Any], region: str
+    ) -> DerechosHerencia:
         """Analyze inheritance rights."""
         derechos = DerechosHerencia(
             tipo_sucesion=property_data.get("succession_type", "testada"),
@@ -227,7 +269,7 @@ class RightsAnalyzerAgent:
         - Some restrictions on foreign ownership
         """
 
-    def _assess_risk_level(self, analysis: Dict[str, Any]) -> str:
+    def _assess_risk_level(self, analysis: dict[str, Any]) -> str:
         """Assess overall risk level of property rights."""
         risk_factors = 0
 
@@ -240,9 +282,11 @@ class RightsAnalyzerAgent:
             if analysis["derechos_herencia"].status_legalizacion != "complete":
                 risk_factors += 2
 
-        if analysis.get("derechos_piso"):
-            if not analysis["derechos_piso"].pueden_hipotecar:
-                risk_factors += 2
+        if (
+            analysis.get("derechos_piso")
+            and not analysis["derechos_piso"].pueden_hipotecar
+        ):
+            risk_factors += 2
 
         if risk_factors == 0:
             return "low"
@@ -253,27 +297,35 @@ class RightsAnalyzerAgent:
         else:
             return "critical"
 
-    def _generate_rights_recommendations(self, analysis: Dict[str, Any]) -> List[str]:
+    def _generate_rights_recommendations(self, analysis: dict[str, Any]) -> list[str]:
         """Generate recommendations based on rights analysis."""
         recommendations = []
 
         if analysis.get("derechos_herencia"):
             herencia = analysis["derechos_herencia"]
             if herencia.status_legalizacion != "complete":
-                recommendations.append("Complete inheritance legalization before closing")
+                recommendations.append(
+                    "Complete inheritance legalization before closing"
+                )
             if herencia.conflictos_pendientes:
-                recommendations.append("Resolve inheritance conflicts with legal counsel")
+                recommendations.append(
+                    "Resolve inheritance conflicts with legal counsel"
+                )
             if herencia.numero_herederos > 1:
                 recommendations.append("Ensure all heirs consent to sale in writing")
 
         if analysis.get("derechos_piso"):
             piso = analysis["derechos_piso"]
             if piso.deuda_expensas and piso.deuda_expensas > 0:
-                recommendations.append(f"Clear HOA debt of ${piso.deuda_expensas:,.0f} before closing")
+                recommendations.append(
+                    f"Clear HOA debt of ${piso.deuda_expensas:,.0f} before closing"
+                )
             if not piso.pueden_hipotecar:
                 recommendations.append("This unit cannot be mortgaged - cash sale only")
             if not piso.pueden_alquilar:
-                recommendations.append("This unit cannot be rented - owner-occupied only")
+                recommendations.append(
+                    "This unit cannot be rented - owner-occupied only"
+                )
 
         if analysis.get("derechos_construccion"):
             construccion = analysis["derechos_construccion"]
@@ -283,11 +335,13 @@ class RightsAnalyzerAgent:
                 )
 
         if analysis.get("overall_risk_level") in ["high", "critical"]:
-            recommendations.append("MANDATORY: Consult with real estate attorney before proceeding")
+            recommendations.append(
+                "MANDATORY: Consult with real estate attorney before proceeding"
+            )
 
         return recommendations
 
-    def check_inheritance_legality(self, property_id: str) -> Optional[Dict[str, Any]]:
+    def check_inheritance_legality(self, property_id: str) -> dict[str, Any] | None:
         """Detailed check for inheritance-related properties."""
         if property_id not in self.analyses:
             return None
@@ -306,11 +360,12 @@ class RightsAnalyzerAgent:
             "outstanding_taxes": herencia.impuestos_herencia,
             "legalization_complete": herencia.status_legalizacion == "complete",
             "conflicts": herencia.conflictos_pendientes,
-            "can_sell": herencia.status_legalizacion == "complete" and len(herencia.conflictos_pendientes) == 0,
+            "can_sell": herencia.status_legalizacion == "complete"
+            and len(herencia.conflictos_pendientes) == 0,
             "required_steps": self._get_inheritance_required_steps(herencia),
         }
 
-    def _get_inheritance_required_steps(self, herencia: DerechosHerencia) -> List[str]:
+    def _get_inheritance_required_steps(self, herencia: DerechosHerencia) -> list[str]:
         """Get required steps for inheritance completion."""
         steps = []
 

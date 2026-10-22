@@ -2,8 +2,9 @@
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, List
-from datetime import datetime
+from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -17,20 +18,23 @@ class PricingRecommendation:
     recommended_price: float
     confidence: float
     strategy: str  # aggressive, balanced, conservative
-    market_conditions: Dict[str, Any]
-    factors: Dict[str, float]  # Individual factor impacts
-    reasoning: List[str]
+    market_conditions: dict[str, Any]
+    factors: dict[str, float]  # Individual factor impacts
+    reasoning: list[str]
 
 
 class PricingAgent:
     """Dynamic pricing using ML predictions + market analysis."""
 
-    def __init__(self, ml_engine: Optional[Any] = None):
+    def __init__(self, ml_engine: Any | None = None):
         self.ml_engine = ml_engine
-        self.recommendations: Dict[str, PricingRecommendation] = {}
+        self.recommendations: dict[str, PricingRecommendation] = {}
 
     def calculate_pricing_recommendation(
-        self, property_data: Dict[str, Any], market_data: Dict[str, Any], strategy: str = "balanced"
+        self,
+        property_data: dict[str, Any],
+        market_data: dict[str, Any],
+        strategy: str = "balanced",
     ) -> PricingRecommendation:
         """Calculate optimal price for property."""
         property_id = property_data.get("property_id", "unknown")
@@ -52,7 +56,9 @@ class PricingAgent:
         confidence = self._calculate_price_confidence(property_data, market_data)
 
         # Generate reasoning
-        reasoning = self._generate_pricing_reasoning(property_data, market_data, strategy, factors)
+        reasoning = self._generate_pricing_reasoning(
+            property_data, market_data, strategy, factors
+        )
 
         recommendation = PricingRecommendation(
             property_id=property_id,
@@ -66,11 +72,15 @@ class PricingAgent:
         )
 
         self.recommendations[property_id] = recommendation
-        logger.info(f"Pricing recommendation for {property_id}: ${recommended_price:,.0f} ({strategy})")
+        logger.info(
+            f"Pricing recommendation for {property_id}: ${recommended_price:,.0f} ({strategy})"
+        )
 
         return recommendation
 
-    def _calculate_base_valuation(self, property_data: Dict[str, Any], market_data: Dict[str, Any]) -> float:
+    def _calculate_base_valuation(
+        self, property_data: dict[str, Any], market_data: dict[str, Any]
+    ) -> float:
         """Calculate base property valuation."""
         # Start with comparable sales data
         comparable_prices = market_data.get("comparable_prices", [])
@@ -88,13 +98,21 @@ class PricingAgent:
 
         return base_price
 
-    def _calculate_price_factors(self, property_data: Dict[str, Any], market_data: Dict[str, Any]) -> Dict[str, float]:
+    def _calculate_price_factors(
+        self, property_data: dict[str, Any], market_data: dict[str, Any]
+    ) -> dict[str, float]:
         """Calculate impact of individual factors on price."""
         factors = {}
 
         # Property condition factor
         condition = property_data.get("condition", "average").lower()
-        condition_factors = {"excellent": 1.10, "good": 1.05, "average": 1.0, "fair": 0.95, "poor": 0.85}
+        condition_factors = {
+            "excellent": 1.10,
+            "good": 1.05,
+            "average": 1.0,
+            "fair": 0.95,
+            "poor": 0.85,
+        }
         factors["condition"] = condition_factors.get(condition, 1.0)
 
         # Market trend factor
@@ -129,7 +147,7 @@ class PricingAgent:
 
         # Age/modernization
         year_built = property_data.get("year_built", 0)
-        current_year = datetime.utcnow().year
+        current_year = utc_now().year
         property_age = current_year - year_built
 
         if property_age < 5:
@@ -160,7 +178,9 @@ class PricingAgent:
         }
         return multipliers.get(strategy, 1.0)
 
-    def _calculate_price_confidence(self, property_data: Dict[str, Any], market_data: Dict[str, Any]) -> float:
+    def _calculate_price_confidence(
+        self, property_data: dict[str, Any], market_data: dict[str, Any]
+    ) -> float:
         """Calculate confidence level of pricing recommendation."""
         confidence = 0.5
 
@@ -185,7 +205,9 @@ class PricingAgent:
 
         return min(confidence, 1.0)
 
-    def _summarize_market_conditions(self, market_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _summarize_market_conditions(
+        self, market_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Summarize key market conditions."""
         return {
             "trend": market_data.get("market_trend", "unknown"),
@@ -196,8 +218,12 @@ class PricingAgent:
         }
 
     def _generate_pricing_reasoning(
-        self, property_data: Dict[str, Any], market_data: Dict[str, Any], strategy: str, factors: Dict[str, float]
-    ) -> List[str]:
+        self,
+        property_data: dict[str, Any],
+        market_data: dict[str, Any],
+        strategy: str,
+        factors: dict[str, float],
+    ) -> list[str]:
         """Generate reasoning for pricing recommendation."""
         reasoning = []
 
@@ -219,7 +245,9 @@ class PricingAgent:
         # Days on market
         days_on_market = property_data.get("days_on_market", 0)
         if days_on_market > 90:
-            reasoning.append(f"Property on market {days_on_market} days - consider price reduction")
+            reasoning.append(
+                f"Property on market {days_on_market} days - consider price reduction"
+            )
         elif days_on_market < 7:
             reasoning.append("Strong buyer interest - can maintain or increase price")
 
@@ -232,13 +260,17 @@ class PricingAgent:
 
         # Strategy
         if strategy == "aggressive":
-            reasoning.append("Aggressive strategy: List high, expect negotiations to market rate")
+            reasoning.append(
+                "Aggressive strategy: List high, expect negotiations to market rate"
+            )
         elif strategy == "conservative":
-            reasoning.append("Conservative strategy: Undercut market to attract quick sale")
+            reasoning.append(
+                "Conservative strategy: Undercut market to attract quick sale"
+            )
 
         return reasoning
 
-    def suggest_negotiation_targets(self, property_id: str) -> Optional[Dict[str, Any]]:
+    def suggest_negotiation_targets(self, property_id: str) -> dict[str, Any] | None:
         """Suggest negotiation targets based on pricing."""
         if property_id not in self.recommendations:
             return None
@@ -263,22 +295,30 @@ class PricingAgent:
             },
         }
 
-    def compare_pricing_strategies(self, property_data: Dict[str, Any], market_data: Dict[str, Any]) -> Dict[str, Any]:
+    def compare_pricing_strategies(
+        self, property_data: dict[str, Any], market_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Compare all three pricing strategies."""
         strategies = {}
 
         for strategy in ["aggressive", "balanced", "conservative"]:
-            rec = self.calculate_pricing_recommendation(property_data, market_data, strategy)
+            rec = self.calculate_pricing_recommendation(
+                property_data, market_data, strategy
+            )
             strategies[strategy] = {
                 "recommended_price": rec.recommended_price,
-                "time_to_sale_days": self._estimate_time_to_sale(rec.recommended_price, market_data),
+                "time_to_sale_days": self._estimate_time_to_sale(
+                    rec.recommended_price, market_data
+                ),
                 "expected_negotiations": self._estimate_negotiation_rounds(strategy),
                 "probability_of_sale": self._estimate_sale_probability(strategy),
             }
 
         return strategies
 
-    def _estimate_time_to_sale(self, price: float, market_data: Dict[str, Any]) -> float:
+    def _estimate_time_to_sale(
+        self, price: float, market_data: dict[str, Any]
+    ) -> float:
         """Estimate time to sale based on price."""
         avg_time = market_data.get("avg_time_to_sale_days", 30)
         market_price = market_data.get("average_listing_price", 300000)
@@ -299,4 +339,6 @@ class PricingAgent:
 
     def _estimate_sale_probability(self, strategy: str) -> float:
         """Estimate probability of sale."""
-        return {"aggressive": 0.70, "balanced": 0.85, "conservative": 0.95}.get(strategy, 0.80)
+        return {"aggressive": 0.70, "balanced": 0.85, "conservative": 0.95}.get(
+            strategy, 0.80
+        )

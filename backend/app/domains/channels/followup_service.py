@@ -23,14 +23,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
 from app.domains.channels.models import (
-    Conversation, ConversationStatus, Message, MessageDirection,
+    Conversation,
+    ConversationStatus,
+    Message,
+    MessageDirection,
 )
 
 logger = get_logger(__name__)
 
-COLD_THRESHOLD_HOURS = 24  # how long a conversation must sit silent before it counts as "cold"
+COLD_THRESHOLD_HOURS = (
+    24  # how long a conversation must sit silent before it counts as "cold"
+)
 MAX_FOLLOWUPS_PER_CONVERSATION = 2
-SCAN_BATCH_LIMIT = 200  # cap per run so one giant backlog can't block the loop for too long
+SCAN_BATCH_LIMIT = (
+    200  # cap per run so one giant backlog can't block the loop for too long
+)
 
 
 async def _find_cold_conversations(db: AsyncSession) -> list[tuple[Any, Any]]:
@@ -45,7 +52,8 @@ async def _find_cold_conversations(db: AsyncSession) -> list[tuple[Any, Any]]:
     threshold = datetime.now(timezone.utc) - timedelta(hours=COLD_THRESHOLD_HOURS)
 
     result = await db.execute(
-        select(Conversation.id, Conversation.business_id).where(
+        select(Conversation.id, Conversation.business_id)
+        .where(
             Conversation.status == ConversationStatus.ACTIVE,
             # ON DELETE SET NULL leaves conversations with no channel; they can
             # never be nudged, and without this they would fill the batch below
@@ -58,7 +66,8 @@ async def _find_cold_conversations(db: AsyncSession) -> list[tuple[Any, Any]]:
                 Conversation.last_followup_sent_at.is_(None),
                 Conversation.last_followup_sent_at < Conversation.last_message_at,
             ),
-        ).limit(SCAN_BATCH_LIMIT)
+        )
+        .limit(SCAN_BATCH_LIMIT)
     )
     return [(row.id, row.business_id) for row in result.all()]
 
@@ -89,7 +98,9 @@ async def _build_followup_text(db: AsyncSession, business_id: Any) -> str:
             angle = ctx.communication_angles[0]
             hook = angle.get("hook")
             if hook:
-                return f"¡Hola! {hook} ¿Seguís interesado/a? Cualquier duda, acá estoy 🙂"
+                return (
+                    f"¡Hola! {hook} ¿Seguís interesado/a? Cualquier duda, acá estoy 🙂"
+                )
         if ctx and ctx.scheduling_link:
             return f"¡Hola! ¿Seguís por ahí? Si querés avanzamos: {ctx.scheduling_link}"
     except Exception as e:
@@ -120,6 +131,7 @@ async def scan_and_send_followups(db: AsyncSession) -> dict[str, int]:
             text = await _build_followup_text(db, business_id)
 
             from app.domains.channels.services import send_outbound_message
+
             await send_outbound_message(db, conversation_id, text)
 
             # Awaited fetch, so it is safe whatever expired since the query
@@ -136,13 +148,17 @@ async def scan_and_send_followups(db: AsyncSession) -> dict[str, int]:
             await db.commit()
 
             stats["sent"] += 1
-            logger.info(f"Follow-up sent to conversation {conversation_id} (#{followup_number})")
+            logger.info(
+                f"Follow-up sent to conversation {conversation_id} (#{followup_number})"
+            )
 
         except Exception as e:
             # Only plain values below this line: rollback() expires every loaded instance.
             await db.rollback()
             stats["errors"] += 1
-            logger.error(f"Follow-up send failed for conversation {conversation_id}: {e}")
+            logger.error(
+                f"Follow-up send failed for conversation {conversation_id}: {e}"
+            )
 
     if stats["sent"] or stats["errors"]:
         logger.info(f"Follow-up scan complete: {stats}")

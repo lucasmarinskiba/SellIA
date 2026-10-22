@@ -1,17 +1,17 @@
 """Google Calendar integration for scheduling demos and follow-ups."""
 
-import httpx
 import logging
-from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
 from enum import Enum
-import base64
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
 
 class EventType(str, Enum):
     """Calendar event types."""
+
     DEMO = "demo"
     FOLLOW_UP = "follow_up"
     NEGOTIATION = "negotiation"
@@ -43,7 +43,7 @@ class CalendarService:
         start_time: datetime,
         duration_minutes: int = 60,
         video_conference: bool = True,
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Schedule event in Google Calendar.
 
@@ -68,9 +68,7 @@ class CalendarService:
                 "description": description,
                 "start": {"dateTime": start_time.isoformat(), "timeZone": "UTC"},
                 "end": {"dateTime": end_time.isoformat(), "timeZone": "UTC"},
-                "attendees": [
-                    {"email": attendee_email, "displayName": attendee_name}
-                ],
+                "attendees": [{"email": attendee_email, "displayName": attendee_name}],
                 "reminders": {
                     "useDefault": False,
                     "overrides": [
@@ -96,8 +94,8 @@ class CalendarService:
 
             return f"event_{start_time.timestamp()}"
 
-        except Exception as e:
-            logger.error(f"Calendar scheduling failed: {e}")
+        except Exception:
+            logger.exception("Calendar scheduling failed")
             return None
 
     async def schedule_demo(
@@ -106,7 +104,7 @@ class CalendarService:
         email: str,
         company: str,
         preferred_time: datetime,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Schedule product demo."""
         return await self.schedule_event(
             EventType.DEMO,
@@ -124,9 +122,9 @@ class CalendarService:
         email: str,
         reason: str,
         days_from_now: int = 3,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Schedule follow-up call."""
-        follow_up_time = datetime.utcnow() + timedelta(days=days_from_now)
+        follow_up_time = utc_now() + timedelta(days=days_from_now)
         follow_up_time = follow_up_time.replace(hour=10, minute=0)
 
         return await self.schedule_event(
@@ -146,7 +144,7 @@ class CalendarService:
         company: str,
         deal_size: float,
         preferred_time: datetime,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Schedule negotiation/closing call."""
         return await self.schedule_event(
             EventType.NEGOTIATION,
@@ -164,7 +162,7 @@ class CalendarService:
         email: str,
         company: str,
         start_date: datetime,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Schedule onboarding kickoff."""
         return await self.schedule_event(
             EventType.ONBOARDING,

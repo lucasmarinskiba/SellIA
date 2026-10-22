@@ -1,9 +1,9 @@
 """Phase 13: Channel-specific marketing strategies."""
 
-from dataclasses import dataclass, field
-from typing import List, Dict, Any
-from enum import Enum
 import logging
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -29,22 +29,22 @@ class ChannelAction:
 class ChannelPlan:
     channel: str
     priority: ChannelPriority
-    actions: List[ChannelAction] = field(default_factory=list)
+    actions: list[ChannelAction] = field(default_factory=list)
     expected_leads_per_month: int = 0
     estimated_conversion_rate: float = 0.2
     budget_recommendation: str = ""
     timeline_to_first_lead_days: int = 7
-    quick_wins: List[str] = field(default_factory=list)
+    quick_wins: list[str] = field(default_factory=list)
 
 
 @dataclass
 class ChannelStrategy:
     business_model: str
-    channels: List[ChannelPlan] = field(default_factory=list)
+    channels: list[ChannelPlan] = field(default_factory=list)
     total_expected_leads_per_month: int = 0
     estimated_monthly_cost: int = 0
-    priority_order: List[str] = field(default_factory=list)
-    phased_approach: List[Dict[str, Any]] = field(default_factory=list)
+    priority_order: list[str] = field(default_factory=list)
+    phased_approach: list[dict[str, Any]] = field(default_factory=list)
 
 
 class ChannelStrategyGenerator:
@@ -80,7 +80,7 @@ class ChannelStrategyGenerator:
                         effort_level="low",
                         timeline_days=2,
                         expected_leads_per_month=15,
-                        cost_estimate="free"
+                        cost_estimate="free",
                     ),
                     ChannelAction(
                         action="Collect Reviews",
@@ -88,7 +88,7 @@ class ChannelStrategyGenerator:
                         effort_level="medium",
                         timeline_days=30,
                         expected_leads_per_month=10,
-                        cost_estimate="free"
+                        cost_estimate="free",
                     ),
                     ChannelAction(
                         action="Regular Posts",
@@ -96,15 +96,15 @@ class ChannelStrategyGenerator:
                         effort_level="low",
                         timeline_days=1,
                         expected_leads_per_month=8,
-                        cost_estimate="free"
-                    )
+                        cost_estimate="free",
+                    ),
                 ],
                 expected_leads_per_month=33,
                 quick_wins=[
                     "Add 10 photos of store + products today",
                     "Ask 5 happy customers for reviews today",
-                    "Setup response template for reviews"
-                ]
+                    "Setup response template for reviews",
+                ],
             ),
             ChannelPlan(
                 channel="instagram",
@@ -116,7 +116,7 @@ class ChannelStrategyGenerator:
                         effort_level="medium",
                         timeline_days=1,
                         expected_leads_per_month=8,
-                        cost_estimate="free"
+                        cost_estimate="free",
                     ),
                     ChannelAction(
                         action="Visual Storytelling",
@@ -124,7 +124,7 @@ class ChannelStrategyGenerator:
                         effort_level="medium",
                         timeline_days=1,
                         expected_leads_per_month=6,
-                        cost_estimate="free"
+                        cost_estimate="free",
                     ),
                     ChannelAction(
                         action="Engagement",
@@ -132,15 +132,15 @@ class ChannelStrategyGenerator:
                         effort_level="low",
                         timeline_days=1,
                         expected_leads_per_month=4,
-                        cost_estimate="free"
-                    )
+                        cost_estimate="free",
+                    ),
                 ],
                 expected_leads_per_month=18,
                 quick_wins=[
                     "Post best 5 product photos today",
                     "Follow 50 local businesses",
-                    "Setup Instagram Insights"
-                ]
+                    "Setup Instagram Insights",
+                ],
             ),
             ChannelPlan(
                 channel="whatsapp",
@@ -152,12 +152,12 @@ class ChannelStrategyGenerator:
                         effort_level="low",
                         timeline_days=1,
                         expected_leads_per_month=5,
-                        cost_estimate="free"
+                        cost_estimate="free",
                     )
                 ],
                 expected_leads_per_month=5,
-                quick_wins=["Setup WhatsApp Business profile today"]
-            )
+                quick_wins=["Setup WhatsApp Business profile today"],
+            ),
         ]
 
         return ChannelStrategy(
@@ -171,21 +171,21 @@ class ChannelStrategyGenerator:
                     "phase": 1,
                     "duration_days": 7,
                     "focus": "Google Maps optimization",
-                    "expected_leads": 10
+                    "expected_leads": 10,
                 },
                 {
                     "phase": 2,
                     "duration_days": 14,
                     "focus": "Instagram content calendar",
-                    "expected_leads": 15
+                    "expected_leads": 15,
                 },
                 {
                     "phase": 3,
                     "duration_days": 7,
                     "focus": "WhatsApp automation",
-                    "expected_leads": 20
-                }
-            ]
+                    "expected_leads": 20,
+                },
+            ],
         )
 
     def _strategy_online(self) -> ChannelStrategy:
@@ -202,7 +202,7 @@ class ChannelStrategyGenerator:
                         effort_level="high",
                         timeline_days=30,
                         expected_leads_per_month=25,
-                        cost_estimate="free"
+                        cost_estimate="free",
                     ),
                     ChannelAction(
                         action="Content Strategy",
@@ -210,10 +210,10 @@ class ChannelStrategyGenerator:
                         effort_level="high",
                         timeline_days=30,
                         expected_leads_per_month=15,
-                        cost_estimate="free"
-                    )
+                        cost_estimate="free",
+                    ),
                 ],
-                expected_leads_per_month=40
+                expected_leads_per_month=40,
             ),
             ChannelPlan(
                 channel="google_ads",
@@ -225,18 +225,18 @@ class ChannelStrategyGenerator:
                         effort_level="medium",
                         timeline_days=3,
                         expected_leads_per_month=30,
-                        cost_estimate="medium"
+                        cost_estimate="medium",
                     )
                 ],
                 expected_leads_per_month=30,
-                budget_recommendation="$300-500/month"
-            )
+                budget_recommendation="$300-500/month",
+            ),
         ]
 
         return ChannelStrategy(
             business_model="online_only",
             channels=channels,
-            total_expected_leads_per_month=70
+            total_expected_leads_per_month=70,
         )
 
     def _strategy_service(self) -> ChannelStrategy:
@@ -246,24 +246,24 @@ class ChannelStrategyGenerator:
             ChannelPlan(
                 channel="google_maps",
                 priority=ChannelPriority.PRIORITY_1,
-                expected_leads_per_month=20
+                expected_leads_per_month=20,
             ),
             ChannelPlan(
                 channel="google_search",
                 priority=ChannelPriority.PRIORITY_2,
-                expected_leads_per_month=15
+                expected_leads_per_month=15,
             ),
             ChannelPlan(
                 channel="whatsapp",
                 priority=ChannelPriority.PRIORITY_3,
-                expected_leads_per_month=10
-            )
+                expected_leads_per_month=10,
+            ),
         ]
 
         return ChannelStrategy(
             business_model="service_at_home",
             channels=channels,
-            total_expected_leads_per_month=45
+            total_expected_leads_per_month=45,
         )
 
     def _strategy_b2b(self) -> ChannelStrategy:
@@ -273,24 +273,24 @@ class ChannelStrategyGenerator:
             ChannelPlan(
                 channel="linkedin",
                 priority=ChannelPriority.PRIORITY_1,
-                expected_leads_per_month=20
+                expected_leads_per_month=20,
             ),
             ChannelPlan(
                 channel="email",
                 priority=ChannelPriority.PRIORITY_2,
-                expected_leads_per_month=15
+                expected_leads_per_month=15,
             ),
             ChannelPlan(
                 channel="content_marketing",
                 priority=ChannelPriority.PRIORITY_3,
-                expected_leads_per_month=10
-            )
+                expected_leads_per_month=10,
+            ),
         ]
 
         return ChannelStrategy(
             business_model="b2b_consulting",
             channels=channels,
-            total_expected_leads_per_month=45
+            total_expected_leads_per_month=45,
         )
 
     def _strategy_generic(self) -> ChannelStrategy:
@@ -300,12 +300,12 @@ class ChannelStrategyGenerator:
             ChannelPlan(
                 channel="google_search",
                 priority=ChannelPriority.PRIORITY_1,
-                expected_leads_per_month=20
+                expected_leads_per_month=20,
             )
         ]
 
         return ChannelStrategy(
             business_model="generic",
             channels=channels,
-            total_expected_leads_per_month=20
+            total_expected_leads_per_month=20,
         )

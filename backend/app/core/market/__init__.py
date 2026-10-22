@@ -1,19 +1,25 @@
 """Market-Adaptive Learning Engine."""
 
-from .market_detector import MarketDetector, MarketProfile, Industry, BusinessModel, BuyerMotivation
 from .agent_loader import AgentLoader
-from .market_rules_engine import MarketRulesEngine
 from .continuous_learner import ContinuousLearner
 from .market_context_injector import MarketContextInjector
+from .market_detector import (
+    BusinessModel,
+    BuyerMotivation,
+    Industry,
+    MarketDetector,
+    MarketProfile,
+)
+from .market_rules_engine import MarketRulesEngine
 
 __all__ = [
-    "MarketDetector",
-    "MarketProfile",
-    "Industry",
+    "AgentLoader",
     "BusinessModel",
     "BuyerMotivation",
-    "AgentLoader",
-    "MarketRulesEngine",
     "ContinuousLearner",
+    "Industry",
     "MarketContextInjector",
+    "MarketDetector",
+    "MarketProfile",
+    "MarketRulesEngine",
 ]

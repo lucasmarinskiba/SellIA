@@ -10,15 +10,17 @@ Workflow:
 """
 
 import logging
-from typing import Dict, List, Any, Tuple
 from enum import Enum
-from datetime import datetime, timedelta
+from typing import Any, ClassVar
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
 
 class ValueType(str, Enum):
     """User value categories."""
+
     FINANCIAL = "financial"  # Save money, ROI
     TIME = "time"  # Save time, efficiency
     HEALTH = "health"  # Wellness, safety
@@ -33,6 +35,7 @@ class ValueType(str, Enum):
 
 class AlignmentSeverity(str, Enum):
     """Severity of value conflict."""
+
     ALIGNED = "aligned"  # Perfectly aligned
     NEUTRAL = "neutral"  # No conflict
     MINOR_CONFLICT = "minor_conflict"  # Small trade-off
@@ -44,55 +47,134 @@ class ValuesAlignmentAgent:
     """Ensures recommendations respect user values."""
 
     # Value extraction patterns (from behavior)
-    VALUE_INDICATORS = {
+    VALUE_INDICATORS: ClassVar[dict] = {
         ValueType.FINANCIAL: [
-            "budget", "save money", "cheap", "discount", "ROI", "investment",
-            "affordability", "cost-effective", "free", "price",
+            "budget",
+            "save money",
+            "cheap",
+            "discount",
+            "ROI",
+            "investment",
+            "affordability",
+            "cost-effective",
+            "free",
+            "price",
         ],
         ValueType.TIME: [
-            "busy", "save time", "quick", "fast", "efficient", "productivity",
-            "automate", "streamline", "urgent", "deadline",
+            "busy",
+            "save time",
+            "quick",
+            "fast",
+            "efficient",
+            "productivity",
+            "automate",
+            "streamline",
+            "urgent",
+            "deadline",
         ],
         ValueType.HEALTH: [
-            "wellness", "health", "safety", "exercise", "nutrition", "mental",
-            "wellbeing", "stress", "sleep", "recovery",
+            "wellness",
+            "health",
+            "safety",
+            "exercise",
+            "nutrition",
+            "mental",
+            "wellbeing",
+            "stress",
+            "sleep",
+            "recovery",
         ],
         ValueType.ENVIRONMENTAL: [
-            "sustainable", "eco", "green", "carbon", "plastic", "recycling",
-            "renewable", "organic", "environment", "climate",
+            "sustainable",
+            "eco",
+            "green",
+            "carbon",
+            "plastic",
+            "recycling",
+            "renewable",
+            "organic",
+            "environment",
+            "climate",
         ],
         ValueType.SOCIAL: [
-            "family", "community", "relationship", "friend", "social", "connection",
-            "team", "collaboration", "support", "together",
+            "family",
+            "community",
+            "relationship",
+            "friend",
+            "social",
+            "connection",
+            "team",
+            "collaboration",
+            "support",
+            "together",
         ],
         ValueType.ETHICAL: [
-            "ethical", "fair", "honest", "transparency", "no exploitation",
-            "responsible", "values", "principles", "integrity",
+            "ethical",
+            "fair",
+            "honest",
+            "transparency",
+            "no exploitation",
+            "responsible",
+            "values",
+            "principles",
+            "integrity",
         ],
         ValueType.PRIVACY: [
-            "privacy", "data", "tracking", "surveillance", "personal", "confidential",
-            "encryption", "secure", "anonymous", "control",
+            "privacy",
+            "data",
+            "tracking",
+            "surveillance",
+            "personal",
+            "confidential",
+            "encryption",
+            "secure",
+            "anonymous",
+            "control",
         ],
         ValueType.GROWTH: [
-            "learn", "develop", "improve", "skill", "education", "course",
-            "knowledge", "progress", "mastery", "challenge",
+            "learn",
+            "develop",
+            "improve",
+            "skill",
+            "education",
+            "course",
+            "knowledge",
+            "progress",
+            "mastery",
+            "challenge",
         ],
         ValueType.QUALITY: [
-            "quality", "premium", "excellence", "craftsmanship", "best", "premium",
-            "durable", "reliable", "top-tier", "superior",
+            "quality",
+            "premium",
+            "excellence",
+            "craftsmanship",
+            "best",
+            "premium",
+            "durable",
+            "reliable",
+            "top-tier",
+            "superior",
         ],
         ValueType.INDEPENDENCE: [
-            "freedom", "autonomy", "independent", "control", "choose", "flexible",
-            "options", "customizable", "own", "self-reliant",
+            "freedom",
+            "autonomy",
+            "independent",
+            "control",
+            "choose",
+            "flexible",
+            "options",
+            "customizable",
+            "own",
+            "self-reliant",
         ],
     }
 
     @staticmethod
     def extract_user_values(
-        user_profile: Dict[str, Any],
-        user_behavior: List[Dict[str, Any]],
-        user_feedback: List[str],
-    ) -> Dict[str, Any]:
+        user_profile: dict[str, Any],
+        user_behavior: list[dict[str, Any]],
+        user_feedback: list[str],
+    ) -> dict[str, Any]:
         """
         Extract user values from profile, behavior, and feedback.
 
@@ -120,17 +202,21 @@ class ValuesAlignmentAgent:
                 if keyword_matches > 0:
                     value_scores[value_type.value] += keyword_matches * 10
                     value_confidence[value_type.value] = min(100, keyword_matches * 15)
-                    extraction_sources.append(f"profile")
+                    extraction_sources.append("profile")
 
         # 2. Extract from behavior
         if user_behavior:
             for behavior_item in user_behavior:
                 action = behavior_item.get("action", "")
-                for value_type, keywords in ValuesAlignmentAgent.VALUE_INDICATORS.items():
+                for (
+                    value_type,
+                    keywords,
+                ) in ValuesAlignmentAgent.VALUE_INDICATORS.items():
                     if any(kw.lower() in action.lower() for kw in keywords):
                         value_scores[value_type.value] += 25
-                        value_confidence[value_type.value] = min(100,
-                                                                 value_confidence[value_type.value] + 25)
+                        value_confidence[value_type.value] = min(
+                            100, value_confidence[value_type.value] + 25
+                        )
                         if "behavior" not in extraction_sources:
                             extraction_sources.append("behavior")
 
@@ -138,17 +224,20 @@ class ValuesAlignmentAgent:
         if user_feedback:
             feedback_text = " ".join(user_feedback).lower()
             for value_type, keywords in ValuesAlignmentAgent.VALUE_INDICATORS.items():
-                keyword_matches = sum(1 for kw in keywords if kw.lower() in feedback_text)
+                keyword_matches = sum(
+                    1 for kw in keywords if kw.lower() in feedback_text
+                )
                 if keyword_matches > 0:
                     value_scores[value_type.value] += keyword_matches * 15
-                    value_confidence[value_type.value] = min(100,
-                                                            value_confidence[value_type.value] + 20)
+                    value_confidence[value_type.value] = min(
+                        100, value_confidence[value_type.value] + 20
+                    )
                     if "feedback" not in extraction_sources:
                         extraction_sources.append("feedback")
 
         # Normalize scores
-        for value_type in value_scores:
-            value_scores[value_type] = min(100, value_scores[value_type])
+        for value_type, score in value_scores.items():
+            value_scores[value_type] = min(100, score)
 
         # Rank values
         sorted_values = sorted(value_scores.items(), key=lambda x: x[1], reverse=True)
@@ -161,14 +250,14 @@ class ValuesAlignmentAgent:
             "secondary_values": secondary_values,
             "confidence": value_confidence,
             "extracted_from": extraction_sources,
-            "extraction_timestamp": datetime.utcnow().isoformat(),
+            "extraction_timestamp": utc_now().isoformat(),
         }
 
     @staticmethod
     def score_recommendation_alignment(
-        recommendation: Dict[str, Any],
-        user_values: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        recommendation: dict[str, Any],
+        user_values: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Score how well a recommendation aligns with user values.
 
@@ -244,7 +333,9 @@ class ValuesAlignmentAgent:
         # Build reasoning
         reasoning_parts = []
         if aligned_values:
-            reasoning_parts.append(f"Aligns with user values: {', '.join(aligned_values)}")
+            reasoning_parts.append(
+                f"Aligns with user values: {', '.join(aligned_values)}"
+            )
         if conflicting_values:
             reasoning_parts.append(f"Conflicts with: {', '.join(conflicting_values)}")
         if not aligned_values and not conflicting_values:
@@ -262,10 +353,10 @@ class ValuesAlignmentAgent:
 
     @staticmethod
     def detect_conflicts(
-        recommendation: Dict[str, Any],
-        user_values: Dict[str, Any],
+        recommendation: dict[str, Any],
+        user_values: dict[str, Any],
         sales_goal: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect conflicts between sales goal and user values.
 
@@ -317,7 +408,9 @@ class ValuesAlignmentAgent:
         }
 
         user_primary = set(user_values.get("primary_values", []))
-        rec_text = f"{recommendation.get('description', '')} {recommendation.get('terms', '')}"
+        rec_text = (
+            f"{recommendation.get('description', '')} {recommendation.get('terms', '')}"
+        )
         rec_text_lower = rec_text.lower()
 
         for pattern_name, pattern_data in conflict_patterns.items():
@@ -327,27 +420,31 @@ class ValuesAlignmentAgent:
 
             keywords = pattern_data["keywords"]
             if any(kw.lower() in rec_text_lower for kw in keywords):
-                conflicts.append({
-                    "type": pattern_name,
-                    "description": f"Recommendation contains '{keywords[0]}' which conflicts with user's {user_value.value} value",
-                    "severity": AlignmentSeverity.MODERATE_CONFLICT.value,
-                    "user_value": user_value.value,
-                    "sales_pressure": sales_goal,
-                    "recommendation": pattern_data["suggestion"],
-                })
+                conflicts.append(
+                    {
+                        "type": pattern_name,
+                        "description": f"Recommendation contains '{keywords[0]}' which conflicts with user's {user_value.value} value",
+                        "severity": AlignmentSeverity.MODERATE_CONFLICT.value,
+                        "user_value": user_value.value,
+                        "sales_pressure": sales_goal,
+                        "recommendation": pattern_data["suggestion"],
+                    }
+                )
 
         return {
             "conflicts_detected": len(conflicts) > 0,
             "conflict_count": len(conflicts),
             "conflicts": conflicts,
-            "ethical_path": ValuesAlignmentAgent._recommend_ethical_path(conflicts, user_values),
+            "ethical_path": ValuesAlignmentAgent._recommend_ethical_path(
+                conflicts, user_values
+            ),
         }
 
     @staticmethod
     def _recommend_ethical_path(
-        conflicts: List[Dict[str, Any]],
-        user_values: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        conflicts: list[dict[str, Any]],
+        user_values: dict[str, Any],
+    ) -> dict[str, Any]:
         """Recommend ethical path forward when conflicts exist."""
 
         if not conflicts:
@@ -365,11 +462,15 @@ class ValuesAlignmentAgent:
                 "action": "Do not push this recommendation. Suggest alternatives that align better.",
             }
 
-        moderate_conflicts = [c for c in conflicts if c["severity"] == AlignmentSeverity.MODERATE_CONFLICT.value]
+        moderate_conflicts = [
+            c
+            for c in conflicts
+            if c["severity"] == AlignmentSeverity.MODERATE_CONFLICT.value
+        ]
         if len(moderate_conflicts) >= 2:
             return {
                 "recommendation": "proceed_with_caution",
-                "reason": f"Multiple moderate conflicts detected",
+                "reason": "Multiple moderate conflicts detected",
                 "conditions": [c["recommendation"] for c in moderate_conflicts],
                 "disclosure": "Be transparent about conflicts and trade-offs",
             }
@@ -385,10 +486,10 @@ class ValuesAlignmentAgent:
     @staticmethod
     def learn_alignment(
         recommendation_id: str,
-        user_values: Dict[str, Any],
+        user_values: dict[str, Any],
         actual_satisfaction: float,
         actual_value_alignment: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Learn from past recommendations to improve alignment.
 
@@ -399,7 +500,7 @@ class ValuesAlignmentAgent:
 
         learning_record = {
             "recommendation_id": recommendation_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "predicted_alignment": 0,
             "actual_satisfaction": actual_satisfaction,
             "actual_alignment": actual_value_alignment,
@@ -436,9 +537,9 @@ class ValuesAlignmentAgent:
 
     @staticmethod
     def alignment_report(
-        user_values: Dict[str, Any],
-        recommendations: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        user_values: dict[str, Any],
+        recommendations: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """Generate comprehensive alignment report."""
 
         scored_recommendations = [
@@ -451,7 +552,7 @@ class ValuesAlignmentAgent:
             for rec in recommendations
         ]
 
-        sorted_by_alignment = sorted(
+        sorted(
             scored_recommendations,
             key=lambda x: x["alignment"]["alignment_score"],
             reverse=True,
@@ -460,10 +561,22 @@ class ValuesAlignmentAgent:
         return {
             "user_primary_values": user_values.get("primary_values", []),
             "total_recommendations": len(recommendations),
-            "fully_aligned": sum(1 for r in scored_recommendations if r["alignment"]["alignment_score"] >= 80),
-            "partially_aligned": sum(1 for r in scored_recommendations if 60 <= r["alignment"]["alignment_score"] < 80),
-            "conflicted": sum(1 for r in scored_recommendations if r["alignment"]["alignment_score"] < 60),
+            "fully_aligned": sum(
+                1
+                for r in scored_recommendations
+                if r["alignment"]["alignment_score"] >= 80
+            ),
+            "partially_aligned": sum(
+                1
+                for r in scored_recommendations
+                if 60 <= r["alignment"]["alignment_score"] < 80
+            ),
+            "conflicted": sum(
+                1
+                for r in scored_recommendations
+                if r["alignment"]["alignment_score"] < 60
+            ),
             "ranked_by_alignment": scored_recommendations,
             "recommendation": "Prioritize fully aligned recommendations",
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
         }

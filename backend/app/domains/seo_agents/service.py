@@ -4,26 +4,24 @@ content calendar, entity signals, multi-location SEO, topical clusters."""
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
-from typing import Optional
-import anthropic
+from datetime import UTC, datetime, timedelta
+from typing import ClassVar
 
+import anthropic
 from sqlalchemy import and_, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from datetime import timedelta
-
 from app.core.logger import get_logger
 from app.domains.seo_agents.models import (
-    GeneratedContent,
-    CompetitorKeywordGap,
-    KeywordOpportunity,
     BacklinkOpportunity,
-    ReviewCampaign,
-    ReviewAggregate,
+    CompetitorKeywordGap,
     ContentCalendarEntry,
     EntitySignal,
+    GeneratedContent,
+    KeywordOpportunity,
     LocationSEOProfile,
+    ReviewAggregate,
+    ReviewCampaign,
     TopicalCluster,
 )
 
@@ -44,7 +42,7 @@ class ContentGenerationService:
         target_keyword: str,
         product_name: str,
         product_description: str = "",
-        competitor_content: Optional[list[str]] = None,
+        competitor_content: list[str] | None = None,
         tone: str = "professional",
     ) -> GeneratedContent:
         """Generate SEO-optimized content using Claude."""
@@ -86,6 +84,7 @@ Return JSON:
         # Parse response
         try:
             import json
+
             response_text = message.content[0].text
             # Extract JSON from response
             json_start = response_text.find("{")
@@ -105,8 +104,12 @@ Return JSON:
 
         # Calculate metrics
         body_word_count = len(content_data.get("body", "").split())
-        keyword_count = content_data.get("body", "").lower().count(target_keyword.lower())
-        keyword_density = (keyword_count / body_word_count * 100) if body_word_count > 0 else 0
+        keyword_count = (
+            content_data.get("body", "").lower().count(target_keyword.lower())
+        )
+        keyword_density = (
+            (keyword_count / body_word_count * 100) if body_word_count > 0 else 0
+        )
 
         # SEO score
         seo_score = self._calculate_seo_score(
@@ -139,7 +142,9 @@ Return JSON:
         logger.info(f"Generated {content_type} for {product_name} (score: {seo_score})")
         return content
 
-    def _calculate_seo_score(self, title: str, meta: str, keyword: str, body: str) -> int:
+    def _calculate_seo_score(
+        self, title: str, meta: str, keyword: str, body: str
+    ) -> int:
         """SEO score: title length + meta length + keyword presence."""
         score = 0
 
@@ -187,10 +192,12 @@ Return JSON:
     async def list_content(
         self,
         business_id: uuid.UUID,
-        status: Optional[str] = None,
+        status: str | None = None,
     ) -> list[GeneratedContent]:
         """List generated content."""
-        query = select(GeneratedContent).where(GeneratedContent.business_id == business_id)
+        query = select(GeneratedContent).where(
+            GeneratedContent.business_id == business_id
+        )
         if status:
             query = query.where(GeneratedContent.status == status)
         query = query.order_by(desc(GeneratedContent.seo_score))
@@ -209,8 +216,8 @@ class CompetitorKeywordService:
         keyword: str,
         search_volume: int,
         difficulty: int,
-        business_rank: Optional[int] = None,
-        competitor_ranks: Optional[dict] = None,  # {1: 3, 2: 5, 3: 8}
+        business_rank: int | None = None,
+        competitor_ranks: dict | None = None,  # {1: 3, 2: 5, 3: 8}
     ) -> CompetitorKeywordGap:
         """Analyze keyword gap vs competitors."""
         competitor_ranks = competitor_ranks or {}
@@ -233,14 +240,16 @@ class CompetitorKeywordService:
         )
         self.db.add(gap)
         await self.db.commit()
-        logger.info(f"Analyzed gap for '{keyword}' (opportunity: {opportunity_score:.1f})")
+        logger.info(
+            f"Analyzed gap for '{keyword}' (opportunity: {opportunity_score:.1f})"
+        )
         return gap
 
     def _calculate_opportunity(
         self,
         search_volume: int,
         difficulty: int,
-        business_rank: Optional[int],
+        business_rank: int | None,
         competitor_ranks: dict,
     ) -> float:
         """Opportunity = search_volume * (1 - difficulty/100) * rank_gap_factor."""
@@ -253,7 +262,9 @@ class CompetitorKeywordService:
             rank_gap_factor = 1.0
 
         score = base_opportunity * rank_gap_factor
-        return min(100.0, score / 10)  # Normalize to 0-100 (search_volume up to ~1000 maps to full range)
+        return min(
+            100.0, score / 10
+        )  # Normalize to 0-100 (search_volume up to ~1000 maps to full range)
 
     async def list_gaps(
         self,
@@ -313,12 +324,14 @@ class BacklinkStrategyService:
         domain_authority: int,
         niche_keywords: list[str],
         domain_topic_keywords: list[str],
-        target_url: Optional[str] = None,
-        contact_email: Optional[str] = None,
-        contact_name: Optional[str] = None,
+        target_url: str | None = None,
+        contact_email: str | None = None,
+        contact_name: str | None = None,
     ) -> BacklinkOpportunity:
         """Score + add a backlink opportunity."""
-        relevance_score = self._calculate_relevance(niche_keywords, domain_topic_keywords)
+        relevance_score = self._calculate_relevance(
+            niche_keywords, domain_topic_keywords
+        )
         priority_score = self._calculate_priority(domain_authority, relevance_score)
 
         opportunity = BacklinkOpportunity(
@@ -334,10 +347,14 @@ class BacklinkStrategyService:
         )
         self.db.add(opportunity)
         await self.db.commit()
-        logger.info(f"Backlink opportunity added: {domain} (priority: {priority_score:.1f})")
+        logger.info(
+            f"Backlink opportunity added: {domain} (priority: {priority_score:.1f})"
+        )
         return opportunity
 
-    def _calculate_relevance(self, niche_keywords: list[str], domain_topic_keywords: list[str]) -> float:
+    def _calculate_relevance(
+        self, niche_keywords: list[str], domain_topic_keywords: list[str]
+    ) -> float:
         """Relevance = overlap ratio between niche and domain topic keywords, 0-100."""
         if not niche_keywords or not domain_topic_keywords:
             return 0.0
@@ -346,7 +363,9 @@ class BacklinkStrategyService:
         overlap = len(niche_set & domain_set)
         return min(100.0, (overlap / len(niche_set)) * 100)
 
-    def _calculate_priority(self, domain_authority: int, relevance_score: float) -> float:
+    def _calculate_priority(
+        self, domain_authority: int, relevance_score: float
+    ) -> float:
         """Priority weights DA 60% + relevance 40% — a highly relevant DA30 site
         can outrank an irrelevant DA70 directory for actual outreach value."""
         return (domain_authority * 0.6) + (relevance_score * 0.4)
@@ -355,12 +374,14 @@ class BacklinkStrategyService:
         self,
         opportunity_id: uuid.UUID,
         status: str,  # identified, contacted, negotiating, acquired, rejected
-        acquired_url: Optional[str] = None,
+        acquired_url: str | None = None,
     ) -> BacklinkOpportunity:
         """Update outreach status."""
         opp = (
             await self.db.execute(
-                select(BacklinkOpportunity).where(BacklinkOpportunity.id == opportunity_id)
+                select(BacklinkOpportunity).where(
+                    BacklinkOpportunity.id == opportunity_id
+                )
             )
         ).scalar_one_or_none()
         if not opp:
@@ -368,9 +389,9 @@ class BacklinkStrategyService:
 
         opp.status = status
         if status == "contacted":
-            opp.outreach_sent_at = datetime.now(timezone.utc)
+            opp.outreach_sent_at = datetime.now(UTC)
         elif status == "acquired":
-            opp.acquired_at = datetime.now(timezone.utc)
+            opp.acquired_at = datetime.now(UTC)
             opp.acquired_url = acquired_url
         await self.db.commit()
         logger.info(f"Backlink opportunity {opportunity_id} status -> {status}")
@@ -379,7 +400,7 @@ class BacklinkStrategyService:
     async def list_opportunities(
         self,
         business_id: uuid.UUID,
-        status: Optional[str] = None,
+        status: str | None = None,
         min_priority: float = 0.0,
     ) -> list[BacklinkOpportunity]:
         """List opportunities ranked by priority."""
@@ -406,9 +427,9 @@ class ReviewOrchestrationService:
         business_id: uuid.UUID,
         customer_name: str,
         customer_email: str,
-        service_type: Optional[str] = None,
+        service_type: str | None = None,
         review_platform: str = "google",
-        review_url: Optional[str] = None,
+        review_url: str | None = None,
     ) -> ReviewCampaign:
         """Create + mark-sent a review request campaign.
 
@@ -423,7 +444,7 @@ class ReviewOrchestrationService:
             review_platform=review_platform,
             review_url=review_url,
             status="sent",
-            sent_at=datetime.now(timezone.utc),
+            sent_at=datetime.now(UTC),
         )
         self.db.add(campaign)
         await self.db.commit()
@@ -434,7 +455,7 @@ class ReviewOrchestrationService:
         self,
         campaign_id: uuid.UUID,
         rating: int,
-        review_text: Optional[str] = None,
+        review_text: str | None = None,
     ) -> ReviewCampaign:
         """Record a completed review + refresh the business aggregate."""
         if not 1 <= rating <= 5:
@@ -451,7 +472,7 @@ class ReviewOrchestrationService:
         campaign.status = "completed"
         campaign.rating = rating
         campaign.review_text = review_text
-        campaign.completed_at = datetime.now(timezone.utc)
+        campaign.completed_at = datetime.now(UTC)
         await self.db.commit()
 
         await self._refresh_aggregate(campaign.business_id)
@@ -461,15 +482,19 @@ class ReviewOrchestrationService:
     async def _refresh_aggregate(self, business_id: uuid.UUID) -> ReviewAggregate:
         """Recompute the AggregateRating rollup from completed campaigns."""
         completed = (
-            await self.db.execute(
-                select(ReviewCampaign).where(
-                    and_(
-                        ReviewCampaign.business_id == business_id,
-                        ReviewCampaign.status == "completed",
+            (
+                await self.db.execute(
+                    select(ReviewCampaign).where(
+                        and_(
+                            ReviewCampaign.business_id == business_id,
+                            ReviewCampaign.status == "completed",
+                        )
                     )
                 )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         star_counts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
         for c in completed:
@@ -481,7 +506,9 @@ class ReviewOrchestrationService:
 
         aggregate = (
             await self.db.execute(
-                select(ReviewAggregate).where(ReviewAggregate.business_id == business_id)
+                select(ReviewAggregate).where(
+                    ReviewAggregate.business_id == business_id
+                )
             )
         ).scalar_one_or_none()
 
@@ -499,18 +526,20 @@ class ReviewOrchestrationService:
         await self.db.commit()
         return aggregate
 
-    async def get_aggregate(self, business_id: uuid.UUID) -> Optional[ReviewAggregate]:
+    async def get_aggregate(self, business_id: uuid.UUID) -> ReviewAggregate | None:
         """Get the AggregateRating rollup for a business."""
         return (
             await self.db.execute(
-                select(ReviewAggregate).where(ReviewAggregate.business_id == business_id)
+                select(ReviewAggregate).where(
+                    ReviewAggregate.business_id == business_id
+                )
             )
         ).scalar_one_or_none()
 
     async def list_campaigns(
         self,
         business_id: uuid.UUID,
-        status: Optional[str] = None,
+        status: str | None = None,
     ) -> list[ReviewCampaign]:
         """List review campaigns."""
         query = select(ReviewCampaign).where(ReviewCampaign.business_id == business_id)
@@ -523,7 +552,12 @@ class ReviewOrchestrationService:
 class ContentCalendarService:
     """Plan a content pipeline ahead of generation — spaces entries across a rolling window."""
 
-    CONTENT_TYPE_ROTATION = ["blog_post", "landing_page", "guide", "video"]
+    CONTENT_TYPE_ROTATION: ClassVar[list] = [
+        "blog_post",
+        "landing_page",
+        "guide",
+        "video",
+    ]
 
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -542,15 +576,15 @@ class ContentCalendarService:
         target_keywords: list[str],
         days: int = 90,
         cadence_days: int = 7,
-        keyword_opportunities: Optional[dict[str, float]] = None,
-        start_date: Optional[datetime] = None,
+        keyword_opportunities: dict[str, float] | None = None,
+        start_date: datetime | None = None,
     ) -> list[ContentCalendarEntry]:
         """Generate a content calendar: one entry per keyword, spaced by cadence_days,
         content_type cycling round-robin, priority driven by keyword opportunity score.
         Stops once the schedule would exceed the `days` window.
         """
         keyword_opportunities = keyword_opportunities or {}
-        start = start_date or datetime.now(timezone.utc)
+        start = start_date or datetime.now(UTC)
         entries = []
 
         for i, keyword in enumerate(target_keywords):
@@ -558,7 +592,9 @@ class ContentCalendarService:
             if offset_days > days:
                 break
 
-            content_type = self.CONTENT_TYPE_ROTATION[i % len(self.CONTENT_TYPE_ROTATION)]
+            content_type = self.CONTENT_TYPE_ROTATION[
+                i % len(self.CONTENT_TYPE_ROTATION)
+            ]
             opportunity_score = keyword_opportunities.get(keyword, 50.0)
             priority = self._priority_for_score(opportunity_score)
 
@@ -575,14 +611,16 @@ class ContentCalendarService:
             entries.append(entry)
 
         await self.db.commit()
-        logger.info(f"Generated {len(entries)} calendar entries for business {business_id}")
+        logger.info(
+            f"Generated {len(entries)} calendar entries for business {business_id}"
+        )
         return entries
 
     async def update_entry_status(
         self,
         entry_id: uuid.UUID,
         status: str,  # planned, in_progress, published, skipped
-        content_id: Optional[uuid.UUID] = None,
+        content_id: uuid.UUID | None = None,
     ) -> ContentCalendarEntry:
         """Update a calendar entry's status, optionally linking generated content."""
         entry = (
@@ -603,10 +641,12 @@ class ContentCalendarService:
     async def list_calendar(
         self,
         business_id: uuid.UUID,
-        status: Optional[str] = None,
+        status: str | None = None,
     ) -> list[ContentCalendarEntry]:
         """List calendar entries in publication order."""
-        query = select(ContentCalendarEntry).where(ContentCalendarEntry.business_id == business_id)
+        query = select(ContentCalendarEntry).where(
+            ContentCalendarEntry.business_id == business_id
+        )
         if status:
             query = query.where(ContentCalendarEntry.status == status)
         query = query.order_by(ContentCalendarEntry.planned_date)
@@ -618,7 +658,7 @@ class ContentCalendarService:
         within_days: int = 7,
     ) -> list[ContentCalendarEntry]:
         """Entries due within the next `within_days` (still planned/in_progress)."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         cutoff = now + timedelta(days=within_days)
         query = (
             select(ContentCalendarEntry)
@@ -644,7 +684,7 @@ class EntityOptimizationService:
         self,
         entity_type: str,  # Organization, Person, Product, LocalBusiness
         entity_name: str,
-        external_links: Optional[list[str]] = None,
+        external_links: list[str] | None = None,
     ) -> dict:
         """Build JSON-LD schema.org markup for the entity."""
         schema = {
@@ -661,8 +701,8 @@ class EntityOptimizationService:
         business_id: uuid.UUID,
         entity_type: str,
         entity_name: str,
-        external_links: Optional[list[str]] = None,
-        co_mention_targets: Optional[list[str]] = None,
+        external_links: list[str] | None = None,
+        co_mention_targets: list[str] | None = None,
     ) -> EntitySignal:
         """Create + score an entity signal with generated schema.org markup."""
         schema_json = self._build_schema(entity_type, entity_name, external_links)
@@ -683,10 +723,10 @@ class EntityOptimizationService:
     async def update_entity(
         self,
         entity_id: uuid.UUID,
-        external_links: Optional[list[str]] = None,
-        co_mention_targets: Optional[list[str]] = None,
-        status: Optional[str] = None,
-        published_url: Optional[str] = None,
+        external_links: list[str] | None = None,
+        co_mention_targets: list[str] | None = None,
+        status: str | None = None,
+        published_url: str | None = None,
     ) -> EntitySignal:
         """Update entity links/targets/status, regenerating schema if links change."""
         entity = (
@@ -699,7 +739,9 @@ class EntityOptimizationService:
 
         if external_links is not None:
             entity.external_links = external_links
-            entity.schema_json = self._build_schema(entity.entity_type, entity.entity_name, external_links)
+            entity.schema_json = self._build_schema(
+                entity.entity_type, entity.entity_name, external_links
+            )
         if co_mention_targets is not None:
             entity.co_mention_targets = co_mention_targets
         if status is not None:
@@ -714,7 +756,7 @@ class EntityOptimizationService:
     async def list_entities(
         self,
         business_id: uuid.UUID,
-        entity_type: Optional[str] = None,
+        entity_type: str | None = None,
     ) -> list[EntitySignal]:
         """List entity signals for a business."""
         query = select(EntitySignal).where(EntitySignal.business_id == business_id)
@@ -731,7 +773,13 @@ class MultiLocationSEOService:
     # Directories checked for NAP (Name/Address/Phone) consistency.
     # Real deployment would verify each via its own API/scrape; here the caller
     # reports what it has confirmed and this service tracks the rollup.
-    CITATION_PLATFORMS = ["google_business", "yelp", "facebook", "bing_places", "apple_maps"]
+    CITATION_PLATFORMS: ClassVar[list] = [
+        "google_business",
+        "yelp",
+        "facebook",
+        "bing_places",
+        "apple_maps",
+    ]
 
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -741,8 +789,8 @@ class MultiLocationSEOService:
         location_name: str,
         address: str,
         city: str,
-        state: Optional[str],
-        zip_code: Optional[str],
+        state: str | None,
+        zip_code: str | None,
         country: str,
     ) -> dict:
         """Build LocalBusiness JSON-LD schema.org markup."""
@@ -779,13 +827,15 @@ class MultiLocationSEOService:
         address: str,
         city: str,
         service_type: str,
-        state: Optional[str] = None,
-        zip_code: Optional[str] = None,
+        state: str | None = None,
+        zip_code: str | None = None,
         country: str = "US",
-        service_area_radius_km: Optional[float] = None,
+        service_area_radius_km: float | None = None,
     ) -> LocationSEOProfile:
         """Create a location profile with generated schema + keyword targets."""
-        schema_json = self._build_local_schema(location_name, address, city, state, zip_code, country)
+        schema_json = self._build_local_schema(
+            location_name, address, city, state, zip_code, country
+        )
         keywords = self._generate_location_keywords(service_type, city)
         citation_status = {platform: False for platform in self.CITATION_PLATFORMS}
 
@@ -829,7 +879,9 @@ class MultiLocationSEOService:
         citation_status = dict(profile.citation_status or {})
         citation_status[platform] = confirmed
         profile.citation_status = citation_status
-        profile.nap_consistent = all(citation_status.get(p, False) for p in self.CITATION_PLATFORMS)
+        profile.nap_consistent = all(
+            citation_status.get(p, False) for p in self.CITATION_PLATFORMS
+        )
 
         await self.db.commit()
         logger.info(f"Citation status updated: {profile_id} {platform}={confirmed}")
@@ -837,7 +889,9 @@ class MultiLocationSEOService:
 
     async def list_locations(self, business_id: uuid.UUID) -> list[LocationSEOProfile]:
         """List all location profiles for a business."""
-        query = select(LocationSEOProfile).where(LocationSEOProfile.business_id == business_id)
+        query = select(LocationSEOProfile).where(
+            LocationSEOProfile.business_id == business_id
+        )
         query = query.order_by(LocationSEOProfile.city)
         return (await self.db.execute(query)).scalars().all()
 
@@ -846,7 +900,12 @@ class MultiLocationSEOService:
         locations = await self.list_locations(business_id)
         total = len(locations)
         if total == 0:
-            return {"total_locations": 0, "avg_citation_coverage_pct": 0.0, "fully_consistent": 0, "inconsistent_locations": []}
+            return {
+                "total_locations": 0,
+                "avg_citation_coverage_pct": 0.0,
+                "fully_consistent": 0,
+                "inconsistent_locations": [],
+            }
 
         coverage_sum = 0.0
         inconsistent = []
@@ -856,7 +915,13 @@ class MultiLocationSEOService:
             coverage = (confirmed / len(self.CITATION_PLATFORMS)) * 100
             coverage_sum += coverage
             if not loc.nap_consistent:
-                inconsistent.append({"location_name": loc.location_name, "city": loc.city, "coverage_pct": round(coverage, 1)})
+                inconsistent.append(
+                    {
+                        "location_name": loc.location_name,
+                        "city": loc.city,
+                        "coverage_pct": round(coverage, 1),
+                    }
+                )
 
         fully_consistent = sum(1 for loc in locations if loc.nap_consistent)
 
@@ -902,7 +967,7 @@ class TopicalClusterService:
         business_id: uuid.UUID,
         pillar_topic: str,
         cluster_topics: list[str],
-        pillar_content_id: Optional[uuid.UUID] = None,
+        pillar_content_id: uuid.UUID | None = None,
     ) -> TopicalCluster:
         """Create a topical cluster with a generated internal-linking map."""
         linking_map = self._build_linking_map(pillar_topic, cluster_topics)
@@ -918,7 +983,9 @@ class TopicalClusterService:
         )
         self.db.add(cluster)
         await self.db.commit()
-        logger.info(f"Topical cluster created: '{pillar_topic}' ({len(cluster_topics)} subtopics)")
+        logger.info(
+            f"Topical cluster created: '{pillar_topic}' ({len(cluster_topics)} subtopics)"
+        )
         return cluster
 
     async def add_cluster_topic(
@@ -938,14 +1005,16 @@ class TopicalClusterService:
         topics = list(cluster.cluster_topics or [])
         topics.append(topic)
         cluster.cluster_topics = topics
-        cluster.internal_linking_map = self._build_linking_map(cluster.pillar_topic, topics)
+        cluster.internal_linking_map = self._build_linking_map(
+            cluster.pillar_topic, topics
+        )
         cluster.authority_score = self._calculate_authority_score(len(topics))
 
         await self.db.commit()
         logger.info(f"Cluster {cluster_id} grew to {len(topics)} subtopics")
         return cluster
 
-    async def get_linking_map(self, cluster_id: uuid.UUID) -> Optional[dict]:
+    async def get_linking_map(self, cluster_id: uuid.UUID) -> dict | None:
         """Get the internal-linking map for a cluster."""
         cluster = (
             await self.db.execute(

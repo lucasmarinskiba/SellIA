@@ -1,24 +1,21 @@
 """Voice Sales + Playbook Management (Phase 29)."""
 
+import json
+import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta
-from typing import List, Optional, Dict, Any
-from sqlalchemy import select
+from typing import Any
+
 from sqlalchemy.orm import Session
 
+from app.core.clock import utc_now
 from app.models.voice_sales import (
-    VoiceCall,
     CallTranscript,
-    VoiceCallMetrics,
-    SalesPlaybook,
-    PlaybookExecution,
-    SalesRepPerformance,
-    AICallScript,
     MeetingBooking,
+    SalesPlaybook,
+    VoiceCall,
+    VoiceCallMetrics,
 )
 from celery_app import celery_app
-import logging
-import json
 
 try:
     from anthropic import Anthropic
@@ -55,16 +52,22 @@ class PlaybookRecommendation:
 class VoiceCallManager:
     """Manage AI voice calls via Twilio + Claude."""
 
-    def __init__(self, db: Session, twilio_client=None, claude_api_key: Optional[str] = None):
+    def __init__(
+        self, db: Session, twilio_client=None, claude_api_key: str | None = None
+    ):
         self.db = db
         self.twilio = twilio_client
-        self.claude = Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
+        self.claude = (
+            Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
+        )
 
     def initiate_call(self, prospect_id: str, deal_id: str) -> VoiceCallResult:
         """Initiate AI voice call with prospect."""
 
         try:
-            from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+            from app.domains.crm.models import (
+                Deal,  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+            )
 
             # 1. Get prospect + deal context
             deal = self.db.query(Deal).filter(Deal.id == deal_id).first()
@@ -86,7 +89,7 @@ class VoiceCallManager:
                     )
                     call_sid = call.sid
                 except Exception as e:
-                    logger.warning(f"Twilio call creation failed: {e}")
+                    logger.warning(f"Twilio call creation failed: {e}", exc_info=True)
 
             # 4. Store voice call record
             voice_call = VoiceCall(
@@ -94,13 +97,15 @@ class VoiceCallManager:
                 deal_id=deal_id,
                 call_sid=call_sid,
                 script_used=script,
-                started_at=datetime.utcnow(),
+                started_at=utc_now(),
                 status="initiated",
             )
             self.db.add(voice_call)
             self.db.commit()
 
-            logger.info(f"Voice call initiated for prospect {prospect_id}, deal {deal_id}")
+            logger.info(
+                f"Voice call initiated for prospect {prospect_id}, deal {deal_id}"
+            )
 
             return VoiceCallResult(
                 call_id=str(voice_call.id),
@@ -153,7 +158,7 @@ class VoiceCallManager:
                 message = self.claude.messages.create(
                     model="claude-opus",
                     max_tokens=300,
-                    messages=[{"role": "user", "content": prompt}]
+                    messages=[{"role": "user", "content": prompt}],
                 )
                 response_text = message.content[0].text
 
@@ -162,7 +167,7 @@ class VoiceCallManager:
                 call_id=call_id,
                 speaker="prospect",
                 text=input_text,
-                timestamp=datetime.utcnow(),
+                timestamp=utc_now(),
             )
             self.db.add(prospect_turn)
 
@@ -170,18 +175,18 @@ class VoiceCallManager:
                 call_id=call_id,
                 speaker="ai",
                 text=response_text,
-                timestamp=datetime.utcnow(),
+                timestamp=utc_now(),
             )
             self.db.add(ai_turn)
             self.db.commit()
 
             return response_text
 
-        except Exception as e:
-            logger.error(f"Error handling call input: {e}")
+        except Exception:
+            logger.exception("Error handling call input")
             return "I didn't catch that. Could you repeat?"
 
-    def end_call(self, call_id: str, outcome: str = "unqualified") -> Dict[str, Any]:
+    def end_call(self, call_id: str, outcome: str = "unqualified") -> dict[str, Any]:
         """End call, analyze, and update metrics."""
 
         try:
@@ -190,28 +195,36 @@ class VoiceCallManager:
                 return {"error": "Call not found"}
 
             # 1. Get full transcript
-            transcript_turns = self.db.query(CallTranscript).filter(
-                CallTranscript.call_id == call_id
-            ).all()
+            transcript_turns = (
+                self.db.query(CallTranscript)
+                .filter(CallTranscript.call_id == call_id)
+                .all()
+            )
 
-            full_transcript = "\n".join([f"{t.speaker}: {t.text}" for t in transcript_turns])
+            full_transcript = "\n".join(
+                [f"{t.speaker}: {t.text}" for t in transcript_turns]
+            )
 
             # 2. Analyze call (sentiment, objections, decision)
             analysis = self._analyze_call(full_transcript)
 
             # 3. Update call record
-            call.ended_at = datetime.utcnow()
+            call.ended_at = utc_now()
             call.transcript = full_transcript
             call.outcome = outcome  # or analysis["decision"]
             call.status = "completed"
-            call.duration_seconds = int((call.ended_at - call.started_at).total_seconds())
+            call.duration_seconds = int(
+                (call.ended_at - call.started_at).total_seconds()
+            )
 
             # 4. Store metrics
             metrics = VoiceCallMetrics(
                 call_id=call_id,
                 objections_raised=analysis.get("objections_count", 0),
                 objections_handled=analysis.get("objections_handled", 0),
-                questions_asked=len([t for t in transcript_turns if t.speaker == "ai" and "?" in t.text]),
+                questions_asked=len(
+                    [t for t in transcript_turns if t.speaker == "ai" and "?" in t.text]
+                ),
             )
             self.db.add(metrics)
 
@@ -240,13 +253,13 @@ class VoiceCallManager:
             }
 
         except Exception as e:
-            logger.error(f"Error ending call: {e}")
+            logger.exception("Error ending call")
             return {"error": str(e)}
 
     def _generate_voice_script(self, prospect_id: str, deal_id: str) -> str:
         """Generate voice script from Phase 28."""
 
-        script = f"""
+        script = """
         Hi, this is SellIA AI calling. I'm reaching out to [Prospect Name] at [Company].
 
         The reason for my call is [brief value prop].
@@ -256,16 +269,19 @@ class VoiceCallManager:
 
         return script
 
-    def _get_conversation_history(self, call_id: str) -> List[Dict[str, str]]:
+    def _get_conversation_history(self, call_id: str) -> list[dict[str, str]]:
         """Get conversation turn history."""
 
-        turns = self.db.query(CallTranscript).filter(
-            CallTranscript.call_id == call_id
-        ).order_by(CallTranscript.timestamp).all()
+        turns = (
+            self.db.query(CallTranscript)
+            .filter(CallTranscript.call_id == call_id)
+            .order_by(CallTranscript.timestamp)
+            .all()
+        )
 
         return [{"speaker": t.speaker, "text": t.text} for t in turns]
 
-    def _analyze_call(self, transcript: str) -> Dict[str, Any]:
+    def _analyze_call(self, transcript: str) -> dict[str, Any]:
         """Analyze call using Claude."""
 
         if not self.claude:
@@ -294,31 +310,38 @@ class VoiceCallManager:
             message = self.claude.messages.create(
                 model="claude-opus",
                 max_tokens=500,
-                messages=[{"role": "user", "content": prompt}]
+                messages=[{"role": "user", "content": prompt}],
             )
 
             return json.loads(message.content[0].text)
-        except Exception as e:
-            logger.error(f"Error analyzing call: {e}")
+        except Exception:
+            logger.exception("Error analyzing call")
             return {"decision": "unqualified"}
 
 
 class PlaybookExtractor:
     """Extract sales playbooks from top performer patterns."""
 
-    def __init__(self, db: Session, claude_api_key: Optional[str] = None):
+    def __init__(self, db: Session, claude_api_key: str | None = None):
         self.db = db
-        self.claude = Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
+        self.claude = (
+            Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
+        )
 
-    def extract_playbooks(self, top_performer_ids: List[str]) -> List[Dict[str, Any]]:
+    def extract_playbooks(self, top_performer_ids: list[str]) -> list[dict[str, Any]]:
         """Extract playbooks from top 20% performers."""
 
         try:
             # 1. Get successful calls from top performers
-            successful_calls = self.db.query(VoiceCall).filter(
-                (VoiceCall.outcome == "meeting_booked") |
-                (VoiceCall.outcome == "qualified")
-            ).limit(100).all()
+            successful_calls = (
+                self.db.query(VoiceCall)
+                .filter(
+                    (VoiceCall.outcome == "meeting_booked")
+                    | (VoiceCall.outcome == "qualified")
+                )
+                .limit(100)
+                .all()
+            )
 
             if not successful_calls:
                 logger.warning("No successful calls to extract from")
@@ -341,15 +364,17 @@ class PlaybookExtractor:
                 if consolidated:
                     master_playbooks.append(consolidated)
 
-            logger.info(f"Extracted {len(master_playbooks)} playbooks from {len(successful_calls)} calls")
+            logger.info(
+                f"Extracted {len(master_playbooks)} playbooks from {len(successful_calls)} calls"
+            )
 
             return master_playbooks
 
-        except Exception as e:
-            logger.error(f"Error extracting playbooks: {e}")
+        except Exception:
+            logger.exception("Error extracting playbooks")
             return []
 
-    def _extract_from_call(self, call: VoiceCall) -> Optional[Dict[str, Any]]:
+    def _extract_from_call(self, call: VoiceCall) -> dict[str, Any] | None:
         """Extract playbook elements from single call."""
 
         if not self.claude or not call.transcript:
@@ -375,15 +400,15 @@ class PlaybookExtractor:
             message = self.claude.messages.create(
                 model="claude-opus",
                 max_tokens=1500,
-                messages=[{"role": "user", "content": prompt}]
+                messages=[{"role": "user", "content": prompt}],
             )
 
             return json.loads(message.content[0].text)
-        except Exception as e:
-            logger.error(f"Error extracting from call: {e}")
+        except Exception:
+            logger.exception("Error extracting from call")
             return None
 
-    def _cluster_playbooks(self, playbooks: List[Dict]) -> List[List[Dict]]:
+    def _cluster_playbooks(self, playbooks: list[dict]) -> list[list[dict]]:
         """Cluster similar playbooks."""
 
         # Simplified: group by deal outcome pattern
@@ -397,21 +422,21 @@ class PlaybookExtractor:
 
         return list(clusters.values())
 
-    def _consolidate_cluster(self, cluster: List[Dict]) -> Optional[SalesPlaybook]:
+    def _consolidate_cluster(self, cluster: list[dict]) -> SalesPlaybook | None:
         """Create playbook from cluster."""
 
         try:
             playbook = SalesPlaybook(
-                name=f"Extracted Playbook {datetime.utcnow().timestamp()}",
+                name=f"Extracted Playbook {utc_now().timestamp()}",
                 win_rate=0.75,  # Placeholder
                 usage_count=0,
                 extracted_from_calls=len(cluster),
-                created_at=datetime.utcnow(),
+                created_at=utc_now(),
             )
 
             return playbook
-        except Exception as e:
-            logger.error(f"Error consolidating cluster: {e}")
+        except Exception:
+            logger.exception("Error consolidating cluster")
             return None
 
 
@@ -421,21 +446,28 @@ class PlaybookRecommender:
     def __init__(self, db: Session):
         self.db = db
 
-    def recommend_playbook(self, deal_id: str) -> Optional[PlaybookRecommendation]:
+    def recommend_playbook(self, deal_id: str) -> PlaybookRecommendation | None:
         """Get recommended playbook for deal."""
 
         try:
-            from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+            from app.domains.crm.models import (
+                Deal,  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+            )
 
             deal = self.db.query(Deal).filter(Deal.id == deal_id).first()
             if not deal:
                 return None
 
             # 1. Find matching playbooks (by industry/stage)
-            candidates = self.db.query(SalesPlaybook).filter(
-                (SalesPlaybook.industry.ilike(f"%{deal.industry}%")) |
-                (SalesPlaybook.deal_stage == deal.stage)
-            ).order_by(SalesPlaybook.win_rate.desc()).first()
+            candidates = (
+                self.db.query(SalesPlaybook)
+                .filter(
+                    (SalesPlaybook.industry.ilike(f"%{deal.industry}%"))
+                    | (SalesPlaybook.deal_stage == deal.stage)
+                )
+                .order_by(SalesPlaybook.win_rate.desc())
+                .first()
+            )
 
             if not candidates:
                 return None
@@ -451,8 +483,8 @@ class PlaybookRecommender:
                 confidence=0.85,
             )
 
-        except Exception as e:
-            logger.error(f"Error recommending playbook: {e}")
+        except Exception:
+            logger.exception("Error recommending playbook")
             return None
 
 
@@ -462,7 +494,7 @@ class PlaybookRecommender:
 
 
 @celery_app.task(bind=True, max_retries=3)
-def extract_playbooks_async(self, top_performer_ids: List[str]):
+def extract_playbooks_async(self, top_performer_ids: list[str]):
     """Extract playbooks in background."""
     try:
         from app.core.database import SessionLocal
@@ -478,5 +510,5 @@ def extract_playbooks_async(self, top_performer_ids: List[str]):
         return {"status": "complete", "playbooks_extracted": len(playbooks)}
 
     except Exception as exc:
-        logger.error(f"Error extracting playbooks: {exc}")
+        logger.exception("Error extracting playbooks")
         raise self.retry(exc=exc, countdown=300)

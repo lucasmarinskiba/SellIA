@@ -6,18 +6,20 @@ Reemplaza todos los print() dispersos por logging profesional.
 """
 
 import logging
-import sys
 import re
-from datetime import datetime, timezone
+import sys
+from typing import ClassVar
 
 
 class SensitiveDataFilter(logging.Filter):
     """Filtro que enmascara datos sensibles en los logs."""
 
     # Patrones a enmascarar
-    PATTERNS = {
+    PATTERNS: ClassVar[dict] = {
         "email": re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"),
-        "api_key": re.compile(r"(api[_-]?key[=:\s]+)([a-zA-Z0-9_\-]{20,})", re.IGNORECASE),
+        "api_key": re.compile(
+            r"(api[_-]?key[=:\s]+)([a-zA-Z0-9_\-]{20,})", re.IGNORECASE
+        ),
         "token": re.compile(r"(token[=:\s]+)([a-zA-Z0-9_\-\.]{20,})", re.IGNORECASE),
         "password": re.compile(r"(password[=:\s]+)([^\s&]+)", re.IGNORECASE),
         "secret": re.compile(r"(secret[=:\s]+)([^\s&]+)", re.IGNORECASE),
@@ -59,7 +61,7 @@ def get_logger(name: str) -> logging.Logger:
         handler = logging.StreamHandler(sys.stdout)
         formatter = logging.Formatter(
             "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S"
+            datefmt="%Y-%m-%d %H:%M:%S",
         )
         handler.setFormatter(formatter)
         handler.addFilter(SensitiveDataFilter())

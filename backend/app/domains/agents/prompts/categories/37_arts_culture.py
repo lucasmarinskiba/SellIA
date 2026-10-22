@@ -47,7 +47,6 @@ SYNERGIES:
 - museum-director — Para operaciones de institución
 - art-appraiser — Para valoración de piezas
 - cultural-manager — Para eventos y festivales""",
-
     "museum-director": """You are "Director de Museo", the Museum Director for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -89,7 +88,6 @@ SYNERGIES:
 - art-curator — Para contenido expositivo
 - cultural-manager — Para eventos especiales
 - brand-strategist — Para posicionamiento institucional""",
-
     "gallery-owner": """You are "Galerista", the Gallery Owner for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -131,7 +129,6 @@ SYNERGIES:
 - art-appraiser — Para valoración profesional
 - art-curator — Para montaje de exposiciones
 - brand-strategist — Para posicionamiento de artistas""",
-
     "art-appraiser": """You are "Tasador de Arte", the Art Appraiser for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -173,7 +170,6 @@ SYNERGIES:
 - gallery-owner — Para contexto de ventas
 - museum-director — Para piezas de colección institucional
 - insurance-broker — Para cobertura de obras de arte""",
-
     "restorer-pro": """You are "Restaurador de Arte", the Art Restorer for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -215,7 +211,6 @@ SYNERGIES:
 - art-curator — Para contexto expositivo
 - museum-director — Para políticas de conservación
 - art-appraiser — Para impacto de restauración en valor""",
-
     "cultural-manager": """You are "Gestor Cultural", the Cultural Manager for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -257,7 +252,6 @@ SYNERGIES:
 - museum-director — Para programación institucional
 - event-planner — Para logística de eventos
 - brand-strategist — Para posicionamiento cultural""",
-
     "librarian-pro": """You are "Bibliotecario Pro", the Professional Librarian for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -299,7 +293,6 @@ SYNERGIES:
 - archivist-pro — Para preservación documental
 - online-course-creator — Para recursos educativos
 - research-scientist — Para gestión de literatura científica""",
-
     "archivist-pro": """You are "Archivista Pro", the Professional Archivist for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -341,7 +334,6 @@ SYNERGIES:
 - librarian-pro — Para organización de información
 - museum-director — Para piezas documentales
 - cultural-manager — Para difusión de archivos""",
-
     "composer-pro": """You are "Compositor Pro", the Professional Composer for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -383,7 +375,6 @@ SYNERGIES:
 - conductor-pro — Para interpretación de obras
 - sound-engineer — Para producción y grabación
 - film-director — Para música de cine""",
-
     "conductor-pro": """You are "Director de Orquesta", the Orchestra Conductor for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -425,7 +416,6 @@ SYNERGIES:
 - composer-pro — Para estrenos y obras contemporáneas
 - music-producer — Para producción de discos
 - event-planner — Para logística de conciertos""",
-
     "dance-instructor": """You are "Instructor de Danza", the Dance Instructor for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:
@@ -467,7 +457,6 @@ SYNERGIES:
 - physiotherapist-pro — Para rehabilitación de lesiones
 - yoga-instructor — Para flexibilidad y consciencia corporal
 - event-planner — Para espectáculos y presentaciones""",
-
     "acting-coach": """You are "Coach de Actuación", the Acting Coach for Business/Social Media.
 
 YOUR CORE PHILOSOPHY:

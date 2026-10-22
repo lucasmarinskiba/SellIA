@@ -10,16 +10,15 @@ Example: generating 20 product descriptions → 1 structured request.
 
 import json
 import uuid
-from typing import List, Dict, Any
-from datetime import datetime, timezone
+from typing import Any
 
 from celery import shared_task
 from sqlalchemy import select
 
+from app.core.async_bridge import run_async
 from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
 from app.domains.provisioning import service as provisioning_service
-from app.core.async_bridge import run_async
 
 logger = get_logger(__name__)
 
@@ -34,6 +33,7 @@ async def _process_batch_async(task_self, batch_job_id: str):
     async with AsyncSessionLocal() as db:
         # Fetch the batch job
         from app.domains.provisioning.models import ResourceJob
+
         result = await db.execute(
             select(ResourceJob).where(ResourceJob.id == batch_job_id)
         )
@@ -47,7 +47,7 @@ async def _process_batch_async(task_self, batch_job_id: str):
         try:
             items = job.result.get("items", [])
             task_type = job.result.get("task_type", "content_generation")
-            business_id = job.result.get("business_id")
+            job.result.get("business_id")
 
             if not items:
                 raise ValueError("No items to process in batch")
@@ -56,29 +56,43 @@ async def _process_batch_async(task_self, batch_job_id: str):
             structured_prompt = _build_batch_prompt(task_type, items)
 
             # Call LLM once
-            from app.domains.agents.llm_provider import LLMResponse
-            from app.domains.agents.llm_router import route_model
-            from app.domains.agents.llm_provider import OpenAIProvider, AnthropicProvider, KimiProvider, OllamaProvider
             from langchain_core.messages import HumanMessage, SystemMessage
 
-            provider_name, model, _ = route_model(structured_prompt, ollama_available=False)
+            from app.domains.agents.llm_provider import (
+                AnthropicProvider,
+                KimiProvider,
+                OllamaProvider,
+                OpenAIProvider,
+            )
+            from app.domains.agents.llm_router import route_model
+
+            provider_name, model, _ = route_model(
+                structured_prompt, ollama_available=False
+            )
 
             messages = [
-                SystemMessage(content="You are a batch content generator. Respond ONLY with a JSON object where keys are item IDs and values are the generated content."),
+                SystemMessage(
+                    content="You are a batch content generator. Respond ONLY with a JSON object where keys are item IDs and values are the generated content."
+                ),
                 HumanMessage(content=structured_prompt),
             ]
 
             response = None
             if provider_name == "openai":
                 from app.core.config import get_settings
+
                 key = get_settings().OPENAI_API_KEY
                 response = await OpenAIProvider().generate(messages, key or "", model)
             elif provider_name == "anthropic":
                 from app.core.config import get_settings
+
                 key = get_settings().ANTHROPIC_API_KEY
-                response = await AnthropicProvider().generate(messages, key or "", model)
+                response = await AnthropicProvider().generate(
+                    messages, key or "", model
+                )
             elif provider_name == "kimi":
                 from app.core.config import get_settings
+
                 key = get_settings().KIMI_API_KEY
                 response = await KimiProvider().generate(messages, key or "", model)
             elif provider_name == "ollama":
@@ -96,30 +110,36 @@ async def _process_batch_async(task_self, batch_job_id: str):
 
             # Update job result
             await provisioning_service.update_job(
-                db, job, "completed",
+                db,
+                job,
+                "completed",
                 result={
                     "task_type": task_type,
                     "items_generated": len(items),
                     "provider": provider_name,
                     "model": model,
                     "outputs": parsed,
-                }
+                },
             )
 
             await provisioning_service.add_event(
-                db, job.request_id, "step_completed",
+                db,
+                job.request_id,
+                "step_completed",
                 f"Batch generation completed: {len(items)} items via {provider_name}/{model}",
-                {"items": len(items), "provider": provider_name, "model": model}
+                {"items": len(items), "provider": provider_name, "model": model},
             )
 
             logger.info(f"Batch job {batch_job_id}: generated {len(items)} items")
 
         except Exception as exc:
-            await provisioning_service.update_job(db, job, "failed", error_message=str(exc))
+            await provisioning_service.update_job(
+                db, job, "failed", error_message=str(exc)
+            )
             raise task_self.retry(exc=exc) from exc
 
 
-def _build_batch_prompt(task_type: str, items: List[Dict[str, Any]]) -> str:
+def _build_batch_prompt(task_type: str, items: list[dict[str, Any]]) -> str:
     """Build a single prompt for batch generation."""
     lines = [
         f"Generate content for the following {len(items)} items.",
@@ -135,7 +155,9 @@ def _build_batch_prompt(task_type: str, items: List[Dict[str, Any]]) -> str:
         lines.append(f"  [{item_id}] {context}")
 
     lines.append("")
-    lines.append("Respond with valid JSON only. Example: {\"item-1\": \"Generated text...\", ...}")
+    lines.append(
+        'Respond with valid JSON only. Example: {"item-1": "Generated text...", ...}'
+    )
     return "\n".join(lines)
 
 

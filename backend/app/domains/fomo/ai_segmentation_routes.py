@@ -1,27 +1,32 @@
 """Fase D: AI Customer Segmentation Agent — API routes"""
 
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Body, Query
+from fastapi import APIRouter, Body, Depends, Query
 
 from app.core.deps import get_current_user
 from app.domains.fomo.ai_segmentation_agent import (
-    AICustomerSegmentationAgent,
-    CustomerSegment,
     SEGMENT_FOMO_STRATEGY,
+    AICustomerSegmentationAgent,
 )
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/fomo/ai/segmentation", tags=["fomo-ai-segmentation"])
 
 
 @router.post("/segment")
 async def segment_customers(
-    customers: List[Dict[str, Any]] = Body(
-        ..., description='[{"customer_id": str, "purchases": [{"date": iso8601, "amount": float}]}]'
-    ),
-    use_clustering: bool = Query(True, description="Use KMeans when data allows, else RFM rules"),
-    current_user=Depends(get_current_user),
+    customers: Annotated[
+        list[dict[str, Any]],
+        Body(
+            description='[{"customer_id": str, "purchases": [{"date": iso8601, "amount": float}]}]'
+        ),
+    ],
+    current_user: Annotated[User, Depends(get_current_user)],
+    use_clustering: Annotated[
+        bool, Query(description="Use KMeans when data allows, else RFM rules")
+    ] = True,
 ):
     """Segment customers via RFM (+ optional KMeans clustering when enough data)"""
     parsed_customers = _parse_purchase_dates(customers)
@@ -33,13 +38,15 @@ async def segment_customers(
 
 @router.post("/analyze-and-recommend")
 async def analyze_and_recommend(
-    customers: List[Dict[str, Any]] = Body(...),
-    fatigue_data: Optional[Dict[str, List[Dict[str, Any]]]] = Body(
-        None,
-        description='{"customer_id": [{"sent_at": iso8601, "opened": bool, "clicked": bool}]}',
-    ),
-    use_clustering: bool = Query(True),
-    current_user=Depends(get_current_user),
+    customers: Annotated[list[dict[str, Any]], Body()],
+    current_user: Annotated[User, Depends(get_current_user)],
+    fatigue_data: Annotated[
+        dict[str, list[dict[str, Any]]] | None,
+        Body(
+            description='{"customer_id": [{"sent_at": iso8601, "opened": bool, "clicked": bool}]}'
+        ),
+    ] = None,
+    use_clustering: Annotated[bool, Query()] = True,
 ):
     """Full pipeline: segment + recommend FOMO campaign per customer + fatigue exclusion"""
     parsed_customers = _parse_purchase_dates(customers)
@@ -52,7 +59,9 @@ async def analyze_and_recommend(
 
 
 @router.get("/strategies")
-async def list_segment_strategies(current_user=Depends(get_current_user)):
+async def list_segment_strategies(
+    current_user: Annotated[User, Depends(get_current_user)],
+):
     """List the FOMO strategy (campaign_type/tone/lift) mapped to each segment"""
     return {
         "strategies": [
@@ -63,12 +72,15 @@ async def list_segment_strategies(current_user=Depends(get_current_user)):
 
 
 @router.get("/strategies/{segment}")
-async def get_segment_strategy(segment: str, current_user=Depends(get_current_user)):
+async def get_segment_strategy(
+    segment: str,
+    current_user: Annotated[User, Depends(get_current_user)],
+):
     """Get the recommended FOMO strategy for one named segment"""
     return AICustomerSegmentationAgent.get_segment_strategy(segment)
 
 
-def _parse_purchase_dates(customers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _parse_purchase_dates(customers: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Convert ISO date strings in purchase history to datetime objects"""
     parsed = []
     for customer in customers:
@@ -76,7 +88,7 @@ def _parse_purchase_dates(customers: List[Dict[str, Any]]) -> List[Dict[str, Any
         for p in customer.get("purchases", []):
             date_val = p.get("date")
             if isinstance(date_val, str):
-                date_val = datetime.fromisoformat(date_val.replace("Z", "+00:00"))
+                date_val = datetime.fromisoformat(date_val)
             purchases.append({"date": date_val, "amount": p.get("amount", 0)})
         parsed.append({"customer_id": customer["customer_id"], "purchases": purchases})
     return parsed

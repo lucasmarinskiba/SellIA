@@ -5,18 +5,22 @@ y el rendimiento de cada seller en tiempo real.
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Any, List, Dict
+from datetime import UTC, datetime
 from decimal import Decimal
+from typing import Any
 
-from sqlalchemy import select, func, desc, and_
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.social_sellers.models import SocialSeller, SellerCustomerRelationship, SellerPerformance
-from app.domains.users.models import User
+from app.core.logger import get_logger
 from app.domains.businesses.models import Business
 from app.domains.security.models import BusinessUserRole
-from app.core.logger import get_logger
+from app.domains.social_sellers.models import (
+    SellerCustomerRelationship,
+    SellerPerformance,
+    SocialSeller,
+)
+from app.domains.users.models import User
 
 logger = get_logger(__name__)
 
@@ -71,7 +75,9 @@ class SocialSellerEngine:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def _check_business_access(self, business_id: uuid.UUID, user_id: uuid.UUID) -> bool:
+    async def _check_business_access(
+        self, business_id: uuid.UUID, user_id: uuid.UUID
+    ) -> bool:
         """Verifica si el usuario tiene acceso al negocio."""
         result = await self.db.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
@@ -94,25 +100,24 @@ class SocialSellerEngine:
                 Business.user_id == user_id,
             )
         )
-        if result.scalar_one_or_none():
-            return True
-
-        return False
+        return bool(result.scalar_one_or_none())
 
     async def create_seller(
         self,
         business_id: uuid.UUID,
         platform: str,
         name: str,
-        personality_slug: Optional[str] = None,
-        voice_config: Optional[dict] = None,
-        greeting_message: Optional[str] = None,
-        closing_message: Optional[str] = None,
+        personality_slug: str | None = None,
+        voice_config: dict | None = None,
+        greeting_message: str | None = None,
+        closing_message: str | None = None,
         ai_auto_reply: bool = True,
     ) -> SocialSeller:
         """Crea un nuevo social seller con configuración por defecto según plataforma."""
         platform_lower = platform.lower()
-        default_voice = DEFAULT_VOICE_CONFIGS.get(platform_lower, DEFAULT_VOICE_CONFIGS["instagram"])
+        default_voice = DEFAULT_VOICE_CONFIGS.get(
+            platform_lower, DEFAULT_VOICE_CONFIGS["instagram"]
+        )
         final_voice = {**default_voice, **(voice_config or {})}
 
         seller = SocialSeller(
@@ -140,8 +145,8 @@ class SocialSellerEngine:
     async def get_sellers(
         self,
         business_id: uuid.UUID,
-        status: Optional[str] = None,
-    ) -> List[SocialSeller]:
+        status: str | None = None,
+    ) -> list[SocialSeller]:
         """Lista todos los sellers de un negocio."""
         query = select(SocialSeller).where(SocialSeller.business_id == business_id)
         if status:
@@ -150,7 +155,7 @@ class SocialSellerEngine:
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
-    async def get_seller(self, seller_id: uuid.UUID) -> Optional[SocialSeller]:
+    async def get_seller(self, seller_id: uuid.UUID) -> SocialSeller | None:
         """Obtiene un seller con conteo de relaciones."""
         result = await self.db.execute(
             select(SocialSeller).where(SocialSeller.id == seller_id)
@@ -165,7 +170,9 @@ class SocialSellerEngine:
             seller._customer_count = rel_count.scalar() or 0
         return seller
 
-    async def update_seller(self, seller_id: uuid.UUID, **updates) -> Optional[SocialSeller]:
+    async def update_seller(
+        self, seller_id: uuid.UUID, **updates
+    ) -> SocialSeller | None:
         """Actualiza un seller existente."""
         result = await self.db.execute(
             select(SocialSeller).where(SocialSeller.id == seller_id)
@@ -174,12 +181,22 @@ class SocialSellerEngine:
         if not seller:
             return None
 
-        allowed = {"name", "avatar_url", "personality_slug", "voice_config", "stats", "status", "ai_auto_reply", "greeting_message", "closing_message"}
+        allowed = {
+            "name",
+            "avatar_url",
+            "personality_slug",
+            "voice_config",
+            "stats",
+            "status",
+            "ai_auto_reply",
+            "greeting_message",
+            "closing_message",
+        }
         for key, value in updates.items():
             if key in allowed and value is not None:
                 setattr(seller, key, value)
 
-        seller.updated_at = datetime.now(timezone.utc)
+        seller.updated_at = datetime.now(UTC)
         await self.db.commit()
         await self.db.refresh(seller)
         return seller
@@ -197,7 +214,9 @@ class SocialSellerEngine:
         await self.db.commit()
         return True
 
-    async def assign_customer(self, seller_id: uuid.UUID, conversation_id: uuid.UUID) -> SellerCustomerRelationship:
+    async def assign_customer(
+        self, seller_id: uuid.UUID, conversation_id: uuid.UUID
+    ) -> SellerCustomerRelationship:
         """Asigna un cliente (conversación) a un seller."""
         existing = await self.db.execute(
             select(SellerCustomerRelationship).where(
@@ -206,13 +225,13 @@ class SocialSellerEngine:
             )
         )
         if existing.scalar_one_or_none():
-            raise ValueError('El cliente ya está asignado a este seller.')
+            raise ValueError("El cliente ya está asignado a este seller.")
 
         rel = SellerCustomerRelationship(
             seller_id=seller_id,
             customer_id=conversation_id,
-            first_contact_at=datetime.now(timezone.utc),
-            last_contact_at=datetime.now(timezone.utc),
+            first_contact_at=datetime.now(UTC),
+            last_contact_at=datetime.now(UTC),
             total_interactions=1,
             relationship_stage="first_contact",
         )
@@ -224,9 +243,9 @@ class SocialSellerEngine:
     async def get_seller_customers(
         self,
         seller_id: uuid.UUID,
-        stage: Optional[str] = None,
+        stage: str | None = None,
         limit: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Obtiene los clientes asignados a un seller enriquecidos con datos de conversación."""
         from app.domains.channels.models import Conversation
         from app.domains.social_sellers.models import UnifiedCustomer
@@ -236,7 +255,9 @@ class SocialSellerEngine:
         )
         if stage:
             query = query.where(SellerCustomerRelationship.relationship_stage == stage)
-        query = query.order_by(desc(SellerCustomerRelationship.last_contact_at)).limit(limit)
+        query = query.order_by(desc(SellerCustomerRelationship.last_contact_at)).limit(
+            limit
+        )
         result = await self.db.execute(query)
         relationships = list(result.scalars().all())
 
@@ -259,55 +280,69 @@ class SocialSellerEngine:
         unified_customers = {}
         if business_id:
             uc_result = await self.db.execute(
-                select(UnifiedCustomer).where(UnifiedCustomer.business_id == business_id)
+                select(UnifiedCustomer).where(
+                    UnifiedCustomer.business_id == business_id
+                )
             )
             all_uc = list(uc_result.scalars().all())
             for uc in all_uc:
                 if uc.master_email:
-                    unified_customers[('email', uc.master_email.lower())] = uc
+                    unified_customers[("email", uc.master_email.lower())] = uc
                 if uc.master_phone:
-                    normalized = uc.master_phone.strip().replace(' ', '').replace('-', '')
-                    unified_customers[('phone', normalized)] = uc
+                    normalized = (
+                        uc.master_phone.strip().replace(" ", "").replace("-", "")
+                    )
+                    unified_customers[("phone", normalized)] = uc
                 for plat, ext_id in (uc.identity_map or {}).items():
-                    unified_customers[('platform', plat.lower(), ext_id)] = uc
+                    unified_customers[("platform", plat.lower(), ext_id)] = uc
 
         output = []
         for rel in relationships:
             conv = conversations.get(rel.customer_id)
             customer_name = conv.lead_name if conv else None
-            customer_avatar = (conv.extra_data or {}).get('avatar_url') if conv else None
+            customer_avatar = (
+                (conv.extra_data or {}).get("avatar_url") if conv else None
+            )
 
             uc = None
             if conv and business_id:
                 if conv.lead_email:
-                    uc = unified_customers.get(('email', conv.lead_email.lower()))
+                    uc = unified_customers.get(("email", conv.lead_email.lower()))
                 if not uc and conv.lead_phone:
-                    normalized = conv.lead_phone.strip().replace(' ', '').replace('-', '')
-                    uc = unified_customers.get(('phone', normalized))
+                    normalized = (
+                        conv.lead_phone.strip().replace(" ", "").replace("-", "")
+                    )
+                    uc = unified_customers.get(("phone", normalized))
                 if not uc and conv.lead_source and conv.external_id:
-                    uc = unified_customers.get(('platform', conv.lead_source.lower(), conv.external_id))
+                    uc = unified_customers.get(
+                        ("platform", conv.lead_source.lower(), conv.external_id)
+                    )
 
-            output.append({
-                'id': rel.id,
-                'seller_id': rel.seller_id,
-                'customer_id': rel.customer_id,
-                'customer_name': customer_name or 'Desconocido',
-                'customer_avatar': customer_avatar,
-                'first_contact_at': rel.first_contact_at,
-                'last_contact_at': rel.last_contact_at,
-                'total_interactions': rel.total_interactions,
-                'deals_closed': rel.deals_closed,
-                'total_revenue': rel.total_revenue,
-                'relationship_stage': rel.relationship_stage,
-                'loyalty_score': rel.loyalty_score,
-                'next_best_action': rel.next_best_action,
-                'unified_customer_id': uc.id if uc else None,
-                'unified_display_name': uc.display_name if uc else None,
-                'unified_identity_map': uc.identity_map if uc else None,
-                'unified_total_lifetime_value': uc.total_lifetime_value if uc else None,
-                'created_at': rel.created_at,
-                'updated_at': rel.updated_at,
-            })
+            output.append(
+                {
+                    "id": rel.id,
+                    "seller_id": rel.seller_id,
+                    "customer_id": rel.customer_id,
+                    "customer_name": customer_name or "Desconocido",
+                    "customer_avatar": customer_avatar,
+                    "first_contact_at": rel.first_contact_at,
+                    "last_contact_at": rel.last_contact_at,
+                    "total_interactions": rel.total_interactions,
+                    "deals_closed": rel.deals_closed,
+                    "total_revenue": rel.total_revenue,
+                    "relationship_stage": rel.relationship_stage,
+                    "loyalty_score": rel.loyalty_score,
+                    "next_best_action": rel.next_best_action,
+                    "unified_customer_id": uc.id if uc else None,
+                    "unified_display_name": uc.display_name if uc else None,
+                    "unified_identity_map": uc.identity_map if uc else None,
+                    "unified_total_lifetime_value": (
+                        uc.total_lifetime_value if uc else None
+                    ),
+                    "created_at": rel.created_at,
+                    "updated_at": rel.updated_at,
+                }
+            )
 
         return output
 
@@ -315,7 +350,7 @@ class SocialSellerEngine:
         self,
         seller_id: uuid.UUID,
         conversation_id: uuid.UUID,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Devuelve un perfil enriquecido del cliente para el seller."""
         result = await self.db.execute(
             select(SellerCustomerRelationship).where(
@@ -336,8 +371,12 @@ class SocialSellerEngine:
             "deals_closed": rel.deals_closed,
             "total_revenue": float(rel.total_revenue) if rel.total_revenue else 0,
             "next_best_action": rel.next_best_action,
-            "last_contact_at": rel.last_contact_at.isoformat() if rel.last_contact_at else None,
-            "first_contact_at": rel.first_contact_at.isoformat() if rel.first_contact_at else None,
+            "last_contact_at": (
+                rel.last_contact_at.isoformat() if rel.last_contact_at else None
+            ),
+            "first_contact_at": (
+                rel.first_contact_at.isoformat() if rel.first_contact_at else None
+            ),
         }
 
     async def record_interaction(
@@ -345,8 +384,8 @@ class SocialSellerEngine:
         seller_id: uuid.UUID,
         conversation_id: uuid.UUID,
         interaction_type: str = "message",
-        revenue: Optional[Decimal] = None,
-    ) -> Optional[SellerCustomerRelationship]:
+        revenue: Decimal | None = None,
+    ) -> SellerCustomerRelationship | None:
         """Registra una interacción y actualiza estadísticas de la relación."""
         result = await self.db.execute(
             select(SellerCustomerRelationship).where(
@@ -359,7 +398,7 @@ class SocialSellerEngine:
             return None
 
         rel.total_interactions += 1
-        rel.last_contact_at = datetime.now(timezone.utc)
+        rel.last_contact_at = datetime.now(UTC)
         if revenue:
             rel.total_revenue = Decimal(rel.total_revenue or 0) + revenue
 
@@ -378,7 +417,7 @@ class SocialSellerEngine:
         seller_id: uuid.UUID,
         conversation_id: uuid.UUID,
         amount: Decimal,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Registra una venta, actualiza relación, stats del seller y crea celebración."""
         result = await self.db.execute(
             select(SocialSeller).where(SocialSeller.id == seller_id)
@@ -395,7 +434,7 @@ class SocialSellerEngine:
         )
         rel = result.scalar_one_or_none()
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         if rel:
             rel.deals_closed += 1
@@ -432,22 +471,23 @@ class SocialSellerEngine:
         celebration = None
         try:
             from app.domains.gamification.models import CelebrationEvent
+
             celebration_event = CelebrationEvent(
                 user_id=seller.business_id,  # simplificado
                 business_id=seller.business_id,
                 event_type="sale",
-                event_title=f'Venta cerrada por {seller.name}',
-                event_description=f'Venta de ${float(amount):.2f} en {seller.platform}',
+                event_title=f"Venta cerrada por {seller.name}",
+                event_description=f"Venta de ${float(amount):.2f} en {seller.platform}",
                 event_value=amount,
                 intensity="medium" if float(amount) < 100 else "big",
-                companion_message=f'¡{seller.name} acaba de cerrar una venta! 🎉',
+                companion_message=f"¡{seller.name} acaba de cerrar una venta! 🎉",
                 companion_emotion="excited",
             )
             self.db.add(celebration_event)
             await self.db.commit()
             celebration = str(celebration_event.id)
         except Exception:
-            pass
+            logger.exception("record_sale: error inesperado")
 
         return {
             "status": "recorded",
@@ -462,7 +502,7 @@ class SocialSellerEngine:
         self,
         business_id: uuid.UUID,
         period: str = "week",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Reporte agregado de todo el equipo de sellers."""
         sellers = await self.get_sellers(business_id)
         if not sellers:
@@ -470,18 +510,18 @@ class SocialSellerEngine:
                 "business_id": business_id,
                 "period": period,
                 "total_sellers": 0,
-                "total_revenue": Decimal("0"),
+                "total_revenue": Decimal(0),
                 "total_deals": 0,
                 "total_leads": 0,
-                "avg_conversion_rate": Decimal("0"),
+                "avg_conversion_rate": Decimal(0),
                 "top_seller": None,
             }
 
-        total_revenue = Decimal("0")
+        total_revenue = Decimal(0)
         total_deals = 0
         total_leads = 0
         top_seller = None
-        top_revenue = Decimal("0")
+        top_revenue = Decimal(0)
 
         for seller in sellers:
             stats = seller.stats or {}
@@ -498,9 +538,13 @@ class SocialSellerEngine:
                     "revenue": float(rev),
                 }
 
-        avg_conversion = Decimal("0")
+        avg_conversion = Decimal(0)
         if len(sellers) > 0:
-            rates = [Decimal(str(s.stats.get("conversion_rate", 0))) for s in sellers if s.stats]
+            rates = [
+                Decimal(str(s.stats.get("conversion_rate", 0)))
+                for s in sellers
+                if s.stats
+            ]
             if rates:
                 avg_conversion = sum(rates) / len(rates)
 
@@ -515,7 +559,7 @@ class SocialSellerEngine:
             "top_seller": top_seller,
         }
 
-    async def get_seller_pipeline(self, seller_id: uuid.UUID) -> Dict[str, Any]:
+    async def get_seller_pipeline(self, seller_id: uuid.UUID) -> dict[str, Any]:
         """Devuelve el pipeline desglosado por etapa de relación."""
         result = await self.db.execute(
             select(
@@ -530,14 +574,16 @@ class SocialSellerEngine:
 
         stages = []
         total_customers = 0
-        total_revenue = Decimal("0")
+        total_revenue = Decimal(0)
         for row in rows:
             stage_revenue = Decimal(row.revenue or 0)
-            stages.append({
-                "stage": row.relationship_stage,
-                "count": row.count,
-                "revenue": stage_revenue,
-            })
+            stages.append(
+                {
+                    "stage": row.relationship_stage,
+                    "count": row.count,
+                    "revenue": stage_revenue,
+                }
+            )
             total_customers += row.count
             total_revenue += stage_revenue
 
@@ -552,7 +598,7 @@ class SocialSellerEngine:
         self,
         seller_id: uuid.UUID,
         period: str = "week",
-    ) -> List[SellerPerformance]:
+    ) -> list[SellerPerformance]:
         """Obtiene métricas de rendimiento del seller."""
         result = await self.db.execute(
             select(SellerPerformance)
@@ -568,7 +614,7 @@ class SocialSellerEngine:
         self,
         seller_id: uuid.UUID,
         conversation_id: uuid.UUID,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Determina la siguiente mejor acción basada en el estado del cliente."""
         result = await self.db.execute(
             select(SellerCustomerRelationship).where(

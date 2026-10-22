@@ -1,18 +1,27 @@
 """Customer timeline & activity models."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Index, Boolean, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 
 
 class EventType(str, Enum):
     """Event types for customer timeline."""
+
     EMAIL_SENT = "email_sent"
     EMAIL_OPENED = "email_opened"
     EMAIL_CLICKED = "email_clicked"
@@ -38,6 +47,7 @@ class EventType(str, Enum):
 
 class EventChannel(str, Enum):
     """Event channels."""
+
     EMAIL = "email"
     SMS = "sms"
     WHATSAPP = "whatsapp"
@@ -52,6 +62,7 @@ class EventChannel(str, Enum):
 
 class EventOutcome(str, Enum):
     """Event outcomes."""
+
     SUCCESS = "success"
     PENDING = "pending"
     FAILED = "failed"
@@ -61,26 +72,43 @@ class EventOutcome(str, Enum):
 
 class CustomerEvent(Base):
     """Customer event record."""
+
     __tablename__ = "customer_events"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    customer_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    customer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Event metadata
     event_type = Column(String(50), nullable=False)  # EventType value
-    channel = Column(String(50), nullable=False)     # EventChannel value
-    outcome = Column(String(50), default=EventOutcome.SUCCESS.value)  # EventOutcome value
+    channel = Column(String(50), nullable=False)  # EventChannel value
+    outcome = Column(
+        String(50), default=EventOutcome.SUCCESS.value
+    )  # EventOutcome value
 
     # Event details
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
-    event_data = Column(JSONB, nullable=False)  # e.g., {"email": "...", "subject": "...", "open_time": "..."}
+    event_data = Column(
+        JSONB, nullable=False
+    )  # e.g., {"email": "...", "subject": "...", "open_time": "..."}
 
     # Engagement metrics
     engagement_score = Column(Integer, default=0)  # 0-100
     is_important = Column(Boolean, default=False)  # Star/pin event
-    revenue_impact = Column(String(50), nullable=True)  # "positive", "negative", "neutral"
+    revenue_impact = Column(
+        String(50), nullable=True
+    )  # "positive", "negative", "neutral"
     estimated_value = Column(Integer, nullable=True)  # In cents/units
 
     # Relationships
@@ -89,8 +117,10 @@ class CustomerEvent(Base):
     related_contact_id = Column(String(255), nullable=True)
 
     # Tracking
-    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc), index=True)
+    created_by = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC), index=True)
 
     __table_args__ = (
         Index("idx_customer_date", "customer_id", "created_at"),
@@ -101,16 +131,28 @@ class CustomerEvent(Base):
 
 class EventTimeline(Base):
     """Customer timeline summary (materialized view)."""
+
     __tablename__ = "event_timelines"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    customer_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True, unique=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    customer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        unique=True,
+    )
 
     # Timeline stats
     total_events = Column(Integer, default=0)
-    last_event_at = Column(DateTime(timezone.utc), nullable=True)
-    first_event_at = Column(DateTime(timezone.utc), nullable=True)
+    last_event_at = Column(DateTime(UTC), nullable=True)
+    first_event_at = Column(DateTime(UTC), nullable=True)
 
     # Event type breakdown
     email_count = Column(Integer, default=0)
@@ -130,23 +172,27 @@ class EventTimeline(Base):
     channel_breakdown = Column(JSONB, nullable=True)  # {"email": 45, "sms": 12, ...}
     event_type_breakdown = Column(JSONB, nullable=True)
 
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
-    __table_args__ = (
-        Index("idx_business_customer", "business_id", "customer_id"),
-    )
+    __table_args__ = (Index("idx_business_customer", "business_id", "customer_id"),)
 
 
 class TimelineMetadata(Base):
     """Enriched metadata for timeline context."""
+
     __tablename__ = "timeline_metadata"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    event_id = Column(UUID(as_uuid=True), ForeignKey("customer_events.id", ondelete="CASCADE"), nullable=False, index=True)
+    event_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("customer_events.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Enrichment data
     geolocation = Column(String(255), nullable=True)  # "New York, NY"
-    device_type = Column(String(50), nullable=True)   # "mobile", "desktop"
+    device_type = Column(String(50), nullable=True)  # "mobile", "desktop"
     browser = Column(String(100), nullable=True)
     ip_address = Column(String(45), nullable=True)
 
@@ -164,20 +210,26 @@ class TimelineMetadata(Base):
     # Additional context
     context_json = Column(JSONB, nullable=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
-    __table_args__ = (
-        Index("idx_event_id", "event_id"),
-    )
+    __table_args__ = (Index("idx_event_id", "event_id"),)
 
 
 class EventFilter(Base):
     """Saved timeline filter views."""
+
     __tablename__ = "event_filters"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
 
     # Filter definition
     name = Column(String(255), nullable=False)
@@ -185,29 +237,33 @@ class EventFilter(Base):
 
     # Filter criteria
     event_types = Column(JSONB, default=list)  # ["email_sent", "order_created", ...]
-    channels = Column(JSONB, default=list)     # ["email", "sms", ...]
-    outcomes = Column(JSONB, default=list)     # ["success", "failed", ...]
-    date_from = Column(DateTime(timezone.utc), nullable=True)
-    date_to = Column(DateTime(timezone.utc), nullable=True)
+    channels = Column(JSONB, default=list)  # ["email", "sms", ...]
+    outcomes = Column(JSONB, default=list)  # ["success", "failed", ...]
+    date_from = Column(DateTime(UTC), nullable=True)
+    date_to = Column(DateTime(UTC), nullable=True)
 
     # Display options
     is_favorite = Column(Boolean, default=False)
     is_default = Column(Boolean, default=False)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
-    __table_args__ = (
-        Index("idx_user_business", "user_id", "business_id"),
-    )
+    __table_args__ = (Index("idx_user_business", "user_id", "business_id"),)
 
 
 class TimelineMetrics(Base):
     """Timeline aggregated metrics."""
+
     __tablename__ = "timeline_metrics"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Activity metrics
     total_events_7d = Column(Integer, default=0)
@@ -231,9 +287,7 @@ class TimelineMetrics(Base):
     total_revenue_impact = Column(Integer, default=0)
     avg_days_to_purchase = Column(Integer, default=0)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
-    __table_args__ = (
-        Index("idx_business_date", "business_id", "created_at"),
-    )
+    __table_args__ = (Index("idx_business_date", "business_id", "created_at"),)

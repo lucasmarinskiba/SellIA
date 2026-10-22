@@ -1,8 +1,8 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Integer, Enum
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Column, DateTime, ForeignKey, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -10,6 +10,7 @@ from app.core.database import Base
 
 class ResourceRequest(Base):
     """Solicitud de provisionamiento de un recurso (Service Broker)."""
+
     __tablename__ = "resource_requests"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -26,24 +27,31 @@ class ResourceRequest(Base):
         index=True,
     )
     # pending | processing | completed | failed | cancelled
-    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_by = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     updated_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
     completed_at = Column(DateTime(timezone=True), nullable=True)
     error_message = Column(Text, nullable=True)
     provider_reference = Column(String(255), nullable=True)
     # ID o ARN del recurso en el proveedor cloud (ej: ARN de certificado ACM)
 
-    jobs = relationship("ResourceJob", back_populates="request", cascade="all, delete-orphan")
-    events = relationship("ResourceEvent", back_populates="request", cascade="all, delete-orphan")
+    jobs = relationship(
+        "ResourceJob", back_populates="request", cascade="all, delete-orphan"
+    )
+    events = relationship(
+        "ResourceEvent", back_populates="request", cascade="all, delete-orphan"
+    )
 
 
 class ResourceJob(Base):
     """Trabajo individual (sub-tarea) dentro de una solicitud de provisionamiento."""
+
     __tablename__ = "resource_jobs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -67,6 +75,7 @@ class ResourceJob(Base):
 
 class ResourceEvent(Base):
     """Evento de auditoría del ciclo de vida de un recurso."""
+
     __tablename__ = "resource_events"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -80,6 +89,6 @@ class ResourceEvent(Base):
     # created | started | step_completed | failed | completed | cancelled
     message = Column(Text, nullable=True)
     metadata_ = Column("metadata", JSONB, nullable=True, default=dict)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     request = relationship("ResourceRequest", back_populates="events")

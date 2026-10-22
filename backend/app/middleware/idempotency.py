@@ -5,14 +5,13 @@ per Idempotency-Key header.
 """
 
 from fastapi import Request
+from sqlalchemy import select
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
-from datetime import datetime, timezone
-from sqlalchemy import select
 
 from app.core.database import AsyncSessionLocal
-from app.domains.security.models import IdempotencyKey
 from app.core.logger import get_logger
+from app.domains.security.models import IdempotencyKey
 
 logger = get_logger(__name__)
 
@@ -72,6 +71,7 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
 
                     # Reconstruct response for downstream
                     import json
+
                     content = json.loads(body) if body else None
 
                     key_entry = IdempotencyKey(
@@ -89,7 +89,9 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
                         headers=dict(response.headers),
                     )
                 except Exception as e:
-                    logger.warning(f"Failed to cache idempotency response: {e}")
+                    logger.warning(
+                        f"Failed to cache idempotency response: {e}", exc_info=True
+                    )
                     # Fall through to return original response
 
             return response

@@ -4,13 +4,13 @@ Core engine for running prompt experiments: variant assignment,
 result recording, and statistical analysis.
 """
 
-import uuid
-import math
 import hashlib
-from datetime import datetime, timezone
-from typing import Optional, List, Dict, Any
+import math
+import uuid
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import select, func, and_, case
+from sqlalchemy import and_, case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
@@ -36,7 +36,7 @@ class ABTestEngine:
         variant_b_name: str,
         variant_b_prompt: str,
         metric: str = "conversion",
-        business_id: Optional[uuid.UUID] = None,
+        business_id: uuid.UUID | None = None,
         confidence_threshold: float = 0.95,
         min_samples: int = 100,
     ) -> PromptExperiment:
@@ -64,7 +64,7 @@ class ABTestEngine:
     async def get_experiment(
         db: AsyncSession,
         experiment_id: uuid.UUID,
-    ) -> Optional[PromptExperiment]:
+    ) -> PromptExperiment | None:
         """Fetch a single experiment by ID."""
         result = await db.execute(
             select(PromptExperiment).where(PromptExperiment.id == experiment_id)
@@ -75,8 +75,8 @@ class ABTestEngine:
     async def get_active_experiment_for_agent(
         db: AsyncSession,
         agent_type: str,
-        business_id: Optional[uuid.UUID] = None,
-    ) -> Optional[PromptExperiment]:
+        business_id: uuid.UUID | None = None,
+    ) -> PromptExperiment | None:
         """Return the first running experiment for the given agent type."""
         filters = [
             PromptExperiment.agent_type == agent_type,
@@ -98,11 +98,11 @@ class ABTestEngine:
     @staticmethod
     async def list_experiments(
         db: AsyncSession,
-        status: Optional[str] = None,
-        business_id: Optional[uuid.UUID] = None,
+        status: str | None = None,
+        business_id: uuid.UUID | None = None,
         limit: int = 100,
         offset: int = 0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """List experiments with optional filters."""
         query = select(PromptExperiment)
         count_query = select(func.count(PromptExperiment.id))
@@ -117,7 +117,11 @@ class ABTestEngine:
             query = query.where(and_(*filters))
             count_query = count_query.where(and_(*filters))
 
-        query = query.order_by(PromptExperiment.created_at.desc()).limit(limit).offset(offset)
+        query = (
+            query.order_by(PromptExperiment.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
 
         result = await db.execute(query)
         experiments = result.scalars().all()
@@ -144,7 +148,7 @@ class ABTestEngine:
             raise ValueError(f"Cannot start experiment in status '{experiment.status}'")
 
         experiment.status = "running"
-        experiment.started_at = datetime.now(timezone.utc)
+        experiment.started_at = datetime.now(UTC)
         await db.commit()
         await db.refresh(experiment)
         logger.info(f"Started experiment {experiment_id}")
@@ -172,7 +176,7 @@ class ABTestEngine:
     async def complete_experiment(
         db: AsyncSession,
         experiment_id: uuid.UUID,
-        winner: Optional[str] = None,
+        winner: str | None = None,
     ) -> PromptExperiment:
         """Mark experiment as completed with optional winner."""
         experiment = await ABTestEngine.get_experiment(db, experiment_id)
@@ -181,7 +185,7 @@ class ABTestEngine:
 
         experiment.status = "completed"
         experiment.winner_variant = winner
-        experiment.completed_at = datetime.now(timezone.utc)
+        experiment.completed_at = datetime.now(UTC)
         await db.commit()
         await db.refresh(experiment)
         logger.info(f"Completed experiment {experiment_id} with winner={winner}")
@@ -202,7 +206,7 @@ class ABTestEngine:
 
         experiment.status = "auto_promoted"
         experiment.winner_variant = variant
-        experiment.completed_at = datetime.now(timezone.utc)
+        experiment.completed_at = datetime.now(UTC)
         await db.commit()
         await db.refresh(experiment)
         logger.info(f"Promoted variant '{variant}' for experiment {experiment_id}")
@@ -219,7 +223,7 @@ class ABTestEngine:
         conversation_id: uuid.UUID,
     ) -> str:
         """Deterministic 50/50 split using hash of conversation_id + experiment_id."""
-        key = f"{str(conversation_id)}:{str(experiment_id)}"
+        key = f"{conversation_id!s}:{experiment_id!s}"
         digest = hashlib.sha256(key.encode()).hexdigest()
         # Use first 8 hex chars as int, even split
         val = int(digest[:8], 16)
@@ -235,9 +239,9 @@ class ABTestEngine:
         experiment_id: uuid.UUID,
         conversation_id: uuid.UUID,
         variant: str,
-        outcome: Optional[str] = None,
-        revenue: Optional[float] = None,
-        engagement_score: Optional[float] = None,
+        outcome: str | None = None,
+        revenue: float | None = None,
+        engagement_score: float | None = None,
     ) -> PromptExperimentResult:
         """Record the outcome of a conversation for an experiment."""
         result = PromptExperimentResult(
@@ -261,17 +265,21 @@ class ABTestEngine:
     async def get_results(
         db: AsyncSession,
         experiment_id: uuid.UUID,
-        variant: Optional[str] = None,
+        variant: str | None = None,
         limit: int = 1000,
         offset: int = 0,
-    ) -> List[PromptExperimentResult]:
+    ) -> list[PromptExperimentResult]:
         """Fetch raw results for an experiment."""
         query = select(PromptExperimentResult).where(
             PromptExperimentResult.experiment_id == experiment_id
         )
         if variant:
             query = query.where(PromptExperimentResult.variant == variant)
-        query = query.order_by(PromptExperimentResult.created_at.desc()).limit(limit).offset(offset)
+        query = (
+            query.order_by(PromptExperimentResult.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
         result = await db.execute(query)
         return list(result.scalars().all())
 
@@ -283,7 +291,7 @@ class ABTestEngine:
     async def analyze_experiment(
         db: AsyncSession,
         experiment_id: uuid.UUID,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Compute conversion rates, z-score, p-value, and determine winner."""
         experiment = await ABTestEngine.get_experiment(db, experiment_id)
         if not experiment:
@@ -296,9 +304,17 @@ class ABTestEngine:
                 func.count(PromptExperimentResult.id).label("n"),
                 func.sum(
                     case(
-                        (PromptExperimentResult.outcome.in_(
-                            ["lead_generated", "sale_closed", "objection_overcome", "converted"]
-                        ), 1),
+                        (
+                            PromptExperimentResult.outcome.in_(
+                                [
+                                    "lead_generated",
+                                    "sale_closed",
+                                    "objection_overcome",
+                                    "converted",
+                                ]
+                            ),
+                            1,
+                        ),
                         else_=0,
                     )
                 ).label("conversions"),
@@ -307,7 +323,10 @@ class ABTestEngine:
             .group_by(PromptExperimentResult.variant)
         )
         result = await db.execute(stmt)
-        rows = {r.variant: {"n": r.n, "conversions": r.conversions or 0} for r in result.all()}
+        rows = {
+            r.variant: {"n": r.n, "conversions": r.conversions or 0}
+            for r in result.all()
+        }
 
         # Real revenue attributed to each variant (from record_result's
         # optional `revenue` arg -- populated with the real Deal.final_value
@@ -316,7 +335,9 @@ class ABTestEngine:
         revenue_stmt = (
             select(
                 PromptExperimentResult.variant,
-                func.coalesce(func.sum(PromptExperimentResult.revenue), 0).label("revenue"),
+                func.coalesce(func.sum(PromptExperimentResult.revenue), 0).label(
+                    "revenue"
+                ),
             )
             .where(PromptExperimentResult.experiment_id == experiment_id)
             .group_by(PromptExperimentResult.variant)
@@ -397,7 +418,7 @@ class ABTestEngine:
         conversation,
         tracking_key: str,
         outcome: str,
-        revenue: Optional[float] = None,
+        revenue: float | None = None,
     ) -> None:
         """Generic helper: read an experiment assignment stashed on
         conversation.extra_data[tracking_key] (as {"experiment_id", "variant"},
@@ -414,18 +435,25 @@ class ABTestEngine:
             experiment_id = uuid.UUID(tracking["experiment_id"])
             variant = tracking["variant"]
             await ABTestEngine.record_result(
-                db, experiment_id=experiment_id, conversation_id=conversation.id,
-                variant=variant, outcome=outcome, revenue=revenue,
+                db,
+                experiment_id=experiment_id,
+                conversation_id=conversation.id,
+                variant=variant,
+                outcome=outcome,
+                revenue=revenue,
             )
             await ABTestEngine.check_auto_promote(db, experiment_id)
         except Exception as e:
-            logger.warning(f"Failed to record AB outcome for key '{tracking_key}': {e}")
+            logger.warning(
+                f"Failed to record AB outcome for key '{tracking_key}': {e}",
+                exc_info=True,
+            )
 
     @staticmethod
     async def check_auto_promote(
         db: AsyncSession,
         experiment_id: uuid.UUID,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Auto-promote if significant and min_samples reached."""
         experiment = await ABTestEngine.get_experiment(db, experiment_id)
         if not experiment:

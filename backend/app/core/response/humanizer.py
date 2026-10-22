@@ -11,14 +11,15 @@ Features:
 """
 
 import random
-from typing import Optional, List, Dict, Any
-from enum import Enum
-from dataclasses import dataclass
 import re
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any, ClassVar
 
 
 class Tone(str, Enum):
     """Communication tone"""
+
     FORMAL = "formal"
     CASUAL = "casual"
     FRIENDLY = "friendly"
@@ -29,6 +30,7 @@ class Tone(str, Enum):
 @dataclass
 class PersonalityProfile:
     """User personality profile"""
+
     user_id: str
     name: str
     tone: Tone = Tone.CASUAL
@@ -36,7 +38,7 @@ class PersonalityProfile:
     formality_level: float = 0.5  # 0=casual, 1=formal
     humor_level: float = 0.5  # 0=serious, 1=very humorous
     language_style: str = "conversational"  # conversational, technical, poetic
-    custom_traits: Dict[str, Any] = None
+    custom_traits: dict[str, Any] = None
 
 
 class ToneAnalyzer:
@@ -48,14 +50,25 @@ class ToneAnalyzer:
         content_lower = content.lower()
 
         # Formal indicators
-        formal_keywords = ["hereby", "furthermore", "therefore", "moreover",
-                          "consequently", "thus", "accordingly"]
+        formal_keywords = [
+            "hereby",
+            "furthermore",
+            "therefore",
+            "moreover",
+            "consequently",
+            "thus",
+            "accordingly",
+        ]
         if any(kw in content_lower for kw in formal_keywords):
             return Tone.FORMAL
 
         # Enthusiastic indicators
-        enthusiastic_patterns = [r'!!!', r'\?\?', r'wow|amazing|incredible',
-                                 r'love|awesome|fantastic']
+        enthusiastic_patterns = [
+            r"!!!",
+            r"\?\?",
+            r"wow|amazing|incredible",
+            r"love|awesome|fantastic",
+        ]
         if any(re.search(p, content_lower) for p in enthusiastic_patterns):
             return Tone.ENTHUSIASTIC
 
@@ -72,19 +85,19 @@ class ToneAnalyzer:
             text = text.replace("won't", "will not")
             text = text.replace("it's", "it is")
             # Remove casual phrases
-            text = re.sub(r'\blike\b|\byou know\b|\bnah\b|\byup\b', '', text)
+            text = re.sub(r"\blike\b|\byou know\b|\bnah\b|\byup\b", "", text)
             return text.strip()
 
         elif target_tone == Tone.CASUAL:
             # Add contractions where natural
-            text = re.sub(r'\bdo not\b', "don't", text)
-            text = re.sub(r'\bcannot\b', "can't", text)
+            text = re.sub(r"\bdo not\b", "don't", text)
+            text = re.sub(r"\bcannot\b", "can't", text)
             return text
 
         elif target_tone == Tone.ENTHUSIASTIC:
             # Add enthusiasm
-            if not text.endswith('!'):
-                text = text.rstrip('.?') + '!'
+            if not text.endswith("!"):
+                text = text.rstrip(".?") + "!"
             return text
 
         return text
@@ -93,7 +106,7 @@ class ToneAnalyzer:
 class EmojiSelector:
     """Context-aware emoji selection"""
 
-    SENTIMENT_EMOJIS = {
+    SENTIMENT_EMOJIS: ClassVar[dict] = {
         "positive": ["😊", "🎉", "✨", "💪", "👏", "🔥", "💯"],
         "negative": ["😞", "😕", "😤", "⚠️", "🚫"],
         "question": ["🤔", "❓", "🤷"],
@@ -108,12 +121,34 @@ class EmojiSelector:
     def select_emoji(text: str, sentiment: str = "positive") -> str:
         """Select contextual emoji based on content"""
         keywords_map = {
-            "money": ["price", "cost", "payment", "affordable", "expensive",
-                     "budget", "invest"],
-            "growth": ["grow", "increase", "scale", "expand", "boost",
-                      "improve", "rise"],
-            "success": ["success", "achieve", "win", "accomplish", "complete",
-                       "done", "finished", "perfect"],
+            "money": [
+                "price",
+                "cost",
+                "payment",
+                "affordable",
+                "expensive",
+                "budget",
+                "invest",
+            ],
+            "growth": [
+                "grow",
+                "increase",
+                "scale",
+                "expand",
+                "boost",
+                "improve",
+                "rise",
+            ],
+            "success": [
+                "success",
+                "achieve",
+                "win",
+                "accomplish",
+                "complete",
+                "done",
+                "finished",
+                "perfect",
+            ],
             "action": ["now", "hurry", "urgent", "quick", "fast", "asap"],
             "question": ["why", "how", "what", "when", "where"],
         }
@@ -121,8 +156,11 @@ class EmojiSelector:
         text_lower = text.lower()
         for keyword_type, keywords in keywords_map.items():
             if any(kw in text_lower for kw in keywords):
-                return random.choice(EmojiSelector.SENTIMENT_EMOJIS.get(
-                    keyword_type, EmojiSelector.SENTIMENT_EMOJIS["positive"]))
+                return random.choice(
+                    EmojiSelector.SENTIMENT_EMOJIS.get(
+                        keyword_type, EmojiSelector.SENTIMENT_EMOJIS["positive"]
+                    )
+                )
 
         return random.choice(EmojiSelector.SENTIMENT_EMOJIS.get(sentiment, []))
 
@@ -130,26 +168,49 @@ class EmojiSelector:
 class SentenceVariator:
     """Avoid repetition through sentence variation"""
 
-    SENTENCE_STARTERS = [
-        "I think", "From what I understand", "Based on this",
-        "It seems", "You know", "I'd say", "Check this out",
-        "Here's the thing", "Consider this", "Think about it"
+    SENTENCE_STARTERS: ClassVar[list] = [
+        "I think",
+        "From what I understand",
+        "Based on this",
+        "It seems",
+        "You know",
+        "I'd say",
+        "Check this out",
+        "Here's the thing",
+        "Consider this",
+        "Think about it",
     ]
 
-    AGREEMENT_PHRASES = [
-        "Absolutely", "For sure", "Yeah", "Totally", "Definitely",
-        "No doubt", "You're right", "Exactly", "Spot on", "No cap"
+    AGREEMENT_PHRASES: ClassVar[list] = [
+        "Absolutely",
+        "For sure",
+        "Yeah",
+        "Totally",
+        "Definitely",
+        "No doubt",
+        "You're right",
+        "Exactly",
+        "Spot on",
+        "No cap",
     ]
 
-    TRANSITION_WORDS = [
-        "Plus", "Also", "Moreover", "Additionally", "On top of that",
-        "By the way", "Speaking of which", "That said", "Anyway", "So"
+    TRANSITION_WORDS: ClassVar[list] = [
+        "Plus",
+        "Also",
+        "Moreover",
+        "Additionally",
+        "On top of that",
+        "By the way",
+        "Speaking of which",
+        "That said",
+        "Anyway",
+        "So",
     ]
 
     @staticmethod
     def add_variety(text: str, variation_level: float = 0.5) -> str:
         """Add sentence variation"""
-        sentences = text.split('. ')
+        sentences = text.split(". ")
         varied = []
 
         for i, sentence in enumerate(sentences):
@@ -160,10 +221,10 @@ class SentenceVariator:
 
             varied.append(sentence)
 
-        return '. '.join(varied)
+        return ". ".join(varied)
 
     @staticmethod
-    def vary_response(text: str, personality: Optional[PersonalityProfile] = None) -> str:
+    def vary_response(text: str, personality: PersonalityProfile | None = None) -> str:
         """Apply variation based on personality"""
         if not personality or personality.language_style != "conversational":
             return text
@@ -174,10 +235,10 @@ class SentenceVariator:
 class FillerWordInjector:
     """Add natural filler words"""
 
-    FILLER_WORDS = {
+    FILLER_WORDS: ClassVar[dict] = {
         "light": ["uh", "um", "you know", "like"],
         "medium": ["actually", "honestly", "basically", "kinda", "sorta"],
-        "heavy": ["literally", "obviously", "I mean", "for real", "no cap"]
+        "heavy": ["literally", "obviously", "I mean", "for real", "no cap"],
     }
 
     @staticmethod
@@ -186,14 +247,14 @@ class FillerWordInjector:
         if intensity not in FillerWordInjector.FILLER_WORDS:
             intensity = "light"
 
-        sentences = text.split('. ')
+        sentences = text.split(". ")
         result = []
 
         for sentence in sentences:
             if len(sentence) > 20 and random.random() < 0.3:  # 30% of sentences
                 filler = random.choice(FillerWordInjector.FILLER_WORDS[intensity])
                 # Insert after first word or at beginning
-                words = sentence.split(' ', 1)
+                words = sentence.split(" ", 1)
                 if len(words) > 1:
                     sentence = f"{words[0]} {filler}, {words[1]}"
                 else:
@@ -201,13 +262,13 @@ class FillerWordInjector:
 
             result.append(sentence)
 
-        return '. '.join(result)
+        return ". ".join(result)
 
 
 class TypoInjector:
     """Intentional typo injection for authenticity (2% rate)"""
 
-    COMMON_TYPOS = {
+    COMMON_TYPOS: ClassVar[dict] = {
         "the": ["teh", "th"],
         "that": ["taht", "that"],
         "and": ["adn", "abd"],
@@ -225,18 +286,18 @@ class TypoInjector:
 
         for word in words:
             # Only introduce typos in common words
-            word_lower = word.lower().strip('.,!?')
+            word_lower = word.lower().strip(".,!?")
             if word_lower in TypoInjector.COMMON_TYPOS and random.random() < typo_rate:
                 typo = random.choice(TypoInjector.COMMON_TYPOS[word_lower])
                 # Preserve case and punctuation
-                punctuation = ''.join(c for c in word if c in '.,!?')
+                punctuation = "".join(c for c in word if c in ".,!?")
                 if word[0].isupper():
                     typo = typo.capitalize()
                 result.append(typo + punctuation)
             else:
                 result.append(word)
 
-        return ' '.join(result)
+        return " ".join(result)
 
 
 class Humanizer:
@@ -252,10 +313,10 @@ class Humanizer:
     def humanize(
         self,
         text: str,
-        personality: Optional[PersonalityProfile] = None,
+        personality: PersonalityProfile | None = None,
         use_emojis: bool = True,
         add_typos: bool = True,
-        filler_intensity: str = "light"
+        filler_intensity: str = "light",
     ) -> str:
         """
         Full humanization pipeline:
@@ -270,7 +331,7 @@ class Humanizer:
             personality = PersonalityProfile(
                 user_id="default",
                 name="Assistant",
-                tone=self.tone_analyzer.analyze_message(text)
+                tone=self.tone_analyzer.analyze_message(text),
             )
 
         # Step 1: Adjust tone
@@ -295,48 +356,42 @@ class Humanizer:
 
         return text
 
-    def humanize_for_user(
-        self,
-        text: str,
-        user_profile: PersonalityProfile
-    ) -> str:
+    def humanize_for_user(self, text: str, user_profile: PersonalityProfile) -> str:
         """Humanize based on specific user profile"""
-        filler_intensity = {
-            0.2: "heavy",
-            0.5: "medium",
-            0.8: "light"
-        }[min(filler_intensity.keys(),
-              key=lambda x: abs(x - user_profile.formality_level))]
+        intensity_levels = {0.2: "heavy", 0.5: "medium", 0.8: "light"}
+        filler_intensity = intensity_levels[
+            min(
+                intensity_levels.keys(),
+                key=lambda x: abs(x - user_profile.formality_level),
+            )
+        ]
 
         return self.humanize(
             text,
             personality=user_profile,
             use_emojis=user_profile.uses_emojis,
-            add_typos=not user_profile.language_style == "technical",
-            filler_intensity=filler_intensity
+            add_typos=user_profile.language_style != "technical",
+            filler_intensity=filler_intensity,
         )
 
-    def quality_score(self, original: str, humanized: str) -> Dict[str, Any]:
+    def quality_score(self, original: str, humanized: str) -> dict[str, Any]:
         """Score humanization quality"""
         scores = {
             "tone_varied": len(set(humanized.split())) > len(set(original.split())),
-            "has_emoji": "😊" in humanized or "🎉" in humanized or any(
-                ord(c) > 127 for c in humanized
-            ),
+            "has_emoji": "😊" in humanized
+            or "🎉" in humanized
+            or any(ord(c) > 127 for c in humanized),
             "has_variation": original != humanized,
             "length_reasonable": 0.8 <= len(humanized) / max(len(original), 1) <= 1.2,
-            "readability": len(humanized) < 500  # Not too long
+            "readability": len(humanized) < 500,  # Not too long
         }
 
         score = sum(scores.values()) / len(scores)
-        return {
-            "overall_score": score,
-            "components": scores
-        }
+        return {"overall_score": score, "components": scores}
 
 
 # Singleton
-_humanizer_instance: Optional[Humanizer] = None
+_humanizer_instance: Humanizer | None = None
 
 
 def get_humanizer() -> Humanizer:

@@ -2,19 +2,20 @@
 Webhook Service
 """
 
-import uuid
-import hmac
 import hashlib
+import hmac
 import json
-from datetime import datetime, timezone
-from typing import Optional, List
-
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-
-from app.domains.webhooks.models import WebhookSubscription, WebhookDelivery
+import logging
+import uuid
+from datetime import UTC, datetime
 
 import httpx
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.domains.webhooks.models import WebhookDelivery, WebhookSubscription
+
+logger = logging.getLogger(__name__)
 
 
 async def create_subscription(
@@ -38,7 +39,9 @@ async def create_subscription(
     return sub
 
 
-async def list_subscriptions(db: AsyncSession, user_id: uuid.UUID) -> List[WebhookSubscription]:
+async def list_subscriptions(
+    db: AsyncSession, user_id: uuid.UUID
+) -> list[WebhookSubscription]:
     result = await db.execute(
         select(WebhookSubscription).where(WebhookSubscription.user_id == user_id)
     )
@@ -47,7 +50,7 @@ async def list_subscriptions(db: AsyncSession, user_id: uuid.UUID) -> List[Webho
 
 async def get_subscription(
     db: AsyncSession, subscription_id: uuid.UUID, user_id: uuid.UUID
-) -> Optional[WebhookSubscription]:
+) -> WebhookSubscription | None:
     result = await db.execute(
         select(WebhookSubscription).where(
             WebhookSubscription.id == subscription_id,
@@ -59,14 +62,14 @@ async def get_subscription(
 
 async def update_subscription(
     db: AsyncSession, subscription_id: uuid.UUID, user_id: uuid.UUID, **kwargs
-) -> Optional[WebhookSubscription]:
+) -> WebhookSubscription | None:
     sub = await get_subscription(db, subscription_id, user_id)
     if not sub:
         return None
     for key, value in kwargs.items():
         if value is not None:
             setattr(sub, key, value)
-    sub.updated_at = datetime.now(timezone.utc)
+    sub.updated_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(sub)
     return sub
@@ -85,7 +88,7 @@ async def delete_subscription(
 
 async def list_deliveries(
     db: AsyncSession, subscription_id: uuid.UUID, user_id: uuid.UUID
-) -> List[WebhookDelivery]:
+) -> list[WebhookDelivery]:
     sub = await get_subscription(db, subscription_id, user_id)
     if not sub:
         return []
@@ -97,7 +100,9 @@ async def list_deliveries(
     return result.scalars().all()
 
 
-async def get_delivery(db: AsyncSession, delivery_id: uuid.UUID) -> Optional[WebhookDelivery]:
+async def get_delivery(
+    db: AsyncSession, delivery_id: uuid.UUID
+) -> WebhookDelivery | None:
     result = await db.execute(
         select(WebhookDelivery).where(WebhookDelivery.id == delivery_id)
     )
@@ -106,7 +111,7 @@ async def get_delivery(db: AsyncSession, delivery_id: uuid.UUID) -> Optional[Web
 
 async def deliver_webhook(
     subscription: WebhookSubscription, event_type: str, payload: dict
-) -> tuple[bool, Optional[int], Optional[str]]:
+) -> tuple[bool, int | None, str | None]:
     body = json.dumps(payload, default=str)
     signature = hmac.new(
         subscription.secret.encode(), body.encode(), hashlib.sha256
@@ -126,6 +131,7 @@ async def deliver_webhook(
             success = 200 <= response.status_code < 300
             return success, response.status_code, response.text
         except Exception as e:
+            logger.exception("deliver_webhook: error inesperado")
             return False, None, str(e)
 
 
@@ -135,8 +141,8 @@ async def record_delivery(
     event_type: str,
     payload: dict,
     success: bool,
-    response_status: Optional[int],
-    response_body: Optional[str],
+    response_status: int | None,
+    response_body: str | None,
 ) -> WebhookDelivery:
     delivery = WebhookDelivery(
         subscription_id=subscription_id,
@@ -152,7 +158,9 @@ async def record_delivery(
     return delivery
 
 
-async def trigger_event(db: AsyncSession, user_id: uuid.UUID, event_type: str, payload: dict) -> int:
+async def trigger_event(
+    db: AsyncSession, user_id: uuid.UUID, event_type: str, payload: dict
+) -> int:
     """Fan out a real business event to every active subscription this user
     has for it, actually delivering (real signed HTTP POST) and recording
     each attempt. This was the one piece missing from an otherwise-complete
@@ -164,21 +172,29 @@ async def trigger_event(db: AsyncSession, user_id: uuid.UUID, event_type: str, p
     subscriptions were triggered.
     """
     result = await db.execute(
-        select(WebhookSubscription).where(WebhookSubscription.user_id == user_id, WebhookSubscription.active == True)
+        select(WebhookSubscription).where(
+            WebhookSubscription.user_id == user_id, WebhookSubscription.active == True
+        )
     )
-    subscriptions = [s for s in result.scalars().all() if event_type in (s.events or [])]
+    subscriptions = [
+        s for s in result.scalars().all() if event_type in (s.events or [])
+    ]
 
     for sub in subscriptions:
         success, status_code, body = await deliver_webhook(sub, event_type, payload)
-        await record_delivery(db, sub.id, event_type, payload, success, status_code, body)
-        sub.updated_at = datetime.now(timezone.utc)
+        await record_delivery(
+            db, sub.id, event_type, payload, success, status_code, body
+        )
+        sub.updated_at = datetime.now(UTC)
     if subscriptions:
         await db.commit()
 
     return len(subscriptions)
 
 
-async def fire_business_event(db: AsyncSession, business_id: uuid.UUID, event_type: str, payload: dict) -> int:
+async def fire_business_event(
+    db: AsyncSession, business_id: uuid.UUID, event_type: str, payload: dict
+) -> int:
     """Convenience wrapper for the real trigger points (lead/deal/payment
     events) -- they know a business_id, not a user_id (subscriptions are
     owned by users, since one user can own several businesses). Resolves
@@ -189,8 +205,9 @@ async def fire_business_event(db: AsyncSession, business_id: uuid.UUID, event_ty
     succeed regardless of whether anyone is subscribed or a delivery
     fails).
     """
-    from app.domains.businesses.models import Business
     from sqlalchemy import select as _select
+
+    from app.domains.businesses.models import Business
 
     try:
         result = await db.execute(_select(Business).where(Business.id == business_id))
@@ -199,10 +216,13 @@ async def fire_business_event(db: AsyncSession, business_id: uuid.UUID, event_ty
             return 0
         return await trigger_event(db, business.user_id, event_type, payload)
     except Exception:
+        logger.exception("fire_business_event: error inesperado")
         return 0
 
 
-async def retry_delivery(db: AsyncSession, delivery: WebhookDelivery) -> WebhookDelivery:
+async def retry_delivery(
+    db: AsyncSession, delivery: WebhookDelivery
+) -> WebhookDelivery:
     result = await db.execute(
         select(WebhookSubscription).where(
             WebhookSubscription.id == delivery.subscription_id
@@ -225,7 +245,7 @@ async def retry_delivery(db: AsyncSession, delivery: WebhookDelivery) -> Webhook
     delivery.response_status = response_status
     delivery.response_body = response_body
     delivery.retry_count += 1
-    delivery.delivered_at = datetime.now(timezone.utc)
+    delivery.delivered_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(delivery)
     return delivery

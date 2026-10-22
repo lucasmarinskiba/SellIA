@@ -12,17 +12,17 @@ Flow:
 """
 
 import logging
-from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
-from datetime import datetime
 from enum import Enum
 from random import choice
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
 
 class CTAType(str, Enum):
     """Call-to-action types"""
+
     SOFT = "soft"  # "Let me know" / "Open to ideas"
     DIRECT = "direct"  # "Click here" / "Buy now"
     SCARCITY = "scarcity"  # "Only X left" / "Limited time"
@@ -34,19 +34,20 @@ class CTAType(str, Enum):
 @dataclass
 class ResponseTemplate:
     """Template for building responses"""
+
     intro: str  # Opening line
     body: str  # Main message
-    social_proof: Optional[str]  # "100+ customers love this"
+    social_proof: str | None  # "100+ customers love this"
     cta: str  # Call to action
     closing: str  # Sign-off
-    tone_tags: List[str]  # ["friendly", "professional"]
+    tone_tags: list[str]  # ["friendly", "professional"]
 
 
 class ResponseBuilder:
     """Builds human-sounding responses from components"""
 
     # Soft CTAs (low pressure)
-    SOFT_CTAS = {
+    SOFT_CTAS: ClassVar[dict] = {
         "en": [
             "What do you think?",
             "How does that sound?",
@@ -64,7 +65,7 @@ class ResponseBuilder:
     }
 
     # Direct CTAs (action-oriented)
-    DIRECT_CTAS = {
+    DIRECT_CTAS: ClassVar[dict] = {
         "en": [
             "Let's set up a quick call.",
             "Click below to get started.",
@@ -82,7 +83,7 @@ class ResponseBuilder:
     }
 
     # Scarcity CTAs (time-limited)
-    SCARCITY_CTAS = {
+    SCARCITY_CTAS: ClassVar[dict] = {
         "en": [
             "Only 2 spots left this month.",
             "This rate only lasts until {date}.",
@@ -100,7 +101,7 @@ class ResponseBuilder:
     }
 
     # Benefit CTAs (value-focused)
-    BENEFIT_CTAS = {
+    BENEFIT_CTAS: ClassVar[dict] = {
         "en": [
             "See how you can save 10 hours/week.",
             "Discover how other teams did it.",
@@ -118,7 +119,7 @@ class ResponseBuilder:
     }
 
     # FOMO CTAs (fear of missing out)
-    FOMO_CTAS = {
+    FOMO_CTAS: ClassVar[dict] = {
         "en": [
             "See what {count} companies discovered.",
             "Check out the results others got.",
@@ -136,7 +137,7 @@ class ResponseBuilder:
     }
 
     # Curiosity CTAs (question-based)
-    CURIOSITY_CTAS = {
+    CURIOSITY_CTAS: ClassVar[dict] = {
         "en": [
             "Wondering if this applies to you?",
             "Want to know if you qualify?",
@@ -154,7 +155,7 @@ class ResponseBuilder:
     }
 
     # Social proof templates
-    SOCIAL_PROOF = {
+    SOCIAL_PROOF: ClassVar[dict] = {
         "en": [
             "Join {count}+ {industry} leaders using this.",
             "{percent}% of {audience} see results in {timeframe}.",
@@ -172,7 +173,7 @@ class ResponseBuilder:
     }
 
     # Closings by tone
-    CLOSINGS = {
+    CLOSINGS: ClassVar[dict] = {
         "professional": {
             "en": ["Best regards,", "Sincerely,", "Kind regards,"],
             "es": ["Saludos cordiales,", "Atentamente,", "Con respeto,"],
@@ -196,11 +197,11 @@ class ResponseBuilder:
         base_message: str,
         tone_type: str,
         emotional_state: str,
-        buyer_name: Optional[str] = None,
+        buyer_name: str | None = None,
         cta_type: CTAType = CTAType.SOFT,
-        social_proof_data: Optional[Dict[str, Any]] = None,
+        social_proof_data: dict[str, Any] | None = None,
         language: str = "en",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Build complete human-sounding response.
 
@@ -278,10 +279,10 @@ class ResponseBuilder:
 
     def _build_intro(
         self,
-        buyer_name: Optional[str],
+        buyer_name: str | None,
         emotional_state: str,
         language: str,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Build personalized intro"""
         if not buyer_name:
             return None
@@ -335,9 +336,9 @@ class ResponseBuilder:
 
     def _build_social_proof(
         self,
-        data: Dict[str, Any],
+        data: dict[str, Any],
         language: str,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Build social proof statement if data provided"""
         if not data:
             return None
@@ -366,7 +367,9 @@ class ResponseBuilder:
             closing_style = "friendly"
 
         closings = self.CLOSINGS.get(closing_style, {})
-        language_closings = closings.get(language, closings.get("en", ["Best regards,"]))
+        language_closings = closings.get(
+            language, closings.get("en", ["Best regards,"])
+        )
         return choice(language_closings)
 
     def _calculate_cta_strength(
@@ -416,11 +419,17 @@ class ResponseBuilder:
             score += 0.15
 
         # Natural transitions
-        if any(word in text.lower() for word in ["i think", "you know", "honestly", "totally"]):
+        if any(
+            word in text.lower()
+            for word in ["i think", "you know", "honestly", "totally"]
+        ):
             score += 0.1
 
         # Contractions (makes it feel natural)
-        if any(contraction in text for contraction in ["'s", "'t", "'re", "'ve", "'ll", "'d"]):
+        if any(
+            contraction in text
+            for contraction in ["'s", "'t", "'re", "'ve", "'ll", "'d"]
+        ):
             score += 0.1
 
         # Emoji usage (adds personality if used appropriately)
@@ -447,7 +456,7 @@ class ResponseBuilder:
         response: str,
         platform: str,  # "email", "whatsapp", "sms", "instagram"
         language: str = "en",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Optimize response for specific platform.
 
@@ -482,7 +491,7 @@ class ResponseBuilder:
             "characteristics": self._get_platform_characteristics(platform),
         }
 
-    def _get_platform_characteristics(self, platform: str) -> Dict[str, Any]:
+    def _get_platform_characteristics(self, platform: str) -> dict[str, Any]:
         """Get platform-specific characteristics"""
         specs = {
             "email": {
@@ -513,7 +522,7 @@ class ResponseBuilder:
         response: str,
         tone: str,
         language: str = "en",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Validate response quality before sending.
 
@@ -555,5 +564,9 @@ class ResponseBuilder:
             "is_valid": len(issues) == 0,
             "issues": issues,
             "warnings": warnings,
-            "recommendation": "Send" if len(issues) == 0 else f"Fix issues before sending: {', '.join(issues)}",
+            "recommendation": (
+                "Send"
+                if len(issues) == 0
+                else f"Fix issues before sending: {', '.join(issues)}"
+            ),
         }

@@ -1,12 +1,13 @@
 """50 Positioning Prompts — Value prop, messaging, competitive positioning, market positioning."""
 
 from dataclasses import dataclass
-from typing import Dict, Any, List
 from enum import Enum
+from typing import Any
 
 
 class PositioningType(str, Enum):
     """Types of positioning prompts."""
+
     VALUE_PROPOSITION = "Value Proposition"
     MESSAGING = "Messaging"
     COMPETITIVE = "Competitive Positioning"
@@ -22,18 +23,19 @@ class PositioningType(str, Enum):
 @dataclass
 class PositioningPromptTemplate:
     """Structure for a positioning prompt."""
+
     id: str
     name: str
     type: str
     business_context: str
     prompt_text: str
-    variables: List[str]
-    example_input: Dict[str, Any]
+    variables: list[str]
+    example_input: dict[str, Any]
     example_output: str
-    success_metrics: List[str]
-    industry_variations: Dict[str, str]
-    best_practices: List[str]
-    tags: List[str]
+    success_metrics: list[str]
+    industry_variations: dict[str, str]
+    best_practices: list[str]
+    tags: list[str]
 
 
 class PositioningPrompts:
@@ -178,15 +180,45 @@ Measure:
 - Website time on page: {time_on_page_target} seconds
 
 If metric is below target: Rephrase value prop, test again""",
-            variables=["product_name", "target_customer", "what_it_does", "feature_1", "feature_2",
-                      "feature_3", "primary_benefit", "secondary_benefit_1", "secondary_benefit_2",
-                      "unique_angle", "customer_problem", "current_solution", "frustration_with_current",
-                      "desired_outcome", "competitor_1", "competitor_1_positioning", "competitor_1_weakness",
-                      "competitor_2", "competitor_2_positioning", "competitor_2_weakness", "product_category",
-                      "main_competitor", "differentiation", "solve_problem", "mechanism", "outcome",
-                      "cost_reduction", "time_saved", "quality_improvement", "fear_eliminated",
-                      "status_benefit", "confidence_improvement", "relief_delivered", "ctr_target",
-                      "open_rate_target", "qual_rate_target", "time_on_page_target"],
+            variables=[
+                "product_name",
+                "target_customer",
+                "what_it_does",
+                "feature_1",
+                "feature_2",
+                "feature_3",
+                "primary_benefit",
+                "secondary_benefit_1",
+                "secondary_benefit_2",
+                "unique_angle",
+                "customer_problem",
+                "current_solution",
+                "frustration_with_current",
+                "desired_outcome",
+                "competitor_1",
+                "competitor_1_positioning",
+                "competitor_1_weakness",
+                "competitor_2",
+                "competitor_2_positioning",
+                "competitor_2_weakness",
+                "product_category",
+                "main_competitor",
+                "differentiation",
+                "solve_problem",
+                "mechanism",
+                "outcome",
+                "cost_reduction",
+                "time_saved",
+                "quality_improvement",
+                "fear_eliminated",
+                "status_benefit",
+                "confidence_improvement",
+                "relief_delivered",
+                "ctr_target",
+                "open_rate_target",
+                "qual_rate_target",
+                "time_on_page_target",
+            ],
             example_input={
                 "product_name": "TaskFlow",
                 "target_customer": "Project managers at teams under 200 people",
@@ -221,7 +253,7 @@ If metric is below target: Rephrase value prop, test again""",
                 "ctr_target": "3",
                 "open_rate_target": "35",
                 "qual_rate_target": "80",
-                "time_on_page_target": "45"
+                "time_on_page_target": "45",
             },
             example_output="""VALUE PROPOSITION OPTIONS:
 
@@ -322,12 +354,12 @@ VALIDATION CHECKLIST:
                 "Website conversion: 2-4% of landing page visitors to trial",
                 "Sales efficiency: 60%+ of prospects qualify (good positioning = better fit)",
                 "Customer fit: 80%+ of customers fit ideal customer profile",
-                "Retention: 90%+ annual retention (good fit stays longer)"
+                "Retention: 90%+ annual retention (good fit stays longer)",
             ],
             industry_variations={
                 "SaaS": "ROI-focused, speed-to-value, cost comparison",
                 "Real Estate": "Market differentiation, returns-focused, timeline",
-                "Services": "Outcome-focused, expertise differentiation, client results"
+                "Services": "Outcome-focused, expertise differentiation, client results",
             },
             best_practices=[
                 "Lead with benefit, not features — 'save time' beats 'automation'",
@@ -335,9 +367,9 @@ VALIDATION CHECKLIST:
                 "Own one thing — trying to be everything is confusing",
                 "Validate with customers — gut feeling ≠ market reality",
                 "Test in market — landing page performance tells truth",
-                "Evolve it — as market changes, update positioning"
+                "Evolve it — as market changes, update positioning",
             ],
-            tags=["value-prop", "positioning", "messaging", "differentiation", "sales"]
+            tags=["value-prop", "positioning", "messaging", "differentiation", "sales"],
         )
 
     @staticmethod
@@ -493,24 +525,85 @@ Market share:
 - Current market share in {segment}: {current_share}%
 - Target market share (Year 2): {target_share}%
 - Target market share (Year 3): {target_share_3yr}%""",
-            variables=["product_name", "main_competitors", "segment_1", "segment_1_leader", "segment_2",
-                      "segment_2_leader", "segment_3", "segment_3_leader", "enterprise_player",
-                      "midmarket_player", "smb_player", "price_player", "premium_player",
-                      "competitor_1_name", "comp_1_positioning", "comp_1_message", "comp_1_target",
-                      "comp_1_strength", "comp_1_weakness", "comp_1_price", "comp_1_share",
-                      "competitor_2_name", "player_1", "player_2", "player_3", "player_4",
-                      "our_position", "gap_1", "opportunity_1", "segment_1", "market_size_1",
-                      "gap_2", "opportunity_2", "market_size_2", "gap_3", "opportunity_3",
-                      "unique_claim", "target_segment", "positioning_message", "positioning_proof",
-                      "attribute_1", "reason_1", "attribute_2", "reason_2", "attribute_3", "reason_3",
-                      "not_like_1", "unlike_target", "not_like_2", "not_like_3", "attack_attribute",
-                      "attack_message", "attack_rationale", "defense_attribute", "defense_message",
-                      "defense_proof", "competitor_1", "their_strength", "our_sweet_spot",
-                      "key_difference", "phase_1_message", "phase_1_audience", "phase_1_goal",
-                      "phase_2_segments", "phase_2_topics", "phase_2_goal", "phase_3_channels",
-                      "phase_3_message", "brand_mention_target", "message_resonance_target",
-                      "win_rate_vs_comp_1", "baseline_rate", "switch_rate", "deal_size_when_winning",
-                      "current_share", "target_share", "target_share_3yr"],
+            variables=[
+                "product_name",
+                "main_competitors",
+                "segment_1",
+                "segment_1_leader",
+                "segment_2",
+                "segment_2_leader",
+                "segment_3",
+                "segment_3_leader",
+                "enterprise_player",
+                "midmarket_player",
+                "smb_player",
+                "price_player",
+                "premium_player",
+                "competitor_1_name",
+                "comp_1_positioning",
+                "comp_1_message",
+                "comp_1_target",
+                "comp_1_strength",
+                "comp_1_weakness",
+                "comp_1_price",
+                "comp_1_share",
+                "competitor_2_name",
+                "player_1",
+                "player_2",
+                "player_3",
+                "player_4",
+                "our_position",
+                "gap_1",
+                "opportunity_1",
+                "segment_1",
+                "market_size_1",
+                "gap_2",
+                "opportunity_2",
+                "market_size_2",
+                "gap_3",
+                "opportunity_3",
+                "unique_claim",
+                "target_segment",
+                "positioning_message",
+                "positioning_proof",
+                "attribute_1",
+                "reason_1",
+                "attribute_2",
+                "reason_2",
+                "attribute_3",
+                "reason_3",
+                "not_like_1",
+                "unlike_target",
+                "not_like_2",
+                "not_like_3",
+                "attack_attribute",
+                "attack_message",
+                "attack_rationale",
+                "defense_attribute",
+                "defense_message",
+                "defense_proof",
+                "competitor_1",
+                "their_strength",
+                "our_sweet_spot",
+                "key_difference",
+                "phase_1_message",
+                "phase_1_audience",
+                "phase_1_goal",
+                "phase_2_segments",
+                "phase_2_topics",
+                "phase_2_goal",
+                "phase_3_channels",
+                "phase_3_message",
+                "brand_mention_target",
+                "message_resonance_target",
+                "win_rate_vs_comp_1",
+                "baseline_rate",
+                "switch_rate",
+                "deal_size_when_winning",
+                "current_share",
+                "target_share",
+                "target_share_3yr",
+            ],
             example_input={
                 "product_name": "TaskFlow",
                 "main_competitors": "Asana, Monday.com, Notion",
@@ -557,7 +650,7 @@ Market share:
                 "deal_size_when_winning": "15000",
                 "current_share": "2",
                 "target_share": "8",
-                "target_share_3yr": "15"
+                "target_share_3yr": "15",
             },
             example_output="""TASKFLOW COMPETITIVE POSITIONING STRATEGY
 
@@ -726,25 +819,31 @@ Retention:
                 "Win rate vs. competitor: Increase 20%+ YoY",
                 "Market share in segment: Grow to 8%+ within 2 years",
                 "Message resonance: 60%+ of target audience recalls positioning",
-                "Competitive switches: 15%+ of new customers from leading competitor"
+                "Competitive switches: 15%+ of new customers from leading competitor",
             ],
             industry_variations={
                 "SaaS": "Speed-to-value, ROI, integration-first",
                 "Real Estate": "Market advantage, pricing power, buyer advantages",
-                "Services": "Expertise differentiation, service quality, client outcomes"
+                "Services": "Expertise differentiation, service quality, client outcomes",
             },
             best_practices=[
                 "Own one specific gap — trying to be everything is positioning suicide",
                 "Acknowledge competitor strengths — credibility wins",
                 "Show proof with case studies — positioning without proof is just talk",
                 "Test positioning with 20+ prospects before going all-in",
-                "Update positioning as market evolves (quarterly review minimum)"
+                "Update positioning as market evolves (quarterly review minimum)",
             ],
-            tags=["positioning", "competitive-strategy", "market-strategy", "differentiation", "brand"]
+            tags=[
+                "positioning",
+                "competitive-strategy",
+                "market-strategy",
+                "differentiation",
+                "brand",
+            ],
         )
 
     @staticmethod
-    def get_all_positioning_prompts() -> Dict[str, PositioningPromptTemplate]:
+    def get_all_positioning_prompts() -> dict[str, PositioningPromptTemplate]:
         """Return all 50 positioning prompts indexed by ID."""
         return {
             "positioning_001": PositioningPrompts.value_proposition_builder(),

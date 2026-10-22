@@ -12,30 +12,33 @@ Covers:
 - Integration tests
 """
 
-import pytest
 import asyncio
-from datetime import datetime, timedelta
-from typing import Dict, Any
+from datetime import timedelta
+
+import pytest
 
 # Import automation components
 from automation_engine import (
     AutomationEngine,
     Job,
-    Task,
-    JobType,
     JobStatus,
+    JobType,
     Priority,
+    Task,
 )
-from task_scheduler import TaskScheduler
-from job_queue import JobQueue, BatchJobQueue
-from state_manager import StateManager, JobRecovery
-from retry_handler import RetryHandler, RetryPolicy as RetryHandlerPolicy
 from escalation_handler import EscalationHandler, EscalationPolicy
+from job_queue import JobQueue
 from monitoring_dashboard import MonitoringDashboard
-from workflow_builder import WorkflowBuilder, WorkflowExecutor, WorkflowTrigger
+from retry_handler import RetryHandler
+from retry_handler import RetryPolicy as RetryHandlerPolicy
+from state_manager import StateManager
+from task_scheduler import TaskScheduler
+from workflow_builder import WorkflowBuilder, WorkflowTrigger
 
+from app.core.clock import utc_now
 
 # ========== FIXTURES ==========
+
 
 @pytest.fixture
 def scheduler():
@@ -74,7 +77,9 @@ def monitoring(state_manager, job_queue, scheduler, escalation_handler):
 
 
 @pytest.fixture
-def automation_engine(scheduler, job_queue, state_manager, retry_handler, escalation_handler, monitoring):
+def automation_engine(
+    scheduler, job_queue, state_manager, retry_handler, escalation_handler, monitoring
+):
     """Create AutomationEngine instance."""
     return AutomationEngine(
         scheduler=scheduler,
@@ -87,6 +92,7 @@ def automation_engine(scheduler, job_queue, state_manager, retry_handler, escala
 
 
 # ========== JOB TESTS ==========
+
 
 class TestJobCreation:
     """Test Job creation and state."""
@@ -117,9 +123,9 @@ class TestJobCreation:
             payload={},
         )
 
-        job.started_at = datetime.utcnow()
+        job.started_at = utc_now()
         await asyncio.sleep(0.1)
-        job.completed_at = datetime.utcnow()
+        job.completed_at = utc_now()
 
         assert job.duration_seconds > 0.1
 
@@ -143,6 +149,7 @@ class TestJobCreation:
 
 
 # ========== SCHEDULER TESTS ==========
+
 
 class TestTaskScheduler:
     """Test TaskScheduler functionality."""
@@ -176,7 +183,7 @@ class TestTaskScheduler:
             priority=Priority.HIGH,
             schedule="0 9 * * *",
             payload={},
-            next_run=datetime.utcnow() - timedelta(minutes=1),
+            next_run=utc_now() - timedelta(minutes=1),
         )
 
         await scheduler.add_task(task)
@@ -208,6 +215,7 @@ class TestTaskScheduler:
 
 
 # ========== JOB QUEUE TESTS ==========
+
 
 class TestJobQueue:
     """Test JobQueue functionality."""
@@ -296,6 +304,7 @@ class TestJobQueue:
 
 # ========== STATE MANAGER TESTS ==========
 
+
 class TestStateManager:
     """Test StateManager functionality."""
 
@@ -351,9 +360,9 @@ class TestStateManager:
                 payload={},
                 status=JobStatus.SUCCESS if i < 4 else JobStatus.FAILED,
                 attempts=1,
-                completed_at=datetime.utcnow(),
+                completed_at=utc_now(),
             )
-            job.started_at = datetime.utcnow()
+            job.started_at = utc_now()
             await state_manager.create(job)
 
         stats = await state_manager.get_statistics(hours=1)
@@ -363,6 +372,7 @@ class TestStateManager:
 
 
 # ========== RETRY HANDLER TESTS ==========
+
 
 class TestRetryHandler:
     """Test RetryHandler functionality."""
@@ -401,6 +411,7 @@ class TestRetryHandler:
 
 # ========== ESCALATION TESTS ==========
 
+
 class TestEscalationHandler:
     """Test EscalationHandler functionality."""
 
@@ -436,7 +447,9 @@ class TestEscalationHandler:
             payload={},
         )
 
-        escalation_id = await escalation_handler.escalate(job, reason="Test", severity="high")
+        escalation_id = await escalation_handler.escalate(
+            job, reason="Test", severity="high"
+        )
         await escalation_handler.resolve_escalation(
             escalation_id,
             resolution="Issue fixed",
@@ -457,7 +470,7 @@ class TestEscalationHandler:
             max_retries=3,
         )
 
-        should_escalate, severity, reason = EscalationPolicy.should_escalate(
+        should_escalate, severity, _reason = EscalationPolicy.should_escalate(
             job,
             "payment_failed",
         )
@@ -467,6 +480,7 @@ class TestEscalationHandler:
 
 
 # ========== MONITORING TESTS ==========
+
 
 class TestMonitoringDashboard:
     """Test MonitoringDashboard functionality."""
@@ -481,8 +495,8 @@ class TestMonitoringDashboard:
             payload={},
         )
 
-        job.started_at = datetime.utcnow()
-        job.completed_at = datetime.utcnow()
+        job.started_at = utc_now()
+        job.completed_at = utc_now()
 
         await monitoring.record_success(job)
         metrics = await monitoring.metrics_collector.get_all_metrics()
@@ -509,6 +523,7 @@ class TestMonitoringDashboard:
 
 
 # ========== INTEGRATION TESTS ==========
+
 
 class TestAutomationEngineIntegration:
     """Integration tests for AutomationEngine."""
@@ -537,6 +552,7 @@ class TestAutomationEngineIntegration:
     @pytest.mark.asyncio
     async def test_engine_cycle(self, automation_engine):
         """Test a single engine cycle."""
+
         # Register a handler
         async def handle_post_product(payload):
             return {"status": "success", "products_posted": payload.get("count", 0)}
@@ -560,6 +576,7 @@ class TestAutomationEngineIntegration:
 
 
 # ========== WORKFLOW TESTS ==========
+
 
 class TestWorkflowBuilder:
     """Test WorkflowBuilder functionality."""
@@ -605,7 +622,7 @@ class TestWorkflowBuilder:
             trigger=WorkflowTrigger.SCHEDULE,
         )
 
-        step1_id = builder.add_step(workflow.id, "Step 1", "post_product", {})
+        builder.add_step(workflow.id, "Step 1", "post_product", {})
         step2_id = builder.add_step(workflow.id, "Step 2", "send_email", {})
 
         builder.add_condition(

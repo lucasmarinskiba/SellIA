@@ -4,18 +4,19 @@ Handles order notifications, inventory updates, and buyer messages.
 Docs: https://developer-docs.amazon.com/sp-api/docs
 """
 
-import hmac
-import hashlib
-import base64
+import logging
 from typing import Any
 
 from app.domains.channels.connectors.base import BaseChannelConnector
-from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.models import ChannelPlatform
+from app.domains.channels.schemas import WebhookPayload
+
+logger = logging.getLogger(__name__)
 
 
 class AmazonSellerConnector(BaseChannelConnector):
     """Conector para Amazon Selling Partner API (SP-API)."""
+
     platform = "amazon"
     BASE_URL = "https://sellingpartnerapi-na.amazon.com"
 
@@ -31,12 +32,15 @@ class AmazonSellerConnector(BaseChannelConnector):
         self.seller_id = credentials.get("seller_id")
         self.access_token = credentials.get("access_token")
 
-    async def send_message(self, recipient_id: str, content: str, content_type: str = "text") -> dict[str, Any]:
+    async def send_message(
+        self, recipient_id: str, content: str, content_type: str = "text"
+    ) -> dict[str, Any]:
         """Send buyer-seller messaging via SP-API."""
         if not self.access_token:
             raise ValueError("Falta access_token de Amazon")
 
         import httpx
+
         url = f"{self.BASE_URL}/messaging/v1/orders/{recipient_id}/messages"
         headers = {
             "x-amz-access-token": self.access_token,
@@ -51,7 +55,7 @@ class AmazonSellerConnector(BaseChannelConnector):
 
     async def parse_webhook(self, raw_payload: dict[str, Any]) -> WebhookPayload:
         """Parse Amazon SP-API notification payload.
-        
+
         Amazon SNS sends notifications with structure:
         {
             "NotificationType": "ORDER_CHANGE",
@@ -74,14 +78,20 @@ class AmazonSellerConnector(BaseChannelConnector):
         payload = raw_payload.get("Payload", {})
 
         if notification_type == "ORDER_CHANGE":
-            order_change = payload.get("OrderChangeNotification", {}).get("OrderChange", {})
+            order_change = payload.get("OrderChangeNotification", {}).get(
+                "OrderChange", {}
+            )
             order_id = order_change.get("OrderId", "")
             buyer_email = order_change.get("BuyerEmail", "")
             order_status = order_change.get("OrderStatus", "")
             order_items = order_change.get("OrderItems", [])
-            
-            items_text = ", ".join([item.get("Title", "") for item in order_items[:3]]) if order_items else ""
-            
+
+            items_text = (
+                ", ".join([item.get("Title", "") for item in order_items[:3]])
+                if order_items
+                else ""
+            )
+
             content = f"Pedido Amazon {order_id}: {order_status}"
             if items_text:
                 content += f"\nProductos: {items_text}"
@@ -115,9 +125,11 @@ class AmazonSellerConnector(BaseChannelConnector):
             )
 
         elif notification_type == "FEED_PROCESSING_FINISHED":
-            feed = payload.get("FeedProcessingFinishedNotification", {}).get("FeedProcessingFinished", {})
+            feed = payload.get("FeedProcessingFinishedNotification", {}).get(
+                "FeedProcessingFinished", {}
+            )
             feed_id = feed.get("FeedId", "")
-            
+
             return WebhookPayload(
                 platform=ChannelPlatform.AMAZON,
                 external_id=feed_id,
@@ -141,8 +153,9 @@ class AmazonSellerConnector(BaseChannelConnector):
         """Refresh LWA access token using refresh_token."""
         if not self.refresh_token or not self.lwa_app_id or not self.lwa_client_secret:
             raise ValueError("Faltan credenciales LWA para refrescar token")
-        
+
         import httpx
+
         url = "https://api.amazon.com/auth/o2/token"
         payload = {
             "grant_type": "refresh_token",
@@ -166,14 +179,17 @@ class AmazonSellerConnector(BaseChannelConnector):
             "Content-Type": "application/json",
         }
 
-    async def get_orders(self, created_after: str | None = None) -> list[dict[str, Any]]:
+    async def get_orders(
+        self, created_after: str | None = None
+    ) -> list[dict[str, Any]]:
         """Fetch orders from SP-API."""
         import httpx
+
         headers = await self._get_sp_api_headers()
         params = {"MarketplaceIds": self.marketplace_id}
         if created_after:
             params["CreatedAfter"] = created_after
-        
+
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"{self.BASE_URL}/orders/v0/orders",
@@ -186,6 +202,7 @@ class AmazonSellerConnector(BaseChannelConnector):
     async def get_order_items(self, order_id: str) -> list[dict[str, Any]]:
         """Fetch items for a specific order."""
         import httpx
+
         headers = await self._get_sp_api_headers()
         async with httpx.AsyncClient() as client:
             response = await client.get(
@@ -198,8 +215,13 @@ class AmazonSellerConnector(BaseChannelConnector):
     async def get_inventory(self) -> list[dict[str, Any]]:
         """Fetch FBA inventory summaries."""
         import httpx
+
         headers = await self._get_sp_api_headers()
-        params = {"details": "true", "granularityType": "Marketplace", "granularityId": self.marketplace_id}
+        params = {
+            "details": "true",
+            "granularityType": "Marketplace",
+            "granularityId": self.marketplace_id,
+        }
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"{self.BASE_URL}/fba/inventory/v1/summaries",
@@ -212,6 +234,7 @@ class AmazonSellerConnector(BaseChannelConnector):
     async def push_catalog_item(self, item: Any) -> dict[str, Any]:
         """Push a CatalogItem to Amazon via SP-API feeds (simplified)."""
         import httpx
+
         headers = await self._get_sp_api_headers()
         payload = {
             "productType": item.extra_data.get("product_type", "PRODUCT"),
@@ -219,7 +242,9 @@ class AmazonSellerConnector(BaseChannelConnector):
             "attributes": {
                 "item_name": [{"value": item.name}],
                 "brand": [{"value": item.brand or "Generic"}],
-                "bullet_point": [{"value": b} for b in (item.description or "").split("\n") if b],
+                "bullet_point": [
+                    {"value": b} for b in (item.description or "").split("\n") if b
+                ],
             },
         }
         async with httpx.AsyncClient() as client:
@@ -234,8 +259,12 @@ class AmazonSellerConnector(BaseChannelConnector):
     async def pull_catalog_items(self) -> list[dict[str, Any]]:
         """Pull catalog items from Amazon via SP-API search."""
         import httpx
+
         headers = await self._get_sp_api_headers()
-        params = {"marketplaceIds": self.marketplace_id, "includedData": "summaries,attributes"}
+        params = {
+            "marketplaceIds": self.marketplace_id,
+            "includedData": "summaries,attributes",
+        }
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"{self.BASE_URL}/catalog/2022-04-01/items",
@@ -250,15 +279,18 @@ class AmazonSellerConnector(BaseChannelConnector):
             try:
                 await self._refresh_access_token()
             except Exception:
+                logger.exception("validate_credentials: error inesperado")
                 return False
         if not self.access_token:
             return False
         try:
             import httpx
+
             url = f"{self.BASE_URL}/sellers/v1/marketplaceParticipations"
             headers = {"x-amz-access-token": self.access_token}
             async with httpx.AsyncClient() as client:
                 response = await client.get(url, headers=headers)
                 return response.status_code == 200
         except Exception:
+            logger.exception("validate_credentials: error inesperado")
             return False

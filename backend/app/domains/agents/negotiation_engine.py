@@ -1,17 +1,16 @@
 """Advanced Negotiation Engine - Dynamic pricing & contract optimization."""
 
-from typing import Dict, Any, List, Optional
+import logging
 from dataclasses import dataclass
 from enum import Enum
-import asyncio
-from datetime import datetime, timedelta
-import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 class CompanySize(str, Enum):
     """Company size segments."""
+
     STARTUP = "startup"  # <50 employees
     SMB = "smb"  # 50-500
     MID_MARKET = "mid_market"  # 500-5000
@@ -20,6 +19,7 @@ class CompanySize(str, Enum):
 
 class NegotiationStrategy(str, Enum):
     """Negotiation strategy selection."""
+
     AGGRESSIVE = "aggressive"  # Max discount authority, aggressive closing
     BALANCED = "balanced"  # Standard playbook
     CONSERVATIVE = "conservative"  # Preserve margin, long-term value
@@ -29,10 +29,11 @@ class NegotiationStrategy(str, Enum):
 @dataclass
 class PricingTier:
     """Pricing option presented to prospect."""
+
     name: str
     annual_price: float
     monthly_price: float
-    features: List[str]
+    features: list[str]
     discount_percent: float = 0.0
     payment_terms: str = "net_30"
     implementation_days: int = 30
@@ -42,6 +43,7 @@ class PricingTier:
 @dataclass
 class ContractTerms:
     """Contract negotiation parameters."""
+
     annual_price: float
     payment_schedule: str  # "monthly", "quarterly", "annual", "custom"
     contract_duration_months: int
@@ -56,11 +58,14 @@ class ContractTerms:
 @dataclass
 class DiscountAuthority:
     """Permission matrix for discounts by company size & deal stage."""
+
     company_size: CompanySize
     base_discount_max: float  # e.g., 0.20 = 20% max
     volume_bonus_threshold: float  # spending threshold for volume discount
     volume_bonus_max: float
-    expansion_potential_multiplier: float  # if high expansion potential, allow more discount
+    expansion_potential_multiplier: (
+        float  # if high expansion potential, allow more discount
+    )
     legal_review_threshold: float  # if discount > this, escalate to legal
 
 
@@ -77,7 +82,7 @@ class NegotiationEngine:
         self.base_price = 75000  # Default annual price
         self.discount_authority_matrix = self._build_authority_matrix()
 
-    def _build_authority_matrix(self) -> Dict[CompanySize, DiscountAuthority]:
+    def _build_authority_matrix(self) -> dict[CompanySize, DiscountAuthority]:
         """Build discount authority rules by company size."""
         return {
             CompanySize.STARTUP: DiscountAuthority(
@@ -115,7 +120,7 @@ class NegotiationEngine:
         }
 
     async def estimate_company_size(
-        self, employee_count: Optional[int] = None, company_name: Optional[str] = None
+        self, employee_count: int | None = None, company_name: str | None = None
     ) -> CompanySize:
         """Estimate company size from employee count or name."""
         if employee_count:
@@ -135,10 +140,10 @@ class NegotiationEngine:
         self,
         intent_score: float,
         company_size: CompanySize,
-        prospect_budget: Optional[float] = None,
+        prospect_budget: float | None = None,
         expansion_potential: float = 0.0,
-        competitor_price: Optional[float] = None,
-    ) -> Dict[str, Any]:
+        competitor_price: float | None = None,
+    ) -> dict[str, Any]:
         """
         Calculate optimal pricing based on:
         - Intent score (0-1): higher intent = more flexibility
@@ -176,9 +181,7 @@ class NegotiationEngine:
         final_price = self.base_price * (1.0 - actual_discount)
 
         # Determine if legal review needed
-        needs_legal = (
-            actual_discount >= authority.legal_review_threshold
-        )
+        needs_legal = actual_discount >= authority.legal_review_threshold
 
         return {
             "base_price": self.base_price,
@@ -199,7 +202,7 @@ class NegotiationEngine:
         self,
         final_price: float,
         company_size: CompanySize,
-    ) -> List[PricingTier]:
+    ) -> list[PricingTier]:
         """Generate 3-tier pricing options (standard, professional, enterprise)."""
         discount = 1.0 - (final_price / self.base_price)
 
@@ -254,7 +257,7 @@ class NegotiationEngine:
         prospect_industry: str,
         company_size: CompanySize,
         annual_price: float,
-        prospect_preferences: Optional[Dict[str, Any]] = None,
+        prospect_preferences: dict[str, Any] | None = None,
     ) -> ContractTerms:
         """
         Optimize contract terms based on industry, size, and price point.
@@ -358,7 +361,7 @@ class NegotiationEngine:
 
     async def get_strategy_playbook(
         self, strategy: NegotiationStrategy
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get negotiation tactics for selected strategy."""
         playbooks = {
             NegotiationStrategy.AGGRESSIVE: {

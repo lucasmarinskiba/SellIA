@@ -1,17 +1,18 @@
 """Celery tasks for SEO config operations."""
 
+import logging
+from datetime import date, timedelta
+
 from celery import shared_task
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
-from datetime import date, timedelta
-import logging
 
 from app.core.async_bridge import run_async
 from app.core.config import get_settings
-from app.domains.seo_config.models import PublicationLink, SEOConfig
-from app.domains.seo_config.platform_analytics_service import PlatformAnalyticsService
 from app.domains.seo_config.fomo_generator import PublicationFOMOGenerator
+from app.domains.seo_config.models import PublicationLink
+from app.domains.seo_config.platform_analytics_service import PlatformAnalyticsService
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -20,9 +21,12 @@ settings = get_settings()
 @shared_task(bind=True, name="seo_config.fetch_nightly_analytics")
 def fetch_nightly_analytics(self):
     """Fetch analytics for all publication links (nightly job)."""
+
     async def _fetch():
         engine = create_async_engine(settings.DATABASE_URL)
-        async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+        async_session = sessionmaker(
+            engine, class_=AsyncSession, expire_on_commit=False
+        )
 
         async with async_session() as db:
             try:
@@ -46,12 +50,14 @@ def fetch_nightly_analytics(self):
                         )
                         if metrics:
                             fetched_count += 1
-                    except Exception as e:
-                        logger.error(
-                            f"Failed to fetch analytics for link {link.id}: {str(e)[:100]}"
+                    except Exception:
+                        logger.exception(
+                            f"Failed to fetch analytics for link {link.id}"
                         )
 
-                logger.info(f"Nightly analytics fetch complete: {fetched_count}/{len(links)} links")
+                logger.info(
+                    f"Nightly analytics fetch complete: {fetched_count}/{len(links)} links"
+                )
                 return {"fetched": fetched_count, "total": len(links)}
 
             except Exception as e:
@@ -66,9 +72,12 @@ def fetch_nightly_analytics(self):
 @shared_task(bind=True, name="seo_config.generate_fomo_cadence")
 def generate_fomo_cadence(self):
     """Generate FOMO copy for all active links without recent FOMO (cadence job)."""
+
     async def _generate():
         engine = create_async_engine(settings.DATABASE_URL)
-        async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+        async_session = sessionmaker(
+            engine, class_=AsyncSession, expire_on_commit=False
+        )
 
         async with async_session() as db:
             try:
@@ -84,19 +93,23 @@ def generate_fomo_cadence(self):
                 for link in links:
                     try:
                         # Check if FOMO generation is enabled for business
-                        if not await fomo_gen.is_fomo_generation_enabled(link.business_id):
+                        if not await fomo_gen.is_fomo_generation_enabled(
+                            link.business_id
+                        ):
                             continue
 
                         # Generate FOMO if not recently generated
-                        fomo = await fomo_gen.generate_fomo_for_link(link.business_id, link)
+                        fomo = await fomo_gen.generate_fomo_for_link(
+                            link.business_id, link
+                        )
                         if fomo:
                             generated_count += 1
-                    except Exception as e:
-                        logger.error(
-                            f"Failed to generate FOMO for link {link.id}: {str(e)[:100]}"
-                        )
+                    except Exception:
+                        logger.exception(f"Failed to generate FOMO for link {link.id}")
 
-                logger.info(f"FOMO cadence complete: {generated_count}/{len(links)} links")
+                logger.info(
+                    f"FOMO cadence complete: {generated_count}/{len(links)} links"
+                )
                 return {"generated": generated_count, "total": len(links)}
 
             except Exception as e:
@@ -111,9 +124,12 @@ def generate_fomo_cadence(self):
 @shared_task(bind=True, name="seo_config.compute_analytics_summaries")
 def compute_analytics_summaries(self):
     """Compute 7-day and 30-day performance summaries."""
+
     async def _compute():
         engine = create_async_engine(settings.DATABASE_URL)
-        async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+        async_session = sessionmaker(
+            engine, class_=AsyncSession, expire_on_commit=False
+        )
 
         async with async_session() as db:
             try:
@@ -144,9 +160,9 @@ def compute_analytics_summaries(self):
                         )
                         if summary_30d:
                             computed_count += 1
-                    except Exception as e:
-                        logger.error(
-                            f"Failed to compute summary for link {link.id}: {str(e)[:100]}"
+                    except Exception:
+                        logger.exception(
+                            f"Failed to compute summary for link {link.id}"
                         )
 
                 logger.info(f"Analytics summaries computed: {computed_count} summaries")
@@ -164,9 +180,12 @@ def compute_analytics_summaries(self):
 @shared_task(bind=True, name="seo_config.check_ab_test_winners")
 def check_ab_test_winners(self):
     """Check running A/B tests and announce winners when threshold reached."""
+
     async def _check():
         engine = create_async_engine(settings.DATABASE_URL)
-        async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+        async_session = sessionmaker(
+            engine, class_=AsyncSession, expire_on_commit=False
+        )
 
         async with async_session() as db:
             try:
@@ -184,13 +203,17 @@ def check_ab_test_winners(self):
 
                 for test in running_tests:
                     try:
-                        updated_test = await ab_svc.check_and_announce_winner(test.business_id, test.id)
+                        updated_test = await ab_svc.check_and_announce_winner(
+                            test.business_id, test.id
+                        )
                         if updated_test and updated_test.status == "completed":
                             winners_announced += 1
-                    except Exception as e:
-                        logger.error(f"Failed to check test {test.id}: {str(e)[:100]}")
+                    except Exception:
+                        logger.exception(f"Failed to check test {test.id}")
 
-                logger.info(f"A/B test check complete: {winners_announced} winners announced")
+                logger.info(
+                    f"A/B test check complete: {winners_announced} winners announced"
+                )
                 return {"winners_announced": winners_announced}
 
             except Exception as e:
@@ -205,18 +228,23 @@ def check_ab_test_winners(self):
 @shared_task(bind=True, name="seo_config.monitor_fomo_decay")
 def monitor_fomo_decay(self):
     """Monitor FOMO copy decay and auto-rotate when detected."""
+
     async def _monitor():
         engine = create_async_engine(settings.DATABASE_URL)
-        async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+        async_session = sessionmaker(
+            engine, class_=AsyncSession, expire_on_commit=False
+        )
 
         async with async_session() as db:
             try:
-                from app.domains.seo_config.fomo_decay_service import FOMADecayService
-                from app.domains.seo_config.fomo_auto_rotation import FOMAAutoRotator
                 from app.domains.businesses.models import Business
+                from app.domains.seo_config.fomo_auto_rotation import FOMAAutoRotator
+                from app.domains.seo_config.fomo_decay_service import FOMADecayService
 
                 # Get all active businesses
-                result = await db.execute(select(Business).where(Business.is_active.is_(True)))
+                result = await db.execute(
+                    select(Business).where(Business.is_active.is_(True))
+                )
                 businesses = result.scalars().all()
 
                 decay_svc = FOMADecayService(db)
@@ -245,13 +273,19 @@ def monitor_fomo_decay(self):
                             total_decay_detected += 1
 
                         # Auto-rotate decayed links
-                        rotation_result = await rotator.auto_rotate_on_decay(business.id)
-                        total_rotated += rotation_result.get('rotated', 0)
+                        rotation_result = await rotator.auto_rotate_on_decay(
+                            business.id
+                        )
+                        total_rotated += rotation_result.get("rotated", 0)
 
-                    except Exception as e:
-                        logger.error(f"Failed to monitor decay for business {business.id}: {str(e)[:100]}")
+                    except Exception:
+                        logger.exception(
+                            f"Failed to monitor decay for business {business.id}"
+                        )
 
-                logger.info(f"FOMO decay monitor complete: {total_decay_detected} decays detected, {total_rotated} auto-rotated")
+                logger.info(
+                    f"FOMO decay monitor complete: {total_decay_detected} decays detected, {total_rotated} auto-rotated"
+                )
                 return {
                     "decay_detected": total_decay_detected,
                     "auto_rotated": total_rotated,
@@ -270,13 +304,18 @@ def monitor_fomo_decay(self):
 def compute_positioning_scores(self):
     """Nightly: compute platform-algorithm-aware positioning score for every
     active publication link that has a ranking connector available."""
+
     async def _compute():
         engine = create_async_engine(settings.DATABASE_URL)
-        async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+        async_session = sessionmaker(
+            engine, class_=AsyncSession, expire_on_commit=False
+        )
 
         async with async_session() as db:
             try:
-                from app.domains.seo_config.positioning_score_service import PositioningScoreService
+                from app.domains.seo_config.positioning_score_service import (
+                    PositioningScoreService,
+                )
 
                 result = await db.execute(
                     select(PublicationLink).where(PublicationLink.seo_enabled == True)
@@ -298,11 +337,15 @@ def compute_positioning_scores(self):
                         )
                         if score:
                             computed += 1
-                    except Exception as e:
+                    except Exception:
                         await db.rollback()
-                        logger.error(f"Failed to compute positioning for link {link_id}: {str(e)[:100]}")
+                        logger.exception(
+                            f"Failed to compute positioning for link {link_id}"
+                        )
 
-                logger.info(f"Positioning score compute complete: {computed}/{len(link_ids)} links")
+                logger.info(
+                    f"Positioning score compute complete: {computed}/{len(link_ids)} links"
+                )
                 return {"computed": computed, "total": len(link_ids)}
 
             except Exception as e:
@@ -323,14 +366,21 @@ def compute_store_positioning_scores(self):
     AmazonStoreRankingConnector. IntegrationApp has no seeded platform slug to
     filter on, and an SP-API-only connection must not be sent to the Ads API.
     """
+
     async def _compute():
         engine = create_async_engine(settings.DATABASE_URL)
-        async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+        async_session = sessionmaker(
+            engine, class_=AsyncSession, expire_on_commit=False
+        )
 
         async with async_session() as db:
             try:
-                from app.domains.integrations.integration_models import IntegrationConnection
-                from app.domains.seo_config.store_positioning_service import StorePositioningScoreService
+                from app.domains.integrations.integration_models import (
+                    IntegrationConnection,
+                )
+                from app.domains.seo_config.store_positioning_service import (
+                    StorePositioningScoreService,
+                )
 
                 result = await db.execute(
                     select(IntegrationConnection).where(
@@ -347,18 +397,26 @@ def compute_store_positioning_scores(self):
 
                 for business_id, connection_id in targets:
                     try:
-                        score = await service.compute_store_score(business_id, "amazon", connection_id)
+                        score = await service.compute_store_score(
+                            business_id, "amazon", connection_id
+                        )
                         if score:
                             computed += 1
-                    except Exception as e:
+                    except Exception:
                         await db.rollback()
-                        logger.error(f"Failed to compute store positioning for business {business_id}: {str(e)[:100]}")
+                        logger.exception(
+                            f"Failed to compute store positioning for business {business_id}"
+                        )
 
-                logger.info(f"Store positioning compute complete: {computed}/{len(targets)} connections")
+                logger.info(
+                    f"Store positioning compute complete: {computed}/{len(targets)} connections"
+                )
                 return {"computed": computed, "total": len(targets)}
 
             except Exception as e:
-                logger.error(f"Error in compute_store_positioning_scores: {str(e)[:200]}")
+                logger.error(
+                    f"Error in compute_store_positioning_scores: {str(e)[:200]}"
+                )
                 raise
             finally:
                 await engine.dispose()

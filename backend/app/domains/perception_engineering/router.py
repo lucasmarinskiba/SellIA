@@ -1,22 +1,28 @@
 """Phase X7: Perception Engineering Agent API."""
+
+from typing import Annotated
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import UUID
-from typing import Dict, List, Optional
+
 from app.core.database import get_db
+from app.domains.perception_engineering.models import (
+    PerceptionDimension,
+    PerceptionShiftTechnique,
+)
 from app.domains.perception_engineering.service import PerceptionEngineeringAgent
-from app.domains.perception_engineering.models import PerceptionDimension, PerceptionShiftTechnique
 
-
-router = APIRouter(prefix="/api/v1/perception-engineering", tags=["perception-engineering"])
+router = APIRouter(
+    prefix="/api/v1/perception-engineering", tags=["perception-engineering"]
+)
 
 
 @router.post("/analyze-gap")
 async def analyze_perception_gap(
     business_id: str,
     product_id: str,
-    current_perception: Dict[str, float],
-    db: AsyncSession = Depends(get_db),
+    current_perception: dict[str, float],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Analyze gap between current and desired customer perception."""
     perception = await PerceptionEngineeringAgent.analyze_perception_gap(
@@ -51,12 +57,18 @@ async def generate_shift_campaign(
     target_dimension: PerceptionDimension,
     current_score: float,
     target_score: float,
+    db: Annotated[AsyncSession, Depends(get_db)],
     customer_segment: str = "general",
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Generate AI-powered perception shift campaign."""
     campaign = await PerceptionEngineeringAgent.generate_perception_shift_campaign(
-        db, business_id, product_id, target_dimension, current_score, target_score, customer_segment
+        db,
+        business_id,
+        product_id,
+        target_dimension,
+        current_score,
+        target_score,
+        customer_segment,
     )
 
     return {
@@ -79,12 +91,17 @@ async def optimize_value_perception(
     product_id: str,
     base_price: float,
     current_perceived_value: float,
-    competitor_prices: List[float],
-    db: AsyncSession = Depends(get_db),
+    competitor_prices: list[float],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Optimize perceived value using psychological techniques."""
     optimizer = await PerceptionEngineeringAgent.optimize_value_perception(
-        db, business_id, product_id, base_price, current_perceived_value, competitor_prices
+        db,
+        business_id,
+        product_id,
+        base_price,
+        current_perceived_value,
+        competitor_prices,
     )
 
     return {
@@ -106,7 +123,7 @@ async def generate_narrative(
     product_id: str,
     product_name: str,
     customer_transformation: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Generate compelling narrative that shifts perception."""
     narrative = await PerceptionEngineeringAgent.generate_perception_narrative(
@@ -143,5 +160,9 @@ async def predict_impact(
         "revenue_impact": impact["revenue_impact_percent"],
         "predicted_perception_score": impact["perception_increase"],
         "roi_estimate": f"{impact['roi_estimate']:.1f}x",
-        "recommendation": "High ROI potential" if impact["conversion_lift_percent"] > 25 else "Moderate potential",
+        "recommendation": (
+            "High ROI potential"
+            if impact["conversion_lift_percent"] > 25
+            else "Moderate potential"
+        ),
     }

@@ -14,69 +14,65 @@ SellIA Specialist Agents Module
 - Storytelling and communication
 """
 
-from .methodology_agent import MethodologyAgent, BusinessStage, BusinessType
-from .sales_agent import SalesAgent, SalesMethodology, SalesStage, ObjectionType
-from .marketing_agent import MarketingAgent, MarketingChannel, AudienceSegment
-from .advertising_agent import AdvertisingAgent, AdPlatform, BidStrategy
-from .business_agent import BusinessAgent, RevenueModel, CostType, UnitEconomics
-from .innovation_agent import InnovationAgent, DisruptionType
-from .development_agent import DevelopmentAgent, TechStackLayer, GrowthHackingTactic
-from .financial_agent import FinancialAgent, PricingStrategy, FinancialMetric, PricingModel
-from .negotiation_agent import NegotiationAgent, NegotiationType, NegotiationPhase
-from .storytelling_agent import StorytellingAgent, StoryType, CommunicationFramework
+from .advertising_agent import AdPlatform, AdvertisingAgent, BidStrategy
+from .business_agent import BusinessAgent, CostType, RevenueModel, UnitEconomics
+from .development_agent import DevelopmentAgent, GrowthHackingTactic, TechStackLayer
+from .financial_agent import (
+    FinancialAgent,
+    FinancialMetric,
+    PricingModel,
+    PricingStrategy,
+)
+from .innovation_agent import DisruptionType, InnovationAgent
+from .marketing_agent import AudienceSegment, MarketingAgent, MarketingChannel
+from .methodology_agent import BusinessStage, BusinessType, MethodologyAgent
+from .negotiation_agent import NegotiationAgent, NegotiationPhase, NegotiationType
+from .sales_agent import ObjectionType, SalesAgent, SalesMethodology, SalesStage
+from .storytelling_agent import CommunicationFramework, StorytellingAgent, StoryType
 
 __all__ = [
-    # Methodology Agent
-    "MethodologyAgent",
+    "AdPlatform",
+    # Advertising Agent
+    "AdvertisingAgent",
+    "AudienceSegment",
+    "BidStrategy",
+    # Business Agent
+    "BusinessAgent",
     "BusinessStage",
     "BusinessType",
-
+    "CommunicationFramework",
+    "CostType",
+    # Development Agent
+    "DevelopmentAgent",
+    "DisruptionType",
+    # Financial Agent
+    "FinancialAgent",
+    "FinancialMetric",
+    "GrowthHackingTactic",
+    # Innovation Agent
+    "InnovationAgent",
+    # Marketing Agent
+    "MarketingAgent",
+    "MarketingChannel",
+    # Methodology Agent
+    "MethodologyAgent",
+    # Negotiation Agent
+    "NegotiationAgent",
+    "NegotiationPhase",
+    "NegotiationType",
+    "ObjectionType",
+    "PricingModel",
+    "PricingStrategy",
+    "RevenueModel",
     # Sales Agent
     "SalesAgent",
     "SalesMethodology",
     "SalesStage",
-    "ObjectionType",
-
-    # Marketing Agent
-    "MarketingAgent",
-    "MarketingChannel",
-    "AudienceSegment",
-
-    # Advertising Agent
-    "AdvertisingAgent",
-    "AdPlatform",
-    "BidStrategy",
-
-    # Business Agent
-    "BusinessAgent",
-    "RevenueModel",
-    "CostType",
-    "UnitEconomics",
-
-    # Innovation Agent
-    "InnovationAgent",
-    "DisruptionType",
-
-    # Development Agent
-    "DevelopmentAgent",
-    "TechStackLayer",
-    "GrowthHackingTactic",
-
-    # Financial Agent
-    "FinancialAgent",
-    "PricingStrategy",
-    "FinancialMetric",
-    "PricingModel",
-
-    # Negotiation Agent
-    "NegotiationAgent",
-    "NegotiationType",
-    "NegotiationPhase",
-
+    "StoryType",
     # Storytelling Agent
     "StorytellingAgent",
-    "StoryType",
-    "CommunicationFramework",
+    "TechStackLayer",
+    "UnitEconomics",
 ]
 
 # Specialist agents registry for dynamic access
@@ -93,9 +89,11 @@ SPECIALIST_AGENTS = {
     "storytelling": StorytellingAgent,
 }
 
+
 def get_agent(agent_name: str):
     """Get specialist agent by name."""
     return SPECIALIST_AGENTS.get(agent_name.lower())
+
 
 def list_specialists() -> list:
     """List all available specialist agents."""

@@ -1,23 +1,24 @@
 """Phase 51: AI Content Generation Endpoints."""
-from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+
+from typing import Annotated
 from uuid import UUID
-from typing import List, Optional
+
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from datetime import datetime
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import get_db
 from app.domains.ai_content_generation.service import ContentGenerationService
-
 
 router = APIRouter(prefix="/api/v1/content-generation", tags=["content-generation"])
 
 
 class ContentGenerationRequest(BaseModel):
     content_type: str  # product_title, product_description, social_post, email_subject, email_body
-    product_id: Optional[UUID] = None
-    platform: Optional[str] = None
-    original_content: Optional[str] = None
-    prompt: Optional[str] = None
+    product_id: UUID | None = None
+    platform: str | None = None
+    original_content: str | None = None
+    prompt: str | None = None
 
 
 class ContentVariantRequest(BaseModel):
@@ -28,20 +29,22 @@ class ContentVariantRequest(BaseModel):
 class BulkGenerationRequest(BaseModel):
     batch_name: str
     content_type: str
-    product_ids: List[UUID]
-    platform: Optional[str] = None
+    product_ids: list[UUID]
+    platform: str | None = None
 
 
 @router.post("/generate")
 async def generate_content(
     business_id: UUID,
     req: ContentGenerationRequest,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Generate AI content (title, description, social post, email)."""
     # In real system, calls Claude API via anthropic
     # For now, returns stub with high scores
-    generated = f"AI-Generated {req.content_type} for platform {req.platform or 'default'}"
+    generated = (
+        f"AI-Generated {req.content_type} for platform {req.platform or 'default'}"
+    )
 
     content = ContentGenerationService.save_generated_content(
         db=db,
@@ -68,15 +71,23 @@ async def generate_content(
 async def create_variants(
     business_id: UUID,
     generated_content_id: UUID,
-    variants: List[ContentVariantRequest],
-    db: AsyncSession = Depends(get_db),
+    variants: list[ContentVariantRequest],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Create content variants (different tones/styles)."""
     created = ContentGenerationService.create_content_variants(
         db=db,
         business_id=business_id,
         generated_content_id=generated_content_id,
-        variants=[{"text": v.text, "style": v.style, "seo_score": 82.0, "engagement_score": 75.0} for v in variants],
+        variants=[
+            {
+                "text": v.text,
+                "style": v.style,
+                "seo_score": 82.0,
+                "engagement_score": 75.0,
+            }
+            for v in variants
+        ],
     )
     return {
         "variants_created": len(created),
@@ -89,7 +100,7 @@ async def create_variants(
 async def publish_content(
     business_id: UUID,
     content_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Publish generated content to platform."""
     content = ContentGenerationService.publish_content(db, content_id)
@@ -107,7 +118,7 @@ async def publish_content(
 async def bulk_generate_content(
     business_id: UUID,
     req: BulkGenerationRequest,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Generate content for multiple products."""
     job = ContentGenerationService.create_bulk_generation_job(
@@ -132,10 +143,10 @@ async def update_bulk_status(
     business_id: UUID,
     job_id: UUID,
     status: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
     generated_count: int = 0,
     approved_count: int = 0,
     published_count: int = 0,
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Update bulk generation job status."""
     job = ContentGenerationService.update_bulk_job_status(
@@ -162,13 +173,13 @@ async def update_bulk_status(
 async def track_content_performance(
     business_id: UUID,
     generated_content_id: UUID,
-    product_id: Optional[UUID],
+    product_id: UUID | None,
     platform: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
     views: int = 0,
     clicks: int = 0,
     conversions: int = 0,
     revenue: float = 0,
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Track content performance metrics."""
     perf = ContentGenerationService.track_content_performance(
@@ -197,8 +208,8 @@ async def track_content_performance(
 async def get_content_by_type(
     business_id: UUID,
     content_type: str,
-    platform: Optional[str] = None,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    platform: str | None = None,
 ) -> dict:
     """Get all published content by type."""
     contents = ContentGenerationService.get_content_by_type(

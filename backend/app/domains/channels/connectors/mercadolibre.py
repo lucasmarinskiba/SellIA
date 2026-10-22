@@ -4,16 +4,21 @@ Handles buyer messages via MercadoLibre Messaging API and order notifications.
 Docs: https://developers.mercadolibre.com.ar/
 """
 
-import httpx
+import logging
 from typing import Any
 
+import httpx
+
 from app.domains.channels.connectors.base import BaseChannelConnector
-from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.models import ChannelPlatform
+from app.domains.channels.schemas import WebhookPayload
+
+logger = logging.getLogger(__name__)
 
 
 class MercadoLibreConnector(BaseChannelConnector):
     """Conector para MercadoLibre mensajes y notificaciones de ventas."""
+
     platform = "mercadolibre"
     BASE_URL = "https://api.mercadolibre.com"
 
@@ -25,7 +30,9 @@ class MercadoLibreConnector(BaseChannelConnector):
         self.client_id = credentials.get("client_id")
         self.client_secret = credentials.get("client_secret")
 
-    async def send_message(self, recipient_id: str, content: str, content_type: str = "text") -> dict[str, Any]:
+    async def send_message(
+        self, recipient_id: str, content: str, content_type: str = "text"
+    ) -> dict[str, Any]:
         if not self.access_token:
             raise ValueError("Falta access_token de MercadoLibre")
 
@@ -46,7 +53,7 @@ class MercadoLibreConnector(BaseChannelConnector):
 
     async def parse_webhook(self, raw_payload: dict[str, Any]) -> WebhookPayload:
         """Parse MercadoLibre notification payload.
-        
+
         ML sends topics like:
         - messages: new buyer message
         - orders: new order, payment, shipping update
@@ -58,17 +65,17 @@ class MercadoLibreConnector(BaseChannelConnector):
 
         # Try to extract data from the resource URL or nested data
         data = raw_payload.get("data", {})
-        
+
         if topic == "messages" or "messages" in resource:
             # Message notification
             message_data = data.get("message", {})
             from_data = message_data.get("from", {})
-            to_data = message_data.get("to", {})
-            
+            message_data.get("to", {})
+
             # Determine if this is inbound (from buyer to seller)
             from_user_id = str(from_data.get("user_id", ""))
             is_inbound = from_user_id != str(self.seller_id) if self.seller_id else True
-            
+
             if is_inbound:
                 return WebhookPayload(
                     platform=ChannelPlatform.MERCADOLIBRE,
@@ -79,12 +86,12 @@ class MercadoLibreConnector(BaseChannelConnector):
                     content_type="text",
                     extra_data=raw_payload,
                 )
-        
+
         elif topic == "questions" or "questions" in resource:
             # Product question
             question_data = data.get("question", {})
             from_data = question_data.get("from", {})
-            
+
             return WebhookPayload(
                 platform=ChannelPlatform.MERCADOLIBRE,
                 external_id=str(from_data.get("id", user_id or "unknown")),
@@ -94,13 +101,13 @@ class MercadoLibreConnector(BaseChannelConnector):
                 content_type="text",
                 extra_data=raw_payload,
             )
-        
+
         elif topic == "orders" or "orders" in resource:
             # Order notification - create a system message
             order_data = data.get("order", {})
             buyer_data = order_data.get("buyer", {})
             order_id = order_data.get("id", "")
-            
+
             return WebhookPayload(
                 platform=ChannelPlatform.MERCADOLIBRE,
                 external_id=str(buyer_data.get("id", user_id or "unknown")),
@@ -131,4 +138,5 @@ class MercadoLibreConnector(BaseChannelConnector):
                 response = await client.get(url, headers=headers)
                 return response.status_code == 200
         except Exception:
+            logger.exception("validate_credentials: error inesperado")
             return False

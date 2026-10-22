@@ -3,16 +3,18 @@ Service Broker — Lógica de negocio para provisionamiento asíncrono de recurs
 Emula el patrón SQS + DynamoDB de Atlassian usando Celery + PostgreSQL.
 """
 
-import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
 
-from app.domains.provisioning.models import ResourceRequest, ResourceJob, ResourceEvent
-from app.domains.provisioning.schemas import ResourceRequestCreate, ResourceRequestUpdate
 from app.core.logger import get_logger
+from app.domains.provisioning.models import ResourceEvent, ResourceJob, ResourceRequest
+from app.domains.provisioning.schemas import (
+    ResourceRequestCreate,
+    ResourceRequestUpdate,
+)
 
 logger = get_logger(__name__)
 
@@ -48,6 +50,7 @@ async def create_request(
 
     # Encolar worker Celery (emula SQS) — lazy import para evitar circularidad
     from app.tasks.provisioning_tasks import process_resource_request
+
     process_resource_request.delay(str(request.id))
     logger.info(f"Provisioning request {request.id} queued for {data.resource_type}")
 
@@ -61,10 +64,11 @@ async def get_request(db: AsyncSession, request_id: UUID) -> ResourceRequest | N
     return result.scalar_one_or_none()
 
 
-async def get_request_detail(db: AsyncSession, request_id: UUID) -> ResourceRequest | None:
+async def get_request_detail(
+    db: AsyncSession, request_id: UUID
+) -> ResourceRequest | None:
     result = await db.execute(
-        select(ResourceRequest)
-        .where(ResourceRequest.id == request_id)
+        select(ResourceRequest).where(ResourceRequest.id == request_id)
     )
     return result.scalar_one_or_none()
 
@@ -101,7 +105,7 @@ async def update_request(
     if data.status:
         request.status = data.status
         if data.status in ("completed", "failed", "cancelled"):
-            request.completed_at = datetime.now(timezone.utc)
+            request.completed_at = datetime.now(UTC)
     if data.error_message is not None:
         request.error_message = data.error_message
     if data.provider_reference is not None:
@@ -156,9 +160,9 @@ async def update_job(
 ) -> ResourceJob:
     job.status = status
     if status == "running" and not job.started_at:
-        job.started_at = datetime.now(timezone.utc)
+        job.started_at = datetime.now(UTC)
     if status in ("completed", "failed"):
-        job.completed_at = datetime.now(timezone.utc)
+        job.completed_at = datetime.now(UTC)
     if error_message is not None:
         job.error_message = error_message
     if result is not None:

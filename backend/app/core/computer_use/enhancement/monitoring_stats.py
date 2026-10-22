@@ -21,14 +21,13 @@ Líneas: 300+ código
 """
 
 import logging
-import asyncio
-from typing import Dict, Any, Optional, List, Callable, Tuple
-from datetime import datetime, timedelta
-from dataclasses import dataclass, field, asdict
-from enum import Enum
-from collections import defaultdict
-import json
 import statistics
+from collections import defaultdict
+from collections.abc import Callable
+from dataclasses import asdict, dataclass, field
+from datetime import datetime, timedelta
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -37,8 +36,10 @@ logger = logging.getLogger(__name__)
 # METRICS TYPES
 # ============================================================================
 
+
 class AlertSeverity(str, Enum):
     """Severidad de alerta."""
+
     INFO = "info"
     WARNING = "warning"
     CRITICAL = "critical"
@@ -46,6 +47,7 @@ class AlertSeverity(str, Enum):
 
 class MetricType(str, Enum):
     """Tipo de métrica."""
+
     COUNTER = "counter"
     GAUGE = "gauge"
     HISTOGRAM = "histogram"
@@ -56,17 +58,20 @@ class MetricType(str, Enum):
 # DATA STRUCTURES
 # ============================================================================
 
+
 @dataclass
 class MetricPoint:
     """Punto de métrica."""
+
     timestamp: datetime
     value: float
-    tags: Dict[str, str] = field(default_factory=dict)
+    tags: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
 class Alert:
     """Alerta."""
+
     id: str
     timestamp: datetime
     severity: AlertSeverity
@@ -75,22 +80,23 @@ class Alert:
     metric_name: str
     threshold: float
     current_value: float
-    platform: Optional[str] = None
+    platform: str | None = None
     acknowledged: bool = False
 
 
 @dataclass
 class PerformanceMetrics:
     """Métricas de desempeño."""
+
     total_actions: int = 0
     successful_actions: int = 0
     failed_actions: int = 0
     success_rate: float = 0.0
     average_duration_ms: float = 0.0
-    min_duration_ms: float = float('inf')
+    min_duration_ms: float = float("inf")
     max_duration_ms: float = 0.0
     error_count: int = 0
-    most_common_errors: Dict[str, int] = field(default_factory=dict)
+    most_common_errors: dict[str, int] = field(default_factory=dict)
     retry_count: int = 0
     retry_success_rate: float = 0.0
 
@@ -99,15 +105,16 @@ class PerformanceMetrics:
 # METRICS COLLECTOR
 # ============================================================================
 
+
 class MetricsCollector:
     """Recolector central de métricas."""
 
     def __init__(self, retention_hours: int = 24):
         self.retention_hours = retention_hours
-        self.metrics: Dict[str, List[MetricPoint]] = defaultdict(list)
-        self.counters: Dict[str, int] = defaultdict(int)
-        self.gauges: Dict[str, float] = {}
-        self.timers: Dict[str, List[float]] = defaultdict(list)  # Duración en ms
+        self.metrics: dict[str, list[MetricPoint]] = defaultdict(list)
+        self.counters: dict[str, int] = defaultdict(int)
+        self.gauges: dict[str, float] = {}
+        self.timers: dict[str, list[float]] = defaultdict(list)  # Duración en ms
         self.last_cleanup = datetime.now()
 
     def record_metric(
@@ -115,14 +122,10 @@ class MetricsCollector:
         metric_name: str,
         value: float,
         metric_type: MetricType = MetricType.GAUGE,
-        tags: Optional[Dict[str, str]] = None
+        tags: dict[str, str] | None = None,
     ) -> None:
         """Registrar métrica."""
-        point = MetricPoint(
-            timestamp=datetime.now(),
-            value=value,
-            tags=tags or {}
-        )
+        point = MetricPoint(timestamp=datetime.now(), value=value, tags=tags or {})
 
         self.metrics[metric_name].append(point)
 
@@ -145,7 +148,7 @@ class MetricsCollector:
         """Registrar tiempo de ejecución."""
         self.timers[timer_name].append(duration_ms)
 
-    def get_metric_stats(self, metric_name: str) -> Optional[Dict[str, Any]]:
+    def get_metric_stats(self, metric_name: str) -> dict[str, Any] | None:
         """Obtener estadísticas de métrica."""
         if metric_name not in self.timers or len(self.timers[metric_name]) == 0:
             return None
@@ -161,7 +164,7 @@ class MetricsCollector:
             "p99": self._percentile(times, 0.99),
         }
 
-    def _percentile(self, data: List[float], percentile: float) -> float:
+    def _percentile(self, data: list[float], percentile: float) -> float:
         """Calcular percentil."""
         sorted_data = sorted(data)
         index = int((len(sorted_data) - 1) * percentile)
@@ -173,7 +176,8 @@ class MetricsCollector:
 
         for metric_name in list(self.metrics.keys()):
             self.metrics[metric_name] = [
-                point for point in self.metrics[metric_name]
+                point
+                for point in self.metrics[metric_name]
                 if point.timestamp > cutoff_time
             ]
 
@@ -188,20 +192,21 @@ class MetricsCollector:
 # ERROR TRACKER
 # ============================================================================
 
+
 class ErrorTracker:
     """Rastreador de errores."""
 
     def __init__(self):
-        self.error_counts: Dict[str, int] = defaultdict(int)
-        self.error_history: List[Dict[str, Any]] = []
+        self.error_counts: dict[str, int] = defaultdict(int)
+        self.error_history: list[dict[str, Any]] = []
         self.max_history = 1000
 
     def record_error(
         self,
         error_type: str,
         error_message: str,
-        platform: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None
+        platform: str | None = None,
+        context: dict[str, Any] | None = None,
     ) -> None:
         """Registrar error."""
         self.error_counts[error_type] += 1
@@ -211,19 +216,19 @@ class ErrorTracker:
             "error_type": error_type,
             "error_message": error_message,
             "platform": platform,
-            "context": context
+            "context": context,
         }
 
         self.error_history.append(error_entry)
 
         # Limitar tamaño de historial
         if len(self.error_history) > self.max_history:
-            self.error_history = self.error_history[-self.max_history:]
+            self.error_history = self.error_history[-self.max_history :]
 
-    def get_error_distribution(self, minutes: int = 60) -> Dict[str, int]:
+    def get_error_distribution(self, minutes: int = 60) -> dict[str, int]:
         """Obtener distribución de errores en últimos N minutos."""
         cutoff_time = datetime.now() - timedelta(minutes=minutes)
-        recent_errors: Dict[str, int] = defaultdict(int)
+        recent_errors: dict[str, int] = defaultdict(int)
 
         for entry in self.error_history:
             try:
@@ -231,38 +236,34 @@ class ErrorTracker:
                 if error_time > cutoff_time:
                     recent_errors[entry["error_type"]] += 1
             except Exception:
-                pass
+                logger.exception("get_error_distribution: error inesperado")
 
         return dict(recent_errors)
 
-    def get_most_common_errors(self, limit: int = 10) -> List[Tuple[str, int]]:
+    def get_most_common_errors(self, limit: int = 10) -> list[tuple[str, int]]:
         """Obtener errores más comunes."""
-        return sorted(
-            self.error_counts.items(),
-            key=lambda x: x[1],
-            reverse=True
-        )[:limit]
+        return sorted(self.error_counts.items(), key=lambda x: x[1], reverse=True)[
+            :limit
+        ]
 
 
 # ============================================================================
 # ALERT MANAGER
 # ============================================================================
 
+
 class AlertManager:
     """Gestor de alertas."""
 
-    def __init__(self, on_alert: Optional[Callable] = None):
-        self.alerts: Dict[str, Alert] = {}
-        self.alert_history: List[Alert] = []
+    def __init__(self, on_alert: Callable | None = None):
+        self.alerts: dict[str, Alert] = {}
+        self.alert_history: list[Alert] = []
         self.on_alert = on_alert
-        self.thresholds: Dict[str, Dict[str, float]] = {}
+        self.thresholds: dict[str, dict[str, float]] = {}
         self.max_alert_history = 500
 
     def set_threshold(
-        self,
-        metric_name: str,
-        severity: AlertSeverity,
-        threshold: float
+        self, metric_name: str, severity: AlertSeverity, threshold: float
     ) -> None:
         """Establecer umbral de alerta."""
         if metric_name not in self.thresholds:
@@ -271,11 +272,8 @@ class AlertManager:
         self.thresholds[metric_name][severity.value] = threshold
 
     def check_metric(
-        self,
-        metric_name: str,
-        current_value: float,
-        platform: Optional[str] = None
-    ) -> Optional[Alert]:
+        self, metric_name: str, current_value: float, platform: str | None = None
+    ) -> Alert | None:
         """
         Verificar métrica contra umbrales.
 
@@ -289,7 +287,9 @@ class AlertManager:
 
             if current_value >= threshold:
                 # Crear alerta
-                alert_id = f"{metric_name}_{severity.value}_{int(datetime.now().timestamp())}"
+                alert_id = (
+                    f"{metric_name}_{severity.value}_{int(datetime.now().timestamp())}"
+                )
 
                 alert = Alert(
                     id=alert_id,
@@ -300,7 +300,7 @@ class AlertManager:
                     metric_name=metric_name,
                     threshold=threshold,
                     current_value=current_value,
-                    platform=platform
+                    platform=platform,
                 )
 
                 # Registrar alerta
@@ -309,14 +309,14 @@ class AlertManager:
 
                 # Limitar historial
                 if len(self.alert_history) > self.max_alert_history:
-                    self.alert_history = self.alert_history[-self.max_alert_history:]
+                    self.alert_history = self.alert_history[-self.max_alert_history :]
 
                 # Disparar callback
                 if self.on_alert:
                     try:
                         self.on_alert(alert)
-                    except Exception as e:
-                        logger.error(f"Alert callback failed: {str(e)}")
+                    except Exception:
+                        logger.exception("Alert callback failed")
 
                 logger.warning(f"Alert fired: {alert.title}")
                 return alert
@@ -330,30 +330,28 @@ class AlertManager:
             return True
         return False
 
-    def get_active_alerts(self) -> List[Alert]:
+    def get_active_alerts(self) -> list[Alert]:
         """Obtener alertas activas (no reconocidas)."""
-        return [
-            alert for alert in self.alerts.values()
-            if not alert.acknowledged
-        ]
+        return [alert for alert in self.alerts.values() if not alert.acknowledged]
 
 
 # ============================================================================
 # PERFORMANCE REPORTER
 # ============================================================================
 
+
 class PerformanceReporter:
     """Generador de reportes de desempeño."""
 
-    def __init__(self, metrics_collector: MetricsCollector, error_tracker: ErrorTracker):
+    def __init__(
+        self, metrics_collector: MetricsCollector, error_tracker: ErrorTracker
+    ):
         self.metrics = metrics_collector
         self.errors = error_tracker
 
     async def generate_report(
-        self,
-        platform: Optional[str] = None,
-        minutes: int = 60
-    ) -> Dict[str, Any]:
+        self, platform: str | None = None, minutes: int = 60
+    ) -> dict[str, Any]:
         """
         Generar reporte de desempeño.
 
@@ -363,12 +361,11 @@ class PerformanceReporter:
         - Errores y distribución
         - Recomendaciones
         """
-        cutoff_time = datetime.now() - timedelta(minutes=minutes)
+        datetime.now() - timedelta(minutes=minutes)
 
         # Recolectar métricas
         relevant_metrics = [
-            name for name in self.metrics.timers.keys()
-            if not platform or platform in name
+            name for name in self.metrics.timers if not platform or platform in name
         ]
 
         report = {
@@ -378,12 +375,11 @@ class PerformanceReporter:
             "summary": {},
             "timing_metrics": {},
             "errors": {},
-            "recommendations": []
+            "recommendations": [],
         }
 
         # Métricas de timing
         total_actions = 0
-        successful_actions = 0
 
         for metric_name in relevant_metrics:
             stats = self.metrics.get_metric_stats(metric_name)
@@ -399,7 +395,7 @@ class PerformanceReporter:
         report["summary"] = {
             "total_actions": total_actions,
             "total_errors": sum(error_dist.values()),
-            "error_rate": sum(error_dist.values()) / max(1, total_actions)
+            "error_rate": sum(error_dist.values()) / max(1, total_actions),
         }
 
         # Recomendaciones
@@ -407,7 +403,7 @@ class PerformanceReporter:
 
         return report
 
-    def _generate_recommendations(self, report: Dict[str, Any]) -> List[str]:
+    def _generate_recommendations(self, report: dict[str, Any]) -> list[str]:
         """Generar recomendaciones basadas en reporte."""
         recommendations = []
 
@@ -419,42 +415,46 @@ class PerformanceReporter:
         if most_common:
             error_type, count = most_common[0]
             if count > 50:
-                recommendations.append(f"High frequency of {error_type}, consider implementing specific handling")
+                recommendations.append(
+                    f"High frequency of {error_type}, consider implementing specific handling"
+                )
 
         return recommendations
 
-    def print_report(self, report: Dict[str, Any]) -> str:
+    def print_report(self, report: dict[str, Any]) -> str:
         """Formatear reporte para impresión."""
         lines = [
             "╔════════════════════════════════════════════════════════════════╗",
             "║              Computer Use Performance Report                   ║",
             "╚════════════════════════════════════════════════════════════════╝",
-            f"",
+            "",
             f"Report Time: {report['timestamp']}",
             f"Period: {report['period_minutes']} minutes",
             f"Platform: {report['platform'] or 'All'}",
-            f"",
-            f"SUMMARY:",
+            "",
+            "SUMMARY:",
             f"  Total Actions: {report['summary']['total_actions']}",
             f"  Errors: {report['summary']['total_errors']}",
             f"  Error Rate: {report['summary']['error_rate']:.2%}",
-            f"",
-            f"TIMING METRICS:",
+            "",
+            "TIMING METRICS:",
         ]
 
         for metric_name, stats in report["timing_metrics"].items():
             lines.append(f"  {metric_name}:")
-            lines.append(f"    Avg: {stats['avg']:.0f}ms | Min: {stats['min']:.0f}ms | Max: {stats['max']:.0f}ms | P95: {stats['p95']:.0f}ms")
+            lines.append(
+                f"    Avg: {stats['avg']:.0f}ms | Min: {stats['min']:.0f}ms | Max: {stats['max']:.0f}ms | P95: {stats['p95']:.0f}ms"
+            )
 
         if report["errors"]:
-            lines.append(f"")
-            lines.append(f"TOP ERRORS:")
+            lines.append("")
+            lines.append("TOP ERRORS:")
             for error_type, count in list(report["errors"].items())[:5]:
                 lines.append(f"  {error_type}: {count}")
 
         if report["recommendations"]:
-            lines.append(f"")
-            lines.append(f"RECOMMENDATIONS:")
+            lines.append("")
+            lines.append("RECOMMENDATIONS:")
             for rec in report["recommendations"]:
                 lines.append(f"  • {rec}")
 
@@ -465,6 +465,7 @@ class PerformanceReporter:
 # MONITORING DASHBOARD
 # ============================================================================
 
+
 class MonitoringDashboard:
     """Dashboard de monitoreo (data provider para UI)."""
 
@@ -473,14 +474,14 @@ class MonitoringDashboard:
         metrics_collector: MetricsCollector,
         error_tracker: ErrorTracker,
         alert_manager: AlertManager,
-        reporter: PerformanceReporter
+        reporter: PerformanceReporter,
     ):
         self.metrics = metrics_collector
         self.errors = error_tracker
         self.alerts = alert_manager
         self.reporter = reporter
 
-    async def get_dashboard_data(self) -> Dict[str, Any]:
+    async def get_dashboard_data(self) -> dict[str, Any]:
         """
         Obtener datos para dashboard.
 
@@ -493,19 +494,16 @@ class MonitoringDashboard:
         return {
             "timestamp": datetime.now().isoformat(),
             "status": self._compute_overall_status(),
-            "reports": {
-                "last_1h": report_1h,
-                "last_24h": report_24h
-            },
+            "reports": {"last_1h": report_1h, "last_24h": report_24h},
             "alerts": {
                 "active": [asdict(a) for a in self.alerts.get_active_alerts()],
-                "total_fired": len(self.alerts.alert_history)
+                "total_fired": len(self.alerts.alert_history),
             },
             "top_errors": self.errors.get_most_common_errors(5),
             "metrics": {
                 "counters": dict(self.metrics.counters),
-                "gauges": dict(self.metrics.gauges)
-            }
+                "gauges": dict(self.metrics.gauges),
+            },
         }
 
     def _compute_overall_status(self) -> str:
@@ -523,14 +521,14 @@ class MonitoringDashboard:
 
 
 __all__ = [
-    "MetricsCollector",
-    "ErrorTracker",
-    "AlertManager",
-    "PerformanceReporter",
-    "MonitoringDashboard",
-    "PerformanceMetrics",
     "Alert",
+    "AlertManager",
+    "AlertSeverity",
+    "ErrorTracker",
     "MetricPoint",
     "MetricType",
-    "AlertSeverity",
+    "MetricsCollector",
+    "MonitoringDashboard",
+    "PerformanceMetrics",
+    "PerformanceReporter",
 ]

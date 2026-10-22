@@ -1,16 +1,23 @@
+import logging
+from datetime import datetime
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Query, Body, WebSocket, Depends, HTTPException
-from datetime import datetime
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, WebSocket
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.businesses.models import Business
 from app.domains.crm.models import Deal
-from app.domains.enterprise.collaboration import CollaborationManager, CollaborationActionEnum
+from app.domains.enterprise.collaboration import (
+    CollaborationActionEnum,
+    CollaborationManager,
+)
+from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["collaboration"])
 collab_manager = CollaborationManager()
@@ -34,7 +41,9 @@ async def _verify_deal_access(deal_id: str, user: User, db: AsyncSession) -> Dea
     if not deal:
         raise HTTPException(status_code=404, detail="Deal no encontrado")
     biz_result = await db.execute(
-        select(Business).where(Business.id == deal.business_id, Business.user_id == user.id)
+        select(Business).where(
+            Business.id == deal.business_id, Business.user_id == user.id
+        )
     )
     if not biz_result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Deal no encontrado")
@@ -43,11 +52,11 @@ async def _verify_deal_access(deal_id: str, user: User, db: AsyncSession) -> Dea
 
 @router.post("/collaboration/comment")
 async def add_comment(
-    deal_id: str = Query(...),
-    content: str = Body(...),
-    mentions: list[str] = Body(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    deal_id: Annotated[str, Query()],
+    content: Annotated[str, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    mentions: Annotated[list[str] | None, Body()] = None,
 ):
     """Add comment to deal."""
     await _verify_deal_access(deal_id, current_user, db)
@@ -68,9 +77,9 @@ async def add_comment(
 @router.get("/collaboration/comments/{deal_id}")
 async def get_comments(
     deal_id: str,
-    limit: int = Query(50, le=100),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    limit: Annotated[int, Query(le=100)] = 50,
 ):
     """Get all comments for deal."""
     await _verify_deal_access(deal_id, current_user, db)
@@ -94,15 +103,17 @@ async def get_comments(
 
 @router.post("/collaboration/share")
 async def share_deal(
-    deal_id: str = Query(...),
-    shared_with: str = Query(...),
-    permissions: str = Query("read"),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    deal_id: Annotated[str, Query()],
+    shared_with: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    permissions: Annotated[str, Query()] = "read",
 ):
     """Share deal with team member."""
     await _verify_deal_access(deal_id, current_user, db)
-    share = await collab_manager.share_deal(db, deal_id, str(current_user.id), shared_with, permissions)
+    share = await collab_manager.share_deal(
+        db, deal_id, str(current_user.id), shared_with, permissions
+    )
 
     return {
         "status": "shared",
@@ -115,17 +126,25 @@ async def share_deal(
 
 @router.post("/collaboration/approval")
 async def create_approval(
-    action_id: str = Query(...),
-    action_type: CollaborationActionEnum = Query(...),
-    deal_id: str = Query(..., description="Deal this action applies to, for ownership verification"),
-    approvers: list[str] = Body(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    action_id: Annotated[str, Query()],
+    action_type: Annotated[CollaborationActionEnum, Query()],
+    deal_id: Annotated[
+        str,
+        Query(description="Deal this action applies to, for ownership verification"),
+    ],
+    approvers: Annotated[list[str], Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create approval chain for action."""
     await _verify_deal_access(deal_id, current_user, db)
     approval = await collab_manager.request_approval(
-        db, action_id, action_type, str(current_user.id), current_user.full_name, approvers
+        db,
+        action_id,
+        action_type,
+        str(current_user.id),
+        current_user.full_name,
+        approvers,
     )
 
     return {
@@ -139,17 +158,19 @@ async def create_approval(
 
 @router.post("/collaboration/approve")
 async def approve_action(
-    action_id: str = Query(...),
-    decision: str = Query(..., description="approved or rejected"),
-    rejection_reason: str = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    action_id: Annotated[str, Query()],
+    decision: Annotated[str, Query(description="approved or rejected")],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    rejection_reason: Annotated[str | None, Query()] = None,
 ):
     """Approve or reject action. Only someone actually listed as an approver
     on this action can decide it -- collab_manager.approve_action raises if
     current_user isn't one of the chain's approvers."""
     try:
-        approval = await collab_manager.approve_action(db, action_id, str(current_user.id), decision, rejection_reason)
+        approval = await collab_manager.approve_action(
+            db, action_id, str(current_user.id), decision, rejection_reason
+        )
     except ValueError:
         return {"status": "not_found"}
 
@@ -158,19 +179,23 @@ async def approve_action(
         "action_id": action_id,
         "decision": decision,
         "decided_by": str(current_user.id),
-        "decided_at": approval.decision_at.isoformat() if approval.decision_at else None,
+        "decided_at": (
+            approval.decision_at.isoformat() if approval.decision_at else None
+        ),
     }
 
 
 @router.get("/collaboration/pending/{user_id}")
 async def get_pending_approvals(
     user_id: str,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Get pending approvals for user."""
     if user_id != str(current_user.id):
-        raise HTTPException(status_code=403, detail="No puede ver aprobaciones de otro usuario")
+        raise HTTPException(
+            status_code=403, detail="No puede ver aprobaciones de otro usuario"
+        )
     pending = await collab_manager.get_pending_approvals(db, user_id)
 
     return {
@@ -192,9 +217,9 @@ async def get_pending_approvals(
 @router.get("/collaboration/activity/{deal_id}")
 async def get_activity_feed(
     deal_id: str,
-    limit: int = Query(50, le=100),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    limit: Annotated[int, Query(le=100)] = 50,
 ):
     """Get activity feed for deal (comments + shares)."""
     await _verify_deal_access(deal_id, current_user, db)
@@ -209,12 +234,13 @@ async def get_activity_feed(
                 "id": a["id"],
                 "user_id": a["user_id"],
                 "timestamp": a["timestamp"].isoformat(),
-                **({
-                    "content": a.get("content"),
-                    "mentions": a.get("mentions", [])
-                } if a["type"] == "comment" else {
-                    "shared_with": a.get("shared_with"),
-                }),
+                **(
+                    {"content": a.get("content"), "mentions": a.get("mentions", [])}
+                    if a["type"] == "comment"
+                    else {
+                        "shared_with": a.get("shared_with"),
+                    }
+                ),
             }
             for a in activity
         ],
@@ -244,23 +270,28 @@ async def websocket_deal(websocket: WebSocket, deal_id: str):
 
             if data.startswith("comment:"):
                 comment_content = data.replace("comment:", "")
-                await websocket.send_json({
-                    "type": "comment_added",
-                    "deal_id": deal_id,
-                    "content": comment_content,
-                    "timestamp": datetime.now().isoformat(),
-                })
+                await websocket.send_json(
+                    {
+                        "type": "comment_added",
+                        "deal_id": deal_id,
+                        "content": comment_content,
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                )
 
             elif data.startswith("approval:"):
                 decision = data.replace("approval:", "")
-                await websocket.send_json({
-                    "type": "approval_updated",
-                    "deal_id": deal_id,
-                    "decision": decision,
-                    "timestamp": datetime.now().isoformat(),
-                })
+                await websocket.send_json(
+                    {
+                        "type": "approval_updated",
+                        "deal_id": deal_id,
+                        "decision": decision,
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                )
 
     except Exception as e:
+        logger.exception("websocket_deal: error inesperado")
         print(f"WebSocket error: {e}")
     finally:
         await websocket.close()

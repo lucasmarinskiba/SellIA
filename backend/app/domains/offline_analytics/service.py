@@ -1,17 +1,18 @@
 """Phase 5D: Offline Analytics Service."""
-from typing import List, Optional, Dict
+
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
-from datetime import datetime, timezone, timedelta
+
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import and_, func, select
+
+from app.domains.locations.models import LocationVisit, OfflineConversion
 from app.domains.offline_analytics.models import (
-    OfflineToOnlineAttribution,
     OfflineAnalyticsMetrics,
-    LocationFootTrafficHourly,
+    OfflineToOnlineAttribution,
     PostVisitSequence,
     PostVisitSequenceExecution,
 )
-from app.domains.locations.models import LocationVisit, OfflineConversion
 
 
 class OfflineAnalyticsService:
@@ -20,11 +21,11 @@ class OfflineAnalyticsService:
         db: AsyncSession,
         business_id: UUID,
         user_id: UUID,
-        first_online_channel: Optional[str] = None,
-        first_online_date: Optional[datetime] = None,
-        location_visited_id: Optional[UUID] = None,
-        location_visit_date: Optional[datetime] = None,
-        post_visit_order_date: Optional[datetime] = None,
+        first_online_channel: str | None = None,
+        first_online_date: datetime | None = None,
+        location_visited_id: UUID | None = None,
+        location_visit_date: datetime | None = None,
+        post_visit_order_date: datetime | None = None,
         post_visit_order_value: float = 0,
         conversion_type: str = "online_to_offline",
     ) -> OfflineToOnlineAttribution:
@@ -51,22 +52,30 @@ class OfflineAnalyticsService:
         return attribution
 
     @staticmethod
-    async def calculate_offline_metrics(db: AsyncSession, business_id: UUID) -> OfflineAnalyticsMetrics:
+    async def calculate_offline_metrics(
+        db: AsyncSession, business_id: UUID
+    ) -> OfflineAnalyticsMetrics:
         # Get all location visits
         result = await db.execute(
             select(LocationVisit).where(LocationVisit.business_id == business_id)
         )
         visits = result.scalars().all()
         total_foot_traffic = len(visits)
-        unique_visitors = len(set(v.user_id for v in visits))
+        unique_visitors = len({v.user_id for v in visits})
 
         # Offline conversions
         result = await db.execute(
-            select(OfflineConversion).where(OfflineConversion.business_id == business_id)
+            select(OfflineConversion).where(
+                OfflineConversion.business_id == business_id
+            )
         )
         offline_conversions = result.scalars().all()
         total_conversions = len([oc for oc in offline_conversions if oc.purchase_made])
-        conversion_rate = (total_conversions / total_foot_traffic * 100) if total_foot_traffic > 0 else 0
+        conversion_rate = (
+            (total_conversions / total_foot_traffic * 100)
+            if total_foot_traffic > 0
+            else 0
+        )
 
         # Avg dwell time
         avg_dwell = sum(v.dwell_minutes for v in visits) / len(visits) if visits else 0
@@ -81,8 +90,12 @@ class OfflineAnalyticsService:
             )
         )
         attributions = result.scalars().all()
-        online_to_offline = len([a for a in attributions if a.conversion_type == "online_to_offline"])
-        offline_to_online = len([a for a in attributions if a.conversion_type == "offline_to_online"])
+        online_to_offline = len(
+            [a for a in attributions if a.conversion_type == "online_to_offline"]
+        )
+        offline_to_online = len(
+            [a for a in attributions if a.conversion_type == "offline_to_online"]
+        )
         full_loop = len([a for a in attributions if a.conversion_type == "full_loop"])
 
         # Peak hour
@@ -96,8 +109,12 @@ class OfflineAnalyticsService:
         visitor_counts = {}
         for v in visits:
             visitor_counts[v.user_id] = visitor_counts.get(v.user_id, 0) + 1
-        repeat_visitors = len([uid for uid, count in visitor_counts.items() if count > 1])
-        repeat_rate = (repeat_visitors / unique_visitors * 100) if unique_visitors > 0 else 0
+        repeat_visitors = len(
+            [uid for uid, count in visitor_counts.items() if count > 1]
+        )
+        repeat_rate = (
+            (repeat_visitors / unique_visitors * 100) if unique_visitors > 0 else 0
+        )
 
         # Get or create metrics
         result = await db.execute(
@@ -148,7 +165,7 @@ class OfflineAnalyticsService:
         business_id: UUID,
         sequence_name: str,
         trigger_type: str,
-        location_id: Optional[UUID] = None,
+        location_id: UUID | None = None,
     ) -> PostVisitSequence:
         seq = PostVisitSequence(
             business_id=business_id,
@@ -167,7 +184,7 @@ class OfflineAnalyticsService:
         business_id: UUID,
         sequence_id: UUID,
         user_id: UUID,
-        offline_conversion_id: Optional[UUID] = None,
+        offline_conversion_id: UUID | None = None,
     ) -> PostVisitSequenceExecution:
         execution = PostVisitSequenceExecution(
             business_id=business_id,
@@ -186,7 +203,7 @@ class OfflineAnalyticsService:
         business_id: UUID,
         days: int = 30,
     ) -> dict:
-        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff_date = datetime.now(UTC) - timedelta(days=days)
         result = await db.execute(
             select(OfflineToOnlineAttribution).where(
                 and_(
@@ -197,8 +214,12 @@ class OfflineAnalyticsService:
         )
         attributions = result.scalars().all()
 
-        online_to_offline = [a for a in attributions if a.conversion_type == "online_to_offline"]
-        offline_to_online = [a for a in attributions if a.conversion_type == "offline_to_online"]
+        online_to_offline = [
+            a for a in attributions if a.conversion_type == "online_to_offline"
+        ]
+        offline_to_online = [
+            a for a in attributions if a.conversion_type == "offline_to_online"
+        ]
         full_loop = [a for a in attributions if a.conversion_type == "full_loop"]
 
         return {
@@ -206,9 +227,12 @@ class OfflineAnalyticsService:
             "online_to_offline_conversions": len(online_to_offline),
             "offline_to_online_conversions": len(offline_to_online),
             "full_loop_conversions": len(full_loop),
-            "total_revenue_from_attribution": sum(a.post_visit_order_value for a in attributions),
+            "total_revenue_from_attribution": sum(
+                a.post_visit_order_value for a in attributions
+            ),
             "avg_time_to_conversion_days": (
                 sum(a.time_to_conversion_days for a in attributions) / len(attributions)
-                if attributions else 0
+                if attributions
+                else 0
             ),
         }

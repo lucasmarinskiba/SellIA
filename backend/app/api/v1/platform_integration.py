@@ -1,22 +1,26 @@
 """Phase 33 Multi-Platform Seller API (12 endpoints)."""
 
-from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Depends
+import logging
+from datetime import timedelta
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
 
+from app.core.clock import utc_now
 from app.core.database import get_db
 from app.domains.enterprise.platform_integration import (
-    PlatformSyncEngine,
+    CompetitorPrice,
     DynamicPricingEngine,
     FOOMTriggerEngine,
-    SEOOptimizationEngine,
     Platform,
+    PlatformSyncEngine,
     Product,
-    PlatformListing,
-    CompetitorPrice,
+    SEOOptimizationEngine,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/platforms", tags=["platforms"])
 
@@ -28,10 +32,10 @@ class ProductRequest(BaseModel):
     category: str
     cost: float
     price_base: float
-    images: List[str]
+    images: list[str]
     brand: str
     stock_total: int
-    platforms: List[str]  # ['mercado_libre', 'amazon', 'hotmart']
+    platforms: list[str]  # ['mercado_libre', 'amazon', 'hotmart']
 
 
 class ProductResponse(BaseModel):
@@ -39,7 +43,7 @@ class ProductResponse(BaseModel):
     sku: str
     title: str
     status: str
-    platforms: List[str]
+    platforms: list[str]
     created_at: str
 
 
@@ -74,8 +78,8 @@ class PricingRecommendationResponse(BaseModel):
 class URGENCYResponse(BaseModel):
     platform: str
     urgency_badge: str
-    scarcity_message: Optional[str]
-    social_proof: Optional[str]
+    scarcity_message: str | None
+    social_proof: str | None
     call_to_action: str
 
 
@@ -92,7 +96,10 @@ class KeywordResearchResponse(BaseModel):
 # ENDPOINT 1: Create Product Across Platforms
 # ============================================================================
 @router.post("/products/create", response_model=ProductResponse)
-def create_multiplatform_product(request: ProductRequest, db: Session = Depends(get_db)):
+def create_multiplatform_product(
+    request: ProductRequest,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Create product on multiple platforms simultaneously."""
     try:
         platforms = [Platform(p.lower()) for p in request.platforms]
@@ -112,7 +119,7 @@ def create_multiplatform_product(request: ProductRequest, db: Session = Depends(
         )
 
         sync_engine = PlatformSyncEngine(db)
-        results = sync_engine.create_product(product, platforms)
+        sync_engine.create_product(product, platforms)
 
         return ProductResponse(
             id=product.id,
@@ -120,9 +127,10 @@ def create_multiplatform_product(request: ProductRequest, db: Session = Depends(
             title=request.title,
             status="active",
             platforms=request.platforms,
-            created_at=datetime.utcnow().isoformat(),
+            created_at=utc_now().isoformat(),
         )
     except Exception as e:
+        logger.exception("create_multiplatform_product: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -130,13 +138,17 @@ def create_multiplatform_product(request: ProductRequest, db: Session = Depends(
 # ENDPOINT 2: Sync Inventory Across Platforms
 # ============================================================================
 @router.post("/inventory/sync/{product_id}", response_model=InventorySyncResponse)
-def sync_inventory(product_id: str, new_stock: int, db: Session = Depends(get_db)):
+def sync_inventory(
+    product_id: str,
+    new_stock: int,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Real-time inventory sync (prevent overselling)."""
     try:
         sync_engine = PlatformSyncEngine(db)
 
         # Create mock product for sync
-        product = Product(
+        Product(
             id=product_id,
             sku=f"SKU-{product_id}",
             title="Product",
@@ -161,6 +173,7 @@ def sync_inventory(product_id: str, new_stock: int, db: Session = Depends(get_db
             sync_results=sync_results,
         )
     except Exception as e:
+        logger.exception("sync_inventory: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -169,7 +182,9 @@ def sync_inventory(product_id: str, new_stock: int, db: Session = Depends(get_db
 # ============================================================================
 @router.get("/pricing/recommend/{product_id}/{platform}")
 def get_pricing_recommendation(
-    product_id: str, platform: str, db: Session = Depends(get_db)
+    product_id: str,
+    platform: str,
+    db: Annotated[Session, Depends(get_db)],
 ) -> PricingRecommendationResponse:
     """Get AI-optimized price recommendation."""
     try:
@@ -215,7 +230,9 @@ def get_pricing_recommendation(
         ]
 
         pricing_engine = DynamicPricingEngine(db)
-        recommendation = pricing_engine.calculate_optimal_price(product, competitors, platform_enum)
+        recommendation = pricing_engine.calculate_optimal_price(
+            product, competitors, platform_enum
+        )
 
         return PricingRecommendationResponse(
             product_id=product_id,
@@ -228,6 +245,7 @@ def get_pricing_recommendation(
             reasoning=recommendation.reasoning,
         )
     except Exception as e:
+        logger.exception("get_pricing_recommendation: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -235,7 +253,10 @@ def get_pricing_recommendation(
 # ENDPOINT 4: Batch Reprice All Products
 # ============================================================================
 @router.post("/pricing/reprice-all/{platform}")
-def reprice_all_products(platform: str, db: Session = Depends(get_db)):
+def reprice_all_products(
+    platform: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Hourly batch repricing across entire catalog."""
     try:
         platform_enum = Platform(platform.lower())
@@ -243,6 +264,7 @@ def reprice_all_products(platform: str, db: Session = Depends(get_db)):
         results = pricing_engine.reprice_all_products(platform_enum, frequency="hourly")
         return results
     except Exception as e:
+        logger.exception("reprice_all_products: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -251,7 +273,12 @@ def reprice_all_products(platform: str, db: Session = Depends(get_db)):
 # ============================================================================
 @router.get("/foom/triggers/{product_id}/{platform}", response_model=URGENCYResponse)
 def get_foom_triggers(
-    product_id: str, platform: str, inventory: int = 10, sales_velocity: float = 30, rank: Optional[int] = 1, db: Session = Depends(get_db)
+    product_id: str,
+    platform: str,
+    db: Annotated[Session, Depends(get_db)],
+    inventory: int = 10,
+    sales_velocity: float = 30,
+    rank: int | None = 1,
 ):
     """Get platform-specific urgency/FOOM messages."""
     try:
@@ -272,7 +299,9 @@ def get_foom_triggers(
         )
 
         foom_engine = FOOMTriggerEngine(db)
-        triggers = foom_engine.generate_listing_urgency(product, platform_enum, inventory, sales_velocity, rank)
+        triggers = foom_engine.generate_listing_urgency(
+            product, platform_enum, inventory, sales_velocity, rank
+        )
 
         return URGENCYResponse(
             platform=platform,
@@ -282,6 +311,7 @@ def get_foom_triggers(
             call_to_action=triggers.get("call_to_action", ""),
         )
     except Exception as e:
+        logger.exception("get_foom_triggers: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -289,7 +319,11 @@ def get_foom_triggers(
 # ENDPOINT 6: Research Keywords
 # ============================================================================
 @router.get("/seo/keywords/{category}/{platform}")
-def research_keywords(category: str, platform: str, db: Session = Depends(get_db)):
+def research_keywords(
+    category: str,
+    platform: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Research high-volume keywords for category."""
     try:
         platform_enum = Platform(platform.lower())
@@ -297,6 +331,7 @@ def research_keywords(category: str, platform: str, db: Session = Depends(get_db
         keywords = seo_engine.research_keywords(category, platform_enum)
         return {"category": category, "platform": platform, "keywords": keywords}
     except Exception as e:
+        logger.exception("research_keywords: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -304,7 +339,12 @@ def research_keywords(category: str, platform: str, db: Session = Depends(get_db
 # ENDPOINT 7: Optimize Listing
 # ============================================================================
 @router.post("/seo/optimize/{product_id}/{platform}")
-def optimize_listing(product_id: str, platform: str, keywords: List[str], db: Session = Depends(get_db)):
+def optimize_listing(
+    product_id: str,
+    platform: str,
+    keywords: list[str],
+    db: Annotated[Session, Depends(get_db)],
+):
     """Generate optimized title, bullets, description."""
     try:
         platform_enum = Platform(platform.lower())
@@ -326,8 +366,13 @@ def optimize_listing(product_id: str, platform: str, keywords: List[str], db: Se
         seo_engine = SEOOptimizationEngine(db)
         optimized = seo_engine.optimize_listing(product, platform_enum, keywords)
 
-        return {"product_id": product_id, "platform": platform, "optimized_listing": optimized}
+        return {
+            "product_id": product_id,
+            "platform": platform,
+            "optimized_listing": optimized,
+        }
     except Exception as e:
+        logger.exception("optimize_listing: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -335,7 +380,11 @@ def optimize_listing(product_id: str, platform: str, keywords: List[str], db: Se
 # ENDPOINT 8: Track Rankings
 # ============================================================================
 @router.get("/seo/rankings/{product_id}/{platform}")
-def track_rankings(product_id: str, platform: str, db: Session = Depends(get_db)):
+def track_rankings(
+    product_id: str,
+    platform: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Track daily keyword rankings + conversion by keyword."""
     try:
         platform_enum = Platform(platform.lower())
@@ -343,6 +392,7 @@ def track_rankings(product_id: str, platform: str, db: Session = Depends(get_db)
         rankings = seo_engine.track_rankings(product_id, platform_enum)
         return rankings
     except Exception as e:
+        logger.exception("track_rankings: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -350,19 +400,23 @@ def track_rankings(product_id: str, platform: str, db: Session = Depends(get_db)
 # ENDPOINT 9: Multi-Platform Dashboard
 # ============================================================================
 @router.get("/dashboard/overview")
-def get_dashboard_overview(db: Session = Depends(get_db)):
+def get_dashboard_overview(
+    db: Annotated[Session, Depends(get_db)],
+):
     """High-level overview: all platforms, all products (real data from DB)."""
-    from app.models.platform_integration import SellerMetrics, Order, PlatformListing
+    from app.models.platform_integration import Order, PlatformListing, SellerMetrics
 
     # Get seller metrics for each platform
-    metrics = db.query(SellerMetrics).filter(
-        SellerMetrics.metric_date == datetime.utcnow().date()
-    ).all()
+    metrics = (
+        db.query(SellerMetrics)
+        .filter(SellerMetrics.metric_date == utc_now().date())
+        .all()
+    )
 
     metrics_by_platform = {m.platform: m for m in metrics}
 
     # Calculate GMV from orders (last 30 days)
-    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    thirty_days_ago = utc_now() - timedelta(days=30)
     orders = db.query(Order).filter(Order.created_at >= thirty_days_ago).all()
     gmv_by_platform = {}
     for order in orders:
@@ -375,30 +429,54 @@ def get_dashboard_overview(db: Session = Depends(get_db)):
     total_conversions = sum(l.sales_this_month for l in listings)
 
     return {
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
         "platforms": {
             "mercado_libre": {
-                "active_listings": metrics_by_platform.get("mercado_libre", {}).active_listings or 0,
-                "best_seller_rank": metrics_by_platform.get("mercado_libre", {}).bestseller_count or 0,
-                "avg_rating": float(metrics_by_platform.get("mercado_libre", {}).avg_rating or 4.8),
+                "active_listings": metrics_by_platform.get(
+                    "mercado_libre", {}
+                ).active_listings
+                or 0,
+                "best_seller_rank": metrics_by_platform.get(
+                    "mercado_libre", {}
+                ).bestseller_count
+                or 0,
+                "avg_rating": float(
+                    metrics_by_platform.get("mercado_libre", {}).avg_rating or 4.8
+                ),
                 "monthly_revenue": int(gmv_by_platform.get("mercado_libre", 0)),
             },
             "amazon": {
-                "active_listings": metrics_by_platform.get("amazon", {}).active_listings or 0,
-                "best_seller_rank": metrics_by_platform.get("amazon", {}).bestseller_count or 0,
-                "avg_rating": float(metrics_by_platform.get("amazon", {}).avg_rating or 4.7),
+                "active_listings": metrics_by_platform.get("amazon", {}).active_listings
+                or 0,
+                "best_seller_rank": metrics_by_platform.get(
+                    "amazon", {}
+                ).bestseller_count
+                or 0,
+                "avg_rating": float(
+                    metrics_by_platform.get("amazon", {}).avg_rating or 4.7
+                ),
                 "monthly_revenue": int(gmv_by_platform.get("amazon", 0)),
             },
             "hotmart": {
-                "active_listings": metrics_by_platform.get("hotmart", {}).active_listings or 0,
-                "best_seller_rank": metrics_by_platform.get("hotmart", {}).bestseller_count or 0,
-                "avg_rating": float(metrics_by_platform.get("hotmart", {}).avg_rating or 4.9),
+                "active_listings": metrics_by_platform.get(
+                    "hotmart", {}
+                ).active_listings
+                or 0,
+                "best_seller_rank": metrics_by_platform.get(
+                    "hotmart", {}
+                ).bestseller_count
+                or 0,
+                "avg_rating": float(
+                    metrics_by_platform.get("hotmart", {}).avg_rating or 4.9
+                ),
                 "monthly_revenue": int(gmv_by_platform.get("hotmart", 0)),
             },
         },
         "total_gmv": sum(gmv_by_platform.values()),
         "total_active_listings": len(listings),
-        "avg_conversion_rate": total_conversions / len(listings) / 100 if listings else 0.08,
+        "avg_conversion_rate": (
+            total_conversions / len(listings) / 100 if listings else 0.08
+        ),
         "top_performing_category": "Electronics",
     }
 
@@ -407,10 +485,12 @@ def get_dashboard_overview(db: Session = Depends(get_db)):
 # ENDPOINT 10: Best Seller Status Tracker
 # ============================================================================
 @router.get("/bestseller/status")
-def get_bestseller_status(db: Session = Depends(get_db)):
+def get_bestseller_status(
+    db: Annotated[Session, Depends(get_db)],
+):
     """Real-time best seller ranking across platforms."""
     return {
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
         "mercado_libre": {
             "categories_ranked_1": 8,  # #1 in 8 categories
             "categories_ranked_top5": 25,  # Top 5 in 25 categories
@@ -434,7 +514,11 @@ def get_bestseller_status(db: Session = Depends(get_db)):
 # ENDPOINT 11: Competitor Analysis
 # ============================================================================
 @router.get("/competitors/analysis/{product_id}/{platform}")
-def analyze_competitors(product_id: str, platform: str, db: Session = Depends(get_db)):
+def analyze_competitors(
+    product_id: str,
+    platform: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Competitive intelligence: top 10 competitors."""
     return {
         "product_id": product_id,
@@ -478,7 +562,10 @@ def analyze_competitors(product_id: str, platform: str, db: Session = Depends(ge
 # ENDPOINT 12: Performance Analytics
 # ============================================================================
 @router.get("/analytics/performance/{platform}")
-def get_platform_performance(platform: str, db: Session = Depends(get_db)):
+def get_platform_performance(
+    platform: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Detailed performance metrics per platform."""
     try:
         platform_name = platform.lower()
@@ -552,4 +639,5 @@ def get_platform_performance(platform: str, db: Session = Depends(get_db)):
                 },
             }
     except Exception as e:
+        logger.exception("get_platform_performance: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

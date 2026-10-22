@@ -33,9 +33,11 @@ async def ensure_conversion_event_dedupe_column() -> None:
         "ALTER TABLE conversion_events ADD COLUMN IF NOT EXISTS external_event_id VARCHAR(255)",
         # Partial: most conversion sources (manual logs, sources with no stable
         # per-order id) leave this NULL, and NULLs must stay unconstrained.
-        "CREATE UNIQUE INDEX IF NOT EXISTS uq_conversion_dedupe ON conversion_events "
-        "(business_id, platform_name, external_listing_id, external_event_id) "
-        "WHERE external_event_id IS NOT NULL",
+        (
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_conversion_dedupe ON conversion_events "
+            "(business_id, platform_name, external_listing_id, external_event_id) "
+            "WHERE external_event_id IS NOT NULL"
+        ),
     )
     ok = 0
     for stmt in statements:
@@ -43,6 +45,15 @@ async def ensure_conversion_event_dedupe_column() -> None:
             async with engine.begin() as conn:
                 await conn.execute(text(stmt))
             ok += 1
-        except Exception as e:  # noqa: BLE001 -- never block startup on this
-            logger.warning("conversion_events bootstrap statement skipped (%s): %s", stmt[:60], str(e)[:180])
-    logger.info("conversion_events dedupe column bootstrap (%s/%s statements)", ok, len(statements))
+        # never block startup on this
+        except Exception as e:  # noqa: BLE001
+            logger.warning(
+                "conversion_events bootstrap statement skipped (%s): %s",
+                stmt[:60],
+                str(e)[:180],
+            )
+    logger.info(
+        "conversion_events dedupe column bootstrap (%s/%s statements)",
+        ok,
+        len(statements),
+    )

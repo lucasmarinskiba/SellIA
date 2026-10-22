@@ -5,15 +5,17 @@ Redis-based Email Scheduler
 - Retry queue
 - Task persistence
 """
+
 import json
 import logging
-from datetime import datetime, timedelta
-from typing import Optional, List
-from enum import Enum
-import redis.asyncio as redis
 import os
+from datetime import datetime, timedelta
+from enum import Enum
+
+import redis.asyncio as redis
 
 logger = logging.getLogger(__name__)
+
 
 # ============================================================
 # TASK ENUMS
@@ -25,6 +27,7 @@ class TaskType(str, Enum):
     PROGRESS_WORKFLOW = "progress_workflow"
     CHECK_NO_ENGAGEMENT = "check_no_engagement"
 
+
 class TaskStatus(str, Enum):
     QUEUED = "queued"
     PROCESSING = "processing"
@@ -32,18 +35,16 @@ class TaskStatus(str, Enum):
     FAILED = "failed"
     RETRY = "retry"
 
+
 # ============================================================
 # REDIS SCHEDULER
 # ============================================================
 class EmailScheduler:
     """Redis-based task scheduler for emails."""
 
-    def __init__(self, redis_url: str = None):
-        self.redis_url = redis_url or os.getenv(
-            "REDIS_URL",
-            "redis://localhost:6379/0"
-        )
-        self.redis: Optional[redis.Redis] = None
+    def __init__(self, redis_url: str | None = None):
+        self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6379/0")
+        self.redis: redis.Redis | None = None
         self.queue_key = "sellia:queue"
         self.delayed_key = "sellia:delayed"
         self.failed_key = "sellia:failed"
@@ -57,8 +58,8 @@ class EmailScheduler:
             self.redis = await redis.from_url(self.redis_url, decode_responses=True)
             await self.redis.ping()
             logger.info("✅ Redis connected")
-        except Exception as e:
-            logger.error(f"❌ Redis connection failed: {e}")
+        except Exception:
+            logger.exception("❌ Redis connection failed")
             logger.warning("Continuing without Redis (in-memory fallback)")
             self.redis = None
 
@@ -74,8 +75,8 @@ class EmailScheduler:
         lead_email: str,
         subject: str,
         body: str,
-        send_at: Optional[datetime] = None,
-        priority: int = 5
+        send_at: datetime | None = None,
+        priority: int = 5,
     ) -> str:
         """
         Queue email for sending.
@@ -91,7 +92,7 @@ class EmailScheduler:
             "priority": priority,
             "attempts": 0,
             "created_at": datetime.now().isoformat(),
-            "status": TaskStatus.QUEUED
+            "status": TaskStatus.QUEUED,
         }
 
         task_id = f"task_{workflow_execution_id}_{datetime.now().timestamp()}"
@@ -115,15 +116,15 @@ class EmailScheduler:
 
             return task_id
 
-        except Exception as e:
-            logger.error(f"Queue error: {e}")
+        except Exception:
+            logger.exception("Queue error")
             return task_id
 
     async def schedule_batch_emails(
         self,
         workflow_id: int,
-        lead_emails: List[dict],  # [{ id, email, subject, body }, ...]
-        send_at: Optional[datetime] = None
+        lead_emails: list[dict],  # [{ id, email, subject, body }, ...]
+        send_at: datetime | None = None,
     ) -> str:
         """Queue batch of emails."""
         task = {
@@ -133,7 +134,7 @@ class EmailScheduler:
             "send_at": (send_at or datetime.now()).isoformat(),
             "count": len(lead_emails),
             "created_at": datetime.now().isoformat(),
-            "status": TaskStatus.QUEUED
+            "status": TaskStatus.QUEUED,
         }
 
         task_id = f"batch_{workflow_id}_{datetime.now().timestamp()}"
@@ -154,8 +155,8 @@ class EmailScheduler:
             logger.info(f"📨 Batch scheduled: {task_id} ({len(lead_emails)} emails)")
             return task_id
 
-        except Exception as e:
-            logger.error(f"Batch queue error: {e}")
+        except Exception:
+            logger.exception("Batch queue error")
             return task_id
 
     async def get_queue_stats(self) -> dict:
@@ -166,7 +167,7 @@ class EmailScheduler:
                 "delayed": 0,
                 "processing": 0,
                 "failed": 0,
-                "provider": "mock"
+                "provider": "mock",
             }
 
         try:
@@ -180,11 +181,11 @@ class EmailScheduler:
                 "delayed": delayed,
                 "processing": processing,
                 "failed": failed,
-                "provider": "redis"
+                "provider": "redis",
             }
 
         except Exception as e:
-            logger.error(f"Stats error: {e}")
+            logger.exception("Stats error")
             return {"error": str(e)}
 
     async def move_delayed_to_queue(self) -> int:
@@ -196,11 +197,7 @@ class EmailScheduler:
             now = datetime.now().timestamp()
 
             # Get all tasks ready to send
-            tasks = await self.redis.zrangebyscore(
-                self.delayed_key,
-                0,
-                now
-            )
+            tasks = await self.redis.zrangebyscore(self.delayed_key, 0, now)
 
             if not tasks:
                 return 0
@@ -215,11 +212,11 @@ class EmailScheduler:
             logger.info(f"📨 Moved {len(tasks)} delayed tasks to queue")
             return len(tasks)
 
-        except Exception as e:
-            logger.error(f"Delayed move error: {e}")
+        except Exception:
+            logger.exception("Delayed move error")
             return 0
 
-    async def peek_queue(self, count: int = 5) -> List[dict]:
+    async def peek_queue(self, count: int = 5) -> list[dict]:
         """Peek at queue without removing."""
         if not self.redis:
             return []
@@ -227,11 +224,11 @@ class EmailScheduler:
         try:
             tasks = await self.redis.lrange(self.queue_key, 0, count - 1)
             return [json.loads(t) for t in tasks if t]
-        except Exception as e:
-            logger.error(f"Peek error: {e}")
+        except Exception:
+            logger.exception("Peek error")
             return []
 
-    async def pop_task(self) -> Optional[dict]:
+    async def pop_task(self) -> dict | None:
         """Pop next task from queue."""
         if not self.redis:
             return None
@@ -244,8 +241,8 @@ class EmailScheduler:
                 await self.redis.lpush(self.processing_key, task_json)
                 return task
             return None
-        except Exception as e:
-            logger.error(f"Pop error: {e}")
+        except Exception:
+            logger.exception("Pop error")
             return None
 
     async def mark_completed(self, task: dict) -> None:
@@ -257,8 +254,8 @@ class EmailScheduler:
             task_json = json.dumps(task)
             await self.redis.lrem(self.processing_key, 1, task_json)
             logger.info(f"✅ Task completed: {task.get('workflow_execution_id')}")
-        except Exception as e:
-            logger.error(f"Mark completed error: {e}")
+        except Exception:
+            logger.exception("Mark completed error")
 
     async def mark_failed(self, task: dict, error: str, retry: bool = True) -> None:
         """Mark task as failed with exponential backoff. Move to DLQ after max_retries."""
@@ -276,18 +273,27 @@ class EmailScheduler:
             if retry and task["attempts"] < self.max_retries:
                 # Exponential backoff: 2^attempt minutes
                 backoff_minutes = 2 ** task["attempts"]
-                retry_at = (datetime.now() + timedelta(minutes=backoff_minutes)).timestamp()
-                await self.redis.zadd(self.delayed_key, {f"{task_id}:retry:{task['attempts']}": retry_at})
-                logger.warning(f"⚠️ Task failed, retry #{task['attempts']} in {backoff_minutes}min: {task_id}")
+                retry_at = (
+                    datetime.now() + timedelta(minutes=backoff_minutes)
+                ).timestamp()
+                await self.redis.zadd(
+                    self.delayed_key, {f"{task_id}:retry:{task['attempts']}": retry_at}
+                )
+                logger.warning(
+                    f"⚠️ Task failed, retry #{task['attempts']} in {backoff_minutes}min: {task_id}"
+                )
             else:
                 # Max retries exceeded → move to DLQ
                 await self.redis.lpush(self.dead_letter_key, task_json)
-                logger.error(f"❌ Task DLQ (max retries {self.max_retries}): {task_id} - {error}")
+                logger.error(
+                    f"❌ Task DLQ (max retries {self.max_retries}): {task_id} - {error}"
+                )
 
             await self.redis.lrem(self.processing_key, 1, task_json)
 
-        except Exception as e:
-            logger.error(f"Mark failed error: {e}")
+        except Exception:
+            logger.exception("Mark failed error")
+
 
 # ============================================================
 # FACTORY

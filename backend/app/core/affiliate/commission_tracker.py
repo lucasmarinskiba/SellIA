@@ -1,16 +1,19 @@
 """Commission Tracker — Track affiliates sales, payouts, performance."""
 
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from enum import Enum
 import logging
+from dataclasses import dataclass, field
+from datetime import timedelta
+from enum import Enum
+from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
 
 class CommissionStatus(Enum):
     """Commission statuses."""
+
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
@@ -20,6 +23,7 @@ class CommissionStatus(Enum):
 @dataclass
 class AffiliateCommission:
     """Single commission record."""
+
     commission_id: str
     affiliate_id: str
     product_id: str
@@ -29,14 +33,15 @@ class AffiliateCommission:
     platform: str  # hotmart|meli|amazon|etc
     sale_date: str
     status: CommissionStatus = CommissionStatus.PENDING
-    approval_date: Optional[str] = None
-    payout_date: Optional[str] = None
+    approval_date: str | None = None
+    payout_date: str | None = None
     notes: str = ""
 
 
 @dataclass
 class AffiliatePerformance:
     """Performance metrics for affiliate."""
+
     affiliate_id: str
     total_clicks: int = 0
     total_conversions: int = 0
@@ -44,19 +49,19 @@ class AffiliatePerformance:
     total_commissions: float = 0.0
     conversion_rate: float = 0.0
     average_order_value: float = 0.0
-    active_products: List[str] = field(default_factory=list)
-    top_performing_product: Optional[str] = None
-    top_performing_method: Optional[str] = None
-    last_sale_date: Optional[str] = None
+    active_products: list[str] = field(default_factory=list)
+    top_performing_product: str | None = None
+    top_performing_method: str | None = None
+    last_sale_date: str | None = None
 
 
 class CommissionTracker:
     """Track affiliate commissions and performance."""
 
     def __init__(self):
-        self.commissions: Dict[str, AffiliateCommission] = {}
-        self.affiliate_performance: Dict[str, AffiliatePerformance] = {}
-        self.payout_history: List[Dict[str, Any]] = []
+        self.commissions: dict[str, AffiliateCommission] = {}
+        self.affiliate_performance: dict[str, AffiliatePerformance] = {}
+        self.payout_history: list[dict[str, Any]] = []
 
     def record_commission(
         self,
@@ -78,15 +83,13 @@ class CommissionTracker:
             commission_percentage=commission_percentage,
             commission_amount=commission_amount,
             platform=platform,
-            sale_date=datetime.utcnow().isoformat(),
+            sale_date=utc_now().isoformat(),
         )
 
         self.commissions[commission_id] = commission
         self._update_performance(affiliate_id, commission)
 
-        logger.info(
-            f"Recorded commission: {commission_id} (${commission_amount:.2f})"
-        )
+        logger.info(f"Recorded commission: {commission_id} (${commission_amount:.2f})")
         return commission
 
     def approve_commission(self, commission_id: str) -> bool:
@@ -96,14 +99,14 @@ class CommissionTracker:
 
         commission = self.commissions[commission_id]
         commission.status = CommissionStatus.APPROVED
-        commission.approval_date = datetime.utcnow().isoformat()
+        commission.approval_date = utc_now().isoformat()
 
         logger.info(f"Approved commission: {commission_id}")
         return True
 
     def process_payout(
         self, affiliate_id: str, method: str = "bank_transfer"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Process payout for affiliate."""
         affiliate_comms = [
             c
@@ -117,12 +120,12 @@ class CommissionTracker:
         total_amount = sum(c.commission_amount for c in affiliate_comms)
 
         payout = {
-            "payout_id": f"payout_{affiliate_id}_{datetime.utcnow().timestamp()}",
+            "payout_id": f"payout_{affiliate_id}_{utc_now().timestamp()}",
             "affiliate_id": affiliate_id,
             "amount": total_amount,
             "method": method,
             "commissions": len(affiliate_comms),
-            "payout_date": datetime.utcnow().isoformat(),
+            "payout_date": utc_now().isoformat(),
             "status": "pending",
         }
 
@@ -133,14 +136,10 @@ class CommissionTracker:
             comm.status = CommissionStatus.PAID
             comm.payout_date = payout["payout_date"]
 
-        logger.info(
-            f"Processed payout {payout['payout_id']}: ${total_amount:.2f}"
-        )
+        logger.info(f"Processed payout {payout['payout_id']}: ${total_amount:.2f}")
         return payout
 
-    def _update_performance(
-        self, affiliate_id: str, commission: AffiliateCommission
-    ):
+    def _update_performance(self, affiliate_id: str, commission: AffiliateCommission):
         """Update affiliate performance metrics."""
         if affiliate_id not in self.affiliate_performance:
             self.affiliate_performance[affiliate_id] = AffiliatePerformance(
@@ -156,22 +155,16 @@ class CommissionTracker:
         if commission.product_id not in perf.active_products:
             perf.active_products.append(commission.product_id)
 
-        perf.conversion_rate = (
-            perf.total_conversions / max(perf.total_clicks, 1)
-        )
-        perf.average_order_value = (
-            perf.total_sales_amount / perf.total_conversions
-        )
+        perf.conversion_rate = perf.total_conversions / max(perf.total_clicks, 1)
+        perf.average_order_value = perf.total_sales_amount / perf.total_conversions
 
         # Find top product
         product_commissions = [
-            c
-            for c in self.commissions.values()
-            if c.affiliate_id == affiliate_id
+            c for c in self.commissions.values() if c.affiliate_id == affiliate_id
         ]
         if product_commissions:
             top_product = max(
-                set(c.product_id for c in product_commissions),
+                {c.product_id for c in product_commissions},
                 key=lambda p: sum(
                     c.commission_amount
                     for c in product_commissions
@@ -180,12 +173,10 @@ class CommissionTracker:
             )
             perf.top_performing_product = top_product
 
-    def get_affiliate_earnings(self, affiliate_id: str) -> Dict[str, Any]:
+    def get_affiliate_earnings(self, affiliate_id: str) -> dict[str, Any]:
         """Get total earnings for affiliate."""
         affiliate_comms = [
-            c
-            for c in self.commissions.values()
-            if c.affiliate_id == affiliate_id
+            c for c in self.commissions.values() if c.affiliate_id == affiliate_id
         ]
 
         if not affiliate_comms:
@@ -210,9 +201,9 @@ class CommissionTracker:
             "approved_not_paid": earned - paid - pending,
         }
 
-    def get_leaderboard(self, period_days: int = 30, top_n: int = 10) -> List[Dict]:
+    def get_leaderboard(self, period_days: int = 30, top_n: int = 10) -> list[dict]:
         """Get top affiliates by earnings in period."""
-        cutoff_date = datetime.utcnow() - timedelta(days=period_days)
+        cutoff_date = utc_now() - timedelta(days=period_days)
         cutoff_iso = cutoff_date.isoformat()
 
         earnings_by_affiliate = {}
@@ -242,7 +233,7 @@ class CommissionTracker:
 
         return leaderboard
 
-    def get_performance_report(self, affiliate_id: str) -> Dict[str, Any]:
+    def get_performance_report(self, affiliate_id: str) -> dict[str, Any]:
         """Get detailed performance report for affiliate."""
         perf = self.affiliate_performance.get(affiliate_id)
         earnings = self.get_affiliate_earnings(affiliate_id)
@@ -263,7 +254,7 @@ class CommissionTracker:
             "last_sale": perf.last_sale_date,
         }
 
-    def get_product_performance(self, product_id: str) -> Dict[str, Any]:
+    def get_product_performance(self, product_id: str) -> dict[str, Any]:
         """Get performance metrics for product across all affiliates."""
         product_comms = [
             c for c in self.commissions.values() if c.product_id == product_id
@@ -277,7 +268,7 @@ class CommissionTracker:
         total_sales = sum(c.sale_amount for c in product_comms)
 
         top_affiliate = max(
-            set(c.affiliate_id for c in product_comms),
+            {c.affiliate_id for c in product_comms},
             key=lambda a: sum(
                 c.commission_amount for c in product_comms if c.affiliate_id == a
             ),
@@ -290,7 +281,7 @@ class CommissionTracker:
             "total_commissions_paid": f"${total_commission:.2f}",
             "average_commission_per_sale": f"${total_commission / total_conversions:.2f}",
             "top_affiliate": top_affiliate,
-            "affiliate_count": len(set(c.affiliate_id for c in product_comms)),
+            "affiliate_count": len({c.affiliate_id for c in product_comms}),
         }
 
     def export_commission_report(self, filename: str) -> bool:
@@ -327,6 +318,6 @@ class CommissionTracker:
 
             logger.info(f"Exported commission report: {filename}")
             return True
-        except Exception as e:
-            logger.error(f"Error exporting report: {e}")
+        except Exception:
+            logger.exception("Error exporting report")
             return False

@@ -1,9 +1,16 @@
-from pydantic import BaseModel, ConfigDict, Field
-from uuid import UUID
 from datetime import datetime
 from typing import Any
+from uuid import UUID
 
-from app.domains.channels.models import ChannelPlatform, ChannelStatus, ConversationStatus, MessageDirection, MessageStatus
+from pydantic import BaseModel, ConfigDict, Field
+
+from app.domains.channels.models import (
+    ChannelPlatform,
+    ChannelStatus,
+    ConversationStatus,
+    MessageDirection,
+    MessageStatus,
+)
 
 
 # ChannelConnection schemas
@@ -88,8 +95,12 @@ class ConversationListResponse(ConversationResponse):
     # itself (only channel_connection_id is), added here so the frontend
     # can show a platform badge without a second round-trip per conversation.
     platform: str | None = None
-    last_direction: str | None = None  # "inbound" | "outbound" of the most recent message
-    ai_responded: bool = False  # has the AI (an outbound message) ever replied in this thread
+    last_direction: str | None = (
+        None  # "inbound" | "outbound" of the most recent message
+    )
+    ai_responded: bool = (
+        False  # has the AI (an outbound message) ever replied in this thread
+    )
 
 
 # Message schemas

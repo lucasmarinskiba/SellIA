@@ -4,16 +4,20 @@ Orchestrates sales simulations between an AI agent and a simulated customer pers
 evaluates performance, and maintains leaderboards.
 """
 
-import uuid
 import json
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+import uuid
+from datetime import UTC, datetime
+from typing import Any, ClassVar
 
-from sqlalchemy import select, desc, func
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.simulation.models import SimulationScenario, SimulationRun, SimulationLeaderboard
 from app.core.logger import get_logger
+from app.domains.simulation.models import (
+    SimulationLeaderboard,
+    SimulationRun,
+    SimulationScenario,
+)
 
 logger = get_logger(__name__)
 
@@ -22,24 +26,33 @@ class SimulationEngine:
     """Runs sales simulations and evaluates agent performance."""
 
     MAX_TURNS = 20
-    _CLOSING_KEYWORDS = [
-        "adiós", "adios", "chau", "nos vemos", "hasta luego",
-        "compra confirmada", "pedido realizado", "orden confirmada",
-        "listo, te envío", "gracias por tu compra", "quedamos así",
-        "perfecto, pasame los datos", "te paso el link de pago",
+    _CLOSING_KEYWORDS: ClassVar[list] = [
+        "adiós",
+        "adios",
+        "chau",
+        "nos vemos",
+        "hasta luego",
+        "compra confirmada",
+        "pedido realizado",
+        "orden confirmada",
+        "listo, te envío",
+        "gracias por tu compra",
+        "quedamos así",
+        "perfecto, pasame los datos",
+        "te paso el link de pago",
     ]
 
     async def create_scenario(
         self,
         db: AsyncSession,
-        business_id: Optional[uuid.UUID],
+        business_id: uuid.UUID | None,
         name: str,
         description: str,
         difficulty: str,
         objective: str,
-        customer_persona: Dict[str, Any],
+        customer_persona: dict[str, Any],
         agent_type: str,
-        success_criteria: Dict[str, Any],
+        success_criteria: dict[str, Any],
     ) -> SimulationScenario:
         scenario = SimulationScenario(
             business_id=business_id,
@@ -61,7 +74,7 @@ class SimulationEngine:
         db: AsyncSession,
         scenario_id: uuid.UUID,
         user_id: uuid.UUID,
-        agent_config: Optional[Dict[str, Any]] = None,
+        agent_config: dict[str, Any] | None = None,
     ) -> SimulationRun:
         result = await db.execute(
             select(SimulationScenario).where(
@@ -79,24 +92,30 @@ class SimulationEngine:
             agent_config=agent_config or {},
             status="running",
             messages=[],
-            started_at=datetime.now(timezone.utc),
+            started_at=datetime.now(UTC),
         )
         db.add(run)
         await db.commit()
         await db.refresh(run)
 
-        started = datetime.now(timezone.utc)
-        messages_history: List[Dict[str, str]] = []
+        started = datetime.now(UTC)
+        messages_history: list[dict[str, str]] = []
 
         try:
             # Initial customer message (ice breaker)
-            initial_customer = await self._generate_customer_message(db, scenario, messages_history)
+            initial_customer = await self._generate_customer_message(
+                db, scenario, messages_history
+            )
             if initial_customer:
-                messages_history.append({"role": "customer", "content": initial_customer})
+                messages_history.append(
+                    {"role": "customer", "content": initial_customer}
+                )
 
             for turn in range(self.MAX_TURNS):
                 # Agent turn
-                agent_msg = await self._generate_agent_message(db, scenario, messages_history)
+                agent_msg = await self._generate_agent_message(
+                    db, scenario, messages_history
+                )
                 if not agent_msg:
                     break
                 messages_history.append({"role": "agent", "content": agent_msg})
@@ -106,7 +125,9 @@ class SimulationEngine:
                     break
 
                 # Customer turn
-                customer_msg = await self._generate_customer_message(db, scenario, messages_history)
+                customer_msg = await self._generate_customer_message(
+                    db, scenario, messages_history
+                )
                 if not customer_msg:
                     break
                 messages_history.append({"role": "customer", "content": customer_msg})
@@ -117,14 +138,18 @@ class SimulationEngine:
 
                 # Periodic objective check after turn 8 to avoid premature exits
                 if turn >= 8 and turn % 2 == 0:
-                    status = await self._check_objective_status(db, scenario, messages_history)
+                    status = await self._check_objective_status(
+                        db, scenario, messages_history
+                    )
                     if status == "COMPLETE":
                         break
 
             # Evaluate
-            score, outcome, skills, feedback = await self._evaluate_run(db, scenario, messages_history)
+            score, outcome, skills, feedback = await self._evaluate_run(
+                db, scenario, messages_history
+            )
 
-            duration = int((datetime.now(timezone.utc) - started).total_seconds())
+            duration = int((datetime.now(UTC) - started).total_seconds())
 
             run.status = "completed"
             run.messages = messages_history
@@ -133,18 +158,18 @@ class SimulationEngine:
             run.skills_tested = skills
             run.feedback = feedback
             run.duration_seconds = duration
-            run.completed_at = datetime.now(timezone.utc)
+            run.completed_at = datetime.now(UTC)
             await db.commit()
             await db.refresh(run)
 
             # Update leaderboard
             await self._update_leaderboard(db, user_id, scenario.agent_type)
 
-        except Exception as e:
-            logger.exception(f"Simulation run failed: {e}")
+        except Exception:
+            logger.exception("Simulation run failed")
             run.status = "failed"
             run.messages = messages_history
-            run.duration_seconds = int((datetime.now(timezone.utc) - started).total_seconds())
+            run.duration_seconds = int((datetime.now(UTC) - started).total_seconds())
             await db.commit()
             await db.refresh(run)
 
@@ -154,10 +179,10 @@ class SimulationEngine:
         self,
         db: AsyncSession,
         scenario: SimulationScenario,
-        messages_history: List[Dict[str, str]],
-    ) -> Optional[str]:
-        from app.domains.agents.prompts import get_system_prompt
+        messages_history: list[dict[str, str]],
+    ) -> str | None:
         from app.domains.agents.ai_reply import generate_raw_ai_response
+        from app.domains.agents.prompts import get_system_prompt
 
         system_prompt = get_system_prompt(scenario.agent_type)
         system_prompt += (
@@ -183,8 +208,8 @@ class SimulationEngine:
         self,
         db: AsyncSession,
         scenario: SimulationScenario,
-        messages_history: List[Dict[str, str]],
-    ) -> Optional[str]:
+        messages_history: list[dict[str, str]],
+    ) -> str | None:
         from app.domains.agents.ai_reply import generate_raw_ai_response
 
         persona = scenario.customer_persona
@@ -199,7 +224,9 @@ class SimulationEngine:
         )
 
         transcript = self._build_transcript(messages_history)
-        user_prompt = f"Conversación hasta ahora:\n{transcript}\n\nTu turno como cliente:"
+        user_prompt = (
+            f"Conversación hasta ahora:\n{transcript}\n\nTu turno como cliente:"
+        )
 
         return await generate_raw_ai_response(
             db=db,
@@ -210,7 +237,7 @@ class SimulationEngine:
             temperature=0.8,
         )
 
-    def _build_transcript(self, messages_history: List[Dict[str, str]]) -> str:
+    def _build_transcript(self, messages_history: list[dict[str, str]]) -> str:
         lines = []
         for m in messages_history:
             speaker = "Agente" if m["role"] == "agent" else "Cliente"
@@ -225,7 +252,7 @@ class SimulationEngine:
         self,
         db: AsyncSession,
         scenario: SimulationScenario,
-        messages_history: List[Dict[str, str]],
+        messages_history: list[dict[str, str]],
     ) -> str:
         from app.domains.agents.ai_reply import generate_raw_ai_response
 
@@ -257,7 +284,7 @@ class SimulationEngine:
         self,
         db: AsyncSession,
         scenario: SimulationScenario,
-        messages_history: List[Dict[str, str]],
+        messages_history: list[dict[str, str]],
     ) -> tuple:
         from app.domains.agents.ai_reply import generate_raw_ai_response
 
@@ -281,7 +308,11 @@ class SimulationEngine:
 
         # Outcome
         status = await self._check_objective_status(db, scenario, messages_history)
-        outcome_map = {"COMPLETE": "success", "PARTIAL": "partial", "INCOMPLETE": "failure"}
+        outcome_map = {
+            "COMPLETE": "success",
+            "PARTIAL": "partial",
+            "INCOMPLETE": "failure",
+        }
         outcome = outcome_map.get(status, "failure")
 
         # Skills
@@ -317,7 +348,9 @@ class SimulationEngine:
 
         return score, outcome, skills, feedback
 
-    def _extract_number(self, text: Optional[str], default: int = 0, max_val: int = 100) -> int:
+    def _extract_number(
+        self, text: str | None, default: int = 0, max_val: int = 100
+    ) -> int:
         if not text:
             return default
         digits = "".join(c for c in text if c.isdigit())
@@ -327,7 +360,9 @@ class SimulationEngine:
         except ValueError:
             return default
 
-    def _extract_json(self, text: Optional[str], default: Dict[str, Any]) -> Dict[str, Any]:
+    def _extract_json(
+        self, text: str | None, default: dict[str, Any]
+    ) -> dict[str, Any]:
         if not text:
             return default
         try:
@@ -338,6 +373,7 @@ class SimulationEngine:
                 cleaned = cleaned.split("```")[1].split("```")[0].strip()
             return json.loads(cleaned)
         except Exception:
+            logger.exception("_extract_json: error inesperado")
             return default
 
     async def _update_leaderboard(
@@ -393,18 +429,20 @@ class SimulationEngine:
         lb.avg_score = avg_score
         lb.best_score = best_score
         lb.success_rate = success_rate
-        lb.updated_at = datetime.now(timezone.utc)
+        lb.updated_at = datetime.now(UTC)
         await db.commit()
 
     async def get_leaderboard(
         self,
         db: AsyncSession,
-        agent_type: Optional[str] = None,
+        agent_type: str | None = None,
         limit: int = 50,
-    ) -> List[SimulationLeaderboard]:
-        query = select(SimulationLeaderboard).order_by(
-            desc(SimulationLeaderboard.avg_score)
-        ).limit(limit)
+    ) -> list[SimulationLeaderboard]:
+        query = (
+            select(SimulationLeaderboard)
+            .order_by(desc(SimulationLeaderboard.avg_score))
+            .limit(limit)
+        )
         if agent_type:
             query = query.where(SimulationLeaderboard.agent_type == agent_type)
         result = await db.execute(query)

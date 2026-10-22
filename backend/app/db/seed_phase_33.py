@@ -4,18 +4,24 @@ Auto-runs on backend startup if tables are empty.
 Professional approach: SQLAlchemy + declarative models.
 """
 
-from datetime import datetime, timedelta
+import logging
+from datetime import timedelta
 from uuid import uuid4
+
 from sqlalchemy.orm import Session
+
+from app.core.clock import utc_now
 
 # Import models
 from app.models.platform_integration import (
-    Product,
-    PlatformListing,
     CustomerReview,
     Order,
+    PlatformListing,
+    Product,
     SellerMetrics,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def seed_phase_33(db: Session) -> dict:
@@ -43,7 +49,7 @@ def seed_phase_33(db: Session) -> dict:
                 stock_total=250,
                 stock_reserved=45,
                 is_digital=False,
-                created_at=datetime.utcnow() - timedelta(days=60),
+                created_at=utc_now() - timedelta(days=60),
             ),
             Product(
                 id=uuid4(),
@@ -59,7 +65,7 @@ def seed_phase_33(db: Session) -> dict:
                 stock_total=500,
                 stock_reserved=120,
                 is_digital=False,
-                created_at=datetime.utcnow() - timedelta(days=45),
+                created_at=utc_now() - timedelta(days=45),
             ),
             Product(
                 id=uuid4(),
@@ -75,7 +81,7 @@ def seed_phase_33(db: Session) -> dict:
                 stock_total=2000,
                 stock_reserved=300,
                 is_digital=False,
-                created_at=datetime.utcnow() - timedelta(days=30),
+                created_at=utc_now() - timedelta(days=30),
             ),
             Product(
                 id=uuid4(),
@@ -91,7 +97,7 @@ def seed_phase_33(db: Session) -> dict:
                 stock_total=500,
                 stock_reserved=0,
                 is_digital=True,
-                created_at=datetime.utcnow() - timedelta(days=15),
+                created_at=utc_now() - timedelta(days=15),
             ),
         ]
 
@@ -115,7 +121,9 @@ def seed_phase_33(db: Session) -> dict:
         base_prices = [99.99, 49.99, 12.99, 99.99]
         listings = []
 
-        for prod_idx, (prod_id, platform, sku, rating, sales, count) in enumerate(listing_specs):
+        for prod_idx, (prod_id, platform, sku, rating, sales, count) in enumerate(
+            listing_specs
+        ):
             listing = PlatformListing(
                 id=uuid4(),
                 product_id=prod_id,
@@ -129,7 +137,7 @@ def seed_phase_33(db: Session) -> dict:
                 rating_count=count,
                 sales_this_month=sales,
                 best_seller_rank=1 if sales > 300 else (3 if sales > 200 else 5),
-                last_sync_at=datetime.utcnow(),
+                last_sync_at=utc_now(),
             )
             listings.append(listing)
             db.add(listing)
@@ -156,9 +164,9 @@ def seed_phase_33(db: Session) -> dict:
                     review_text=text,
                     is_flagged=False,
                     seller_response="Thank you for your feedback!",
-                    response_date=datetime.utcnow(),
+                    response_date=utc_now(),
                     helpful_count=5 if rating == 5 else 2,
-                    created_at=datetime.utcnow() - timedelta(days=10),
+                    created_at=utc_now() - timedelta(days=10),
                 )
                 db.add(review)
         db.flush()
@@ -176,9 +184,9 @@ def seed_phase_33(db: Session) -> dict:
                     price=listing.current_price,
                     quantity=1,
                     order_status="delivered",
-                    created_at=datetime.utcnow() - timedelta(days=30-i),
-                    shipped_at=datetime.utcnow() - timedelta(days=28-i),
-                    delivered_at=datetime.utcnow() - timedelta(days=25-i),
+                    created_at=utc_now() - timedelta(days=30 - i),
+                    shipped_at=utc_now() - timedelta(days=28 - i),
+                    delivered_at=utc_now() - timedelta(days=25 - i),
                 )
                 db.add(order)
         db.flush()
@@ -190,12 +198,22 @@ def seed_phase_33(db: Session) -> dict:
             ("hotmart", 80, 1, 5, 4.9, 200, 30, 4000.0, 0.15),
         ]
 
-        for platform, active, bestseller, top5, rating, reviews, orders, gmv, conv_rate in metrics_data:
+        for (
+            platform,
+            active,
+            bestseller,
+            top5,
+            rating,
+            reviews,
+            orders,
+            gmv,
+            conv_rate,
+        ) in metrics_data:
             metric = SellerMetrics(
                 id=uuid4(),
                 seller_id="seller-sellbot-001",
                 platform=platform,
-                metric_date=datetime.utcnow().date(),
+                metric_date=utc_now().date(),
                 active_listings=active,
                 bestseller_count=bestseller,
                 top_5_count=top5,
@@ -223,5 +241,6 @@ def seed_phase_33(db: Session) -> dict:
         }
 
     except Exception as e:
+        logger.exception("seed_phase_33: error inesperado")
         db.rollback()
         return {"status": "error", "error": str(e)}

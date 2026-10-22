@@ -1,15 +1,20 @@
 """Facebook Messenger Connector via Meta Graph API."""
 
-import httpx
+import logging
 from typing import Any
 
+import httpx
+
 from app.domains.channels.connectors.base import BaseChannelConnector
-from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.models import ChannelPlatform
+from app.domains.channels.schemas import WebhookPayload
+
+logger = logging.getLogger(__name__)
 
 
 class MessengerConnector(BaseChannelConnector):
     """Conector para Facebook Messenger usando Meta Graph API."""
+
     platform = "messenger"
     BASE_URL = "https://graph.facebook.com/v18.0"
 
@@ -18,7 +23,9 @@ class MessengerConnector(BaseChannelConnector):
         self.api_token = credentials.get("api_token")
         self.page_id = credentials.get("page_id")
 
-    async def send_message(self, recipient_id: str, content: str, content_type: str = "text") -> dict[str, Any]:
+    async def send_message(
+        self, recipient_id: str, content: str, content_type: str = "text"
+    ) -> dict[str, Any]:
         if not self.api_token:
             raise ValueError("Faltan credenciales de Messenger")
 
@@ -64,4 +71,5 @@ class MessengerConnector(BaseChannelConnector):
                 response = await client.get(url, headers=headers)
                 return response.status_code == 200
         except Exception:
+            logger.exception("validate_credentials: error inesperado")
             return False

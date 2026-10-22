@@ -1,22 +1,22 @@
 """Lead Qualifier Auto-Agent Router"""
 
-from typing import Annotated, Optional
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.agents.lead_qualifier import service as lq_service
 from app.domains.agents.lead_qualifier.schemas import (
-    QualifyLeadOut,
     LeadQualificationOut,
     QualifyingQuestionOut,
+    QualifyLeadOut,
     RouteLeadIn,
     RouteLeadOut,
 )
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/lead-qualifier", tags=["lead-qualifier"])
 
@@ -29,8 +29,8 @@ async def get_db():
 @router.post("/qualify/{conversation_id}", response_model=QualifyLeadOut)
 async def qualify_lead(
     conversation_id: UUID,
-    business_id: UUID = Query(...),
-    customer_id: Optional[UUID] = Query(None),
+    business_id: Annotated[UUID, Query()],
+    customer_id: Annotated[UUID | None, Query()] = None,
     db: Annotated[AsyncSession, Depends(get_db)] = None,
     current_user: Annotated[User, Depends(get_current_user)] = None,
 ):
@@ -49,9 +49,9 @@ async def qualify_lead(
 
 @router.get("/leads", response_model=list[LeadQualificationOut])
 async def list_leads(
-    business_id: UUID = Query(...),
-    min_score: float = Query(70.0, ge=0.0, le=100.0),
-    limit: int = Query(100, ge=1, le=500),
+    business_id: Annotated[UUID, Query()],
+    min_score: Annotated[float, Query(ge=0.0, le=100.0)] = 70.0,
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
     db: Annotated[AsyncSession, Depends(get_db)] = None,
     current_user: Annotated[User, Depends(get_current_user)] = None,
 ):
@@ -69,7 +69,9 @@ async def get_lead(
     """Get qualification details for a lead."""
     lead = await lq_service.get_qualification(db, qualification_id)
     if not lead:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lead no encontrado")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Lead no encontrado"
+        )
     return lead
 
 
@@ -82,7 +84,9 @@ async def route_lead(
 ):
     """Manually route a lead to a destination."""
     try:
-        lead = await lq_service.route_lead(db, qualification_id, data.routing_destination)
+        lead = await lq_service.route_lead(
+            db, qualification_id, data.routing_destination
+        )
         return RouteLeadOut(
             qualification_id=lead.id,
             routing_destination=lead.routing_destination or "",

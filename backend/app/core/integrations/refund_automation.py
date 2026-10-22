@@ -11,15 +11,15 @@ Flujo:
 """
 
 import logging
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 class DisputeReason(Enum):
     """Categorías de reclamo."""
+
     PRODUCT_DAMAGED = "producto_dañado"
     PRODUCT_DIFFERENT = "producto_diferente"
     NOT_ARRIVED = "no_llegó"
@@ -30,6 +30,7 @@ class DisputeReason(Enum):
 
 class RefundStrategy(Enum):
     """Estrategias de resolución."""
+
     FULL_REFUND = "full_refund"
     PARTIAL_REFUND = "partial_refund"
     REPLACEMENT = "replacement"
@@ -50,8 +51,8 @@ class RefundAutomation:
         self,
         order_id: str,
         buyer_message: str,
-        photos: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        photos: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Analiza reclamo. Detecta categoría + confianza + estrategia recomendada.
         """
@@ -64,7 +65,9 @@ class RefundAutomation:
         # Determinar estrategia automática
         strategy = self._recommend_strategy(reason, confidence)
 
-        logger.info(f"Dispute: {reason.value}, confidence: {confidence:.1%}, strategy: {strategy.value}")
+        logger.info(
+            f"Dispute: {reason.value}, confidence: {confidence:.1%}, strategy: {strategy.value}"
+        )
 
         return {
             "status": "analyzed",
@@ -83,10 +86,29 @@ class RefundAutomation:
 
         keywords = {
             DisputeReason.PRODUCT_DAMAGED: ["dañado", "roto", "quebrado", "defecto"],
-            DisputeReason.PRODUCT_DIFFERENT: ["no es igual", "diferente", "no es lo que", "no corresponde"],
-            DisputeReason.NOT_ARRIVED: ["no llegó", "no recibí", "desapareció", "tracking"],
-            DisputeReason.QUALITY_ISSUE: ["mala calidad", "bajo calidad", "no funciona", "falla"],
-            DisputeReason.WRONG_ADDRESS: ["dirección incorrecta", "envío equivocado", "otro destino"],
+            DisputeReason.PRODUCT_DIFFERENT: [
+                "no es igual",
+                "diferente",
+                "no es lo que",
+                "no corresponde",
+            ],
+            DisputeReason.NOT_ARRIVED: [
+                "no llegó",
+                "no recibí",
+                "desapareció",
+                "tracking",
+            ],
+            DisputeReason.QUALITY_ISSUE: [
+                "mala calidad",
+                "bajo calidad",
+                "no funciona",
+                "falla",
+            ],
+            DisputeReason.WRONG_ADDRESS: [
+                "dirección incorrecta",
+                "envío equivocado",
+                "otro destino",
+            ],
         }
 
         for reason, kws in keywords.items():
@@ -95,7 +117,7 @@ class RefundAutomation:
 
         return DisputeReason.FRAUD  # Default fallback (rare)
 
-    def _estimate_confidence(self, message: str, photos: Optional[List[str]]) -> float:
+    def _estimate_confidence(self, message: str, photos: list[str] | None) -> float:
         """Estima confianza en reclamo (0-1)."""
 
         confidence = 0.5
@@ -113,7 +135,9 @@ class RefundAutomation:
 
         return min(confidence, 1.0)
 
-    def _recommend_strategy(self, reason: DisputeReason, confidence: float) -> RefundStrategy:
+    def _recommend_strategy(
+        self, reason: DisputeReason, confidence: float
+    ) -> RefundStrategy:
         """Recomienda estrategia de resolución."""
 
         # Alta confianza → refund automático
@@ -136,14 +160,28 @@ class RefundAutomation:
         else:
             return RefundStrategy.ESCALATE
 
-    def _get_resolution_text(self, reason: DisputeReason, strategy: RefundStrategy) -> str:
+    def _get_resolution_text(
+        self, reason: DisputeReason, strategy: RefundStrategy
+    ) -> str:
         """Texto de oferta de resolución."""
 
         offers = {
-            (DisputeReason.PRODUCT_DAMAGED, RefundStrategy.REPLACEMENT): "Enviaremos producto nuevo sin cargo. El dañado lo retiramos.",
-            (DisputeReason.PRODUCT_DAMAGED, RefundStrategy.PARTIAL_REFUND): "Ofrecemos 50% de refund + puedes quedarte con el producto.",
-            (DisputeReason.NOT_ARRIVED, RefundStrategy.FULL_REFUND): "Reembolso 100%. Lamentamos el inconveniente.",
-            (DisputeReason.PRODUCT_DIFFERENT, RefundStrategy.PARTIAL_REFUND): "Refund 70%. Te pedimos disculpas.",
+            (
+                DisputeReason.PRODUCT_DAMAGED,
+                RefundStrategy.REPLACEMENT,
+            ): "Enviaremos producto nuevo sin cargo. El dañado lo retiramos.",
+            (
+                DisputeReason.PRODUCT_DAMAGED,
+                RefundStrategy.PARTIAL_REFUND,
+            ): "Ofrecemos 50% de refund + puedes quedarte con el producto.",
+            (
+                DisputeReason.NOT_ARRIVED,
+                RefundStrategy.FULL_REFUND,
+            ): "Reembolso 100%. Lamentamos el inconveniente.",
+            (
+                DisputeReason.PRODUCT_DIFFERENT,
+                RefundStrategy.PARTIAL_REFUND,
+            ): "Refund 70%. Te pedimos disculpas.",
         }
 
         return offers.get(
@@ -159,7 +197,7 @@ class RefundAutomation:
         payment_method: str,  # stripe, mercadolibre, etc
         amount: float,
         reason: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Procesa refund automáticamente."""
 
         logger.info(f"Processing refund for order {order_id}: ${amount}")
@@ -170,7 +208,10 @@ class RefundAutomation:
             elif payment_method == "mercadolibre":
                 result = await self.ml.process_refund(order_id, amount, reason)
             else:
-                return {"status": "error", "error": f"Unknown payment method: {payment_method}"}
+                return {
+                    "status": "error",
+                    "error": f"Unknown payment method: {payment_method}",
+                }
 
             if result["status"] == "success":
                 # Notificar buyer
@@ -181,13 +222,13 @@ class RefundAutomation:
                 return result
 
         except Exception as e:
-            logger.error(f"Refund error: {str(e)}")
+            logger.exception("Refund error")
             return {"status": "error", "error": str(e)}
 
-    async def _notify_buyer_refund(self, order_id: str, amount: float, reason: str) -> None:
+    async def _notify_buyer_refund(
+        self, order_id: str, amount: float, reason: str
+    ) -> None:
         """Notifica buyer vía WhatsApp."""
-
-        message = f"✅ Refund procesado: ${amount}. Retornarán en 3-5 días hábiles. Motivo: {reason}."
 
         # TODO: WhatsApp notification integration
         logger.info(f"Refund notification sent for {order_id}")
@@ -199,10 +240,12 @@ class RefundAutomation:
         order_id: str,
         chargeback_amount: float,
         reason_code: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Maneja chargeback automático."""
 
-        logger.warning(f"Chargeback received for {order_id}: ${chargeback_amount} ({reason_code})")
+        logger.warning(
+            f"Chargeback received for {order_id}: ${chargeback_amount} ({reason_code})"
+        )
 
         # Estrategia: responder a chargeback con evidencia
         evidence = await self._gather_evidence(order_id)
@@ -219,7 +262,7 @@ class RefundAutomation:
             logger.warning(f"No evidence for {order_id}. Chargeback accepted.")
             return {"status": "chargeback_accepted"}
 
-    async def _gather_evidence(self, order_id: str) -> Optional[Dict[str, Any]]:
+    async def _gather_evidence(self, order_id: str) -> dict[str, Any] | None:
         """Reúne evidencia de transacción válida."""
 
         # TODO: Obtener del DB: confirmación de pago, shipping evidence, tracking, etc
@@ -237,8 +280,8 @@ class RefundAutomation:
         self,
         order_id: str,
         amount: float,
-        buyer_info: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        buyer_info: dict[str, Any],
+    ) -> dict[str, Any]:
         """Detecta posible fraude en reclamo."""
 
         logger.info(f"Checking for fraud signals in {order_id}")

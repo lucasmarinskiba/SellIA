@@ -8,8 +8,10 @@ Checks:
 """
 
 import logging
-from typing import Dict, Any
 from datetime import datetime
+from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +19,7 @@ logger = logging.getLogger(__name__)
 async def validate_scheduling_request(
     seller_id: str,
     scheduled_time: datetime,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     P1: Valida si se puede agendar una call/meeting.
 
@@ -44,7 +46,7 @@ async def validate_scheduling_request(
             }
 
         # 2. Check if time is in the past
-        if scheduled_time < datetime.utcnow():
+        if scheduled_time < utc_now():
             return {
                 "allowed": False,
                 "error": "time_in_past",
@@ -59,7 +61,7 @@ async def validate_scheduling_request(
         }
 
     except Exception as e:
-        logger.error(f"Scheduling validation error: {str(e)}")
+        logger.exception("Scheduling validation error")
         return {
             "allowed": False,
             "error": "validation_error",

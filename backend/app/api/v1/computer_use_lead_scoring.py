@@ -6,22 +6,19 @@ Endpoints para evaluar leads:
 - GET /leads/priority — ordenar por priority
 """
 
-import logging
-from typing import List
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
 from app.core.logger import get_logger
-from app.domains.users.models import User
 from app.domains.computer_use.services.lead_scorer import (
     get_lead_scoring_service,
-    LeadScoringService,
-    LeadTemperature,
 )
+from app.domains.users.models import User
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -43,7 +40,7 @@ class LeadScoringRequest(BaseModel):
 
     lead_id: str
     lead_name: str
-    conversation_history: List[MessageHistory]
+    conversation_history: list[MessageHistory]
     customer_profile: dict = Field(default_factory=dict)
     product_info: dict = Field(default_factory=dict)
 
@@ -77,8 +74,8 @@ class LeadScoreResponse(BaseModel):
 @router.post("/leads/score", response_model=LeadScoreResponse)
 async def score_lead(
     request: LeadScoringRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """
     Calcula score automático de un lead.
@@ -117,15 +114,15 @@ async def score_lead(
         )
 
     except Exception as e:
-        logger.error(f"Error scoring lead: {e}")
+        logger.exception("Error scoring lead")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/leads/batch-score", response_model=List[LeadScoreResponse])
+@router.post("/leads/batch-score", response_model=list[LeadScoreResponse])
 async def batch_score_leads(
-    requests: List[LeadScoringRequest],
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    requests: list[LeadScoringRequest],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """
     Calcula scores para múltiples leads de una vez.
@@ -173,15 +170,15 @@ async def batch_score_leads(
         ]
 
     except Exception as e:
-        logger.error(f"Error batch scoring leads: {e}")
+        logger.exception("Error batch scoring leads")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/leads/by-temperature")
 async def get_leads_by_temperature(
-    temperature: str = Query(..., description="hot | warm | cold"),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    temperature: Annotated[str, Query(description="hot | warm | cold")],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """
     Retorna info sobre acciones recomendadas por temperatura.
@@ -237,13 +234,13 @@ async def get_leads_by_temperature(
         return recommendations.get(temperature)
 
     except Exception as e:
-        logger.error(f"Error getting temperature info: {e}")
+        logger.exception("Error getting temperature info")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/leads/scoring-factors")
 async def get_scoring_factors(
-    current_user: User = Depends(get_current_active_user),
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """
     Retorna explicación de factores de scoring.

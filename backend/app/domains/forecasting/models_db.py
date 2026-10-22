@@ -8,7 +8,7 @@ forecast_accuracy     Realised error once the target dates have passed.
 
 import enum
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import (
     Boolean,
@@ -30,7 +30,7 @@ from app.core.database import Base
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class RunStatus(str, enum.Enum):
@@ -43,14 +43,18 @@ class ForecastSeries(Base):
     __tablename__ = "forecast_series"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"),
-                         nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
-    series_key = Column(String(200), nullable=False)   # SeriesSpec.series_key
-    level = Column(String(16), nullable=False)          # total|product|channel|category
-    target = Column(String(16), nullable=False)         # units|revenue|orders
+    series_key = Column(String(200), nullable=False)  # SeriesSpec.series_key
+    level = Column(String(16), nullable=False)  # total|product|channel|category
+    target = Column(String(16), nullable=False)  # units|revenue|orders
     grain = Column(String(10), default="daily", nullable=False)
-    key = Column(String(200), nullable=True)            # sku / channel value
+    key = Column(String(200), nullable=True)  # sku / channel value
     label = Column(String(200), nullable=True)
     country = Column(String(2), default="AR", nullable=False)
 
@@ -67,10 +71,17 @@ class ForecastSeries(Base):
     created_at = Column(DateTime(timezone=True), default=_utcnow)
     updated_at = Column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
 
-    runs = relationship("ForecastRun", back_populates="series", cascade="all, delete-orphan", lazy="noload")
+    runs = relationship(
+        "ForecastRun",
+        back_populates="series",
+        cascade="all, delete-orphan",
+        lazy="noload",
+    )
 
     __table_args__ = (
-        UniqueConstraint("business_id", "series_key", name="uq_forecast_series_business_key"),
+        UniqueConstraint(
+            "business_id", "series_key", name="uq_forecast_series_business_key"
+        ),
         Index("ix_forecast_series_business_active", "business_id", "is_active"),
     )
 
@@ -79,13 +90,21 @@ class ForecastRun(Base):
     __tablename__ = "forecast_runs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    series_id = Column(UUID(as_uuid=True), ForeignKey("forecast_series.id", ondelete="CASCADE"),
-                       nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"),
-                         nullable=False, index=True)
+    series_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("forecast_series.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     run_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
-    origin_date = Column(Date, nullable=False)          # last actual day used
+    origin_date = Column(Date, nullable=False)  # last actual day used
     horizon = Column(Integer, nullable=False)
     grain = Column(String(10), default="daily", nullable=False)
 
@@ -102,13 +121,18 @@ class ForecastRun(Base):
     pinball_backtest = Column(Numeric(14, 4), nullable=True)
     coverage_backtest = Column(Numeric(6, 4), nullable=True)
 
-    total_forecast = Column(Numeric(18, 2), nullable=True)   # sum of mean over horizon
+    total_forecast = Column(Numeric(18, 2), nullable=True)  # sum of mean over horizon
     reconciled = Column(Boolean, default=False, nullable=False)
 
     created_at = Column(DateTime(timezone=True), default=_utcnow)
 
     series = relationship("ForecastSeries", back_populates="runs")
-    points = relationship("ForecastPoint", back_populates="run", cascade="all, delete-orphan", lazy="noload")
+    points = relationship(
+        "ForecastPoint",
+        back_populates="run",
+        cascade="all, delete-orphan",
+        lazy="noload",
+    )
 
     __table_args__ = (
         Index("ix_forecast_runs_business_run_at", "business_id", "run_at"),
@@ -120,12 +144,24 @@ class ForecastPoint(Base):
     __tablename__ = "forecast_points"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    run_id = Column(UUID(as_uuid=True), ForeignKey("forecast_runs.id", ondelete="CASCADE"),
-                    nullable=False, index=True)
-    series_id = Column(UUID(as_uuid=True), ForeignKey("forecast_series.id", ondelete="CASCADE"),
-                       nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"),
-                         nullable=False, index=True)
+    run_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("forecast_runs.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    series_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("forecast_series.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     target_date = Column(Date, nullable=False, index=True)
     horizon_step = Column(Integer, nullable=False)
@@ -134,7 +170,9 @@ class ForecastPoint(Base):
     q10 = Column(Numeric(18, 4), nullable=True)
     q50 = Column(Numeric(18, 4), nullable=True)
     q90 = Column(Numeric(18, 4), nullable=True)
-    quantiles = Column(JSONB, default=dict, nullable=False)   # {"0.25": x, "0.75": y, ...}
+    quantiles = Column(
+        JSONB, default=dict, nullable=False
+    )  # {"0.25": x, "0.75": y, ...}
 
     created_at = Column(DateTime(timezone=True), default=_utcnow)
 
@@ -150,16 +188,28 @@ class ForecastAccuracy(Base):
     __tablename__ = "forecast_accuracy"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    series_id = Column(UUID(as_uuid=True), ForeignKey("forecast_series.id", ondelete="CASCADE"),
-                       nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"),
-                         nullable=False, index=True)
-    run_id = Column(UUID(as_uuid=True), ForeignKey("forecast_runs.id", ondelete="SET NULL"), nullable=True)
+    series_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("forecast_series.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    run_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("forecast_runs.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     evaluated_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
     window_start = Column(Date, nullable=False)
     window_end = Column(Date, nullable=False)
-    horizon_bucket = Column(String(16), nullable=False)   # "1-7", "8-14", "15-28"
+    horizon_bucket = Column(String(16), nullable=False)  # "1-7", "8-14", "15-28"
 
     n = Column(Integer, default=0, nullable=False)
     wape = Column(Numeric(10, 3), nullable=True)

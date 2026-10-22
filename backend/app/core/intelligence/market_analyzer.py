@@ -6,9 +6,8 @@ Output: Análisis competencia, precios, demanda, tendencias, oportunidades.
 """
 
 import logging
-from typing import Dict, List, Any, Optional
-from datetime import datetime
 from dataclasses import dataclass
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -16,16 +15,17 @@ logger = logging.getLogger(__name__)
 @dataclass
 class MarketAnalysis:
     """Resultado análisis mercado."""
+
     product: str
     category: str
     market_size: str  # Pequeño, Medio, Grande
     demand_level: str  # Bajo, Medio, Alto
     competition_level: str  # Baja, Media, Alta
-    price_range: Dict[str, float]  # min, max, avg
-    top_competitors: List[Dict[str, Any]]
-    market_trends: List[str]
-    opportunities: List[str]
-    threats: List[str]
+    price_range: dict[str, float]  # min, max, avg
+    top_competitors: list[dict[str, Any]]
+    market_trends: list[str]
+    opportunities: list[str]
+    threats: list[str]
     recommended_positioning: str
     confidence: float  # 0-1
 
@@ -34,7 +34,9 @@ class MarketAnalyzer:
     """Analiza mercado para producto dado."""
 
     @staticmethod
-    def analyze(product_name: str, product_description: str, price: float) -> MarketAnalysis:
+    def analyze(
+        product_name: str, product_description: str, price: float
+    ) -> MarketAnalysis:
         """
         Analiza mercado del producto.
 
@@ -50,7 +52,9 @@ class MarketAnalyzer:
 
         # Mock analysis basado en keywords producto
         category = MarketAnalyzer._detect_category(product_description)
-        market_size = MarketAnalyzer._estimate_market_size(category, product_description)
+        market_size = MarketAnalyzer._estimate_market_size(
+            category, product_description
+        )
         demand = MarketAnalyzer._estimate_demand(product_description)
         competition = MarketAnalyzer._estimate_competition(category)
         price_range = MarketAnalyzer._estimate_price_range(category, price)
@@ -151,7 +155,7 @@ class MarketAnalyzer:
         return high_comp.get(category, "Media")
 
     @staticmethod
-    def _estimate_price_range(category: str, user_price: float) -> Dict[str, float]:
+    def _estimate_price_range(category: str, user_price: float) -> dict[str, float]:
         """Estima rango de precios mercado."""
         # Mock: basado en categoría
         ranges = {
@@ -169,11 +173,15 @@ class MarketAnalyzer:
             "max": range_data["max"],
             "avg": avg,
             "user_price": user_price,
-            "vs_avg": "competitivo" if abs(user_price - avg) / avg < 0.2 else "premium" if user_price > avg else "budget",
+            "vs_avg": (
+                "competitivo"
+                if abs(user_price - avg) / avg < 0.2
+                else "premium" if user_price > avg else "budget"
+            ),
         }
 
     @staticmethod
-    def _get_trends(category: str) -> List[str]:
+    def _get_trends(category: str) -> list[str]:
         """Tendencias mercado."""
         trends = {
             "saas": [
@@ -197,7 +205,7 @@ class MarketAnalyzer:
     @staticmethod
     def _identify_opportunities(
         category: str, demand: str, competition: str, price: float
-    ) -> List[str]:
+    ) -> list[str]:
         """Oportunidades para usuario."""
         opps = []
 
@@ -221,7 +229,7 @@ class MarketAnalyzer:
         return opps[:3]  # Top 3
 
     @staticmethod
-    def _identify_threats(category: str, competition: str) -> List[str]:
+    def _identify_threats(category: str, competition: str) -> list[str]:
         """Threats."""
         threats = []
 
@@ -238,7 +246,10 @@ class MarketAnalyzer:
 
     @staticmethod
     def _recommend_positioning(
-        category: str, competition: str, price_range: Dict[str, float], user_price: float
+        category: str,
+        competition: str,
+        price_range: dict[str, float],
+        user_price: float,
     ) -> str:
         """Recomendación posicionamiento."""
 
@@ -261,17 +272,30 @@ class MarketComparator:
     @staticmethod
     def compare_strategies(
         user_product_analysis: MarketAnalysis, competitor_analysis: MarketAnalysis
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Compara estrategias vs competidor."""
 
         return {
             "user_positioning": user_product_analysis.recommended_positioning,
             "competitor_positioning": competitor_analysis.recommended_positioning,
-            "positioning_gap": "Diferenciación posible" if user_product_analysis.recommended_positioning != competitor_analysis.recommended_positioning else "Competing on same positioning",
+            "positioning_gap": (
+                "Diferenciación posible"
+                if user_product_analysis.recommended_positioning
+                != competitor_analysis.recommended_positioning
+                else "Competing on same positioning"
+            ),
             "price_gap_pct": (
-                (user_product_analysis.price_range["user_price"] - competitor_analysis.price_range["avg"])
+                (
+                    user_product_analysis.price_range["user_price"]
+                    - competitor_analysis.price_range["avg"]
+                )
                 / competitor_analysis.price_range["avg"]
                 * 100
             ),
-            "recommendation": "Diferenciarse o cambiar positioning" if user_product_analysis.recommended_positioning == competitor_analysis.recommended_positioning else "Posicionamiento claro diferente",
+            "recommendation": (
+                "Diferenciarse o cambiar positioning"
+                if user_product_analysis.recommended_positioning
+                == competitor_analysis.recommended_positioning
+                else "Posicionamiento claro diferente"
+            ),
         }

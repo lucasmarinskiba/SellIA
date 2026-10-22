@@ -1,12 +1,12 @@
 import hashlib
 import hmac
 import os
-from typing import Optional
+from typing import Annotated
 
-from fastapi import Depends, HTTPException, status, Request
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.security import decode_access_token
@@ -50,7 +50,7 @@ async def get_token_from_request(request: Request) -> str | None:
 
 async def get_current_user(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -71,7 +71,7 @@ async def get_current_user(
                     request.state.user = user
                     return user
             except Exception:
-                pass
+                logger.exception("get_current_user: error inesperado")
         # Si el header viene pero no encontramos el usuario, caemos al JWT
 
     token = await get_token_from_request(request)
@@ -94,6 +94,7 @@ async def get_current_user(
     except HTTPException:
         raise
     except Exception:
+        logger.exception("get_current_user: error inesperado")
         raise credentials_exception
 
     # Guardar usuario en request.state para logging
@@ -103,8 +104,8 @@ async def get_current_user(
 
 async def get_current_user_optional(
     request: Request,
-    db: AsyncSession = Depends(get_db),
-) -> Optional[User]:
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> User | None:
     """Identify the caller when it is signed in, without ever rejecting.
 
     For endpoints that are legitimately public (the /sellia-brain demo) but
@@ -116,12 +117,13 @@ async def get_current_user_optional(
         return await get_current_user(request, db)
     except HTTPException:
         return None
-    except Exception:  # noqa: BLE001 -- a broken/expired token is not an error here
+    # a broken/expired token is not an error here
+    except Exception:  # noqa: BLE001
         return None
 
 
 async def get_current_active_user(
-    current_user: User = Depends(get_current_user),
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> User:
     if not current_user.is_active:
         raise HTTPException(
@@ -132,13 +134,20 @@ async def get_current_active_user(
 
 
 # Dependency de rate limiting (wrapper para fastapi-limiter)
+import logging
+
 from fastapi_limiter.depends import RateLimiter
+
+logger = logging.getLogger(__name__)
 
 # Re-exportar para uso en routers
 RateLimit = RateLimiter
 
 
-async def get_current_user_ws(token: Optional[str], db: AsyncSession = Depends(get_db)) -> Optional[User]:
+async def get_current_user_ws(
+    token: str | None,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> User | None:
     """Validate user from JWT token for WebSocket connections (no HTTP Request)."""
     if not token:
         return None

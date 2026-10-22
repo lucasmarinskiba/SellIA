@@ -5,12 +5,14 @@ column-level encryption at rest.
 """
 
 import json
+import logging
 from typing import Any
 
-from sqlalchemy import TypeDecorator, Text
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import Text, TypeDecorator
 
-from app.core.encryption import encrypt_value, decrypt_value
+from app.core.encryption import decrypt_value, encrypt_value
+
+logger = logging.getLogger(__name__)
 
 
 class EncryptedString(TypeDecorator):
@@ -31,6 +33,7 @@ class EncryptedString(TypeDecorator):
             return decrypt_value(value)
         except Exception:
             # Backward compat: may be plain text from before encryption
+            logger.exception("process_result_value: error inesperado")
             return value
 
 
@@ -54,7 +57,9 @@ class EncryptedJSONB(TypeDecorator):
             return json.loads(decrypted)
         except Exception:
             # Backward compat: may be plain JSON from before encryption
+            logger.exception("process_result_value: error inesperado")
             try:
                 return json.loads(value)
             except Exception:
+                logger.exception("process_result_value: error inesperado")
                 return value

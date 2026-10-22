@@ -11,9 +11,11 @@ task in it) from being registered at all.
 """
 
 import logging
-from celery import shared_task
-from typing import List, Dict, Any
 from datetime import datetime, timedelta
+from typing import Any
+
+from celery import shared_task
+
 from app.core.async_bridge import run_async
 
 logger = logging.getLogger(__name__)
@@ -27,12 +29,13 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=300)
-def import_and_enrich_leads(self, leads_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+def import_and_enrich_leads(self, leads_data: list[dict[str, Any]]) -> dict[str, Any]:
     """
     Fase 11: Importa + enriquece leads.
 
     Retries: 3 intentos con delay de 5 minutos.
     """
+
     async def _run():
         from app.domains.computer_use.services.lead_generator import get_lead_generator
 
@@ -55,24 +58,28 @@ def import_and_enrich_leads(self, leads_data: List[Dict[str, Any]]) -> Dict[str,
     try:
         return run_async(_run())
     except Exception as exc:
-        logger.error(f"Error importing leads: {exc}")
-        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+        logger.exception("Error importing leads")
+        raise self.retry(exc=exc, countdown=2**self.request.retries)
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=300)
 def send_outreach_batch(
     self,
-    leads: List[Dict[str, Any]],
+    leads: list[dict[str, Any]],
     channel: str = "email",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Fase 11: Envía outreach a batch de leads.
 
     Retries: 3 intentos.
     """
+
     async def _run():
         from app.domains.computer_use.services.lead_generator import get_lead_generator
-        from app.domains.computer_use.services.outreach_orchestrator import get_outreach_orchestrator, OutreachChannel
+        from app.domains.computer_use.services.outreach_orchestrator import (
+            OutreachChannel,
+            get_outreach_orchestrator,
+        )
 
         lead_gen = get_lead_generator()
         outreach = get_outreach_orchestrator()
@@ -84,7 +91,7 @@ def send_outreach_batch(
             lead = await lead_gen.score_lead(lead)
 
         campaign = await outreach.create_campaign(
-            name=f"Outreach {datetime.utcnow().strftime('%Y%m%d%H%M')}",
+            name=f"Outreach {utc_now().strftime('%Y%m%d%H%M')}",
             target_quality="hot",
             channel=OutreachChannel(channel),
         )
@@ -92,7 +99,7 @@ def send_outreach_batch(
         contacted = 0
         for lead in imported:
             if lead.quality.value == "hot":
-                success, msg_id = await outreach.send_outreach(
+                success, _msg_id = await outreach.send_outreach(
                     campaign=campaign,
                     lead=lead,
                     sender_name="SellIA Bot",
@@ -112,12 +119,12 @@ def send_outreach_batch(
     try:
         return run_async(_run())
     except Exception as exc:
-        logger.error(f"Error in outreach: {exc}")
-        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+        logger.exception("Error in outreach")
+        raise self.retry(exc=exc, countdown=2**self.request.retries)
 
 
 @shared_task(bind=True, max_retries=2, default_retry_delay=600)
-def send_follow_ups(self) -> Dict[str, Any]:
+def send_follow_ups(self) -> dict[str, Any]:
     """
     Envía follow-ups automáticos, senior-salesperson style: proactive but
     not spammy. Corre diariamente.
@@ -138,15 +145,22 @@ def send_follow_ups(self) -> Dict[str, Any]:
     non-repetitive nudge appropriate to the conversation's current funnel
     stage — not a canned "just checking in" template.
     """
+
     async def _run():
-        from sqlalchemy import select, func
+        from sqlalchemy import func, select
+
         from app.core.database import AsyncSessionLocal
-        from app.domains.channels.models import Conversation, Message, ConversationStatus, MessageDirection
-        from app.domains.channels.services import send_outbound_message
-        from app.domains.agents.models import AgentConfig
+        from app.core.prompts.funnel_specialists import FunnelStage
         from app.domains.agents.ai_reply import generate_ai_response
         from app.domains.agents.funnel_stage_detector import detect_funnel_stage
-        from app.core.prompts.funnel_specialists import FunnelStage
+        from app.domains.agents.models import AgentConfig
+        from app.domains.channels.models import (
+            Conversation,
+            ConversationStatus,
+            Message,
+            MessageDirection,
+        )
+        from app.domains.channels.services import send_outbound_message
 
         sent = 0
         skipped = 0
@@ -186,7 +200,9 @@ def send_follow_ups(self) -> Dict[str, Any]:
 
                 # Don't nag an already-converted/retention-stage customer —
                 # that's a different job (RETENTION/EXPANSION messaging).
-                stage = await detect_funnel_stage(db, conversation.business_id, conversation)
+                stage = await detect_funnel_stage(
+                    db, conversation.business_id, conversation
+                )
                 if stage in (FunnelStage.RETENTION, FunnelStage.EXPANSION):
                     skipped += 1
                     continue
@@ -226,7 +242,10 @@ def send_follow_ups(self) -> Dict[str, Any]:
                     else:
                         skipped += 1
                 except Exception as e:
-                    logger.warning(f"Follow-up failed for conversation {conversation.id}: {e}")
+                    logger.warning(
+                        f"Follow-up failed for conversation {conversation.id}: {e}",
+                        exc_info=True,
+                    )
                     skipped += 1
 
         logger.info(f"Follow-ups: sent={sent} skipped={skipped}")
@@ -235,28 +254,31 @@ def send_follow_ups(self) -> Dict[str, Any]:
     try:
         return run_async(_run())
     except Exception as exc:
-        logger.error(f"Error in follow-ups: {exc}")
-        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+        logger.exception("Error in follow-ups")
+        raise self.retry(exc=exc, countdown=2**self.request.retries)
 
 
 @shared_task(bind=True, max_retries=2, default_retry_delay=300)
 def send_welcome_sequences(
     self,
-    customers: List[Dict[str, Any]],
-) -> Dict[str, Any]:
+    customers: list[dict[str, Any]],
+) -> dict[str, Any]:
     """
     Fase 12: Envía email sequences de bienvenida post-compra.
 
     Corre inmediatamente después de nueva compra.
     """
+
     async def _run():
-        from app.domains.computer_use.services.customer_loyalty import get_customer_loyalty_engine
+        from app.domains.computer_use.services.customer_loyalty import (
+            get_customer_loyalty_engine,
+        )
 
         loyalty = get_customer_loyalty_engine()
 
         sent = 0
         for customer in customers:
-            success, seq_id = await loyalty.trigger_welcome_sequence(
+            success, _seq_id = await loyalty.trigger_welcome_sequence(
                 customer_id=customer.get("id", ""),
                 customer_name=customer.get("name", ""),
                 customer_email=customer.get("email", ""),
@@ -271,19 +293,22 @@ def send_welcome_sequences(
     try:
         return run_async(_run())
     except Exception as exc:
-        logger.error(f"Error in welcome sequences: {exc}")
-        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+        logger.exception("Error in welcome sequences")
+        raise self.retry(exc=exc, countdown=2**self.request.retries)
 
 
 @shared_task(bind=True, max_retries=2, default_retry_delay=600)
-def send_upsell_campaigns(self) -> Dict[str, Any]:
+def send_upsell_campaigns(self) -> dict[str, Any]:
     """
     Fase 12: Envía upsells automáticos a clientes.
 
     Corre cada 7 días para clientes activos.
     """
+
     async def _run():
-        from app.domains.computer_use.services.customer_loyalty import get_customer_loyalty_engine
+        from app.domains.computer_use.services.customer_loyalty import (
+            get_customer_loyalty_engine,
+        )
 
         loyalty = get_customer_loyalty_engine()
 
@@ -313,19 +338,22 @@ def send_upsell_campaigns(self) -> Dict[str, Any]:
     try:
         return run_async(_run())
     except Exception as exc:
-        logger.error(f"Error in upsells: {exc}")
-        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+        logger.exception("Error in upsells")
+        raise self.retry(exc=exc, countdown=2**self.request.retries)
 
 
 @shared_task(bind=True, max_retries=1, default_retry_delay=600)
-def send_winback_campaigns(self) -> Dict[str, Any]:
+def send_winback_campaigns(self) -> dict[str, Any]:
     """
     Fase 12: Detecta clientes at-risk + envía win-back.
 
     Corre cada 14 días.
     """
+
     async def _run():
-        from app.domains.computer_use.services.customer_loyalty import get_customer_loyalty_engine
+        from app.domains.computer_use.services.customer_loyalty import (
+            get_customer_loyalty_engine,
+        )
 
         loyalty = get_customer_loyalty_engine()
 
@@ -340,19 +368,22 @@ def send_winback_campaigns(self) -> Dict[str, Any]:
     try:
         return run_async(_run())
     except Exception as exc:
-        logger.error(f"Error in win-back: {exc}")
-        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+        logger.exception("Error in win-back")
+        raise self.retry(exc=exc, countdown=2**self.request.retries)
 
 
 @shared_task(bind=True, max_retries=1)
-def daily_growth_cycle(self, product_info: Dict[str, Any]) -> Dict[str, Any]:
+def daily_growth_cycle(self, product_info: dict[str, Any]) -> dict[str, Any]:
     """
     Fase 10: Ciclo diario de crecimiento (trending → content → publish).
 
     Corre diariamente a las 6 AM UTC.
     """
+
     async def _run():
-        from app.domains.computer_use.services.growth_automation_engine import get_growth_automation_engine
+        from app.domains.computer_use.services.growth_automation_engine import (
+            get_growth_automation_engine,
+        )
 
         growth = get_growth_automation_engine()
 
@@ -368,7 +399,7 @@ def daily_growth_cycle(self, product_info: Dict[str, Any]) -> Dict[str, Any]:
     try:
         return run_async(_run())
     except Exception as exc:
-        logger.error(f"Error in growth cycle: {exc}")
+        logger.exception("Error in growth cycle")
         raise self.retry(exc=exc, countdown=3600)  # Retry en 1 hora
 
 
@@ -407,3 +438,5 @@ def setup_periodic_tasks(sender, **kwargs):
 
 # Import crontab
 from celery.schedules import crontab
+
+from app.core.clock import utc_now

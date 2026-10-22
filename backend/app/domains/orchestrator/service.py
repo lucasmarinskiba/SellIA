@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import uuid
 from decimal import Decimal
-from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -50,15 +49,17 @@ class OrchestratorService:
             runway = cf.runway_days
             revenue_30d = sum(p.revenue_forecast for p in cf.points)
         except Exception:  # noqa: BLE001
-            cash = Decimal("0")
+            cash = Decimal(0)
             runway = None
-            revenue_30d = Decimal("0")
+            revenue_30d = Decimal(0)
 
         # Forecast confidence from forecasting domain
         from app.domains.forecasting.service import ForecastingService
 
         fc_svc = ForecastingService(self.db)
-        forecast_data = await fc_svc.get_forecast(business_id, "total:revenue:daily:*", horizon=30)
+        forecast_data = await fc_svc.get_forecast(
+            business_id, "total:revenue:daily:*", horizon=30
+        )
         confidence = Decimal("0.5")
         if forecast_data and forecast_data.get("points"):
             points = forecast_data["points"]
@@ -67,7 +68,7 @@ class OrchestratorService:
             q50_sum = sum(p.get("yhat", 0) for p in points)
             if q50_sum > 0:
                 confidence = Decimal(str((q90_sum - q10_sum) / (2 * q50_sum)))
-                confidence = Decimal("1") - confidence.min(Decimal("1"))
+                confidence = Decimal(1) - confidence.min(Decimal(1))
 
         # OpEx and margins from ledger
         from app.domains.ledger.service import LedgerService
@@ -75,10 +76,10 @@ class OrchestratorService:
         ledger_svc = LedgerService(self.db)
         try:
             pnl = await ledger_svc.profit_and_loss(business_id, period_months=1)
-            monthly_opex = pnl.get("total_opex", Decimal("0"))
+            monthly_opex = pnl.get("total_opex", Decimal(0))
             gross_margin = pnl.get("gross_margin_pct", Decimal("0.3"))
         except Exception:  # noqa: BLE001
-            monthly_opex = Decimal("0")
+            monthly_opex = Decimal(0)
             gross_margin = Decimal("0.3")
 
         # Ad budget metrics from ad_budget domain
@@ -87,13 +88,21 @@ class OrchestratorService:
         ab_svc = AdBudgetService(self.db)
         try:
             channels = await ab_svc.list_channels(business_id)
-            high_roas = max(channels, key=lambda c: c.last_roas or Decimal("0")).name if channels else "unknown"
-            low_roas = min(channels, key=lambda c: c.last_roas or Decimal("99")).name if channels else "unknown"
-            daily_spend = sum(c.daily_budget or Decimal("0") for c in channels)
+            high_roas = (
+                max(channels, key=lambda c: c.last_roas or Decimal(0)).name
+                if channels
+                else "unknown"
+            )
+            low_roas = (
+                min(channels, key=lambda c: c.last_roas or Decimal(99)).name
+                if channels
+                else "unknown"
+            )
+            daily_spend = sum(c.daily_budget or Decimal(0) for c in channels)
         except Exception:  # noqa: BLE001
             high_roas = "unknown"
             low_roas = "unknown"
-            daily_spend = Decimal("0")
+            daily_spend = Decimal(0)
 
         return BusinessMetrics(
             cash_balance=cash,
@@ -167,7 +176,8 @@ class OrchestratorService:
                         rationale=f"Shift budget toward {metrics.highest_roas_channel} (high ROAS) from {metrics.lowest_roas_channel}.",
                         target_value=Decimal("0.15"),  # 15% shift
                         confidence=Decimal("0.85"),
-                        impact_revenue_30d=metrics.forecast_revenue_30d * Decimal("0.05"),
+                        impact_revenue_30d=metrics.forecast_revenue_30d
+                        * Decimal("0.05"),
                     )
                 )
 
@@ -199,7 +209,10 @@ class OrchestratorService:
         return recs
 
     def _explain_reasoning(
-        self, metrics: BusinessMetrics, priority: Priority, recommendations: list[Recommendation]
+        self,
+        metrics: BusinessMetrics,
+        priority: Priority,
+        recommendations: list[Recommendation],
     ) -> str:
         """Narrative explanation of the decision."""
         lines = [
@@ -226,15 +239,25 @@ class OrchestratorService:
                 name="ad_spend_+25%",
                 description="Increase daily ad spend by 25%",
                 changes={"ad_spend_daily": 0.25},
-                projected_cash_30d=metrics.cash_balance - (metrics.ad_spend_daily * 30 * Decimal("0.25")),
+                projected_cash_30d=metrics.cash_balance
+                - (metrics.ad_spend_daily * 30 * Decimal("0.25")),
                 projected_revenue_30d=metrics.forecast_revenue_30d * Decimal("1.10"),
                 projected_runway_days=(
-                    int((metrics.cash_balance - (metrics.ad_spend_daily * 30 * Decimal("0.25"))) / (metrics.current_monthly_opex / 30))
+                    int(
+                        (
+                            metrics.cash_balance
+                            - (metrics.ad_spend_daily * 30 * Decimal("0.25"))
+                        )
+                        / (metrics.current_monthly_opex / 30)
+                    )
                     if metrics.current_monthly_opex > 0
                     else None
                 ),
                 feasibility="easy",
-                risks=["erosion of ROAS if scaling beyond sweet spot", "cash burn accelerates"],
+                risks=[
+                    "erosion of ROAS if scaling beyond sweet spot",
+                    "cash burn accelerates",
+                ],
             )
         )
 
@@ -244,10 +267,18 @@ class OrchestratorService:
                 name="opex_-15%",
                 description="Reduce operating expenses by 15%",
                 changes={"opex_pct": -0.15},
-                projected_cash_30d=metrics.cash_balance + (metrics.current_monthly_opex * Decimal("0.15")),
-                projected_revenue_30d=metrics.forecast_revenue_30d * Decimal("0.98"),  # slight impact
+                projected_cash_30d=metrics.cash_balance
+                + (metrics.current_monthly_opex * Decimal("0.15")),
+                projected_revenue_30d=metrics.forecast_revenue_30d
+                * Decimal("0.98"),  # slight impact
                 projected_runway_days=(
-                    int((metrics.cash_balance + (metrics.current_monthly_opex * Decimal("0.15"))) / ((metrics.current_monthly_opex * Decimal("0.85")) / 30))
+                    int(
+                        (
+                            metrics.cash_balance
+                            + (metrics.current_monthly_opex * Decimal("0.15"))
+                        )
+                        / ((metrics.current_monthly_opex * Decimal("0.85")) / 30)
+                    )
                     if metrics.current_monthly_opex > 0
                     else None
                 ),

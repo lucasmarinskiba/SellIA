@@ -9,23 +9,23 @@ This file demonstrates production-ready integration patterns for:
 - Load testing
 """
 
-import time
 import logging
-from datetime import datetime, timedelta
-from typing import Any, Dict, Optional
+import time
+from typing import Annotated, Any
 
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import utc_now
 from app.core.database import get_db
 from app.core.performance import (
-    DatabaseOptimizer,
-    CacheLayer,
     AsyncJobQueue,
-    PerformanceMonitor,
-    LoadTestRunner,
-    LoadTestConfig,
+    CacheLayer,
+    DatabaseOptimizer,
     JobPriority,
+    LoadTestConfig,
+    LoadTestRunner,
+    PerformanceMonitor,
 )
 
 logger = logging.getLogger(__name__)
@@ -34,7 +34,10 @@ logger = logging.getLogger(__name__)
 # INITIALIZATION
 # ============================================================================
 
-def setup_performance_stack(app: FastAPI, redis_client: Optional[Any] = None) -> Dict[str, Any]:
+
+def setup_performance_stack(
+    app: FastAPI, redis_client: Any | None = None
+) -> dict[str, Any]:
     """
     Set up the complete performance stack.
 
@@ -71,7 +74,8 @@ def setup_performance_stack(app: FastAPI, redis_client: Optional[Any] = None) ->
 # MIDDLEWARE FOR AUTOMATIC PERFORMANCE TRACKING
 # ============================================================================
 
-async def performance_tracking_middleware(app: FastAPI, performance: Dict[str, Any]):
+
+async def performance_tracking_middleware(app: FastAPI, performance: dict[str, Any]):
     """
     Middleware to automatically track endpoint performance.
 
@@ -88,7 +92,7 @@ async def performance_tracking_middleware(app: FastAPI, performance: Dict[str, A
 
         try:
             response = await call_next(request)
-        except Exception as e:
+        except Exception:
             response_time_ms = (time.time() - start_time) * 1000
             performance["monitor"].record_endpoint_time(
                 endpoint=endpoint,
@@ -115,10 +119,13 @@ async def performance_tracking_middleware(app: FastAPI, performance: Dict[str, A
 # EXAMPLE: DATABASE OPTIMIZATION
 # ============================================================================
 
+
 async def get_agents_with_optimization(
-    db: AsyncSession = Depends(get_db),
-    cache: CacheLayer = Depends(lambda: Depends(get_cache_layer)),
-    db_optimizer: DatabaseOptimizer = Depends(lambda: Depends(get_db_optimizer)),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    cache: Annotated[CacheLayer, Depends(lambda: Depends(get_cache_layer))],
+    db_optimizer: Annotated[
+        DatabaseOptimizer, Depends(lambda: Depends(get_db_optimizer))
+    ],
 ) -> list:
     """
     Example endpoint that uses caching and database optimization.
@@ -164,12 +171,13 @@ async def get_agents_with_optimization(
 # EXAMPLE: ASYNC JOB PROCESSING
 # ============================================================================
 
+
 async def enqueue_agent_import(
     file_path: str,
     user_id: str,
-    job_queue: AsyncJobQueue = Depends(lambda: Depends(get_job_queue)),
-    background_tasks: BackgroundTasks = Depends(),
-) -> Dict[str, str]:
+    job_queue: Annotated[AsyncJobQueue, Depends(lambda: Depends(get_job_queue))],
+    background_tasks: Annotated[BackgroundTasks, Depends()],
+) -> dict[str, str]:
     """
     Example: Enqueue long-running import task.
 
@@ -193,14 +201,14 @@ async def enqueue_agent_import(
     return {
         "job_id": job.id,
         "status": "queued",
-        "message": "Agent import started in background"
+        "message": "Agent import started in background",
     }
 
 
 async def get_import_status(
     job_id: str,
-    job_queue: AsyncJobQueue = Depends(lambda: Depends(get_job_queue)),
-) -> Dict[str, Any]:
+    job_queue: Annotated[AsyncJobQueue, Depends(lambda: Depends(get_job_queue))],
+) -> dict[str, Any]:
     """
     GET /api/jobs/{job_id}
 
@@ -225,9 +233,10 @@ async def process_agent_csv_import(file_path: str, user_id: str) -> None:
 # EXAMPLE: PERFORMANCE MONITORING
 # ============================================================================
 
+
 async def get_performance_dashboard(
-    monitor: PerformanceMonitor = Depends(lambda: Depends(get_monitor)),
-) -> Dict[str, Any]:
+    monitor: Annotated[PerformanceMonitor, Depends(lambda: Depends(get_monitor))],
+) -> dict[str, Any]:
     """
     GET /api/performance/dashboard
 
@@ -237,7 +246,7 @@ async def get_performance_dashboard(
     report = monitor.get_performance_report()
 
     return {
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
         "health": report["health"],
         "top_metrics": report["top_metrics"],
         "bottlenecks": report["detected_bottlenecks"],
@@ -247,9 +256,11 @@ async def get_performance_dashboard(
 
 
 async def get_slow_queries(
-    db_optimizer: DatabaseOptimizer = Depends(lambda: Depends(get_db_optimizer)),
+    db_optimizer: Annotated[
+        DatabaseOptimizer, Depends(lambda: Depends(get_db_optimizer))
+    ],
     limit: int = 50,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     GET /api/performance/slow-queries?limit=50
 
@@ -261,7 +272,7 @@ async def get_slow_queries(
     return {
         "count": len(slow_queries),
         "queries": slow_queries,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     }
 
 
@@ -269,11 +280,12 @@ async def get_slow_queries(
 # EXAMPLE: LOAD TESTING
 # ============================================================================
 
+
 async def run_load_test(
+    load_tester: Annotated[LoadTestRunner, Depends(lambda: Depends(get_load_tester))],
     concurrent_users: int = 100,
     duration_seconds: int = 60,
-    load_tester: LoadTestRunner = Depends(lambda: Depends(get_load_tester)),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     POST /api/testing/load-test
 
@@ -287,7 +299,7 @@ async def run_load_test(
 
     # Configuration
     config = LoadTestConfig(
-        name=f"load_test_{datetime.utcnow().timestamp()}",
+        name=f"load_test_{utc_now().timestamp()}",
         target_function=simulate_api_request,
         concurrent_users=concurrent_users,
         requests_per_second=concurrent_users * 10,
@@ -301,7 +313,7 @@ async def run_load_test(
         return {
             "endpoint": "/api/agents/search",
             "method": "POST",
-            "params": {"query": "test"}
+            "params": {"query": "test"},
         }
 
     # Run test
@@ -310,7 +322,7 @@ async def run_load_test(
     return result.to_dict()
 
 
-async def simulate_api_request(**kwargs) -> Dict[str, Any]:
+async def simulate_api_request(**kwargs) -> dict[str, Any]:
     """Simulate an API request for load testing."""
     # In real scenario, make actual HTTP request
     await asyncio.sleep(0.05)  # Simulate 50ms response
@@ -321,47 +333,44 @@ async def simulate_api_request(**kwargs) -> Dict[str, Any]:
 # DEPENDENCY INJECTION HELPERS
 # ============================================================================
 
+
 async def get_cache_layer() -> CacheLayer:
     """Get cache layer from app state."""
     # In real app: return request.app.state.performance["cache"]
-    pass
 
 
 async def get_db_optimizer() -> DatabaseOptimizer:
     """Get database optimizer from app state."""
     # In real app: return request.app.state.performance["db_optimizer"]
-    pass
 
 
 async def get_job_queue() -> AsyncJobQueue:
     """Get job queue from app state."""
     # In real app: return request.app.state.performance["job_queue"]
-    pass
 
 
 async def get_monitor() -> PerformanceMonitor:
     """Get performance monitor from app state."""
     # In real app: return request.app.state.performance["monitor"]
-    pass
 
 
 async def get_load_tester() -> LoadTestRunner:
     """Get load test runner from app state."""
     # In real app: return request.app.state.performance["load_tester"]
-    pass
 
 
 # ============================================================================
 # EXAMPLE ROUTES
 # ============================================================================
 
+
 def setup_performance_routes(app: FastAPI) -> None:
     """Set up performance monitoring routes."""
 
     @app.get("/health/performance")
     async def health_check(
-        monitor: PerformanceMonitor = Depends(get_monitor),
-    ) -> Dict[str, Any]:
+        monitor: Annotated[PerformanceMonitor, Depends(get_monitor)],
+    ) -> dict[str, Any]:
         """Health check including performance metrics."""
         health = monitor.get_system_health()
         return {
@@ -372,9 +381,9 @@ def setup_performance_routes(app: FastAPI) -> None:
     @app.get("/api/performance/metrics")
     async def get_metrics(
         metric_name: str,
+        monitor: Annotated[PerformanceMonitor, Depends(get_monitor)],
         limit: int = 100,
-        monitor: PerformanceMonitor = Depends(get_monitor),
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get specific performance metric."""
         stats = monitor.get_metric_stats(metric_name)
         recent = monitor.get_recent_metrics(metric_name, limit)
@@ -387,15 +396,15 @@ def setup_performance_routes(app: FastAPI) -> None:
 
     @app.get("/api/performance/cache-stats")
     async def get_cache_stats(
-        cache: CacheLayer = Depends(get_cache_layer),
-    ) -> Dict[str, Any]:
+        cache: Annotated[CacheLayer, Depends(get_cache_layer)],
+    ) -> dict[str, Any]:
         """Get cache statistics."""
         return cache.get_stats()
 
     @app.get("/api/performance/queue-status")
     async def get_queue_status(
-        job_queue: AsyncJobQueue = Depends(get_job_queue),
-    ) -> Dict[str, Any]:
+        job_queue: Annotated[AsyncJobQueue, Depends(get_job_queue)],
+    ) -> dict[str, Any]:
         """Get job queue status."""
         return {
             "queue": job_queue.get_queue_status(),
@@ -406,7 +415,7 @@ def setup_performance_routes(app: FastAPI) -> None:
     async def create_load_test(
         concurrent_users: int = 100,
         duration: int = 60,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run load test."""
         return await run_load_test(concurrent_users, duration)
 
@@ -414,6 +423,7 @@ def setup_performance_routes(app: FastAPI) -> None:
 # ============================================================================
 # MAIN APPLICATION SETUP
 # ============================================================================
+
 
 def create_app() -> FastAPI:
     """Create FastAPI application with performance stack."""
@@ -424,11 +434,12 @@ def create_app() -> FastAPI:
     @app.on_event("startup")
     async def startup():
         import redis
+
         # Initialize Redis client (or None for local cache only)
         try:
             redis_client = redis.asyncio.from_url("redis://localhost:6379")
         except Exception as e:
-            logger.warning(f"Redis unavailable, using local cache: {e}")
+            logger.warning(f"Redis unavailable, using local cache: {e}", exc_info=True)
             redis_client = None
 
         app.state.performance = setup_performance_stack(app, redis_client)
@@ -450,6 +461,7 @@ def create_app() -> FastAPI:
 
 if __name__ == "__main__":
     import asyncio
+
     import uvicorn
 
     app = create_app()

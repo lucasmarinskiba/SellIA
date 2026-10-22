@@ -5,17 +5,24 @@ Orquesta: Find → Contact → Respond → Close → Pay → Grow → Loyalty
 
 import logging
 import uuid
-from typing import Dict, Any, List, Optional, Tuple
-from datetime import datetime
+from typing import Any
 
-from app.domains.computer_use.services.lead_generator import get_lead_generator
-from app.domains.computer_use.services.outreach_orchestrator import get_outreach_orchestrator, OutreachChannel
+from app.core.clock import utc_now
 from app.domains.computer_use.services.auto_responder import get_auto_responder_service
-from app.domains.computer_use.services.sales_closer import get_sales_closer_service
 from app.domains.computer_use.services.conversion_tracker import get_conversion_tracker
-from app.domains.computer_use.services.growth_automation_engine import get_growth_automation_engine
-from app.domains.computer_use.services.customer_loyalty import get_customer_loyalty_engine
+from app.domains.computer_use.services.customer_loyalty import (
+    get_customer_loyalty_engine,
+)
+from app.domains.computer_use.services.growth_automation_engine import (
+    get_growth_automation_engine,
+)
+from app.domains.computer_use.services.lead_generator import get_lead_generator
 from app.domains.computer_use.services.lead_scorer import get_lead_scoring_service
+from app.domains.computer_use.services.outreach_orchestrator import (
+    OutreachChannel,
+    get_outreach_orchestrator,
+)
+from app.domains.computer_use.services.sales_closer import get_sales_closer_service
 
 logger = logging.getLogger(__name__)
 
@@ -58,15 +65,17 @@ class SalesFunnelOrchestrator:
 
     async def run_complete_pipeline(
         self,
-        leads_data: List[Dict[str, Any]],
-        product_info: Dict[str, Any],
+        leads_data: list[dict[str, Any]],
+        product_info: dict[str, Any],
         outreach_channel: OutreachChannel = OutreachChannel.EMAIL,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Ejecuta pipeline completo: Find → Contact → Response → Close → Pay → Grow → Loyalty
         """
         try:
-            self.campaign_id = f"campaign_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
+            self.campaign_id = (
+                f"campaign_{utc_now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
+            )
 
             self.logger.info(f"Starting pipeline: {self.campaign_id}")
 
@@ -115,10 +124,10 @@ class SalesFunnelOrchestrator:
             return result
 
         except Exception as e:
-            self.logger.error(f"Pipeline error: {e}")
+            self.logger.exception("Pipeline error")
             return {"status": "error", "message": str(e)}
 
-    async def _find_phase(self, leads_data: List[Dict[str, Any]]) -> List[Any]:
+    async def _find_phase(self, leads_data: list[dict[str, Any]]) -> list[Any]:
         """Fase 11: Importa + enriquece leads."""
         try:
             leads = await self.lead_gen.import_leads(leads_data)
@@ -133,15 +142,15 @@ class SalesFunnelOrchestrator:
 
             return leads
 
-        except Exception as e:
-            self.logger.error(f"Find phase error: {e}")
+        except Exception:
+            self.logger.exception("Find phase error")
             return []
 
     async def _contact_phase(
         self,
-        leads: List[Any],
+        leads: list[Any],
         channel: OutreachChannel,
-    ) -> List[Any]:
+    ) -> list[Any]:
         """Fase 11: Outreach automático a leads."""
         try:
             campaign = await self.outreach.create_campaign(
@@ -154,7 +163,7 @@ class SalesFunnelOrchestrator:
 
             for lead in leads:
                 if lead.quality.value == "hot":
-                    success, msg_id = await self.outreach.send_outreach(
+                    success, _msg_id = await self.outreach.send_outreach(
                         campaign=campaign,
                         lead=lead,
                         sender_name="SellIA Bot",
@@ -170,15 +179,15 @@ class SalesFunnelOrchestrator:
 
             return contacted
 
-        except Exception as e:
-            self.logger.error(f"Contact phase error: {e}")
+        except Exception:
+            self.logger.exception("Contact phase error")
             return []
 
-    async def _respond_phase(self, leads: List[Any]) -> List[Any]:
+    async def _respond_phase(self, leads: list[Any]) -> list[Any]:
         """Fase 1-2: Auto-responder a replies."""
         # En prod: webhook detecta respuestas
         # Mock: asumir 30% responden
-        responded = leads[:int(len(leads) * 0.3)]
+        responded = leads[: int(len(leads) * 0.3)]
 
         self.metrics["leads_responded"] = len(responded)
 
@@ -188,9 +197,9 @@ class SalesFunnelOrchestrator:
 
     async def _qualify_phase(
         self,
-        leads: List[Any],
-        product_info: Dict[str, Any],
-    ) -> List[Any]:
+        leads: list[Any],
+        product_info: dict[str, Any],
+    ) -> list[Any]:
         """Fase 3-5: Score + Sales Closer."""
         qualified = []
 
@@ -205,9 +214,9 @@ class SalesFunnelOrchestrator:
 
     async def _close_and_pay_phase(
         self,
-        leads: List[Any],
-        product_info: Dict[str, Any],
-    ) -> List[Any]:
+        leads: list[Any],
+        product_info: dict[str, Any],
+    ) -> list[Any]:
         """Fase 9: Sales Closer + Stripe payment."""
         paid = []
 
@@ -225,16 +234,16 @@ class SalesFunnelOrchestrator:
 
         return paid
 
-    async def _loyalty_phase(self, customers: List[Any]) -> Dict[str, Any]:
+    async def _loyalty_phase(self, customers: list[Any]) -> dict[str, Any]:
         """Fase 12: Email sequences + upsell."""
         try:
             # Crear sequences
-            welcome = await self.loyalty.create_email_sequence(
+            await self.loyalty.create_email_sequence(
                 name="Welcome",
                 sequence_type="welcome",
             )
 
-            upsell = await self.loyalty.create_email_sequence(
+            await self.loyalty.create_email_sequence(
                 name="Upsell",
                 sequence_type="upsell",
             )
@@ -271,10 +280,10 @@ class SalesFunnelOrchestrator:
             }
 
         except Exception as e:
-            self.logger.error(f"Loyalty phase error: {e}")
+            self.logger.exception("Loyalty phase error")
             return {"error": str(e)}
 
-    async def _grow_phase(self, product_info: Dict[str, Any]) -> Dict[str, Any]:
+    async def _grow_phase(self, product_info: dict[str, Any]) -> dict[str, Any]:
         """Fase 10: Growth automation."""
         try:
             result = await self.growth.run_daily_growth_cycle(
@@ -286,15 +295,16 @@ class SalesFunnelOrchestrator:
             return result
 
         except Exception as e:
-            self.logger.error(f"Grow phase error: {e}")
+            self.logger.exception("Grow phase error")
             return {"error": str(e)}
 
-    async def get_pipeline_status(self) -> Dict[str, Any]:
+    async def get_pipeline_status(self) -> dict[str, Any]:
         """Obtiene status actual del pipeline."""
         return {
             "campaign_id": self.campaign_id,
             "metrics": self.metrics,
-            "roi": self.metrics.get("revenue", 0) / max(self.metrics.get("leads_imported", 1), 1),
+            "roi": self.metrics.get("revenue", 0)
+            / max(self.metrics.get("leads_imported", 1), 1),
         }
 
 

@@ -4,16 +4,19 @@ Endpoints for recording conversation outcomes, viewing stats,
 and getting AI-suggested prompt improvements.
 """
 
+import logging
+from typing import Annotated
 from uuid import UUID
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.agents.prompt_optimizer import PromptOptimizer
+from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/outcomes", tags=["outcomes"])
 
@@ -23,11 +26,11 @@ async def record_outcome(
     conversation_id: UUID,
     agent_type: str,
     outcome: str,
-    revenue: Optional[float] = None,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    revenue: float | None = None,
     confidence: float = 0.0,
-    feedback: Optional[str] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    feedback: str | None = None,
 ):
     """Record the outcome of a conversation."""
     optimizer = PromptOptimizer(db)
@@ -43,10 +46,12 @@ async def record_outcome(
     # Trigger self-reflection and causal analysis for closed/lost conversations
     if outcome in ("lost", "stalled", "objection_unresolved", "no_progress"):
         try:
-            from app.domains.agents.reflection import SelfReflection
             from app.domains.agents.causal_engine import CausalAnalyzer
+            from app.domains.agents.reflection import SelfReflection
 
-            reflection_result = await SelfReflection.reflect_on_conversation(db, conversation_id)
+            reflection_result = await SelfReflection.reflect_on_conversation(
+                db, conversation_id
+            )
             if reflection_result:
                 await SelfReflection.save_reflection(
                     db=db,
@@ -58,11 +63,14 @@ async def record_outcome(
             analyzer = CausalAnalyzer(db)
             causal_result = await analyzer.analyze_failed_deal(conversation_id)
             if causal_result:
-                from app.domains.channels.models import Conversation
                 from sqlalchemy import select
 
+                from app.domains.channels.models import Conversation
+
                 conv_result = await db.execute(
-                    select(Conversation.business_id).where(Conversation.id == conversation_id)
+                    select(Conversation.business_id).where(
+                        Conversation.id == conversation_id
+                    )
                 )
                 business_id = conv_result.scalar_one_or_none()
                 if business_id:
@@ -73,7 +81,9 @@ async def record_outcome(
                         result=causal_result,
                     )
         except Exception as e:
+            logger.exception("record_outcome: error inesperado")
             import logging
+
             logging.getLogger(__name__).warning(f"Post-outcome analysis failed: {e}")
 
     return {
@@ -91,9 +101,9 @@ async def record_outcome(
 @router.get("/stats")
 async def get_outcome_stats(
     agent_type: str,
-    days: int = Query(30, ge=1, le=365),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ):
     """Get outcome statistics by agent type."""
     optimizer = PromptOptimizer(db)
@@ -104,9 +114,9 @@ async def get_outcome_stats(
 @router.get("/prompt-suggestions")
 async def get_prompt_suggestions(
     agent_type: str,
-    days: int = Query(30, ge=1, le=365),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ):
     """Get AI-suggested prompt improvements based on failed conversations."""
     optimizer = PromptOptimizer(db)

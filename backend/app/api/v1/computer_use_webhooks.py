@@ -12,20 +12,19 @@ Endpoints para recibir webhooks de plataformas:
 Webhooks sin autenticación (validar con tokens en headers).
 """
 
-import logging
-from typing import Dict, Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, status, Header, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
 from app.core.config import get_settings
+from app.core.database import get_db
 from app.core.logger import get_logger
-from app.domains.computer_use.services.webhook_receiver import (
-    WebhookReceiverService,
-    IncomingMessage,
-)
 from app.domains.computer_use.services.auto_responder import get_auto_responder_service
+from app.domains.computer_use.services.webhook_receiver import (
+    IncomingMessage,
+    WebhookReceiverService,
+)
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -33,8 +32,8 @@ router = APIRouter()
 
 
 async def _verify_webhook_token(
-    x_webhook_token: str = Header(None),
-    platform: str = None,
+    x_webhook_token: Annotated[str | None, Header()] = None,
+    platform: str | None = None,
 ) -> str:
     """Verifica token de webhook."""
     if not x_webhook_token:
@@ -52,12 +51,13 @@ async def _verify_webhook_token(
 
 # ========== WhatsApp ==========
 
+
 @router.post("/webhooks/whatsapp")
 async def whatsapp_webhook(
-    payload: Dict[str, Any],
-    db: AsyncSession = Depends(get_db),
+    payload: dict[str, Any],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _token: Annotated[str, Depends(lambda: _verify_webhook_token(platform="whatsapp"))],
     background_tasks: BackgroundTasks = None,
-    _token: str = Depends(lambda: _verify_webhook_token(platform="whatsapp")),
 ):
     """
     Webhook de WhatsApp Business API.
@@ -100,18 +100,21 @@ async def whatsapp_webhook(
         return {"status": "received", "message_id": message.message_id}
 
     except Exception as e:
-        logger.error(f"WhatsApp webhook error: {e}")
+        logger.exception("WhatsApp webhook error")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 # ========== Instagram ==========
 
+
 @router.post("/webhooks/instagram")
 async def instagram_webhook(
-    payload: Dict[str, Any],
-    db: AsyncSession = Depends(get_db),
+    payload: dict[str, Any],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _token: Annotated[
+        str, Depends(lambda: _verify_webhook_token(platform="instagram"))
+    ],
     background_tasks: BackgroundTasks = None,
-    _token: str = Depends(lambda: _verify_webhook_token(platform="instagram")),
 ):
     """Webhook de Instagram (DMs + comments)."""
     try:
@@ -130,18 +133,19 @@ async def instagram_webhook(
         return {"status": "received", "message_id": message.message_id}
 
     except Exception as e:
-        logger.error(f"Instagram webhook error: {e}")
+        logger.exception("Instagram webhook error")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 # ========== TikTok ==========
 
+
 @router.post("/webhooks/tiktok")
 async def tiktok_webhook(
-    payload: Dict[str, Any],
-    db: AsyncSession = Depends(get_db),
+    payload: dict[str, Any],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _token: Annotated[str, Depends(lambda: _verify_webhook_token(platform="tiktok"))],
     background_tasks: BackgroundTasks = None,
-    _token: str = Depends(lambda: _verify_webhook_token(platform="tiktok")),
 ):
     """Webhook de TikTok (comments)."""
     try:
@@ -160,18 +164,19 @@ async def tiktok_webhook(
         return {"status": "received", "message_id": message.message_id}
 
     except Exception as e:
-        logger.error(f"TikTok webhook error: {e}")
+        logger.exception("TikTok webhook error")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 # ========== Facebook ==========
 
+
 @router.post("/webhooks/facebook")
 async def facebook_webhook(
-    payload: Dict[str, Any],
-    db: AsyncSession = Depends(get_db),
+    payload: dict[str, Any],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _token: Annotated[str, Depends(lambda: _verify_webhook_token(platform="facebook"))],
     background_tasks: BackgroundTasks = None,
-    _token: str = Depends(lambda: _verify_webhook_token(platform="facebook")),
 ):
     """Webhook de Facebook (Messenger + comments)."""
     try:
@@ -190,18 +195,21 @@ async def facebook_webhook(
         return {"status": "received", "message_id": message.message_id}
 
     except Exception as e:
-        logger.error(f"Facebook webhook error: {e}")
+        logger.exception("Facebook webhook error")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 # ========== Mercado Libre ==========
 
+
 @router.post("/webhooks/mercadolibre")
 async def mercadolibre_webhook(
-    payload: Dict[str, Any],
-    db: AsyncSession = Depends(get_db),
+    payload: dict[str, Any],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _token: Annotated[
+        str, Depends(lambda: _verify_webhook_token(platform="mercadolibre"))
+    ],
     background_tasks: BackgroundTasks = None,
-    _token: str = Depends(lambda: _verify_webhook_token(platform="mercadolibre")),
 ):
     """Webhook de Mercado Libre (mensajes)."""
     try:
@@ -220,18 +228,19 @@ async def mercadolibre_webhook(
         return {"status": "received", "message_id": message.message_id}
 
     except Exception as e:
-        logger.error(f"Mercado Libre webhook error: {e}")
+        logger.exception("Mercado Libre webhook error")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 # ========== Amazon ==========
 
+
 @router.post("/webhooks/amazon")
 async def amazon_webhook(
-    payload: Dict[str, Any],
-    db: AsyncSession = Depends(get_db),
+    payload: dict[str, Any],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _token: Annotated[str, Depends(lambda: _verify_webhook_token(platform="amazon"))],
     background_tasks: BackgroundTasks = None,
-    _token: str = Depends(lambda: _verify_webhook_token(platform="amazon")),
 ):
     """Webhook de Amazon (mensajes)."""
     try:
@@ -250,18 +259,19 @@ async def amazon_webhook(
         return {"status": "received", "message_id": message.message_id}
 
     except Exception as e:
-        logger.error(f"Amazon webhook error: {e}")
+        logger.exception("Amazon webhook error")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 # ========== Hotmart ==========
 
+
 @router.post("/webhooks/hotmart")
 async def hotmart_webhook(
-    payload: Dict[str, Any],
-    db: AsyncSession = Depends(get_db),
+    payload: dict[str, Any],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _token: Annotated[str, Depends(lambda: _verify_webhook_token(platform="hotmart"))],
     background_tasks: BackgroundTasks = None,
-    _token: str = Depends(lambda: _verify_webhook_token(platform="hotmart")),
 ):
     """Webhook de Hotmart (mensajes)."""
     try:
@@ -280,11 +290,12 @@ async def hotmart_webhook(
         return {"status": "received", "message_id": message.message_id}
 
     except Exception as e:
-        logger.error(f"Hotmart webhook error: {e}")
+        logger.exception("Hotmart webhook error")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 # ========== Background Task ==========
+
 
 async def _process_auto_response(db: AsyncSession, message: IncomingMessage) -> None:
     """
@@ -298,7 +309,7 @@ async def _process_auto_response(db: AsyncSession, message: IncomingMessage) -> 
         # TODO: obtener user_id del owner de la account/business
         user_id = "system"  # placeholder
 
-        response_text, status, confidence = await responder.process_message(
+        _response_text, status, confidence = await responder.process_message(
             user_id=user_id,
             message=message,
         )
@@ -313,5 +324,5 @@ async def _process_auto_response(db: AsyncSession, message: IncomingMessage) -> 
             f"status={status} | confidence={confidence:.0%}"
         )
 
-    except Exception as e:
-        logger.error(f"Error processing auto-response: {e}")
+    except Exception:
+        logger.exception("Error processing auto-response")

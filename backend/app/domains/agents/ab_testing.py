@@ -4,9 +4,18 @@ Tracks prompt variants, experiment results, and statistical significance.
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Float, Integer, Numeric
+from sqlalchemy import (
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+)
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.core.database import Base
@@ -26,7 +35,9 @@ class PromptExperiment(Base):
     )
     name = Column(String(200), nullable=False)
     agent_type = Column(String(50), nullable=False, index=True)
-    metric = Column(String(20), nullable=False)  # 'conversion', 'engagement', 'satisfaction', 'revenue'
+    metric = Column(
+        String(20), nullable=False
+    )  # 'conversion', 'engagement', 'satisfaction', 'revenue'
     variant_a_name = Column(String(100), nullable=False)
     variant_a_prompt = Column(Text, nullable=False)
     variant_b_name = Column(String(100), nullable=False)
@@ -43,12 +54,12 @@ class PromptExperiment(Base):
     completed_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     updated_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
 
@@ -71,5 +82,5 @@ class PromptExperimentResult(Base):
     engagement_score = Column(Float, nullable=True)
     created_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )

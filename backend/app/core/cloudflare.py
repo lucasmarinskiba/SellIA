@@ -4,7 +4,6 @@ Detecta requests que pasan por Cloudflare y extrae información de seguridad.
 """
 
 import ipaddress
-from typing import Optional
 
 # Lista de rangos IP de Cloudflare (actualizada 2024)
 # Fuente: https://www.cloudflare.com/ips/
@@ -119,6 +118,9 @@ def validate_cloudflare_origin(client_ip: str, headers: dict) -> tuple[bool, str
         return True, "Acceso directo (sin Cloudflare)"
 
     if not is_cloudflare_ip(client_ip):
-        return False, f"IP {client_ip} no pertenece a Cloudflare. Posible spoofing de headers."
+        return (
+            False,
+            f"IP {client_ip} no pertenece a Cloudflare. Posible spoofing de headers.",
+        )
 
     return True, "Request validado como proveniente de Cloudflare"

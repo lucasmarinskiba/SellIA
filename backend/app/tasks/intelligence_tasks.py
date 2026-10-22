@@ -4,7 +4,8 @@ Celery tasks for System Intelligence Engine.
 Automated analysis, improvement generation, and rollout.
 """
 
-from datetime import datetime, timezone, timedelta
+import uuid
+from datetime import UTC, datetime, timedelta
 
 from celery import shared_task
 
@@ -21,18 +22,21 @@ async def hourly_system_analysis():
 
     async with AsyncSessionLocal() as db:
         report = await generate_health_report(db)
-        logger.info(f"Hourly system analysis: {report.unresolved_tickets} unresolved tickets, {len(report.top_feedback_themes)} feedback themes")
+        logger.info(
+            f"Hourly system analysis: {report.unresolved_tickets} unresolved tickets, {len(report.top_feedback_themes)} feedback themes"
+        )
         return report.to_dict()
 
 
 @shared_task
 async def daily_improvement_generation():
     """Genera propuestas de mejora diariamente."""
-    from app.core.database import AsyncSessionLocal
-    from app.core.intelligence.system_analyzer import generate_health_report
-    from app.core.intelligence.improvement_generator import generate_improvements
-    from app.domains.businesses.models import Business
     from sqlalchemy import select
+
+    from app.core.database import AsyncSessionLocal
+    from app.core.intelligence.improvement_generator import generate_improvements
+    from app.core.intelligence.system_analyzer import generate_health_report
+    from app.domains.businesses.models import Business
 
     async with AsyncSessionLocal() as db:
         # Get first business as context
@@ -51,8 +55,8 @@ async def daily_improvement_generation():
 async def weekly_feedback_synthesis():
     """Síntesis semanal de todo el feedback para detectar patrones."""
     from app.core.database import AsyncSessionLocal
-    from app.domains.feedback.service import FeedbackService
     from app.domains.feedback.models import FeedbackType
+    from app.domains.feedback.service import FeedbackService
 
     async with AsyncSessionLocal() as db:
         svc = FeedbackService(db)
@@ -62,7 +66,9 @@ async def weekly_feedback_synthesis():
         ideas, _ = await svc.list_feedback(type=FeedbackType.IDEA)
         complaints, _ = await svc.list_feedback(type=FeedbackType.COMPLAINT)
 
-        logger.info(f"Weekly synthesis: {len(bugs)} bugs, {len(ideas)} ideas, {len(complaints)} complaints")
+        logger.info(
+            f"Weekly synthesis: {len(bugs)} bugs, {len(ideas)} ideas, {len(complaints)} complaints"
+        )
         return {
             "bugs": len(bugs),
             "ideas": len(ideas),
@@ -73,10 +79,13 @@ async def weekly_feedback_synthesis():
 @shared_task
 async def apply_approved_improvements():
     """Aplica mejoras aprobadas creando feature flags."""
-    from app.core.database import AsyncSessionLocal
-    from app.domains.feedback.models import SystemImprovement
-    from app.core.intelligence.improvement_generator import create_feature_flag_for_improvement
     from sqlalchemy import select
+
+    from app.core.database import AsyncSessionLocal
+    from app.core.intelligence.improvement_generator import (
+        create_feature_flag_for_improvement,
+    )
+    from app.domains.feedback.models import SystemImprovement
 
     async with AsyncSessionLocal() as db:
         result = await db.execute(
@@ -87,8 +96,8 @@ async def apply_approved_improvements():
         for imp in improvements:
             try:
                 await create_feature_flag_for_improvement(db, imp)
-            except Exception as e:
-                logger.error(f"Failed to create feature flag for {imp.id}: {e}")
+            except Exception:
+                logger.exception(f"Failed to create feature flag for {imp.id}")
 
         logger.info(f"Applied {len(improvements)} approved improvements")
         return {"applied": len(improvements)}
@@ -97,10 +106,11 @@ async def apply_approved_improvements():
 @shared_task
 async def rollout_progressive():
     """Incrementa gradualmente el rollout de features en progreso."""
-    from app.core.database import AsyncSessionLocal
-    from app.domains.feedback.models import FeatureFlag
-    from app.core.intelligence.feature_flags import increment_rollout
     from sqlalchemy import select
+
+    from app.core.database import AsyncSessionLocal
+    from app.core.intelligence.feature_flags import increment_rollout
+    from app.domains.feedback.models import FeatureFlag
 
     async with AsyncSessionLocal() as db:
         result = await db.execute(
@@ -114,8 +124,8 @@ async def rollout_progressive():
         for flag in flags:
             try:
                 await increment_rollout(db, flag.name, increment=10)
-            except Exception as e:
-                logger.error(f"Failed to increment rollout for {flag.name}: {e}")
+            except Exception:
+                logger.exception(f"Failed to increment rollout for {flag.name}")
 
         logger.info(f"Progressive rollout updated for {len(flags)} features")
         return {"flags_updated": len(flags)}
@@ -124,16 +134,17 @@ async def rollout_progressive():
 @shared_task
 async def notify_users_of_new_features():
     """Notifica a usuarios cuando una feature que solicitaron se despliega."""
-    from app.core.database import AsyncSessionLocal
-    from app.domains.feedback.models import UserFeedback, SystemImprovement
     from sqlalchemy import select
+
+    from app.core.database import AsyncSessionLocal
+    from app.domains.feedback.models import SystemImprovement
 
     async with AsyncSessionLocal() as db:
         # Find shipped improvements linked to feedback
         result = await db.execute(
             select(SystemImprovement).where(
                 SystemImprovement.status == "deployed",
-                SystemImprovement.deployed_at >= datetime.now(timezone.utc) - timedelta(days=1),
+                SystemImprovement.deployed_at >= datetime.now(UTC) - timedelta(days=1),
             )
         )
         improvements = result.scalars().all()
@@ -142,6 +153,8 @@ async def notify_users_of_new_features():
             if imp.source_feedback_ids:
                 for fb_id in imp.source_feedback_ids:
                     # TODO: Send email/push notification to the user who submitted this feedback
-                    logger.info(f"Would notify user about shipped improvement {imp.id} from feedback {fb_id}")
+                    logger.info(
+                        f"Would notify user about shipped improvement {imp.id} from feedback {fb_id}"
+                    )
 
         return {"notifications_sent": len(improvements)}

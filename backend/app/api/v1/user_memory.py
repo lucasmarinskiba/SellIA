@@ -1,31 +1,30 @@
 """User Memory API — Endpoints para gestionar memoria persistente del usuario"""
 
-from uuid import UUID
-from typing import Optional, List, Dict, Any
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
-from app.domains.users.models import User
-from app.domains.user_memory.service import UserMemoryService
 from app.domains.user_memory.schemas import (
-    UserMemoryResponse,
-    UserMemoryUpdate,
     UserMemoryEventCreate,
     UserMemoryEventResponse,
-    UserPreferenceUpdate,
+    UserMemoryResponse,
+    UserMemoryUpdate,
     UserPreferenceResponse,
+    UserPreferenceUpdate,
 )
+from app.domains.user_memory.service import UserMemoryService
+from app.domains.users.models import User
 
 router = APIRouter()
 
 
 @router.get("/me", response_model=UserMemoryResponse)
 async def get_my_memory(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Get memoria del usuario actual"""
     service = UserMemoryService(db)
@@ -51,9 +50,19 @@ async def get_my_memory(
         satisfaction_score=memory.satisfaction_score,
         churn_risk_score=memory.churn_risk_score,
         lifetime_value_estimate=memory.lifetime_value_estimate,
-        last_active_business_id=str(memory.last_active_business_id) if memory.last_active_business_id else None,
-        last_active_conversation_id=str(memory.last_active_conversation_id) if memory.last_active_conversation_id else None,
-        last_active_agent_id=str(memory.last_active_agent_id) if memory.last_active_agent_id else None,
+        last_active_business_id=(
+            str(memory.last_active_business_id)
+            if memory.last_active_business_id
+            else None
+        ),
+        last_active_conversation_id=(
+            str(memory.last_active_conversation_id)
+            if memory.last_active_conversation_id
+            else None
+        ),
+        last_active_agent_id=(
+            str(memory.last_active_agent_id) if memory.last_active_agent_id else None
+        ),
         created_at=memory.created_at,
         updated_at=memory.updated_at,
         last_activity_at=memory.last_activity_at,
@@ -63,8 +72,8 @@ async def get_my_memory(
 @router.patch("/me", response_model=UserMemoryResponse)
 async def update_my_memory(
     update_data: UserMemoryUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Update memoria del usuario actual"""
     service = UserMemoryService(db)
@@ -90,20 +99,34 @@ async def update_my_memory(
         satisfaction_score=memory.satisfaction_score,
         churn_risk_score=memory.churn_risk_score,
         lifetime_value_estimate=memory.lifetime_value_estimate,
-        last_active_business_id=str(memory.last_active_business_id) if memory.last_active_business_id else None,
-        last_active_conversation_id=str(memory.last_active_conversation_id) if memory.last_active_conversation_id else None,
-        last_active_agent_id=str(memory.last_active_agent_id) if memory.last_active_agent_id else None,
+        last_active_business_id=(
+            str(memory.last_active_business_id)
+            if memory.last_active_business_id
+            else None
+        ),
+        last_active_conversation_id=(
+            str(memory.last_active_conversation_id)
+            if memory.last_active_conversation_id
+            else None
+        ),
+        last_active_agent_id=(
+            str(memory.last_active_agent_id) if memory.last_active_agent_id else None
+        ),
         created_at=memory.created_at,
         updated_at=memory.updated_at,
         last_activity_at=memory.last_activity_at,
     )
 
 
-@router.post("/events", response_model=UserMemoryEventResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/events",
+    response_model=UserMemoryEventResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def log_memory_event(
     event: UserMemoryEventCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Log un evento de memoria (mensaje enviado, acción tomada, etc.)"""
     service = UserMemoryService(db)
@@ -114,7 +137,9 @@ async def log_memory_event(
         user_id=str(logged_event.user_id),
         event_type=logged_event.event_type,
         event_data=logged_event.event_data or {},
-        conversation_id=str(logged_event.conversation_id) if logged_event.conversation_id else None,
+        conversation_id=(
+            str(logged_event.conversation_id) if logged_event.conversation_id else None
+        ),
         business_id=str(logged_event.business_id) if logged_event.business_id else None,
         agent_id=str(logged_event.agent_id) if logged_event.agent_id else None,
         created_at=logged_event.created_at,
@@ -124,8 +149,8 @@ async def log_memory_event(
 @router.post("/interests/{interest}", response_model=UserMemoryResponse)
 async def add_interest(
     interest: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Agregar un interés a la memoria del usuario"""
     service = UserMemoryService(db)
@@ -151,9 +176,19 @@ async def add_interest(
         satisfaction_score=memory.satisfaction_score,
         churn_risk_score=memory.churn_risk_score,
         lifetime_value_estimate=memory.lifetime_value_estimate,
-        last_active_business_id=str(memory.last_active_business_id) if memory.last_active_business_id else None,
-        last_active_conversation_id=str(memory.last_active_conversation_id) if memory.last_active_conversation_id else None,
-        last_active_agent_id=str(memory.last_active_agent_id) if memory.last_active_agent_id else None,
+        last_active_business_id=(
+            str(memory.last_active_business_id)
+            if memory.last_active_business_id
+            else None
+        ),
+        last_active_conversation_id=(
+            str(memory.last_active_conversation_id)
+            if memory.last_active_conversation_id
+            else None
+        ),
+        last_active_agent_id=(
+            str(memory.last_active_agent_id) if memory.last_active_agent_id else None
+        ),
         created_at=memory.created_at,
         updated_at=memory.updated_at,
         last_activity_at=memory.last_activity_at,
@@ -163,8 +198,8 @@ async def add_interest(
 @router.post("/challenges/{challenge}", response_model=UserMemoryResponse)
 async def add_challenge(
     challenge: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Agregar un desafío a la memoria del usuario"""
     service = UserMemoryService(db)
@@ -190,24 +225,40 @@ async def add_challenge(
         satisfaction_score=memory.satisfaction_score,
         churn_risk_score=memory.churn_risk_score,
         lifetime_value_estimate=memory.lifetime_value_estimate,
-        last_active_business_id=str(memory.last_active_business_id) if memory.last_active_business_id else None,
-        last_active_conversation_id=str(memory.last_active_conversation_id) if memory.last_active_conversation_id else None,
-        last_active_agent_id=str(memory.last_active_agent_id) if memory.last_active_agent_id else None,
+        last_active_business_id=(
+            str(memory.last_active_business_id)
+            if memory.last_active_business_id
+            else None
+        ),
+        last_active_conversation_id=(
+            str(memory.last_active_conversation_id)
+            if memory.last_active_conversation_id
+            else None
+        ),
+        last_active_agent_id=(
+            str(memory.last_active_agent_id) if memory.last_active_agent_id else None
+        ),
         created_at=memory.created_at,
         updated_at=memory.updated_at,
         last_activity_at=memory.last_activity_at,
     )
 
 
-@router.post("/preferences", response_model=UserPreferenceResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/preferences",
+    response_model=UserPreferenceResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def set_preference(
     pref_data: UserPreferenceUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Guardar una preferencia granular del usuario"""
     service = UserMemoryService(db)
-    pref = await service.set_preference(current_user.id, pref_data.preference_key, pref_data.preference_value)
+    pref = await service.set_preference(
+        current_user.id, pref_data.preference_key, pref_data.preference_value
+    )
 
     return UserPreferenceResponse(
         id=str(pref.id),
@@ -219,11 +270,13 @@ async def set_preference(
     )
 
 
-@router.get("/preferences/{preference_key}", response_model=Optional[UserPreferenceResponse])
+@router.get(
+    "/preferences/{preference_key}", response_model=UserPreferenceResponse | None
+)
 async def get_preference(
     preference_key: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Obtener una preferencia granular del usuario"""
     service = UserMemoryService(db)
@@ -242,11 +295,11 @@ async def get_preference(
     )
 
 
-@router.get("/events", response_model=List[UserMemoryEventResponse])
+@router.get("/events", response_model=list[UserMemoryEventResponse])
 async def get_recent_events(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
     limit: int = 50,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
 ):
     """Obtener eventos recientes de la memoria del usuario"""
     service = UserMemoryService(db)

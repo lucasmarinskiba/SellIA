@@ -5,6 +5,7 @@ Call these before the actual agent methods.
 """
 
 from uuid import UUID
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
@@ -27,7 +28,9 @@ class SEOAwareAgentWrapper:
         """
         can_run = await self.guard.can_run_seo_agent(business_id, "positioning_agent")
         if not can_run:
-            await self.guard.log_agent_execution(business_id, "positioning_agent", False)
+            await self.guard.log_agent_execution(
+                business_id, "positioning_agent", False
+            )
         return can_run
 
     async def should_run_fomo_engine_agent(

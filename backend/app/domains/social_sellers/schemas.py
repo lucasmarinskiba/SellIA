@@ -2,36 +2,35 @@
 
 import uuid
 from datetime import datetime
-from typing import Optional, Any, List, Dict
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict
 
-
 # ========== SocialSeller Schemas ==========
+
 
 class SocialSellerCreate(BaseModel):
     business_id: uuid.UUID
     platform: str
     name: str
-    avatar_url: Optional[str] = None
-    personality_slug: Optional[str] = None
-    voice_config: Optional[dict] = None
-    greeting_message: Optional[str] = None
-    closing_message: Optional[str] = None
+    avatar_url: str | None = None
+    personality_slug: str | None = None
+    voice_config: dict | None = None
+    greeting_message: str | None = None
+    closing_message: str | None = None
     ai_auto_reply: bool = True
 
 
 class SocialSellerUpdate(BaseModel):
-    name: Optional[str] = None
-    avatar_url: Optional[str] = None
-    personality_slug: Optional[str] = None
-    voice_config: Optional[dict] = None
-    stats: Optional[dict] = None
-    status: Optional[str] = None
-    ai_auto_reply: Optional[bool] = None
-    greeting_message: Optional[str] = None
-    closing_message: Optional[str] = None
+    name: str | None = None
+    avatar_url: str | None = None
+    personality_slug: str | None = None
+    voice_config: dict | None = None
+    stats: dict | None = None
+    status: str | None = None
+    ai_auto_reply: bool | None = None
+    greeting_message: str | None = None
+    closing_message: str | None = None
 
 
 class SocialSellerResponse(BaseModel):
@@ -41,40 +40,23 @@ class SocialSellerResponse(BaseModel):
     business_id: uuid.UUID
     platform: str
     name: str
-    avatar_url: Optional[str]
-    personality_slug: Optional[str]
+    avatar_url: str | None
+    personality_slug: str | None
     voice_config: dict
     stats: dict
     status: str
     ai_auto_reply: bool
-    greeting_message: Optional[str]
-    closing_message: Optional[str]
+    greeting_message: str | None
+    closing_message: str | None
     created_at: datetime
     updated_at: datetime
 
 
 # ========== SellerCustomerRelationship Schemas ==========
 
+
 class SellerCustomerCreate(BaseModel):
     customer_id: uuid.UUID
-
-
-class SellerCustomerResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: uuid.UUID
-    seller_id: uuid.UUID
-    customer_id: uuid.UUID
-    first_contact_at: Optional[datetime]
-    last_contact_at: Optional[datetime]
-    total_interactions: int
-    deals_closed: int
-    total_revenue: Decimal
-    relationship_stage: str
-    loyalty_score: int
-    next_best_action: Optional[str]
-    created_at: datetime
-    updated_at: datetime
 
 
 class CustomerInsightResponse(BaseModel):
@@ -85,12 +67,13 @@ class CustomerInsightResponse(BaseModel):
     total_interactions: int
     deals_closed: int
     total_revenue: Decimal
-    next_best_action: Optional[str]
-    last_contact_at: Optional[datetime]
-    first_contact_at: Optional[datetime]
+    next_best_action: str | None
+    last_contact_at: datetime | None
+    first_contact_at: datetime | None
 
 
 # ========== SellerPerformance Schemas ==========
+
 
 class SellerPerformanceResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -106,12 +89,13 @@ class SellerPerformanceResponse(BaseModel):
     deals_won: int
     revenue: Decimal
     conversion_rate: Decimal
-    best_performing_hour: Optional[int]
-    best_performing_content_type: Optional[str]
+    best_performing_hour: int | None
+    best_performing_content_type: str | None
     created_at: datetime
 
 
 # ========== Pipeline & Reports ==========
+
 
 class PipelineStage(BaseModel):
     stage: str
@@ -121,7 +105,7 @@ class PipelineStage(BaseModel):
 
 class SellerPipelineResponse(BaseModel):
     seller_id: uuid.UUID
-    stages: List[PipelineStage]
+    stages: list[PipelineStage]
     total_customers: int
     total_revenue: Decimal
 
@@ -134,7 +118,7 @@ class TeamReportResponse(BaseModel):
     total_deals: int
     total_leads: int
     avg_conversion_rate: Decimal
-    top_seller: Optional[dict] = None
+    top_seller: dict | None = None
 
 
 class RecordSaleRequest(BaseModel):
@@ -148,21 +132,22 @@ class RecordSaleResponse(BaseModel):
     conversation_id: uuid.UUID
     amount: Decimal
     new_total_revenue: Decimal
-    celebration: Optional[str] = None
+    celebration: str | None = None
 
 
 class ExecuteActionRequest(BaseModel):
     action: str  # send_message, wait, offer_discount
-    payload: Optional[dict] = None
+    payload: dict | None = None
 
 
 class ExecuteActionResponse(BaseModel):
     status: str
     action: str
-    result: Optional[dict] = None
+    result: dict | None = None
 
 
 # ========== Loyalty & Wall of Fame Schemas ==========
+
 
 class LoyaltyBadgeResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -171,8 +156,8 @@ class LoyaltyBadgeResponse(BaseModel):
     business_id: uuid.UUID
     badge_type: str
     name: str
-    description: Optional[str]
-    icon_url: Optional[str]
+    description: str | None
+    icon_url: str | None
     criteria: dict
     created_at: datetime
 
@@ -181,9 +166,9 @@ class CustomerBadgeResponse(BaseModel):
     id: uuid.UUID
     badge_type: str
     name: str
-    description: Optional[str]
-    icon_url: Optional[str]
-    earned_at: Optional[datetime]
+    description: str | None
+    icon_url: str | None
+    earned_at: datetime | None
 
 
 class WallOfFameCustomer(BaseModel):
@@ -191,10 +176,10 @@ class WallOfFameCustomer(BaseModel):
     name: str
     ltv: float
     total_purchases: int
-    last_purchase_at: Optional[str]
-    first_contact_at: Optional[str]
+    last_purchase_at: str | None
+    first_contact_at: str | None
     platform: str
-    badges: List[dict]
+    badges: list[dict]
 
 
 class LoyaltySegmentData(BaseModel):
@@ -205,7 +190,7 @@ class LoyaltySegmentData(BaseModel):
 class LoyaltySegmentsResponse(BaseModel):
     business_id: str
     total_customers: int
-    segments: Dict[str, LoyaltySegmentData]
+    segments: dict[str, LoyaltySegmentData]
 
 
 class LoyaltyActionRequest(BaseModel):
@@ -223,22 +208,23 @@ class LoyaltyActionResponse(BaseModel):
 
 # ========== Unified Customer Schemas ==========
 
+
 class UnifiedCustomerResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
     business_id: uuid.UUID
-    display_name: Optional[str] = None
-    master_email: Optional[str] = None
-    master_phone: Optional[str] = None
+    display_name: str | None = None
+    master_email: str | None = None
+    master_phone: str | None = None
     identity_map: dict
-    first_seen_at: Optional[datetime] = None
-    last_seen_at: Optional[datetime] = None
+    first_seen_at: datetime | None = None
+    last_seen_at: datetime | None = None
     total_lifetime_value: Decimal
-    buying_frequency_days: Optional[int] = None
+    buying_frequency_days: int | None = None
     preferred_platforms: list
-    rfm_segment: Optional[str] = None
-    last_purchase_at: Optional[datetime] = None
+    rfm_segment: str | None = None
+    last_purchase_at: datetime | None = None
     total_purchases: int
     created_at: datetime
     updated_at: datetime
@@ -247,22 +233,22 @@ class UnifiedCustomerResponse(BaseModel):
 class UnifiedCustomerProfileResponse(BaseModel):
     id: str
     business_id: str
-    display_name: Optional[str] = None
-    master_email: Optional[str] = None
-    master_phone: Optional[str] = None
+    display_name: str | None = None
+    master_email: str | None = None
+    master_phone: str | None = None
     identity_map: dict
     platforms: list
-    first_seen_at: Optional[str] = None
-    last_seen_at: Optional[str] = None
+    first_seen_at: str | None = None
+    last_seen_at: str | None = None
     total_lifetime_value: float
-    buying_frequency_days: Optional[int] = None
+    buying_frequency_days: int | None = None
     preferred_platforms: list
-    preferred_platform: Optional[str] = None
-    rfm_segment: Optional[str] = None
-    last_purchase_at: Optional[str] = None
+    preferred_platform: str | None = None
+    rfm_segment: str | None = None
+    last_purchase_at: str | None = None
     total_purchases: int
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    created_at: str | None = None
+    updated_at: str | None = None
 
 
 class MergeSuggestionResponse(BaseModel):
@@ -289,39 +275,40 @@ class SellerCustomerResponse(BaseModel):
     id: uuid.UUID
     seller_id: uuid.UUID
     customer_id: uuid.UUID
-    customer_name: Optional[str] = None
-    customer_avatar: Optional[str] = None
-    first_contact_at: Optional[datetime] = None
-    last_contact_at: Optional[datetime] = None
+    customer_name: str | None = None
+    customer_avatar: str | None = None
+    first_contact_at: datetime | None = None
+    last_contact_at: datetime | None = None
     total_interactions: int
     deals_closed: int
     total_revenue: Decimal
     relationship_stage: str
     loyalty_score: int
-    next_best_action: Optional[str] = None
-    unified_customer_id: Optional[uuid.UUID] = None
-    unified_display_name: Optional[str] = None
-    unified_identity_map: Optional[dict] = None
-    unified_total_lifetime_value: Optional[Decimal] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    next_best_action: str | None = None
+    unified_customer_id: uuid.UUID | None = None
+    unified_display_name: str | None = None
+    unified_identity_map: dict | None = None
+    unified_total_lifetime_value: Decimal | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 # ========== Radar de Oportunidades Schemas ==========
 
+
 class PredictedPurchase(BaseModel):
-    predicted_date: Optional[str] = None
+    predicted_date: str | None = None
     confidence_score: int
-    days_until: Optional[int] = None
-    reason: Optional[str] = None
-    avg_interval_days: Optional[float] = None
+    days_until: int | None = None
+    reason: str | None = None
+    avg_interval_days: float | None = None
 
 
 class PurchaseHistory(BaseModel):
     total_orders: int
     total_spent: float
     avg_order_value: float
-    last_order_at: Optional[str] = None
+    last_order_at: str | None = None
 
 
 class RadarOpportunity(BaseModel):
@@ -330,13 +317,13 @@ class RadarOpportunity(BaseModel):
     platform: str
     score: int
     heat_level: str
-    signals: List[str]
-    seller_id: Optional[str] = None
-    seller_name: Optional[str] = None
-    seller_avatar: Optional[str] = None
-    last_contact_at: Optional[str] = None
-    predicted_next_purchase: Optional[PredictedPurchase] = None
-    purchase_history: Optional[PurchaseHistory] = None
+    signals: list[str]
+    seller_id: str | None = None
+    seller_name: str | None = None
+    seller_avatar: str | None = None
+    last_contact_at: str | None = None
+    predicted_next_purchase: PredictedPurchase | None = None
+    purchase_history: PurchaseHistory | None = None
     recent_messages_count: int = 0
 
 
@@ -360,42 +347,43 @@ class RadarDataResponse(BaseModel):
     business_id: str
     generated_at: str
     summary: RadarSummary
-    opportunities: Dict[str, List[RadarOpportunity]]
-    top_actions: List[TopAction]
+    opportunities: dict[str, list[RadarOpportunity]]
+    top_actions: list[TopAction]
 
 
 class OpportunityScoreResponse(BaseModel):
     conversation_id: str
     score: int
     heat_level: str
-    signals: List[str]
-    components: Dict[str, int]
+    signals: list[str]
+    components: dict[str, int]
 
 
 class RadarActRequest(BaseModel):
     action: str  # send_message, offer_discount, view_profile
-    payload: Optional[dict] = None
+    payload: dict | None = None
 
 
 class RadarActResponse(BaseModel):
     status: str
     action: str
-    message: Optional[str] = None
-    discount_pct: Optional[int] = None
-    redirect_url: Optional[str] = None
+    message: str | None = None
+    discount_pct: int | None = None
+    redirect_url: str | None = None
     conversation_id: str
-    detail: Optional[str] = None
+    detail: str | None = None
 
 
 # ========== Lookalike Audience Schemas ==========
 
+
 class IdealCustomerProfile(BaseModel):
     avg_lifetime_value: float
     avg_purchase_frequency_days: float
-    preferred_platforms: List[str]
-    common_keywords_in_messages: List[str]
+    preferred_platforms: list[str]
+    common_keywords_in_messages: list[str]
     avg_deal_value: float
-    best_performing_seller: Optional[str] = None
+    best_performing_seller: str | None = None
 
 
 class LookalikeLead(BaseModel):
@@ -403,12 +391,12 @@ class LookalikeLead(BaseModel):
     name: str
     platform: str
     similarity_score: int
-    why: List[str]
-    recommended_seller: Optional[str] = None
+    why: list[str]
+    recommended_seller: str | None = None
 
 
 class LookalikeReportResponse(BaseModel):
     summary: str
     ideal_profile: IdealCustomerProfile
-    top_opportunities: List[LookalikeLead]
+    top_opportunities: list[LookalikeLead]
     total_leads_scored: int

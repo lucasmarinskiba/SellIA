@@ -11,20 +11,21 @@ Complete equity market mastery covering:
 - Market microstructure (order types, liquidity, spreads, short selling)
 """
 
-from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple, Any
-from enum import Enum
-from datetime import datetime, timedelta
-import statistics
 import math
-
+import statistics
+from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
+from typing import Any, ClassVar
 
 # ============================================================================
 # 1. EQUITY FUNDAMENTALS (1,200+ lines)
 # ============================================================================
 
+
 class PriceTargetRating(Enum):
     """Price target rating categories."""
+
     STRONG_BUY = "STRONG_BUY"
     BUY = "BUY"
     HOLD = "HOLD"
@@ -34,6 +35,7 @@ class PriceTargetRating(Enum):
 
 class DividendType(Enum):
     """Types of dividends."""
+
     CASH = "CASH"
     STOCK = "STOCK"
     SPECIAL = "SPECIAL"
@@ -43,6 +45,7 @@ class DividendType(Enum):
 @dataclass
 class EarningsMetric:
     """Earnings per share and related metrics."""
+
     eps_current: float
     eps_previous_year: float
     eps_growth_rate: float
@@ -54,13 +57,27 @@ class EarningsMetric:
     forecast_eps_next_year: float
     earnings_revisions_trend: str  # up, down, stable
 
-    def valuation_assessment(self) -> Dict[str, Any]:
+    def valuation_assessment(self) -> dict[str, Any]:
         """Assess if valuation is attractive based on earnings metrics."""
         assessment = {
-            "pe_status": "expensive" if self.pe_ratio > 20 else "fair" if self.pe_ratio > 12 else "cheap",
-            "peg_status": "overvalued" if self.peg_ratio > 1.5 else "fair" if self.peg_ratio > 1.0 else "undervalued",
-            "earnings_quality": "high" if self.earnings_quality_score > 0.7 else "moderate" if self.earnings_quality_score > 0.4 else "low",
-            "growth_momentum": "positive" if self.eps_growth_rate > 0.05 else "negative",
+            "pe_status": (
+                "expensive"
+                if self.pe_ratio > 20
+                else "fair" if self.pe_ratio > 12 else "cheap"
+            ),
+            "peg_status": (
+                "overvalued"
+                if self.peg_ratio > 1.5
+                else "fair" if self.peg_ratio > 1.0 else "undervalued"
+            ),
+            "earnings_quality": (
+                "high"
+                if self.earnings_quality_score > 0.7
+                else "moderate" if self.earnings_quality_score > 0.4 else "low"
+            ),
+            "growth_momentum": (
+                "positive" if self.eps_growth_rate > 0.05 else "negative"
+            ),
             "revision_trend": self.earnings_revisions_trend,
             "recommendation": self._valuation_recommendation(),
         }
@@ -81,26 +98,41 @@ class EarningsMetric:
 @dataclass
 class DividendAnalysis:
     """Comprehensive dividend analysis."""
+
     annual_dividend_per_share: float
     dividend_yield: float
     payout_ratio: float
     dividend_growth_rate: float
     years_of_increases: int
     dividend_cut_risk: float  # 0-1 probability
-    special_dividends: List[float]
-    ex_dividend_dates: List[datetime]
+    special_dividends: list[float]
+    ex_dividend_dates: list[datetime]
     sustainability_score: float  # 0-1
 
-    def dividend_assessment(self) -> Dict[str, Any]:
+    def dividend_assessment(self) -> dict[str, Any]:
         """Assess dividend sustainability and growth potential."""
         return {
             "yield": f"{self.dividend_yield*100:.2f}%",
             "safety_rating": self._safety_rating(),
-            "growth_potential": "high" if self.dividend_growth_rate > 0.05 else "moderate" if self.dividend_growth_rate > 0.02 else "low",
-            "aristocrat_status": "yes" if self.years_of_increases >= 25 else "champion" if self.years_of_increases >= 50 else "no",
+            "growth_potential": (
+                "high"
+                if self.dividend_growth_rate > 0.05
+                else "moderate" if self.dividend_growth_rate > 0.02 else "low"
+            ),
+            "aristocrat_status": (
+                "yes"
+                if self.years_of_increases >= 25
+                else "champion" if self.years_of_increases >= 50 else "no"
+            ),
             "cut_probability": f"{self.dividend_cut_risk*100:.1f}%",
-            "next_payment_date": self.ex_dividend_dates[0] if self.ex_dividend_dates else None,
-            "recommendation": "DIVIDEND_FOCUS" if self.sustainability_score > 0.8 else "CAUTION" if self.sustainability_score < 0.5 else "MONITOR",
+            "next_payment_date": (
+                self.ex_dividend_dates[0] if self.ex_dividend_dates else None
+            ),
+            "recommendation": (
+                "DIVIDEND_FOCUS"
+                if self.sustainability_score > 0.8
+                else "CAUTION" if self.sustainability_score < 0.5 else "MONITOR"
+            ),
         }
 
     def _safety_rating(self) -> str:
@@ -118,6 +150,7 @@ class DividendAnalysis:
 @dataclass
 class FreeCashFlowAnalysis:
     """Free cash flow and capital allocation analysis."""
+
     operating_cash_flow: float
     capital_expenditure: float
     free_cash_flow: float
@@ -129,19 +162,39 @@ class FreeCashFlowAnalysis:
     cash_position: float
     fcf_per_share: float
 
-    def cash_flow_assessment(self) -> Dict[str, Any]:
+    def cash_flow_assessment(self) -> dict[str, Any]:
         """Assess quality of cash generation and allocation."""
         return {
-            "fcf_quality": "excellent" if self.fcf_conversion_ratio > 0.8 else "good" if self.fcf_conversion_ratio > 0.6 else "fair",
-            "cash_generation": "strong" if self.fcf_growth_rate > 0.1 else "moderate" if self.fcf_growth_rate > 0 else "weak",
+            "fcf_quality": (
+                "excellent"
+                if self.fcf_conversion_ratio > 0.8
+                else "good" if self.fcf_conversion_ratio > 0.6 else "fair"
+            ),
+            "cash_generation": (
+                "strong"
+                if self.fcf_growth_rate > 0.1
+                else "moderate" if self.fcf_growth_rate > 0 else "weak"
+            ),
             "shareholder_friendliness": self._shareholder_score(),
-            "financial_flexibility": "high" if self.cash_position > self.capital_expenditure * 2 else "moderate" if self.cash_position > self.capital_expenditure else "low",
+            "financial_flexibility": (
+                "high"
+                if self.cash_position > self.capital_expenditure * 2
+                else (
+                    "moderate"
+                    if self.cash_position > self.capital_expenditure
+                    else "low"
+                )
+            ),
             "capital_allocation": self._allocation_strategy(),
             "intrinsic_value_proxy": self._fcf_valuation(),
         }
 
     def _shareholder_score(self) -> str:
-        distribution_ratio = self.shareholder_distributions / self.free_cash_flow if self.free_cash_flow > 0 else 0
+        distribution_ratio = (
+            self.shareholder_distributions / self.free_cash_flow
+            if self.free_cash_flow > 0
+            else 0
+        )
         if 0.3 < distribution_ratio < 0.7:
             return "BALANCED"
         elif distribution_ratio > 0.7:
@@ -157,7 +210,7 @@ class FreeCashFlowAnalysis:
         else:
             return "BALANCED_GROWTH"
 
-    def _fcf_valuation(self) -> Dict[str, float]:
+    def _fcf_valuation(self) -> dict[str, float]:
         """Estimate intrinsic value proxy using FCF."""
         wacc = 0.08  # Weighted average cost of capital estimate
         terminal_growth = 0.025
@@ -165,7 +218,9 @@ class FreeCashFlowAnalysis:
             fcf_multiple = 1 / (wacc - terminal_growth)
             return {
                 "fcf_yield": 1 / fcf_multiple,
-                "valuation_indicator": self.fcf_per_share * fcf_multiple if self.fcf_per_share > 0 else 0,
+                "valuation_indicator": (
+                    self.fcf_per_share * fcf_multiple if self.fcf_per_share > 0 else 0
+                ),
             }
         return {"fcf_yield": 0, "valuation_indicator": 0}
 
@@ -173,6 +228,7 @@ class FreeCashFlowAnalysis:
 @dataclass
 class ValuationMetrics:
     """Comprehensive valuation metrics."""
+
     price_to_book_ratio: float
     price_to_sales_ratio: float
     enterprise_value_to_ebitda: float
@@ -180,17 +236,32 @@ class ValuationMetrics:
     price_to_fcf_ratio: float
     dividend_discount_model_value: float
     dcf_intrinsic_value: float
-    sum_of_parts_value: Optional[float]
+    sum_of_parts_value: float | None
     book_value_per_share: float
     tangible_book_value_per_share: float
     current_stock_price: float
 
-    def valuation_summary(self) -> Dict[str, Any]:
+    def valuation_summary(self) -> dict[str, Any]:
         """Comprehensive valuation analysis."""
-        intrinsic_values = [self.dcf_intrinsic_value, self.dividend_discount_model_value]
-        avg_intrinsic = statistics.mean([v for v in intrinsic_values if v > 0]) if intrinsic_values else 0
+        intrinsic_values = [
+            self.dcf_intrinsic_value,
+            self.dividend_discount_model_value,
+        ]
+        avg_intrinsic = (
+            statistics.mean([v for v in intrinsic_values if v > 0])
+            if intrinsic_values
+            else 0
+        )
 
-        upside_potential = ((avg_intrinsic - self.current_stock_price) / self.current_stock_price * 100) if self.current_stock_price > 0 else 0
+        upside_potential = (
+            (
+                (avg_intrinsic - self.current_stock_price)
+                / self.current_stock_price
+                * 100
+            )
+            if self.current_stock_price > 0
+            else 0
+        )
 
         return {
             "estimated_intrinsic_value": round(avg_intrinsic, 2),
@@ -202,7 +273,11 @@ class ValuationMetrics:
                 "ev_ebitda": self.enterprise_value_to_ebitda,
                 "forward_pe": self.forward_pe_ratio,
             },
-            "safety_margin": "high" if abs(upside_potential) > 25 else "moderate" if abs(upside_potential) > 10 else "low",
+            "safety_margin": (
+                "high"
+                if abs(upside_potential) > 25
+                else "moderate" if abs(upside_potential) > 10 else "low"
+            ),
             "investment_thesis": self._investment_thesis(),
         }
 
@@ -240,7 +315,9 @@ class EquityFundamentals:
     @staticmethod
     def calculate_peg_ratio(pe_ratio: float, earnings_growth_rate: float) -> float:
         """Calculate PEG ratio (PE / Growth Rate)."""
-        return pe_ratio / (earnings_growth_rate * 100) if earnings_growth_rate > 0 else 0
+        return (
+            pe_ratio / (earnings_growth_rate * 100) if earnings_growth_rate > 0 else 0
+        )
 
     @staticmethod
     def calculate_roe(net_income: float, shareholder_equity: float) -> float:
@@ -253,17 +330,23 @@ class EquityFundamentals:
         return net_income / total_assets if total_assets > 0 else 0
 
     @staticmethod
-    def calculate_book_value_per_share(shareholder_equity: float, shares_outstanding: float) -> float:
+    def calculate_book_value_per_share(
+        shareholder_equity: float, shares_outstanding: float
+    ) -> float:
         """Calculate book value per share."""
         return shareholder_equity / shares_outstanding if shares_outstanding > 0 else 0
 
     @staticmethod
-    def calculate_fcf_per_share(free_cash_flow: float, shares_outstanding: float) -> float:
+    def calculate_fcf_per_share(
+        free_cash_flow: float, shares_outstanding: float
+    ) -> float:
         """Calculate free cash flow per share."""
         return free_cash_flow / shares_outstanding if shares_outstanding > 0 else 0
 
     @staticmethod
-    def analyze_debt_metrics(total_debt: float, equity: float, ebitda: float) -> Dict[str, float]:
+    def analyze_debt_metrics(
+        total_debt: float, equity: float, ebitda: float
+    ) -> dict[str, float]:
         """Analyze debt ratios and leverage."""
         debt_to_equity = total_debt / equity if equity > 0 else 0
         debt_to_ebitda = total_debt / ebitda if ebitda > 0 else 0
@@ -271,8 +354,16 @@ class EquityFundamentals:
         return {
             "debt_to_equity": debt_to_equity,
             "debt_to_ebitda": debt_to_ebitda,
-            "leverage_assessment": "low" if debt_to_equity < 0.5 else "moderate" if debt_to_equity < 1.5 else "high",
-            "solvency_status": "strong" if debt_to_ebitda < 3 else "moderate" if debt_to_ebitda < 5 else "concerning",
+            "leverage_assessment": (
+                "low"
+                if debt_to_equity < 0.5
+                else "moderate" if debt_to_equity < 1.5 else "high"
+            ),
+            "solvency_status": (
+                "strong"
+                if debt_to_ebitda < 3
+                else "moderate" if debt_to_ebitda < 5 else "concerning"
+            ),
         }
 
 
@@ -280,8 +371,10 @@ class EquityFundamentals:
 # 2. TECHNICAL ANALYSIS (1,200+ lines)
 # ============================================================================
 
+
 class ChartPattern(Enum):
     """Common technical chart patterns."""
+
     HEAD_AND_SHOULDERS = "HEAD_AND_SHOULDERS"
     DOUBLE_TOP = "DOUBLE_TOP"
     DOUBLE_BOTTOM = "DOUBLE_BOTTOM"
@@ -299,6 +392,7 @@ class ChartPattern(Enum):
 @dataclass
 class TechnicalIndicators:
     """Collection of technical indicators."""
+
     rsi: float  # Relative Strength Index (0-100)
     macd: float  # MACD line
     macd_signal: float  # Signal line
@@ -315,7 +409,7 @@ class TechnicalIndicators:
     williamsr: float  # Williams %R
     roc: float  # Rate of Change
 
-    def signal_analysis(self) -> Dict[str, Any]:
+    def signal_analysis(self) -> dict[str, Any]:
         """Analyze technical signals from multiple indicators."""
         return {
             "momentum": self._momentum_signal(),
@@ -349,7 +443,11 @@ class TechnicalIndicators:
 
     def _volatility_assessment(self) -> str:
         # Bollinger Band width as volatility indicator
-        bb_width = (self.bollinger_upper - self.bollinger_lower) / self.bollinger_middle if self.bollinger_middle > 0 else 0
+        bb_width = (
+            (self.bollinger_upper - self.bollinger_lower) / self.bollinger_middle
+            if self.bollinger_middle > 0
+            else 0
+        )
         return "HIGH" if bb_width > 0.15 else "NORMAL" if bb_width > 0.08 else "LOW"
 
     def _reversal_probability(self) -> float:
@@ -363,7 +461,7 @@ class TechnicalIndicators:
             reversal_signals += 1
         return min(reversal_signals / 3, 1.0)
 
-    def _support_resistance(self) -> Dict[str, float]:
+    def _support_resistance(self) -> dict[str, float]:
         return {
             "support_level": self.bollinger_lower,
             "resistance_level": self.bollinger_upper,
@@ -419,25 +517,27 @@ class SupportResistance:
     """Support and resistance level analysis."""
 
     @staticmethod
-    def find_support_levels(prices: List[float], window: int = 20) -> List[float]:
+    def find_support_levels(prices: list[float], window: int = 20) -> list[float]:
         """Identify support levels from historical prices."""
         support_levels = []
         for i in range(window, len(prices) - window):
-            if prices[i] == min(prices[i-window:i+window]):
+            if prices[i] == min(prices[i - window : i + window]):
                 support_levels.append(prices[i])
         return sorted(set(support_levels))
 
     @staticmethod
-    def find_resistance_levels(prices: List[float], window: int = 20) -> List[float]:
+    def find_resistance_levels(prices: list[float], window: int = 20) -> list[float]:
         """Identify resistance levels from historical prices."""
         resistance_levels = []
         for i in range(window, len(prices) - window):
-            if prices[i] == max(prices[i-window:i+window]):
+            if prices[i] == max(prices[i - window : i + window]):
                 resistance_levels.append(prices[i])
         return sorted(set(resistance_levels), reverse=True)
 
     @staticmethod
-    def calculate_pivot_points(high: float, low: float, close: float) -> Dict[str, float]:
+    def calculate_pivot_points(
+        high: float, low: float, close: float
+    ) -> dict[str, float]:
         """Calculate Pivot, Support, Resistance levels."""
         pivot = (high + low + close) / 3
         r1 = 2 * pivot - low
@@ -458,12 +558,15 @@ class MovingAverageAnalysis:
     """Moving average strategies and analysis."""
 
     @staticmethod
-    def calculate_sma(prices: List[float], period: int) -> List[float]:
+    def calculate_sma(prices: list[float], period: int) -> list[float]:
         """Calculate simple moving average."""
-        return [statistics.mean(prices[max(0, i-period+1):i+1]) for i in range(len(prices))]
+        return [
+            statistics.mean(prices[max(0, i - period + 1) : i + 1])
+            for i in range(len(prices))
+        ]
 
     @staticmethod
-    def calculate_ema(prices: List[float], period: int) -> List[float]:
+    def calculate_ema(prices: list[float], period: int) -> list[float]:
         """Calculate exponential moving average."""
         ema = []
         multiplier = 2 / (period + 1)
@@ -471,20 +574,22 @@ class MovingAverageAnalysis:
             if i == 0:
                 ema.append(price)
             else:
-                ema.append(price * multiplier + ema[i-1] * (1 - multiplier))
+                ema.append(price * multiplier + ema[i - 1] * (1 - multiplier))
         return ema
 
     @staticmethod
-    def ma_crossover_signals(prices: List[float], short_period: int = 20, long_period: int = 50) -> List[str]:
+    def ma_crossover_signals(
+        prices: list[float], short_period: int = 20, long_period: int = 50
+    ) -> list[str]:
         """Generate buy/sell signals from moving average crossovers."""
         short_ma = MovingAverageAnalysis.calculate_sma(prices, short_period)
         long_ma = MovingAverageAnalysis.calculate_sma(prices, long_period)
 
         signals = []
         for i in range(1, len(prices)):
-            if short_ma[i] > long_ma[i] and short_ma[i-1] <= long_ma[i-1]:
+            if short_ma[i] > long_ma[i] and short_ma[i - 1] <= long_ma[i - 1]:
                 signals.append("BUY")
-            elif short_ma[i] < long_ma[i] and short_ma[i-1] >= long_ma[i-1]:
+            elif short_ma[i] < long_ma[i] and short_ma[i - 1] >= long_ma[i - 1]:
                 signals.append("SELL")
             else:
                 signals.append("HOLD")
@@ -509,10 +614,10 @@ class RSIAnalysis:
     """Relative Strength Index analysis."""
 
     @staticmethod
-    def calculate_rsi(prices: List[float], period: int = 14) -> List[float]:
+    def calculate_rsi(prices: list[float], period: int = 14) -> list[float]:
         """Calculate RSI indicator."""
         rsi_values = []
-        deltas = [prices[i] - prices[i-1] for i in range(1, len(prices))]
+        deltas = [prices[i] - prices[i - 1] for i in range(1, len(prices))]
 
         gains = [max(d, 0) for d in deltas]
         losses = [abs(min(d, 0)) for d in deltas]
@@ -531,13 +636,15 @@ class RSIAnalysis:
         return rsi_values
 
     @staticmethod
-    def rsi_divergence_signals(prices: List[float], rsi_values: List[float]) -> List[str]:
+    def rsi_divergence_signals(
+        prices: list[float], rsi_values: list[float]
+    ) -> list[str]:
         """Detect bullish and bearish divergences."""
         signals = []
         for i in range(1, len(prices) - 1):
-            if prices[i] < prices[i-1] and rsi_values[i] > rsi_values[i-1]:
+            if prices[i] < prices[i - 1] and rsi_values[i] > rsi_values[i - 1]:
                 signals.append("BULLISH_DIVERGENCE")
-            elif prices[i] > prices[i-1] and rsi_values[i] < rsi_values[i-1]:
+            elif prices[i] > prices[i - 1] and rsi_values[i] < rsi_values[i - 1]:
                 signals.append("BEARISH_DIVERGENCE")
             else:
                 signals.append("NEUTRAL")
@@ -548,7 +655,9 @@ class MACDAnalysis:
     """MACD indicator analysis."""
 
     @staticmethod
-    def calculate_macd(prices: List[float], fast: int = 12, slow: int = 26, signal: int = 9) -> Tuple[List[float], List[float], List[float]]:
+    def calculate_macd(
+        prices: list[float], fast: int = 12, slow: int = 26, signal: int = 9
+    ) -> tuple[list[float], list[float], list[float]]:
         """Calculate MACD, Signal line, and Histogram."""
         fast_ema = MovingAverageAnalysis.calculate_ema(prices, fast)
         slow_ema = MovingAverageAnalysis.calculate_ema(prices, slow)
@@ -560,13 +669,15 @@ class MACDAnalysis:
         return macd_line, signal_line, histogram
 
     @staticmethod
-    def macd_signals(macd_line: List[float], signal_line: List[float]) -> List[str]:
+    def macd_signals(macd_line: list[float], signal_line: list[float]) -> list[str]:
         """Generate buy/sell signals from MACD."""
         signals = []
         for i in range(1, len(macd_line)):
-            if macd_line[i] > signal_line[i] and macd_line[i-1] <= signal_line[i-1]:
+            if macd_line[i] > signal_line[i] and macd_line[i - 1] <= signal_line[i - 1]:
                 signals.append("BUY")
-            elif macd_line[i] < signal_line[i] and macd_line[i-1] >= signal_line[i-1]:
+            elif (
+                macd_line[i] < signal_line[i] and macd_line[i - 1] >= signal_line[i - 1]
+            ):
                 signals.append("SELL")
             else:
                 signals.append("HOLD")
@@ -577,7 +688,9 @@ class BollingerBandAnalysis:
     """Bollinger Band analysis."""
 
     @staticmethod
-    def calculate_bollinger_bands(prices: List[float], period: int = 20, std_dev: float = 2) -> Tuple[List[float], List[float], List[float]]:
+    def calculate_bollinger_bands(
+        prices: list[float], period: int = 20, std_dev: float = 2
+    ) -> tuple[list[float], list[float], list[float]]:
         """Calculate Bollinger Bands."""
         sma = MovingAverageAnalysis.calculate_sma(prices, period)
         upper_band = []
@@ -588,7 +701,7 @@ class BollingerBandAnalysis:
                 upper_band.append(0)
                 lower_band.append(0)
             else:
-                window_prices = prices[i-period+1:i+1]
+                window_prices = prices[i - period + 1 : i + 1]
                 std = statistics.stdev(window_prices)
                 upper_band.append(sma[i] + (std_dev * std))
                 lower_band.append(sma[i] - (std_dev * std))
@@ -596,16 +709,24 @@ class BollingerBandAnalysis:
         return upper_band, sma, lower_band
 
     @staticmethod
-    def bb_squeeze_detection(upper_band: List[float], lower_band: List[float], period: int = 20) -> List[bool]:
+    def bb_squeeze_detection(
+        upper_band: list[float], lower_band: list[float], period: int = 20
+    ) -> list[bool]:
         """Detect Bollinger Band squeeze periods."""
         squeeze_detected = []
         for i in range(len(upper_band)):
             if i < period:
                 squeeze_detected.append(False)
             else:
-                recent_widths = [upper_band[j] - lower_band[j] for j in range(i-period+1, i+1) if upper_band[j] > 0]
+                recent_widths = [
+                    upper_band[j] - lower_band[j]
+                    for j in range(i - period + 1, i + 1)
+                    if upper_band[j] > 0
+                ]
                 current_width = upper_band[i] - lower_band[i]
-                avg_width = statistics.mean(recent_widths) if recent_widths else current_width
+                avg_width = (
+                    statistics.mean(recent_widths) if recent_widths else current_width
+                )
                 squeeze_detected.append(current_width < avg_width * 0.7)
 
         return squeeze_detected
@@ -618,7 +739,9 @@ class TechnicalAnalysis:
         self.indicators = None
         self.chart_patterns = []
 
-    def comprehensive_technical_analysis(self, prices: List[float], volumes: List[float]) -> Dict[str, Any]:
+    def comprehensive_technical_analysis(
+        self, prices: list[float], volumes: list[float]
+    ) -> dict[str, Any]:
         """Perform comprehensive technical analysis."""
         if len(prices) < 50:
             return {"error": "Insufficient price history for analysis"}
@@ -634,7 +757,7 @@ class TechnicalAnalysis:
             "overall_signal": self._generate_overall_signal(prices),
         }
 
-    def _analyze_moving_averages(self, prices: List[float]) -> Dict[str, Any]:
+    def _analyze_moving_averages(self, prices: list[float]) -> dict[str, Any]:
         sma_20 = MovingAverageAnalysis.calculate_sma(prices, 20)[-1]
         sma_50 = MovingAverageAnalysis.calculate_sma(prices, 50)[-1]
         sma_200 = MovingAverageAnalysis.calculate_sma(prices, 200)[-1]
@@ -644,21 +767,35 @@ class TechnicalAnalysis:
             "sma_20": round(sma_20, 2),
             "sma_50": round(sma_50, 2),
             "sma_200": round(sma_200, 2),
-            "price_position": MovingAverageAnalysis.ma_strength(current_price, sma_20, sma_50, sma_200),
-            "crossover_signal": MovingAverageAnalysis.ma_crossover_signals(prices)[-1] if len(prices) > 50 else "INSUFFICIENT_DATA",
+            "price_position": MovingAverageAnalysis.ma_strength(
+                current_price, sma_20, sma_50, sma_200
+            ),
+            "crossover_signal": (
+                MovingAverageAnalysis.ma_crossover_signals(prices)[-1]
+                if len(prices) > 50
+                else "INSUFFICIENT_DATA"
+            ),
         }
 
-    def _analyze_rsi(self, prices: List[float]) -> Dict[str, Any]:
+    def _analyze_rsi(self, prices: list[float]) -> dict[str, Any]:
         rsi_values = RSIAnalysis.calculate_rsi(prices)
         current_rsi = rsi_values[-1]
 
         return {
             "current_rsi": round(current_rsi, 1),
-            "status": "OVERBOUGHT" if current_rsi > 70 else "OVERSOLD" if current_rsi < 30 else "NEUTRAL",
-            "divergence": RSIAnalysis.rsi_divergence_signals(prices, rsi_values)[-1] if len(prices) > 2 else "NEUTRAL",
+            "status": (
+                "OVERBOUGHT"
+                if current_rsi > 70
+                else "OVERSOLD" if current_rsi < 30 else "NEUTRAL"
+            ),
+            "divergence": (
+                RSIAnalysis.rsi_divergence_signals(prices, rsi_values)[-1]
+                if len(prices) > 2
+                else "NEUTRAL"
+            ),
         }
 
-    def _analyze_macd(self, prices: List[float]) -> Dict[str, Any]:
+    def _analyze_macd(self, prices: list[float]) -> dict[str, Any]:
         macd_line, signal_line, histogram = MACDAnalysis.calculate_macd(prices)
         signals = MACDAnalysis.macd_signals(macd_line, signal_line)
 
@@ -670,24 +807,34 @@ class TechnicalAnalysis:
             "momentum": "BULLISH" if histogram[-1] > 0 else "BEARISH",
         }
 
-    def _analyze_bollinger_bands(self, prices: List[float]) -> Dict[str, Any]:
+    def _analyze_bollinger_bands(self, prices: list[float]) -> dict[str, Any]:
         upper, middle, lower = BollingerBandAnalysis.calculate_bollinger_bands(prices)
         squeeze = BollingerBandAnalysis.bb_squeeze_detection(upper, lower)
 
         current_price = prices[-1]
-        bb_position = (current_price - lower[-1]) / (upper[-1] - lower[-1]) if upper[-1] > lower[-1] else 0.5
+        bb_position = (
+            (current_price - lower[-1]) / (upper[-1] - lower[-1])
+            if upper[-1] > lower[-1]
+            else 0.5
+        )
 
         return {
             "upper_band": round(upper[-1], 2),
             "middle_band": round(middle[-1], 2),
             "lower_band": round(lower[-1], 2),
             "band_width": round(upper[-1] - lower[-1], 2),
-            "price_position": "OVERBOUGHT" if bb_position > 0.8 else "OVERSOLD" if bb_position < 0.2 else "NEUTRAL",
+            "price_position": (
+                "OVERBOUGHT"
+                if bb_position > 0.8
+                else "OVERSOLD" if bb_position < 0.2 else "NEUTRAL"
+            ),
             "squeeze_detected": squeeze[-1] if squeeze else False,
         }
 
-    def _analyze_support_resistance(self, prices: List[float]) -> Dict[str, Any]:
-        pivot = SupportResistance.calculate_pivot_points(max(prices[-20:]), min(prices[-20:]), prices[-1])
+    def _analyze_support_resistance(self, prices: list[float]) -> dict[str, Any]:
+        pivot = SupportResistance.calculate_pivot_points(
+            max(prices[-20:]), min(prices[-20:]), prices[-1]
+        )
 
         return {
             "pivot_point": round(pivot["pivot"], 2),
@@ -697,10 +844,18 @@ class TechnicalAnalysis:
             "support_2": round(pivot["support2"], 2),
         }
 
-    def _analyze_volume(self, volumes: List[float]) -> Dict[str, Any]:
-        avg_volume = statistics.mean(volumes[-20:]) if len(volumes) >= 20 else statistics.mean(volumes)
+    def _analyze_volume(self, volumes: list[float]) -> dict[str, Any]:
+        avg_volume = (
+            statistics.mean(volumes[-20:])
+            if len(volumes) >= 20
+            else statistics.mean(volumes)
+        )
         current_volume = volumes[-1]
-        volume_trend = "above_average" if current_volume > avg_volume * 1.2 else "below_average" if current_volume < avg_volume * 0.8 else "normal"
+        volume_trend = (
+            "above_average"
+            if current_volume > avg_volume * 1.2
+            else "below_average" if current_volume < avg_volume * 0.8 else "normal"
+        )
 
         return {
             "current_volume": int(current_volume),
@@ -708,7 +863,7 @@ class TechnicalAnalysis:
             "trend": volume_trend,
         }
 
-    def _detect_patterns(self, prices: List[float]) -> List[str]:
+    def _detect_patterns(self, prices: list[float]) -> list[str]:
         """Detect common chart patterns."""
         patterns = []
         if len(prices) < 20:
@@ -723,21 +878,27 @@ class TechnicalAnalysis:
 
         return patterns
 
-    def _is_double_bottom(self, prices: List[float]) -> bool:
+    def _is_double_bottom(self, prices: list[float]) -> bool:
         if len(prices) < 10:
             return False
-        low1_idx = prices[:len(prices)//2].index(min(prices[:len(prices)//2]))
-        low2_idx = len(prices)//2 + prices[len(prices)//2:].index(min(prices[len(prices)//2:]))
-        return abs(prices[low1_idx] - prices[low2_idx]) < prices[-1] * 0.02  # Within 2% of each other
+        low1_idx = prices[: len(prices) // 2].index(min(prices[: len(prices) // 2]))
+        low2_idx = len(prices) // 2 + prices[len(prices) // 2 :].index(
+            min(prices[len(prices) // 2 :])
+        )
+        return (
+            abs(prices[low1_idx] - prices[low2_idx]) < prices[-1] * 0.02
+        )  # Within 2% of each other
 
-    def _is_double_top(self, prices: List[float]) -> bool:
+    def _is_double_top(self, prices: list[float]) -> bool:
         if len(prices) < 10:
             return False
-        high1_idx = prices[:len(prices)//2].index(max(prices[:len(prices)//2]))
-        high2_idx = len(prices)//2 + prices[len(prices)//2:].index(max(prices[len(prices)//2:]))
+        high1_idx = prices[: len(prices) // 2].index(max(prices[: len(prices) // 2]))
+        high2_idx = len(prices) // 2 + prices[len(prices) // 2 :].index(
+            max(prices[len(prices) // 2 :])
+        )
         return abs(prices[high1_idx] - prices[high2_idx]) < prices[-1] * 0.02
 
-    def _generate_overall_signal(self, prices: List[float]) -> str:
+    def _generate_overall_signal(self, prices: list[float]) -> str:
         """Generate overall technical signal."""
         # Simplified overall signal
         rsi = RSIAnalysis.calculate_rsi(prices)[-1]
@@ -761,9 +922,11 @@ class TechnicalAnalysis:
 # 3. FUNDAMENTAL ANALYSIS (1,200+ lines)
 # ============================================================================
 
+
 @dataclass
 class FinancialStatements:
     """Complete financial statements data."""
+
     revenue: float
     gross_profit: float
     operating_income: float
@@ -776,10 +939,14 @@ class FinancialStatements:
     current_liabilities: float
     shareholder_equity: float
 
-    def profitability_ratios(self) -> Dict[str, float]:
+    def profitability_ratios(self) -> dict[str, float]:
         """Calculate profitability metrics."""
-        gross_margin = (self.gross_profit / self.revenue * 100) if self.revenue > 0 else 0
-        operating_margin = (self.operating_income / self.revenue * 100) if self.revenue > 0 else 0
+        gross_margin = (
+            (self.gross_profit / self.revenue * 100) if self.revenue > 0 else 0
+        )
+        operating_margin = (
+            (self.operating_income / self.revenue * 100) if self.revenue > 0 else 0
+        )
         net_margin = (self.net_income / self.revenue * 100) if self.revenue > 0 else 0
 
         return {
@@ -788,20 +955,34 @@ class FinancialStatements:
             "net_margin_percent": round(net_margin, 2),
         }
 
-    def liquidity_ratios(self) -> Dict[str, float]:
+    def liquidity_ratios(self) -> dict[str, float]:
         """Calculate liquidity metrics."""
-        current_ratio = self.current_assets / self.current_liabilities if self.current_liabilities > 0 else 0
-        quick_ratio = (self.current_assets - 50000000) / self.current_liabilities if self.current_liabilities > 0 else 0  # Simplified
+        current_ratio = (
+            self.current_assets / self.current_liabilities
+            if self.current_liabilities > 0
+            else 0
+        )
+        quick_ratio = (
+            (self.current_assets - 50000000) / self.current_liabilities
+            if self.current_liabilities > 0
+            else 0
+        )  # Simplified
 
         return {
             "current_ratio": round(current_ratio, 2),
             "quick_ratio": round(quick_ratio, 2),
-            "liquidity_status": "strong" if current_ratio > 1.5 else "adequate" if current_ratio > 1.0 else "weak",
+            "liquidity_status": (
+                "strong"
+                if current_ratio > 1.5
+                else "adequate" if current_ratio > 1.0 else "weak"
+            ),
         }
 
-    def efficiency_ratios(self) -> Dict[str, float]:
+    def efficiency_ratios(self) -> dict[str, float]:
         """Calculate efficiency metrics."""
-        asset_turnover = self.revenue / self.total_assets if self.total_assets > 0 else 0
+        asset_turnover = (
+            self.revenue / self.total_assets if self.total_assets > 0 else 0
+        )
         fcf = self.operating_cash_flow - self.capex
         fcf_to_revenue = (fcf / self.revenue * 100) if self.revenue > 0 else 0
 
@@ -815,10 +996,22 @@ class FundamentalAnalysis:
     """Complete fundamental analysis."""
 
     @staticmethod
-    def analyze_growth_trajectory(revenues: List[float], earnings: List[float]) -> Dict[str, Any]:
+    def analyze_growth_trajectory(
+        revenues: list[float], earnings: list[float]
+    ) -> dict[str, Any]:
         """Analyze company growth trajectory."""
-        revenue_growth = [(revenues[i] - revenues[i-1]) / revenues[i-1] * 100 for i in range(1, len(revenues))]
-        earnings_growth = [(earnings[i] - earnings[i-1]) / earnings[i-1] * 100 if earnings[i-1] > 0 else 0 for i in range(1, len(earnings))]
+        revenue_growth = [
+            (revenues[i] - revenues[i - 1]) / revenues[i - 1] * 100
+            for i in range(1, len(revenues))
+        ]
+        earnings_growth = [
+            (
+                (earnings[i] - earnings[i - 1]) / earnings[i - 1] * 100
+                if earnings[i - 1] > 0
+                else 0
+            )
+            for i in range(1, len(earnings))
+        ]
 
         avg_revenue_growth = statistics.mean(revenue_growth) if revenue_growth else 0
         avg_earnings_growth = statistics.mean(earnings_growth) if earnings_growth else 0
@@ -826,21 +1019,55 @@ class FundamentalAnalysis:
         return {
             "revenue_cagr": round(avg_revenue_growth, 2),
             "earnings_cagr": round(avg_earnings_growth, 2),
-            "growth_momentum": "accelerating" if revenue_growth[-1] > avg_revenue_growth else "decelerating" if revenue_growth[-1] < avg_revenue_growth * 0.8 else "stable",
-            "earnings_quality": "high" if avg_earnings_growth > avg_revenue_growth * 0.8 else "moderate" if avg_earnings_growth > avg_revenue_growth * 0.5 else "low",
+            "growth_momentum": (
+                "accelerating"
+                if revenue_growth[-1] > avg_revenue_growth
+                else (
+                    "decelerating"
+                    if revenue_growth[-1] < avg_revenue_growth * 0.8
+                    else "stable"
+                )
+            ),
+            "earnings_quality": (
+                "high"
+                if avg_earnings_growth > avg_revenue_growth * 0.8
+                else (
+                    "moderate"
+                    if avg_earnings_growth > avg_revenue_growth * 0.5
+                    else "low"
+                )
+            ),
         }
 
     @staticmethod
-    def competitive_analysis(company_metrics: Dict, industry_metrics: Dict) -> Dict[str, Any]:
+    def competitive_analysis(
+        company_metrics: dict, industry_metrics: dict
+    ) -> dict[str, Any]:
         """Compare company against industry."""
         return {
-            "profitability_rank": "above_average" if company_metrics.get("net_margin", 0) > industry_metrics.get("net_margin", 0) else "below_average",
-            "growth_rank": "above_average" if company_metrics.get("revenue_growth", 0) > industry_metrics.get("revenue_growth", 0) else "below_average",
-            "efficiency_rank": "above_average" if company_metrics.get("roa", 0) > industry_metrics.get("roa", 0) else "below_average",
+            "profitability_rank": (
+                "above_average"
+                if company_metrics.get("net_margin", 0)
+                > industry_metrics.get("net_margin", 0)
+                else "below_average"
+            ),
+            "growth_rank": (
+                "above_average"
+                if company_metrics.get("revenue_growth", 0)
+                > industry_metrics.get("revenue_growth", 0)
+                else "below_average"
+            ),
+            "efficiency_rank": (
+                "above_average"
+                if company_metrics.get("roa", 0) > industry_metrics.get("roa", 0)
+                else "below_average"
+            ),
         }
 
     @staticmethod
-    def sector_tailwinds_analysis(sector: str, macro_indicators: Dict) -> Dict[str, Any]:
+    def sector_tailwinds_analysis(
+        sector: str, macro_indicators: dict
+    ) -> dict[str, Any]:
         """Assess sector tailwinds and headwinds."""
         tailwinds = []
         headwinds = []
@@ -851,18 +1078,18 @@ class FundamentalAnalysis:
             if macro_indicators.get("inflation", 0.02) < 0.03:
                 tailwinds.append("Moderate inflation supports tech growth")
 
-        if sector == "finance":
-            if macro_indicators.get("interest_rates", 0.03) > 0.02:
-                tailwinds.append("Higher rates benefit net interest margins")
+        if sector == "finance" and macro_indicators.get("interest_rates", 0.03) > 0.02:
+            tailwinds.append("Higher rates benefit net interest margins")
 
-        if sector == "energy":
-            if macro_indicators.get("oil_price", 50) > 60:
-                tailwinds.append("Higher oil prices support profitability")
+        if sector == "energy" and macro_indicators.get("oil_price", 50) > 60:
+            tailwinds.append("Higher oil prices support profitability")
 
         return {
             "tailwinds": tailwinds,
             "headwinds": headwinds,
-            "sector_attractiveness": "attractive" if len(tailwinds) > len(headwinds) else "challenging",
+            "sector_attractiveness": (
+                "attractive" if len(tailwinds) > len(headwinds) else "challenging"
+            ),
         }
 
 
@@ -870,9 +1097,11 @@ class FundamentalAnalysis:
 # 4. PORTFOLIO STRATEGY (1,200+ lines)
 # ============================================================================
 
+
 @dataclass
 class PortfolioAllocation:
     """Asset allocation strategy."""
+
     equities_percent: float
     bonds_percent: float
     alternatives_percent: float
@@ -880,11 +1109,15 @@ class PortfolioAllocation:
     target_return: float
     expected_volatility: float
 
-    def rebalancing_analysis(self, current_allocation: Dict[str, float]) -> Dict[str, Any]:
+    def rebalancing_analysis(
+        self, current_allocation: dict[str, float]
+    ) -> dict[str, Any]:
         """Analyze need for rebalancing."""
         drift = {
-            k: abs(current_allocation.get(k, 0) - getattr(self, f"{k.lower()}_percent", 0))
-            for k in current_allocation.keys()
+            k: abs(
+                current_allocation.get(k, 0) - getattr(self, f"{k.lower()}_percent", 0)
+            )
+            for k in current_allocation
         }
 
         max_drift = max(drift.values()) if drift else 0
@@ -895,13 +1128,19 @@ class PortfolioAllocation:
             "suggested_actions": self._rebalancing_actions(drift, current_allocation),
         }
 
-    def _rebalancing_actions(self, drift: Dict[str, float], current: Dict[str, float]) -> List[str]:
+    def _rebalancing_actions(
+        self, drift: dict[str, float], current: dict[str, float]
+    ) -> list[str]:
         actions = []
         target_equities = self.equities_percent
         if current.get("equities", 0) > target_equities + 5:
-            actions.append(f"Reduce equities exposure by {round(current.get('equities', 0) - target_equities, 1)}%")
+            actions.append(
+                f"Reduce equities exposure by {round(current.get('equities', 0) - target_equities, 1)}%"
+            )
         elif current.get("equities", 0) < target_equities - 5:
-            actions.append(f"Increase equities exposure by {round(target_equities - current.get('equities', 0), 1)}%")
+            actions.append(
+                f"Increase equities exposure by {round(target_equities - current.get('equities', 0), 1)}%"
+            )
 
         return actions
 
@@ -910,7 +1149,9 @@ class PortfolioStrategy:
     """Comprehensive portfolio strategy."""
 
     @staticmethod
-    def optimal_allocation(risk_tolerance: str, time_horizon: int) -> PortfolioAllocation:
+    def optimal_allocation(
+        risk_tolerance: str, time_horizon: int
+    ) -> PortfolioAllocation:
         """Determine optimal asset allocation."""
         if risk_tolerance == "conservative":
             return PortfolioAllocation(
@@ -941,19 +1182,55 @@ class PortfolioStrategy:
             )
 
     @staticmethod
-    def sector_rotation_strategy(business_cycle_phase: str) -> Dict[str, float]:
+    def sector_rotation_strategy(business_cycle_phase: str) -> dict[str, float]:
         """Recommend sector allocation based on business cycle."""
         allocations = {
-            "early_cycle": {"financials": 15, "industrials": 15, "energy": 10, "healthcare": 15, "technology": 20, "consumer_staples": 10, "utilities": 5, "reits": 10},
-            "mid_cycle": {"technology": 25, "consumer_discretionary": 15, "industrials": 15, "healthcare": 15, "financials": 10, "energy": 5, "consumer_staples": 8, "utilities": 7},
-            "late_cycle": {"consumer_staples": 20, "utilities": 15, "healthcare": 20, "energy": 10, "reits": 15, "financials": 10, "technology": 5, "industrials": 5},
-            "recession": {"consumer_staples": 25, "utilities": 20, "healthcare": 20, "financials": 10, "reits": 10, "technology": 10, "energy": 3, "industrials": 2},
+            "early_cycle": {
+                "financials": 15,
+                "industrials": 15,
+                "energy": 10,
+                "healthcare": 15,
+                "technology": 20,
+                "consumer_staples": 10,
+                "utilities": 5,
+                "reits": 10,
+            },
+            "mid_cycle": {
+                "technology": 25,
+                "consumer_discretionary": 15,
+                "industrials": 15,
+                "healthcare": 15,
+                "financials": 10,
+                "energy": 5,
+                "consumer_staples": 8,
+                "utilities": 7,
+            },
+            "late_cycle": {
+                "consumer_staples": 20,
+                "utilities": 15,
+                "healthcare": 20,
+                "energy": 10,
+                "reits": 15,
+                "financials": 10,
+                "technology": 5,
+                "industrials": 5,
+            },
+            "recession": {
+                "consumer_staples": 25,
+                "utilities": 20,
+                "healthcare": 20,
+                "financials": 10,
+                "reits": 10,
+                "technology": 10,
+                "energy": 3,
+                "industrials": 2,
+            },
         }
 
         return allocations.get(business_cycle_phase, allocations["mid_cycle"])
 
     @staticmethod
-    def diversification_analysis(holdings: Dict[str, float]) -> Dict[str, Any]:
+    def diversification_analysis(holdings: dict[str, float]) -> dict[str, Any]:
         """Analyze portfolio diversification."""
         total = sum(holdings.values())
         concentration = max(holdings.values()) / total if total > 0 else 0
@@ -961,12 +1238,22 @@ class PortfolioStrategy:
         return {
             "number_of_positions": len(holdings),
             "largest_position_percent": round(concentration * 100, 1),
-            "diversification_score": "excellent" if concentration < 0.1 else "good" if concentration < 0.15 else "fair" if concentration < 0.2 else "poor",
-            "herfindahl_index": round(sum((v/total)**2 for v in holdings.values()) if total > 0 else 0, 3),
+            "diversification_score": (
+                "excellent"
+                if concentration < 0.1
+                else (
+                    "good"
+                    if concentration < 0.15
+                    else "fair" if concentration < 0.2 else "poor"
+                )
+            ),
+            "herfindahl_index": round(
+                sum((v / total) ** 2 for v in holdings.values()) if total > 0 else 0, 3
+            ),
         }
 
     @staticmethod
-    def rebalancing_schedule(volatility: float, costs: Dict[str, float]) -> str:
+    def rebalancing_schedule(volatility: float, costs: dict[str, float]) -> str:
         """Determine optimal rebalancing frequency."""
         if volatility > 0.20:
             return "QUARTERLY"
@@ -980,9 +1267,11 @@ class PortfolioStrategy:
 # 5. RISK MANAGEMENT (1,000+ lines)
 # ============================================================================
 
+
 @dataclass
 class VaRMetrics:
     """Value at Risk metrics."""
+
     var_95: float  # 95% confidence
     var_99: float  # 99% confidence
     cvar_95: float  # Conditional VaR
@@ -990,7 +1279,7 @@ class VaRMetrics:
     daily_volatility: float
     time_horizon_days: int
 
-    def risk_summary(self) -> Dict[str, Any]:
+    def risk_summary(self) -> dict[str, Any]:
         """Summarize VaR-based risk metrics."""
         annual_vol = self.daily_volatility * math.sqrt(252)
 
@@ -999,7 +1288,19 @@ class VaRMetrics:
             "max_loss_99_confidence": round(self.var_99, 2),
             "expected_shortfall": round(self.cvar_95, 2),
             "annual_volatility_percent": round(annual_vol * 100, 2),
-            "risk_level": "extreme" if self.var_95 > self.portfolio_value * 0.05 else "high" if self.var_95 > self.portfolio_value * 0.03 else "moderate" if self.var_95 > self.portfolio_value * 0.01 else "low",
+            "risk_level": (
+                "extreme"
+                if self.var_95 > self.portfolio_value * 0.05
+                else (
+                    "high"
+                    if self.var_95 > self.portfolio_value * 0.03
+                    else (
+                        "moderate"
+                        if self.var_95 > self.portfolio_value * 0.01
+                        else "low"
+                    )
+                )
+            ),
         }
 
 
@@ -1007,14 +1308,21 @@ class RiskManagement:
     """Comprehensive risk management."""
 
     @staticmethod
-    def calculate_var(returns: List[float], confidence_level: float = 0.95, time_horizon: int = 1) -> float:
+    def calculate_var(
+        returns: list[float], confidence_level: float = 0.95, time_horizon: int = 1
+    ) -> float:
         """Calculate Value at Risk."""
         sorted_returns = sorted(returns)
         var_index = int((1 - confidence_level) * len(returns))
         return abs(sorted_returns[var_index])
 
     @staticmethod
-    def position_sizing(portfolio_value: float, max_loss_percent: float, stop_loss_price: float, entry_price: float) -> float:
+    def position_sizing(
+        portfolio_value: float,
+        max_loss_percent: float,
+        stop_loss_price: float,
+        entry_price: float,
+    ) -> float:
         """Calculate optimal position size based on risk."""
         max_loss = portfolio_value * max_loss_percent
         price_risk = entry_price - stop_loss_price
@@ -1024,23 +1332,26 @@ class RiskManagement:
         return min(position_size, portfolio_value * 0.1)  # Cap at 10% of portfolio
 
     @staticmethod
-    def correlation_analysis(asset_returns: Dict[str, List[float]]) -> Dict[str, float]:
+    def correlation_analysis(asset_returns: dict[str, list[float]]) -> dict[str, float]:
         """Analyze correlation between assets."""
         correlations = {}
         assets = list(asset_returns.keys())
 
         for i, asset1 in enumerate(assets):
-            for asset2 in assets[i+1:]:
+            for asset2 in assets[i + 1 :]:
                 returns1 = asset_returns[asset1]
                 returns2 = asset_returns[asset2]
 
                 mean1 = statistics.mean(returns1)
                 mean2 = statistics.mean(returns2)
 
-                numerator = sum((returns1[j] - mean1) * (returns2[j] - mean2) for j in range(len(returns1)))
+                numerator = sum(
+                    (returns1[j] - mean1) * (returns2[j] - mean2)
+                    for j in range(len(returns1))
+                )
                 denominator = math.sqrt(
-                    sum((returns1[j] - mean1)**2 for j in range(len(returns1))) *
-                    sum((returns2[j] - mean2)**2 for j in range(len(returns2)))
+                    sum((returns1[j] - mean1) ** 2 for j in range(len(returns1)))
+                    * sum((returns2[j] - mean2) ** 2 for j in range(len(returns2)))
                 )
 
                 correlation = numerator / denominator if denominator > 0 else 0
@@ -1049,25 +1360,49 @@ class RiskManagement:
         return correlations
 
     @staticmethod
-    def stress_test_scenarios() -> Dict[str, Dict[str, float]]:
+    def stress_test_scenarios() -> dict[str, dict[str, float]]:
         """Define stress test scenarios."""
         return {
-            "market_crash": {"equity_return": -0.25, "bond_return": 0.05, "volatility_spike": 2.0},
-            "recession": {"equity_return": -0.15, "bond_return": 0.08, "volatility_spike": 1.5},
-            "inflation_spike": {"equity_return": -0.10, "bond_return": -0.08, "volatility_spike": 1.2},
-            "rate_hike": {"equity_return": -0.08, "bond_return": -0.06, "volatility_spike": 1.1},
+            "market_crash": {
+                "equity_return": -0.25,
+                "bond_return": 0.05,
+                "volatility_spike": 2.0,
+            },
+            "recession": {
+                "equity_return": -0.15,
+                "bond_return": 0.08,
+                "volatility_spike": 1.5,
+            },
+            "inflation_spike": {
+                "equity_return": -0.10,
+                "bond_return": -0.08,
+                "volatility_spike": 1.2,
+            },
+            "rate_hike": {
+                "equity_return": -0.08,
+                "bond_return": -0.06,
+                "volatility_spike": 1.1,
+            },
         }
 
     @staticmethod
-    def portfolio_stress_test(portfolio: Dict[str, float], scenarios: Dict[str, Dict[str, float]]) -> Dict[str, Dict[str, float]]:
+    def portfolio_stress_test(
+        portfolio: dict[str, float], scenarios: dict[str, dict[str, float]]
+    ) -> dict[str, dict[str, float]]:
         """Run portfolio through stress scenarios."""
         results = {}
 
         for scenario_name, scenario_effects in scenarios.items():
-            equity_allocation = sum(v for k, v in portfolio.items() if "equity" in k.lower()) / sum(portfolio.values()) if portfolio else 0
+            equity_allocation = (
+                sum(v for k, v in portfolio.items() if "equity" in k.lower())
+                / sum(portfolio.values())
+                if portfolio
+                else 0
+            )
 
-            portfolio_return = (equity_allocation * scenario_effects.get("equity_return", 0) +
-                              (1 - equity_allocation) * scenario_effects.get("bond_return", 0))
+            portfolio_return = equity_allocation * scenario_effects.get(
+                "equity_return", 0
+            ) + (1 - equity_allocation) * scenario_effects.get("bond_return", 0)
 
             results[scenario_name] = {
                 "portfolio_loss_percent": round(portfolio_return * 100, 1),
@@ -1081,31 +1416,44 @@ class RiskManagement:
 # 6. TRADING PSYCHOLOGY (1,000+ lines)
 # ============================================================================
 
+
 class TradeJournal:
     """Trading journal for performance tracking."""
 
     def __init__(self):
-        self.trades: List[Dict[str, Any]] = []
+        self.trades: list[dict[str, Any]] = []
 
-    def log_trade(self, entry_date: datetime, entry_price: float, exit_price: float,
-                  quantity: int, symbol: str, reason: str, emotions: List[str]):
+    def log_trade(
+        self,
+        entry_date: datetime,
+        entry_price: float,
+        exit_price: float,
+        quantity: int,
+        symbol: str,
+        reason: str,
+        emotions: list[str],
+    ):
         """Log a completed trade."""
         profit_loss = (exit_price - entry_price) * quantity
-        profit_loss_percent = ((exit_price - entry_price) / entry_price * 100) if entry_price > 0 else 0
+        profit_loss_percent = (
+            ((exit_price - entry_price) / entry_price * 100) if entry_price > 0 else 0
+        )
 
-        self.trades.append({
-            "entry_date": entry_date,
-            "entry_price": entry_price,
-            "exit_price": exit_price,
-            "quantity": quantity,
-            "symbol": symbol,
-            "profit_loss": profit_loss,
-            "profit_loss_percent": profit_loss_percent,
-            "reason": reason,
-            "emotions": emotions,
-        })
+        self.trades.append(
+            {
+                "entry_date": entry_date,
+                "entry_price": entry_price,
+                "exit_price": exit_price,
+                "quantity": quantity,
+                "symbol": symbol,
+                "profit_loss": profit_loss,
+                "profit_loss_percent": profit_loss_percent,
+                "reason": reason,
+                "emotions": emotions,
+            }
+        )
 
-    def analyze_journal(self) -> Dict[str, Any]:
+    def analyze_journal(self) -> dict[str, Any]:
         """Analyze trading performance and psychology patterns."""
         if not self.trades:
             return {"error": "No trades logged yet"}
@@ -1115,8 +1463,16 @@ class TradeJournal:
 
         win_rate = len(winning_trades) / len(self.trades) if self.trades else 0
 
-        avg_win = statistics.mean([t["profit_loss"] for t in winning_trades]) if winning_trades else 0
-        avg_loss = statistics.mean([t["profit_loss"] for t in losing_trades]) if losing_trades else 0
+        avg_win = (
+            statistics.mean([t["profit_loss"] for t in winning_trades])
+            if winning_trades
+            else 0
+        )
+        avg_loss = (
+            statistics.mean([t["profit_loss"] for t in losing_trades])
+            if losing_trades
+            else 0
+        )
 
         profit_factor = avg_win / abs(avg_loss) if avg_loss != 0 else 0
 
@@ -1131,7 +1487,9 @@ class TradeJournal:
         emotion_analysis = {
             emotion: {
                 "avg_outcome": round(statistics.mean(outcomes), 2),
-                "win_rate": round(sum(1 for o in outcomes if o > 0) / len(outcomes) * 100, 1),
+                "win_rate": round(
+                    sum(1 for o in outcomes if o > 0) / len(outcomes) * 100, 1
+                ),
             }
             for emotion, outcomes in emotion_outcomes.items()
         }
@@ -1143,21 +1501,29 @@ class TradeJournal:
             "average_win": round(avg_win, 2),
             "average_loss": round(avg_loss, 2),
             "emotion_analysis": emotion_analysis,
-            "psychological_insights": self._generate_insights(emotion_analysis, win_rate),
+            "psychological_insights": self._generate_insights(
+                emotion_analysis, win_rate
+            ),
         }
 
-    def _generate_insights(self, emotion_analysis: Dict, win_rate: float) -> List[str]:
+    def _generate_insights(self, emotion_analysis: dict, win_rate: float) -> list[str]:
         """Generate psychological insights from trading data."""
         insights = []
 
         for emotion, stats in emotion_analysis.items():
             if stats["win_rate"] < 40:
-                insights.append(f"Trading while {emotion} has {stats['win_rate']}% win rate - consider avoiding this emotion")
+                insights.append(
+                    f"Trading while {emotion} has {stats['win_rate']}% win rate - consider avoiding this emotion"
+                )
             elif stats["win_rate"] > 60:
-                insights.append(f"Trading while {emotion} has {stats['win_rate']}% win rate - positive emotional state")
+                insights.append(
+                    f"Trading while {emotion} has {stats['win_rate']}% win rate - positive emotional state"
+                )
 
         if win_rate < 0.4:
-            insights.append("Overall win rate below 40% - consider position sizing and stop loss discipline")
+            insights.append(
+                "Overall win rate below 40% - consider position sizing and stop loss discipline"
+            )
 
         return insights
 
@@ -1165,7 +1531,7 @@ class TradeJournal:
 class TradingBiases:
     """Common trading biases and mitigation."""
 
-    COMMON_BIASES = {
+    COMMON_BIASES: ClassVar[dict] = {
         "confirmation_bias": "Seeking only information that confirms existing beliefs",
         "recency_bias": "Overweighting recent price action",
         "loss_aversion": "Holding losers too long and closing winners too early",
@@ -1175,7 +1541,7 @@ class TradingBiases:
     }
 
     @staticmethod
-    def bias_mitigation_strategies() -> Dict[str, List[str]]:
+    def bias_mitigation_strategies() -> dict[str, list[str]]:
         """Strategies to combat common biases."""
         return {
             "confirmation_bias": [
@@ -1218,7 +1584,7 @@ class TradingPsychology:
         self.journal = TradeJournal()
         self.biases = TradingBiases()
 
-    def discipline_framework(self) -> Dict[str, Any]:
+    def discipline_framework(self) -> dict[str, Any]:
         """Framework for trading discipline."""
         return {
             "pre_trade_checklist": [
@@ -1243,19 +1609,25 @@ class TradingPsychology:
             ],
         }
 
-    def patience_metrics(self, trades: List[Dict]) -> Dict[str, Any]:
+    def patience_metrics(self, trades: list[dict]) -> dict[str, Any]:
         """Analyze patience in trading decisions."""
         if not trades:
             return {"error": "No trades to analyze"}
 
-        avg_holding_period = statistics.mean([t.get("holding_days", 0) for t in trades if t.get("holding_days")])
+        avg_holding_period = statistics.mean(
+            [t.get("holding_days", 0) for t in trades if t.get("holding_days")]
+        )
         early_exits = sum(1 for t in trades if t.get("early_exit", False))
 
         return {
             "average_holding_period_days": round(avg_holding_period, 1),
             "early_exit_count": early_exits,
             "early_exit_percent": round(early_exits / len(trades) * 100, 1),
-            "patience_assessment": "excellent" if early_exits / len(trades) < 0.1 else "good" if early_exits / len(trades) < 0.2 else "needs_improvement",
+            "patience_assessment": (
+                "excellent"
+                if early_exits / len(trades) < 0.1
+                else "good" if early_exits / len(trades) < 0.2 else "needs_improvement"
+            ),
         }
 
 
@@ -1263,8 +1635,10 @@ class TradingPsychology:
 # 7. MARKET MICROSTRUCTURE (1,000+ lines)
 # ============================================================================
 
+
 class OrderType(Enum):
     """Types of orders."""
+
     MARKET = "MARKET"
     LIMIT = "LIMIT"
     STOP = "STOP"
@@ -1278,6 +1652,7 @@ class OrderType(Enum):
 @dataclass
 class OrderFlowAnalysis:
     """Analysis of order flow dynamics."""
+
     bid_volume: float
     ask_volume: float
     bid_ask_spread: float
@@ -1288,13 +1663,29 @@ class OrderFlowAnalysis:
     market_impact: float
     slippage: float
 
-    def liquidity_assessment(self) -> Dict[str, Any]:
+    def liquidity_assessment(self) -> dict[str, Any]:
         """Assess market liquidity."""
         return {
             "liquidity_score": self._liquidity_score(),
-            "bid_ask_quality": "tight" if self.spread_percent < 0.05 else "normal" if self.spread_percent < 0.1 else "wide",
-            "order_imbalance": "bullish" if self.order_imbalance > 0.1 else "bearish" if self.order_imbalance < -0.1 else "balanced",
-            "market_depth": "deep" if (self.bid_volume + self.ask_volume) > 1000000 else "moderate" if (self.bid_volume + self.ask_volume) > 100000 else "shallow",
+            "bid_ask_quality": (
+                "tight"
+                if self.spread_percent < 0.05
+                else "normal" if self.spread_percent < 0.1 else "wide"
+            ),
+            "order_imbalance": (
+                "bullish"
+                if self.order_imbalance > 0.1
+                else "bearish" if self.order_imbalance < -0.1 else "balanced"
+            ),
+            "market_depth": (
+                "deep"
+                if (self.bid_volume + self.ask_volume) > 1000000
+                else (
+                    "moderate"
+                    if (self.bid_volume + self.ask_volume) > 100000
+                    else "shallow"
+                )
+            ),
             "execution_cost_percent": round(self.slippage * 100, 3),
         }
 
@@ -1327,18 +1718,26 @@ class MarketMaker:
         return base_spread + volatility_adjustment + liquidity_adjustment
 
     @staticmethod
-    def inventory_risk_analysis(market_maker_holdings: Dict[str, float]) -> Dict[str, Any]:
+    def inventory_risk_analysis(
+        market_maker_holdings: dict[str, float],
+    ) -> dict[str, Any]:
         """Analyze market maker inventory risk."""
         total_inventory = sum(abs(v) for v in market_maker_holdings.values())
         long_positions = sum(max(v, 0) for v in market_maker_holdings.values())
         short_positions = sum(abs(min(v, 0)) for v in market_maker_holdings.values())
 
-        imbalance = abs(long_positions - short_positions) / total_inventory if total_inventory > 0 else 0
+        imbalance = (
+            abs(long_positions - short_positions) / total_inventory
+            if total_inventory > 0
+            else 0
+        )
 
         return {
             "total_inventory_exposure": total_inventory,
             "inventory_imbalance": round(imbalance, 3),
-            "risk_level": "low" if imbalance < 0.2 else "moderate" if imbalance < 0.4 else "high",
+            "risk_level": (
+                "low" if imbalance < 0.2 else "moderate" if imbalance < 0.4 else "high"
+            ),
         }
 
 
@@ -1346,7 +1745,9 @@ class ShortSelling:
     """Short selling mechanics and analysis."""
 
     @staticmethod
-    def short_interest_analysis(short_shares: float, float_shares: float, avg_daily_volume: float) -> Dict[str, Any]:
+    def short_interest_analysis(
+        short_shares: float, float_shares: float, avg_daily_volume: float
+    ) -> dict[str, Any]:
         """Analyze short interest metrics."""
         short_percent = (short_shares / float_shares * 100) if float_shares > 0 else 0
         days_to_cover = (short_shares / avg_daily_volume) if avg_daily_volume > 0 else 0
@@ -1354,7 +1755,11 @@ class ShortSelling:
         return {
             "short_interest_percent": round(short_percent, 2),
             "days_to_cover": round(days_to_cover, 1),
-            "squeeze_risk": "high" if short_percent > 10 and days_to_cover > 10 else "moderate" if short_percent > 5 else "low",
+            "squeeze_risk": (
+                "high"
+                if short_percent > 10 and days_to_cover > 10
+                else "moderate" if short_percent > 5 else "low"
+            ),
         }
 
     @staticmethod
@@ -1367,18 +1772,30 @@ class OptionsMarketMicrostructure:
     """Options-specific market microstructure."""
 
     @staticmethod
-    def options_volume_analysis(call_volume: float, put_volume: float, open_interest: float) -> Dict[str, Any]:
+    def options_volume_analysis(
+        call_volume: float, put_volume: float, open_interest: float
+    ) -> dict[str, Any]:
         """Analyze options market activity."""
         put_call_ratio = (put_volume / call_volume) if call_volume > 0 else 0
 
         return {
             "put_call_ratio": round(put_call_ratio, 2),
-            "sentiment": "bullish" if put_call_ratio < 0.7 else "bearish" if put_call_ratio > 1.3 else "neutral",
-            "options_liquidity": "strong" if open_interest > 1000000 else "moderate" if open_interest > 100000 else "weak",
+            "sentiment": (
+                "bullish"
+                if put_call_ratio < 0.7
+                else "bearish" if put_call_ratio > 1.3 else "neutral"
+            ),
+            "options_liquidity": (
+                "strong"
+                if open_interest > 1000000
+                else "moderate" if open_interest > 100000 else "weak"
+            ),
         }
 
     @staticmethod
-    def implied_volatility_skew(atm_iv: float, otm_call_iv: float, otm_put_iv: float) -> Dict[str, float]:
+    def implied_volatility_skew(
+        atm_iv: float, otm_call_iv: float, otm_put_iv: float
+    ) -> dict[str, float]:
         """Analyze volatility skew in options."""
         call_skew = (otm_call_iv - atm_iv) / atm_iv if atm_iv > 0 else 0
         put_skew = (otm_put_iv - atm_iv) / atm_iv if atm_iv > 0 else 0
@@ -1386,7 +1803,9 @@ class OptionsMarketMicrostructure:
         return {
             "call_skew": round(call_skew, 3),
             "put_skew": round(put_skew, 3),
-            "volatility_smile": "present" if abs(call_skew) > 0.05 or abs(put_skew) > 0.05 else "absent",
+            "volatility_smile": (
+                "present" if abs(call_skew) > 0.05 or abs(put_skew) > 0.05 else "absent"
+            ),
         }
 
 
@@ -1394,9 +1813,15 @@ class MarketMicrostructure:
     """Complete market microstructure framework."""
 
     @staticmethod
-    def optimal_execution_strategy(order_size: float, avg_daily_volume: float, target_participation_rate: float = 0.1) -> Dict[str, Any]:
+    def optimal_execution_strategy(
+        order_size: float,
+        avg_daily_volume: float,
+        target_participation_rate: float = 0.1,
+    ) -> dict[str, Any]:
         """Recommend execution strategy to minimize market impact."""
-        order_as_percent_of_volume = (order_size / avg_daily_volume * 100) if avg_daily_volume > 0 else 0
+        order_as_percent_of_volume = (
+            (order_size / avg_daily_volume * 100) if avg_daily_volume > 0 else 0
+        )
 
         if order_as_percent_of_volume < 5:
             strategy = "MARKET_ORDER"
@@ -1419,17 +1844,27 @@ class MarketMicrostructure:
         }
 
     @staticmethod
-    def volatility_smile_analysis(strikes: List[float], implied_vols: List[float], atm_strike: float) -> Dict[str, Any]:
+    def volatility_smile_analysis(
+        strikes: list[float], implied_vols: list[float], atm_strike: float
+    ) -> dict[str, Any]:
         """Analyze and classify volatility smile."""
-        atm_iv = next((iv for s, iv in zip(strikes, implied_vols) if s == atm_strike), 0)
+        atm_iv = next(
+            (iv for s, iv in zip(strikes, implied_vols) if s == atm_strike), 0
+        )
         otm_calls = [(s, iv) for s, iv in zip(strikes, implied_vols) if s > atm_strike]
         otm_puts = [(s, iv) for s, iv in zip(strikes, implied_vols) if s < atm_strike]
 
-        call_skew = (otm_calls[0][1] - atm_iv) / atm_iv if otm_calls and atm_iv > 0 else 0
+        call_skew = (
+            (otm_calls[0][1] - atm_iv) / atm_iv if otm_calls and atm_iv > 0 else 0
+        )
         put_skew = (otm_puts[-1][1] - atm_iv) / atm_iv if otm_puts and atm_iv > 0 else 0
 
         return {
-            "volatility_smile_type": "smile" if abs(call_skew - put_skew) < 0.02 else "skew" if call_skew > put_skew else "reverse_skew",
+            "volatility_smile_type": (
+                "smile"
+                if abs(call_skew - put_skew) < 0.02
+                else "skew" if call_skew > put_skew else "reverse_skew"
+            ),
             "call_skew": round(call_skew, 3),
             "put_skew": round(put_skew, 3),
             "implied_market_bias": "bullish" if put_skew > call_skew else "bearish",

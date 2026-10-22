@@ -9,15 +9,15 @@ Validar:
 """
 
 import pytest
-import asyncio
-from datetime import datetime
 from retry_engine import (
+    CircuitBreakerState,
+    RetryConfig,
     RetryEngine,
     RetryPolicy,
-    RetryConfig,
-    CircuitBreakerState,
     retry,
 )
+
+from app.core.clock import utc_now
 
 
 @pytest.mark.asyncio
@@ -63,7 +63,9 @@ async def test_exponential_backoff():
 async def test_max_delay_cap():
     """Test: Delay no excede max_delay."""
     engine = RetryEngine()
-    config = RetryConfig(initial_delay=1.0, max_delay=10.0, exponential_base=2.0, jitter=False)
+    config = RetryConfig(
+        initial_delay=1.0, max_delay=10.0, exponential_base=2.0, jitter=False
+    )
 
     # Intento 10 con base 2: 1 * 2^10 = 1024, capeado a 10.0
     delay = engine._calculate_delay(10, config)
@@ -98,7 +100,7 @@ async def test_retry_on_failure():
 async def test_exhaust_retries():
     """Test: Agota retries y lanza excepción."""
     engine = RetryEngine()
-    config = RetryConfig(max_retries=2)
+    RetryConfig(max_retries=2)
 
     call_count = 0
 
@@ -152,6 +154,7 @@ async def test_circuit_breaker_recovery():
     cb = engine.circuit_breakers.get("test_cb_recovery")
     if not cb:
         from retry_engine import CircuitBreaker
+
         cb = CircuitBreaker("test_cb_recovery", config)
         engine.circuit_breakers["test_cb_recovery"] = cb
 
@@ -161,7 +164,7 @@ async def test_circuit_breaker_recovery():
     assert cb.state == CircuitBreakerState.OPEN
 
     # Intentar half-open (simulando timeout pasado)
-    cb.last_failure_time = datetime.utcnow() - __import__("datetime").timedelta(seconds=61)
+    cb.last_failure_time = utc_now() - __import__("datetime").timedelta(seconds=61)
     cb.can_attempt()  # Esto transita a HALF_OPEN
 
     assert cb.state == CircuitBreakerState.HALF_OPEN
@@ -187,8 +190,7 @@ async def test_retry_history():
             raise ValueError("First attempt failed")
         return "success"
 
-    operation_id = None
-    result = await engine.execute_with_retry(
+    await engine.execute_with_retry(
         func_with_retry,
         policy=RetryPolicy.DEFAULT,
         operation_name="test_history",
@@ -198,7 +200,7 @@ async def test_retry_history():
     # Verificar que history fue guardada
     assert len(engine.retry_history) > 0
 
-    history = list(engine.retry_history.values())[0]
+    history = next(iter(engine.retry_history.values()))
     assert history.final_status == "success"
     assert len(history.attempts) == 2
 

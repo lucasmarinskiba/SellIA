@@ -9,12 +9,23 @@ not a row here), admin, member. No invitation-email flow yet -- this is the
 data model + the direct-add/role/remove endpoints; inviting by email is a
 separate feature.
 """
-import uuid
-import enum
-from datetime import datetime, timezone
 
-from sqlalchemy import Column, ForeignKey, DateTime, Enum, Boolean, Text, String, UniqueConstraint, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+import enum
+import uuid
+from datetime import UTC, datetime
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Index,
+    String,
+    Text,
+    UniqueConstraint,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 
@@ -31,14 +42,27 @@ class BusinessMember(Base):
     already have full access via that column. This table is for everyone
     else added to the team.
     """
+
     __tablename__ = "business_members"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    role = Column(Enum(BusinessMemberRole), default=BusinessMemberRole.MEMBER, nullable=False)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    role = Column(
+        Enum(BusinessMemberRole), default=BusinessMemberRole.MEMBER, nullable=False
+    )
     is_active = Column(Boolean, default=True, nullable=False)
-    joined_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    joined_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         UniqueConstraint("business_id", "user_id", name="uq_business_member"),
@@ -55,16 +79,30 @@ class DealDelegation(Base):
     types" to a person had nothing real to attach to. Delegating actual
     Deal ownership does.
     """
+
     __tablename__ = "deal_delegations"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    from_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    to_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    deal_ids = Column(JSONB, default=list, nullable=False)  # [uuid_str, ...] -- the specific deals being handed off
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    from_user_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    to_user_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    deal_ids = Column(
+        JSONB, default=list, nullable=False
+    )  # [uuid_str, ...] -- the specific deals being handed off
     reason = Column(Text, nullable=True)
-    status = Column(String(20), default="pending", nullable=False)  # pending, approved, rejected
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    status = Column(
+        String(20), default="pending", nullable=False
+    )  # pending, approved, rejected
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     expires_at = Column(DateTime(timezone=True), nullable=True)
     decided_at = Column(DateTime(timezone=True), nullable=True)
 

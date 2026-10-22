@@ -13,11 +13,11 @@ Optimizado para precisión, velocidad y eficiencia:
 
 import io
 import re
-from typing import Optional, Any
+from typing import Any
 from urllib.parse import urlparse
 
-from playwright.async_api import async_playwright
 from PIL import Image
+from playwright.async_api import async_playwright
 
 from app.core.config import get_settings
 from app.core.logger import get_logger
@@ -28,10 +28,21 @@ settings = get_settings()
 # Heavy / tracking resources never needed for automation
 _BLOCK_RESOURCE_TYPES = {"image", "media", "font"}
 _BLOCK_URL_PATTERNS = [
-    r"google-analytics", r"googletagmanager", r"facebook\.com/tr",
-    r"doubleclick", r"adsystem", r"adservice", r"/ads?[/?]",
-    r"analytics", r"hotjar", r"segment\.(io|com)", r"mixpanel",
-    r"fullstory", r"clarity\.ms", r"amplitude", r"intercom",
+    r"google-analytics",
+    r"googletagmanager",
+    r"facebook\.com/tr",
+    r"doubleclick",
+    r"adsystem",
+    r"adservice",
+    r"/ads?[/?]",
+    r"analytics",
+    r"hotjar",
+    r"segment\.(io|com)",
+    r"mixpanel",
+    r"fullstory",
+    r"clarity\.ms",
+    r"amplitude",
+    r"intercom",
 ]
 _BLOCK_URL_RE = re.compile("|".join(_BLOCK_URL_PATTERNS), re.IGNORECASE)
 
@@ -41,14 +52,14 @@ class BrowserService:
 
     def __init__(self) -> None:
         self._playwright = None
-        self._browser: Optional[Any] = None
-        self._context: Optional[Any] = None
-        self._page: Optional[Any] = None
+        self._browser: Any | None = None
+        self._context: Any | None = None
+        self._page: Any | None = None
         self._viewport = {"width": 1280, "height": 720}
 
     # ── lifecycle ───────────────────────────────────────────────────────
     @property
-    def page(self) -> Optional[Any]:
+    def page(self) -> Any | None:
         """Active Playwright page (read-only accessor)."""
         return self._page
 
@@ -90,7 +101,10 @@ class BrowserService:
 
         if settings.COMPUTER_USE_BLOCK_RESOURCES:
             await self._page.route("**/*", self._route_handler)
-        logger.info("BrowserService started (block_resources=%s)", settings.COMPUTER_USE_BLOCK_RESOURCES)
+        logger.info(
+            "BrowserService started (block_resources=%s)",
+            settings.COMPUTER_USE_BLOCK_RESOURCES,
+        )
 
     async def _route_handler(self, route: Any, request: Any) -> None:
         """Aborta recursos pesados y trackers; deja pasar el resto."""
@@ -106,10 +120,11 @@ class BrowserService:
             await route.continue_()
         except Exception:
             # Never let a routing error stall the page
+            logger.exception("_route_handler: error inesperado")
             try:
                 await route.continue_()
             except Exception:
-                pass
+                logger.exception("_route_handler: error inesperado")
 
     async def stop(self) -> None:
         """Cierra el navegador y libera recursos."""
@@ -123,7 +138,7 @@ class BrowserService:
                 if coro:
                     await coro
             except Exception as e:
-                logger.warning(f"Error closing {label}: {e}")
+                logger.warning(f"Error closing {label}: {e}", exc_info=True)
         self._page = None
         self._context = None
         self._browser = None
@@ -131,7 +146,7 @@ class BrowserService:
         logger.info("BrowserService stopped")
 
     # ── internal helpers ────────────────────────────────────────────────
-    async def _settle(self, floor_ms: Optional[int] = None) -> None:
+    async def _settle(self, floor_ms: int | None = None) -> None:
         """Espera inteligente: red inactiva + DOM listo, con piso corto.
 
         Reemplaza los ``wait_for_timeout`` fijos. Sale apenas la página se
@@ -146,6 +161,7 @@ class BrowserService:
             )
         except Exception:
             # networkidle may never fire on streaming pages — fall back to floor
+            logger.exception("_settle: error inesperado")
             if floor > 0:
                 await self._page.wait_for_timeout(floor)
             return
@@ -180,7 +196,7 @@ class BrowserService:
         if not self._validate_url(url):
             raise ValueError(f"URL no permitida: {url}")
 
-        last_err: Optional[str] = None
+        last_err: str | None = None
         for attempt in range(2):
             try:
                 response = await self._page.goto(
@@ -197,7 +213,9 @@ class BrowserService:
                 }
             except Exception as e:
                 last_err = str(e)
-                logger.warning(f"Navigation attempt {attempt + 1} failed: {e}")
+                logger.warning(
+                    f"Navigation attempt {attempt + 1} failed: {e}", exc_info=True
+                )
         return {"success": False, "error": last_err}
 
     # ── screenshots ─────────────────────────────────────────────────────
@@ -208,7 +226,7 @@ class BrowserService:
         raw_bytes = await self._page.screenshot(type="png", full_page=False)
         return self._encode_jpeg(raw_bytes)
 
-    async def screenshot_element(self, selector: str) -> Optional[bytes]:
+    async def screenshot_element(self, selector: str) -> bytes | None:
         """Captura solo un elemento (más preciso y liviano)."""
         if not self._page:
             raise RuntimeError("Browser not started")
@@ -219,7 +237,7 @@ class BrowserService:
             raw = await el.screenshot(type="png")
             return self._encode_jpeg(raw)
         except Exception as e:
-            logger.warning(f"Element screenshot failed: {e}")
+            logger.warning(f"Element screenshot failed: {e}", exc_info=True)
             return None
 
     def _encode_jpeg(self, raw_bytes: bytes) -> bytes:
@@ -227,10 +245,15 @@ class BrowserService:
         max_width = settings.COMPUTER_USE_MAX_SCREENSHOT_WIDTH
         if img.width > max_width:
             ratio = max_width / img.width
-            img = img.resize((max_width, int(img.height * ratio)), Image.Resampling.LANCZOS)
+            img = img.resize(
+                (max_width, int(img.height * ratio)), Image.Resampling.LANCZOS
+            )
         output = io.BytesIO()
         img.convert("RGB").save(
-            output, format="JPEG", quality=settings.COMPUTER_USE_SCREENSHOT_QUALITY, optimize=True
+            output,
+            format="JPEG",
+            quality=settings.COMPUTER_USE_SCREENSHOT_QUALITY,
+            optimize=True,
         )
         output.seek(0)
         return output.getvalue()
@@ -244,6 +267,7 @@ class BrowserService:
             await self._settle()
             return {"success": True}
         except Exception as e:
+            logger.exception("click: error inesperado")
             return {"success": False, "error": str(e)}
 
     async def double_click(self, x: int, y: int) -> dict:
@@ -254,6 +278,7 @@ class BrowserService:
             await self._settle()
             return {"success": True}
         except Exception as e:
+            logger.exception("double_click: error inesperado")
             return {"success": False, "error": str(e)}
 
     async def right_click(self, x: int, y: int) -> dict:
@@ -264,6 +289,7 @@ class BrowserService:
             await self._settle()
             return {"success": True}
         except Exception as e:
+            logger.exception("right_click: error inesperado")
             return {"success": False, "error": str(e)}
 
     async def type(self, text: str) -> dict:
@@ -271,10 +297,13 @@ class BrowserService:
         if not self._page:
             raise RuntimeError("Browser not started")
         try:
-            await self._page.keyboard.type(text, delay=settings.COMPUTER_USE_TYPE_DELAY_MS)
+            await self._page.keyboard.type(
+                text, delay=settings.COMPUTER_USE_TYPE_DELAY_MS
+            )
             await self._settle()
             return {"success": True}
         except Exception as e:
+            logger.exception("type: error inesperado")
             return {"success": False, "error": str(e)}
 
     async def scroll(self, direction: str, amount: int) -> dict:
@@ -294,6 +323,7 @@ class BrowserService:
             await self._settle()
             return {"success": True}
         except Exception as e:
+            logger.exception("scroll: error inesperado")
             return {"success": False, "error": str(e)}
 
     async def wait(self, seconds: float) -> dict:
@@ -311,6 +341,7 @@ class BrowserService:
             await self._settle()
             return {"success": True}
         except Exception as e:
+            logger.exception("press_key: error inesperado")
             return {"success": False, "error": str(e)}
 
     # ── DOM-precise actions (high accuracy path) ────────────────────────
@@ -319,10 +350,13 @@ class BrowserService:
         if not self._page:
             raise RuntimeError("Browser not started")
         try:
-            await self._page.click(selector, timeout=settings.COMPUTER_USE_SETTLE_TIMEOUT_MS)
+            await self._page.click(
+                selector, timeout=settings.COMPUTER_USE_SETTLE_TIMEOUT_MS
+            )
             await self._settle()
             return {"success": True}
         except Exception as e:
+            logger.exception("click_selector: error inesperado")
             return {"success": False, "error": str(e)}
 
     async def click_text(self, text: str, exact: bool = False) -> dict:
@@ -335,6 +369,7 @@ class BrowserService:
             await self._settle()
             return {"success": True}
         except Exception as e:
+            logger.exception("click_text: error inesperado")
             return {"success": False, "error": str(e)}
 
     async def fill(self, selector: str, value: str) -> dict:
@@ -342,13 +377,18 @@ class BrowserService:
         if not self._page:
             raise RuntimeError("Browser not started")
         try:
-            await self._page.fill(selector, value, timeout=settings.COMPUTER_USE_SETTLE_TIMEOUT_MS)
+            await self._page.fill(
+                selector, value, timeout=settings.COMPUTER_USE_SETTLE_TIMEOUT_MS
+            )
             await self._settle()
             return {"success": True}
         except Exception as e:
+            logger.exception("fill: error inesperado")
             return {"success": False, "error": str(e)}
 
-    async def wait_for_selector(self, selector: str, timeout_ms: Optional[int] = None) -> dict:
+    async def wait_for_selector(
+        self, selector: str, timeout_ms: int | None = None
+    ) -> dict:
         """Espera a que aparezca un elemento (sincronización determinística)."""
         if not self._page:
             raise RuntimeError("Browser not started")
@@ -358,6 +398,7 @@ class BrowserService:
             )
             return {"success": True}
         except Exception as e:
+            logger.exception("wait_for_selector: error inesperado")
             return {"success": False, "error": str(e)}
 
     async def get_page_info(self) -> dict:
@@ -407,5 +448,5 @@ class BrowserService:
         try:
             return await self._page.evaluate(js, limit)
         except Exception as e:
-            logger.warning(f"get_interactive_elements failed: {e}")
+            logger.warning(f"get_interactive_elements failed: {e}", exc_info=True)
             return []

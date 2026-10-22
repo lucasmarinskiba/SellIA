@@ -2,8 +2,7 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
-from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -15,11 +14,11 @@ class ComplianceCheckResult:
     property_id: str
     compliant: bool
     severity_level: str  # low, medium, high, critical
-    issues: List[Dict[str, Any]] = field(default_factory=list)
-    missing_documents: List[str] = field(default_factory=list)
-    required_disclosures: List[str] = field(default_factory=list)
+    issues: list[dict[str, Any]] = field(default_factory=list)
+    missing_documents: list[str] = field(default_factory=list)
+    required_disclosures: list[str] = field(default_factory=list)
     estimated_remediation_days: int = 0
-    recommendations: List[str] = field(default_factory=list)
+    recommendations: list[str] = field(default_factory=list)
 
 
 class LegalComplianceAgent:
@@ -27,9 +26,11 @@ class LegalComplianceAgent:
 
     def __init__(self, region: str = "Argentina"):
         self.region = region
-        self.compliance_checks: Dict[str, ComplianceCheckResult] = {}
+        self.compliance_checks: dict[str, ComplianceCheckResult] = {}
 
-    def perform_compliance_check(self, property_data: Dict[str, Any]) -> ComplianceCheckResult:
+    def perform_compliance_check(
+        self, property_data: dict[str, Any]
+    ) -> ComplianceCheckResult:
         """Comprehensive legal compliance check."""
         property_id = property_data.get("property_id", "unknown")
 
@@ -41,7 +42,12 @@ class LegalComplianceAgent:
 
         # Check title status
         if not property_data.get("clear_title"):
-            issues.append({"type": "title", "description": "Title not clear - liens or encumbrances present"})
+            issues.append(
+                {
+                    "type": "title",
+                    "description": "Title not clear - liens or encumbrances present",
+                }
+            )
             missing_docs.append("Clear title report")
             severity_level = "high"
             estimated_days += 30
@@ -60,10 +66,9 @@ class LegalComplianceAgent:
                 required_disclosures.append(disc)
 
         # Check HOA/community status
-        if property_data.get("is_condo"):
-            if not property_data.get("hoa_approval"):
-                issues.append({"type": "hoa", "description": "HOA approval not confirmed"})
-                severity_level = "medium"
+        if property_data.get("is_condo") and not property_data.get("hoa_approval"):
+            issues.append({"type": "hoa", "description": "HOA approval not confirmed"})
+            severity_level = "medium"
 
         # Check environmental compliance
         environmental_risk = property_data.get("environmental_risk_level", "low")
@@ -80,12 +85,16 @@ class LegalComplianceAgent:
         # Check utilities and services
         utilities = property_data.get("utilities_connected", [])
         if len(utilities) < 3:  # Should have water, electric, gas/sewage
-            issues.append({"type": "utilities", "description": "Not all utilities connected"})
+            issues.append(
+                {"type": "utilities", "description": "Not all utilities connected"}
+            )
             severity_level = "medium"
 
         compliant = severity_level in ["low", "medium"] and len(issues) == 0
 
-        recommendations = self._generate_compliance_recommendations(issues, missing_docs)
+        recommendations = self._generate_compliance_recommendations(
+            issues, missing_docs
+        )
 
         result = ComplianceCheckResult(
             property_id=property_id,
@@ -99,11 +108,13 @@ class LegalComplianceAgent:
         )
 
         self.compliance_checks[property_id] = result
-        logger.info(f"Compliance check for {property_id}: {severity_level} severity, compliant={compliant}")
+        logger.info(
+            f"Compliance check for {property_id}: {severity_level} severity, compliant={compliant}"
+        )
 
         return result
 
-    def _get_required_documents(self, region: str) -> List[str]:
+    def _get_required_documents(self, region: str) -> list[str]:
         """Get region-specific required documents."""
         if region.lower() == "argentina":
             return [
@@ -126,7 +137,9 @@ class LegalComplianceAgent:
         else:
             return ["title_deed", "property_survey", "property_tax_records"]
 
-    def _get_required_disclosures(self, region: str, property_data: Dict[str, Any]) -> List[str]:
+    def _get_required_disclosures(
+        self, region: str, property_data: dict[str, Any]
+    ) -> list[str]:
         """Get region-specific required disclosures."""
         disclosures = [
             "property_condition",
@@ -146,27 +159,35 @@ class LegalComplianceAgent:
 
         return disclosures
 
-    def _generate_compliance_recommendations(self, issues: List[Dict[str, Any]], missing_docs: List[str]) -> List[str]:
+    def _generate_compliance_recommendations(
+        self, issues: list[dict[str, Any]], missing_docs: list[str]
+    ) -> list[str]:
         """Generate recommendations to achieve compliance."""
         recommendations = []
 
         for issue in issues:
             issue_type = issue.get("type", "")
             if issue_type == "title":
-                recommendations.append("Obtain title insurance and clear any liens before closing")
+                recommendations.append(
+                    "Obtain title insurance and clear any liens before closing"
+                )
             elif issue_type == "hoa":
                 recommendations.append("Contact HOA for approval documentation")
             elif issue_type == "taxes":
-                recommendations.append("Settle delinquent property taxes before transfer")
+                recommendations.append(
+                    "Settle delinquent property taxes before transfer"
+                )
             elif issue_type == "utilities":
-                recommendations.append("Ensure all utilities are properly connected and registered")
+                recommendations.append(
+                    "Ensure all utilities are properly connected and registered"
+                )
 
         for doc in missing_docs:
             recommendations.append(f"Obtain: {doc}")
 
         return recommendations
 
-    def check_disclosure_compliance(self, property_id: str) -> Optional[Dict[str, Any]]:
+    def check_disclosure_compliance(self, property_id: str) -> dict[str, Any] | None:
         """Detailed disclosure compliance check."""
         if property_id not in self.compliance_checks:
             return None
@@ -177,7 +198,9 @@ class LegalComplianceAgent:
             "property_id": property_id,
             "required_disclosures": result.required_disclosures,
             "all_disclosed": all(f"disclosed_{d}" for d in result.required_disclosures),
-            "missing_disclosures": [d for d in result.required_disclosures if not f"disclosed_{d}"],
+            "missing_disclosures": [
+                d for d in result.required_disclosures if not f"disclosed_{d}"
+            ],
             "disclosure_deadline": "Before signing purchase agreement",
             "penalty_for_non_disclosure": "Buyer can rescind, sue for damages",
         }

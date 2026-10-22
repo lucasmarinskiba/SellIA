@@ -3,15 +3,14 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from decimal import Decimal
-from typing import Optional
 
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.procurement.models import PurchaseOrder, RFQ, Vendor
+from app.domains.procurement.models import RFQ, PurchaseOrder, Vendor
 
 logger = get_logger(__name__)
 
@@ -28,7 +27,7 @@ class VendorService:
         name: str,
         category: str,
         contact_email: str,
-        contact_phone: Optional[str] = None,
+        contact_phone: str | None = None,
     ) -> Vendor:
         """Create vendor."""
         vendor = Vendor(
@@ -45,15 +44,19 @@ class VendorService:
     async def list_vendors(self, business_id: uuid.UUID) -> list[Vendor]:
         """List active vendors."""
         vendors = (
-            await self.db.execute(
-                select(Vendor).where(
-                    and_(
-                        Vendor.business_id == business_id,
-                        Vendor.is_active == True,
+            (
+                await self.db.execute(
+                    select(Vendor).where(
+                        and_(
+                            Vendor.business_id == business_id,
+                            Vendor.is_active == True,
+                        )
                     )
                 )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return vendors
 
     async def update_scores(
@@ -75,9 +78,9 @@ class VendorService:
         vendor.delivery_score = delivery_score
         # Weighted average: 40% quality, 35% cost, 25% delivery
         vendor.overall_score = (
-            quality_score * Decimal("0.40") +
-            cost_score * Decimal("0.35") +
-            delivery_score * Decimal("0.25")
+            quality_score * Decimal("0.40")
+            + cost_score * Decimal("0.35")
+            + delivery_score * Decimal("0.25")
         )
         await self.db.commit()
         logger.info(f"Vendor {vendor_id} scored: {vendor.overall_score}")
@@ -93,7 +96,7 @@ class RFQService:
     async def create_rfq(
         self,
         business_id: uuid.UUID,
-        vendor_id: Optional[uuid.UUID],
+        vendor_id: uuid.UUID | None,
         description: str,
         quantity: int,
         unit: str,
@@ -101,7 +104,9 @@ class RFQService:
     ) -> RFQ:
         """Create RFQ."""
         # Same collision risk as po_number above — see that comment.
-        rfq_number = f"RFQ-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
+        rfq_number = (
+            f"RFQ-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
+        )
         rfq = RFQ(
             business_id=business_id,
             rfq_number=rfq_number,
@@ -135,7 +140,7 @@ class RFQService:
         rfq = await self.get_rfq(rfq_id)
         rfq.status = "received"
         rfq.quote_amount_aed = quote_amount_aed
-        rfq.response_received_at = datetime.now(timezone.utc)
+        rfq.response_received_at = datetime.now(UTC)
         await self.db.commit()
         return rfq
 
@@ -150,7 +155,7 @@ class PurchaseOrderService:
         self,
         business_id: uuid.UUID,
         vendor_id: uuid.UUID,
-        rfq_id: Optional[uuid.UUID],
+        rfq_id: uuid.UUID | None,
         description: str,
         quantity: int,
         unit_price_aed: Decimal,
@@ -160,7 +165,9 @@ class PurchaseOrderService:
         # Second-precision timestamp alone collides whenever two POs are
         # created within the same wall-clock second — same fix as
         # invoicing.service.create_invoice's invoice_number.
-        po_number = f"PO-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
+        po_number = (
+            f"PO-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
+        )
         total_amount = quantity * unit_price_aed
 
         po = PurchaseOrder(
@@ -183,7 +190,9 @@ class PurchaseOrderService:
     async def get_po(self, po_id: uuid.UUID) -> PurchaseOrder:
         """Fetch PO."""
         po = (
-            await self.db.execute(select(PurchaseOrder).where(PurchaseOrder.id == po_id))
+            await self.db.execute(
+                select(PurchaseOrder).where(PurchaseOrder.id == po_id)
+            )
         ).scalar_one_or_none()
         if not po:
             raise ValueError(f"PO {po_id} not found")
@@ -193,9 +202,9 @@ class PurchaseOrderService:
         self,
         po_id: uuid.UUID,
         status: str,
-        actual_delivery_date: Optional[date] = None,
-        invoice_number: Optional[str] = None,
-        invoice_amount_aed: Optional[Decimal] = None,
+        actual_delivery_date: date | None = None,
+        invoice_number: str | None = None,
+        invoice_amount_aed: Decimal | None = None,
     ) -> PurchaseOrder:
         """Update PO status."""
         po = await self.get_po(po_id)
@@ -210,7 +219,7 @@ class PurchaseOrderService:
             po.invoice_amount_aed = invoice_amount_aed or po.total_amount_aed
 
         if status == "paid":
-            po.paid_at = datetime.now(timezone.utc)
+            po.paid_at = datetime.now(UTC)
 
         await self.db.commit()
         logger.info(f"PO {po_id} status: {old_status} → {status}")
@@ -219,10 +228,16 @@ class PurchaseOrderService:
     async def po_summary(self, business_id: uuid.UUID) -> dict:
         """Summary of POs by status."""
         pos = (
-            await self.db.execute(
-                select(PurchaseOrder).where(PurchaseOrder.business_id == business_id)
+            (
+                await self.db.execute(
+                    select(PurchaseOrder).where(
+                        PurchaseOrder.business_id == business_id
+                    )
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         issued = sum(1 for p in pos if p.status == "issued")
         received = sum(1 for p in pos if p.status == "received")

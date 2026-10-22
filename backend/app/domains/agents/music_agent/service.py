@@ -3,17 +3,17 @@
 Handles music generation via Suno / Mureka APIs.
 """
 
-import uuid
+import asyncio
 import os
-from datetime import datetime, timezone
+import uuid
 from pathlib import Path
-from typing import Optional, List
 
 import httpx
-from sqlalchemy import select, desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
+from app.core.fileio import write_file
 from app.core.logger import get_logger
 from app.domains.agents.music_agent.models import MusicGenerationJob, MusicTrack
 
@@ -62,7 +62,7 @@ class MusicService:
                 audio_bytes = await self._call_suno(prompt, genre, duration)
                 provider = "suno"
             except Exception as e:
-                logger.warning(f"Suno generation failed: {e}")
+                logger.warning(f"Suno generation failed: {e}", exc_info=True)
 
         # Fallback: Mureka API
         if not audio_bytes and settings.MUREKA_API_KEY:
@@ -70,7 +70,7 @@ class MusicService:
                 audio_bytes = await self._call_mureka(prompt, genre, duration)
                 provider = "mureka"
             except Exception as e:
-                logger.warning(f"Mureka generation failed: {e}")
+                logger.warning(f"Mureka generation failed: {e}", exc_info=True)
 
         # Development fallback: create a small dummy file
         if not audio_bytes:
@@ -78,8 +78,7 @@ class MusicService:
             audio_bytes = b"\xff\xfb" + os.urandom(1024)  # minimal mp3-ish header
             provider = "mock"
 
-        with open(file_path, "wb") as f:
-            f.write(audio_bytes)
+        await asyncio.to_thread(write_file, file_path, "wb", data=audio_bytes)
 
         file_url = f"/storage/media/music/{file_name}"
 
@@ -106,7 +105,7 @@ class MusicService:
         await self.db.refresh(track)
         return track
 
-    async def list_tracks(self, business_id: uuid.UUID) -> List[MusicTrack]:
+    async def list_tracks(self, business_id: uuid.UUID) -> list[MusicTrack]:
         """List generated music tracks for a business."""
         result = await self.db.execute(
             select(MusicTrack)
@@ -115,13 +114,13 @@ class MusicService:
         )
         return result.scalars().all()
 
-    async def get_track(self, track_id: uuid.UUID) -> Optional[MusicTrack]:
+    async def get_track(self, track_id: uuid.UUID) -> MusicTrack | None:
         result = await self.db.execute(
             select(MusicTrack).where(MusicTrack.id == track_id)
         )
         return result.scalar_one_or_none()
 
-    async def get_job(self, job_id: uuid.UUID) -> Optional[MusicGenerationJob]:
+    async def get_job(self, job_id: uuid.UUID) -> MusicGenerationJob | None:
         result = await self.db.execute(
             select(MusicGenerationJob).where(MusicGenerationJob.id == job_id)
         )

@@ -3,28 +3,30 @@
 Endpoints for deal scores, pipeline funnel, and alerts.
 """
 
+from typing import Annotated
 from uuid import UUID
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.agents.service_scoring import DealScoringService
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/deals", tags=["deals"])
 
 
 @router.get("/scores")
 async def list_deal_scores(
-    category: Optional[str] = Query(None, description="Filter by category: cold, warm, hot, ready"),
-    min_score: Optional[int] = Query(None, ge=0, le=100),
-    limit: int = Query(50, ge=1, le=100),
-    offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    category: Annotated[
+        str | None, Query(description="Filter by category: cold, warm, hot, ready")
+    ] = None,
+    min_score: Annotated[int | None, Query(ge=0, le=100)] = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ):
     """List deal scores for the current user's business."""
     service = DealScoringService(db)
@@ -41,8 +43,8 @@ async def list_deal_scores(
 @router.get("/scores/{conversation_id}")
 async def get_score_history(
     conversation_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get score history for a specific conversation."""
     service = DealScoringService(db)
@@ -52,8 +54,8 @@ async def get_score_history(
 
 @router.get("/pipeline")
 async def get_pipeline_funnel(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get pipeline funnel counts by category."""
     service = DealScoringService(db)
@@ -63,11 +65,11 @@ async def get_pipeline_funnel(
 
 @router.get("/alerts")
 async def list_alerts(
-    unread_only: bool = Query(False),
-    limit: int = Query(50, ge=1, le=100),
-    offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    unread_only: Annotated[bool, Query()] = False,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ):
     """List deal alerts for the current user's business."""
     service = DealScoringService(db)
@@ -83,8 +85,8 @@ async def list_alerts(
 @router.post("/alerts/{alert_id}/read", status_code=status.HTTP_200_OK)
 async def mark_alert_read(
     alert_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Mark a deal alert as read."""
     service = DealScoringService(db)
@@ -97,8 +99,8 @@ async def mark_alert_read(
 @router.post("/score/{conversation_id}", status_code=status.HTTP_201_CREATED)
 async def trigger_manual_scoring(
     conversation_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Trigger manual deal scoring for a conversation."""
     service = DealScoringService(db)

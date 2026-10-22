@@ -20,15 +20,14 @@ Características:
 Líneas: 500+ código
 """
 
-import logging
 import asyncio
-import json
+import logging
 import re
-from typing import Dict, Any, Optional, List, Callable, Union
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from datetime import datetime
-from dataclasses import dataclass, field, asdict
 from enum import Enum
-import hashlib
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -37,8 +36,10 @@ logger = logging.getLogger(__name__)
 # DATA EXTRACTION TYPES
 # ============================================================================
 
+
 class DataType(str, Enum):
     """Tipo de dato."""
+
     STRING = "string"
     NUMBER = "number"
     DATE = "date"
@@ -53,6 +54,7 @@ class DataType(str, Enum):
 
 class ExtractionStrategy(str, Enum):
     """Estrategia de extracción."""
+
     CSS_SELECTOR = "css_selector"
     XPATH = "xpath"
     REGEX = "regex"
@@ -66,36 +68,40 @@ class ExtractionStrategy(str, Enum):
 # DATA STRUCTURES
 # ============================================================================
 
+
 @dataclass
 class ExtractionRule:
     """Regla de extracción."""
+
     field_name: str
     strategy: ExtractionStrategy
     selector_or_pattern: str
     data_type: DataType = DataType.STRING
     required: bool = False
-    transform: Optional[Callable] = None
-    validation: Optional[Callable] = None
+    transform: Callable | None = None
+    validation: Callable | None = None
     default_value: Any = None
 
 
 @dataclass
 class ExtractionResult:
     """Resultado de extracción."""
+
     success: bool
     timestamp: datetime
     extraction_time_ms: int
-    data: Dict[str, Any] = field(default_factory=dict)
+    data: dict[str, Any] = field(default_factory=dict)
     extracted_fields: int = 0
     total_fields: int = 0
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-    validation_errors: Dict[str, List[str]] = field(default_factory=dict)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    validation_errors: dict[str, list[str]] = field(default_factory=dict)
 
 
 # ============================================================================
 # STRUCTURED DATA EXTRACTOR
 # ============================================================================
+
 
 class StructuredDataExtractor:
     """Extractor de datos estructurados (tablas, listas, grillas)."""
@@ -106,9 +112,9 @@ class StructuredDataExtractor:
     async def extract_table(
         self,
         table_selector: str,
-        headers: Optional[List[str]] = None,
-        skip_first_row: bool = True
-    ) -> List[Dict[str, Any]]:
+        headers: list[str] | None = None,
+        skip_first_row: bool = True,
+    ) -> list[dict[str, Any]]:
         """
         Extraer datos de tabla.
 
@@ -125,19 +131,21 @@ class StructuredDataExtractor:
             header_row = None
 
             # Buscar filas
-            row_pattern = r'<tr[^>]*>(.*?)</tr>'
+            row_pattern = r"<tr[^>]*>(.*?)</tr>"
 
-            for row_idx, row_match in enumerate(re.finditer(row_pattern, table_html, re.DOTALL)):
+            for row_idx, row_match in enumerate(
+                re.finditer(row_pattern, table_html, re.DOTALL)
+            ):
                 row_html = row_match.group(1)
 
                 # Extraer celdas
-                cell_pattern = r'<t[dh][^>]*>(.*?)</t[dh]>'
+                cell_pattern = r"<t[dh][^>]*>(.*?)</t[dh]>"
                 cells = []
 
                 for cell_match in re.finditer(cell_pattern, row_html, re.DOTALL):
                     cell_html = cell_match.group(1)
                     # Limpiar HTML
-                    cell_text = re.sub(r'<[^>]+>', '', cell_html).strip()
+                    cell_text = re.sub(r"<[^>]+>", "", cell_html).strip()
                     cells.append(cell_text)
 
                 # Primera fila como headers
@@ -156,16 +164,16 @@ class StructuredDataExtractor:
             logger.info(f"Extracted {len(rows)} rows from table")
             return rows
 
-        except Exception as e:
-            logger.error(f"Table extraction failed: {str(e)}")
+        except Exception:
+            logger.exception("Table extraction failed")
             return []
 
     async def extract_list(
         self,
         list_selector: str,
         item_selector: str,
-        fields: Optional[Dict[str, str]] = None
-    ) -> List[Dict[str, Any]]:
+        fields: dict[str, str] | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Extraer datos de lista.
 
@@ -187,16 +195,16 @@ class StructuredDataExtractor:
             logger.info(f"Extracted {len(items)} items from list")
             return items
 
-        except Exception as e:
-            logger.error(f"List extraction failed: {str(e)}")
+        except Exception:
+            logger.exception("List extraction failed")
             return []
 
     async def extract_grid(
         self,
         grid_selector: str,
         cell_selector: str,
-        fields: Optional[Dict[str, str]] = None
-    ) -> List[Dict[str, Any]]:
+        fields: dict[str, str] | None = None,
+    ) -> list[dict[str, Any]]:
         """Extraer datos de grilla."""
         try:
             logger.info(f"Extracting grid: {grid_selector}")
@@ -214,14 +222,15 @@ class StructuredDataExtractor:
             logger.info(f"Extracted {len(items)} cells from grid")
             return items
 
-        except Exception as e:
-            logger.error(f"Grid extraction failed: {str(e)}")
+        except Exception:
+            logger.exception("Grid extraction failed")
             return []
 
 
 # ============================================================================
 # SEMI-STRUCTURED DATA EXTRACTOR
 # ============================================================================
+
 
 class SemiStructuredDataExtractor:
     """Extractor de datos semi-estructurados."""
@@ -230,10 +239,8 @@ class SemiStructuredDataExtractor:
         self.computer_use = computer_use_engine
 
     async def extract_property_list(
-        self,
-        container_selector: str,
-        property_pattern: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, container_selector: str, property_pattern: str | None = None
+    ) -> dict[str, Any]:
         """
         Extraer lista de propiedades (pares clave-valor).
 
@@ -259,8 +266,8 @@ class SemiStructuredDataExtractor:
             else:
                 # Patrón por defecto: "Clave: Valor" o "Clave → Valor"
                 patterns = [
-                    r'([^:\n]+):\s*([^\n]+)',  # "Clave: Valor"
-                    r'([^\n→]+)→\s*([^\n]+)',  # "Clave → Valor"
+                    r"([^:\n]+):\s*([^\n]+)",  # "Clave: Valor"
+                    r"([^\n→]+)→\s*([^\n]+)",  # "Clave → Valor"
                 ]
 
                 for pattern in patterns:
@@ -272,16 +279,13 @@ class SemiStructuredDataExtractor:
             logger.info(f"Extracted {len(properties)} properties")
             return properties
 
-        except Exception as e:
-            logger.error(f"Property list extraction failed: {str(e)}")
+        except Exception:
+            logger.exception("Property list extraction failed")
             return {}
 
     async def extract_key_value_pairs(
-        self,
-        container_selector: str,
-        key_selector: str,
-        value_selector: str
-    ) -> Dict[str, Any]:
+        self, container_selector: str, key_selector: str, value_selector: str
+    ) -> dict[str, Any]:
         """Extraer pares clave-valor."""
         try:
             logger.info(f"Extracting key-value pairs from: {container_selector}")
@@ -293,14 +297,15 @@ class SemiStructuredDataExtractor:
 
             return pairs
 
-        except Exception as e:
-            logger.error(f"Key-value extraction failed: {str(e)}")
+        except Exception:
+            logger.exception("Key-value extraction failed")
             return {}
 
 
 # ============================================================================
 # UNSTRUCTURED DATA EXTRACTOR
 # ============================================================================
+
 
 class UnstructuredDataExtractor:
     """Extractor de datos no estructurados."""
@@ -310,10 +315,7 @@ class UnstructuredDataExtractor:
         self.ocr = ocr_engine
 
     async def extract_text_content(
-        self,
-        selector: str,
-        clean: bool = True,
-        max_length: Optional[int] = None
+        self, selector: str, clean: bool = True, max_length: int | None = None
     ) -> str:
         """Extraer texto no estructurado."""
         try:
@@ -321,22 +323,20 @@ class UnstructuredDataExtractor:
 
             if clean:
                 # Limpiar espacios en blanco excesivos
-                text = re.sub(r'\s+', ' ', text).strip()
+                text = re.sub(r"\s+", " ", text).strip()
 
             if max_length:
                 text = text[:max_length]
 
             return text
 
-        except Exception as e:
-            logger.error(f"Text extraction failed: {str(e)}")
+        except Exception:
+            logger.exception("Text extraction failed")
             return ""
 
     async def extract_from_image(
-        self,
-        image_selector: str,
-        use_ocr: bool = False
-    ) -> Dict[str, Any]:
+        self, image_selector: str, use_ocr: bool = False
+    ) -> dict[str, Any]:
         """
         Extraer datos de imagen.
 
@@ -346,12 +346,7 @@ class UnstructuredDataExtractor:
         try:
             logger.info(f"Extracting from image: {image_selector}")
 
-            result = {
-                "src": None,
-                "alt": None,
-                "title": None,
-                "text": None
-            }
+            result = {"src": None, "alt": None, "title": None, "text": None}
 
             # Obtener elemento
             img = await self.computer_use.find_element(image_selector)
@@ -361,23 +356,27 @@ class UnstructuredDataExtractor:
             # Extraer atributos
             result["src"] = await self.computer_use.get_element_attribute(img, "src")
             result["alt"] = await self.computer_use.get_element_attribute(img, "alt")
-            result["title"] = await self.computer_use.get_element_attribute(img, "title")
+            result["title"] = await self.computer_use.get_element_attribute(
+                img, "title"
+            )
 
             # OCR si está disponible
             if use_ocr and self.ocr:
                 try:
                     # Descargar imagen
                     if result["src"]:
-                        image_data = await self.computer_use.download_file(result["src"])
+                        image_data = await self.computer_use.download_file(
+                            result["src"]
+                        )
                         # Ejecutar OCR
                         result["text"] = await self.ocr.extract_text(image_data)
                 except Exception as e:
-                    logger.debug(f"OCR failed: {str(e)}")
+                    logger.debug(f"OCR failed: {e!s}", exc_info=True)
 
             return result
 
-        except Exception as e:
-            logger.error(f"Image extraction failed: {str(e)}")
+        except Exception:
+            logger.exception("Image extraction failed")
             return {}
 
 
@@ -385,13 +384,14 @@ class UnstructuredDataExtractor:
 # METADATA EXTRACTOR
 # ============================================================================
 
+
 class MetadataExtractor:
     """Extractor de metadatos."""
 
     def __init__(self, computer_use_engine):
         self.computer_use = computer_use_engine
 
-    async def extract_page_metadata(self) -> Dict[str, Any]:
+    async def extract_page_metadata(self) -> dict[str, Any]:
         """Extraer metadatos de página."""
         try:
             return {
@@ -402,36 +402,39 @@ class MetadataExtractor:
                 "author": await self._extract_author(),
                 "description": await self._extract_description(),
             }
-        except Exception as e:
-            logger.error(f"Metadata extraction failed: {str(e)}")
+        except Exception:
+            logger.exception("Metadata extraction failed")
             return {}
 
-    async def _extract_language(self) -> Optional[str]:
+    async def _extract_language(self) -> str | None:
         """Extraer idioma."""
         try:
             html = await self.computer_use.get_page_html()
             match = re.search(r'lang=["\']([^"\']+)["\']', html)
             return match.group(1) if match else None
         except Exception:
+            logger.exception("_extract_language: error inesperado")
             return None
 
-    async def _extract_author(self) -> Optional[str]:
+    async def _extract_author(self) -> str | None:
         """Extraer autor."""
         try:
             # Buscar meta author
             pass
         except Exception:
+            logger.exception("_extract_author: error inesperado")
             return None
 
-    async def _extract_description(self) -> Optional[str]:
+    async def _extract_description(self) -> str | None:
         """Extraer descripción."""
         try:
             # Buscar meta description
             pass
         except Exception:
+            logger.exception("_extract_description: error inesperado")
             return None
 
-    async def extract_element_metadata(self, selector: str) -> Dict[str, Any]:
+    async def extract_element_metadata(self, selector: str) -> dict[str, Any]:
         """Extraer metadatos de elemento."""
         try:
             element = await self.computer_use.find_element(selector)
@@ -440,27 +443,31 @@ class MetadataExtractor:
 
             return {
                 "id": await self.computer_use.get_element_attribute(element, "id"),
-                "class": await self.computer_use.get_element_attribute(element, "class"),
+                "class": await self.computer_use.get_element_attribute(
+                    element, "class"
+                ),
                 "data_attributes": await self._extract_data_attributes(element),
                 "position": await self.computer_use.get_element_position(element),
                 "size": await self.computer_use.get_element_size(element),
             }
-        except Exception as e:
-            logger.error(f"Element metadata extraction failed: {str(e)}")
+        except Exception:
+            logger.exception("Element metadata extraction failed")
             return {}
 
-    async def _extract_data_attributes(self, element: Any) -> Dict[str, str]:
+    async def _extract_data_attributes(self, element: Any) -> dict[str, str]:
         """Extraer data attributes."""
         try:
             # En producción, parsear atributos data-*
             return {}
         except Exception:
+            logger.exception("_extract_data_attributes: error inesperado")
             return {}
 
 
 # ============================================================================
 # DATA VALIDATOR
 # ============================================================================
+
 
 class DataValidator:
     """Validador de datos extraídos."""
@@ -476,10 +483,8 @@ class DataValidator:
         }
 
     async def validate(
-        self,
-        data: Dict[str, Any],
-        rules: List[ExtractionRule]
-    ) -> Dict[str, List[str]]:
+        self, data: dict[str, Any], rules: list[ExtractionRule]
+    ) -> dict[str, list[str]]:
         """
         Validar datos contra reglas.
 
@@ -510,7 +515,8 @@ class DataValidator:
                     if not is_valid:
                         errors[rule.field_name] = ["Custom validation failed"]
                 except Exception as e:
-                    errors[rule.field_name] = [f"Validation error: {str(e)}"]
+                    logger.exception("validate: error inesperado")
+                    errors[rule.field_name] = [f"Validation error: {e!s}"]
 
         return errors
 
@@ -528,26 +534,26 @@ class DataValidator:
 
     async def _validate_email(self, value: str) -> bool:
         """Validar email."""
-        pattern = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
+        pattern = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
         return bool(re.match(pattern, value))
 
     async def _validate_url(self, value: str) -> bool:
         """Validar URL."""
-        pattern = r'^https?://'
+        pattern = r"^https?://"
         return bool(re.match(pattern, value))
 
     async def _validate_phone(self, value: str) -> bool:
         """Validar teléfono."""
         # Validación simple
-        digits = re.sub(r'\D', '', value)
+        digits = re.sub(r"\D", "", value)
         return len(digits) >= 10
 
     async def _validate_date(self, value: str) -> bool:
         """Validar fecha."""
         patterns = [
-            r'^\d{4}-\d{2}-\d{2}$',  # YYYY-MM-DD
-            r'^\d{2}/\d{2}/\d{4}$',  # MM/DD/YYYY
-            r'^\d{1,2}\s+\w+\s+\d{4}$',  # D MMMM YYYY
+            r"^\d{4}-\d{2}-\d{2}$",  # YYYY-MM-DD
+            r"^\d{2}/\d{2}/\d{4}$",  # MM/DD/YYYY
+            r"^\d{1,2}\s+\w+\s+\d{4}$",  # D MMMM YYYY
         ]
         return any(re.match(p, value) for p in patterns)
 
@@ -555,6 +561,7 @@ class DataValidator:
 # ============================================================================
 # UNIVERSAL DATA EXTRACTOR
 # ============================================================================
+
 
 class UniversalDataExtractor:
     """Extractor universal de datos."""
@@ -569,9 +576,7 @@ class UniversalDataExtractor:
         self.extraction_cache = {}
 
     async def extract(
-        self,
-        rules: List[ExtractionRule],
-        cache: bool = True
+        self, rules: list[ExtractionRule], cache: bool = True
     ) -> ExtractionResult:
         """
         Extraer datos usando reglas.
@@ -617,7 +622,11 @@ class UniversalDataExtractor:
 
                     # Transformar si es necesario
                     if value and rule.transform:
-                        value = await rule.transform(value) if asyncio.iscoroutinefunction(rule.transform) else rule.transform(value)
+                        value = (
+                            await rule.transform(value)
+                            if asyncio.iscoroutinefunction(rule.transform)
+                            else rule.transform(value)
+                        )
 
                     if value is not None:
                         extracted_data[rule.field_name] = value
@@ -626,8 +635,10 @@ class UniversalDataExtractor:
                         warnings.append(f"{rule.field_name}: using default value")
 
                 except Exception as e:
-                    errors.append(f"{rule.field_name}: {str(e)}")
-                    logger.warning(f"Extraction error for {rule.field_name}: {str(e)}")
+                    errors.append(f"{rule.field_name}: {e!s}")
+                    logger.warning(
+                        f"Extraction error for {rule.field_name}: {e!s}", exc_info=True
+                    )
 
             # Validar
             validation_errors = await self.validator.validate(extracted_data, rules)
@@ -643,44 +654,46 @@ class UniversalDataExtractor:
                 total_fields=len(rules),
                 errors=errors,
                 warnings=warnings,
-                validation_errors=validation_errors
+                validation_errors=validation_errors,
             )
 
-            logger.info(f"Extraction completed: {result.extracted_fields}/{result.total_fields} fields")
+            logger.info(
+                f"Extraction completed: {result.extracted_fields}/{result.total_fields} fields"
+            )
 
             return result
 
         except Exception as e:
             duration_ms = int((asyncio.get_event_loop().time() - start_time) * 1000)
-            logger.error(f"Extraction failed: {str(e)}", exc_info=True)
+            logger.exception("Extraction failed")
 
             return ExtractionResult(
                 success=False,
                 timestamp=datetime.now(),
                 extraction_time_ms=duration_ms,
-                errors=[str(e)]
+                errors=[str(e)],
             )
 
-    async def _extract_by_vision(self, text_to_find: str) -> Optional[str]:
+    async def _extract_by_vision(self, text_to_find: str) -> str | None:
         """Extraer usando visión."""
         try:
             element = await self.computer_use.find_element(text_to_find)
             if element:
                 return await self.computer_use.get_element_text(element)
         except Exception:
-            pass
+            logger.exception("_extract_by_vision: error inesperado")
         return None
 
 
 __all__ = [
-    "UniversalDataExtractor",
-    "StructuredDataExtractor",
-    "SemiStructuredDataExtractor",
-    "UnstructuredDataExtractor",
-    "MetadataExtractor",
-    "DataValidator",
-    "ExtractionRule",
-    "ExtractionResult",
     "DataType",
+    "DataValidator",
+    "ExtractionResult",
+    "ExtractionRule",
     "ExtractionStrategy",
+    "MetadataExtractor",
+    "SemiStructuredDataExtractor",
+    "StructuredDataExtractor",
+    "UniversalDataExtractor",
+    "UnstructuredDataExtractor",
 ]

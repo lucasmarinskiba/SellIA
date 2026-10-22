@@ -5,57 +5,71 @@ browser profiles, proxies, session sharing, batch jobs, tags, webhooks,
 export, replay, y analytics.
 """
 
-import os
-import csv
-import json
 import secrets
-from datetime import datetime
-from datetime import timezone, timedelta
-from typing import Optional
+from datetime import UTC, datetime, timedelta
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import FileResponse
+from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func, and_
 
+from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
-from app.core.config import get_settings
 from app.core.logger import get_logger
-from app.domains.users.models import User
-from app.domains.businesses.models import Business
-from app.domains.computer_use.models import ComputerUseSession, ComputerUseStep, ComputerUseMessage
+from app.domains.computer_use.models import (
+    ComputerUseSession,
+    ComputerUseStep,
+)
 from app.domains.computer_use.models_extended import (
-    ComputerUseTemplate,
-    ComputerUseScheduledTask,
     ComputerUseAnnotation,
+    ComputerUseBatchJob,
     ComputerUseBrowserProfile,
     ComputerUseProxyConfig,
+    ComputerUseScheduledTask,
     ComputerUseSessionShare,
-    ComputerUseBatchJob,
     ComputerUseSessionTag,
+    ComputerUseTemplate,
     ComputerUseWebhook,
 )
 from app.domains.computer_use.schemas_extended import (
-    ComputerUseTemplateCreate, ComputerUseTemplateResponse, ComputerUseTemplateListResponse,
-    ComputerUseScheduledTaskCreate, ComputerUseScheduledTaskResponse, ComputerUseScheduledTaskListResponse,
-    ComputerUseAnnotationCreate, ComputerUseAnnotationResponse,
-    ComputerUseBrowserProfileCreate, ComputerUseBrowserProfileResponse,
-    ComputerUseProxyConfigCreate, ComputerUseProxyConfigResponse,
-    ComputerUseSessionShareCreate, ComputerUseSessionShareResponse,
-    ComputerUseBatchJobCreate, ComputerUseBatchJobResponse,
-    ComputerUseSessionTagCreate, ComputerUseSessionTagResponse,
-    ComputerUseSessionBookmarkCreate, ComputerUseSessionBookmarkResponse,
-    ComputerUseSessionNoteCreate, ComputerUseSessionNoteResponse,
-    ComputerUseWebhookCreate, ComputerUseWebhookResponse,
-    ComputerUseExportRequest, ComputerUseReplayResponse, ComputerUseReplayStep,
-    ComputerUseAnalyticsSummary, ComputerUseSessionFilter,
-    ComputerUseTemplateImport, ComputerUseBrowserProfileImport,
-    ComputerUseProxyConfigImport, ComputerUseWebhookImport,
+    ComputerUseAnalyticsSummary,
+    ComputerUseAnnotationCreate,
+    ComputerUseAnnotationResponse,
+    ComputerUseBatchJobCreate,
+    ComputerUseBatchJobResponse,
+    ComputerUseBrowserProfileCreate,
+    ComputerUseBrowserProfileImport,
+    ComputerUseBrowserProfileResponse,
+    ComputerUseExportRequest,
+    ComputerUseProxyConfigCreate,
+    ComputerUseProxyConfigImport,
+    ComputerUseProxyConfigResponse,
+    ComputerUseReplayResponse,
+    ComputerUseReplayStep,
+    ComputerUseScheduledTaskCreate,
+    ComputerUseScheduledTaskListResponse,
+    ComputerUseScheduledTaskResponse,
+    ComputerUseSessionBookmarkCreate,
+    ComputerUseSessionBookmarkResponse,
+    ComputerUseSessionNoteCreate,
+    ComputerUseSessionShareCreate,
+    ComputerUseSessionShareResponse,
+    ComputerUseSessionTagCreate,
+    ComputerUseSessionTagResponse,
+    ComputerUseTemplateCreate,
+    ComputerUseTemplateImport,
+    ComputerUseTemplateListResponse,
+    ComputerUseTemplateResponse,
+    ComputerUseWebhookCreate,
+    ComputerUseWebhookImport,
+    ComputerUseWebhookResponse,
 )
 from app.domains.computer_use.services.pdf_service import PDFExportService
 from app.domains.computer_use.services.webhook_service import WebhookService
+from app.domains.users.models import User
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -66,15 +80,20 @@ webhook_service = WebhookService()
 
 # ========== Templates ==========
 
-@router.post("/templates", response_model=ComputerUseTemplateResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/templates",
+    response_model=ComputerUseTemplateResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_template(
     data: ComputerUseTemplateCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     template = ComputerUseTemplate(
         user_id=current_user.id,
-        business_id=data.business_id if hasattr(data, 'business_id') else None,
+        business_id=data.business_id if hasattr(data, "business_id") else None,
         name=data.name,
         description=data.description,
         task_description=data.task_description,
@@ -90,22 +109,28 @@ async def create_template(
 
 @router.get("/templates", response_model=ComputerUseTemplateListResponse)
 async def list_templates(
-    search: Optional[str] = None,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    search: str | None = None,
     limit: int = 20,
     offset: int = 0,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
 ):
-    query = select(ComputerUseTemplate).where(
-        and_(
-            ComputerUseTemplate.user_id == current_user.id,
-            ComputerUseTemplate.is_public == False
-        ) if not search else and_(
-            ComputerUseTemplate.user_id == current_user.id,
-            ComputerUseTemplate.is_public == False,
-            ComputerUseTemplate.name.ilike(f"%{search}%")
+    query = (
+        select(ComputerUseTemplate)
+        .where(
+            and_(
+                ComputerUseTemplate.user_id == current_user.id,
+                ComputerUseTemplate.is_public == False,
+            )
+            if not search
+            else and_(
+                ComputerUseTemplate.user_id == current_user.id,
+                ComputerUseTemplate.is_public == False,
+                ComputerUseTemplate.name.ilike(f"%{search}%"),
+            )
         )
-    ).order_by(desc(ComputerUseTemplate.created_at))
+        .order_by(desc(ComputerUseTemplate.created_at))
+    )
 
     result = await db.execute(query.limit(limit).offset(offset))
     items = result.scalars().all()
@@ -124,8 +149,8 @@ async def list_templates(
 @router.post("/templates/{template_id}/use")
 async def use_template(
     template_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseTemplate).where(
@@ -149,11 +174,16 @@ async def use_template(
 
 # ========== Scheduled Tasks ==========
 
-@router.post("/scheduled-tasks", response_model=ComputerUseScheduledTaskResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/scheduled-tasks",
+    response_model=ComputerUseScheduledTaskResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_scheduled_task(
     data: ComputerUseScheduledTaskCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     task = ComputerUseScheduledTask(
         user_id=current_user.id,
@@ -173,8 +203,8 @@ async def create_scheduled_task(
 
 @router.get("/scheduled-tasks", response_model=ComputerUseScheduledTaskListResponse)
 async def list_scheduled_tasks(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseScheduledTask)
@@ -194,12 +224,17 @@ async def list_scheduled_tasks(
 
 # ========== Annotations ==========
 
-@router.post("/sessions/{session_id}/annotations", response_model=ComputerUseAnnotationResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/sessions/{session_id}/annotations",
+    response_model=ComputerUseAnnotationResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_annotation(
     session_id: UUID,
     data: ComputerUseAnnotationCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSession).where(
@@ -225,11 +260,14 @@ async def create_annotation(
     return annotation
 
 
-@router.get("/sessions/{session_id}/annotations", response_model=list[ComputerUseAnnotationResponse])
+@router.get(
+    "/sessions/{session_id}/annotations",
+    response_model=list[ComputerUseAnnotationResponse],
+)
 async def list_annotations(
     session_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSession).where(
@@ -251,11 +289,16 @@ async def list_annotations(
 
 # ========== Browser Profiles ==========
 
-@router.post("/browser-profiles", response_model=ComputerUseBrowserProfileResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/browser-profiles",
+    response_model=ComputerUseBrowserProfileResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_browser_profile(
     data: ComputerUseBrowserProfileCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     if data.is_default:
         await db.execute(
@@ -287,13 +330,16 @@ async def create_browser_profile(
 
 @router.get("/browser-profiles", response_model=list[ComputerUseBrowserProfileResponse])
 async def list_browser_profiles(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseBrowserProfile)
         .where(ComputerUseBrowserProfile.user_id == current_user.id)
-        .order_by(desc(ComputerUseBrowserProfile.is_default), desc(ComputerUseBrowserProfile.created_at))
+        .order_by(
+            desc(ComputerUseBrowserProfile.is_default),
+            desc(ComputerUseBrowserProfile.created_at),
+        )
     )
     profiles = result.scalars().all()
     return [ComputerUseBrowserProfileResponse.model_validate(p) for p in profiles]
@@ -301,13 +347,19 @@ async def list_browser_profiles(
 
 # ========== Proxy Configs ==========
 
-@router.post("/proxy-configs", response_model=ComputerUseProxyConfigResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/proxy-configs",
+    response_model=ComputerUseProxyConfigResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_proxy_config(
     data: ComputerUseProxyConfigCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     from app.core.encryption import encrypt_value
+
     password_encrypted = encrypt_value(data.password) if data.password else None
 
     proxy = ComputerUseProxyConfig(
@@ -328,8 +380,8 @@ async def create_proxy_config(
 
 @router.get("/proxy-configs", response_model=list[ComputerUseProxyConfigResponse])
 async def list_proxy_configs(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseProxyConfig)
@@ -342,12 +394,17 @@ async def list_proxy_configs(
 
 # ========== Session Sharing ==========
 
-@router.post("/sessions/{session_id}/shares", response_model=ComputerUseSessionShareResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/sessions/{session_id}/shares",
+    response_model=ComputerUseSessionShareResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def share_session(
     session_id: UUID,
     data: ComputerUseSessionShareCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSession).where(
@@ -359,7 +416,11 @@ async def share_session(
         raise HTTPException(status_code=404, detail="Sesión no encontrada")
 
     token = secrets.token_urlsafe(32)
-    expires_at = datetime.now(timezone.utc) + timedelta(days=data.expires_days) if data.expires_days else None
+    expires_at = (
+        datetime.now(UTC) + timedelta(days=data.expires_days)
+        if data.expires_days
+        else None
+    )
 
     share = ComputerUseSessionShare(
         session_id=session_id,
@@ -376,11 +437,14 @@ async def share_session(
     return share
 
 
-@router.get("/sessions/{session_id}/shares", response_model=list[ComputerUseSessionShareResponse])
+@router.get(
+    "/sessions/{session_id}/shares",
+    response_model=list[ComputerUseSessionShareResponse],
+)
 async def list_session_shares(
     session_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSessionShare)
@@ -395,7 +459,7 @@ async def list_session_shares(
 @router.get("/shared-sessions/{token}")
 async def get_shared_session(
     token: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     result = await db.execute(
         select(ComputerUseSessionShare).where(
@@ -406,7 +470,7 @@ async def get_shared_session(
     share = result.scalar_one_or_none()
     if not share:
         raise HTTPException(status_code=404, detail="Enlace no válido")
-    if share.expires_at and share.expires_at < datetime.now(timezone.utc):
+    if share.expires_at and share.expires_at < datetime.now(UTC):
         raise HTTPException(status_code=410, detail="Enlace expirado")
 
     session_result = await db.execute(
@@ -424,11 +488,16 @@ async def get_shared_session(
 
 # ========== Batch Jobs ==========
 
-@router.post("/batch-jobs", response_model=ComputerUseBatchJobResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/batch-jobs",
+    response_model=ComputerUseBatchJobResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_batch_job(
     data: ComputerUseBatchJobCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     job = ComputerUseBatchJob(
         user_id=current_user.id,
@@ -448,8 +517,8 @@ async def create_batch_job(
 
 @router.get("/batch-jobs", response_model=list[ComputerUseBatchJobResponse])
 async def list_batch_jobs(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseBatchJob)
@@ -462,12 +531,17 @@ async def list_batch_jobs(
 
 # ========== Session Tags ==========
 
-@router.post("/sessions/{session_id}/tags", response_model=ComputerUseSessionTagResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/sessions/{session_id}/tags",
+    response_model=ComputerUseSessionTagResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def add_session_tag(
     session_id: UUID,
     data: ComputerUseSessionTagCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSession).where(
@@ -489,11 +563,13 @@ async def add_session_tag(
     return tag
 
 
-@router.get("/sessions/{session_id}/tags", response_model=list[ComputerUseSessionTagResponse])
+@router.get(
+    "/sessions/{session_id}/tags", response_model=list[ComputerUseSessionTagResponse]
+)
 async def list_session_tags(
     session_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSession).where(
@@ -516,8 +592,8 @@ async def list_session_tags(
 @router.get("/tags/search")
 async def search_sessions_by_tag(
     tag: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSession)
@@ -534,12 +610,17 @@ async def search_sessions_by_tag(
 
 # ========== Bookmarks ==========
 
-@router.post("/sessions/{session_id}/bookmarks", response_model=ComputerUseSessionBookmarkResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/sessions/{session_id}/bookmarks",
+    response_model=ComputerUseSessionBookmarkResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_bookmark(
     session_id: UUID,
     data: ComputerUseSessionBookmarkCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSession).where(
@@ -551,6 +632,7 @@ async def create_bookmark(
         raise HTTPException(status_code=404, detail="Sesión no encontrada")
 
     from app.domains.computer_use.models_extended import ComputerUseSessionBookmark
+
     bookmark = ComputerUseSessionBookmark(
         session_id=session_id,
         step_number=data.step_number,
@@ -564,11 +646,14 @@ async def create_bookmark(
     return bookmark
 
 
-@router.get("/sessions/{session_id}/bookmarks", response_model=list[ComputerUseSessionBookmarkResponse])
+@router.get(
+    "/sessions/{session_id}/bookmarks",
+    response_model=list[ComputerUseSessionBookmarkResponse],
+)
 async def list_bookmarks(
     session_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSession).where(
@@ -580,6 +665,7 @@ async def list_bookmarks(
         raise HTTPException(status_code=404, detail="Sesión no encontrada")
 
     from app.domains.computer_use.models_extended import ComputerUseSessionBookmark
+
     result = await db.execute(
         select(ComputerUseSessionBookmark)
         .where(ComputerUseSessionBookmark.session_id == session_id)
@@ -591,11 +677,12 @@ async def list_bookmarks(
 
 # ========== Clone Session ==========
 
+
 @router.post("/sessions/{session_id}/clone")
 async def clone_session(
     session_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Clona una sesión completada como punto de partida."""
     result = await db.execute(
@@ -630,13 +717,24 @@ async def clone_session(
 
 # ========== Mobile Presets ==========
 
+
 @router.get("/mobile-presets")
 async def list_mobile_presets():
     """Lista los presets de emulación móvil disponibles."""
-    from app.domains.computer_use.services.mobile_presets import list_presets, MOBILE_PRESETS
+    from app.domains.computer_use.services.mobile_presets import (
+        MOBILE_PRESETS,
+    )
+
     return {
         "presets": [
-            {"id": k, "name": v["name"], "viewport": {"width": v["viewport_width"], "height": v["viewport_height"]}}
+            {
+                "id": k,
+                "name": v["name"],
+                "viewport": {
+                    "width": v["viewport_width"],
+                    "height": v["viewport_height"],
+                },
+            }
             for k, v in MOBILE_PRESETS.items()
         ]
     }
@@ -644,10 +742,11 @@ async def list_mobile_presets():
 
 # ========== Import/Export Config ==========
 
+
 @router.post("/config/export")
 async def export_config(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Exporta toda la configuración de Computer Use del usuario."""
     config = {
@@ -655,61 +754,75 @@ async def export_config(
         "profiles": [],
         "proxies": [],
         "webhooks": [],
-        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "exported_at": datetime.now(UTC).isoformat(),
     }
 
     # Templates
     result = await db.execute(
-        select(ComputerUseTemplate).where(ComputerUseTemplate.user_id == current_user.id)
+        select(ComputerUseTemplate).where(
+            ComputerUseTemplate.user_id == current_user.id
+        )
     )
     for t in result.scalars().all():
-        config["templates"].append({
-            "name": t.name,
-            "description": t.description,
-            "task_description": t.task_description,
-            "start_url": t.start_url,
-            "tags": t.tags,
-        })
+        config["templates"].append(
+            {
+                "name": t.name,
+                "description": t.description,
+                "task_description": t.task_description,
+                "start_url": t.start_url,
+                "tags": t.tags,
+            }
+        )
 
     # Profiles
     result = await db.execute(
-        select(ComputerUseBrowserProfile).where(ComputerUseBrowserProfile.user_id == current_user.id)
+        select(ComputerUseBrowserProfile).where(
+            ComputerUseBrowserProfile.user_id == current_user.id
+        )
     )
     for p in result.scalars().all():
-        config["profiles"].append({
-            "name": p.name,
-            "viewport_width": p.viewport_width,
-            "viewport_height": p.viewport_height,
-            "user_agent": p.user_agent,
-            "locale": p.locale,
-            "timezone_id": p.timezone_id,
-            "cookies": p.cookies,
-            "local_storage": p.local_storage,
-        })
+        config["profiles"].append(
+            {
+                "name": p.name,
+                "viewport_width": p.viewport_width,
+                "viewport_height": p.viewport_height,
+                "user_agent": p.user_agent,
+                "locale": p.locale,
+                "timezone_id": p.timezone_id,
+                "cookies": p.cookies,
+                "local_storage": p.local_storage,
+            }
+        )
 
     # Proxies (sin contraseñas)
     result = await db.execute(
-        select(ComputerUseProxyConfig).where(ComputerUseProxyConfig.user_id == current_user.id)
+        select(ComputerUseProxyConfig).where(
+            ComputerUseProxyConfig.user_id == current_user.id
+        )
     )
     for px in result.scalars().all():
-        config["proxies"].append({
-            "name": px.name,
-            "proxy_type": px.proxy_type,
-            "host": px.host,
-            "port": px.port,
-            "username": px.username,
-        })
+        config["proxies"].append(
+            {
+                "name": px.name,
+                "proxy_type": px.proxy_type,
+                "host": px.host,
+                "port": px.port,
+                "username": px.username,
+            }
+        )
 
     # Webhooks (sin secrets)
     result = await db.execute(
         select(ComputerUseWebhook).where(ComputerUseWebhook.user_id == current_user.id)
     )
     for w in result.scalars().all():
-        config["webhooks"].append({
-            "name": w.name,
-            "url": w.url,
-            "events": w.events,
-        })
+        config["webhooks"].append(
+            {
+                "name": w.name,
+                "url": w.url,
+                "events": w.events,
+            }
+        )
 
     return config
 
@@ -717,8 +830,8 @@ async def export_config(
 @router.post("/config/import")
 async def import_config(
     config: dict,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Importa configuración de Computer Use."""
     imported = {"templates": 0, "profiles": 0, "proxies": 0, "webhooks": 0}
@@ -753,12 +866,13 @@ async def import_config(
 
 # ========== Session Notes ==========
 
+
 @router.post("/sessions/{session_id}/notes")
 async def create_session_note(
     session_id: UUID,
     data: ComputerUseSessionNoteCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSession).where(
@@ -770,6 +884,7 @@ async def create_session_note(
         raise HTTPException(status_code=404, detail="Sesión no encontrada")
 
     from app.domains.computer_use.models_extended import ComputerUseSessionNote
+
     note = ComputerUseSessionNote(
         session_id=session_id,
         user_id=current_user.id,
@@ -785,8 +900,8 @@ async def create_session_note(
 @router.get("/sessions/{session_id}/notes")
 async def list_session_notes(
     session_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSession).where(
@@ -798,10 +913,14 @@ async def list_session_notes(
         raise HTTPException(status_code=404, detail="Sesión no encontrada")
 
     from app.domains.computer_use.models_extended import ComputerUseSessionNote
+
     result = await db.execute(
         select(ComputerUseSessionNote)
         .where(ComputerUseSessionNote.session_id == session_id)
-        .order_by(ComputerUseSessionNote.is_pinned.desc(), ComputerUseSessionNote.created_at.desc())
+        .order_by(
+            ComputerUseSessionNote.is_pinned.desc(),
+            ComputerUseSessionNote.created_at.desc(),
+        )
     )
     notes = result.scalars().all()
     return notes
@@ -809,11 +928,12 @@ async def list_session_notes(
 
 # ========== Markdown Export ==========
 
+
 @router.post("/sessions/{session_id}/export/markdown")
 async def export_markdown(
     session_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSession).where(
@@ -831,43 +951,66 @@ async def export_markdown(
         .order_by(ComputerUseStep.step_number)
     )
     steps = steps_result.scalars().all()
-    steps_data = [{
-        "step_number": s.step_number,
-        "action_type": s.action_type,
-        "action_params": s.action_params,
-        "reason": s.llm_response,
-        "execution_result": s.execution_result,
-    } for s in steps]
+    steps_data = [
+        {
+            "step_number": s.step_number,
+            "action_type": s.action_type,
+            "action_params": s.action_params,
+            "reason": s.llm_response,
+            "execution_result": s.execution_result,
+        }
+        for s in steps
+    ]
 
     ann_result = await db.execute(
-        select(ComputerUseAnnotation).where(ComputerUseAnnotation.session_id == session_id)
+        select(ComputerUseAnnotation).where(
+            ComputerUseAnnotation.session_id == session_id
+        )
     )
     annotations = ann_result.scalars().all()
-    ann_data = [{"step_number": a.step_number, "content": a.content} for a in annotations]
+    ann_data = [
+        {"step_number": a.step_number, "content": a.content} for a in annotations
+    ]
 
     from app.domains.computer_use.services.markdown_export import MarkdownExportService
+
     md_service = MarkdownExportService()
     markdown = md_service.export_session(
-        {"task_description": session.task_description, "status": session.status, "total_steps": session.total_steps,
-         "started_at": session.started_at, "completed_at": session.completed_at, "result_data": session.result_data},
-        steps_data, ann_data,
+        {
+            "task_description": session.task_description,
+            "status": session.status,
+            "total_steps": session.total_steps,
+            "started_at": session.started_at,
+            "completed_at": session.completed_at,
+            "result_data": session.result_data,
+        },
+        steps_data,
+        ann_data,
     )
 
     from fastapi.responses import PlainTextResponse
+
     return PlainTextResponse(
         content=markdown,
         media_type="text/markdown",
-        headers={"Content-Disposition": f"attachment; filename=session_{session_id}.md"},
+        headers={
+            "Content-Disposition": f"attachment; filename=session_{session_id}.md"
+        },
     )
 
 
 # ========== Webhooks ==========
 
-@router.post("/webhooks", response_model=ComputerUseWebhookResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/webhooks",
+    response_model=ComputerUseWebhookResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_webhook(
     data: ComputerUseWebhookCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     webhook = ComputerUseWebhook(
         user_id=current_user.id,
@@ -884,8 +1027,8 @@ async def create_webhook(
 
 @router.get("/webhooks", response_model=list[ComputerUseWebhookResponse])
 async def list_webhooks(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseWebhook)
@@ -898,12 +1041,13 @@ async def list_webhooks(
 
 # ========== Export ==========
 
+
 @router.post("/sessions/{session_id}/export")
 async def export_session(
     session_id: UUID,
     data: ComputerUseExportRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSession).where(
@@ -922,29 +1066,37 @@ async def export_session(
         .order_by(ComputerUseStep.step_number)
     )
     steps = steps_result.scalars().all()
-    steps_data = [{
-        "step_number": s.step_number,
-        "screenshot_path": s.screenshot_path,
-        "action_type": s.action_type,
-        "action_params": s.action_params,
-        "reason": s.llm_response,
-        "execution_result": s.execution_result,
-        "execution_ms": s.execution_ms,
-        "executed_at": s.executed_at,
-    } for s in steps]
+    steps_data = [
+        {
+            "step_number": s.step_number,
+            "screenshot_path": s.screenshot_path,
+            "action_type": s.action_type,
+            "action_params": s.action_params,
+            "reason": s.llm_response,
+            "execution_result": s.execution_result,
+            "execution_ms": s.execution_ms,
+            "executed_at": s.executed_at,
+        }
+        for s in steps
+    ]
 
     # Get annotations
     ann_result = await db.execute(
-        select(ComputerUseAnnotation).where(ComputerUseAnnotation.session_id == session_id)
+        select(ComputerUseAnnotation).where(
+            ComputerUseAnnotation.session_id == session_id
+        )
     )
     annotations = ann_result.scalars().all()
-    ann_data = [{
-        "step_number": a.step_number,
-        "content": a.content,
-        "x_coordinate": a.x_coordinate,
-        "y_coordinate": a.y_coordinate,
-        "color": a.color,
-    } for a in annotations]
+    ann_data = [
+        {
+            "step_number": a.step_number,
+            "content": a.content,
+            "x_coordinate": a.x_coordinate,
+            "y_coordinate": a.y_coordinate,
+            "color": a.color,
+        }
+        for a in annotations
+    ]
 
     session_data = {
         "id": str(session.id),
@@ -962,26 +1114,33 @@ async def export_session(
         path = await pdf_service.export_session(
             session_id, session_data, steps_data, ann_data, data.include_screenshots
         )
-        return FileResponse(path, media_type="application/pdf", filename=f"session_{session_id}.pdf")
+        return FileResponse(
+            path, media_type="application/pdf", filename=f"session_{session_id}.pdf"
+        )
 
     elif data.format == "csv":
         path = await pdf_service.export_csv(steps_data)
-        return FileResponse(path, media_type="text/csv", filename=f"session_{session_id}_steps.csv")
+        return FileResponse(
+            path, media_type="text/csv", filename=f"session_{session_id}_steps.csv"
+        )
 
     elif data.format == "json":
         path = await pdf_service.export_json(session_data, steps_data, ann_data)
-        return FileResponse(path, media_type="application/json", filename=f"session_{session_id}.json")
+        return FileResponse(
+            path, media_type="application/json", filename=f"session_{session_id}.json"
+        )
 
     raise HTTPException(status_code=400, detail="Formato no soportado")
 
 
 # ========== Replay ==========
 
+
 @router.get("/sessions/{session_id}/replay", response_model=ComputerUseReplayResponse)
 async def get_session_replay(
     session_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
         select(ComputerUseSession).where(
@@ -1001,23 +1160,29 @@ async def get_session_replay(
     steps = steps_result.scalars().all()
 
     ann_result = await db.execute(
-        select(ComputerUseAnnotation).where(ComputerUseAnnotation.session_id == session_id)
+        select(ComputerUseAnnotation).where(
+            ComputerUseAnnotation.session_id == session_id
+        )
     )
     annotations = ann_result.scalars().all()
 
     replay_steps = []
     for step in steps:
         step_anns = [a for a in annotations if a.step_number == step.step_number]
-        replay_steps.append(ComputerUseReplayStep(
-            step_number=step.step_number,
-            screenshot_url=f"/api/v1/computer-use/sessions/{session_id}/screenshots/{step.step_number}",
-            action_type=step.action_type,
-            action_params=step.action_params or {},
-            reason=step.llm_response,
-            execution_result=step.execution_result,
-            execution_ms=step.execution_ms,
-            annotations=[ComputerUseAnnotationResponse.model_validate(a) for a in step_anns],
-        ))
+        replay_steps.append(
+            ComputerUseReplayStep(
+                step_number=step.step_number,
+                screenshot_url=f"/api/v1/computer-use/sessions/{session_id}/screenshots/{step.step_number}",
+                action_type=step.action_type,
+                action_params=step.action_params or {},
+                reason=step.llm_response,
+                execution_result=step.execution_result,
+                execution_ms=step.execution_ms,
+                annotations=[
+                    ComputerUseAnnotationResponse.model_validate(a) for a in step_anns
+                ],
+            )
+        )
 
     return ComputerUseReplayResponse(
         session_id=session_id,
@@ -1030,10 +1195,11 @@ async def get_session_replay(
 
 # ========== Analytics ==========
 
+
 @router.get("/analytics/summary", response_model=ComputerUseAnalyticsSummary)
 async def get_analytics_summary(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     # Total sessions
     total_result = await db.execute(
@@ -1043,32 +1209,49 @@ async def get_analytics_summary(
 
     # By status
     completed_result = await db.execute(
-        select(func.count()).where(ComputerUseSession.user_id == current_user.id, ComputerUseSession.status == "completed")
+        select(func.count()).where(
+            ComputerUseSession.user_id == current_user.id,
+            ComputerUseSession.status == "completed",
+        )
     )
     completed = completed_result.scalar() or 0
 
     failed_result = await db.execute(
-        select(func.count()).where(ComputerUseSession.user_id == current_user.id, ComputerUseSession.status == "failed")
+        select(func.count()).where(
+            ComputerUseSession.user_id == current_user.id,
+            ComputerUseSession.status == "failed",
+        )
     )
     failed = failed_result.scalar() or 0
 
     stopped_result = await db.execute(
-        select(func.count()).where(ComputerUseSession.user_id == current_user.id, ComputerUseSession.status == "stopped")
+        select(func.count()).where(
+            ComputerUseSession.user_id == current_user.id,
+            ComputerUseSession.status == "stopped",
+        )
     )
     stopped = stopped_result.scalar() or 0
 
     # Avg steps
     avg_steps_result = await db.execute(
-        select(func.avg(ComputerUseSession.total_steps)).where(ComputerUseSession.user_id == current_user.id)
+        select(func.avg(ComputerUseSession.total_steps)).where(
+            ComputerUseSession.user_id == current_user.id
+        )
     )
     avg_steps = avg_steps_result.scalar() or 0.0
 
     # Avg duration (for completed sessions)
     from sqlalchemy import extract
+
     avg_dur_result = await db.execute(
-        select(func.avg(
-            extract('epoch', ComputerUseSession.completed_at - ComputerUseSession.started_at)
-        )).where(
+        select(
+            func.avg(
+                extract(
+                    "epoch",
+                    ComputerUseSession.completed_at - ComputerUseSession.started_at,
+                )
+            )
+        ).where(
             ComputerUseSession.user_id == current_user.id,
             ComputerUseSession.status == "completed",
             ComputerUseSession.started_at.isnot(None),
@@ -1080,7 +1263,10 @@ async def get_analytics_summary(
     # Most used provider
     provider_result = await db.execute(
         select(ComputerUseSession.provider_used, func.count())
-        .where(ComputerUseSession.user_id == current_user.id, ComputerUseSession.provider_used.isnot(None))
+        .where(
+            ComputerUseSession.user_id == current_user.id,
+            ComputerUseSession.provider_used.isnot(None),
+        )
         .group_by(ComputerUseSession.provider_used)
         .order_by(desc(func.count()))
         .limit(1)
@@ -1101,21 +1287,36 @@ async def get_analytics_summary(
     most_action = action_row[0] if action_row else None
 
     # Time-based counts
-    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    today = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = today - timedelta(days=today.weekday())
     month_start = today.replace(day=1)
 
-    today_count = (await db.execute(
-        select(func.count()).where(ComputerUseSession.user_id == current_user.id, ComputerUseSession.created_at >= today)
-    )).scalar() or 0
+    today_count = (
+        await db.execute(
+            select(func.count()).where(
+                ComputerUseSession.user_id == current_user.id,
+                ComputerUseSession.created_at >= today,
+            )
+        )
+    ).scalar() or 0
 
-    week_count = (await db.execute(
-        select(func.count()).where(ComputerUseSession.user_id == current_user.id, ComputerUseSession.created_at >= week_start)
-    )).scalar() or 0
+    week_count = (
+        await db.execute(
+            select(func.count()).where(
+                ComputerUseSession.user_id == current_user.id,
+                ComputerUseSession.created_at >= week_start,
+            )
+        )
+    ).scalar() or 0
 
-    month_count = (await db.execute(
-        select(func.count()).where(ComputerUseSession.user_id == current_user.id, ComputerUseSession.created_at >= month_start)
-    )).scalar() or 0
+    month_count = (
+        await db.execute(
+            select(func.count()).where(
+                ComputerUseSession.user_id == current_user.id,
+                ComputerUseSession.created_at >= month_start,
+            )
+        )
+    ).scalar() or 0
 
     return ComputerUseAnalyticsSummary(
         total_sessions=total,
@@ -1134,10 +1335,11 @@ async def get_analytics_summary(
 
 # ========== Multi-Session Grid ==========
 
+
 @router.get("/active-sessions")
 async def list_active_sessions(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Lista todas las sesiones activas del usuario para el grid de monitoreo."""
     result = await db.execute(
@@ -1150,27 +1352,32 @@ async def list_active_sessions(
     )
     sessions = result.scalars().all()
     return {
-        "items": [{
-            "id": str(s.id),
-            "task_description": s.task_description,
-            "status": s.status,
-            "current_url": s.current_url,
-            "total_steps": s.total_steps,
-            "browser_type": s.browser_type,
-            "created_at": s.created_at,
-            "started_at": s.started_at,
-        } for s in sessions],
+        "items": [
+            {
+                "id": str(s.id),
+                "task_description": s.task_description,
+                "status": s.status,
+                "current_url": s.current_url,
+                "total_steps": s.total_steps,
+                "browser_type": s.browser_type,
+                "created_at": s.created_at,
+                "started_at": s.started_at,
+            }
+            for s in sessions
+        ],
         "total": len(sessions),
     }
 
 
 # ========== Browser Pool Stats ==========
 
+
 @router.get("/browser-pool/stats")
 async def get_browser_pool_stats(
-    current_user: User = Depends(get_current_active_user),
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Estadísticas del pool de navegadores."""
     from app.domains.computer_use.services.browser_pool import get_browser_pool
+
     pool = get_browser_pool()
     return pool.get_stats()

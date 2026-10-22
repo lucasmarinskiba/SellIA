@@ -12,11 +12,20 @@ Gen-4 Standard para producción.
 """
 
 import asyncio
-from typing import Dict, Any, Optional
+import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
-from ..utils import download_url
+
+from ..base import (
+    BaseProvider,
+    ContentQuality,
+    ContentType,
+    GenerationConfig,
+    GenerationResult,
+)
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -50,7 +59,7 @@ class RunwayProvider(BaseProvider):
 
     name = "Runway ML"
     slug = "runway"
-    supports = [ContentType.VIDEO, ContentType.IMAGE]
+    supports: ClassVar[list] = [ContentType.VIDEO, ContentType.IMAGE]
 
     @property
     def is_available(self) -> bool:
@@ -59,7 +68,9 @@ class RunwayProvider(BaseProvider):
     def estimate_cost(self, config: GenerationConfig) -> float:
         if config.content_type == ContentType.VIDEO:
             duration = config.duration_seconds or 5
-            model_config = RUNWAY_MODELS.get(config.quality, RUNWAY_MODELS[ContentQuality.STANDARD])
+            model_config = RUNWAY_MODELS.get(
+                config.quality, RUNWAY_MODELS[ContentQuality.STANDARD]
+            )
             cost = model_config["cost_per_second"] * duration
             if config.quality == ContentQuality.PREMIUM:
                 cost += 0.02 * duration  # upscale
@@ -69,7 +80,7 @@ class RunwayProvider(BaseProvider):
             return 0.05
         return 0.0
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {
             "gen-4-turbo": 0.05,
             "gen-4": 0.12,
@@ -96,13 +107,16 @@ class RunwayProvider(BaseProvider):
                     error_message=f"Tipo {config.content_type.value} no soportado por Runway",
                 )
         except Exception as e:
+            logger.exception("generate: error inesperado")
             return GenerationResult(
                 success=False,
                 error_message=str(e),
             )
 
     async def _generate_video(self, config: GenerationConfig) -> GenerationResult:
-        model_config = RUNWAY_MODELS.get(config.quality, RUNWAY_MODELS[ContentQuality.STANDARD])
+        model_config = RUNWAY_MODELS.get(
+            config.quality, RUNWAY_MODELS[ContentQuality.STANDARD]
+        )
         duration = min(config.duration_seconds or 5, 10)  # Max 10s base
 
         # Runway API REST
@@ -208,20 +222,19 @@ class RunwayProvider(BaseProvider):
             "model": "gen-4-image",
         }
 
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                "https://api.dev.runwayml.com/v1/image-to-image",  # o endpoint correcto
-                headers=headers,
-                json=payload,
-            ) as resp:
-                if resp.status not in (200, 201):
-                    text = await resp.text()
-                    return GenerationResult(
-                        success=False,
-                        error_message=f"Runway image error {resp.status}: {text}",
-                    )
-                data = await resp.json()
-                image_url = data.get("url") or data.get("output", [{}])[0].get("url")
+        async with aiohttp.ClientSession() as session, session.post(
+            "https://api.dev.runwayml.com/v1/image-to-image",  # o endpoint correcto
+            headers=headers,
+            json=payload,
+        ) as resp:
+            if resp.status not in (200, 201):
+                text = await resp.text()
+                return GenerationResult(
+                    success=False,
+                    error_message=f"Runway image error {resp.status}: {text}",
+                )
+            data = await resp.json()
+            image_url = data.get("url") or data.get("output", [{}])[0].get("url")
 
         return GenerationResult(
             success=True,

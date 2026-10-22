@@ -1,7 +1,6 @@
 """Forecasting API schemas."""
 
 from datetime import date, datetime
-from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -15,13 +14,13 @@ class SeriesResponse(BaseModel):
     level: str
     target: str
     grain: str
-    key: Optional[str]
-    label: Optional[str]
+    key: str | None
+    label: str | None
     is_active: bool
     intermittent: bool
-    last_run_at: Optional[datetime]
-    last_wape: Optional[float]
-    last_mase: Optional[float]
+    last_run_at: datetime | None
+    last_wape: float | None
+    last_mase: float | None
 
 
 class RunRequest(BaseModel):
@@ -33,21 +32,21 @@ class ForecastPointOut(BaseModel):
     date: date
     step: int
     yhat: float
-    q10: Optional[float]
-    q50: Optional[float]
-    q90: Optional[float]
+    q10: float | None
+    q50: float | None
+    q90: float | None
 
 
 class ForecastResponse(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
     series_key: str
-    label: Optional[str] = None
-    level: Optional[str] = None
-    target: Optional[str] = None
-    origin_date: Optional[str] = None
-    run_at: Optional[str] = None
+    label: str | None = None
+    level: str | None = None
+    target: str | None = None
+    origin_date: str | None = None
+    run_at: str | None = None
     model_weights: dict = {}
     backtest: dict = {}
     reconciled: bool = False
-    status: Optional[str] = None
+    status: str | None = None
     points: list[ForecastPointOut] = []

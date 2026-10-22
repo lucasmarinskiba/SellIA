@@ -4,18 +4,22 @@ Captures leads from Google Ads Lead Form Extensions and manages campaign data.
 Docs: https://developers.google.com/google-ads/api/docs/start
 """
 
-import hmac
-import hashlib
 import base64
+import hashlib
+import hmac
+import logging
 from typing import Any
 
 from app.domains.channels.connectors.base import BaseChannelConnector
-from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.models import ChannelPlatform
+from app.domains.channels.schemas import WebhookPayload
+
+logger = logging.getLogger(__name__)
 
 
 class GoogleAdsConnector(BaseChannelConnector):
     """Conector para Google Ads Lead Forms y gestión de campañas."""
+
     platform = "google_ads"
 
     def __init__(self, credentials: dict[str, Any], settings: dict[str, Any]):
@@ -29,13 +33,15 @@ class GoogleAdsConnector(BaseChannelConnector):
         self.access_token = credentials.get("access_token")
         self.webhook_secret = credentials.get("webhook_secret")
 
-    async def send_message(self, recipient_id: str, content: str, content_type: str = "text") -> dict[str, Any]:
+    async def send_message(
+        self, recipient_id: str, content: str, content_type: str = "text"
+    ) -> dict[str, Any]:
         """Google Ads no tiene mensajería directa; log para tracking."""
         return {"status": "logged", "note": "Google Ads no soporta mensajería directa"}
 
     async def parse_webhook(self, raw_payload: dict[str, Any]) -> WebhookPayload:
         """Parse Google Ads Lead Form webhook payload.
-        
+
         Google sends webhook data via Google Ads API or webhook integrations:
         {
             "lead_id": "...",
@@ -63,7 +69,9 @@ class GoogleAdsConnector(BaseChannelConnector):
         form_id = raw_payload.get("form_id", "")
         gcl_id = raw_payload.get("gcl_id", "")
 
-        full_name = lead_fields.get("full_name", lead_fields.get("name", "Lead Google Ads"))
+        full_name = lead_fields.get(
+            "full_name", lead_fields.get("name", "Lead Google Ads")
+        )
         email = lead_fields.get("email", "")
         phone = lead_fields.get("phone_number", lead_fields.get("phone", ""))
         city = lead_fields.get("city", "")
@@ -120,6 +128,7 @@ class GoogleAdsConnector(BaseChannelConnector):
             ).decode()
             return hmac.compare_digest(expected, signature_header)
         except Exception:
+            logger.exception("verify_webhook: error inesperado")
             return False
 
     async def validate_credentials(self) -> bool:
@@ -127,7 +136,8 @@ class GoogleAdsConnector(BaseChannelConnector):
             return False
         try:
             import httpx
-            url = "https://googleads.googleapis.com/v14/customers/{}/campaigns".format(self.customer_id)
+
+            url = f"https://googleads.googleapis.com/v14/customers/{self.customer_id}/campaigns"
             headers = {
                 "Authorization": f"Bearer {self.access_token}",
                 "developer-token": self.developer_token,
@@ -135,12 +145,17 @@ class GoogleAdsConnector(BaseChannelConnector):
             if self.login_customer_id:
                 headers["login-customer-id"] = self.login_customer_id
             async with httpx.AsyncClient() as client:
-                response = await client.get(url, headers=headers, params={"pageSize": "1"})
+                response = await client.get(
+                    url, headers=headers, params={"pageSize": "1"}
+                )
                 return response.status_code == 200
         except Exception:
+            logger.exception("validate_credentials: error inesperado")
             return False
 
-    async def update_campaign_budget(self, campaign_id: str, new_budget_aed: float) -> None:
+    async def update_campaign_budget(
+        self, campaign_id: str, new_budget_aed: float
+    ) -> None:
         """Update campaign daily budget via Google Ads API v14.
 
         Args:
@@ -150,20 +165,19 @@ class GoogleAdsConnector(BaseChannelConnector):
         Raises:
             Exception if API call fails
         """
-        import httpx
-        from google.protobuf.json_format import MessageToDict
         from google.ads.googleads.client import GoogleAdsClient
 
         client = GoogleAdsClient.load_from_storage(
-            version="v14",
-            common_params={"developer_token": self.developer_token}
+            version="v14", common_params={"developer_token": self.developer_token}
         )
         if self.access_token:
             client._transport._credentials.refresh_token = self.refresh_token
             client._transport._credentials.access_token = self.access_token
 
         campaign_service = client.get_service("CampaignService")
-        campaign_resource_name = campaign_service.campaign_path(self.customer_id, campaign_id)
+        campaign_resource_name = campaign_service.campaign_path(
+            self.customer_id, campaign_id
+        )
 
         campaign = client.get_type("Campaign")
         campaign.resource_name = campaign_resource_name
@@ -173,6 +187,8 @@ class GoogleAdsConnector(BaseChannelConnector):
         operation.update.CopyFrom(campaign)
         operation.update_mask.paths.append("daily_budget_micros")
 
-        response = campaign_service.mutate_campaigns(customer_id=self.customer_id, operations=[operation])
+        response = campaign_service.mutate_campaigns(
+            customer_id=self.customer_id, operations=[operation]
+        )
         if not response.results:
-            raise Exception("Google Ads API: no results returned")
+            raise RuntimeError("Google Ads API: no results returned")

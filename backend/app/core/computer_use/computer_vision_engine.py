@@ -9,11 +9,12 @@ APIs:
 - Tesseract OCR (local, offline)
 """
 
-import logging
 import base64
-import httpx
-from typing import Dict, List, Any, Optional
+import logging
+from typing import Any
+
 import anthropic
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,9 @@ logger = logging.getLogger(__name__)
 class ComputerVisionEngine:
     """Computer Vision para entender interfaces web automáticamente."""
 
-    def __init__(self, anthropic_api_key: str, google_vision_api_key: Optional[str] = None):
+    def __init__(
+        self, anthropic_api_key: str, google_vision_api_key: str | None = None
+    ):
         self.anthropic_client = anthropic.Anthropic(api_key=anthropic_api_key)
         self.google_api_key = google_vision_api_key
         self.http_client = httpx.AsyncClient(timeout=30)
@@ -31,7 +34,7 @@ class ComputerVisionEngine:
     async def analyze_feedia_interface(
         self,
         screenshot_bytes: bytes,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Claude Vision analiza screenshot de FeedIA.
 
@@ -96,7 +99,11 @@ Responde en JSON: {
                 analysis = json.loads(response_text)
             except json.JSONDecodeError:
                 json_match = re.search(r"\{.*\}", response_text, re.DOTALL)
-                analysis = json.loads(json_match.group(0)) if json_match else {"raw": response_text}
+                analysis = (
+                    json.loads(json_match.group(0))
+                    if json_match
+                    else {"raw": response_text}
+                )
 
             return {
                 "status": "success",
@@ -105,7 +112,7 @@ Responde en JSON: {
             }
 
         except Exception as e:
-            logger.error(f"Claude Vision analysis failed: {str(e)}")
+            logger.exception("Claude Vision analysis failed")
             return {"status": "error", "error": str(e)}
 
     # ========== BUTTON DETECTION ==========
@@ -113,7 +120,7 @@ Responde en JSON: {
     async def detect_clickable_elements(
         self,
         screenshot_bytes: bytes,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detecta botones, links, campos clickeables con sus posiciones.
 
@@ -179,15 +186,19 @@ Responde en JSON:
                 detection = json.loads(response_text)
             except json.JSONDecodeError:
                 json_match = re.search(r"\{.*\}", response_text, re.DOTALL)
-                detection = json.loads(json_match.group(0)) if json_match else {"raw": response_text}
+                detection = (
+                    json.loads(json_match.group(0))
+                    if json_match
+                    else {"raw": response_text}
+                )
 
             return {
                 "status": "success",
                 "elements": detection.get("elements", []),
             }
 
-        except Exception as e:
-            logger.error(f"Element detection failed: {str(e)}")
+        except Exception:
+            logger.exception("Element detection failed")
             return {"status": "error"}
 
     # ========== TEXT RECOGNITION (OCR) ==========
@@ -195,7 +206,7 @@ Responde en JSON:
     async def extract_text_from_screenshot(
         self,
         screenshot_bytes: bytes,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Extrae TODO el texto visible en screenshot.
 
@@ -224,7 +235,7 @@ Responde en JSON:
                             },
                             {
                                 "type": "text",
-                                "text": "Extrae TODO el texto visible. Responde en JSON: {\"text\": \"...\", \"sections\": [{\"heading\": \"...\", \"content\": \"...\"}]}",
+                                "text": 'Extrae TODO el texto visible. Responde en JSON: {"text": "...", "sections": [{"heading": "...", "content": "..."}]}',
                             },
                         ],
                     }
@@ -240,12 +251,16 @@ Responde en JSON:
                 extraction = json.loads(response_text)
             except json.JSONDecodeError:
                 json_match = re.search(r"\{.*\}", response_text, re.DOTALL)
-                extraction = json.loads(json_match.group(0)) if json_match else {"text": response_text}
+                extraction = (
+                    json.loads(json_match.group(0))
+                    if json_match
+                    else {"text": response_text}
+                )
 
             return {"status": "success", "extraction": extraction}
 
-        except Exception as e:
-            logger.error(f"OCR extraction failed: {str(e)}")
+        except Exception:
+            logger.exception("OCR extraction failed")
             return {"status": "error"}
 
     # ========== GOOGLE CLOUD VISION (BACKUP) ==========
@@ -253,17 +268,22 @@ Responde en JSON:
     async def detect_with_google_vision(
         self,
         screenshot_bytes: bytes,
-        features: List[str] = ["TEXT_DETECTION", "LABEL_DETECTION", "OBJECT_LOCALIZATION"],
-    ) -> Dict[str, Any]:
+        features: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Google Cloud Vision API como backup/complemento.
 
         features: TEXT_DETECTION, LABEL_DETECTION, OBJECT_LOCALIZATION, etc
         """
+        if features is None:
+            features = ["TEXT_DETECTION", "LABEL_DETECTION", "OBJECT_LOCALIZATION"]
 
         if not self.google_api_key:
             logger.warning("Google Vision API key not configured")
-            return {"status": "error", "message": "Google Vision API key not configured"}
+            return {
+                "status": "error",
+                "message": "Google Vision API key not configured",
+            }
 
         logger.info(f"Detecting with Google Vision: {features}")
 
@@ -293,7 +313,7 @@ Responde en JSON:
                 return {"status": "error", "code": response.status_code}
 
         except Exception as e:
-            logger.error(f"Google Vision detection failed: {str(e)}")
+            logger.exception("Google Vision detection failed")
             return {"status": "error", "error": str(e)}
 
     # ========== INTELLIGENT ACTION SUGGESTION ==========
@@ -302,7 +322,7 @@ Responde en JSON:
         self,
         screenshot_bytes: bytes,
         goal: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Computer Vision lee interfaz + entiende objetivo → sugiere qué hacer.
 
@@ -366,12 +386,16 @@ Responde en JSON: {{
                 suggestion = json.loads(response_text)
             except json.JSONDecodeError:
                 json_match = re.search(r"\{.*\}", response_text, re.DOTALL)
-                suggestion = json.loads(json_match.group(0)) if json_match else {"recommendation": response_text}
+                suggestion = (
+                    json.loads(json_match.group(0))
+                    if json_match
+                    else {"recommendation": response_text}
+                )
 
             return {"status": "success", "suggestion": suggestion}
 
-        except Exception as e:
-            logger.error(f"Action suggestion failed: {str(e)}")
+        except Exception:
+            logger.exception("Action suggestion failed")
             return {"status": "error"}
 
     # ========== VERIFY COMPLETION ==========
@@ -380,7 +404,7 @@ Responde en JSON: {{
         self,
         screenshot_bytes: bytes,
         expected_result: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Verifica si tarea se completó exitosamente.
 
@@ -437,12 +461,16 @@ Responde en JSON: {{
                 verification = json.loads(response_text)
             except json.JSONDecodeError:
                 json_match = re.search(r"\{.*\}", response_text, re.DOTALL)
-                verification = json.loads(json_match.group(0)) if json_match else {"result": response_text}
+                verification = (
+                    json.loads(json_match.group(0))
+                    if json_match
+                    else {"result": response_text}
+                )
 
             return {"status": "success", "verification": verification}
 
-        except Exception as e:
-            logger.error(f"Task verification failed: {str(e)}")
+        except Exception:
+            logger.exception("Task verification failed")
             return {"status": "error"}
 
     async def close(self):

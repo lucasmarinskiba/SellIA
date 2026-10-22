@@ -14,11 +14,21 @@ y DALL-E 3 HD o GPT Image 1 High para premium.
 """
 
 import asyncio
-from typing import Dict, Any, Optional
+import logging
+from typing import Any, ClassVar
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
-from ..utils import compress_image, smart_quality_for_size, get_image_size_kb
+
+from ..base import (
+    BaseProvider,
+    ContentQuality,
+    ContentType,
+    GenerationConfig,
+    GenerationResult,
+)
+from ..utils import get_image_size_kb, smart_quality_for_size
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -56,17 +66,19 @@ class OpenAIImageProvider(BaseProvider):
 
     name = "OpenAI Image"
     slug = "openai_image"
-    supports = [ContentType.IMAGE]
+    supports: ClassVar[list] = [ContentType.IMAGE]
 
     @property
     def is_available(self) -> bool:
         return bool(settings.OPENAI_API_KEY)
 
     def estimate_cost(self, config: GenerationConfig) -> float:
-        model_config = QUALITY_MODELS.get(config.quality, QUALITY_MODELS[ContentQuality.STANDARD])
+        model_config = QUALITY_MODELS.get(
+            config.quality, QUALITY_MODELS[ContentQuality.STANDARD]
+        )
         return model_config["cost_per_image"] * config.num_variations
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {
             "gpt-image-1-mini-low": 0.005,
             "gpt-image-1-mini-high": 0.036,
@@ -86,11 +98,11 @@ class OpenAIImageProvider(BaseProvider):
 
         try:
             from openai import AsyncOpenAI
+
             client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
             model_config = QUALITY_MODELS.get(
-                config.quality,
-                QUALITY_MODELS[ContentQuality.STANDARD]
+                config.quality, QUALITY_MODELS[ContentQuality.STANDARD]
             )
 
             # Para variaciones, generamos en paralelo
@@ -101,7 +113,9 @@ class OpenAIImageProvider(BaseProvider):
                     prompt=config.prompt,
                     model_config=model_config,
                     negative_prompt=config.negative_prompt,
-                    size=config.extra_params.get("size", model_config.get("size", "1024x1024")),
+                    size=config.extra_params.get(
+                        "size", model_config.get("size", "1024x1024")
+                    ),
                 )
                 tasks.append(task)
 
@@ -128,6 +142,7 @@ class OpenAIImageProvider(BaseProvider):
             )
 
         except Exception as e:
+            logger.exception("generate: error inesperado")
             return GenerationResult(
                 success=False,
                 error_message=str(e),
@@ -137,8 +152,8 @@ class OpenAIImageProvider(BaseProvider):
         self,
         client,
         prompt: str,
-        model_config: Dict[str, Any],
-        negative_prompt: Optional[str] = None,
+        model_config: dict[str, Any],
+        negative_prompt: str | None = None,
         size: str = "1024x1024",
     ) -> GenerationResult:
         """Genera una sola imagen."""
@@ -162,7 +177,8 @@ class OpenAIImageProvider(BaseProvider):
             revised_prompt = response.data[0].revised_prompt or prompt
 
             # Intentamos descargar y comprimir
-            from ..utils import download_url, compress_image, get_image_dimensions
+            from ..utils import compress_image, download_url, get_image_dimensions
+
             image_bytes = await download_url(image_url)
 
             if image_bytes:
@@ -184,17 +200,28 @@ class OpenAIImageProvider(BaseProvider):
                 local_path=compressed,
                 cost_usd=model_config["cost_per_image"],
                 model_used=model_config["model"],
-                quality_tier=ContentQuality.STANDARD if model_config["quality"] == "standard" else ContentQuality.PREMIUM if model_config["quality"] == "hd" else ContentQuality.DRAFT,
+                quality_tier=(
+                    ContentQuality.STANDARD
+                    if model_config["quality"] == "standard"
+                    else (
+                        ContentQuality.PREMIUM
+                        if model_config["quality"] == "hd"
+                        else ContentQuality.DRAFT
+                    )
+                ),
                 width=width,
                 height=height,
                 metadata={
                     "revised_prompt": revised_prompt,
                     "size": size,
-                    "compressed_size_kb": len(compressed) / 1024 if compressed else None,
+                    "compressed_size_kb": (
+                        len(compressed) / 1024 if compressed else None
+                    ),
                 },
             )
 
         except Exception as e:
+            logger.exception("_generate_single: error inesperado")
             return GenerationResult(
                 success=False,
                 error_message=str(e),

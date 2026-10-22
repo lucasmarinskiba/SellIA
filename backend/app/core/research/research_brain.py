@@ -6,11 +6,12 @@ Feeds Computer Use Orchestrator with research-backed decisions.
 
 import asyncio
 import logging
-from datetime import datetime, timedelta
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Callable
 from abc import ABC, abstractmethod
-import json
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger("research_brain")
 
@@ -18,32 +19,35 @@ logger = logging.getLogger("research_brain")
 @dataclass
 class ResearchSignal:
     """Signal from research agents"""
+
     agent_id: str
     signal_type: str
     value: Any
     confidence: float
-    timestamp: datetime = field(default_factory=datetime.utcnow)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    timestamp: datetime = field(default_factory=utc_now)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class MarketInsight:
     """Market insight with sources and confidence"""
+
     topic: str
     insight: str
-    sources: List[str]
+    sources: list[str]
     confidence: float
     urgency: str  # "critical", "high", "medium", "low"
     action_required: bool
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
 
 @dataclass
 class CompetitorSignal:
     """Real-time competitor intelligence"""
+
     competitor_id: str
     signal_type: str  # "price_change", "new_product", "campaign", "hiring"
-    details: Dict[str, Any]
+    details: dict[str, Any]
     confidence: float
     impact_level: str  # "critical", "high", "medium", "low"
 
@@ -51,17 +55,19 @@ class CompetitorSignal:
 @dataclass
 class TrendAlert:
     """Real-time trend detection"""
+
     trend_name: str
     direction: str  # "rising", "falling", "stable", "emerging"
     velocity: float  # Rate of change
-    affected_segments: List[str]
+    affected_segments: list[str]
     opportunity: bool
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
 
 # ============================================================================
 # RESEARCH AGENT BASE CLASSES
 # ============================================================================
+
 
 class ResearchAgent(ABC):
     """Base class for all research agents"""
@@ -75,19 +81,23 @@ class ResearchAgent(ABC):
         self.confidence_score = 0.75
 
     @abstractmethod
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
         """Execute research and return signals"""
-        pass
 
     async def update_cache(self, key: str, value: Any, ttl_seconds: int = 3600):
         """Cache research results with TTL"""
-        self.cache[key] = {"value": value, "expires": datetime.utcnow() + timedelta(seconds=ttl_seconds)}
+        self.cache[key] = {
+            "value": value,
+            "expires": utc_now() + timedelta(seconds=ttl_seconds),
+        }
 
-    async def get_cached(self, key: str) -> Optional[Any]:
+    async def get_cached(self, key: str) -> Any | None:
         """Get cached value if not expired"""
         if key in self.cache:
             entry = self.cache[key]
-            if datetime.utcnow() < entry["expires"]:
+            if utc_now() < entry["expires"]:
                 return entry["value"]
         return None
 
@@ -105,13 +115,21 @@ class SpecialistAgent(ResearchAgent):
 # 10 SPECIALIST AGENTS (Core Competencies)
 # ============================================================================
 
+
 class MarketResearchSpecialist(SpecialistAgent):
     """Deep market research: demographics, psychographics, buying behavior"""
 
     def __init__(self):
-        super().__init__("spec.market_research", "Market Research Specialist", "specialist", "market_analysis")
+        super().__init__(
+            "spec.market_research",
+            "Market Research Specialist",
+            "specialist",
+            "market_analysis",
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
         """Market research with demographic segmentation"""
         signals = []
 
@@ -126,7 +144,10 @@ class MarketResearchSpecialist(SpecialistAgent):
                 "market_growth": 0.23,  # 23% YoY
             },
             confidence=0.82,
-            metadata={"source": "market_analysis", "region": context.get("region", "LATAM")}
+            metadata={
+                "source": "market_analysis",
+                "region": context.get("region", "LATAM"),
+            },
         )
         signals.append(tam_signal)
 
@@ -135,13 +156,21 @@ class MarketResearchSpecialist(SpecialistAgent):
             agent_id=self.agent_id,
             signal_type="demographic_breakdown",
             value={
-                "primary_segment": {"age": "25-44", "income": "high", "education": "college+"},
-                "secondary_segment": {"age": "35-54", "income": "medium-high", "education": "college+"},
+                "primary_segment": {
+                    "age": "25-44",
+                    "income": "high",
+                    "education": "college+",
+                },
+                "secondary_segment": {
+                    "age": "35-54",
+                    "income": "medium-high",
+                    "education": "college+",
+                },
                 "segment_size_primary": 350_000,
                 "segment_size_secondary": 280_000,
             },
             confidence=0.85,
-            metadata={"source": "census_data", "updated": "2026-Q3"}
+            metadata={"source": "census_data", "updated": "2026-Q3"},
         )
         signals.append(demo_signal)
 
@@ -151,12 +180,16 @@ class MarketResearchSpecialist(SpecialistAgent):
             signal_type="psychographic_analysis",
             value={
                 "primary_values": ["efficiency", "growth", "innovation"],
-                "buying_motivation": ["time_savings", "revenue_increase", "risk_reduction"],
+                "buying_motivation": [
+                    "time_savings",
+                    "revenue_increase",
+                    "risk_reduction",
+                ],
                 "pain_points": ["complexity", "integration", "support"],
                 "decision_criteria": ["roi", "ease_of_use", "vendor_stability"],
             },
             confidence=0.78,
-            metadata={"source": "survey_data", "sample_size": 2500}
+            metadata={"source": "survey_data", "sample_size": 2500},
         )
         signals.append(psycho_signal)
 
@@ -167,9 +200,16 @@ class CompetitorAnalysisSpecialist(SpecialistAgent):
     """SWOT, positioning, messaging, pricing intelligence"""
 
     def __init__(self):
-        super().__init__("spec.competitor", "Competitor Analysis Specialist", "specialist", "competitive_intelligence")
+        super().__init__(
+            "spec.competitor",
+            "Competitor Analysis Specialist",
+            "specialist",
+            "competitive_intelligence",
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
         """Competitive analysis and positioning"""
         signals = []
 
@@ -178,13 +218,21 @@ class CompetitorAnalysisSpecialist(SpecialistAgent):
             agent_id=self.agent_id,
             signal_type="swot_analysis",
             value={
-                "strengths": ["brand_recognition", "support_quality", "feature_richness"],
-                "weaknesses": ["pricing_premium", "learning_curve", "integration_limited"],
+                "strengths": [
+                    "brand_recognition",
+                    "support_quality",
+                    "feature_richness",
+                ],
+                "weaknesses": [
+                    "pricing_premium",
+                    "learning_curve",
+                    "integration_limited",
+                ],
                 "opportunities": ["emerging_markets", "ai_adoption", "consolidation"],
                 "threats": ["new_entrants", "price_wars", "open_source_alternatives"],
             },
             confidence=0.80,
-            metadata={"competitors_analyzed": 8, "updated": datetime.utcnow().isoformat()}
+            metadata={"competitors_analyzed": 8, "updated": utc_now().isoformat()},
         )
         signals.append(swot_signal)
 
@@ -200,7 +248,7 @@ class CompetitorAnalysisSpecialist(SpecialistAgent):
                 "price_elasticity": -0.65,
             },
             confidence=0.83,
-            metadata={"sample_size": 12, "data_freshness": "7d"}
+            metadata={"sample_size": 12, "data_freshness": "7d"},
         )
         signals.append(pricing_signal)
 
@@ -214,10 +262,14 @@ class CompetitorAnalysisSpecialist(SpecialistAgent):
                     "CompetitorA": ["speed", "reliability", "support"],
                     "CompetitorB": ["affordability", "ease_of_use", "integration"],
                 },
-                "market_differentiation_gaps": ["ai_powered", "predictive", "automation"],
+                "market_differentiation_gaps": [
+                    "ai_powered",
+                    "predictive",
+                    "automation",
+                ],
             },
             confidence=0.79,
-            metadata={"method": "messaging_audit"}
+            metadata={"method": "messaging_audit"},
         )
         signals.append(messaging_signal)
 
@@ -228,9 +280,16 @@ class ContentResearchSpecialist(SpecialistAgent):
     """Trending topics, SEO keywords, content gaps"""
 
     def __init__(self):
-        super().__init__("spec.content", "Content Research Specialist", "specialist", "content_strategy")
+        super().__init__(
+            "spec.content",
+            "Content Research Specialist",
+            "specialist",
+            "content_strategy",
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
         """Content research and SEO analysis"""
         signals = []
 
@@ -240,16 +299,28 @@ class ContentResearchSpecialist(SpecialistAgent):
             signal_type="trending_topics",
             value={
                 "emerging_topics": [
-                    {"topic": "AI sales automation", "growth_rate": 0.45, "volume": 12000},
-                    {"topic": "predictive analytics", "growth_rate": 0.38, "volume": 8500},
-                    {"topic": "revenue intelligence", "growth_rate": 0.52, "volume": 6200},
+                    {
+                        "topic": "AI sales automation",
+                        "growth_rate": 0.45,
+                        "volume": 12000,
+                    },
+                    {
+                        "topic": "predictive analytics",
+                        "growth_rate": 0.38,
+                        "volume": 8500,
+                    },
+                    {
+                        "topic": "revenue intelligence",
+                        "growth_rate": 0.52,
+                        "volume": 6200,
+                    },
                 ],
                 "declining_topics": [
                     {"topic": "CRM basics", "decline_rate": -0.15},
                 ],
             },
             confidence=0.84,
-            metadata={"source": "google_trends", "updated": "daily"}
+            metadata={"source": "google_trends", "updated": "daily"},
         )
         signals.append(trends_signal)
 
@@ -259,8 +330,18 @@ class ContentResearchSpecialist(SpecialistAgent):
             signal_type="seo_keywords",
             value={
                 "high_opportunity_keywords": [
-                    {"keyword": "sales automation AI", "volume": 2900, "difficulty": 45, "cpc": 3.20},
-                    {"keyword": "automated sales flow", "volume": 1200, "difficulty": 32, "cpc": 1.80},
+                    {
+                        "keyword": "sales automation AI",
+                        "volume": 2900,
+                        "difficulty": 45,
+                        "cpc": 3.20,
+                    },
+                    {
+                        "keyword": "automated sales flow",
+                        "volume": 1200,
+                        "difficulty": 32,
+                        "cpc": 1.80,
+                    },
                 ],
                 "long_tail_opportunities": [
                     "best AI sales automation 2026",
@@ -268,7 +349,7 @@ class ContentResearchSpecialist(SpecialistAgent):
                 ],
             },
             confidence=0.81,
-            metadata={"source": "semrush", "competitor_gap": "high"}
+            metadata={"source": "semrush", "competitor_gap": "high"},
         )
         signals.append(seo_signal)
 
@@ -289,7 +370,7 @@ class ContentResearchSpecialist(SpecialistAgent):
                 ],
             },
             confidence=0.76,
-            metadata={"source": "competitor_content_audit"}
+            metadata={"source": "competitor_content_audit"},
         )
         signals.append(gaps_signal)
 
@@ -300,9 +381,16 @@ class AdvertisingStrategySpecialist(SpecialistAgent):
     """Audience targeting, creative strategy, budget optimization"""
 
     def __init__(self):
-        super().__init__("spec.advertising", "Advertising Strategy Specialist", "specialist", "advertising")
+        super().__init__(
+            "spec.advertising",
+            "Advertising Strategy Specialist",
+            "specialist",
+            "advertising",
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
         """Advertising strategy and audience targeting"""
         signals = []
 
@@ -329,7 +417,7 @@ class AdvertisingStrategySpecialist(SpecialistAgent):
                 ],
             },
             confidence=0.82,
-            metadata={"segments_analyzed": 6}
+            metadata={"segments_analyzed": 6},
         )
         signals.append(audience_signal)
 
@@ -343,10 +431,15 @@ class AdvertisingStrategySpecialist(SpecialistAgent):
                     {"angle": "revenue_increase", "ctr": 0.038, "cpc": 0.92},
                 ],
                 "messaging_framework": "AIDA",
-                "recommended_channels": ["LinkedIn", "Google Ads", "Facebook", "YouTube"],
+                "recommended_channels": [
+                    "LinkedIn",
+                    "Google Ads",
+                    "Facebook",
+                    "YouTube",
+                ],
             },
             confidence=0.80,
-            metadata={"test_sample": 45000}
+            metadata={"test_sample": 45000},
         )
         signals.append(creative_signal)
 
@@ -365,7 +458,7 @@ class AdvertisingStrategySpecialist(SpecialistAgent):
                 "estimated_monthly_leads": 1200,
             },
             confidence=0.79,
-            metadata={"method": "historical_performance"}
+            metadata={"method": "historical_performance"},
         )
         signals.append(budget_signal)
 
@@ -376,9 +469,13 @@ class CustomerReachSpecialist(SpecialistAgent):
     """Channel selection, audience segmentation, customer journey"""
 
     def __init__(self):
-        super().__init__("spec.reach", "Customer Reach Specialist", "specialist", "distribution")
+        super().__init__(
+            "spec.reach", "Customer Reach Specialist", "specialist", "distribution"
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
         """Customer reach and distribution strategy"""
         signals = []
 
@@ -389,13 +486,21 @@ class CustomerReachSpecialist(SpecialistAgent):
             value={
                 "channels": {
                     "email": {"reach": 0.35, "engagement": 0.08, "conversion": 0.025},
-                    "linkedin": {"reach": 0.42, "engagement": 0.12, "conversion": 0.035},
+                    "linkedin": {
+                        "reach": 0.42,
+                        "engagement": 0.12,
+                        "conversion": 0.035,
+                    },
                     "webinar": {"reach": 0.15, "engagement": 0.45, "conversion": 0.10},
-                    "partnership": {"reach": 0.20, "engagement": 0.25, "conversion": 0.08},
+                    "partnership": {
+                        "reach": 0.20,
+                        "engagement": 0.25,
+                        "conversion": 0.08,
+                    },
                 },
             },
             confidence=0.83,
-            metadata={"sample_period": "6_months"}
+            metadata={"sample_period": "6_months"},
         )
         signals.append(channel_signal)
 
@@ -418,7 +523,7 @@ class CustomerReachSpecialist(SpecialistAgent):
                 },
             },
             confidence=0.81,
-            metadata={"journey_touchpoints": 12}
+            metadata={"journey_touchpoints": 12},
         )
         signals.append(segment_signal)
 
@@ -429,9 +534,13 @@ class PositioningSpecialist(SpecialistAgent):
     """Brand positioning, differentiation, value proposition"""
 
     def __init__(self):
-        super().__init__("spec.positioning", "Positioning Specialist", "specialist", "positioning")
+        super().__init__(
+            "spec.positioning", "Positioning Specialist", "specialist", "positioning"
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
         """Brand positioning and differentiation"""
         signals = []
 
@@ -450,7 +559,7 @@ class PositioningSpecialist(SpecialistAgent):
                 "positioning_gap": "AI intelligence + ethical selling",
             },
             confidence=0.85,
-            metadata={"methodology": "perceptual_mapping"}
+            metadata={"methodology": "perceptual_mapping"},
         )
         signals.append(positioning_signal)
 
@@ -469,7 +578,7 @@ class PositioningSpecialist(SpecialistAgent):
                 "proof_points": ["8,000+ successful sales", "450% average ROI"],
             },
             confidence=0.84,
-            metadata={"tested": True, "lift": "18%"}
+            metadata={"tested": True, "lift": "18%"},
         )
         signals.append(value_signal)
 
@@ -480,9 +589,13 @@ class InfluencerSpecialist(SpecialistAgent):
     """Influencer identification, collaboration strategies, partnership terms"""
 
     def __init__(self):
-        super().__init__("spec.influencer", "Influencer Specialist", "specialist", "partnerships")
+        super().__init__(
+            "spec.influencer", "Influencer Specialist", "specialist", "partnerships"
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
         """Influencer research and partnership strategies"""
         signals = []
 
@@ -492,15 +605,30 @@ class InfluencerSpecialist(SpecialistAgent):
             signal_type="influencer_database",
             value={
                 "tier_1_influencers": [
-                    {"name": "Neil Patel", "followers": 2_800_000, "engagement": 0.045, "focus": "marketing"},
-                    {"name": "Gary Vaynerchuk", "followers": 10_000_000, "engagement": 0.025, "focus": "sales"},
+                    {
+                        "name": "Neil Patel",
+                        "followers": 2_800_000,
+                        "engagement": 0.045,
+                        "focus": "marketing",
+                    },
+                    {
+                        "name": "Gary Vaynerchuk",
+                        "followers": 10_000_000,
+                        "engagement": 0.025,
+                        "focus": "sales",
+                    },
                 ],
                 "tier_2_influencers": [
-                    {"name": "SaaS Experts", "followers": 250_000, "engagement": 0.12, "focus": "b2b_sales"},
+                    {
+                        "name": "SaaS Experts",
+                        "followers": 250_000,
+                        "engagement": 0.12,
+                        "focus": "b2b_sales",
+                    },
                 ],
             },
             confidence=0.80,
-            metadata={"influencers_vetted": 150}
+            metadata={"influencers_vetted": 150},
         )
         signals.append(influencer_signal)
 
@@ -510,14 +638,23 @@ class InfluencerSpecialist(SpecialistAgent):
             signal_type="partnership_opportunities",
             value={
                 "ambassador_programs": [
-                    {"influencer": "name", "cost": 5000, "reach": 500_000, "expected_roi": 3.2},
+                    {
+                        "influencer": "name",
+                        "cost": 5000,
+                        "reach": 500_000,
+                        "expected_roi": 3.2,
+                    },
                 ],
                 "affiliate_programs": [
-                    {"partner": "reseller_network", "commission": 0.15, "deal_potential": 120},
+                    {
+                        "partner": "reseller_network",
+                        "commission": 0.15,
+                        "deal_potential": 120,
+                    },
                 ],
             },
             confidence=0.75,
-            metadata={"partnerships_active": 8}
+            metadata={"partnerships_active": 8},
         )
         signals.append(partnership_signal)
 
@@ -528,9 +665,16 @@ class ContentDistributionSpecialist(SpecialistAgent):
     """Multi-channel publishing, timing optimization, engagement tracking"""
 
     def __init__(self):
-        super().__init__("spec.distribution", "Content Distribution Specialist", "specialist", "publishing")
+        super().__init__(
+            "spec.distribution",
+            "Content Distribution Specialist",
+            "specialist",
+            "publishing",
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
         """Content distribution and timing optimization"""
         signals = []
 
@@ -555,7 +699,7 @@ class ContentDistributionSpecialist(SpecialistAgent):
                 },
             },
             confidence=0.82,
-            metadata={"data_source": "platform_analytics"}
+            metadata={"data_source": "platform_analytics"},
         )
         signals.append(timing_signal)
 
@@ -570,7 +714,7 @@ class ContentDistributionSpecialist(SpecialistAgent):
                 "amplification_multiplier": 4.2,  # Reach = owned × amplifier
             },
             confidence=0.81,
-            metadata={"distribution_partners": 18}
+            metadata={"distribution_partners": 18},
         )
         signals.append(distribution_signal)
 
@@ -581,9 +725,16 @@ class MarketIntelligenceSpecialist(SpecialistAgent):
     """Real-time market shifts, news monitoring, trend detection"""
 
     def __init__(self):
-        super().__init__("spec.intelligence", "Market Intelligence Specialist", "specialist", "market_intel")
+        super().__init__(
+            "spec.intelligence",
+            "Market Intelligence Specialist",
+            "specialist",
+            "market_intel",
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
         """Real-time market intelligence and trend detection"""
         signals = []
 
@@ -593,16 +744,32 @@ class MarketIntelligenceSpecialist(SpecialistAgent):
             signal_type="market_shifts",
             value={
                 "macro_trends": [
-                    {"trend": "AI adoption surge", "impact": "high", "timeline": "immediate"},
-                    {"trend": "sales automation", "impact": "high", "timeline": "6_months"},
-                    {"trend": "remote selling", "impact": "medium", "timeline": "ongoing"},
+                    {
+                        "trend": "AI adoption surge",
+                        "impact": "high",
+                        "timeline": "immediate",
+                    },
+                    {
+                        "trend": "sales automation",
+                        "impact": "high",
+                        "timeline": "6_months",
+                    },
+                    {
+                        "trend": "remote selling",
+                        "impact": "medium",
+                        "timeline": "ongoing",
+                    },
                 ],
                 "regulatory_changes": [
-                    {"change": "AI transparency requirements", "impact": "medium", "region": "EU"},
+                    {
+                        "change": "AI transparency requirements",
+                        "impact": "medium",
+                        "region": "EU",
+                    },
                 ],
             },
             confidence=0.88,
-            metadata={"sources": 42, "updated": "real_time"}
+            metadata={"sources": 42, "updated": "real_time"},
         )
         signals.append(market_signal)
 
@@ -612,13 +779,21 @@ class MarketIntelligenceSpecialist(SpecialistAgent):
             signal_type="market_opportunities",
             value={
                 "emerging_segments": [
-                    {"segment": "healthcare_sales", "tam": 2_500_000, "growth_rate": 0.35},
+                    {
+                        "segment": "healthcare_sales",
+                        "tam": 2_500_000,
+                        "growth_rate": 0.35,
+                    },
                     {"segment": "fintech_sales", "tam": 3_200_000, "growth_rate": 0.42},
                 ],
-                "white_space": ["predictive_analytics", "ethical_ai", "cultural_fit_optimization"],
+                "white_space": [
+                    "predictive_analytics",
+                    "ethical_ai",
+                    "cultural_fit_optimization",
+                ],
             },
             confidence=0.79,
-            metadata={"opportunity_horizon": "12_months"}
+            metadata={"opportunity_horizon": "12_months"},
         )
         signals.append(opportunity_signal)
 
@@ -629,6 +804,7 @@ class MarketIntelligenceSpecialist(SpecialistAgent):
 # 52+ RESEARCH AGENTS (Specialized Intelligence)
 # ============================================================================
 
+
 # MARKET RESEARCH AGENTS (8)
 class DemographicAgent(ResearchAgent):
     """Demographic analysis and segmentation"""
@@ -636,28 +812,41 @@ class DemographicAgent(ResearchAgent):
     def __init__(self):
         super().__init__("agent.demographics", "Demographic Agent", "market_research")
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="demographic_data",
-            value={"age": "25-54", "income": "60k+", "education": "college+"},
-            confidence=0.82
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="demographic_data",
+                value={"age": "25-54", "income": "60k+", "education": "college+"},
+                confidence=0.82,
+            )
+        ]
 
 
 class PsychographicAgent(ResearchAgent):
     """Psychographic profiling and behavioral analysis"""
 
     def __init__(self):
-        super().__init__("agent.psychographics", "Psychographic Agent", "market_research")
+        super().__init__(
+            "agent.psychographics", "Psychographic Agent", "market_research"
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="psychographic_data",
-            value={"values": ["efficiency", "growth"], "motivations": ["roi", "time_saving"]},
-            confidence=0.78
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="psychographic_data",
+                value={
+                    "values": ["efficiency", "growth"],
+                    "motivations": ["roi", "time_saving"],
+                },
+                confidence=0.78,
+            )
+        ]
 
 
 class GeographicAgent(ResearchAgent):
@@ -666,28 +855,41 @@ class GeographicAgent(ResearchAgent):
     def __init__(self):
         super().__init__("agent.geographic", "Geographic Agent", "market_research")
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="geographic_data",
-            value={"regions": ["LATAM", "NA", "EU"], "growth_rates": [0.35, 0.22, 0.18]},
-            confidence=0.85
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="geographic_data",
+                value={
+                    "regions": ["LATAM", "NA", "EU"],
+                    "growth_rates": [0.35, 0.22, 0.18],
+                },
+                confidence=0.85,
+            )
+        ]
 
 
 class BehavioralSegmentationAgent(ResearchAgent):
     """Behavioral segmentation and purchase patterns"""
 
     def __init__(self):
-        super().__init__("agent.behavioral", "Behavioral Segmentation Agent", "market_research")
+        super().__init__(
+            "agent.behavioral", "Behavioral Segmentation Agent", "market_research"
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="behavioral_patterns",
-            value={"segments": ["early_adopters", "mainstream", "laggards"]},
-            confidence=0.80
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="behavioral_patterns",
+                value={"segments": ["early_adopters", "mainstream", "laggards"]},
+                confidence=0.80,
+            )
+        ]
 
 
 class BuyingJourneyAgent(ResearchAgent):
@@ -696,13 +898,20 @@ class BuyingJourneyAgent(ResearchAgent):
     def __init__(self):
         super().__init__("agent.journey", "Buying Journey Agent", "market_research")
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="buyer_journey",
-            value={"stages": ["awareness", "consideration", "decision"], "touchpoints": 12},
-            confidence=0.83
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="buyer_journey",
+                value={
+                    "stages": ["awareness", "consideration", "decision"],
+                    "touchpoints": 12,
+                },
+                confidence=0.83,
+            )
+        ]
 
 
 class MarketSizeAgent(ResearchAgent):
@@ -711,43 +920,59 @@ class MarketSizeAgent(ResearchAgent):
     def __init__(self):
         super().__init__("agent.market_size", "Market Size Agent", "market_research")
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="market_sizing",
-            value={"tam": 10_000_000, "sam": 1_000_000, "som": 100_000},
-            confidence=0.84
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="market_sizing",
+                value={"tam": 10_000_000, "sam": 1_000_000, "som": 100_000},
+                confidence=0.84,
+            )
+        ]
 
 
 class IndustryBenchmarkAgent(ResearchAgent):
     """Industry benchmarks and performance metrics"""
 
     def __init__(self):
-        super().__init__("agent.benchmarks", "Industry Benchmark Agent", "market_research")
+        super().__init__(
+            "agent.benchmarks", "Industry Benchmark Agent", "market_research"
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="industry_benchmarks",
-            value={"avg_deal_size": 15000, "sales_cycle": 90, "close_rate": 0.22},
-            confidence=0.81
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="industry_benchmarks",
+                value={"avg_deal_size": 15000, "sales_cycle": 90, "close_rate": 0.22},
+                confidence=0.81,
+            )
+        ]
 
 
 class CustomerInsightAgent(ResearchAgent):
     """Customer satisfaction, NPS, and satisfaction research"""
 
     def __init__(self):
-        super().__init__("agent.customer_insights", "Customer Insight Agent", "market_research")
+        super().__init__(
+            "agent.customer_insights", "Customer Insight Agent", "market_research"
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="customer_satisfaction",
-            value={"nps": 65, "satisfaction": 4.5, "loyalty": 0.78},
-            confidence=0.79
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="customer_satisfaction",
+                value={"nps": 65, "satisfaction": 4.5, "loyalty": 0.78},
+                confidence=0.79,
+            )
+        ]
 
 
 # COMPETITOR INTELLIGENCE AGENTS (12)
@@ -755,150 +980,264 @@ class CompetitorPricingAgent(ResearchAgent):
     """Real-time competitor pricing intelligence"""
 
     def __init__(self):
-        super().__init__("agent.competitor_pricing", "Competitor Pricing Agent", "competitive_intelligence")
+        super().__init__(
+            "agent.competitor_pricing",
+            "Competitor Pricing Agent",
+            "competitive_intelligence",
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="competitor_pricing",
-            value={"market_avg": 299, "price_range": (99, 999), "elasticity": -0.65},
-            confidence=0.83
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="competitor_pricing",
+                value={
+                    "market_avg": 299,
+                    "price_range": (99, 999),
+                    "elasticity": -0.65,
+                },
+                confidence=0.83,
+            )
+        ]
 
 
 class CompetitorProductAgent(ResearchAgent):
     """Competitor product features and roadmap tracking"""
 
     def __init__(self):
-        super().__init__("agent.competitor_product", "Competitor Product Agent", "competitive_intelligence")
+        super().__init__(
+            "agent.competitor_product",
+            "Competitor Product Agent",
+            "competitive_intelligence",
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="competitor_features",
-            value={"top_features": ["automation", "ai", "integration"], "gaps": ["predictive", "ethics"]},
-            confidence=0.80
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="competitor_features",
+                value={
+                    "top_features": ["automation", "ai", "integration"],
+                    "gaps": ["predictive", "ethics"],
+                },
+                confidence=0.80,
+            )
+        ]
 
 
 class CompetitorMessagingAgent(ResearchAgent):
     """Competitor messaging and positioning analysis"""
 
     def __init__(self):
-        super().__init__("agent.competitor_messaging", "Competitor Messaging Agent", "competitive_intelligence")
+        super().__init__(
+            "agent.competitor_messaging",
+            "Competitor Messaging Agent",
+            "competitive_intelligence",
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="competitor_messaging",
-            value={"top_messages": ["speed", "reliability"], "differentiation_gaps": ["ai", "ethics"]},
-            confidence=0.79
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="competitor_messaging",
+                value={
+                    "top_messages": ["speed", "reliability"],
+                    "differentiation_gaps": ["ai", "ethics"],
+                },
+                confidence=0.79,
+            )
+        ]
 
 
 class CompetitorSalesAgent(ResearchAgent):
     """Competitor sales strategies and tactics"""
 
     def __init__(self):
-        super().__init__("agent.competitor_sales", "Competitor Sales Agent", "competitive_intelligence")
+        super().__init__(
+            "agent.competitor_sales",
+            "Competitor Sales Agent",
+            "competitive_intelligence",
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="competitor_sales_tactics",
-            value={"tactics": ["free_trial", "freemium", "enterprise"], "avg_sales_cycle": 120},
-            confidence=0.77
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="competitor_sales_tactics",
+                value={
+                    "tactics": ["free_trial", "freemium", "enterprise"],
+                    "avg_sales_cycle": 120,
+                },
+                confidence=0.77,
+            )
+        ]
 
 
 class CompetitorMarketingAgent(ResearchAgent):
     """Competitor marketing channels and campaigns"""
 
     def __init__(self):
-        super().__init__("agent.competitor_marketing", "Competitor Marketing Agent", "competitive_intelligence")
+        super().__init__(
+            "agent.competitor_marketing",
+            "Competitor Marketing Agent",
+            "competitive_intelligence",
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="competitor_marketing",
-            value={"channels": ["linkedin", "google", "content"], "spend_estimate": 500_000},
-            confidence=0.75
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="competitor_marketing",
+                value={
+                    "channels": ["linkedin", "google", "content"],
+                    "spend_estimate": 500_000,
+                },
+                confidence=0.75,
+            )
+        ]
 
 
 class CompetitorStrengthsAgent(ResearchAgent):
     """Competitor strengths and competitive advantages"""
 
     def __init__(self):
-        super().__init__("agent.competitor_strengths", "Competitor Strengths Agent", "competitive_intelligence")
+        super().__init__(
+            "agent.competitor_strengths",
+            "Competitor Strengths Agent",
+            "competitive_intelligence",
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="competitor_strengths",
-            value={"strengths": ["brand", "support", "features"], "moat": "switching_cost"},
-            confidence=0.82
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="competitor_strengths",
+                value={
+                    "strengths": ["brand", "support", "features"],
+                    "moat": "switching_cost",
+                },
+                confidence=0.82,
+            )
+        ]
 
 
 class CompetitorWeaknessesAgent(ResearchAgent):
     """Competitor weaknesses and vulnerabilities"""
 
     def __init__(self):
-        super().__init__("agent.competitor_weaknesses", "Competitor Weaknesses Agent", "competitive_intelligence")
+        super().__init__(
+            "agent.competitor_weaknesses",
+            "Competitor Weaknesses Agent",
+            "competitive_intelligence",
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="competitor_weaknesses",
-            value={"weaknesses": ["pricing", "ux", "support"], "vulnerability": "high"},
-            confidence=0.80
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="competitor_weaknesses",
+                value={
+                    "weaknesses": ["pricing", "ux", "support"],
+                    "vulnerability": "high",
+                },
+                confidence=0.80,
+            )
+        ]
 
 
 class CompetitorGrowthAgent(ResearchAgent):
     """Competitor growth rates and market share trends"""
 
     def __init__(self):
-        super().__init__("agent.competitor_growth", "Competitor Growth Agent", "competitive_intelligence")
+        super().__init__(
+            "agent.competitor_growth",
+            "Competitor Growth Agent",
+            "competitive_intelligence",
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="competitor_growth",
-            value={"growth_rate": 0.35, "market_share": 0.18, "momentum": "accelerating"},
-            confidence=0.78
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="competitor_growth",
+                value={
+                    "growth_rate": 0.35,
+                    "market_share": 0.18,
+                    "momentum": "accelerating",
+                },
+                confidence=0.78,
+            )
+        ]
 
 
 class CompetitorPartnershipAgent(ResearchAgent):
     """Competitor partnerships and integrations"""
 
     def __init__(self):
-        super().__init__("agent.competitor_partnerships", "Competitor Partnership Agent", "competitive_intelligence")
+        super().__init__(
+            "agent.competitor_partnerships",
+            "Competitor Partnership Agent",
+            "competitive_intelligence",
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="competitor_partnerships",
-            value={"partners": 15, "integrations": 42, "ecosystem_strength": "strong"},
-            confidence=0.81
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="competitor_partnerships",
+                value={
+                    "partners": 15,
+                    "integrations": 42,
+                    "ecosystem_strength": "strong",
+                },
+                confidence=0.81,
+            )
+        ]
 
 
 class CompetitorSentimentAgent(ResearchAgent):
     """Competitor sentiment analysis and brand perception"""
 
     def __init__(self):
-        super().__init__("agent.competitor_sentiment", "Competitor Sentiment Agent", "competitive_intelligence")
+        super().__init__(
+            "agent.competitor_sentiment",
+            "Competitor Sentiment Agent",
+            "competitive_intelligence",
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="competitor_sentiment",
-            value={"sentiment": 0.72, "satisfaction": 4.2, "recommendation_rate": 0.68},
-            confidence=0.76
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="competitor_sentiment",
+                value={
+                    "sentiment": 0.72,
+                    "satisfaction": 4.2,
+                    "recommendation_rate": 0.68,
+                },
+                confidence=0.76,
+            )
+        ]
 
 
 # CONTENT & SEO AGENTS (8)
@@ -908,28 +1247,44 @@ class SEOKeywordAgent(ResearchAgent):
     def __init__(self):
         super().__init__("agent.seo_keywords", "SEO Keyword Agent", "content_strategy")
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="seo_keywords",
-            value={"high_opportunity": ["sales_automation", "ai_selling"], "volume": 2900},
-            confidence=0.84
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="seo_keywords",
+                value={
+                    "high_opportunity": ["sales_automation", "ai_selling"],
+                    "volume": 2900,
+                },
+                confidence=0.84,
+            )
+        ]
 
 
 class TrendingTopicsAgent(ResearchAgent):
     """Identify trending topics and emerging discussions"""
 
     def __init__(self):
-        super().__init__("agent.trending_topics", "Trending Topics Agent", "content_strategy")
+        super().__init__(
+            "agent.trending_topics", "Trending Topics Agent", "content_strategy"
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="trending_topics",
-            value={"topics": ["ai_sales", "predictive", "automation"], "growth": 0.45},
-            confidence=0.86
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="trending_topics",
+                value={
+                    "topics": ["ai_sales", "predictive", "automation"],
+                    "growth": 0.45,
+                },
+                confidence=0.86,
+            )
+        ]
 
 
 class ContentGapAgent(ResearchAgent):
@@ -938,73 +1293,109 @@ class ContentGapAgent(ResearchAgent):
     def __init__(self):
         super().__init__("agent.content_gaps", "Content Gap Agent", "content_strategy")
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="content_gaps",
-            value={"gaps": ["roi_frameworks", "playbooks", "case_studies"]},
-            confidence=0.81
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="content_gaps",
+                value={"gaps": ["roi_frameworks", "playbooks", "case_studies"]},
+                confidence=0.81,
+            )
+        ]
 
 
 class ContentPerformanceAgent(ResearchAgent):
     """Analyze content performance and engagement"""
 
     def __init__(self):
-        super().__init__("agent.content_performance", "Content Performance Agent", "content_strategy")
+        super().__init__(
+            "agent.content_performance", "Content Performance Agent", "content_strategy"
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="content_performance",
-            value={"avg_engagement": 0.12, "top_formats": ["video", "webinar"]},
-            confidence=0.83
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="content_performance",
+                value={"avg_engagement": 0.12, "top_formats": ["video", "webinar"]},
+                confidence=0.83,
+            )
+        ]
 
 
 class SearchIntentAgent(ResearchAgent):
     """Analyze search intent and user motivations"""
 
     def __init__(self):
-        super().__init__("agent.search_intent", "Search Intent Agent", "content_strategy")
+        super().__init__(
+            "agent.search_intent", "Search Intent Agent", "content_strategy"
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="search_intent",
-            value={"intent": ["informational", "commercial", "navigational"], "ratio": [0.4, 0.35, 0.25]},
-            confidence=0.82
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="search_intent",
+                value={
+                    "intent": ["informational", "commercial", "navigational"],
+                    "ratio": [0.4, 0.35, 0.25],
+                },
+                confidence=0.82,
+            )
+        ]
 
 
 class BacklinkOpportunityAgent(ResearchAgent):
     """Identify backlink opportunities and link targets"""
 
     def __init__(self):
-        super().__init__("agent.backlink_opportunities", "Backlink Opportunity Agent", "content_strategy")
+        super().__init__(
+            "agent.backlink_opportunities",
+            "Backlink Opportunity Agent",
+            "content_strategy",
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="backlink_opportunities",
-            value={"opportunities": 45, "authority_potential": 0.8},
-            confidence=0.78
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="backlink_opportunities",
+                value={"opportunities": 45, "authority_potential": 0.8},
+                confidence=0.78,
+            )
+        ]
 
 
 class ContentFormatAgent(ResearchAgent):
     """Determine optimal content formats for audience"""
 
     def __init__(self):
-        super().__init__("agent.content_format", "Content Format Agent", "content_strategy")
+        super().__init__(
+            "agent.content_format", "Content Format Agent", "content_strategy"
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="content_formats",
-            value={"top_formats": ["video", "case_study", "webinar"], "engagement_lift": 0.45},
-            confidence=0.85
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="content_formats",
+                value={
+                    "top_formats": ["video", "case_study", "webinar"],
+                    "engagement_lift": 0.45,
+                },
+                confidence=0.85,
+            )
+        ]
 
 
 # ADVERTISING & CAMPAIGN AGENTS (10)
@@ -1012,30 +1403,45 @@ class AudienceTargetingAgent(ResearchAgent):
     """Audience segmentation and targeting strategies"""
 
     def __init__(self):
-        super().__init__("agent.audience_targeting", "Audience Targeting Agent", "advertising")
+        super().__init__(
+            "agent.audience_targeting", "Audience Targeting Agent", "advertising"
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="audience_targeting",
-            value={"segments": 6, "total_addressable": 630_000},
-            confidence=0.84
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="audience_targeting",
+                value={"segments": 6, "total_addressable": 630_000},
+                confidence=0.84,
+            )
+        ]
 
 
 class CreativeStrategyAgent(ResearchAgent):
     """Creative messaging and design strategies"""
 
     def __init__(self):
-        super().__init__("agent.creative_strategy", "Creative Strategy Agent", "advertising")
+        super().__init__(
+            "agent.creative_strategy", "Creative Strategy Agent", "advertising"
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="creative_strategy",
-            value={"frameworks": ["AIDA", "PAS"], "tested_angles": ["ROI", "time_saving"]},
-            confidence=0.82
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="creative_strategy",
+                value={
+                    "frameworks": ["AIDA", "PAS"],
+                    "tested_angles": ["ROI", "time_saving"],
+                },
+                confidence=0.82,
+            )
+        ]
 
 
 class ChannelMixAgent(ResearchAgent):
@@ -1044,43 +1450,59 @@ class ChannelMixAgent(ResearchAgent):
     def __init__(self):
         super().__init__("agent.channel_mix", "Channel Mix Agent", "advertising")
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="channel_mix",
-            value={"linkedin": 0.40, "google": 0.30, "youtube": 0.20},
-            confidence=0.83
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="channel_mix",
+                value={"linkedin": 0.40, "google": 0.30, "youtube": 0.20},
+                confidence=0.83,
+            )
+        ]
 
 
 class BudgetOptimizationAgent(ResearchAgent):
     """Budget allocation and ROI optimization"""
 
     def __init__(self):
-        super().__init__("agent.budget_optimization", "Budget Optimization Agent", "advertising")
+        super().__init__(
+            "agent.budget_optimization", "Budget Optimization Agent", "advertising"
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="budget_optimization",
-            value={"expected_roas": 4.5, "monthly_leads": 1200},
-            confidence=0.81
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="budget_optimization",
+                value={"expected_roas": 4.5, "monthly_leads": 1200},
+                confidence=0.81,
+            )
+        ]
 
 
 class CampaignPerformanceAgent(ResearchAgent):
     """Track and analyze campaign performance"""
 
     def __init__(self):
-        super().__init__("agent.campaign_performance", "Campaign Performance Agent", "advertising")
+        super().__init__(
+            "agent.campaign_performance", "Campaign Performance Agent", "advertising"
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="campaign_performance",
-            value={"ctr": 0.042, "cpc": 0.89, "conversion": 0.032},
-            confidence=0.85
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="campaign_performance",
+                value={"ctr": 0.042, "cpc": 0.89, "conversion": 0.032},
+                confidence=0.85,
+            )
+        ]
 
 
 class ABTestingAgent(ResearchAgent):
@@ -1089,13 +1511,21 @@ class ABTestingAgent(ResearchAgent):
     def __init__(self):
         super().__init__("agent.ab_testing", "A/B Testing Agent", "advertising")
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="ab_testing",
-            value={"sample_size": 45000, "test_duration": 14, "winner": "variant_b"},
-            confidence=0.88
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="ab_testing",
+                value={
+                    "sample_size": 45000,
+                    "test_duration": 14,
+                    "winner": "variant_b",
+                },
+                confidence=0.88,
+            )
+        ]
 
 
 class BidStrategyAgent(ResearchAgent):
@@ -1104,28 +1534,38 @@ class BidStrategyAgent(ResearchAgent):
     def __init__(self):
         super().__init__("agent.bid_strategy", "Bid Strategy Agent", "advertising")
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="bid_strategy",
-            value={"strategy": "target_roas", "target_roas": 4.0},
-            confidence=0.79
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="bid_strategy",
+                value={"strategy": "target_roas", "target_roas": 4.0},
+                confidence=0.79,
+            )
+        ]
 
 
 class LandingPageOptimizationAgent(ResearchAgent):
     """Landing page optimization and conversion strategies"""
 
     def __init__(self):
-        super().__init__("agent.landing_page_optimization", "Landing Page Agent", "advertising")
+        super().__init__(
+            "agent.landing_page_optimization", "Landing Page Agent", "advertising"
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="landing_page_optimization",
-            value={"conversion_rate": 0.045, "improvement_potential": 0.20},
-            confidence=0.82
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="landing_page_optimization",
+                value={"conversion_rate": 0.045, "improvement_potential": 0.20},
+                confidence=0.82,
+            )
+        ]
 
 
 class RetargetingStrategyAgent(ResearchAgent):
@@ -1134,13 +1574,17 @@ class RetargetingStrategyAgent(ResearchAgent):
     def __init__(self):
         super().__init__("agent.retargeting", "Retargeting Agent", "advertising")
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="retargeting_strategy",
-            value={"audiences": 8, "roi_multiplier": 2.5},
-            confidence=0.80
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="retargeting_strategy",
+                value={"audiences": 8, "roi_multiplier": 2.5},
+                confidence=0.80,
+            )
+        ]
 
 
 # SALES & CHANNEL AGENTS (8)
@@ -1150,88 +1594,127 @@ class SalesChannelAgent(ResearchAgent):
     def __init__(self):
         super().__init__("agent.sales_channels", "Sales Channel Agent", "distribution")
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="sales_channels",
-            value={"channels": ["direct", "partner", "marketplace"], "conversion": [0.10, 0.08, 0.05]},
-            confidence=0.83
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="sales_channels",
+                value={
+                    "channels": ["direct", "partner", "marketplace"],
+                    "conversion": [0.10, 0.08, 0.05],
+                },
+                confidence=0.83,
+            )
+        ]
 
 
 class CustomerJourneyAgent(ResearchAgent):
     """Customer journey mapping and optimization"""
 
     def __init__(self):
-        super().__init__("agent.customer_journey", "Customer Journey Agent", "distribution")
+        super().__init__(
+            "agent.customer_journey", "Customer Journey Agent", "distribution"
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="customer_journey",
-            value={"stages": 5, "touchpoints": 12},
-            confidence=0.84
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="customer_journey",
+                value={"stages": 5, "touchpoints": 12},
+                confidence=0.84,
+            )
+        ]
 
 
 class TouchpointOptimizationAgent(ResearchAgent):
     """Optimize customer touchpoints and interactions"""
 
     def __init__(self):
-        super().__init__("agent.touchpoint_optimization", "Touchpoint Optimization Agent", "distribution")
+        super().__init__(
+            "agent.touchpoint_optimization",
+            "Touchpoint Optimization Agent",
+            "distribution",
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="touchpoint_optimization",
-            value={"improvement_opportunities": 15, "uplift_potential": 0.25},
-            confidence=0.81
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="touchpoint_optimization",
+                value={"improvement_opportunities": 15, "uplift_potential": 0.25},
+                confidence=0.81,
+            )
+        ]
 
 
 class ConversionRateAgent(ResearchAgent):
     """Conversion rate optimization across funnel"""
 
     def __init__(self):
-        super().__init__("agent.conversion_rate", "Conversion Rate Agent", "distribution")
+        super().__init__(
+            "agent.conversion_rate", "Conversion Rate Agent", "distribution"
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="conversion_rate",
-            value={"top_of_funnel": 0.05, "middle": 0.15, "bottom": 0.30},
-            confidence=0.85
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="conversion_rate",
+                value={"top_of_funnel": 0.05, "middle": 0.15, "bottom": 0.30},
+                confidence=0.85,
+            )
+        ]
 
 
 class FunnelAnalysisAgent(ResearchAgent):
     """Analyze and optimize sales funnel"""
 
     def __init__(self):
-        super().__init__("agent.funnel_analysis", "Funnel Analysis Agent", "distribution")
+        super().__init__(
+            "agent.funnel_analysis", "Funnel Analysis Agent", "distribution"
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="funnel_analysis",
-            value={"bottleneck": "middle", "improvement_target": "0.20"},
-            confidence=0.83
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="funnel_analysis",
+                value={"bottleneck": "middle", "improvement_target": "0.20"},
+                confidence=0.83,
+            )
+        ]
 
 
 class PartnerChannelAgent(ResearchAgent):
     """Partner and reseller channel strategy"""
 
     def __init__(self):
-        super().__init__("agent.partner_channel", "Partner Channel Agent", "distribution")
+        super().__init__(
+            "agent.partner_channel", "Partner Channel Agent", "distribution"
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="partner_channel",
-            value={"partners": 18, "revenue_contribution": 0.35},
-            confidence=0.79
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="partner_channel",
+                value={"partners": 18, "revenue_contribution": 0.35},
+                confidence=0.79,
+            )
+        ]
 
 
 class AffiliateAgent(ResearchAgent):
@@ -1240,13 +1723,17 @@ class AffiliateAgent(ResearchAgent):
     def __init__(self):
         super().__init__("agent.affiliate", "Affiliate Agent", "distribution")
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="affiliate_network",
-            value={"affiliates": 250, "average_commission": 0.15},
-            confidence=0.78
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="affiliate_network",
+                value={"affiliates": 250, "average_commission": 0.15},
+                confidence=0.78,
+            )
+        ]
 
 
 # TREND & MARKET INTEL AGENTS (6)
@@ -1254,30 +1741,45 @@ class TrendDetectionAgent(ResearchAgent):
     """Real-time trend detection and monitoring"""
 
     def __init__(self):
-        super().__init__("agent.trend_detection", "Trend Detection Agent", "market_intel")
+        super().__init__(
+            "agent.trend_detection", "Trend Detection Agent", "market_intel"
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="trend_detection",
-            value={"emerging_trends": ["ai_sales", "predictive"], "adoption_rate": 0.40},
-            confidence=0.87
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="trend_detection",
+                value={
+                    "emerging_trends": ["ai_sales", "predictive"],
+                    "adoption_rate": 0.40,
+                },
+                confidence=0.87,
+            )
+        ]
 
 
 class NewsMonitoringAgent(ResearchAgent):
     """Monitor news and press for market signals"""
 
     def __init__(self):
-        super().__init__("agent.news_monitoring", "News Monitoring Agent", "market_intel")
+        super().__init__(
+            "agent.news_monitoring", "News Monitoring Agent", "market_intel"
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="news_monitoring",
-            value={"sources": 150, "daily_articles": 12},
-            confidence=0.84
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="news_monitoring",
+                value={"sources": 150, "daily_articles": 12},
+                confidence=0.84,
+            )
+        ]
 
 
 class RegulatoryAgent(ResearchAgent):
@@ -1286,13 +1788,17 @@ class RegulatoryAgent(ResearchAgent):
     def __init__(self):
         super().__init__("agent.regulatory", "Regulatory Agent", "market_intel")
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="regulatory_changes",
-            value={"regions": ["EU", "US"], "changes": ["ai_transparency"]},
-            confidence=0.88
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="regulatory_changes",
+                value={"regions": ["EU", "US"], "changes": ["ai_transparency"]},
+                confidence=0.88,
+            )
+        ]
 
 
 class MacroeconomicAgent(ResearchAgent):
@@ -1301,43 +1807,66 @@ class MacroeconomicAgent(ResearchAgent):
     def __init__(self):
         super().__init__("agent.macroeconomic", "Macroeconomic Agent", "market_intel")
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="macroeconomic_analysis",
-            value={"gdp_growth": 0.025, "unemployment": 0.042, "business_confidence": 0.68},
-            confidence=0.85
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="macroeconomic_analysis",
+                value={
+                    "gdp_growth": 0.025,
+                    "unemployment": 0.042,
+                    "business_confidence": 0.68,
+                },
+                confidence=0.85,
+            )
+        ]
 
 
 class OpportunityScouttingAgent(ResearchAgent):
     """Identify emerging market opportunities"""
 
     def __init__(self):
-        super().__init__("agent.opportunity_scouting", "Opportunity Scouting Agent", "market_intel")
+        super().__init__(
+            "agent.opportunity_scouting", "Opportunity Scouting Agent", "market_intel"
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="market_opportunities",
-            value={"opportunities": 12, "tam_total": 5_000_000},
-            confidence=0.80
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="market_opportunities",
+                value={"opportunities": 12, "tam_total": 5_000_000},
+                confidence=0.80,
+            )
+        ]
 
 
 class ThreatDetectionAgent(ResearchAgent):
     """Identify market threats and risks"""
 
     def __init__(self):
-        super().__init__("agent.threat_detection", "Threat Detection Agent", "market_intel")
+        super().__init__(
+            "agent.threat_detection", "Threat Detection Agent", "market_intel"
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="threat_detection",
-            value={"threats": ["price_wars", "new_entrants"], "risk_level": "medium"},
-            confidence=0.82
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="threat_detection",
+                value={
+                    "threats": ["price_wars", "new_entrants"],
+                    "risk_level": "medium",
+                },
+                confidence=0.82,
+            )
+        ]
 
 
 # POSITIONING & BRAND AGENTS (4)
@@ -1347,28 +1876,44 @@ class PositioningAgent(ResearchAgent):
     def __init__(self):
         super().__init__("agent.positioning", "Positioning Agent", "positioning")
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="positioning",
-            value={"position": "AI-powered sales automation", "differentiation": "ethical_ai"},
-            confidence=0.86
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="positioning",
+                value={
+                    "position": "AI-powered sales automation",
+                    "differentiation": "ethical_ai",
+                },
+                confidence=0.86,
+            )
+        ]
 
 
 class ValuePropositionAgent(ResearchAgent):
     """Value proposition analysis and messaging"""
 
     def __init__(self):
-        super().__init__("agent.value_proposition", "Value Proposition Agent", "positioning")
+        super().__init__(
+            "agent.value_proposition", "Value Proposition Agent", "positioning"
+        )
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="value_proposition",
-            value={"headline": "Close 40% more deals", "benefits": ["speed", "accuracy", "trust"]},
-            confidence=0.85
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="value_proposition",
+                value={
+                    "headline": "Close 40% more deals",
+                    "benefits": ["speed", "accuracy", "trust"],
+                },
+                confidence=0.85,
+            )
+        ]
 
 
 class BrandHealthAgent(ResearchAgent):
@@ -1377,13 +1922,17 @@ class BrandHealthAgent(ResearchAgent):
     def __init__(self):
         super().__init__("agent.brand_health", "Brand Health Agent", "positioning")
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="brand_health",
-            value={"awareness": 0.42, "sentiment": 0.78, "nps": 65},
-            confidence=0.83
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="brand_health",
+                value={"awareness": 0.42, "sentiment": 0.78, "nps": 65},
+                confidence=0.83,
+            )
+        ]
 
 
 class ReputationAgent(ResearchAgent):
@@ -1392,18 +1941,23 @@ class ReputationAgent(ResearchAgent):
     def __init__(self):
         super().__init__("agent.reputation", "Reputation Agent", "positioning")
 
-    async def research(self, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
-        return [ResearchSignal(
-            agent_id=self.agent_id,
-            signal_type="reputation",
-            value={"mentions": 1250, "positive": 0.85, "negative": 0.08},
-            confidence=0.82
-        )]
+    async def research(
+        self, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
+        return [
+            ResearchSignal(
+                agent_id=self.agent_id,
+                signal_type="reputation",
+                value={"mentions": 1250, "positive": 0.85, "negative": 0.08},
+                confidence=0.82,
+            )
+        ]
 
 
 # ============================================================================
 # RESEARCH BRAIN ORCHESTRATOR
 # ============================================================================
+
 
 class ResearchBrain:
     """Unified research intelligence system"""
@@ -1414,7 +1968,7 @@ class ResearchBrain:
         self.signals_buffer = []
         self.insights_cache = {}
 
-    def _initialize_specialists(self) -> Dict[str, SpecialistAgent]:
+    def _initialize_specialists(self) -> dict[str, SpecialistAgent]:
         """Initialize 10 specialist agents"""
         specialists = {}
         for specialist_class in [
@@ -1433,66 +1987,106 @@ class ResearchBrain:
 
         return specialists
 
-    def _initialize_agents(self) -> Dict[str, ResearchAgent]:
+    def _initialize_agents(self) -> dict[str, ResearchAgent]:
         """Initialize 52+ research agents"""
         agents = {}
 
         # Market Research (8)
         market_agents = [
-            DemographicAgent(), PsychographicAgent(), GeographicAgent(),
-            BehavioralSegmentationAgent(), BuyingJourneyAgent(), MarketSizeAgent(),
-            IndustryBenchmarkAgent(), CustomerInsightAgent(),
+            DemographicAgent(),
+            PsychographicAgent(),
+            GeographicAgent(),
+            BehavioralSegmentationAgent(),
+            BuyingJourneyAgent(),
+            MarketSizeAgent(),
+            IndustryBenchmarkAgent(),
+            CustomerInsightAgent(),
         ]
 
         # Competitor Intelligence (12)
         competitor_agents = [
-            CompetitorPricingAgent(), CompetitorProductAgent(), CompetitorMessagingAgent(),
-            CompetitorSalesAgent(), CompetitorMarketingAgent(), CompetitorStrengthsAgent(),
-            CompetitorWeaknessesAgent(), CompetitorGrowthAgent(), CompetitorPartnershipAgent(),
+            CompetitorPricingAgent(),
+            CompetitorProductAgent(),
+            CompetitorMessagingAgent(),
+            CompetitorSalesAgent(),
+            CompetitorMarketingAgent(),
+            CompetitorStrengthsAgent(),
+            CompetitorWeaknessesAgent(),
+            CompetitorGrowthAgent(),
+            CompetitorPartnershipAgent(),
             CompetitorSentimentAgent(),
         ]
 
         # Content & SEO (8)
         content_agents = [
-            SEOKeywordAgent(), TrendingTopicsAgent(), ContentGapAgent(),
-            ContentPerformanceAgent(), SearchIntentAgent(), BacklinkOpportunityAgent(),
+            SEOKeywordAgent(),
+            TrendingTopicsAgent(),
+            ContentGapAgent(),
+            ContentPerformanceAgent(),
+            SearchIntentAgent(),
+            BacklinkOpportunityAgent(),
             ContentFormatAgent(),
         ]
 
         # Advertising (10)
         ad_agents = [
-            AudienceTargetingAgent(), CreativeStrategyAgent(), ChannelMixAgent(),
-            BudgetOptimizationAgent(), CampaignPerformanceAgent(), ABTestingAgent(),
-            BidStrategyAgent(), LandingPageOptimizationAgent(), RetargetingStrategyAgent(),
+            AudienceTargetingAgent(),
+            CreativeStrategyAgent(),
+            ChannelMixAgent(),
+            BudgetOptimizationAgent(),
+            CampaignPerformanceAgent(),
+            ABTestingAgent(),
+            BidStrategyAgent(),
+            LandingPageOptimizationAgent(),
+            RetargetingStrategyAgent(),
         ]
 
         # Sales & Distribution (8)
         sales_agents = [
-            SalesChannelAgent(), CustomerJourneyAgent(), TouchpointOptimizationAgent(),
-            ConversionRateAgent(), FunnelAnalysisAgent(), PartnerChannelAgent(),
+            SalesChannelAgent(),
+            CustomerJourneyAgent(),
+            TouchpointOptimizationAgent(),
+            ConversionRateAgent(),
+            FunnelAnalysisAgent(),
+            PartnerChannelAgent(),
             AffiliateAgent(),
         ]
 
         # Market Intel (6)
         intel_agents = [
-            TrendDetectionAgent(), NewsMonitoringAgent(), RegulatoryAgent(),
-            MacroeconomicAgent(), OpportunityScouttingAgent(), ThreatDetectionAgent(),
+            TrendDetectionAgent(),
+            NewsMonitoringAgent(),
+            RegulatoryAgent(),
+            MacroeconomicAgent(),
+            OpportunityScouttingAgent(),
+            ThreatDetectionAgent(),
         ]
 
         # Positioning (4)
         positioning_agents = [
-            PositioningAgent(), ValuePropositionAgent(), BrandHealthAgent(),
+            PositioningAgent(),
+            ValuePropositionAgent(),
+            BrandHealthAgent(),
             ReputationAgent(),
         ]
 
-        for agent_list in [market_agents, competitor_agents, content_agents, ad_agents,
-                           sales_agents, intel_agents, positioning_agents]:
+        for agent_list in [
+            market_agents,
+            competitor_agents,
+            content_agents,
+            ad_agents,
+            sales_agents,
+            intel_agents,
+            positioning_agents,
+        ]:
             for agent in agent_list:
                 agents[agent.agent_id] = agent
 
         return agents
 
-    async def research(self, query: str, context: Dict[str, Any], agent_ids: Optional[List[str]] = None) -> List[ResearchSignal]:
+    async def research(
+        self, query: str, context: dict[str, Any], agent_ids: list[str] | None = None
+    ) -> list[ResearchSignal]:
         """Execute research across specialists and agents"""
         signals = []
         target_agents = agent_ids or list(self.agents.keys())
@@ -1513,18 +2107,22 @@ class ResearchBrain:
 
         return signals
 
-    async def specialist_research(self, specialist_id: str, query: str, context: Dict[str, Any]) -> List[ResearchSignal]:
+    async def specialist_research(
+        self, specialist_id: str, query: str, context: dict[str, Any]
+    ) -> list[ResearchSignal]:
         """Execute research via specialist"""
         if specialist_id in self.specialists:
             specialist = self.specialists[specialist_id]
             return await specialist.research(query, context)
         return []
 
-    def synthesize_signals(self, signals: List[ResearchSignal]) -> Dict[str, Any]:
+    def synthesize_signals(self, signals: list[ResearchSignal]) -> dict[str, Any]:
         """Synthesize signals into actionable insights"""
         synthesis = {
             "total_signals": len(signals),
-            "avg_confidence": sum(s.confidence for s in signals) / len(signals) if signals else 0,
+            "avg_confidence": (
+                sum(s.confidence for s in signals) / len(signals) if signals else 0
+            ),
             "by_type": {},
             "by_agent": {},
             "recommendations": [],
@@ -1541,7 +2139,9 @@ class ResearchBrain:
 
         return synthesis
 
-    async def generate_market_insights(self, context: Dict[str, Any]) -> List[MarketInsight]:
+    async def generate_market_insights(
+        self, context: dict[str, Any]
+    ) -> list[MarketInsight]:
         """Generate high-level market insights"""
         signals = await self.research("market_analysis", context)
         synthesis = self.synthesize_signals(signals)
@@ -1550,52 +2150,64 @@ class ResearchBrain:
 
         # Example insights
         if synthesis["avg_confidence"] > 0.80:
-            insights.append(MarketInsight(
-                topic="Market Opportunity",
-                insight="Strong market signals indicate high growth potential in AI sales automation",
-                sources=["market_research", "trend_detection", "competitor_analysis"],
-                confidence=synthesis["avg_confidence"],
-                urgency="high",
-                action_required=True,
-            ))
+            insights.append(
+                MarketInsight(
+                    topic="Market Opportunity",
+                    insight="Strong market signals indicate high growth potential in AI sales automation",
+                    sources=[
+                        "market_research",
+                        "trend_detection",
+                        "competitor_analysis",
+                    ],
+                    confidence=synthesis["avg_confidence"],
+                    urgency="high",
+                    action_required=True,
+                )
+            )
 
         return insights
 
-    async def generate_competitor_alerts(self, context: Dict[str, Any]) -> List[CompetitorSignal]:
+    async def generate_competitor_alerts(
+        self, context: dict[str, Any]
+    ) -> list[CompetitorSignal]:
         """Generate real-time competitor alerts"""
-        competitor_agents = [aid for aid in self.agents.keys() if "competitor" in aid]
+        competitor_agents = [aid for aid in self.agents if "competitor" in aid]
         signals = await self.research("competitor_tracking", context, competitor_agents)
 
         alerts = []
         for signal in signals:
-            alerts.append(CompetitorSignal(
-                competitor_id=context.get("competitor_id", "unknown"),
-                signal_type=signal.signal_type,
-                details=signal.value,
-                confidence=signal.confidence,
-                impact_level="high" if signal.confidence > 0.85 else "medium",
-            ))
+            alerts.append(
+                CompetitorSignal(
+                    competitor_id=context.get("competitor_id", "unknown"),
+                    signal_type=signal.signal_type,
+                    details=signal.value,
+                    confidence=signal.confidence,
+                    impact_level="high" if signal.confidence > 0.85 else "medium",
+                )
+            )
 
         return alerts
 
-    async def generate_trend_alerts(self, context: Dict[str, Any]) -> List[TrendAlert]:
+    async def generate_trend_alerts(self, context: dict[str, Any]) -> list[TrendAlert]:
         """Generate trend detection alerts"""
-        trend_agents = [aid for aid in self.agents.keys() if "trend" in aid]
+        trend_agents = [aid for aid in self.agents if "trend" in aid]
         signals = await self.research("trend_analysis", context, trend_agents)
 
         alerts = []
         for signal in signals:
-            alerts.append(TrendAlert(
-                trend_name=signal.signal_type,
-                direction="rising" if signal.confidence > 0.80 else "emerging",
-                velocity=0.3,
-                affected_segments=list(signal.metadata.get("segments", [])),
-                opportunity=signal.confidence > 0.80,
-            ))
+            alerts.append(
+                TrendAlert(
+                    trend_name=signal.signal_type,
+                    direction="rising" if signal.confidence > 0.80 else "emerging",
+                    velocity=0.3,
+                    affected_segments=list(signal.metadata.get("segments", [])),
+                    opportunity=signal.confidence > 0.80,
+                )
+            )
 
         return alerts
 
-    def get_brain_health(self) -> Dict[str, Any]:
+    def get_brain_health(self) -> dict[str, Any]:
         """Get research brain health metrics"""
         total_agents = len(self.agents) + len(self.specialists)
         active_signals = len(self.signals_buffer)
@@ -1605,7 +2217,7 @@ class ResearchBrain:
             "total_specialists": len(self.specialists),
             "active_signals": active_signals,
             "cache_size": len(self.insights_cache),
-            "last_update": datetime.utcnow().isoformat(),
+            "last_update": utc_now().isoformat(),
             "status": "healthy" if total_agents > 50 else "degraded",
         }
 
@@ -1614,8 +2226,11 @@ class ResearchBrain:
 # EXPORT & INITIALIZATION
 # ============================================================================
 
+
 async def initialize_research_brain() -> ResearchBrain:
     """Initialize research brain with all agents"""
     brain = ResearchBrain()
-    logger.info(f"Research Brain initialized with {len(brain.agents)} agents and {len(brain.specialists)} specialists")
+    logger.info(
+        f"Research Brain initialized with {len(brain.agents)} agents and {len(brain.specialists)} specialists"
+    )
     return brain

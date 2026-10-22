@@ -3,49 +3,55 @@
 Endpoints para gestionar agentes expertos, conversaciones y chat.
 """
 
+import logging
+from typing import Annotated
 from uuid import UUID
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
-from app.domains.subscriptions.services import check_subscription_limit, track_usage
-from app.domains.users.models import User
-from app.domains.businesses.models import Business
-from app.domains.agents.models import AgentPersonality, AgentConversation, AgentMessage, AgentConfig
+from app.domains.agents.models import (
+    AgentConfig,
+    AgentPersonality,
+)
 from app.domains.agents.schemas import (
-    AgentPersonalityResponse,
+    AgentChatResponse,
+    AgentConfigCreate,
+    AgentConfigResponse,
     AgentConversationCreate,
-    AgentConversationResponse,
     AgentConversationDetailResponse,
+    AgentConversationResponse,
     AgentMessageCreate,
     AgentMessageResponse,
-    AgentChatResponse,
+    AgentPersonalityResponse,
     AutopilotVoiceConfig,
     AutopilotVoiceConfigResponse,
-    AgentConfigResponse,
-    AgentConfigCreate,
-    AgentConfigUpdate,
-    ReactChatRequest,
-    ReactChatResponse,
     PlanRequest,
     PlanResponse,
     PlanStepResponse,
+    ReactChatRequest,
+    ReactChatResponse,
 )
 from app.domains.agents.services import AgentService
+from app.domains.businesses.models import Business
 from app.domains.subscriptions.models import UserAPIKey
+from app.domains.subscriptions.services import check_subscription_limit, track_usage
+from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
 # ========== Personalities ==========
 
+
 @router.get("/personalities", response_model=list[AgentPersonalityResponse])
 async def list_personalities(
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Listar todas las personalidades de agentes disponibles."""
     service = AgentService(db)
@@ -55,12 +61,14 @@ async def list_personalities(
 
 @router.post("/personalities/seed", status_code=status.HTTP_201_CREATED)
 async def seed_personalities(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Sembrar personalidades predefinidas (solo admin)."""
     if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Solo superusuarios pueden sembrar personalidades")
+        raise HTTPException(
+            status_code=403, detail="Solo superusuarios pueden sembrar personalidades"
+        )
     service = AgentService(db)
     await service.seed_personalities()
     return {"message": "Personalidades sembradas correctamente"}
@@ -68,11 +76,12 @@ async def seed_personalities(
 
 # ========== Conversations ==========
 
+
 @router.get("/conversations", response_model=list[AgentConversationResponse])
 async def list_conversations(
-    business_id: Optional[UUID] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    business_id: UUID | None = None,
 ):
     """Listar conversaciones del usuario actual."""
     service = AgentService(db)
@@ -80,16 +89,22 @@ async def list_conversations(
     return conversations
 
 
-@router.post("/conversations", response_model=AgentConversationResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/conversations",
+    response_model=AgentConversationResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_conversation(
     data: AgentConversationCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Crear una nueva conversación con un agente."""
     # Verify business belongs to user
     result = await db.execute(
-        select(Business).where(Business.id == data.business_id).where(Business.user_id == current_user.id)
+        select(Business)
+        .where(Business.id == data.business_id)
+        .where(Business.user_id == current_user.id)
     )
     business = result.scalar_one_or_none()
     if not business:
@@ -115,11 +130,13 @@ async def create_conversation(
     return conv
 
 
-@router.get("/conversations/{conversation_id}", response_model=AgentConversationDetailResponse)
+@router.get(
+    "/conversations/{conversation_id}", response_model=AgentConversationDetailResponse
+)
 async def get_conversation(
     conversation_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Obtener una conversación con todos sus mensajes."""
     service = AgentService(db)
@@ -153,8 +170,8 @@ async def get_conversation(
 @router.delete("/conversations/{conversation_id}")
 async def delete_conversation(
     conversation_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Eliminar (soft-delete) una conversación."""
     service = AgentService(db)
@@ -166,21 +183,24 @@ async def delete_conversation(
 
 # ========== Chat ==========
 
+
 @router.post("/conversations/{conversation_id}/chat", response_model=AgentChatResponse)
 async def chat_with_agent(
     conversation_id: UUID,
     data: AgentMessageCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Enviar un mensaje al agente y obtener respuesta."""
 
     # Check AI token limit
-    limit_check = await check_subscription_limit(db, current_user.id, "ai_tokens", quantity=1)
+    limit_check = await check_subscription_limit(
+        db, current_user.id, "ai_tokens", quantity=1
+    )
     if not limit_check["allowed"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Límite de tokens IA alcanzado. Usados: {limit_check['used']}/{limit_check['limit']}"
+            detail=f"Límite de tokens IA alcanzado. Usados: {limit_check['used']}/{limit_check['limit']}",
         )
 
     service = AgentService(db)
@@ -203,19 +223,17 @@ async def chat_with_agent(
     if not api_key_record or not api_key_record.api_key_fernet:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No tienes una API key de OpenAI configurada. Ve a Configuración > API Keys para agregar tu clave."
+            detail="No tienes una API key de OpenAI configurada. Ve a Configuración > API Keys para agregar tu clave.",
         )
 
     # Get personality
     result = await db.execute(
         select(AgentPersonality).where(AgentPersonality.id == conv.personality_id)
     )
-    personality = result.scalar_one_or_none()
+    result.scalar_one_or_none()
 
     # Get business context
-    result = await db.execute(
-        select(Business).where(Business.id == conv.business_id)
-    )
+    result = await db.execute(select(Business).where(Business.id == conv.business_id))
     business = result.scalar_one_or_none()
 
     business_context = {}
@@ -228,6 +246,7 @@ async def chat_with_agent(
 
     # Get custom instructions if any
     from app.domains.agents.models import AgentConfig
+
     result = await db.execute(
         select(AgentConfig).where(
             AgentConfig.business_id == conv.business_id,
@@ -246,12 +265,19 @@ async def chat_with_agent(
             custom_instructions=custom_instructions,
         )
     except Exception:
+        logger.exception("chat_with_agent: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).exception("Agent execution error")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error",
+        )
 
     # Track token usage
-    await track_usage(db, current_user.id, "ai_tokens", quantity=assistant_msg.tokens_used or 1)
+    await track_usage(
+        db, current_user.id, "ai_tokens", quantity=assistant_msg.tokens_used or 1
+    )
 
     return AgentChatResponse(
         message=AgentMessageResponse.model_validate(assistant_msg),
@@ -269,12 +295,14 @@ AUTOPILOT_SLUGS = ["captador", "cualificador", "vendedor", "post-venta"]
 @router.get("/configs", response_model=list[AgentConfigResponse])
 async def list_agent_configs(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Listar configuraciones de agentes para un negocio."""
     result = await db.execute(
-        select(Business).where(Business.id == business_id).where(Business.user_id == current_user.id)
+        select(Business)
+        .where(Business.id == business_id)
+        .where(Business.user_id == current_user.id)
     )
     business = result.scalar_one_or_none()
     if not business:
@@ -294,7 +322,9 @@ async def list_agent_configs(
         config.personality = result.scalar_one_or_none()
         if config.voice_personality_id:
             result = await db.execute(
-                select(AgentPersonality).where(AgentPersonality.id == config.voice_personality_id)
+                select(AgentPersonality).where(
+                    AgentPersonality.id == config.voice_personality_id
+                )
             )
             config.voice_personality = result.scalar_one_or_none()
         response.append(AgentConfigResponse.model_validate(config))
@@ -302,16 +332,20 @@ async def list_agent_configs(
     return response
 
 
-@router.post("/configs", response_model=AgentConfigResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/configs", response_model=AgentConfigResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_or_update_agent_config(
     business_id: UUID,
     data: AgentConfigCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Crear o actualizar configuración de un agente para un negocio."""
     result = await db.execute(
-        select(Business).where(Business.id == business_id).where(Business.user_id == current_user.id)
+        select(Business)
+        .where(Business.id == business_id)
+        .where(Business.user_id == current_user.id)
     )
     business = result.scalar_one_or_none()
     if not business:
@@ -328,7 +362,9 @@ async def create_or_update_agent_config(
     # Verify voice personality if provided
     if data.voice_personality_id:
         result = await db.execute(
-            select(AgentPersonality).where(AgentPersonality.id == data.voice_personality_id)
+            select(AgentPersonality).where(
+                AgentPersonality.id == data.voice_personality_id
+            )
         )
         voice = result.scalar_one_or_none()
         if not voice:
@@ -370,7 +406,9 @@ async def create_or_update_agent_config(
     config.personality = personality
     if config.voice_personality_id:
         result = await db.execute(
-            select(AgentPersonality).where(AgentPersonality.id == config.voice_personality_id)
+            select(AgentPersonality).where(
+                AgentPersonality.id == config.voice_personality_id
+            )
         )
         config.voice_personality = result.scalar_one_or_none()
 
@@ -380,12 +418,14 @@ async def create_or_update_agent_config(
 @router.get("/autopilot-voices", response_model=AutopilotVoiceConfigResponse)
 async def get_autopilot_voices(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Obtener configuración de voz experta para cada agente de auto-piloto."""
     result = await db.execute(
-        select(Business).where(Business.id == business_id).where(Business.user_id == current_user.id)
+        select(Business)
+        .where(Business.id == business_id)
+        .where(Business.user_id == current_user.id)
     )
     business = result.scalar_one_or_none()
     if not business:
@@ -415,7 +455,9 @@ async def get_autopilot_voices(
             if config:
                 custom_instructions = config.custom_instructions
                 if config.voice_personality_id:
-                    voice_personality = personalities_by_id.get(config.voice_personality_id)
+                    voice_personality = personalities_by_id.get(
+                        config.voice_personality_id
+                    )
                     if voice_personality:
                         voice_slug = voice_personality.slug
 
@@ -430,11 +472,12 @@ async def get_autopilot_voices(
 
 # ========== ReAct Orchestrator ==========
 
+
 @router.post("/react-chat", response_model=ReactChatResponse)
 async def react_chat(
     data: ReactChatRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Chat using the ReAct orchestrator with tool use."""
     from app.domains.agents.react_orchestrator import ReActOrchestrator
@@ -461,8 +504,8 @@ async def react_chat(
 @router.post("/plan", response_model=PlanResponse)
 async def create_and_execute_plan(
     data: PlanRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Create a plan for a complex task and execute it via ReAct."""
     from app.domains.agents.planning_agent import PlanningAgent
@@ -496,16 +539,19 @@ async def create_and_execute_plan(
 
 # ========== Sales Playbooks ==========
 
+
 @router.post("/{business_id}/playbooks/generate", status_code=status.HTTP_201_CREATED)
 async def generate_playbook(
     business_id: UUID,
-    voice_slug: Optional[str] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    voice_slug: str | None = None,
 ):
     """Generate an AI-powered sales playbook for a business."""
     result = await db.execute(
-        select(Business).where(Business.id == business_id).where(Business.user_id == current_user.id)
+        select(Business)
+        .where(Business.id == business_id)
+        .where(Business.user_id == current_user.id)
     )
     business = result.scalar_one_or_none()
     if not business:

@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from decimal import Decimal
-from typing import Optional
 
-from sqlalchemy import desc, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
@@ -28,7 +27,12 @@ class RecruitmentService:
         self.db = db
 
     async def add_candidate(
-        self, business_id: uuid.UUID, full_name: str, email: str, position: str, sourced_via: str = "manual"
+        self,
+        business_id: uuid.UUID,
+        full_name: str,
+        email: str,
+        position: str,
+        sourced_via: str = "manual",
     ) -> Candidate:
         """Add candidate to pipeline."""
         cand = Candidate(
@@ -42,9 +46,13 @@ class RecruitmentService:
         await self.db.commit()
         return cand
 
-    async def score_screening(self, candidate_id: uuid.UUID, score: Decimal) -> Candidate:
+    async def score_screening(
+        self, candidate_id: uuid.UUID, score: Decimal
+    ) -> Candidate:
         """Screening score (0–100); advance if >= 60."""
-        cand = (await self.db.execute(select(Candidate).where(Candidate.id == candidate_id))).scalar_one()
+        cand = (
+            await self.db.execute(select(Candidate).where(Candidate.id == candidate_id))
+        ).scalar_one()
         cand.screening_score = score
         if score >= 60:
             cand.stage = CandidateStage.SCREENING.value
@@ -53,21 +61,27 @@ class RecruitmentService:
         await self.db.commit()
         return cand
 
-    async def send_offer(self, candidate_id: uuid.UUID, salary_aed: Decimal) -> Candidate:
+    async def send_offer(
+        self, candidate_id: uuid.UUID, salary_aed: Decimal
+    ) -> Candidate:
         """Send job offer."""
-        cand = (await self.db.execute(select(Candidate).where(Candidate.id == candidate_id))).scalar_one()
+        cand = (
+            await self.db.execute(select(Candidate).where(Candidate.id == candidate_id))
+        ).scalar_one()
         cand.stage = CandidateStage.OFFER_SENT.value
         cand.offer_salary_aed = salary_aed
-        cand.offer_sent_at = datetime.now(timezone.utc)
+        cand.offer_sent_at = datetime.now(UTC)
         await self.db.commit()
         return cand
 
     async def accept_offer(self, candidate_id: uuid.UUID) -> Employee:
         """Accept offer → hire → create employee."""
-        cand = (await self.db.execute(select(Candidate).where(Candidate.id == candidate_id))).scalar_one()
+        cand = (
+            await self.db.execute(select(Candidate).where(Candidate.id == candidate_id))
+        ).scalar_one()
         cand.stage = CandidateStage.HIRED.value
-        cand.offer_accepted_at = datetime.now(timezone.utc)
-        cand.hired_at = datetime.now(timezone.utc)
+        cand.offer_accepted_at = datetime.now(UTC)
+        cand.hired_at = datetime.now(UTC)
 
         # Second-precision timestamp alone collides whenever two employees are
         # hired within the same wall-clock second — append a short random
@@ -83,7 +97,7 @@ class RecruitmentService:
             position=cand.position,
             department="unassigned",
             hire_date=date.today(),
-            salary_aed_monthly=cand.offer_salary_aed or Decimal("0"),
+            salary_aed_monthly=cand.offer_salary_aed or Decimal(0),
             contract_type="full_time",
         )
         self.db.add(emp)
@@ -96,7 +110,9 @@ class OnboardingService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def create_checklist(self, employee_id: uuid.UUID, business_id: uuid.UUID) -> list[OnboardingChecklistItem]:
+    async def create_checklist(
+        self, employee_id: uuid.UUID, business_id: uuid.UUID
+    ) -> list[OnboardingChecklistItem]:
         """Auto-create standard onboarding checklist."""
         items = [
             ("equipment", "Provision laptop & peripherals"),
@@ -123,10 +139,18 @@ class OnboardingService:
         await self.db.commit()
         return created
 
-    async def complete_item(self, item_id: uuid.UUID, notes: Optional[str] = None) -> OnboardingChecklistItem:
+    async def complete_item(
+        self, item_id: uuid.UUID, notes: str | None = None
+    ) -> OnboardingChecklistItem:
         """Mark onboarding task complete."""
-        item = (await self.db.execute(select(OnboardingChecklistItem).where(OnboardingChecklistItem.id == item_id))).scalar_one()
-        item.completed_at = datetime.now(timezone.utc)
+        item = (
+            await self.db.execute(
+                select(OnboardingChecklistItem).where(
+                    OnboardingChecklistItem.id == item_id
+                )
+            )
+        ).scalar_one()
+        item.completed_at = datetime.now(UTC)
         if notes:
             item.notes = notes
         await self.db.commit()
@@ -135,12 +159,16 @@ class OnboardingService:
     async def onboarding_status(self, employee_id: uuid.UUID) -> dict:
         """Get onboarding completion status."""
         items = (
-            await self.db.execute(
-                select(OnboardingChecklistItem)
-                .where(OnboardingChecklistItem.employee_id == employee_id)
-                .order_by(OnboardingChecklistItem.category)
+            (
+                await self.db.execute(
+                    select(OnboardingChecklistItem)
+                    .where(OnboardingChecklistItem.employee_id == employee_id)
+                    .order_by(OnboardingChecklistItem.category)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         total = len(items)
         completed = sum(1 for i in items if i.completed_at)
         return {
@@ -148,7 +176,11 @@ class OnboardingService:
             "completed_items": completed,
             "pct_complete": (completed / total * 100) if total else 0,
             "pending_items": [
-                {"category": i.category, "description": i.description, "assigned_to": i.assigned_to}
+                {
+                    "category": i.category,
+                    "description": i.description,
+                    "assigned_to": i.assigned_to,
+                }
                 for i in items
                 if not i.completed_at
             ],
@@ -160,14 +192,21 @@ class PayrollService:
         self.db = db
 
     async def calculate_payroll(
-        self, employee_id: uuid.UUID, payroll_date: date, allowances_aed: Decimal = Decimal("0")
+        self,
+        employee_id: uuid.UUID,
+        payroll_date: date,
+        allowances_aed: Decimal = Decimal(0),
     ) -> Payroll:
         """Calculate monthly payroll: salary + allowances - deductions - tax."""
-        emp = (await self.db.execute(select(Employee).where(Employee.id == employee_id))).scalar_one()
+        emp = (
+            await self.db.execute(select(Employee).where(Employee.id == employee_id))
+        ).scalar_one()
 
         salary = emp.salary_aed_monthly
-        deductions = Decimal("0")  # placeholder for loans, etc.
-        tax = (salary + allowances_aed - deductions) * Decimal("0.05")  # simplified 5% tax
+        deductions = Decimal(0)  # placeholder for loans, etc.
+        tax = (salary + allowances_aed - deductions) * Decimal(
+            "0.05"
+        )  # simplified 5% tax
 
         net = salary + allowances_aed - deductions - tax
 
@@ -190,14 +229,18 @@ class PayrollService:
     ) -> dict[str, int]:
         """Generate payroll for all active employees."""
         emps = (
-            await self.db.execute(
-                select(Employee).where(
-                    Employee.business_id == business_id,
-                    Employee.status == EmployeeStatus.ACTIVE.value,
-                    Employee.is_active == True,
+            (
+                await self.db.execute(
+                    select(Employee).where(
+                        Employee.business_id == business_id,
+                        Employee.status == EmployeeStatus.ACTIVE.value,
+                        Employee.is_active == True,
+                    )
                 )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         created = 0
         for emp in emps:
@@ -205,18 +248,26 @@ class PayrollService:
             created += 1
 
         logger.info(f"Payroll processed: {created} employees for {payroll_date}")
-        return {"business_id": str(business_id), "payroll_date": payroll_date.isoformat(), "employees": created}
+        return {
+            "business_id": str(business_id),
+            "payroll_date": payroll_date.isoformat(),
+            "employees": created,
+        }
 
     async def payroll_summary(self, business_id: uuid.UUID, payroll_date: date) -> dict:
         """Summary of payroll for a date."""
         rows = (
-            await self.db.execute(
-                select(Payroll).where(
-                    Payroll.business_id == business_id,
-                    Payroll.payroll_date == payroll_date,
+            (
+                await self.db.execute(
+                    select(Payroll).where(
+                        Payroll.business_id == business_id,
+                        Payroll.payroll_date == payroll_date,
+                    )
                 )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         total_salary = sum(p.salary_aed for p in rows)
         total_allowances = sum(p.allowances_aed for p in rows)

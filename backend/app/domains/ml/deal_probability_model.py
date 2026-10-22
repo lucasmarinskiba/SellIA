@@ -1,11 +1,14 @@
 """XGBoost model for deal close probability prediction."""
 
-import pickle
-import numpy as np
-from datetime import datetime, timedelta
-from typing import Dict, List, Tuple, Optional
 import logging
+import pickle
+from datetime import datetime
 from pathlib import Path
+from typing import ClassVar
+
+import numpy as np
+
+from app.core.clock import utc_now
 
 try:
     import xgboost as xgb
@@ -21,7 +24,7 @@ FEATURES_PATH = Path(__file__).parent / "models" / "feature_names.pkl"
 class DealProbabilityModel:
     """XGBoost model for predicting deal close probability."""
 
-    FEATURES = [
+    FEATURES: ClassVar[list] = [
         "days_in_stage",
         "engagement_velocity",
         "stakeholder_count",
@@ -39,7 +42,7 @@ class DealProbabilityModel:
         "deal_size_normalized",
     ]
 
-    def __init__(self, model_path: Optional[str] = None):
+    def __init__(self, model_path: str | None = None):
         """Initialize model. Load from disk or create new."""
         self.model = None
         self.model_version = "1.0.0"
@@ -57,7 +60,10 @@ class DealProbabilityModel:
             try:
                 self.load_model(str(MODEL_PATH))
             except Exception as e:
-                logger.warning(f"Failed to load default model: {e}. Using random forest fallback.")
+                logger.warning(
+                    f"Failed to load default model: {e}. Using random forest fallback.",
+                    exc_info=True,
+                )
                 self._create_fallback_model()
         else:
             logger.info("No model found. Using random forest fallback.")
@@ -72,9 +78,11 @@ class DealProbabilityModel:
                 self.model_version = model_data.get("version", "1.0.0")
                 self.training_date = model_data.get("training_date")
                 self.auc_score = model_data.get("auc_score")
-            logger.info(f"Loaded model version {self.model_version} (AUC: {self.auc_score})")
-        except Exception as e:
-            logger.error(f"Error loading model: {e}")
+            logger.info(
+                f"Loaded model version {self.model_version} (AUC: {self.auc_score})"
+            )
+        except Exception:
+            logger.exception("Error loading model")
             self._create_fallback_model()
 
     def save_model(self, path: str):
@@ -84,15 +92,15 @@ class DealProbabilityModel:
             model_data = {
                 "model": self.model,
                 "version": self.model_version,
-                "training_date": datetime.utcnow(),
+                "training_date": utc_now(),
                 "auc_score": self.auc_score,
                 "features": self.FEATURES,
             }
             with open(path, "wb") as f:
                 pickle.dump(model_data, f)
             logger.info(f"Saved model to {path}")
-        except Exception as e:
-            logger.error(f"Error saving model: {e}")
+        except Exception:
+            logger.exception("Error saving model")
 
     def _create_fallback_model(self):
         """Create simple fallback model if XGBoost unavailable."""
@@ -105,18 +113,18 @@ class DealProbabilityModel:
                     objective="binary:logistic",
                     random_state=42,
                 )
-            except Exception as e:
-                logger.error(f"Failed to create XGBoost model: {e}")
+            except Exception:
+                logger.exception("Failed to create XGBoost model")
                 self.model = None
         else:
             logger.warning("XGBoost not installed. Model predictions will be random.")
             self.model = None
 
-    def extract_features(self, deal_data: Dict) -> np.ndarray:
+    def extract_features(self, deal_data: dict) -> np.ndarray:
         """Extract feature vector from deal data."""
         features = []
 
-        now = datetime.utcnow()
+        now = utc_now()
         deal_created = deal_data.get("created_at", now)
         if isinstance(deal_created, str):
             deal_created = datetime.fromisoformat(deal_created)
@@ -127,7 +135,8 @@ class DealProbabilityModel:
         engagement_events = deal_data.get("engagement_events", [])
         if engagement_events:
             recent_events = [
-                e for e in engagement_events
+                e
+                for e in engagement_events
                 if (now - datetime.fromisoformat(e.get("timestamp", ""))).days <= 7
             ]
             engagement_velocity = len(recent_events) / 7.0
@@ -138,10 +147,15 @@ class DealProbabilityModel:
         stakeholder_count = len(deal_data.get("stakeholders", []))
         features.append(min(stakeholder_count, 10))  # Cap at 10
 
-        economic_buyer_engaged = 1.0 if any(
-            s.get("buyer_role") == "economic_buyer" and s.get("engagement_score", 0) > 30
-            for s in deal_data.get("stakeholders", [])
-        ) else 0.0
+        economic_buyer_engaged = (
+            1.0
+            if any(
+                s.get("buyer_role") == "economic_buyer"
+                and s.get("engagement_score", 0) > 30
+                for s in deal_data.get("stakeholders", [])
+            )
+            else 0.0
+        )
         features.append(economic_buyer_engaged)
 
         buyer_response_time = deal_data.get("avg_buyer_response_time_hours", 48)
@@ -151,21 +165,30 @@ class DealProbabilityModel:
         features.append(proposal_sent)
 
         if deal_data.get("proposal_sent_at"):
-            proposal_age = (now - datetime.fromisoformat(deal_data["proposal_sent_at"])).days
+            proposal_age = (
+                now - datetime.fromisoformat(deal_data["proposal_sent_at"])
+            ).days
             proposal_days_old = min(proposal_age, 90)
         else:
             proposal_days_old = 0.0
         features.append(proposal_days_old)
 
-        meetings_30d = len([
-            e for e in engagement_events
-            if e.get("event_type") == "meeting"
-            and (now - datetime.fromisoformat(e.get("timestamp", ""))).days <= 30
-        ])
+        meetings_30d = len(
+            [
+                e
+                for e in engagement_events
+                if e.get("event_type") == "meeting"
+                and (now - datetime.fromisoformat(e.get("timestamp", ""))).days <= 30
+            ]
+        )
         features.append(min(meetings_30d, 20))
 
-        email_opens = len([e for e in engagement_events if e.get("event_type") == "email_open"])
-        email_sends = len([e for e in engagement_events if e.get("event_type") == "email_send"])
+        email_opens = len(
+            [e for e in engagement_events if e.get("event_type") == "email_open"]
+        )
+        email_sends = len(
+            [e for e in engagement_events if e.get("event_type") == "email_send"]
+        )
         email_open_rate = (email_opens / email_sends) if email_sends > 0 else 0.0
         features.append(email_open_rate)
 
@@ -178,7 +201,9 @@ class DealProbabilityModel:
         timeline_confirmed = 1.0 if deal_data.get("timeline_confirmed") else 0.0
         features.append(timeline_confirmed)
 
-        decision_process_mapped = 1.0 if len(deal_data.get("stakeholders", [])) >= 3 else 0.0
+        decision_process_mapped = (
+            1.0 if len(deal_data.get("stakeholders", [])) >= 3 else 0.0
+        )
         features.append(decision_process_mapped)
 
         multiple_stakeholders = 1.0 if stakeholder_count >= 3 else 0.0
@@ -190,7 +215,7 @@ class DealProbabilityModel:
 
         return np.array(features, dtype=np.float32).reshape(1, -1)
 
-    def predict(self, deal_data: Dict) -> Tuple[float, float, float, float]:
+    def predict(self, deal_data: dict) -> tuple[float, float, float, float]:
         """Predict close probability for deal.
 
         Returns: (probability, confidence, probability_low_90, probability_high_90)
@@ -210,23 +235,29 @@ class DealProbabilityModel:
             probability = float(self.model.predict_proba(features)[0][1] * 100)
 
             try:
-                predict_leaf_index = self.model.predict(
-                    features, pred_leaf=True
-                )
+                self.model.predict(features, pred_leaf=True)
                 confidence = float(
                     min(
                         (
-                            abs(self.model.predict_proba(features)[0][0]
-                                - self.model.predict_proba(features)[0][1])
+                            abs(
+                                self.model.predict_proba(features)[0][0]
+                                - self.model.predict_proba(features)[0][1]
+                            )
                             + 0.5
                         )
                         * 100,
                         100,
                     )
                 )
-            except:
-                confidence = float(abs(self.model.predict_proba(features)[0][0]
-                    - self.model.predict_proba(features)[0][1]) * 100)
+            except Exception:
+                logger.exception("predict: error inesperado")
+                confidence = float(
+                    abs(
+                        self.model.predict_proba(features)[0][0]
+                        - self.model.predict_proba(features)[0][1]
+                    )
+                    * 100
+                )
 
             std_error = (probability * (100 - probability)) ** 0.5 / np.sqrt(10)
             z_90 = 1.645
@@ -236,17 +267,17 @@ class DealProbabilityModel:
 
             return (probability, confidence, probability_low, probability_high)
 
-        except Exception as e:
-            logger.error(f"Error during prediction: {e}")
+        except Exception:
+            logger.exception("Error during prediction")
             return (50.0, 0.5, 30.0, 70.0)
 
     def train(
         self,
-        training_data: List[Dict],
-        training_labels: List[int],
-        validation_data: Optional[List[Dict]] = None,
-        validation_labels: Optional[List[int]] = None,
-    ) -> Dict:
+        training_data: list[dict],
+        training_labels: list[int],
+        validation_data: list[dict] | None = None,
+        validation_labels: list[int] | None = None,
+    ) -> dict:
         """Train model on historical deal data.
 
         Args:
@@ -298,7 +329,7 @@ class DealProbabilityModel:
                 self.model.fit(X_train, y_train)
                 self.auc_score = None
 
-            self.training_date = datetime.utcnow()
+            self.training_date = utc_now()
 
             logger.info(f"Model training complete. AUC: {self.auc_score}")
 
@@ -310,17 +341,19 @@ class DealProbabilityModel:
             }
 
         except Exception as e:
-            logger.error(f"Error training model: {e}")
+            logger.exception("Error training model")
             return {"error": str(e)}
 
-    def get_feature_importance(self) -> Dict[str, float]:
+    def get_feature_importance(self) -> dict[str, float]:
         """Get feature importance scores from trained model."""
         if self.model is None:
             return {}
 
         try:
             importance_dict = dict(zip(self.FEATURES, self.model.feature_importances_))
-            return dict(sorted(importance_dict.items(), key=lambda x: x[1], reverse=True))
-        except Exception as e:
-            logger.error(f"Error getting feature importance: {e}")
+            return dict(
+                sorted(importance_dict.items(), key=lambda x: x[1], reverse=True)
+            )
+        except Exception:
+            logger.exception("Error getting feature importance")
             return {}

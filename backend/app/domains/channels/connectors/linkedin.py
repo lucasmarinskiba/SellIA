@@ -1,15 +1,20 @@
 """LinkedIn Messaging Connector."""
 
-import httpx
+import logging
 from typing import Any
 
+import httpx
+
 from app.domains.channels.connectors.base import BaseChannelConnector
-from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.models import ChannelPlatform
+from app.domains.channels.schemas import WebhookPayload
+
+logger = logging.getLogger(__name__)
 
 
 class LinkedInConnector(BaseChannelConnector):
     """Conector para LinkedIn Messages usando LinkedIn API."""
+
     platform = "linkedin"
     BASE_URL = "https://api.linkedin.com/v2"
 
@@ -18,7 +23,9 @@ class LinkedInConnector(BaseChannelConnector):
         self.access_token = credentials.get("access_token")
         self.sender_urn = credentials.get("sender_urn")
 
-    async def send_message(self, recipient_id: str, content: str, content_type: str = "text") -> dict[str, Any]:
+    async def send_message(
+        self, recipient_id: str, content: str, content_type: str = "text"
+    ) -> dict[str, Any]:
         if not self.access_token:
             raise ValueError("Faltan credenciales de LinkedIn")
 
@@ -63,4 +70,5 @@ class LinkedInConnector(BaseChannelConnector):
                 response = await client.get(url, headers=headers)
                 return response.status_code == 200
         except Exception:
+            logger.exception("validate_credentials: error inesperado")
             return False

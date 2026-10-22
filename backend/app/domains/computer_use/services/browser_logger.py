@@ -4,10 +4,11 @@ Captura logs de consola, errores JS, y network requests del navegador
 para debugging avanzado de sesiones.
 """
 
-import json
-from typing import List, Dict, Any, Callable, Optional
-from dataclasses import dataclass, asdict
-from datetime import datetime, timezone
+from collections.abc import Callable
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from typing import Any
+
 from app.core.logger import get_logger
 
 logger = get_logger(__name__)
@@ -20,30 +21,30 @@ class ConsoleLog:
     source: str
     url: str
     timestamp: datetime
-    args: List[str]
+    args: list[str]
 
 
 @dataclass
 class NetworkRequest:
     method: str
     url: str
-    status: Optional[int]
-    duration_ms: Optional[float]
-    request_headers: Dict[str, str]
-    response_headers: Dict[str, str]
+    status: int | None
+    duration_ms: float | None
+    request_headers: dict[str, str]
+    response_headers: dict[str, str]
     timestamp: datetime
-    error: Optional[str]
+    error: str | None
 
 
 class BrowserLogger:
     """Captura logs del navegador durante sesiones de Computer Use."""
 
     def __init__(self):
-        self.console_logs: List[ConsoleLog] = []
-        self.network_requests: List[NetworkRequest] = []
-        self._console_handler: Optional[Callable] = None
-        self._request_handler: Optional[Callable] = None
-        self._response_handler: Optional[Callable] = None
+        self.console_logs: list[ConsoleLog] = []
+        self.network_requests: list[NetworkRequest] = []
+        self._console_handler: Callable | None = None
+        self._request_handler: Callable | None = None
+        self._response_handler: Callable | None = None
         self._page = None
 
     async def attach(self, page) -> None:
@@ -65,14 +66,19 @@ class BrowserLogger:
         page.on("response", self._response_handler)
 
         # Page error
-        page.on("pageerror", lambda err: self.console_logs.append(ConsoleLog(
-            level="pageerror",
-            text=str(err),
-            source="page",
-            url=page.url,
-            timestamp=datetime.now(timezone.utc),
-            args=[],
-        )))
+        page.on(
+            "pageerror",
+            lambda err: self.console_logs.append(
+                ConsoleLog(
+                    level="pageerror",
+                    text=str(err),
+                    source="page",
+                    url=page.url,
+                    timestamp=datetime.now(UTC),
+                    args=[],
+                )
+            ),
+        )
 
         logger.info("BrowserLogger attached")
 
@@ -97,40 +103,49 @@ class BrowserLogger:
                     val = arg.json_value()
                     args.append(str(val)[:500])
                 except Exception:
+                    logger.exception("_on_console: error inesperado")
                     args.append("[object]")
 
-            self.console_logs.append(ConsoleLog(
-                level=msg.type,
-                text=msg.text[:1000],
-                source=msg.location.get("url", "") if msg.location else "",
-                url=self._page.url if self._page else "",
-                timestamp=datetime.now(timezone.utc),
-                args=args,
-            ))
+            self.console_logs.append(
+                ConsoleLog(
+                    level=msg.type,
+                    text=msg.text[:1000],
+                    source=msg.location.get("url", "") if msg.location else "",
+                    url=self._page.url if self._page else "",
+                    timestamp=datetime.now(UTC),
+                    args=args,
+                )
+            )
         except Exception as e:
-            logger.warning(f"Console log processing error: {e}")
+            logger.warning(f"Console log processing error: {e}", exc_info=True)
 
     def _on_request(self, request) -> None:
         """Procesa request de red."""
         try:
-            self.network_requests.append(NetworkRequest(
-                method=request.method,
-                url=request.url[:500],
-                status=None,
-                duration_ms=None,
-                request_headers=dict(request.headers),
-                response_headers={},
-                timestamp=datetime.now(timezone.utc),
-                error=None,
-            ))
+            self.network_requests.append(
+                NetworkRequest(
+                    method=request.method,
+                    url=request.url[:500],
+                    status=None,
+                    duration_ms=None,
+                    request_headers=dict(request.headers),
+                    response_headers={},
+                    timestamp=datetime.now(UTC),
+                    error=None,
+                )
+            )
         except Exception as e:
-            logger.warning(f"Request processing error: {e}")
+            logger.warning(f"Request processing error: {e}", exc_info=True)
 
     def _on_response(self, response) -> None:
         """Procesa response de red."""
         try:
             # Find matching request
-            matching = [r for r in self.network_requests if r.url == response.url[:500] and r.status is None]
+            matching = [
+                r
+                for r in self.network_requests
+                if r.url == response.url[:500] and r.status is None
+            ]
             if matching:
                 req = matching[-1]
                 req.status = response.status
@@ -141,19 +156,19 @@ class BrowserLogger:
                     if timing and "endTime" in timing and "startTime" in timing:
                         req.duration_ms = timing["endTime"] - timing["startTime"]
                 except Exception:
-                    pass
+                    logger.exception("_on_response: error inesperado")
         except Exception as e:
-            logger.warning(f"Response processing error: {e}")
+            logger.warning(f"Response processing error: {e}", exc_info=True)
 
-    def get_errors(self) -> List[ConsoleLog]:
+    def get_errors(self) -> list[ConsoleLog]:
         """Obtiene solo errores de consola."""
         return [log for log in self.console_logs if log.level in ("error", "pageerror")]
 
-    def get_failed_requests(self) -> List[NetworkRequest]:
+    def get_failed_requests(self) -> list[NetworkRequest]:
         """Obtiene requests fallidos (4xx, 5xx)."""
         return [r for r in self.network_requests if r.status and r.status >= 400]
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """Resumen de logs capturados."""
         errors = self.get_errors()
         failed_reqs = self.get_failed_requests()
@@ -167,12 +182,11 @@ class BrowserLogger:
                 for e in errors[:5]
             ],
             "failed_request_samples": [
-                {"url": r.url[:100], "status": r.status}
-                for r in failed_reqs[:5]
+                {"url": r.url[:100], "status": r.status} for r in failed_reqs[:5]
             ],
         }
 
-    def export_logs(self) -> Dict[str, Any]:
+    def export_logs(self) -> dict[str, Any]:
         """Exporta todos los logs serializables."""
         return {
             "console_logs": [

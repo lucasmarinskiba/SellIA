@@ -4,18 +4,22 @@ Coordinates proximity events → message template selection → channel delivery
 """
 
 import logging
-from typing import Optional
 from uuid import UUID
 
 from sqlalchemy.orm import Session
 
 from app.domains.analytics.offline_models import GeoProximityEvent
-from app.domains.businesses.location_models import Location
-from app.domains.businesses.localization import BusinessLocalizationService, LocalizationStrategy
-from app.domains.channels.location_messaging import (
-    LocationMessageTemplateService, MessageTemplate
+from app.domains.businesses.localization import (
+    BusinessLocalizationService,
 )
-from app.domains.proximity.proximity_engine import ProximityEngine, ProximityTriggerConfig
+from app.domains.businesses.location_models import Location
+from app.domains.channels.location_messaging import (
+    LocationMessageTemplateService,
+    MessageTemplate,
+)
+from app.domains.proximity.proximity_engine import (
+    ProximityEngine,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +32,9 @@ class LocationChannelOrchestrator:
         proximity_event: GeoProximityEvent,
         location: Location,
         channel: str = "sms",
-        business_model: Optional[str] = None,
-        db: Optional[Session] = None
-    ) -> Optional[dict]:
+        business_model: str | None = None,
+        db: Session | None = None,
+    ) -> dict | None:
         """
         Build location-based message for proximity event.
 
@@ -48,32 +52,31 @@ class LocationChannelOrchestrator:
             return None
 
         # Get strategy for this location
-        business = db.query("Business").filter("Business.id" == location.business_id).first()
+        business = (
+            db.query("Business").filter("Business.id" == location.business_id).first()
+        )
         if not business:
             return None
 
         strategy_name = BusinessLocalizationService.get_strategy_for_model(
-            business.type,
-            business.localization_model
+            business.type, business.localization_model
         ).value
 
         # Find appropriate template
         template_key = LocationMessageTemplateService.get_default_template_for_strategy(
-            strategy_name,
-            location.type,
-            channel
+            strategy_name, location.type, channel
         )
 
         if not template_key:
-            logger.warning(f"No template found for strategy {strategy_name}, location type {location.type}")
+            logger.warning(
+                f"No template found for strategy {strategy_name}, location type {location.type}"
+            )
             return None
 
         # Build location context
         hours_str = LocationChannelOrchestrator._format_hours(location.hours_json)
-        eta_minutes = ProximityEngine.estimate_eta_minutes(
-            proximity_event.user_latitude,
-            proximity_event.user_longitude,
-            location
+        ProximityEngine.estimate_eta_minutes(
+            proximity_event.user_latitude, proximity_event.user_longitude, location
         )
 
         location_ctx = LocationMessageTemplateService.build_location_context(
@@ -84,7 +87,8 @@ class LocationChannelOrchestrator:
             hours=hours_str,
             open_time="09:00",  # TODO: extract from location.hours_json
             close_time="18:00",
-            maps_url=location.google_maps_url or f"https://maps.google.com/?q={location.latitude},{location.longitude}"
+            maps_url=location.google_maps_url
+            or f"https://maps.google.com/?q={location.latitude},{location.longitude}",
         )
 
         # Build visitor context
@@ -96,9 +100,7 @@ class LocationChannelOrchestrator:
 
         # Build offer context (if applicable)
         offer_ctx = LocationMessageTemplateService.build_offer_context(
-            offer_percentage=10,
-            offer_type="discount",
-            offer_expiry="today"
+            offer_percentage=10, offer_type="discount", offer_expiry="today"
         )
 
         # Merge all contexts
@@ -106,9 +108,7 @@ class LocationChannelOrchestrator:
 
         # Render template
         message_content = LocationMessageTemplateService.render_template(
-            template_key,
-            channel,
-            all_vars
+            template_key, channel, all_vars
         )
 
         if not message_content:
@@ -131,7 +131,10 @@ class LocationChannelOrchestrator:
             "FOOT_TRAFFIC": ["sms"],  # Retail: quick SMS with offer
             "TOUR_SCHEDULING": ["email"],  # B2B: detailed email invite
             "DEMO_BOOKING": ["email"],  # SaaS: professional email
-            "SERVICE_DISPATCH": ["sms", "whatsapp"],  # Services: SMS + WhatsApp for updates
+            "SERVICE_DISPATCH": [
+                "sms",
+                "whatsapp",
+            ],  # Services: SMS + WhatsApp for updates
         }
         return channel_map.get(strategy, ["sms"])
 
@@ -141,16 +144,17 @@ class LocationChannelOrchestrator:
         location_id: UUID,
         user_name: str,
         distance_km: float,
-        db: Optional[Session] = None
+        db: Session | None = None,
     ) -> dict:
         """Build summary message for "proximity check" trigger type."""
-        location = db.query(Location).filter(Location.id == location_id).first() if db else None
+        location = (
+            db.query(Location).filter(Location.id == location_id).first()
+            if db
+            else None
+        )
 
         if not location:
-            return {
-                "status": "error",
-                "message": "Location not found"
-            }
+            return {"status": "error", "message": "Location not found"}
 
         return {
             "status": "success",
@@ -171,18 +175,26 @@ class LocationChannelOrchestrator:
             return "Call for hours"
 
         days_open = []
-        for day in ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]:
+        for day in [
+            "monday",
+            "tuesday",
+            "wednesday",
+            "thursday",
+            "friday",
+            "saturday",
+            "sunday",
+        ]:
             day_hours = hours_json.get(day)
             if day_hours:
-                days_open.append(f"{day.title()}: {day_hours.get('open', '')} - {day_hours.get('close', '')}")
+                days_open.append(
+                    f"{day.title()}: {day_hours.get('open', '')} - {day_hours.get('close', '')}"
+                )
 
         return "; ".join(days_open) if days_open else "Hours not specified"
 
     @staticmethod
     def route_message_to_channels(
-        message: dict,
-        channels: list[str],
-        db: Optional[Session] = None
+        message: dict, channels: list[str], db: Session | None = None
     ) -> list[dict]:
         """Route rendered message to multiple channels.
 
@@ -202,7 +214,7 @@ class LocationChannelOrchestrator:
                 "location_id": message.get("location_id"),
                 "proximity_event_id": message.get("proximity_event_id"),
                 "status": "queued",
-                "message_id": None
+                "message_id": None,
             }
 
             try:
@@ -210,11 +222,13 @@ class LocationChannelOrchestrator:
                 # connector = get_connector_for_channel(channel)
                 # delivery = connector.send_message(...)
 
-                logger.info(f"Queued {channel} message for location {message['location_id']}")
+                logger.info(
+                    f"Queued {channel} message for location {message['location_id']}"
+                )
                 result["status"] = "sent"
 
             except Exception as e:
-                logger.error(f"Failed to send {channel} message: {e}")
+                logger.exception(f"Failed to send {channel} message")
                 result["status"] = "failed"
                 result["error"] = str(e)
 

@@ -23,18 +23,19 @@ Polling fallback: If webhook fails, use polling every 30 seconds
 """
 
 import logging
-import httpx
-import uuid
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
 from enum import Enum
-import json
+from typing import Any
+
+import httpx
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
 
 class TelegramCommandType(Enum):
     """Telegram bot commands."""
+
     START = "start"
     STATUS = "status"
     ORDERS = "orders"
@@ -44,6 +45,7 @@ class TelegramCommandType(Enum):
 
 class TelegramMessageType(Enum):
     """Telegram message types."""
+
     TEXT = "text"
     PHOTO = "photo"
     DOCUMENT = "document"
@@ -60,8 +62,8 @@ class TelegramAutomation:
     def __init__(
         self,
         bot_token: str,
-        webhook_url: Optional[str] = None,
-        webhook_secret: Optional[str] = None,
+        webhook_url: str | None = None,
+        webhook_secret: str | None = None,
     ):
         """
         Initialize Telegram automation.
@@ -135,7 +137,7 @@ class TelegramAutomation:
 
     # ========== UPDATE HANDLING ==========
 
-    async def handle_update(self, update: Dict[str, Any]) -> Dict[str, Any]:
+    async def handle_update(self, update: dict[str, Any]) -> dict[str, Any]:
         """
         Process incoming Telegram update.
 
@@ -171,10 +173,10 @@ class TelegramAutomation:
             return {"status": "ok"}
 
         except Exception as e:
-            logger.error(f"Error handling update: {e}")
+            logger.exception("Error handling update")
             return {"status": "error", "message": str(e)}
 
-    async def _handle_message(self, message: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_message(self, message: dict[str, Any]) -> dict[str, Any]:
         """Handle incoming message."""
         chat_id = message.get("chat", {}).get("id")
         from_user = message.get("from", {})
@@ -194,20 +196,20 @@ class TelegramAutomation:
         self,
         text: str,
         chat_id: int,
-        user: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        user: dict[str, Any],
+    ) -> dict[str, Any]:
         """Handle non-command message."""
         # Could be order inquiry, search query, etc
-        response = await self.send_message(
+        await self.send_message(
             chat_id,
-            f"I didn't understand that. Type /help for available commands.",
+            "I didn't understand that. Type /help for available commands.",
         )
         return {"status": "ok"}
 
     async def _handle_callback_query(
         self,
-        callback_query: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        callback_query: dict[str, Any],
+    ) -> dict[str, Any]:
         """Handle inline button callback."""
         query_id = callback_query.get("id")
         chat_id = callback_query.get("from", {}).get("id")
@@ -234,8 +236,8 @@ class TelegramAutomation:
         self,
         command: str,
         chat_id: int,
-        user: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        user: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Handle slash command.
 
@@ -267,17 +269,17 @@ class TelegramAutomation:
                 )
 
         except Exception as e:
-            logger.error(f"Error handling command: {e}")
+            logger.exception("Error handling command")
             return await self.send_message(
                 chat_id,
-                f"Error processing command: {str(e)}",
+                f"Error processing command: {e!s}",
             )
 
     async def _handle_start_command(
         self,
         chat_id: int,
-        user: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        user: dict[str, Any],
+    ) -> dict[str, Any]:
         """Handle /start command."""
         first_name = user.get("first_name", "User")
 
@@ -303,8 +305,8 @@ class TelegramAutomation:
     async def _handle_status_command(
         self,
         chat_id: int,
-        user: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        user: dict[str, Any],
+    ) -> dict[str, Any]:
         """Handle /status command."""
         # Fetch real status from DB
         status_text = (
@@ -324,8 +326,8 @@ class TelegramAutomation:
     async def _handle_orders_command(
         self,
         chat_id: int,
-        user: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        user: dict[str, Any],
+    ) -> dict[str, Any]:
         """Handle /orders command."""
         # Create inline keyboard with recent orders
         keyboard = {
@@ -346,8 +348,8 @@ class TelegramAutomation:
     async def _handle_settings_command(
         self,
         chat_id: int,
-        user: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        user: dict[str, Any],
+    ) -> dict[str, Any]:
         """Handle /settings command."""
         keyboard = {
             "inline_keyboard": [
@@ -379,7 +381,7 @@ class TelegramAutomation:
             parse_mode="Markdown",
         )
 
-    async def _handle_help_command(self, chat_id: int) -> Dict[str, Any]:
+    async def _handle_help_command(self, chat_id: int) -> dict[str, Any]:
         """Handle /help command."""
         help_text = (
             "📚 *Available Commands*\n\n"
@@ -396,7 +398,7 @@ class TelegramAutomation:
             parse_mode="Markdown",
         )
 
-    async def _handle_order_query(self, order_id: str, chat_id: int) -> Dict[str, Any]:
+    async def _handle_order_query(self, order_id: str, chat_id: int) -> dict[str, Any]:
         """Handle order details query."""
         # Fetch order from DB
         order_text = (
@@ -417,7 +419,7 @@ class TelegramAutomation:
         self,
         setting: str,
         chat_id: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Handle setting update."""
         logger.info(f"Updating setting: {setting}")
 
@@ -433,9 +435,9 @@ class TelegramAutomation:
         chat_id: int,
         text: str,
         parse_mode: str = "HTML",
-        reply_markup: Optional[Dict[str, Any]] = None,
+        reply_markup: dict[str, Any] | None = None,
         disable_notification: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Send text message to user.
 
@@ -475,7 +477,7 @@ class TelegramAutomation:
         chat_id: int,
         title: str,
         message: str,
-        data: Optional[Dict[str, Any]] = None,
+        data: dict[str, Any] | None = None,
     ) -> bool:
         """
         Send notification message.
@@ -505,8 +507,8 @@ class TelegramAutomation:
 
             return result.get("ok", False)
 
-        except Exception as e:
-            logger.error(f"Error sending notification: {e}")
+        except Exception:
+            logger.exception("Error sending notification")
             return False
 
     async def send_order_notification(
@@ -520,7 +522,7 @@ class TelegramAutomation:
             chat_id,
             "Order Update",
             f"Order #{order_id} status: {status}",
-            {"Time": datetime.utcnow().isoformat()},
+            {"Time": utc_now().isoformat()},
         )
 
     async def send_payment_notification(
@@ -577,7 +579,7 @@ class TelegramAutomation:
 
     # ========== POLLING FALLBACK ==========
 
-    async def poll_updates(self, last_update_id: int = 0) -> List[Dict[str, Any]]:
+    async def poll_updates(self, last_update_id: int = 0) -> list[dict[str, Any]]:
         """
         Poll for updates (fallback if webhook unavailable).
 
@@ -611,7 +613,7 @@ class TelegramAutomation:
 
     # ========== BOT INFO & MANAGEMENT ==========
 
-    async def get_bot_info(self) -> Optional[Dict[str, Any]]:
+    async def get_bot_info(self) -> dict[str, Any] | None:
         """Fetch bot information."""
         try:
             url = f"{self.api_url}/getMe"
@@ -630,7 +632,7 @@ class TelegramAutomation:
             logger.error(f"Error fetching bot info: {e}")
             return None
 
-    async def set_commands(self, commands: List[Dict[str, str]]) -> bool:
+    async def set_commands(self, commands: list[dict[str, str]]) -> bool:
         """
         Set bot commands menu.
 

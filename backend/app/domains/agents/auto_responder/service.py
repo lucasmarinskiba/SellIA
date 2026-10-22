@@ -1,33 +1,48 @@
 """Auto-Responder Pilot Agent Service"""
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional, List, Dict, Any
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func, and_
 
 from app.core.logger import get_logger
+from app.domains.agents.ai_reply import generate_raw_ai_response
 from app.domains.agents.auto_responder.models import AutoResponderRule, AutoResponseLog
 from app.domains.channels.models import Conversation, Message
 from app.domains.memory.service import MemoryEngine
-from app.domains.agents.ai_reply import generate_raw_ai_response
 
 logger = get_logger(__name__)
 
 BUY_SIGNALS = [
-    "comprar", "compro", "adquirir", "quiero", "precio", "cotización",
-    "cotizacion", "presupuesto", "pagar", "tarjeta", "transferencia",
-    "factura", "confirmo", "dale", "lo quiero", "me interesa",
+    "comprar",
+    "compro",
+    "adquirir",
+    "quiero",
+    "precio",
+    "cotización",
+    "cotizacion",
+    "presupuesto",
+    "pagar",
+    "tarjeta",
+    "transferencia",
+    "factura",
+    "confirmo",
+    "dale",
+    "lo quiero",
+    "me interesa",
 ]
 
 
-async def check_and_respond(db: AsyncSession, business_id: uuid.UUID) -> List[Dict[str, Any]]:
+async def check_and_respond(
+    db: AsyncSession, business_id: uuid.UUID
+) -> list[dict[str, Any]]:
     """
     Celery task logic that checks for conversations matching trigger rules
     and sends auto-responses.
     """
-    results: List[Dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
 
     # Load active rules for business
     rules_result = await db.execute(
@@ -42,15 +57,16 @@ async def check_and_respond(db: AsyncSession, business_id: uuid.UUID) -> List[Di
     if not rules:
         return results
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     for rule in rules:
-        matched_conversations = await _find_matching_conversations(db, business_id, rule, now)
+        matched_conversations = await _find_matching_conversations(
+            db, business_id, rule, now
+        )
         for conv in matched_conversations:
             # Skip if already auto-responded recently
             recent_log = await db.execute(
-                select(AutoResponseLog)
-                .where(
+                select(AutoResponseLog).where(
                     AutoResponseLog.conversation_id == conv.id,
                     AutoResponseLog.rule_id == rule.id,
                     AutoResponseLog.created_at >= now - timedelta(hours=1),
@@ -63,12 +79,18 @@ async def check_and_respond(db: AsyncSession, business_id: uuid.UUID) -> List[Di
             memory_engine = MemoryEngine(db)
             customer_memories = []
             try:
-                customer_id = conv.extra_data.get("customer_id") if conv.extra_data else None
+                customer_id = (
+                    conv.extra_data.get("customer_id") if conv.extra_data else None
+                )
                 if customer_id:
-                    profile = await memory_engine.get_customer_profile_summary(uuid.UUID(customer_id))
+                    profile = await memory_engine.get_customer_profile_summary(
+                        uuid.UUID(customer_id)
+                    )
                     customer_memories = [profile] if profile else []
             except Exception as e:
-                logger.warning(f"Memory load failed for conversation {conv.id}: {e}")
+                logger.warning(
+                    f"Memory load failed for conversation {conv.id}: {e}", exc_info=True
+                )
 
             # Check for buy-ready signals
             last_msg_result = await db.execute(
@@ -121,13 +143,15 @@ async def check_and_respond(db: AsyncSession, business_id: uuid.UUID) -> List[Di
             )
             db.add(log)
 
-            results.append({
-                "conversation_id": conv.id,
-                "rule_id": rule.id,
-                "trigger_type": rule.trigger_type,
-                "response_sent": response_text,
-                "has_buy_signal": has_buy_signal,
-            })
+            results.append(
+                {
+                    "conversation_id": conv.id,
+                    "rule_id": rule.id,
+                    "trigger_type": rule.trigger_type,
+                    "response_sent": response_text,
+                    "has_buy_signal": has_buy_signal,
+                }
+            )
 
     await db.commit()
     return results
@@ -138,7 +162,7 @@ async def _find_matching_conversations(
     business_id: uuid.UUID,
     rule: AutoResponderRule,
     now: datetime,
-) -> List[Conversation]:
+) -> list[Conversation]:
     """Find conversations matching a rule's trigger conditions."""
     stmt = select(Conversation).where(
         Conversation.business_id == business_id,
@@ -159,7 +183,7 @@ async def _find_matching_conversations(
         keywords = rule.trigger_config.get("keywords", [])
         if keywords:
             # Find conversations with recent messages containing keywords
-            keyword_patterns = [f"%{k}%" for k in keywords]
+            [f"%{k}%" for k in keywords]
             # Simplified: match any of the keywords in recent messages
             # For production, use full-text search or a more robust approach
             msg_stmt = select(Message.conversation_id).where(
@@ -167,7 +191,9 @@ async def _find_matching_conversations(
             )
             for kw in keywords[1:]:
                 msg_stmt = msg_stmt.union(
-                    select(Message.conversation_id).where(Message.content.ilike(f"%{kw}%"))
+                    select(Message.conversation_id).where(
+                        Message.content.ilike(f"%{kw}%")
+                    )
                 )
             subq = msg_stmt.subquery()
             stmt = stmt.where(Conversation.id.in_(subq))
@@ -176,9 +202,11 @@ async def _find_matching_conversations(
         tz_name = rule.trigger_config.get("timezone", "UTC")
         try:
             import zoneinfo
+
             tz = zoneinfo.ZoneInfo(tz_name)
         except Exception:
-            tz = timezone.utc
+            logger.exception("_find_matching_conversations: error inesperado")
+            tz = UTC
         local_now = now.astimezone(tz)
         start_str = rule.trigger_config.get("start", "18:00")
         end_str = rule.trigger_config.get("end", "08:00")
@@ -208,7 +236,7 @@ async def _find_matching_conversations(
 async def create_rule(
     db: AsyncSession,
     business_id: uuid.UUID,
-    data: Dict[str, Any],
+    data: dict[str, Any],
 ) -> AutoResponderRule:
     rule = AutoResponderRule(business_id=business_id, **data)
     db.add(rule)
@@ -221,7 +249,7 @@ async def list_rules(
     db: AsyncSession,
     business_id: uuid.UUID,
     active_only: bool = True,
-) -> List[AutoResponderRule]:
+) -> list[AutoResponderRule]:
     stmt = select(AutoResponderRule).where(AutoResponderRule.business_id == business_id)
     if active_only:
         stmt = stmt.where(AutoResponderRule.is_active == True)
@@ -230,7 +258,7 @@ async def list_rules(
     return result.scalars().all()
 
 
-async def get_rule(db: AsyncSession, rule_id: uuid.UUID) -> Optional[AutoResponderRule]:
+async def get_rule(db: AsyncSession, rule_id: uuid.UUID) -> AutoResponderRule | None:
     result = await db.execute(
         select(AutoResponderRule).where(AutoResponderRule.id == rule_id)
     )
@@ -240,7 +268,7 @@ async def get_rule(db: AsyncSession, rule_id: uuid.UUID) -> Optional[AutoRespond
 async def update_rule(
     db: AsyncSession,
     rule_id: uuid.UUID,
-    data: Dict[str, Any],
+    data: dict[str, Any],
 ) -> AutoResponderRule:
     rule = await get_rule(db, rule_id)
     if not rule:
@@ -266,9 +294,9 @@ async def get_response_stats(
     db: AsyncSession,
     business_id: uuid.UUID,
     days: int = 7,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Return auto-response statistics for a business."""
-    since = datetime.now(timezone.utc) - timedelta(days=days)
+    since = datetime.now(UTC) - timedelta(days=days)
 
     total_sent_result = await db.execute(
         select(func.count(AutoResponseLog.id))
@@ -338,7 +366,7 @@ async def list_logs(
     business_id: uuid.UUID,
     limit: int = 100,
     offset: int = 0,
-) -> List[AutoResponseLog]:
+) -> list[AutoResponseLog]:
     result = await db.execute(
         select(AutoResponseLog)
         .join(AutoResponderRule)

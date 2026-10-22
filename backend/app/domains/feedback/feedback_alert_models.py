@@ -1,11 +1,21 @@
 """Real-time feedback alerts — NPS monitoring + escalation."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Integer, Numeric, Enum as SQLEnum, Index, Float
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+)
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -13,6 +23,7 @@ from app.core.database import Base
 
 class FeedbackSentiment(str, Enum):
     """Feedback sentiment classification."""
+
     POSITIVE = "positive"
     NEUTRAL = "neutral"
     NEGATIVE = "negative"
@@ -20,6 +31,7 @@ class FeedbackSentiment(str, Enum):
 
 class AlertStatus(str, Enum):
     """Alert lifecycle."""
+
     ACTIVE = "active"
     ACKNOWLEDGED = "acknowledged"
     RESOLVED = "resolved"
@@ -28,12 +40,27 @@ class AlertStatus(str, Enum):
 
 class NPSAlert(Base):
     """Alert triggered on low NPS (< 6) feedback."""
+
     __tablename__ = "nps_alerts"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    location_id = Column(UUID(as_uuid=True), ForeignKey("locations.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    feedback_id = Column(UUID(as_uuid=True), ForeignKey("location_feedback.id", ondelete="CASCADE"), nullable=False)
+    location_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("locations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    feedback_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("location_feedback.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     # Visitor context
     visitor_email = Column(String(255), nullable=True)
@@ -44,7 +71,9 @@ class NPSAlert(Base):
     nps_score = Column(Integer, nullable=False)  # 0-5 (detectors < 6)
     sentiment = Column(SQLEnum(FeedbackSentiment), nullable=False)
     comment = Column(String(1000), nullable=True)
-    topics = Column(JSONB, default=list)  # Pain points: ["staff_rudeness", "wait_time", "product_quality"]
+    topics = Column(
+        JSONB, default=list
+    )  # Pain points: ["staff_rudeness", "wait_time", "product_quality"]
 
     # Status
     # Explicit Postgres type name: app.domains.alerts.models also has an AlertStatus (UNREAD/READ/DISMISSED),
@@ -57,17 +86,23 @@ class NPSAlert(Base):
     acknowledged_at = Column(DateTime(timezone=True), nullable=True)
 
     # Resolution
-    assigned_to_staff_id = Column(UUID(as_uuid=True), nullable=True)  # Staff assigned follow-up
+    assigned_to_staff_id = Column(
+        UUID(as_uuid=True), nullable=True
+    )  # Staff assigned follow-up
     assigned_at = Column(DateTime(timezone=True), nullable=True)
     resolution_notes = Column(String(1000), nullable=True)
     resolved_at = Column(DateTime(timezone=True), nullable=True)
 
     # Re-survey
-    resurvey_scheduled_for = Column(DateTime(timezone=True), nullable=True)  # 7 days after resolution
+    resurvey_scheduled_for = Column(
+        DateTime(timezone=True), nullable=True
+    )  # 7 days after resolution
     resurvey_completed = Column(Boolean, default=False)
     resurvey_nps_score = Column(Integer, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True
+    )
 
     location = relationship("Location", foreign_keys=[location_id])
 
@@ -79,11 +114,21 @@ class NPSAlert(Base):
 
 class NPSTrendMetric(Base):
     """Running NPS metrics per location (hourly snapshot)."""
+
     __tablename__ = "nps_trend_metrics"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    location_id = Column(UUID(as_uuid=True), ForeignKey("locations.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False)
+    location_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("locations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     # Period
     date = Column(String(10), nullable=False)  # YYYY-MM-DD
@@ -102,24 +147,34 @@ class NPSTrendMetric(Base):
     negative_count = Column(Integer, default=0)
 
     # Top topics (if negative)
-    top_issues = Column(JSONB, default=list)  # [{"topic": "wait_time", "count": 3}, ...]
+    top_issues = Column(
+        JSONB, default=list
+    )  # [{"topic": "wait_time", "count": 3}, ...]
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     location = relationship("Location", foreign_keys=[location_id])
 
-    __table_args__ = (
-        Index("idx_location_date", "location_id", "date"),
-    )
+    __table_args__ = (Index("idx_location_date", "location_id", "date"),)
 
 
 class SentimentTrend(Base):
     """Track sentiment changes over time (daily)."""
+
     __tablename__ = "sentiment_trends"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    location_id = Column(UUID(as_uuid=True), ForeignKey("locations.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False)
+    location_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("locations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     # Period
     date = Column(String(10), nullable=False, index=True)  # YYYY-MM-DD
@@ -131,22 +186,31 @@ class SentimentTrend(Base):
 
     # Trend direction
     direction = Column(String(20), default="stable")  # improving, stable, declining
-    day_over_day_change = Column(Numeric(5, 2), nullable=True)  # % change from previous day
+    day_over_day_change = Column(
+        Numeric(5, 2), nullable=True
+    )  # % change from previous day
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
-    __table_args__ = (
-        Index("idx_location_trend_date", "location_id", "date"),
-    )
+    __table_args__ = (Index("idx_location_trend_date", "location_id", "date"),)
 
 
 class FeedbackFollowUp(Base):
     """Follow-up task + re-survey schedule for negative feedback."""
+
     __tablename__ = "feedback_follow_ups"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    nps_alert_id = Column(UUID(as_uuid=True), ForeignKey("nps_alerts.id", ondelete="CASCADE"), nullable=False)
-    feedback_id = Column(UUID(as_uuid=True), ForeignKey("location_feedback.id", ondelete="CASCADE"), nullable=False)
+    nps_alert_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("nps_alerts.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    feedback_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("location_feedback.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     # Contact info
     visitor_email = Column(String(255), nullable=True)
@@ -164,7 +228,9 @@ class FeedbackFollowUp(Base):
 
     # Re-survey schedule
     initial_nps = Column(Integer, nullable=False)
-    resurvey_scheduled_for = Column(DateTime(timezone=True), nullable=False)  # 7 days post-resolution
+    resurvey_scheduled_for = Column(
+        DateTime(timezone=True), nullable=False
+    )  # 7 days post-resolution
     resurvey_sent = Column(Boolean, default=False)
     resurvey_response_at = Column(DateTime(timezone=True), nullable=True)
     resurvey_nps = Column(Integer, nullable=True)
@@ -174,8 +240,6 @@ class FeedbackFollowUp(Base):
     resolved = Column(Boolean, default=False)
     resolution_details = Column(String(1000), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
-    __table_args__ = (
-        Index("idx_alert_follow_up", "nps_alert_id"),
-    )
+    __table_args__ = (Index("idx_alert_follow_up", "nps_alert_id"),)

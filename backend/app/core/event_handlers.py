@@ -3,14 +3,17 @@
 Registra handlers para eventos del sistema que conectan dominios.
 """
 
-from typing import Any, Dict
+import logging
+from typing import Any
 from uuid import UUID
 
-from app.core.events import event_bus
 from app.core.database import AsyncSessionLocal
+from app.core.events import event_bus
+
+logger = logging.getLogger(__name__)
 
 
-async def _on_lead_score_changed(payload: Dict[str, Any]):
+async def _on_lead_score_changed(payload: dict[str, Any]):
     """Cuando un lead cambia de clasificación, actuar según corresponda."""
     new_classification = payload.get("new_classification")
     conversation_id = payload.get("conversation_id")
@@ -20,7 +23,9 @@ async def _on_lead_score_changed(payload: Dict[str, Any]):
         # Verificar si ya existe un deal para esta conversación
         async with AsyncSessionLocal() as db:
             from sqlalchemy import select
+
             from app.domains.crm.models import Deal
+
             result = await db.execute(
                 select(Deal).where(
                     Deal.conversation_id == UUID(conversation_id),
@@ -31,6 +36,7 @@ async def _on_lead_score_changed(payload: Dict[str, Any]):
             if not existing:
                 # Crear deal automáticamente
                 from app.domains.channels.models import Conversation
+
                 c_result = await db.execute(
                     select(Conversation).where(Conversation.id == UUID(conversation_id))
                 )
@@ -43,18 +49,26 @@ async def _on_lead_score_changed(payload: Dict[str, Any]):
                         contact_name=conversation.lead_name,
                         contact_email=conversation.lead_email,
                         contact_phone=conversation.lead_phone,
-                        value=conversation.extra_data.get("deal_value") if conversation.extra_data else None,
+                        value=(
+                            conversation.extra_data.get("deal_value")
+                            if conversation.extra_data
+                            else None
+                        ),
                         stage="qualified",
                         source_channel=conversation.lead_source,
                     )
                     db.add(deal)
                     await db.commit()
                     from app.core.logger import get_logger
-                    get_logger(__name__).info(f"Auto-created deal for hot lead {conversation_id}")
+
+                    get_logger(__name__).info(
+                        f"Auto-created deal for hot lead {conversation_id}"
+                    )
 
     # Evaluate alert rules
     async with AsyncSessionLocal() as db:
         from app.domains.alerts.engine import AlertEngine
+
         engine = AlertEngine(db)
         await engine.evaluate_rules(
             "lead.score_changed",
@@ -67,11 +81,12 @@ async def _on_lead_score_changed(payload: Dict[str, Any]):
         )
 
 
-async def _on_deal_created(payload: Dict[str, Any]):
+async def _on_deal_created(payload: dict[str, Any]):
     """Cuando se crea un deal, evaluar alertas."""
     business_id = payload.get("business_id")
     async with AsyncSessionLocal() as db:
         from app.domains.alerts.engine import AlertEngine
+
         engine = AlertEngine(db)
         await engine.evaluate_rules(
             "deal.created",
@@ -82,24 +97,29 @@ async def _on_deal_created(payload: Dict[str, Any]):
         )
 
 
-async def _on_human_handoff(payload: Dict[str, Any]):
+async def _on_human_handoff(payload: dict[str, Any]):
     """Cuando se requiere handoff humano, agregar a cola Redis."""
     try:
         import redis
+
         from app.core.config import get_settings
+
         settings = get_settings()
         r = redis.from_url(settings.REDIS_URL, decode_responses=True)
         r.lpush("human_handoff_queue", str(payload))
         r.expire("human_handoff_queue", 86400)  # 24h TTL
         r.close()
     except Exception as e:
+        logger.exception("_on_human_handoff: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).error(f"Handoff queue error: {e}")
 
     # Evaluate no-reply alert rules
     business_id = payload.get("business_id")
     async with AsyncSessionLocal() as db:
         from app.domains.alerts.engine import AlertEngine
+
         engine = AlertEngine(db)
         await engine.evaluate_rules(
             "human.handoff_required",
@@ -109,11 +129,12 @@ async def _on_human_handoff(payload: Dict[str, Any]):
         )
 
 
-async def _on_order_created(payload: Dict[str, Any]):
+async def _on_order_created(payload: dict[str, Any]):
     """Cuando se crea una orden, evaluar alertas de revenue."""
     business_id = payload.get("business_id")
     async with AsyncSessionLocal() as db:
         from app.domains.alerts.engine import AlertEngine
+
         engine = AlertEngine(db)
         await engine.evaluate_rules(
             "order.created",
@@ -124,11 +145,12 @@ async def _on_order_created(payload: Dict[str, Any]):
         )
 
 
-async def _on_workflow_completed(payload: Dict[str, Any]):
+async def _on_workflow_completed(payload: dict[str, Any]):
     """Cuando un workflow completa, evaluar si falló."""
     business_id = payload.get("business_id")
     async with AsyncSessionLocal() as db:
         from app.domains.alerts.engine import AlertEngine
+
         engine = AlertEngine(db)
         await engine.evaluate_rules(
             "workflow.completed",
@@ -139,7 +161,7 @@ async def _on_workflow_completed(payload: Dict[str, Any]):
         )
 
 
-async def _on_order_created_growth(payload: Dict[str, Any]):
+async def _on_order_created_growth(payload: dict[str, Any]):
     """Cuando se crea una orden: gamificación + review + referral."""
     business_id = payload.get("business_id")
     order_id = payload.get("order_id")
@@ -149,9 +171,8 @@ async def _on_order_created_growth(payload: Dict[str, Any]):
     async with AsyncSessionLocal() as db:
         # 1. Gamification: record sale and trigger celebration
         try:
-            from app.domains.gamification.service import GamificationEngine
-            from app.domains.users.models import User
             from app.domains.businesses.models import Business
+            from app.domains.gamification.service import GamificationEngine
 
             # Find user for this business
             biz = await db.get(Business, UUID(business_id))
@@ -165,31 +186,38 @@ async def _on_order_created_growth(payload: Dict[str, Any]):
                     was_autopilot=was_autopilot,
                 )
                 from app.core.logger import get_logger
+
                 get_logger(__name__).info(
                     f"Gamification: sale recorded for user {biz.user_id}, "
                     f"XP: +{result['xp_gained']}, celebrations: {result['celebration_intensity']}"
                 )
         except Exception as e:
+            logger.exception("_on_order_created_growth: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).info(f"Gamification sale recording skipped: {e}")
 
         # 2. Generate referral link
         if conversation_id:
             try:
                 from app.domains.growth.viral_referral import ViralReferralEngine
+
                 engine = ViralReferralEngine(db)
                 await engine.generate_referral_link(
                     business_id=UUID(business_id),
                     conversation_id=UUID(conversation_id),
                 )
             except Exception as e:
+                logger.exception("_on_order_created_growth: error inesperado")
                 from app.core.logger import get_logger
+
                 get_logger(__name__).info(f"Referral link generation skipped: {e}")
 
         # 3. Queue review request
         if order_id and conversation_id:
             try:
                 from app.domains.growth.social_proof import SocialProofEngine
+
                 engine = SocialProofEngine(db)
                 await engine.request_review(
                     business_id=UUID(business_id),
@@ -199,36 +227,47 @@ async def _on_order_created_growth(payload: Dict[str, Any]):
                     delay_hours=72,
                 )
             except Exception as e:
+                logger.exception("_on_order_created_growth: error inesperado")
                 from app.core.logger import get_logger
+
                 get_logger(__name__).info(f"Review request scheduling skipped: {e}")
 
 
-async def _on_lead_magnet_delivered(payload: Dict[str, Any]):
+async def _on_lead_magnet_delivered(payload: dict[str, Any]):
     """Cuando se entrega un lead magnet y no hay respuesta en 24h, enviar value bomb."""
-    business_id = payload.get("business_id")
+    payload.get("business_id")
     conversation_id = payload.get("conversation_id")
 
     # This would be handled by a scheduled task checking for non-responders
     # We just log it here for tracking
     from app.core.logger import get_logger
-    get_logger(__name__).info(f"Lead magnet delivered to {conversation_id}, monitoring for response")
+
+    get_logger(__name__).info(
+        f"Lead magnet delivered to {conversation_id}, monitoring for response"
+    )
 
 
-async def _on_referral_signup(payload: Dict[str, Any]):
+async def _on_referral_signup(payload: dict[str, Any]):
     """Cuando un referral se registra, iniciar secuencia de bienvenida."""
-    business_id = payload.get("business_id")
+    payload.get("business_id")
     new_conversation_id = payload.get("new_conversation_id")
 
     if new_conversation_id:
         from app.core.logger import get_logger
-        get_logger(__name__).info(f"Referral signup from {new_conversation_id}, welcome sequence queued")
+
+        get_logger(__name__).info(
+            f"Referral signup from {new_conversation_id}, welcome sequence queued"
+        )
 
 
-async def _on_social_proof_approved(payload: Dict[str, Any]):
+async def _on_social_proof_approved(payload: dict[str, Any]):
     """Cuando se aprueba social proof, hacerlo disponible para sales messages."""
     item_id = payload.get("item_id")
     from app.core.logger import get_logger
-    get_logger(__name__).info(f"Social proof {item_id} approved and available for reuse")
+
+    get_logger(__name__).info(
+        f"Social proof {item_id} approved and available for reuse"
+    )
 
 
 def register_event_handlers():
@@ -244,4 +283,5 @@ def register_event_handlers():
     event_bus.subscribe("referral.signup", _on_referral_signup)
     event_bus.subscribe("social_proof.approved", _on_social_proof_approved)
     from app.core.logger import get_logger
+
     get_logger(__name__).info("Event handlers registered")

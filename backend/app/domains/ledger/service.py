@@ -9,19 +9,22 @@ resolution and idempotency are enforced in one place.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from decimal import ROUND_HALF_UP, Decimal
-from typing import Any, Iterable, Optional
+from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.ledger.chart_of_accounts import REQUIRED_SUBTYPES, build_default_accounts
+from app.domains.ledger.chart_of_accounts import (
+    REQUIRED_SUBTYPES,
+    build_default_accounts,
+)
 from app.domains.ledger.models import (
     NORMAL_BALANCE_BY_TYPE,
     AccountingPeriod,
-    AccountType,
     JournalEntry,
     JournalLine,
     JournalSource,
@@ -43,15 +46,15 @@ def _q(value: Any) -> Decimal:
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _month_bounds(dt: datetime) -> tuple[datetime, datetime, str]:
-    start = datetime(dt.year, dt.month, 1, tzinfo=timezone.utc)
+    start = datetime(dt.year, dt.month, 1, tzinfo=UTC)
     if dt.month == 12:
-        end = datetime(dt.year + 1, 1, 1, tzinfo=timezone.utc)
+        end = datetime(dt.year + 1, 1, 1, tzinfo=UTC)
     else:
-        end = datetime(dt.year, dt.month + 1, 1, tzinfo=timezone.utc)
+        end = datetime(dt.year, dt.month + 1, 1, tzinfo=UTC)
     return start, end, start.strftime("%Y-%m")
 
 
@@ -70,10 +73,14 @@ class LedgerService:
     # ------------------------------------------------------------------
     # Setup
     # ------------------------------------------------------------------
-    async def ensure_setup(self, business_id: uuid.UUID, currency: str = "ARS") -> dict[str, Any]:
+    async def ensure_setup(
+        self, business_id: uuid.UUID, currency: str = "ARS"
+    ) -> dict[str, Any]:
         """Idempotently seed the chart of accounts and open the current period."""
         existing = await self.db.execute(
-            select(func.count(LedgerAccount.id)).where(LedgerAccount.business_id == business_id)
+            select(func.count(LedgerAccount.id)).where(
+                LedgerAccount.business_id == business_id
+            )
         )
         count = existing.scalar() or 0
         created = 0
@@ -96,14 +103,18 @@ class LedgerService:
 
     async def _subtypes_present(self, business_id: uuid.UUID) -> set[str]:
         res = await self.db.execute(
-            select(LedgerAccount.subtype).where(LedgerAccount.business_id == business_id)
+            select(LedgerAccount.subtype).where(
+                LedgerAccount.business_id == business_id
+            )
         )
         return {s for (s,) in res.all() if s}
 
     # ------------------------------------------------------------------
     # Account lookup
     # ------------------------------------------------------------------
-    async def get_accounts(self, business_id: uuid.UUID, active_only: bool = False) -> list[LedgerAccount]:
+    async def get_accounts(
+        self, business_id: uuid.UUID, active_only: bool = False
+    ) -> list[LedgerAccount]:
         q = select(LedgerAccount).where(LedgerAccount.business_id == business_id)
         if active_only:
             q = q.where(LedgerAccount.is_active.is_(True))
@@ -123,9 +134,9 @@ class LedgerService:
         self,
         business_id: uuid.UUID,
         *,
-        account_id: Optional[uuid.UUID] = None,
-        code: Optional[str] = None,
-        subtype: Optional[str] = None,
+        account_id: uuid.UUID | None = None,
+        code: str | None = None,
+        subtype: str | None = None,
     ) -> LedgerAccount:
         q = select(LedgerAccount).where(LedgerAccount.business_id == business_id)
         if account_id:
@@ -138,10 +149,14 @@ class LedgerService:
             raise LedgerError("resolve_account needs account_id, code or subtype")
         acc = (await self.db.execute(q)).scalars().first()
         if not acc:
-            raise LedgerError(f"account not found (id={account_id} code={code} subtype={subtype})")
+            raise LedgerError(
+                f"account not found (id={account_id} code={code} subtype={subtype})"
+            )
         return acc
 
-    async def create_account(self, business_id: uuid.UUID, **data: Any) -> LedgerAccount:
+    async def create_account(
+        self, business_id: uuid.UUID, **data: Any
+    ) -> LedgerAccount:
         acc_type = data["type"]
         if acc_type not in NORMAL_BALANCE_BY_TYPE:
             raise LedgerError(f"invalid account type: {acc_type}")
@@ -158,7 +173,9 @@ class LedgerService:
     # ------------------------------------------------------------------
     # Periods
     # ------------------------------------------------------------------
-    async def _get_or_create_period(self, business_id: uuid.UUID, dt: datetime) -> AccountingPeriod:
+    async def _get_or_create_period(
+        self, business_id: uuid.UUID, dt: datetime
+    ) -> AccountingPeriod:
         start, end, name = _month_bounds(dt)
         res = await self.db.execute(
             select(AccountingPeriod).where(
@@ -203,7 +220,7 @@ class LedgerService:
 
     async def find_by_idempotency(
         self, business_id: uuid.UUID, key: str
-    ) -> Optional[JournalEntry]:
+    ) -> JournalEntry | None:
         if not key:
             return None
         res = await self.db.execute(
@@ -232,12 +249,12 @@ class LedgerService:
         business_id: uuid.UUID,
         lines: list[dict[str, Any]],
         *,
-        entry_date: Optional[datetime] = None,
-        memo: Optional[str] = None,
+        entry_date: datetime | None = None,
+        memo: str | None = None,
         source: str = JournalSource.MANUAL.value,
-        source_ref: Optional[str] = None,
-        idempotency_key: Optional[str] = None,
-        created_by: Optional[uuid.UUID] = None,
+        source_ref: str | None = None,
+        idempotency_key: str | None = None,
+        created_by: uuid.UUID | None = None,
         currency: str = "ARS",
         allow_closed_period: bool = False,
         commit: bool = True,
@@ -250,17 +267,21 @@ class LedgerService:
         if idempotency_key:
             dup = await self.find_by_idempotency(business_id, idempotency_key)
             if dup:
-                logger.info("Ledger: idempotent hit for key=%s -> entry %s", idempotency_key, dup.id)
+                logger.info(
+                    "Ledger: idempotent hit for key=%s -> entry %s",
+                    idempotency_key,
+                    dup.id,
+                )
                 return dup
 
         entry_date = entry_date or _utcnow()
         if entry_date.tzinfo is None:
-            entry_date = entry_date.replace(tzinfo=timezone.utc)
+            entry_date = entry_date.replace(tzinfo=UTC)
 
         # Resolve + validate lines
         resolved: list[dict[str, Any]] = []
-        total_debit = Decimal("0")
-        total_credit = Decimal("0")
+        total_debit = Decimal(0)
+        total_credit = Decimal(0)
         for idx, raw in enumerate(lines):
             debit = _q(raw.get("debit", 0))
             credit = _q(raw.get("credit", 0))
@@ -334,7 +355,10 @@ class LedgerService:
             await self.db.refresh(entry, ["lines"])
         logger.info(
             "Ledger: posted %s (%s) %s lines total %s",
-            entry.entry_number, source, len(resolved), _q(total_debit),
+            entry.entry_number,
+            source,
+            len(resolved),
+            _q(total_debit),
         )
         return entry
 
@@ -343,8 +367,8 @@ class LedgerService:
         business_id: uuid.UUID,
         entry_id: uuid.UUID,
         *,
-        reason: Optional[str] = None,
-        created_by: Optional[uuid.UUID] = None,
+        reason: str | None = None,
+        created_by: uuid.UUID | None = None,
     ) -> JournalEntry:
         res = await self.db.execute(
             select(JournalEntry).where(
@@ -406,9 +430,9 @@ class LedgerService:
         self,
         business_id: uuid.UUID,
         *,
-        account_ids: Optional[Iterable[uuid.UUID]] = None,
-        start: Optional[datetime] = None,
-        end: Optional[datetime] = None,
+        account_ids: Iterable[uuid.UUID] | None = None,
+        start: datetime | None = None,
+        end: datetime | None = None,
     ):
         q = (
             select(
@@ -429,26 +453,28 @@ class LedgerService:
             q = q.where(JournalEntry.entry_date >= start)
         if end is not None:
             q = q.where(JournalEntry.entry_date < end)
-        return {row[0]: (_q(row[1]), _q(row[2])) for row in (await self.db.execute(q)).all()}
+        return {
+            row[0]: (_q(row[1]), _q(row[2])) for row in (await self.db.execute(q)).all()
+        }
 
     async def trial_balance(
-        self, business_id: uuid.UUID, as_of: Optional[datetime] = None
+        self, business_id: uuid.UUID, as_of: datetime | None = None
     ) -> dict[str, Any]:
         as_of = as_of or _utcnow()
         accounts = await self.get_accounts(business_id)
         balances = await self._balance_query(business_id, end=as_of)
         rows = []
-        total_debit = Decimal("0")
-        total_credit = Decimal("0")
+        total_debit = Decimal(0)
+        total_credit = Decimal(0)
         for acc in accounts:
-            dr, cr = balances.get(acc.id, (Decimal("0"), Decimal("0")))
+            dr, cr = balances.get(acc.id, (Decimal(0), Decimal(0)))
             net = dr - cr
             if net == 0 and acc.id not in balances:
                 continue
             if acc.normal_balance == "debit":
-                row_dr, row_cr = (net, Decimal("0")) if net >= 0 else (Decimal("0"), -net)
+                row_dr, row_cr = (net, Decimal(0)) if net >= 0 else (Decimal(0), -net)
             else:
-                row_cr, row_dr = (-net, Decimal("0")) if net <= 0 else (Decimal("0"), net)
+                row_cr, row_dr = (-net, Decimal(0)) if net <= 0 else (Decimal(0), net)
             total_debit += row_dr
             total_credit += row_cr
             rows.append(
@@ -475,8 +501,8 @@ class LedgerService:
         business_id: uuid.UUID,
         account_id: uuid.UUID,
         *,
-        start: Optional[datetime] = None,
-        end: Optional[datetime] = None,
+        start: datetime | None = None,
+        end: datetime | None = None,
         limit: int = 200,
     ) -> list[dict[str, Any]]:
         q = (
@@ -513,8 +539,8 @@ class LedgerService:
         self,
         business_id: uuid.UUID,
         *,
-        source: Optional[str] = None,
-        status: Optional[str] = None,
+        source: str | None = None,
+        status: str | None = None,
         limit: int = 100,
     ) -> list[JournalEntry]:
         q = select(JournalEntry).where(JournalEntry.business_id == business_id)

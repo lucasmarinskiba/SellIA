@@ -3,14 +3,19 @@ Ambassador & Certification Router
 """
 
 from typing import Annotated
-from uuid import UUID
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
+from app.domains.gamification.ambassador_service import (
+    get_or_create_expert_profile,
+    get_user_certifications,
+    list_certifications,
+    publish_profile,
+)
 from app.domains.users.models import User
-from app.domains.gamification.ambassador_service import list_certifications, get_user_certifications, get_or_create_expert_profile, publish_profile
 
 router = APIRouter(prefix="/ambassador", tags=["ambassador"])
 
@@ -86,4 +91,8 @@ async def publish_expert_profile(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     profile = await publish_profile(db, current_user.id, data)
-    return {"message": "Profile published", "slug": profile.slug, "url": f"/expert/{profile.slug}"}
+    return {
+        "message": "Profile published",
+        "slug": profile.slug,
+        "url": f"/expert/{profile.slug}",
+    }

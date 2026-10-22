@@ -8,17 +8,20 @@ Se integra con RetryEngine del proyecto para:
 - Circuit breaker: stop retrying si service está down
 """
 
-import logging
 import asyncio
-from typing import Optional, Dict, Any
-from datetime import datetime, timedelta
+import logging
+from datetime import timedelta
 from enum import Enum
+from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
 
 class RetryPolicy(Enum):
     """Políticas de retry."""
+
     AGGRESSIVE = "aggressive"  # 5 retries, fast backoff
     DEFAULT = "default"  # 3 retries, normal backoff
     CONSERVATIVE = "conservative"  # 1 retry, long waits
@@ -31,7 +34,7 @@ class RetryHandler:
     def __init__(self, job_queue, state_manager):
         self.job_queue = job_queue
         self.state_manager = state_manager
-        self.retry_queue: Dict[str, Dict[str, Any]] = {}
+        self.retry_queue: dict[str, dict[str, Any]] = {}
         self.lock = asyncio.Lock()
 
     async def schedule_retry(
@@ -48,7 +51,7 @@ class RetryHandler:
         """
         async with self.lock:
             delay = self._calculate_delay(job.attempts, policy)
-            retry_at = datetime.utcnow() + timedelta(seconds=delay)
+            retry_at = utc_now() + timedelta(seconds=delay)
 
             self.retry_queue[job.id] = {
                 "job": job,
@@ -69,7 +72,7 @@ class RetryHandler:
         Returns:
             Cantidad de retries procesados
         """
-        now = datetime.utcnow()
+        now = utc_now()
         retries_ready = []
 
         async with self.lock:
@@ -86,7 +89,7 @@ class RetryHandler:
 
         return len(retries_ready)
 
-    async def get_pending_retries(self) -> Dict[str, Dict[str, Any]]:
+    async def get_pending_retries(self) -> dict[str, dict[str, Any]]:
         """Obtiene retries pendientes."""
         async with self.lock:
             return dict(self.retry_queue)
@@ -126,6 +129,7 @@ class RetryHandler:
 
         # Add jitter (±10%)
         import random
+
         jitter = random.uniform(0.9, 1.1)
         return delay * jitter
 

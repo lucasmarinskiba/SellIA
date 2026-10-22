@@ -1,8 +1,7 @@
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from enum import Enum
-from typing import Optional
 import random
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
 
 
 class MetricType(str, Enum):
@@ -30,7 +29,7 @@ class MetricValue:
     timestamp: datetime
     value: float
     unit: str
-    trend: Optional[float] = None  # change %
+    trend: float | None = None  # change %
 
 
 @dataclass
@@ -39,7 +38,7 @@ class KPICard:
     metric_type: MetricType
     current_value: float
     unit: str
-    target: Optional[float] = None
+    target: float | None = None
     trend: float = 0.0  # percentage
     trend_direction: str = "neutral"  # up, down, neutral
     last_updated: datetime = field(default_factory=datetime.now)
@@ -50,14 +49,14 @@ class KPICard:
 class AgentPerformance:
     agent_id: str
     agent_name: str
-    status: str  #active, idle, offline %
+    status: str  # active, idle, offline %
     tasks_completed: int
-    success_rate: float  #0-100 %
-    avg_response_time: float  #seconds %
+    success_rate: float  # 0-100 %
+    avg_response_time: float  # seconds %
     leads_generated: int
     conversions: int
     revenue_attributed: float
-    efficiency_score: float  #0-100 %
+    efficiency_score: float  # 0-100 %
 
 
 @dataclass
@@ -75,10 +74,10 @@ class SegmentMetrics:
 @dataclass
 class PipelineMetrics:
     total_pipeline_value: float
-    opportunities_in_stage: dict[str, int]  #stage -> count %
+    opportunities_in_stage: dict[str, int]  # stage -> count %
     avg_deal_size: float
     days_in_pipeline: float
-    forecast_confidence: float  #0-100 %
+    forecast_confidence: float  # 0-100 %
 
 
 @dataclass
@@ -134,7 +133,9 @@ class PerformanceDashboardEngine:
                 trend=random.uniform(-5, 15),
                 trend_direction="up" if random.random() > 0.3 else "neutral",
                 sparkline_data=[
-                    self._get_metric_value(user_id, MetricType.LEAD_COUNT, TimeRange.TODAY)
+                    self._get_metric_value(
+                        user_id, MetricType.LEAD_COUNT, TimeRange.TODAY
+                    )
                     for _ in range(7)
                 ],
             )

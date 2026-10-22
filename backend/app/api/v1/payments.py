@@ -1,25 +1,30 @@
 """Payment API endpoints."""
 
-from uuid import UUID
-from typing import Optional
+import logging
 from decimal import Decimal
+from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.core.integrations.mercadopago_webhook import verify_mercadopago_signature
-from app.domains.users.models import User
 from app.domains.businesses.models import Business
 from app.domains.payments.payment_service import PaymentService
+from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1", tags=["payments"])
 
 
-async def _get_business_for_user(business_id: UUID, user: User, db: AsyncSession) -> Business:
+async def _get_business_for_user(
+    business_id: UUID, user: User, db: AsyncSession
+) -> Business:
     """Same convention as websites.py/catalog.py/channels.py/conversations.py.
 
     Every route below used to take business_id straight from the URL with no
@@ -42,12 +47,12 @@ class CreateTransactionRequest(BaseModel):
     amount: Decimal
     currency: str = "USD"
     method: str
-    customer_id: Optional[UUID] = None
-    order_id: Optional[UUID] = None
-    location_id: Optional[UUID] = None
-    conversation_id: Optional[UUID] = None
-    description: Optional[str] = None
-    reference_id: Optional[str] = None
+    customer_id: UUID | None = None
+    order_id: UUID | None = None
+    location_id: UUID | None = None
+    conversation_id: UUID | None = None
+    description: str | None = None
+    reference_id: str | None = None
 
 
 class CreateCheckoutRequest(BaseModel):
@@ -56,8 +61,8 @@ class CreateCheckoutRequest(BaseModel):
     items: list
     amount: Decimal
     currency: str = "USD"
-    order_id: Optional[UUID] = None
-    conversation_id: Optional[UUID] = None
+    order_id: UUID | None = None
+    conversation_id: UUID | None = None
 
 
 class CreateRefundRequest(BaseModel):
@@ -68,15 +73,15 @@ class CreateRefundRequest(BaseModel):
 
 class ReconcileTransactionRequest(BaseModel):
     order_id: UUID
-    transaction_id: Optional[UUID] = None
+    transaction_id: UUID | None = None
 
 
 @router.post("/businesses/{business_id}/transactions")
 async def create_transaction(
     business_id: UUID,
     request: CreateTransactionRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create payment transaction."""
     await _get_business_for_user(business_id, current_user, db)
@@ -91,7 +96,7 @@ async def create_transaction(
         conversation_id=request.conversation_id,
         description=request.description,
         reference_id=request.reference_id,
-        db=db
+        db=db,
     )
 
 
@@ -99,8 +104,8 @@ async def create_transaction(
 async def create_mercadopago_checkout(
     business_id: UUID,
     request: CreateCheckoutRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create MercadoPago checkout."""
     await _get_business_for_user(business_id, current_user, db)
@@ -113,7 +118,7 @@ async def create_mercadopago_checkout(
         currency=request.currency,
         order_id=request.order_id,
         conversation_id=request.conversation_id,
-        db=db
+        db=db,
     )
 
 
@@ -121,7 +126,7 @@ async def create_mercadopago_checkout(
 async def handle_mercadopago_webhook(
     business_id: UUID,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Handle MercadoPago webhook notification.
 
@@ -139,13 +144,12 @@ async def handle_mercadopago_webhook(
     try:
         body = await request.json()
     except Exception:
+        logger.exception("handle_mercadopago_webhook: error inesperado")
         body = {}
     if not verify_mercadopago_signature(request, body):
         raise HTTPException(status_code=401, detail="Invalid webhook signature")
     return await PaymentService.process_mercadopago_webhook(
-        business_id=business_id,
-        event_data=body,
-        db=db
+        business_id=business_id, event_data=body, db=db
     )
 
 
@@ -153,8 +157,8 @@ async def handle_mercadopago_webhook(
 async def create_refund(
     business_id: UUID,
     request: CreateRefundRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create refund request."""
     await _get_business_for_user(business_id, current_user, db)
@@ -163,7 +167,7 @@ async def create_refund(
         business_id=business_id,
         amount=request.amount,
         reason=request.reason,
-        db=db
+        db=db,
     )
 
 
@@ -171,8 +175,8 @@ async def create_refund(
 async def reconcile_transaction(
     business_id: UUID,
     request: ReconcileTransactionRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Reconcile order with payment transaction."""
     await _get_business_for_user(business_id, current_user, db)
@@ -180,18 +184,18 @@ async def reconcile_transaction(
         order_id=request.order_id,
         transaction_id=request.transaction_id,
         business_id=business_id,
-        db=db
+        db=db,
     )
 
 
 @router.get("/businesses/{business_id}/transactions")
 async def get_transactions(
     business_id: UUID,
-    status: Optional[str] = Query(None),
-    location_id: Optional[UUID] = Query(None),
-    limit: int = Query(50, ge=1, le=200),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    status: Annotated[str | None, Query()] = None,
+    location_id: Annotated[UUID | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
 ):
     """Get transactions."""
     await _get_business_for_user(business_id, current_user, db)
@@ -200,35 +204,30 @@ async def get_transactions(
         status=status,
         location_id=location_id,
         limit=limit,
-        db=db
+        db=db,
     )
 
 
 @router.get("/businesses/{business_id}/settlements/metrics")
 async def get_settlement_metrics(
     business_id: UUID,
-    period_days: int = Query(30, ge=1, le=365),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    period_days: Annotated[int, Query(ge=1, le=365)] = 30,
 ):
     """Get settlement metrics."""
     await _get_business_for_user(business_id, current_user, db)
     return await PaymentService.get_settlement_metrics(
-        business_id=business_id,
-        period_days=period_days,
-        db=db
+        business_id=business_id, period_days=period_days, db=db
     )
 
 
 @router.get("/businesses/{business_id}/payments/metrics")
 async def get_payment_metrics(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get payment metrics."""
     await _get_business_for_user(business_id, current_user, db)
-    return await PaymentService.get_payment_metrics(
-        business_id=business_id,
-        db=db
-    )
+    return await PaymentService.get_payment_metrics(business_id=business_id, db=db)

@@ -1,7 +1,7 @@
 """Query Optimizer — Index strategy, query rewriting, materialized views."""
 
 import logging
-from typing import Dict, List, Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +10,7 @@ class QueryOptimizer:
     """Optimize database queries for speed."""
 
     # Index strategy recommendations
-    INDEX_STRATEGIES = {
+    INDEX_STRATEGIES: ClassVar[dict] = {
         "user_id_lookup": {
             "columns": ["user_id"],
             "type": "B-tree",
@@ -42,79 +42,97 @@ class QueryOptimizer:
         query: str,
         execution_time_ms: float,
         rows_scanned: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Analyze query performance."""
 
-        efficiency = (1.0 if execution_time_ms < 100 else 0.5) if rows_scanned > 0 else 0
+        efficiency = (
+            (1.0 if execution_time_ms < 100 else 0.5) if rows_scanned > 0 else 0
+        )
 
         return {
             "query": query[:100],
             "execution_time_ms": execution_time_ms,
             "rows_scanned": rows_scanned,
             "efficiency": round(efficiency, 2),
-            "status": "good" if execution_time_ms < 100 else "slow" if execution_time_ms < 1000 else "very_slow",
-            "recommendation": "Add index" if rows_scanned > 10000 else "Query is efficient",
+            "status": (
+                "good"
+                if execution_time_ms < 100
+                else "slow" if execution_time_ms < 1000 else "very_slow"
+            ),
+            "recommendation": (
+                "Add index" if rows_scanned > 10000 else "Query is efficient"
+            ),
         }
 
     @staticmethod
     def recommend_indexes(
         table: str,
-        frequent_filters: List[str],
-    ) -> List[Dict[str, Any]]:
+        frequent_filters: list[str],
+    ) -> list[dict[str, Any]]:
         """Recommend indexes for table."""
 
         recommendations = []
 
         for filter_col in frequent_filters:
-            recommendations.append({
-                "table": table,
-                "column": filter_col,
-                "type": "B-tree",
-                "priority": "High" if len(frequent_filters) == 1 else "Medium",
-                "query_impact": "-50% to -80% execution time",
-            })
+            recommendations.append(
+                {
+                    "table": table,
+                    "column": filter_col,
+                    "type": "B-tree",
+                    "priority": "High" if len(frequent_filters) == 1 else "Medium",
+                    "query_impact": "-50% to -80% execution time",
+                }
+            )
 
         # Composite index
         if len(frequent_filters) > 1:
-            recommendations.append({
-                "table": table,
-                "columns": frequent_filters[:3],
-                "type": "Composite B-tree",
-                "priority": "Very High",
-                "query_impact": "-80% to -95% execution time",
-            })
+            recommendations.append(
+                {
+                    "table": table,
+                    "columns": frequent_filters[:3],
+                    "type": "Composite B-tree",
+                    "priority": "Very High",
+                    "query_impact": "-80% to -95% execution time",
+                }
+            )
 
         return recommendations
 
     @staticmethod
     def optimize_query(
         query: str,
-        table_stats: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        table_stats: dict[str, Any],
+    ) -> dict[str, Any]:
         """Rewrite query for optimization."""
 
         optimizations = []
 
         # If query has OR conditions, suggest UNION
         if " OR " in query:
-            optimizations.append({
-                "type": "Use UNION instead of OR",
-                "expected_improvement": "20-30%",
-            })
+            optimizations.append(
+                {
+                    "type": "Use UNION instead of OR",
+                    "expected_improvement": "20-30%",
+                }
+            )
 
         # If query joins many tables, suggest denormalization
         if query.count("JOIN") > 3:
-            optimizations.append({
-                "type": "Consider denormalization",
-                "expected_improvement": "40-60%",
-            })
+            optimizations.append(
+                {
+                    "type": "Consider denormalization",
+                    "expected_improvement": "40-60%",
+                }
+            )
 
         # If query lacks LIMIT, add it
         if "LIMIT" not in query:
-            optimizations.append({
-                "type": "Add LIMIT clause",
-                "expected_improvement": "Reduce memory usage",
-            })
+            optimizations.append(
+                {
+                    "type": "Add LIMIT clause",
+                    "expected_improvement": "Reduce memory usage",
+                }
+            )
 
         return {
             "original_query": query[:100],
@@ -127,7 +145,7 @@ class QueryOptimizer:
     def cache_strategy(
         table: str,
         row_count: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Determine caching strategy."""
 
         if row_count < 100000:
@@ -152,7 +170,7 @@ class QueryOptimizer:
     def batch_operations(
         operation: str,
         count: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Recommend batch size for bulk operations."""
 
         if count < 100:

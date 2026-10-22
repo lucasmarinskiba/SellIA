@@ -16,8 +16,8 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -42,11 +42,13 @@ class HoursVerdict:
     """Whether the bot may speak now, and what to say if not."""
 
     within_hours: bool
-    reason: Optional[str] = None
-    after_hours_message: Optional[str] = None
+    reason: str | None = None
+    after_hours_message: str | None = None
 
 
-def check_hours(active_hours: Optional[dict[str, Any]], now: Optional[datetime] = None) -> HoursVerdict:
+def check_hours(
+    active_hours: dict[str, Any] | None, now: datetime | None = None
+) -> HoursVerdict:
     """Is the current moment inside the bot's window?
 
     The window is stored in the seller's local time with an explicit UTC offset,
@@ -66,7 +68,7 @@ def check_hours(active_hours: Optional[dict[str, Any]], now: Optional[datetime] 
     if start == end:
         return HoursVerdict(True)  # a zero-width window means "no restriction"
 
-    now = now or datetime.now(timezone.utc)
+    now = now or datetime.now(UTC)
     local_hour = (now + timedelta(hours=offset)).hour
     inside = start < end and (start <= local_hour < end)
     inside = inside or (start > end and (local_hour >= start or local_hour < end))
@@ -85,7 +87,7 @@ class BotBrief:
     platform: str
     prompt: str
     max_chars: int
-    language: Optional[str]
+    language: str | None
     #: Names of the sources that really contributed, for the UI and the logs.
     sources: list[str]
     #: Configuration the seller filled in that could not be read.
@@ -109,15 +111,17 @@ async def build_brief(
         from app.domains.preferences.models import SellerPreferences
 
         result = await db.execute(
-            select(SellerPreferences).where(SellerPreferences.business_id == business_id)
+            select(SellerPreferences).where(
+                SellerPreferences.business_id == business_id
+            )
         )
         prefs = result.scalar_one_or_none()
     except Exception as e:  # noqa: BLE001
         logger.warning("bot brief: seller preferences unreadable: %s", str(e)[:160])
         try:
             await db.rollback()
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception:
+            logger.exception("build_brief: error ignorado")
         missing.append("preferencias del vendedor")
 
     language_name = None
@@ -161,7 +165,9 @@ async def build_brief(
             )
 
     if bot is not None and getattr(bot, "custom_instructions", None):
-        sections.append(f"INSTRUCCIONES DEL VENDEDOR PARA ESTE CANAL: {bot.custom_instructions}")
+        sections.append(
+            f"INSTRUCCIONES DEL VENDEDOR PARA ESTE CANAL: {bot.custom_instructions}"
+        )
         sources.append("instrucciones del canal")
 
     prompt = playbooks.prompt_fragment(platform, language=language_name)
@@ -188,7 +194,9 @@ class SendVerdict:
     trimmed: bool
 
 
-def vet_reply(platform: str, reply: str, *, hold_on_violation: bool = True) -> SendVerdict:
+def vet_reply(
+    platform: str, reply: str, *, hold_on_violation: bool = True
+) -> SendVerdict:
     """Check a generated reply against the platform before it goes out.
 
     Length is repaired (trimmed at a sentence boundary). A forbidden link or

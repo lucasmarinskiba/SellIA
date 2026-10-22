@@ -2,11 +2,16 @@
 Cold email sequence generation + sending.
 Uses Efti (cold email) + Kennedy (80/20 ROI) frameworks.
 """
+
+import logging
 import os
-import httpx
 from datetime import datetime
-from pydantic import BaseModel
+
+import httpx
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/sequences", tags=["email_sequences"])
 
@@ -33,7 +38,9 @@ class SequenceRequest(BaseModel):
     sender_email: str
 
 
-async def _generate_cold_email_sequence(lead: LeadProfile, offer: str) -> list[EmailInSequence]:
+async def _generate_cold_email_sequence(
+    lead: LeadProfile, offer: str
+) -> list[EmailInSequence]:
     """Generate 5-email cold sequence using Efti + Kennedy frameworks."""
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
     if not anthropic_key:
@@ -92,6 +99,7 @@ Return ONLY valid JSON array, no markdown."""
     content = data["content"][0]["text"]
     # Parse JSON from response
     import json
+
     emails_data = json.loads(content)
     return [EmailInSequence(**e) for e in emails_data]
 
@@ -109,4 +117,5 @@ async def create_cold_email_sequence(req: SequenceRequest) -> dict:
             "created_at": datetime.now().isoformat(),
         }
     except Exception as e:
+        logger.exception("create_cold_email_sequence: error inesperado")
         raise HTTPException(status_code=500, detail=str(e))

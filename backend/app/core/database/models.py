@@ -8,13 +8,28 @@ Env vars:
   - DATABASE_URL=postgresql://user:password@localhost:5432/sellia
 """
 
-from sqlalchemy import create_engine, Column, String, Float, Integer, DateTime, Boolean, JSON, Text, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
-from datetime import datetime
 import os
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/sellia")
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    create_engine,
+)
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship, sessionmaker
+
+from app.core.clock import utc_now
+
+DATABASE_URL = os.getenv(
+    "DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/sellia"
+)
 
 engine = create_engine(DATABASE_URL, echo=False)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -34,8 +49,8 @@ class Account(Base):
     product_description = Column(Text)
     price = Column(Float)
     industry = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     # Relations
     orders = relationship("Order", back_populates="account")
@@ -56,8 +71,8 @@ class Lead(Base):
     source = Column(String)  # whatsapp, instagram, email, ad, organic
     status = Column(String, default="new")  # new, qualified, contacted, converted
     score = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now)
 
     account = relationship("Account", back_populates="leads")
 
@@ -75,7 +90,7 @@ class Order(Base):
     status = Column(String, default="pending")  # pending, paid, shipped, delivered
     payment_status = Column(String, default="pending")  # pending, confirmed, failed
     stripe_payment_intent_id = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     completed_at = Column(DateTime)
 
     account = relationship("Account", back_populates="orders")
@@ -92,7 +107,7 @@ class EmailLog(Base):
     subject = Column(String)
     template = Column(String)  # welcome, follow_up, invoice, etc
     status = Column(String)  # sent, bounced, opened, clicked
-    sent_at = Column(DateTime, default=datetime.utcnow)
+    sent_at = Column(DateTime, default=utc_now)
 
     account = relationship("Account", back_populates="emails")
 
@@ -107,7 +122,7 @@ class WebhookEvent(Base):
     event_type = Column(String)
     payload = Column(JSON)
     processed = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
 
 class Strategy(Base):
@@ -122,8 +137,8 @@ class Strategy(Base):
     channels = Column(JSON)
     tactics = Column(JSON)
     kpis = Column(JSON)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now)
 
 
 class Metric(Base):
@@ -133,7 +148,7 @@ class Metric(Base):
 
     id = Column(String, primary_key=True)
     account_id = Column(String, index=True)
-    date = Column(DateTime, default=datetime.utcnow)
+    date = Column(DateTime, default=utc_now)
     leads_captured = Column(Integer, default=0)
     leads_qualified = Column(Integer, default=0)
     orders_completed = Column(Integer, default=0)

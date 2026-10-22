@@ -1,10 +1,10 @@
 """API rate limiting & caching models."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Index, Boolean
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -13,6 +13,7 @@ from app.core.database import Base
 
 class RateLimitTier(str, Enum):
     """API rate limit tier."""
+
     FREE = "free"  # 100 req/hour
     STARTER = "starter"  # 1000 req/hour
     PRO = "pro"  # 10000 req/hour
@@ -21,6 +22,7 @@ class RateLimitTier(str, Enum):
 
 class RateLimitWindow(str, Enum):
     """Rate limit time window."""
+
     PER_MINUTE = "per_minute"
     PER_HOUR = "per_hour"
     PER_DAY = "per_day"
@@ -28,14 +30,22 @@ class RateLimitWindow(str, Enum):
 
 class ApiKey(Base):
     """API key for business."""
+
     __tablename__ = "api_keys"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Key
     key_name = Column(String(255), nullable=False)
-    key_hash = Column(String(64), nullable=False, unique=True, index=True)  # SHA256 hash
+    key_hash = Column(
+        String(64), nullable=False, unique=True, index=True
+    )  # SHA256 hash
     masked_key = Column(String(50), nullable=False)  # Last 8 chars visible
 
     # Tier
@@ -44,31 +54,43 @@ class ApiKey(Base):
     custom_rph_limit = Column(Integer, nullable=True)  # Override default
 
     # Permissions
-    allowed_endpoints = Column(String(500), nullable=True)  # Comma-separated paths or "*"
-    allowed_methods = Column(String(50), default="GET,POST,PUT,DELETE")  # Comma-separated
+    allowed_endpoints = Column(
+        String(500), nullable=True
+    )  # Comma-separated paths or "*"
+    allowed_methods = Column(
+        String(50), default="GET,POST,PUT,DELETE"
+    )  # Comma-separated
 
     # Status
     is_active = Column(Boolean, default=True)
-    last_used_at = Column(DateTime(timezone.utc), nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc), index=True)
-    expires_at = Column(DateTime(timezone.utc), nullable=True)  # Optional expiration
+    last_used_at = Column(DateTime(UTC), nullable=True)
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC), index=True)
+    expires_at = Column(DateTime(UTC), nullable=True)  # Optional expiration
 
     notes = Column(String(255), nullable=True)
 
     business = relationship("Business", foreign_keys=[business_id])
 
-    __table_args__ = (
-        Index("idx_business_active", "business_id", "is_active"),
-    )
+    __table_args__ = (Index("idx_business_active", "business_id", "is_active"),)
 
 
 class RateLimitLog(Base):
     """Track rate limit violations."""
+
     __tablename__ = "rate_limit_logs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    api_key_id = Column(UUID(as_uuid=True), ForeignKey("api_keys.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False)
+    api_key_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("api_keys.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     # Request info
     endpoint = Column(String(255), nullable=False)
@@ -86,7 +108,7 @@ class RateLimitLog(Base):
     response_status = Column(Integer, default=200)
     response_time_ms = Column(Integer, nullable=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC), index=True)
 
     api_key = relationship("ApiKey", foreign_keys=[api_key_id])
 
@@ -98,13 +120,21 @@ class RateLimitLog(Base):
 
 class CachePolicy(Base):
     """Cache policy for endpoints."""
+
     __tablename__ = "cache_policies"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Endpoint
-    endpoint_path = Column(String(255), nullable=False)  # e.g., "/api/v1/customers/{id}"
+    endpoint_path = Column(
+        String(255), nullable=False
+    )  # e.g., "/api/v1/customers/{id}"
     method = Column(String(10), default="GET")
 
     # Cache config
@@ -113,15 +143,17 @@ class CachePolicy(Base):
     cache_by = Column(String(100), nullable=True)  # e.g., "user_id", "business_id"
 
     # Invalidation
-    invalidate_on_endpoints = Column(String(500), nullable=True)  # Comma-separated endpoints
+    invalidate_on_endpoints = Column(
+        String(500), nullable=True
+    )  # Comma-separated endpoints
     invalidate_on_methods = Column(String(50), default="POST,PUT,DELETE")
 
     # Stats
     cache_hits = Column(Integer, default=0)
     cache_misses = Column(Integer, default=0)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     business = relationship("Business", foreign_keys=[business_id])
 
@@ -132,10 +164,16 @@ class CachePolicy(Base):
 
 class ApiMetrics(Base):
     """Aggregate API performance metrics."""
+
     __tablename__ = "api_metrics"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, unique=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
 
     # Date
     date = Column(String(10), nullable=False)  # YYYY-MM-DD
@@ -164,10 +202,8 @@ class ApiMetrics(Base):
     unique_endpoints_called = Column(Integer, default=0)
     most_used_endpoint = Column(String(255), nullable=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     business = relationship("Business", foreign_keys=[business_id])
 
-    __table_args__ = (
-        Index("idx_business_date", "business_id", "date"),
-    )
+    __table_args__ = (Index("idx_business_date", "business_id", "date"),)

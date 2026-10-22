@@ -95,7 +95,8 @@ def _import_all_models() -> int:
     if failed:
         logger.warning(
             "schema bootstrap: %s model module(s) could not be imported: %s",
-            len(failed), "; ".join(failed[:5]),
+            len(failed),
+            "; ".join(failed[:5]),
         )
     logger.info("schema bootstrap: %s model modules registered", imported)
     return imported
@@ -214,12 +215,16 @@ async def existing_table_names(engine: AsyncEngine) -> set[str] | None:
         from sqlalchemy import text
 
         async with engine.connect() as conn:
-            result = await conn.execute(text(
-                "SELECT tablename FROM pg_tables WHERE schemaname = current_schema()"
-            ))
+            result = await conn.execute(
+                text(
+                    "SELECT tablename FROM pg_tables WHERE schemaname = current_schema()"
+                )
+            )
             return {row[0] for row in result}
     except Exception as e:  # noqa: BLE001
-        logger.warning("schema bootstrap: could not list existing tables: %s", str(e)[:160])
+        logger.warning(
+            "schema bootstrap: could not list existing tables: %s", str(e)[:160]
+        )
         return None
 
 
@@ -265,7 +270,9 @@ def ensure_unique_index_names(metadata) -> dict[str, int]:
             continue
         for table, index in members:
             new_name = f"{name}_{table.name}"
-            if len(new_name) > 63:  # PostgreSQL identifier limit; keep it deterministic and unique
+            if (
+                len(new_name) > 63
+            ):  # PostgreSQL identifier limit; keep it deterministic and unique
                 digest = hashlib.sha256(new_name.encode()).hexdigest()[:8]
                 new_name = f"{new_name[:54]}_{digest}"
             index.name = new_name
@@ -288,18 +295,29 @@ async def ensure_vector_extension(engine: AsyncEngine) -> str:
         async with engine.connect() as conn:
             if conn.dialect.name != "postgresql":
                 return "unavailable"
-            installed = (await conn.execute(text("SELECT 1 FROM pg_extension WHERE extname = 'vector'"))).first()
+            installed = (
+                await conn.execute(
+                    text("SELECT 1 FROM pg_extension WHERE extname = 'vector'")
+                )
+            ).first()
             if installed:
                 return "already"
-            available = (await conn.execute(text("SELECT 1 FROM pg_available_extensions WHERE name = 'vector'"))).first()
+            available = (
+                await conn.execute(
+                    text("SELECT 1 FROM pg_available_extensions WHERE name = 'vector'")
+                )
+            ).first()
             if not available:
-                logger.info("schema bootstrap: pgvector is not available on this server; vector tables stay skipped")
+                logger.info(
+                    "schema bootstrap: pgvector is not available on this server; vector tables stay skipped"
+                )
                 return "unavailable"
         async with engine.begin() as conn:
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         logger.info("✅ schema bootstrap: pgvector extension installed")
         return "installed"
-    except Exception as e:  # noqa: BLE001 -- e.g. the role may not be allowed to create extensions
+    # e.g. the role may not be allowed to create extensions
+    except Exception as e:  # noqa: BLE001
         logger.warning("schema bootstrap: could not install pgvector: %s", str(e)[:160])
         return "failed"
 
@@ -320,7 +338,11 @@ async def ensure_all_tables(engine: AsyncEngine | None = None) -> dict[str, int]
     _import_all_models()
     fixed = ensure_unique_index_names(CoreBase.metadata)
     if fixed["renamed"] or fixed["dropped"]:
-        logger.info("schema bootstrap: made index names unique (%s renamed, %s duplicates dropped)", fixed["renamed"], fixed["dropped"])
+        logger.info(
+            "schema bootstrap: made index names unique (%s renamed, %s duplicates dropped)",
+            fixed["renamed"],
+            fixed["dropped"],
+        )
 
     # Before the early return below: the steady state (every table present) is exactly where a table
     # that exists with a wrong enum type lives.
@@ -341,7 +363,9 @@ async def ensure_all_tables(engine: AsyncEngine | None = None) -> dict[str, int]
 
     pending = [t for t in tables if t.name not in existing]
     if not pending:
-        logger.info("✅ schema bootstrap: %s domain tables already present", len(tables))
+        logger.info(
+            "✅ schema bootstrap: %s domain tables already present", len(tables)
+        )
         return {"tables": len(tables), "created": 0, "skipped": 0}
 
     # Tables with vector columns need the extension first.
@@ -360,11 +384,14 @@ async def ensure_all_tables(engine: AsyncEngine | None = None) -> dict[str, int]
             try:
                 async with engine.begin() as conn:
                     await conn.run_sync(
-                        lambda sync_conn, t=table: t.create(bind=sync_conn, checkfirst=True)
+                        lambda sync_conn, t=table: t.create(
+                            bind=sync_conn, checkfirst=True
+                        )
                     )
                 created += 1
                 errors.pop(table.name, None)
-            except Exception as e:  # noqa: BLE001 -- one bad table must not stop the rest
+            # one bad table must not stop the rest
+            except Exception as e:  # noqa: BLE001
                 errors[table.name] = str(e)[:100]
                 failed.append(table)
         if len(failed) == len(pending):
@@ -376,7 +403,10 @@ async def ensure_all_tables(engine: AsyncEngine | None = None) -> dict[str, int]
     if errors:
         logger.warning(
             "schema bootstrap: %s table(s) skipped: %s",
-            len(errors), "; ".join(f"{k}: {v}" for k, v in list(errors.items())[:8]),
+            len(errors),
+            "; ".join(f"{k}: {v}" for k, v in list(errors.items())[:8]),
         )
-    logger.info("✅ schema bootstrap: %s/%s domain tables ensured", created, len(tables))
+    logger.info(
+        "✅ schema bootstrap: %s/%s domain tables ensured", created, len(tables)
+    )
     return {"tables": len(tables), "created": created, "skipped": len(errors)}

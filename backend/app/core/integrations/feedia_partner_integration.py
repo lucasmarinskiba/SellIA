@@ -12,9 +12,11 @@ Integración bidireccional:
 """
 
 import logging
+from typing import Any
+
 import httpx
-from typing import Dict, List, Any, Optional
-from datetime import datetime
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -37,9 +39,9 @@ class FeedIAPartnerIntegration:
         product_name: str,
         product_description: str,
         product_price: float,
-        product_images: List[str],
-        style: Optional[str] = None,  # minimal, maximalist, trendy, etc
-    ) -> Dict[str, Any]:
+        product_images: list[str],
+        style: str | None = None,  # minimal, maximalist, trendy, etc
+    ) -> dict[str, Any]:
         """
         Solicita carousel Instagram para producto.
 
@@ -93,15 +95,15 @@ class FeedIAPartnerIntegration:
                 return {"status": "error"}
 
         except Exception as e:
-            logger.error(f"Request carousel failed: {str(e)}")
+            logger.exception("Request carousel failed")
             return {"status": "error", "error": str(e)}
 
     async def request_reel_for_product(
         self,
         product_id: str,
         product_name: str,
-        trending_hook: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        trending_hook: str | None = None,
+    ) -> dict[str, Any]:
         """
         Solicita Instagram Reel para producto (15-60s).
 
@@ -146,8 +148,8 @@ class FeedIAPartnerIntegration:
             else:
                 return {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"Request reel failed: {str(e)}")
+        except Exception:
+            logger.exception("Request reel failed")
             return {"status": "error"}
 
     async def request_tiktok_video(
@@ -155,7 +157,7 @@ class FeedIAPartnerIntegration:
         product_id: str,
         product_name: str,
         product_price: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Solicita TikTok video para producto (15-60s).
 
@@ -201,8 +203,8 @@ class FeedIAPartnerIntegration:
             else:
                 return {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"Request TikTok failed: {str(e)}")
+        except Exception:
+            logger.exception("Request TikTok failed")
             return {"status": "error"}
 
     # ========== PUBLISHING ==========
@@ -211,8 +213,8 @@ class FeedIAPartnerIntegration:
         self,
         content_id: str,
         user_instagram_account: str,
-        caption: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        caption: str | None = None,
+    ) -> dict[str, Any]:
         """
         Publica carousel a Instagram del usuario.
 
@@ -244,20 +246,20 @@ class FeedIAPartnerIntegration:
                     "status": "success",
                     "post_id": result.get("post_id"),
                     "url": result.get("post_url"),
-                    "published_at": datetime.utcnow().isoformat(),
+                    "published_at": utc_now().isoformat(),
                 }
             else:
                 return {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"Publish failed: {str(e)}")
+        except Exception:
+            logger.exception("Publish failed")
             return {"status": "error"}
 
     async def publish_reel_to_instagram(
         self,
         content_id: str,
         user_instagram_account: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Publica Reel a Instagram."""
 
         logger.info(f"Publishing reel {content_id}")
@@ -281,14 +283,15 @@ class FeedIAPartnerIntegration:
             else:
                 return {"status": "error"}
 
-        except Exception as e:
+        except Exception:
+            logger.exception("publish_reel_to_instagram: error inesperado")
             return {"status": "error"}
 
     async def publish_tiktok_video(
         self,
         content_id: str,
         user_tiktok_account: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Publica video a TikTok."""
 
         logger.info(f"Publishing TikTok {content_id}")
@@ -312,12 +315,13 @@ class FeedIAPartnerIntegration:
             else:
                 return {"status": "error"}
 
-        except Exception as e:
+        except Exception:
+            logger.exception("publish_tiktok_video: error inesperado")
             return {"status": "error"}
 
     # ========== ANALYTICS & FEEDBACK LOOP ==========
 
-    async def get_content_performance(self, content_id: str) -> Dict[str, Any]:
+    async def get_content_performance(self, content_id: str) -> dict[str, Any]:
         """
         Obtiene engagement + analytics de contenido.
 
@@ -351,7 +355,8 @@ class FeedIAPartnerIntegration:
             else:
                 return {"status": "error"}
 
-        except Exception as e:
+        except Exception:
+            logger.exception("get_content_performance: error inesperado")
             return {"status": "error"}
 
     async def report_sale_attribution(
@@ -359,21 +364,23 @@ class FeedIAPartnerIntegration:
         content_id: str,
         sale_amount: float,
         product_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Reporta a FeedIA que una venta vino de su contenido.
 
         Feedback loop: FeedIA optimiza basado en ROI real.
         """
 
-        logger.info(f"Reporting sale attribution for content {content_id}: ${sale_amount}")
+        logger.info(
+            f"Reporting sale attribution for content {content_id}: ${sale_amount}"
+        )
 
         try:
             payload = {
                 "content_id": content_id,
                 "sale_amount": sale_amount,
                 "product_id": product_id,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": utc_now().isoformat(),
             }
 
             response = await self.http_client.post(
@@ -387,12 +394,13 @@ class FeedIAPartnerIntegration:
             else:
                 return {"status": "error"}
 
-        except Exception as e:
+        except Exception:
+            logger.exception("report_sale_attribution: error inesperado")
             return {"status": "error"}
 
     # ========== FEEDIA CAPABILITIES ACCESS ==========
 
-    async def list_feedia_services(self) -> Dict[str, Any]:
+    async def list_feedia_services(self) -> dict[str, Any]:
         """
         Lista todas herramientas/funciones disponibles en FeedIA.
 
@@ -416,7 +424,9 @@ class FeedIAPartnerIntegration:
 
             if response.status_code == 200:
                 services = response.json()
-                logger.info(f"FeedIA services available: {len(services.get('services', []))}")
+                logger.info(
+                    f"FeedIA services available: {len(services.get('services', []))}"
+                )
 
                 return {
                     "status": "success",
@@ -425,7 +435,8 @@ class FeedIAPartnerIntegration:
             else:
                 return {"status": "error"}
 
-        except Exception as e:
+        except Exception:
+            logger.exception("list_feedia_services: error inesperado")
             return {"status": "error"}
 
     async def close(self):

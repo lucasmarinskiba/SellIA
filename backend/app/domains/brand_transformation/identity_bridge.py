@@ -32,9 +32,11 @@ def _voice_template_prompt(ident: BrandIdentity) -> str:
         + (f" / {ident.secondary_archetype}" if ident.secondary_archetype else ""),
         f"Tagline: {ident.tagline or '—'}",
         "",
-        "Voice attributes: " + ", ".join(
+        "Voice attributes: "
+        + ", ".join(
             f'{a.get("adj")} (sounds like: {a.get("sounds_like")}; not: {a.get("not")})'
-            for a in (vi.get("attributes") or []) if isinstance(a, dict)
+            for a in (vi.get("attributes") or [])
+            if isinstance(a, dict)
         ),
         f"Rhythm: {vi.get('rhythm', '—')}",
         f"Humor: {vi.get('humor', '—')}",
@@ -54,22 +56,47 @@ def build_plan(ident: BrandIdentity) -> dict:
         assets.append({"content_type": "manifesto", "content": ident.manifesto})
     if ident.tagline:
         alts = " · ".join(ident.taglines_alt or [])
-        assets.append({"content_type": "tagline", "content": ident.tagline + (f"\n\nAlternates: {alts}" if alts else "")})
-    for sr in (ident.sample_rewrites or []):
+        assets.append(
+            {
+                "content_type": "tagline",
+                "content": ident.tagline + (f"\n\nAlternates: {alts}" if alts else ""),
+            }
+        )
+    for sr in ident.sample_rewrites or []:
         if isinstance(sr, dict) and sr.get("text"):
-            assets.append({"content_type": f"copy:{sr.get('context', 'snippet')}", "content": sr["text"]})
+            assets.append(
+                {
+                    "content_type": f"copy:{sr.get('context', 'snippet')}",
+                    "content": sr["text"],
+                }
+            )
     if ident.story_spine:
-        assets.append({"content_type": "story_spine", "content": json.dumps(ident.story_spine, ensure_ascii=False, indent=2)})
+        assets.append(
+            {
+                "content_type": "story_spine",
+                "content": json.dumps(ident.story_spine, ensure_ascii=False, indent=2),
+            }
+        )
     if ident.visual_brief:
         vb = ident.visual_brief
-        terms = ", ".join(vb.get("moodboard_search_terms") or []) if isinstance(vb, dict) else ""
-        assets.append({
-            "content_type": "visual_brief",
-            "content": json.dumps(vb, ensure_ascii=False, indent=2) + (f"\n\nMoodboard search: {terms}" if terms else ""),
-        })
+        terms = (
+            ", ".join(vb.get("moodboard_search_terms") or [])
+            if isinstance(vb, dict)
+            else ""
+        )
+        assets.append(
+            {
+                "content_type": "visual_brief",
+                "content": json.dumps(vb, ensure_ascii=False, indent=2)
+                + (f"\n\nMoodboard search: {terms}" if terms else ""),
+            }
+        )
     return {
         "identity_id": str(ident.id),
-        "voice_template": {"template_name": f"[BT] Brand Voice — {ident.primary_archetype or 'v1'}", "template_type": "brand_voice"},
+        "voice_template": {
+            "template_name": f"[BT] Brand Voice — {ident.primary_archetype or 'v1'}",
+            "template_type": "brand_voice",
+        },
         "assets": assets,
         "consistency_rules": ident.identity_consistency_rules or [],
         "note": "Voice template + draft copy assets land in the content library; visual brief is a designer handoff.",
@@ -90,9 +117,15 @@ class IdentityBridge:
             return plan
 
         try:
-            from app.domains.ai_content_generation.service import ContentGenerationService as AIContentService
+            from app.domains.ai_content_generation.service import (
+                ContentGenerationService as AIContentService,
+            )
         except Exception as e:  # noqa: BLE001
-            return {**plan, "deployed": [], "error": f"content domain unavailable: {str(e)[:160]}"}
+            return {
+                **plan,
+                "deployed": [],
+                "error": f"content domain unavailable: {str(e)[:160]}",
+            }
 
         deployed: list[dict] = []
         try:
@@ -117,25 +150,28 @@ class IdentityBridge:
         for a in plan["assets"]:
             try:
                 new_id = uuid.uuid4()
-                await self.db.execute(_text(
-                    """
+                await self.db.execute(
+                    _text("""
                     INSERT INTO generated_content
                         (id, business_id, content_type, generated_content, content_length, created_at)
                     VALUES
                         (:id, :business_id, :content_type, :generated_content, :content_length, now())
-                    """
-                ), {
-                    "id": new_id, "business_id": ident.business_id,
-                    "content_type": a["content_type"][:50], "generated_content": a["content"],
-                    "content_length": len(a["content"]),
-                })
+                    """),
+                    {
+                        "id": new_id,
+                        "business_id": ident.business_id,
+                        "content_type": a["content_type"][:50],
+                        "generated_content": a["content"],
+                        "content_length": len(a["content"]),
+                    },
+                )
                 await self.db.commit()
                 deployed.append({"kind": a["content_type"], "content_id": str(new_id)})
             except Exception as e:  # noqa: BLE001
                 try:
                     await self.db.rollback()  # don't let one bad insert cascade to the rest
-                except Exception:  # noqa: BLE001
-                    pass
+                except Exception:
+                    logger.exception("deploy: error ignorado")
                 deployed.append({"kind": a["content_type"], "error": str(e)[:160]})
 
         try:
@@ -146,5 +182,7 @@ class IdentityBridge:
             plan["writeback_error"] = str(e)[:160]
 
         plan["deployed"] = deployed
-        plan["created_count"] = sum(1 for d in deployed if d.get("content_id") or d.get("template_id"))
+        plan["created_count"] = sum(
+            1 for d in deployed if d.get("content_id") or d.get("template_id")
+        )
         return plan

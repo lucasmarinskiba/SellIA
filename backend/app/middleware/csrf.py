@@ -14,7 +14,12 @@ SAFE_METHODS = {"GET", "HEAD", "OPTIONS", "TRACE"}
 
 
 class CSRFMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app: ASGIApp, cookie_name: str = "csrf_token", header_name: str = "X-CSRF-Token"):
+    def __init__(
+        self,
+        app: ASGIApp,
+        cookie_name: str = "csrf_token",
+        header_name: str = "X-CSRF-Token",
+    ):
         super().__init__(app)
         self.cookie_name = cookie_name
         self.header_name = header_name
@@ -29,8 +34,11 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         # Validate on state-changing requests
         if request.method not in SAFE_METHODS:
             header_token = request.headers.get(self.header_name, "")
-            if not header_token or not secrets.compare_digest(header_token, cookie_token):
+            if not header_token or not secrets.compare_digest(
+                header_token, cookie_token
+            ):
                 from fastapi.responses import JSONResponse
+
                 return JSONResponse(
                     status_code=403,
                     content={"detail": "CSRF token missing or invalid"},
@@ -43,7 +51,7 @@ class CSRFMiddleware(BaseHTTPMiddleware):
             key=self.cookie_name,
             value=cookie_token,
             httponly=False,  # Must be readable by JS for double-submit
-            secure=False,    # Set True in production via proxy
+            secure=False,  # Set True in production via proxy
             samesite="strict",
             path="/",
             max_age=86400 * 7,

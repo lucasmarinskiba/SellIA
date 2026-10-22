@@ -1,11 +1,17 @@
-from fastapi import APIRouter, Query, Body
+import logging
 from datetime import datetime
+from typing import Annotated
+
+from fastapi import APIRouter, Body, Query
+
 from app.domains.enterprise.integrations import (
     IntegrationManager,
+    Message,
     Platform,
     PlatformCredentials,
-    Message,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["integrations"])
 integration_manager = IntegrationManager()
@@ -13,13 +19,13 @@ integration_manager = IntegrationManager()
 
 @router.post("/integrations/connect")
 async def connect_platform(
-    user_id: str = Query(..., description="User ID"),
-    platform: str = Query(..., description="whatsapp or telegram"),
-    account_id: str = Query(...),
-    api_key: str = Query(...),
-    api_secret: str = Query(...),
-    phone_number: str = Query(None, description="WhatsApp only"),
-    bot_token: str = Query(None, description="Telegram only"),
+    user_id: Annotated[str, Query(description="User ID")],
+    platform: Annotated[str, Query(description="whatsapp or telegram")],
+    account_id: Annotated[str, Query()],
+    api_key: Annotated[str, Query()],
+    api_secret: Annotated[str, Query()],
+    phone_number: Annotated[str | None, Query(description="WhatsApp only")] = None,
+    bot_token: Annotated[str | None, Query(description="Telegram only")] = None,
 ):
     """Connect WhatsApp or Telegram platform."""
     try:
@@ -45,6 +51,7 @@ async def connect_platform(
     except ValueError:
         return {"status": "error", "message": f"Invalid platform: {platform}"}
     except Exception as e:
+        logger.exception("connect_platform: error inesperado")
         return {"status": "error", "message": str(e)}
 
 
@@ -64,7 +71,8 @@ async def get_platform_status(user_id: str):
 
 @router.get("/integrations/stats/{user_id}")
 async def get_integration_stats(
-    user_id: str, platform: str = Query("whatsapp", description="Platform name")
+    user_id: str,
+    platform: Annotated[str, Query(description="Platform name")] = "whatsapp",
 ):
     """Get statistics for platform activity."""
     try:
@@ -90,9 +98,9 @@ async def get_integration_stats(
 @router.get("/integrations/conversations/{user_id}")
 async def list_conversations(
     user_id: str,
-    platform: str = Query("whatsapp"),
-    limit: int = Query(20, le=100),
-    offset: int = Query(0),
+    platform: Annotated[str, Query()] = "whatsapp",
+    limit: Annotated[int, Query(le=100)] = 20,
+    offset: Annotated[int, Query()] = 0,
 ):
     """List active conversations on platform."""
     try:
@@ -105,14 +113,16 @@ async def list_conversations(
             conv = integration_manager.get_conversation(
                 user_id, platform_enum, contact_id
             )
-            conversations.append({
-                "contact_id": conv.contact_id,
-                "contact_name": conv.contact_name,
-                "last_message_at": conv.last_message_at.isoformat(),
-                "message_count": conv.message_count,
-                "unread_count": conv.unread_count,
-                "status": conv.status,
-            })
+            conversations.append(
+                {
+                    "contact_id": conv.contact_id,
+                    "contact_name": conv.contact_name,
+                    "last_message_at": conv.last_message_at.isoformat(),
+                    "message_count": conv.message_count,
+                    "unread_count": conv.unread_count,
+                    "status": conv.status,
+                }
+            )
 
         return {
             "platform": platform,
@@ -128,9 +138,9 @@ async def list_conversations(
 @router.get("/integrations/messages/{user_id}")
 async def get_conversation_messages(
     user_id: str,
-    platform: str = Query("whatsapp"),
-    contact_id: str = Query(...),
-    limit: int = Query(50, le=100),
+    contact_id: Annotated[str, Query()],
+    platform: Annotated[str, Query()] = "whatsapp",
+    limit: Annotated[int, Query(le=100)] = 50,
 ):
     """Get message history for conversation."""
     try:
@@ -160,10 +170,10 @@ async def get_conversation_messages(
 
 @router.post("/integrations/send-message")
 async def send_message(
-    user_id: str = Query(...),
-    platform: str = Query(...),
-    contact_id: str = Query(...),
-    content: str = Body(..., description="Message content"),
+    user_id: Annotated[str, Query()],
+    platform: Annotated[str, Query()],
+    contact_id: Annotated[str, Query()],
+    content: Annotated[str, Body(description="Message content")],
 ):
     """Send message via integrated platform."""
     try:
@@ -171,9 +181,9 @@ async def send_message(
         key = f"{user_id}:{platform_enum.value}"
 
         if key not in integration_manager.platforms:
-            return {"status": "error", "message": f"Platform not connected"}
+            return {"status": "error", "message": "Platform not connected"}
 
-        agent = integration_manager.platforms[key]
+        integration_manager.platforms[key]
 
         # Create message record
         message = Message(
@@ -199,14 +209,15 @@ async def send_message(
     except ValueError:
         return {"status": "error", "message": f"Invalid platform: {platform}"}
     except Exception as e:
+        logger.exception("send_message: error inesperado")
         return {"status": "error", "message": str(e)}
 
 
 @router.post("/integrations/webhook/{platform}")
 async def receive_webhook(
     platform: str,
-    user_id: str = Query(...),
-    payload: dict = Body(...),
+    user_id: Annotated[str, Query()],
+    payload: Annotated[dict, Body()],
 ):
     """Receive incoming messages via webhooks."""
     try:
@@ -232,4 +243,5 @@ async def receive_webhook(
     except ValueError:
         return {"status": "error", "message": f"Invalid platform: {platform}"}
     except Exception as e:
+        logger.exception("receive_webhook: error inesperado")
         return {"status": "error", "message": str(e)}

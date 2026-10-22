@@ -8,20 +8,19 @@ Endpoints para que Computer Use consulte SellIA Brain:
 """
 
 import logging
-from typing import Optional
-from uuid import UUID
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from app.core.deps import get_current_active_user
-from app.domains.users.models import User
 from app.domains.computer_use.services.sellia_brain_service import (
-    get_brain_service,
     ActionContext,
-    SalesStage,
     Platform,
+    SalesStage,
+    get_brain_service,
 )
+from app.domains.users.models import User
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -33,11 +32,20 @@ router = APIRouter()
 class StrategyRequest(BaseModel):
     """Solicitud de estrategia al Brain."""
 
-    platform: str = Field(..., description="Plataforma: whatsapp, email, instagram, etc")
-    stage: str = Field(..., description="Etapa de venta: awareness, consideration, decision, closure, etc")
-    customer_profile: Optional[dict] = Field(default=None, description="Perfil del cliente")
-    product_info: Optional[dict] = Field(default=None, description="Información del producto")
-    objections: Optional[list] = Field(default=[], description="Objeciones del cliente")
+    platform: str = Field(
+        ..., description="Plataforma: whatsapp, email, instagram, etc"
+    )
+    stage: str = Field(
+        ...,
+        description="Etapa de venta: awareness, consideration, decision, closure, etc",
+    )
+    customer_profile: dict | None = Field(
+        default=None, description="Perfil del cliente"
+    )
+    product_info: dict | None = Field(
+        default=None, description="Información del producto"
+    )
+    objections: list | None = Field(default=[], description="Objeciones del cliente")
 
 
 class StrategyResponse(BaseModel):
@@ -59,9 +67,9 @@ class ResponsePromptRequest(BaseModel):
     instruction: str = Field(..., description="Qué debe lograr la respuesta")
     platform: str = Field(..., description="Plataforma")
     stage: str = Field(..., description="Etapa de venta")
-    customer_profile: Optional[dict] = Field(default=None)
-    message_history: Optional[list] = Field(default=None)
-    objections: Optional[list] = Field(default=[])
+    customer_profile: dict | None = Field(default=None)
+    message_history: list | None = Field(default=None)
+    objections: list | None = Field(default=[])
 
 
 class ResponsePromptResponse(BaseModel):
@@ -100,7 +108,7 @@ class SalesSignalResponse(BaseModel):
     """Resultado de detección de señales."""
 
     signal_found: bool
-    signal_type: Optional[str]
+    signal_type: str | None
     recommended_action: str
     confidence: float
 
@@ -111,7 +119,7 @@ class SalesSignalResponse(BaseModel):
 @router.post("/brain/strategy", response_model=StrategyResponse)
 async def get_strategy(
     request: StrategyRequest,
-    current_user: User = Depends(get_current_active_user),
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """
     Consulta SellIA Brain por estrategia óptima.
@@ -161,14 +169,14 @@ async def get_strategy(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting strategy: {e}")
+        logger.exception("Error getting strategy")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/brain/response-prompt", response_model=ResponsePromptResponse)
 async def get_response_prompt(
     request: ResponsePromptRequest,
-    current_user: User = Depends(get_current_active_user),
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """
     Genera prompt completo para responder mensaje.
@@ -210,14 +218,14 @@ async def get_response_prompt(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error generating response prompt: {e}")
+        logger.exception("Error generating response prompt")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/brain/score-lead", response_model=LeadScoringResponse)
 async def score_lead(
     request: LeadScoringRequest,
-    current_user: User = Depends(get_current_active_user),
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """
     Scoring automático de lead (hot/warm/cold).
@@ -234,14 +242,14 @@ async def score_lead(
         return LeadScoringResponse(**result)
 
     except Exception as e:
-        logger.error(f"Error scoring lead: {e}")
+        logger.exception("Error scoring lead")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/brain/detect-signals", response_model=SalesSignalResponse)
 async def detect_sales_signals(
     request: SalesSignalRequest,
-    current_user: User = Depends(get_current_active_user),
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """
     Detecta señales de compra en mensaje.
@@ -268,5 +276,5 @@ async def detect_sales_signals(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error detecting signals: {e}")
+        logger.exception("Error detecting signals")
         raise HTTPException(status_code=500, detail=str(e))

@@ -4,20 +4,18 @@ Analyzes every inbound message with LLM to detect sentiment, intent, objections,
 pain points, buying signals, and recommends next actions.
 """
 
-import uuid
 import json
 import re
-from datetime import datetime, timezone
-from typing import Optional, Any
+import uuid
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.intelligence.models import MessageAnalysis, ConversationIntelligence
-from app.domains.channels.models import Message, Conversation
-from app.domains.agents.ai_reply import generate_raw_ai_response
-from app.core.logger import get_logger
 from app.core.events import event_bus
+from app.core.logger import get_logger
+from app.domains.agents.ai_reply import generate_raw_ai_response
+from app.domains.channels.models import Conversation, Message
+from app.domains.intelligence.models import ConversationIntelligence, MessageAnalysis
 
 logger = get_logger(__name__)
 
@@ -67,7 +65,7 @@ class MessageIntelligenceService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def analyze_message(self, message_id: uuid.UUID) -> Optional[MessageAnalysis]:
+    async def analyze_message(self, message_id: uuid.UUID) -> MessageAnalysis | None:
         """Analyze a single message and store results."""
         # Check if already analyzed
         existing = await self.db.execute(
@@ -94,19 +92,25 @@ class MessageIntelligenceService:
 
         # Get recent messages for context
         recent_result = await self.db.execute(
-            select(Message).where(
+            select(Message)
+            .where(
                 Message.conversation_id == conversation.id,
-            ).order_by(desc(Message.created_at)).limit(5)
+            )
+            .order_by(desc(Message.created_at))
+            .limit(5)
         )
         recent_messages = recent_result.scalars().all()
-        context_summary = " | ".join([
-            f"{'Cliente' if m.direction == 'inbound' else 'Sistema'}: {m.content[:100]}"
-            for m in reversed(recent_messages)
-        ])
+        context_summary = " | ".join(
+            [
+                f"{'Cliente' if m.direction == 'inbound' else 'Sistema'}: {m.content[:100]}"
+                for m in reversed(recent_messages)
+            ]
+        )
 
         # Get business context (catalog summary)
         from app.domains.businesses.models import Business
         from app.domains.catalogs.models import CatalogItem
+
         biz_result = await self.db.execute(
             select(Business).where(Business.id == conversation.business_id)
         )
@@ -114,10 +118,12 @@ class MessageIntelligenceService:
         business_context = ""
         if business:
             catalog_result = await self.db.execute(
-                select(CatalogItem).where(
+                select(CatalogItem)
+                .where(
                     CatalogItem.business_id == business.id,
                     CatalogItem.is_active == True,
-                ).limit(5)
+                )
+                .limit(5)
             )
             items = catalog_result.scalars().all()
             business_context = ", ".join([f"{i.name} (${i.price})" for i in items])
@@ -147,7 +153,9 @@ class MessageIntelligenceService:
             # Parse JSON
             analysis_data = self._extract_json(response_text)
             if not analysis_data:
-                logger.warning(f"Could not parse JSON from LLM response for message {message_id}")
+                logger.warning(
+                    f"Could not parse JSON from LLM response for message {message_id}"
+                )
                 return None
 
             # Create analysis record
@@ -161,7 +169,9 @@ class MessageIntelligenceService:
                 intent_confidence=float(analysis_data.get("intent_confidence", 0)),
                 objections_detected=analysis_data.get("objections_detected", []),
                 pain_points_detected=analysis_data.get("pain_points_detected", []),
-                buying_signals_detected=analysis_data.get("buying_signals_detected", []),
+                buying_signals_detected=analysis_data.get(
+                    "buying_signals_detected", []
+                ),
                 urgency_level=analysis_data.get("urgency_level", "low"),
                 language_detected=analysis_data.get("language_detected", "es"),
                 key_entities=analysis_data.get("key_entities", {}),
@@ -185,20 +195,20 @@ class MessageIntelligenceService:
             )
             return analysis
 
-        except Exception as e:
-            logger.exception(f"Failed to analyze message {message_id}: {e}")
+        except Exception:
+            logger.exception(f"Failed to analyze message {message_id}")
             return None
 
-    def _extract_json(self, text: str) -> Optional[dict]:
+    def _extract_json(self, text: str) -> dict | None:
         """Extract JSON from LLM response (handles markdown code blocks)."""
         # Try to find JSON in markdown code block
-        match = re.search(r'```(?:json)?\s*\n?(.*?)\n?```', text, re.DOTALL)
+        match = re.search(r"```(?:json)?\s*\n?(.*?)\n?```", text, re.DOTALL)
         if match:
             text = match.group(1).strip()
 
         # Try to find JSON between braces
-        if not text.strip().startswith('{'):
-            match = re.search(r'\{.*\}', text, re.DOTALL)
+        if not text.strip().startswith("{"):
+            match = re.search(r"\{.*\}", text, re.DOTALL)
             if match:
                 text = match.group(0)
 
@@ -207,13 +217,17 @@ class MessageIntelligenceService:
         except json.JSONDecodeError:
             return None
 
-    async def _update_conversation_intelligence(self, conversation_id: uuid.UUID) -> None:
+    async def _update_conversation_intelligence(
+        self, conversation_id: uuid.UUID
+    ) -> None:
         """Recalculate aggregated intelligence for a conversation."""
         # Get all analyses for this conversation
         result = await self.db.execute(
-            select(MessageAnalysis).where(
+            select(MessageAnalysis)
+            .where(
                 MessageAnalysis.conversation_id == conversation_id,
-            ).order_by(desc(MessageAnalysis.created_at))
+            )
+            .order_by(desc(MessageAnalysis.created_at))
         )
         analyses = result.scalars().all()
 
@@ -248,12 +262,17 @@ class MessageIntelligenceService:
             trend = "stable"
 
         # Calculate buying readiness (0-100)
-        readiness = min(100, int(
-            (avg_sentiment + 1) * 15 +  # sentiment contribution (0-30)
-            (buying_signals_count / max(total, 1)) * 30 +  # signals per message (0-30)
-            (intents.get("buy", 0) / max(total, 1)) * 20 +  # buy intent frequency (0-20)
-            max(0, 20 - churn_signals * 5)  # churn penalty (0-20)
-        ))
+        readiness = min(
+            100,
+            int(
+                (avg_sentiment + 1) * 15  # sentiment contribution (0-30)
+                + (buying_signals_count / max(total, 1))
+                * 30  # signals per message (0-30)
+                + (intents.get("buy", 0) / max(total, 1))
+                * 20  # buy intent frequency (0-20)
+                + max(0, 20 - churn_signals * 5)  # churn penalty (0-20)
+            ),
+        )
 
         # Determine next best action
         latest = analyses[0]
@@ -269,6 +288,7 @@ class MessageIntelligenceService:
         conv_intel = conv_intel_result.scalar_one_or_none()
         if not conv_intel:
             from app.domains.channels.models import Conversation
+
             conv_result = await self.db.execute(
                 select(Conversation).where(Conversation.id == conversation_id)
             )
@@ -293,63 +313,81 @@ class MessageIntelligenceService:
 
         await self.db.commit()
 
-    async def _emit_events(self, analysis: MessageAnalysis, conversation: Conversation) -> None:
+    async def _emit_events(
+        self, analysis: MessageAnalysis, conversation: Conversation
+    ) -> None:
         """Emit events based on analysis results."""
         # Emit message analyzed event
-        await event_bus.emit("message.analyzed", {
-            "message_id": str(analysis.message_id),
-            "conversation_id": str(analysis.conversation_id),
-            "business_id": str(analysis.business_id),
-            "intent_type": analysis.intent_type,
-            "sentiment_label": analysis.sentiment_label,
-            "urgency_level": analysis.urgency_level,
-        })
-
-        # Emit intent detected
-        if analysis.intent_type != "neutral" and analysis.intent_confidence >= 0.6:
-            await event_bus.emit("intent.detected", {
+        await event_bus.emit(
+            "message.analyzed",
+            {
+                "message_id": str(analysis.message_id),
                 "conversation_id": str(analysis.conversation_id),
                 "business_id": str(analysis.business_id),
                 "intent_type": analysis.intent_type,
-                "confidence": float(analysis.intent_confidence),
-                "recommended_action": analysis.recommended_action,
-            })
+                "sentiment_label": analysis.sentiment_label,
+                "urgency_level": analysis.urgency_level,
+            },
+        )
+
+        # Emit intent detected
+        if analysis.intent_type != "neutral" and analysis.intent_confidence >= 0.6:
+            await event_bus.emit(
+                "intent.detected",
+                {
+                    "conversation_id": str(analysis.conversation_id),
+                    "business_id": str(analysis.business_id),
+                    "intent_type": analysis.intent_type,
+                    "confidence": float(analysis.intent_confidence),
+                    "recommended_action": analysis.recommended_action,
+                },
+            )
 
         # Emit buying signal
         if analysis.buying_signals_detected:
-            await event_bus.emit("buying_signal.detected", {
-                "conversation_id": str(analysis.conversation_id),
-                "business_id": str(analysis.business_id),
-                "signals": analysis.buying_signals_detected,
-                "urgency": analysis.urgency_level,
-            })
+            await event_bus.emit(
+                "buying_signal.detected",
+                {
+                    "conversation_id": str(analysis.conversation_id),
+                    "business_id": str(analysis.business_id),
+                    "signals": analysis.buying_signals_detected,
+                    "urgency": analysis.urgency_level,
+                },
+            )
 
         # Emit objection raised
         if analysis.objections_detected:
-            await event_bus.emit("objection.raised", {
-                "conversation_id": str(analysis.conversation_id),
-                "business_id": str(analysis.business_id),
-                "objections": analysis.objections_detected,
-            })
+            await event_bus.emit(
+                "objection.raised",
+                {
+                    "conversation_id": str(analysis.conversation_id),
+                    "business_id": str(analysis.business_id),
+                    "objections": analysis.objections_detected,
+                },
+            )
 
         # Emit churn risk
         if analysis.intent_type == "churn_risk" or analysis.sentiment_score < -0.5:
-            await event_bus.emit("churn_risk.detected", {
-                "conversation_id": str(analysis.conversation_id),
-                "business_id": str(analysis.business_id),
-                "sentiment_score": float(analysis.sentiment_score),
-            })
+            await event_bus.emit(
+                "churn_risk.detected",
+                {
+                    "conversation_id": str(analysis.conversation_id),
+                    "business_id": str(analysis.business_id),
+                    "sentiment_score": float(analysis.sentiment_score),
+                },
+            )
 
     async def get_pending_messages(self, limit: int = 100) -> list[Message]:
         """Get inbound messages that haven't been analyzed yet."""
         result = await self.db.execute(
-            select(Message).where(
+            select(Message)
+            .where(
                 Message.direction == "inbound",
-            ).outerjoin(
-                MessageAnalysis, MessageAnalysis.message_id == Message.id
-            ).where(
-                MessageAnalysis.id == None
-            ).order_by(desc(Message.created_at)).limit(limit)
+            )
+            .outerjoin(MessageAnalysis, MessageAnalysis.message_id == Message.id)
+            .where(MessageAnalysis.id == None)
+            .order_by(desc(Message.created_at))
+            .limit(limit)
         )
         return result.scalars().all()
 
@@ -370,7 +408,9 @@ class ConversationIntelligenceService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_by_conversation(self, conversation_id: uuid.UUID) -> Optional[ConversationIntelligence]:
+    async def get_by_conversation(
+        self, conversation_id: uuid.UUID
+    ) -> ConversationIntelligence | None:
         result = await self.db.execute(
             select(ConversationIntelligence).where(
                 ConversationIntelligence.conversation_id == conversation_id,
@@ -378,20 +418,30 @@ class ConversationIntelligenceService:
         )
         return result.scalar_one_or_none()
 
-    async def get_hot_leads(self, business_id: uuid.UUID, min_readiness: int = 60) -> list[ConversationIntelligence]:
+    async def get_hot_leads(
+        self, business_id: uuid.UUID, min_readiness: int = 60
+    ) -> list[ConversationIntelligence]:
         result = await self.db.execute(
-            select(ConversationIntelligence).where(
+            select(ConversationIntelligence)
+            .where(
                 ConversationIntelligence.business_id == business_id,
                 ConversationIntelligence.buying_readiness_score >= min_readiness,
-            ).order_by(desc(ConversationIntelligence.buying_readiness_score)).limit(50)
+            )
+            .order_by(desc(ConversationIntelligence.buying_readiness_score))
+            .limit(50)
         )
         return result.scalars().all()
 
-    async def get_at_risk_conversations(self, business_id: uuid.UUID) -> list[ConversationIntelligence]:
+    async def get_at_risk_conversations(
+        self, business_id: uuid.UUID
+    ) -> list[ConversationIntelligence]:
         result = await self.db.execute(
-            select(ConversationIntelligence).where(
+            select(ConversationIntelligence)
+            .where(
                 ConversationIntelligence.business_id == business_id,
                 ConversationIntelligence.churn_risk_signals_count >= 2,
-            ).order_by(desc(ConversationIntelligence.churn_risk_signals_count)).limit(50)
+            )
+            .order_by(desc(ConversationIntelligence.churn_risk_signals_count))
+            .limit(50)
         )
         return result.scalars().all()

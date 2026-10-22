@@ -1,17 +1,17 @@
 """Stripe payment processing and webhooks."""
 
-import logging
-from typing import Optional, Dict, Any
-from enum import Enum
-import hmac
 import hashlib
-import json
+import hmac
+import logging
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 class StripeEventType(str, Enum):
     """Stripe webhook event types."""
+
     PAYMENT_SUCCEEDED = "payment_intent.succeeded"
     PAYMENT_FAILED = "payment_intent.payment_failed"
     INVOICE_PAID = "invoice.paid"
@@ -71,13 +71,13 @@ class StripeService:
 
             return hmac.compare_digest(stripe_signature, expected_sig)
 
-        except Exception as e:
-            logger.error(f"Webhook verification failed: {e}")
+        except Exception:
+            logger.exception("Webhook verification failed")
             return False
 
     async def handle_payment_succeeded(
-        self, event_data: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+        self, event_data: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Handle payment_intent.succeeded event."""
         try:
             payment_intent = event_data.get("object", {})
@@ -98,18 +98,20 @@ class StripeService:
                 "action": "activate_subscription",  # Auto-activate subscription
             }
 
-        except Exception as e:
-            logger.error(f"Payment success handler failed: {e}")
+        except Exception:
+            logger.exception("Payment success handler failed")
             return None
 
     async def handle_payment_failed(
-        self, event_data: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+        self, event_data: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Handle payment failure."""
         try:
             payment_intent = event_data.get("object", {})
             customer_id = payment_intent.get("customer")
-            error = payment_intent.get("last_payment_error", {}).get("message", "Unknown error")
+            error = payment_intent.get("last_payment_error", {}).get(
+                "message", "Unknown error"
+            )
 
             logger.warning(f"Payment failed for customer {customer_id}: {error}")
 
@@ -121,13 +123,13 @@ class StripeService:
                 "action": "retry_payment",  # Retry logic
             }
 
-        except Exception as e:
-            logger.error(f"Payment failure handler failed: {e}")
+        except Exception:
+            logger.exception("Payment failure handler failed")
             return None
 
     async def handle_invoice_paid(
-        self, event_data: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+        self, event_data: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Handle invoice.paid event."""
         try:
             invoice = event_data.get("object", {})
@@ -147,21 +149,19 @@ class StripeService:
                 "status": "paid",
             }
 
-        except Exception as e:
-            logger.error(f"Invoice paid handler failed: {e}")
+        except Exception:
+            logger.exception("Invoice paid handler failed")
             return None
 
-    async def create_customer(
-        self, email: str, name: str, company: str
-    ) -> Optional[str]:
+    async def create_customer(self, email: str, name: str, company: str) -> str | None:
         """Create Stripe customer."""
         try:
             # In production, call Stripe API
             logger.info(f"Stripe customer created: {name} ({email})")
             return f"cus_{datetime.now().timestamp()}"
 
-        except Exception as e:
-            logger.error(f"Customer creation failed: {e}")
+        except Exception:
+            logger.exception("Customer creation failed")
             return None
 
     async def create_subscription(
@@ -169,17 +169,15 @@ class StripeService:
         customer_id: str,
         price_id: str,
         annual_price: float,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Create subscription."""
         try:
             # In production, call Stripe API
-            logger.info(
-                f"Subscription created: {customer_id} - ${annual_price}/year"
-            )
+            logger.info(f"Subscription created: {customer_id} - ${annual_price}/year")
             return f"sub_{datetime.now().timestamp()}"
 
-        except Exception as e:
-            logger.error(f"Subscription creation failed: {e}")
+        except Exception:
+            logger.exception("Subscription creation failed")
             return None
 
 

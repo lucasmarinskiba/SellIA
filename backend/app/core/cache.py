@@ -3,11 +3,13 @@
 Provides a @cached decorator for FastAPI endpoints and async functions.
 """
 
-import json
-import hashlib
 import functools
-from typing import Any, Callable
+import hashlib
+import json
+from collections.abc import Callable
+
 import redis.asyncio as redis
+
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -19,7 +21,9 @@ async def _get_redis() -> redis.Redis:
 
 def _make_key(func_name: str, args: tuple, kwargs: dict) -> str:
     """Generate a deterministic cache key."""
-    key_data = json.dumps({"f": func_name, "a": args, "k": kwargs}, sort_keys=True, default=str)
+    key_data = json.dumps(
+        {"f": func_name, "a": args, "k": kwargs}, sort_keys=True, default=str
+    )
     return f"sellia:cache:{hashlib.sha256(key_data.encode()).hexdigest()[:32]}"
 
 
@@ -31,6 +35,7 @@ def cached(ttl_seconds: int = 60, key_prefix: str = ""):
         async def get_expensive_data(business_id: UUID):
             ...
     """
+
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
@@ -42,11 +47,15 @@ def cached(ttl_seconds: int = 60, key_prefix: str = ""):
                     return json.loads(cached_value)
 
                 result = await func(*args, **kwargs)
-                await redis_client.setex(key, ttl_seconds, json.dumps(result, default=str))
+                await redis_client.setex(
+                    key, ttl_seconds, json.dumps(result, default=str)
+                )
                 return result
             finally:
                 await redis_client.close()
+
         return wrapper
+
     return decorator
 
 

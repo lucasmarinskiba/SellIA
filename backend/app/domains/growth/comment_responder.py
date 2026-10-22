@@ -6,37 +6,76 @@ This is one of the highest-ROI organic growth strategies.
 """
 
 import uuid
-import re
-from typing import Optional, Any, List, Dict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.agents.ai_reply import generate_raw_ai_response
-from app.domains.outreach.service import FatigueScoringService
-from app.domains.growth.models import InboundLead, InboundLeadSource
-from app.core.logger import get_logger
 from app.core.events import event_bus
+from app.core.logger import get_logger
+from app.domains.agents.ai_reply import generate_raw_ai_response
+from app.domains.growth.models import InboundLead, InboundLeadSource
+from app.domains.outreach.service import FatigueScoringService
 
 logger = get_logger(__name__)
 
 # Keywords that indicate high intent in comments
 HIGH_INTENT_KEYWORDS = [
-    "precio", "precios", "cuanto", "cuánto", "costo", "valor",
-    "como compro", "como comprar", "donde", "dónde", "link",
-    "quiero", "me interesa", "info", "información", "informacion",
-    "disponible", "stock", "envian", "envían", "a domicilio",
-    "price", "how much", "cost", "buy", "interested", "link",
-    "dm", "mensaje", "whatsapp", "consulta",
+    "precio",
+    "precios",
+    "cuanto",
+    "cuánto",
+    "costo",
+    "valor",
+    "como compro",
+    "como comprar",
+    "donde",
+    "dónde",
+    "link",
+    "quiero",
+    "me interesa",
+    "info",
+    "información",
+    "informacion",
+    "disponible",
+    "stock",
+    "envian",
+    "envían",
+    "a domicilio",
+    "price",
+    "how much",
+    "cost",
+    "buy",
+    "interested",
+    "link",
+    "dm",
+    "mensaje",
+    "whatsapp",
+    "consulta",
 ]
 
 # Value-first response keywords (educational engagement)
 VALUE_KEYWORDS = [
-    "consejo", "tip", "ayuda", "como hago", "cómo hago",
-    "tutorial", "guía", "guia", "explica", "explicá",
-    "tips", "consejos", "ayudame", "ayúdame",
-    "help", "how to", "tips", "advice", "explain",
+    "consejo",
+    "tip",
+    "ayuda",
+    "como hago",
+    "cómo hago",
+    "tutorial",
+    "guía",
+    "guia",
+    "explica",
+    "explicá",
+    "tips",
+    "consejos",
+    "ayudame",
+    "ayúdame",
+    "help",
+    "how to",
+    "tips",
+    "advice",
+    "explain",
 ]
 
 
@@ -55,7 +94,7 @@ class CommentResponder:
         comment_id: str,
         author_username: str,
         comment_text: str,
-        author_id: str = None,
+        author_id: str | None = None,
     ) -> dict[str, Any]:
         """Process a single comment and generate response strategy."""
         comment_lower = comment_text.lower()
@@ -185,19 +224,22 @@ Reglas:
 - NUNCA vender en público
 - Siempre sonar humano"""
 
-        user_prompt = f"Comentario del usuario: \"{comment_text}\"\n\nResponde en UNA oración corta."
+        user_prompt = f'Comentario del usuario: "{comment_text}"\n\nResponde en UNA oración corta.'
 
         try:
-            return await generate_raw_ai_response(
-                db=self.db,
-                business_id=business_id,
-                system_prompt=system_prompt,
-                user_prompt=user_prompt,
-                max_tokens=150,
-                temperature=0.8,
-            ) or "¡Gracias por tu comentario! Te mandé un DM con más info 💬"
-        except Exception as e:
-            logger.error(f"Public reply generation failed: {e}")
+            return (
+                await generate_raw_ai_response(
+                    db=self.db,
+                    business_id=business_id,
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    max_tokens=150,
+                    temperature=0.8,
+                )
+                or "¡Gracias por tu comentario! Te mandé un DM con más info 💬"
+            )
+        except Exception:
+            logger.exception("Public reply generation failed")
             return "¡Gracias por tu comentario! Te mandé un DM con más info 💬"
 
     async def _generate_dm_message(
@@ -222,16 +264,19 @@ Reglas:
         user_prompt = f"Escribe un DM para @{username} que comentó en tu post."
 
         try:
-            return await generate_raw_ai_response(
-                db=self.db,
-                business_id=business_id,
-                system_prompt=system_prompt,
-                user_prompt=user_prompt,
-                max_tokens=300,
-                temperature=0.8,
-            ) or f"Hola @{username}! Ví tu comentario y quería ayudarte con eso. ¿En qué andás ahora?"
-        except Exception as e:
-            logger.error(f"DM generation failed: {e}")
+            return (
+                await generate_raw_ai_response(
+                    db=self.db,
+                    business_id=business_id,
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    max_tokens=300,
+                    temperature=0.8,
+                )
+                or f"Hola @{username}! Ví tu comentario y quería ayudarte con eso. ¿En qué andás ahora?"
+            )
+        except Exception:
+            logger.exception("DM generation failed")
             return f"Hola @{username}! Ví tu comentario y quería ayudarte con eso. ¿En qué andás ahora?"
 
     async def _capture_comment_lead(
@@ -241,7 +286,7 @@ Reglas:
         username: str,
         post_id: str,
         source_detail: str,
-    ) -> Optional[InboundLead]:
+    ) -> InboundLead | None:
         """Capture a lead from social comment."""
         lead = InboundLead(
             business_id=business_id,
@@ -253,11 +298,14 @@ Reglas:
         await self.db.commit()
         await self.db.refresh(lead)
 
-        await event_bus.emit("inbound.lead_captured", {
-            "business_id": str(business_id),
-            "lead_id": str(lead.id),
-            "source_type": "comment_dm",
-        })
+        await event_bus.emit(
+            "inbound.lead_captured",
+            {
+                "business_id": str(business_id),
+                "lead_id": str(lead.id),
+                "source_type": "comment_dm",
+            },
+        )
 
         return lead
 
@@ -267,7 +315,7 @@ Reglas:
         days: int = 7,
     ) -> dict[str, Any]:
         """Get analytics on comment engagement."""
-        since = datetime.now(timezone.utc) - __import__('datetime').timedelta(days=days)
+        since = datetime.now(UTC) - __import__("datetime").timedelta(days=days)
 
         result = await self.db.execute(
             select(func.count(InboundLead.id)).where(

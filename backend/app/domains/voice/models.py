@@ -1,10 +1,21 @@
 """Voice Agent Models"""
 
 import uuid
-from datetime import datetime, timezone, time
+from datetime import UTC, datetime, time
 
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Integer, Numeric, Boolean, Time, Float
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    Time,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 
@@ -34,20 +45,24 @@ class VoiceCall(Base):
     )
     phone_number = Column(String(50), nullable=False)
     direction = Column(String(20), nullable=False)  # inbound, outbound
-    status = Column(String(20), nullable=False, default="ringing")  # ringing, in_progress, completed, failed, voicemail
+    status = Column(
+        String(20), nullable=False, default="ringing"
+    )  # ringing, in_progress, completed, failed, voicemail
     recording_url = Column(String(500), nullable=True)
     recording_duration = Column(Integer, nullable=True)  # seconds
     transcript = Column(Text, nullable=True)
     transcript_segments = Column(JSONB, nullable=True)  # [{start, end, text, speaker}]
     ai_summary = Column(Text, nullable=True)
-    outcome = Column(String(50), nullable=True)  # sale, lead, appointment, callback, no_answer, hangup
+    outcome = Column(
+        String(50), nullable=True
+    )  # sale, lead, appointment, callback, no_answer, hangup
     cost_usd = Column(Numeric(10, 6), default=0)
     extra_data = Column(JSONB, default=dict, nullable=False)
     started_at = Column(DateTime(timezone=True), nullable=True)
     ended_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
 
@@ -59,9 +74,13 @@ class VoiceConfig(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id = Column(UUID(as_uuid=True), nullable=False, index=True, unique=True)
     is_active = Column(Boolean, default=True, nullable=False)
-    voice_id = Column(String(100), nullable=False)  # ElevenLabs voice ID or OpenAI voice
+    voice_id = Column(
+        String(100), nullable=False
+    )  # ElevenLabs voice ID or OpenAI voice
     tts_provider = Column(String(20), nullable=False)  # elevenlabs, openai, google
-    stt_provider = Column(String(20), nullable=False)  # openai_whisper, google, deepgram
+    stt_provider = Column(
+        String(20), nullable=False
+    )  # openai_whisper, google, deepgram
     language = Column(String(10), default="es", nullable=False)
     greeting_message = Column(Text, nullable=False)
     # Added while wiring app/domains/enterprise/voice_agent.py to this real
@@ -76,10 +95,10 @@ class VoiceConfig(Base):
     allowed_hours_end = Column(Time, default=time(18, 0), nullable=False)
     created_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     updated_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )

@@ -16,15 +16,17 @@ Env vars:
 - MERCADOPAGO_NOTIFICATION_URL: Webhook notification URL
 """
 
-import os
-import logging
-import requests
-import json
-import hmac
 import hashlib
-from typing import Dict, Any, Optional
-from datetime import datetime
+import hmac
+import logging
+import os
+from datetime import timedelta
 from enum import Enum
+from typing import Any
+
+import requests
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -36,10 +38,11 @@ logger = logging.getLogger(__name__)
 # a confusing "Invalid leading whitespace... in header value" error.
 MERCADOPAGO_ACCESS_TOKEN = os.getenv("MERCADOPAGO_ACCESS_TOKEN", "TEST_TOKEN").strip()
 MERCADOPAGO_PUBLIC_KEY = os.getenv("MERCADOPAGO_PUBLIC_KEY", "TEST_KEY").strip()
-MERCADOPAGO_WEBHOOK_SECRET = os.getenv("MERCADOPAGO_WEBHOOK_SECRET", "TEST_SECRET").strip()
+MERCADOPAGO_WEBHOOK_SECRET = os.getenv(
+    "MERCADOPAGO_WEBHOOK_SECRET", "TEST_SECRET"
+).strip()
 MERCADOPAGO_NOTIFICATION_URL = os.getenv(
-    "MERCADOPAGO_NOTIFICATION_URL",
-    "https://api.example.com/webhooks/mercadopago"
+    "MERCADOPAGO_NOTIFICATION_URL", "https://api.example.com/webhooks/mercadopago"
 ).strip()
 
 MERCADOPAGO_API_BASE = "https://api.mercadopago.com/v1"
@@ -48,6 +51,7 @@ MERCADOPAGO_CHECKOUT_BASE = "https://www.mercadopago.com.ar/checkout/pay"
 
 class CurrencyCode(str, Enum):
     """Supported currencies in MercadoPago."""
+
     ARS = "ARS"  # Argentine Peso
     BRL = "BRL"  # Brazilian Real
     CLP = "CLP"  # Chilean Peso
@@ -60,6 +64,7 @@ class CurrencyCode(str, Enum):
 
 class PaymentStatus(str, Enum):
     """MercadoPago payment statuses."""
+
     PENDING = "pending"
     APPROVED = "approved"
     AUTHORIZED = "authorized"
@@ -81,11 +86,11 @@ class MercadoPagoProcessor:
         customer_name: str,
         items: list,
         currency_code: str = "USD",
-        notification_url: Optional[str] = None,
+        notification_url: str | None = None,
         installments: int = 1,
         auto_return: str = "approved",
-        back_urls: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+        back_urls: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         """
         Create MercadoPago Checkout Pro preference.
 
@@ -125,7 +130,8 @@ class MercadoPagoProcessor:
                     "email": customer_email,
                 },
                 "items": items,
-                "back_urls": back_urls or {
+                "back_urls": back_urls
+                or {
                     "success": f"{MERCADOPAGO_NOTIFICATION_URL}/success",
                     "failure": f"{MERCADOPAGO_NOTIFICATION_URL}/failure",
                     "pending": f"{MERCADOPAGO_NOTIFICATION_URL}/pending",
@@ -176,19 +182,19 @@ class MercadoPagoProcessor:
                 "preference_id": preference_id,
                 "checkout_url": init_point,
                 "init_point": init_point,
-                "expires_at": datetime.utcnow(),
+                "expires_at": utc_now(),
                 "external_reference": external_reference,
             }
 
         except requests.RequestException as e:
-            logger.error(f"MercadoPago API error: {str(e)}")
+            logger.error(f"MercadoPago API error: {e!s}")
             return {"status": "error", "error": str(e)}
         except Exception as e:
-            logger.error(f"Error creating preference: {str(e)}")
+            logger.exception("Error creating preference")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
-    def get_payment_info(payment_id: str) -> Dict[str, Any]:
+    def get_payment_info(payment_id: str) -> dict[str, Any]:
         """
         Get payment information.
 
@@ -226,7 +232,6 @@ class MercadoPagoProcessor:
             payment = response.json()
 
             return {
-                "status": "retrieved",
                 "payment_id": payment["id"],
                 "status": payment["status"],
                 "amount": payment["transaction_amount"],
@@ -239,14 +244,14 @@ class MercadoPagoProcessor:
             }
 
         except Exception as e:
-            logger.error(f"Error retrieving payment: {str(e)}")
+            logger.exception("Error retrieving payment")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
     def refund_payment(
         payment_id: str,
-        amount: Optional[float] = None,
-    ) -> Dict[str, Any]:
+        amount: float | None = None,
+    ) -> dict[str, Any]:
         """
         Refund a payment (full or partial).
 
@@ -281,9 +286,7 @@ class MercadoPagoProcessor:
             )
 
             if response.status_code not in (200, 201):
-                logger.error(
-                    f"Refund error: {response.status_code} - {response.text}"
-                )
+                logger.error(f"Refund error: {response.status_code} - {response.text}")
                 return {"status": "error", "error": "Refund failed"}
 
             refund = response.json()
@@ -291,7 +294,6 @@ class MercadoPagoProcessor:
             logger.info(f"Refund created: {refund.get('id')} | Payment: {payment_id}")
 
             return {
-                "status": "refunded",
                 "refund_id": refund.get("id"),
                 "payment_id": payment_id,
                 "amount_refunded": refund.get("amount", amount),
@@ -299,7 +301,7 @@ class MercadoPagoProcessor:
             }
 
         except Exception as e:
-            logger.error(f"Error refunding payment: {str(e)}")
+            logger.exception("Error refunding payment")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -310,7 +312,7 @@ class MercadoPagoProcessor:
         amount: float,
         currency: str = "USD",
         expiration_days: int = 30,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create a payment link (alternative to Checkout Pro).
 
@@ -342,9 +344,7 @@ class MercadoPagoProcessor:
                 "reference_id": external_reference,
                 "price": amount,
                 "currency_id": currency,
-                "expires_at": (
-                    datetime.utcnow() + timedelta(days=expiration_days)
-                ).isoformat(),
+                "expires_at": (utc_now() + timedelta(days=expiration_days)).isoformat(),
             }
 
             response = requests.post(
@@ -368,7 +368,7 @@ class MercadoPagoProcessor:
             }
 
         except Exception as e:
-            logger.error(f"Error creating payment link: {str(e)}")
+            logger.exception("Error creating payment link")
             return {"status": "error", "error": str(e)}
 
 
@@ -401,12 +401,12 @@ class MercadoPagoWebhookHandler:
 
             return signature == calculated_signature
 
-        except Exception as e:
-            logger.error(f"Signature verification error: {str(e)}")
+        except Exception:
+            logger.exception("Signature verification error")
             return False
 
     @staticmethod
-    def handle_webhook(event_data: Dict[str, Any]) -> Dict[str, Any]:
+    def handle_webhook(event_data: dict[str, Any]) -> dict[str, Any]:
         """
         Handle MercadoPago webhook event.
 
@@ -438,11 +438,11 @@ class MercadoPagoWebhookHandler:
                 return {"status": "acknowledged", "type": event_type}
 
         except Exception as e:
-            logger.error(f"Error handling webhook: {str(e)}")
+            logger.exception("Error handling webhook")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
-    def _handle_payment_event(data: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_payment_event(data: dict[str, Any]) -> dict[str, Any]:
         """Handle payment event from webhook."""
         payment_id = data.get("id")
         status = data.get("status")
@@ -473,16 +473,14 @@ class MercadoPagoWebhookHandler:
         }
 
     @staticmethod
-    def _handle_merchant_order(data: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_merchant_order(data: dict[str, Any]) -> dict[str, Any]:
         """Handle merchant order event from webhook."""
         order_id = data.get("id")
         reference = data.get("external_reference")
         payments = data.get("payments", [])
 
         # Check if all payments are approved
-        all_approved = all(
-            p.get("status") == PaymentStatus.APPROVED for p in payments
-        )
+        all_approved = all(p.get("status") == PaymentStatus.APPROVED for p in payments)
 
         logger.info(f"Merchant order: {order_id} | Reference: {reference}")
 

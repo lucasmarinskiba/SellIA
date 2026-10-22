@@ -4,14 +4,15 @@ Genera captions contextuales basadas en trending topics + product.
 """
 
 import logging
-from typing import List, Dict, Any, Optional
 from enum import Enum
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
 
 class ContentStyle(str, Enum):
     """Estilos de contenido."""
+
     EDUCATIONAL = "educational"  # Tips, how-to
     MOTIVATIONAL = "motivational"  # Inspiración
     ENTERTAINING = "entertaining"  # Diversión
@@ -23,7 +24,7 @@ class ContentStyle(str, Enum):
 class ContentTemplate:
     """Template para generar contenido."""
 
-    TEMPLATES = {
+    TEMPLATES: ClassVar[dict] = {
         ContentStyle.EDUCATIONAL: [
             "🔥 {tip_number} tip para {topic}:\n{insight}\n\n💡 {action}\n\n{hashtags}",
             "¿Sabías que {fact}?\n\nAcá está cómo {solution}:\n{steps}\n\n{hashtags}",
@@ -35,7 +36,7 @@ class ContentTemplate:
             "No es suerte, es {strategy}.\n\n{explanation}\n\n{hashtags}",
         ],
         ContentStyle.TESTIMONIAL: [
-            "\"Ganamos {amount} en {timeframe}\" - {customer}\n\n{story}\n\n¿Vos querés lo mismo?\n\n{hashtags}",
+            '"Ganamos {amount} en {timeframe}" - {customer}\n\n{story}\n\n¿Vos querés lo mismo?\n\n{hashtags}',
             "Cliente: {name}\nResultado: {result}\nTiempo: {time}\n\n{detail}\n\n{hashtags}",
         ],
         ContentStyle.ENTERTAINING: [
@@ -48,7 +49,7 @@ class ContentTemplate:
         ],
     }
 
-    HOOKS = [
+    HOOKS: ClassVar[list] = [
         "¿Cuál es tu? Yo elegiría...",
         "Si solo tuvieras 1 tip...",
         "Nadie te va a decir esto pero...",
@@ -64,7 +65,7 @@ class ContentTemplate:
 
     def generate_caption(
         self,
-        product_info: Dict[str, Any],
+        product_info: dict[str, Any],
         trending_topic: str,
         style: ContentStyle,
         platform: str,  # instagram, tiktok
@@ -72,7 +73,9 @@ class ContentTemplate:
         """Genera caption automático."""
         try:
             # Seleccionar template
-            templates = self.TEMPLATES.get(style, self.TEMPLATES[ContentStyle.EDUCATIONAL])
+            templates = self.TEMPLATES.get(
+                style, self.TEMPLATES[ContentStyle.EDUCATIONAL]
+            )
             template = templates[0]  # Usar primer template por ahora
 
             # Contexto base
@@ -83,7 +86,7 @@ class ContentTemplate:
                 "benefit": product_info.get("benefit", "cambiar tu vida"),
                 "tip_number": self._get_tip_number(),
                 "insight": f"La mayoría intenta vender sin {trending_topic}",
-                "action": f"Aquí está el secreto...",
+                "action": "Aquí está el secreto...",
                 "hashtags": self._generate_hashtags(trending_topic, platform),
                 "successful_person": "Hormozi",
                 "action_text": "construyó su imperio",
@@ -103,8 +106,8 @@ class ContentTemplate:
                 "persona": "un emprendedor",
                 "scenario": f"aprendiendo {trending_topic}",
                 "punchline": "Cambio total de vida 🚀",
-                "contrast_1": "Trabajar sin {topic}",
-                "contrast_2": f"Usar {topic} estratégicamente",
+                "contrast_1": f"Trabajar sin {trending_topic}",
+                "contrast_2": f"Usar {trending_topic} estratégicamente",
                 "offer": f"30% OFF en {product_info.get('name')}",
                 "urgency": "Solo hoy",
                 "cta": "→ Compra ahora",
@@ -120,17 +123,20 @@ class ContentTemplate:
             if len(caption) > 2200:
                 caption = caption[:2197] + "..."
 
-            self.logger.info(f"Generated caption: {len(caption)} chars | style={style.value}")
+            self.logger.info(
+                f"Generated caption: {len(caption)} chars | style={style.value}"
+            )
 
             return caption
 
-        except Exception as e:
-            self.logger.error(f"Error generating caption: {e}")
+        except Exception:
+            self.logger.exception("Error generating caption")
             return f"🔥 {trending_topic}\n\n{product_info.get('name')} te espera.\n\n#growth #viralcontent"
 
     def _get_tip_number(self) -> str:
         """Random tip number 1-10."""
         import random
+
         return str(random.randint(1, 10))
 
     def _generate_hashtags(self, trending_topic: str, platform: str) -> str:
@@ -149,7 +155,7 @@ class ContentTemplate:
 
         return " ".join(base_hashtags[:12])
 
-    def select_image_theme(self, trending_topic: str) -> Dict[str, Any]:
+    def select_image_theme(self, trending_topic: str) -> dict[str, Any]:
         """Sugiere tema de imagen para trending topic."""
         themes = {
             "hustle_culture": {

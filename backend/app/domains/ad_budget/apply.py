@@ -28,7 +28,12 @@ class BudgetApplier:
         self.db = db
 
     async def apply(
-        self, business_id: uuid.UUID, channel: AdChannel, new_budget: Decimal, *, pause: bool = False
+        self,
+        business_id: uuid.UUID,
+        channel: AdChannel,
+        new_budget: Decimal,
+        *,
+        pause: bool = False,
     ) -> dict[str, Any]:
         new_budget = Decimal(str(new_budget)).quantize(CENT, rounding=ROUND_HALF_UP)
 
@@ -41,11 +46,14 @@ class BudgetApplier:
         elif channel.platform == AdPlatform.TIKTOK.value:
             result = await self._apply_tiktok(channel, new_budget)
         else:
-            result = {"applied": False, "manual_required": True,
-                      "message": f"El conector de {channel.platform} no permite escribir presupuesto todavía"}
+            result = {
+                "applied": False,
+                "manual_required": True,
+                "message": f"El conector de {channel.platform} no permite escribir presupuesto todavía",
+            }
 
         if result.get("applied"):
-            channel.current_daily_budget = new_budget if not pause else Decimal("0")
+            channel.current_daily_budget = new_budget if not pause else Decimal(0)
             if pause:
                 channel.is_paused = True
         return result
@@ -58,24 +66,36 @@ class BudgetApplier:
 
         conn = (
             await self.db.execute(
-                select(ChannelConnection).where(ChannelConnection.id == channel.channel_connection_id)
+                select(ChannelConnection).where(
+                    ChannelConnection.id == channel.channel_connection_id
+                )
             )
         ).scalar_one_or_none()
         if not conn:
             return None
         return get_connector(conn.platform, conn.credentials, conn.settings)
 
-    async def _apply_meta(self, channel: AdChannel, new_budget: Decimal) -> dict[str, Any]:
+    async def _apply_meta(
+        self, channel: AdChannel, new_budget: Decimal
+    ) -> dict[str, Any]:
         connector = await self._connector(channel)
         if connector is None or not hasattr(connector, "update_campaign_budget"):
-            return {"applied": False, "manual_required": True,
-                    "message": "Sin conexión Meta Ads válida"}
+            return {
+                "applied": False,
+                "manual_required": True,
+                "message": "Sin conexión Meta Ads válida",
+            }
         refs = [str(r) for r in (channel.campaign_refs or []) if r]
         if not refs:
-            return {"applied": False, "manual_required": True,
-                    "message": "El canal no tiene campañas (campaign_refs) asignadas"}
+            return {
+                "applied": False,
+                "manual_required": True,
+                "message": "El canal no tiene campañas (campaign_refs) asignadas",
+            }
 
-        per_campaign_minor = int((new_budget / len(refs) * 100).to_integral_value(rounding=ROUND_HALF_UP))
+        per_campaign_minor = int(
+            (new_budget / len(refs) * 100).to_integral_value(rounding=ROUND_HALF_UP)
+        )
         errors = []
         for ref in refs:
             try:
@@ -84,20 +104,34 @@ class BudgetApplier:
                 errors.append(f"{ref}: {e}")
         if errors:
             logger.warning("ad_budget: Meta budget update partial failure: %s", errors)
-            return {"applied": len(errors) < len(refs), "manual_required": bool(errors),
-                    "message": "; ".join(errors)}
-        return {"applied": True, "message": f"{len(refs)} campañas actualizadas a {new_budget} total"}
+            return {
+                "applied": len(errors) < len(refs),
+                "manual_required": bool(errors),
+                "message": "; ".join(errors),
+            }
+        return {
+            "applied": True,
+            "message": f"{len(refs)} campañas actualizadas a {new_budget} total",
+        }
 
-    async def _apply_google(self, channel: AdChannel, new_budget: Decimal) -> dict[str, Any]:
+    async def _apply_google(
+        self, channel: AdChannel, new_budget: Decimal
+    ) -> dict[str, Any]:
         """Apply budget via Google Ads API (campaigns.update)."""
         connector = await self._connector(channel)
         if connector is None or not hasattr(connector, "update_campaign_budget"):
-            return {"applied": False, "manual_required": True,
-                    "message": "Sin conexión Google Ads válida"}
+            return {
+                "applied": False,
+                "manual_required": True,
+                "message": "Sin conexión Google Ads válida",
+            }
         refs = [str(r) for r in (channel.campaign_refs or []) if r]
         if not refs:
-            return {"applied": False, "manual_required": True,
-                    "message": "El canal no tiene campañas (campaign_refs) asignadas"}
+            return {
+                "applied": False,
+                "manual_required": True,
+                "message": "El canal no tiene campañas (campaign_refs) asignadas",
+            }
 
         per_campaign = (new_budget / len(refs)).quantize(CENT, rounding=ROUND_HALF_UP)
         errors = []
@@ -107,21 +141,37 @@ class BudgetApplier:
             except Exception as e:  # noqa: BLE001
                 errors.append(f"{ref}: {e}")
         if errors:
-            logger.warning("ad_budget: Google budget update partial failure: %s", errors)
-            return {"applied": len(errors) < len(refs), "manual_required": bool(errors),
-                    "message": "; ".join(errors)}
-        return {"applied": True, "message": f"{len(refs)} campañas Google actualizadas a {new_budget} total"}
+            logger.warning(
+                "ad_budget: Google budget update partial failure: %s", errors
+            )
+            return {
+                "applied": len(errors) < len(refs),
+                "manual_required": bool(errors),
+                "message": "; ".join(errors),
+            }
+        return {
+            "applied": True,
+            "message": f"{len(refs)} campañas Google actualizadas a {new_budget} total",
+        }
 
-    async def _apply_tiktok(self, channel: AdChannel, new_budget: Decimal) -> dict[str, Any]:
+    async def _apply_tiktok(
+        self, channel: AdChannel, new_budget: Decimal
+    ) -> dict[str, Any]:
         """Apply budget via TikTok Ads API (ad_group.update)."""
         connector = await self._connector(channel)
         if connector is None or not hasattr(connector, "update_campaign_budget"):
-            return {"applied": False, "manual_required": True,
-                    "message": "Sin conexión TikTok Ads válida"}
+            return {
+                "applied": False,
+                "manual_required": True,
+                "message": "Sin conexión TikTok Ads válida",
+            }
         refs = [str(r) for r in (channel.campaign_refs or []) if r]
         if not refs:
-            return {"applied": False, "manual_required": True,
-                    "message": "El canal no tiene campañas (campaign_refs) asignadas"}
+            return {
+                "applied": False,
+                "manual_required": True,
+                "message": "El canal no tiene campañas (campaign_refs) asignadas",
+            }
 
         per_campaign = (new_budget / len(refs)).quantize(CENT, rounding=ROUND_HALF_UP)
         errors = []
@@ -131,16 +181,27 @@ class BudgetApplier:
             except Exception as e:  # noqa: BLE001
                 errors.append(f"{ref}: {e}")
         if errors:
-            logger.warning("ad_budget: TikTok budget update partial failure: %s", errors)
-            return {"applied": len(errors) < len(refs), "manual_required": bool(errors),
-                    "message": "; ".join(errors)}
-        return {"applied": True, "message": f"{len(refs)} campañas TikTok actualizadas a {new_budget} total"}
+            logger.warning(
+                "ad_budget: TikTok budget update partial failure: %s", errors
+            )
+            return {
+                "applied": len(errors) < len(refs),
+                "manual_required": bool(errors),
+                "message": "; ".join(errors),
+            }
+        return {
+            "applied": True,
+            "message": f"{len(refs)} campañas TikTok actualizadas a {new_budget} total",
+        }
 
     async def _pause(self, channel: AdChannel) -> dict[str, Any]:
         connector = await self._connector(channel)
         if connector is None or not hasattr(connector, "pause_campaign"):
-            return {"applied": False, "manual_required": True,
-                    "message": f"Pausar manualmente el canal {channel.display_name}"}
+            return {
+                "applied": False,
+                "manual_required": True,
+                "message": f"Pausar manualmente el canal {channel.display_name}",
+            }
         errors = []
         for ref in [str(r) for r in (channel.campaign_refs or []) if r]:
             try:
@@ -148,5 +209,9 @@ class BudgetApplier:
             except Exception as e:  # noqa: BLE001
                 errors.append(f"{ref}: {e}")
         if errors:
-            return {"applied": False, "manual_required": True, "message": "; ".join(errors)}
+            return {
+                "applied": False,
+                "manual_required": True,
+                "message": "; ".join(errors),
+            }
         return {"applied": True, "message": "campañas pausadas"}

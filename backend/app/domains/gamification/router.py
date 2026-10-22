@@ -1,32 +1,48 @@
 """Gamification & Experience API Router"""
 
+import logging
 import uuid
-from typing import Optional, List
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user, resolve_business_id
-from app.domains.users.models import User
-
-from app.domains.gamification.models import UserGamificationProfile, Achievement, UserAchievement, CelebrationEvent
+from app.domains.gamification.leaderboard import (
+    DEFAULT_METRIC,
+    LeaderboardService,
+)
+from app.domains.gamification.models import (
+    Achievement,
+    UserAchievement,
+)
 from app.domains.gamification.schemas import (
-    GamificationProfileResponse, AchievementResponse, UserAchievementResponse,
-    CelebrationEventResponse, GardenStateResponse, CompanionMessageResponse,
-    MoodCheckinRequest, MoodCheckinResponse, SaleRecordedResponse, LoginResponse,
-    LeaderboardEntryResponse, UserRankResponse, NearbyUsersResponse, TeamStatsResponse,
+    AchievementResponse,
+    CelebrationEventResponse,
+    GamificationProfileResponse,
+    GardenStateResponse,
+    LeaderboardEntryResponse,
+    LoginResponse,
+    MoodCheckinRequest,
+    MoodCheckinResponse,
+    NearbyUsersResponse,
+    TeamStatsResponse,
+    UserAchievementResponse,
+    UserRankResponse,
 )
 from app.domains.gamification.service import GamificationEngine, GamificationSeeder
-from app.domains.gamification.leaderboard import LeaderboardService, VALID_METRICS, DEFAULT_METRIC
+from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/gamification", tags=["gamification"])
 
 
 @router.get("/profile", response_model=GamificationProfileResponse)
 async def get_profile(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get user's gamification profile."""
     engine = GamificationEngine(db)
@@ -39,15 +55,17 @@ async def get_profile(
 
 @router.post("/login", response_model=LoginResponse)
 async def record_login(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Record daily login, update streaks, check achievements."""
     engine = GamificationEngine(db)
     business_id = await resolve_business_id(db, current_user)
 
     result = await engine.record_login(current_user.id, business_id)
-    welcome_msg = await engine.get_companion_message(current_user.id, business_id, "welcome")
+    welcome_msg = await engine.get_companion_message(
+        current_user.id, business_id, "welcome"
+    )
 
     return {
         **result,
@@ -55,35 +73,39 @@ async def record_login(
     }
 
 
-@router.get("/achievements", response_model=List[AchievementResponse])
+@router.get("/achievements", response_model=list[AchievementResponse])
 async def list_achievements(
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """List all available achievements."""
     from sqlalchemy import select
+
     result = await db.execute(select(Achievement).where(Achievement.is_active == True))
     return list(result.scalars().all())
 
 
-@router.get("/my-achievements", response_model=List[UserAchievementResponse])
+@router.get("/my-achievements", response_model=list[UserAchievementResponse])
 async def my_achievements(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """List user's unlocked achievements."""
     from sqlalchemy import select
+
     result = await db.execute(
-        select(UserAchievement).where(
+        select(UserAchievement)
+        .where(
             UserAchievement.user_id == current_user.id,
-        ).order_by(UserAchievement.unlocked_at.desc())
+        )
+        .order_by(UserAchievement.unlocked_at.desc())
     )
     return list(result.scalars().all())
 
 
-@router.get("/celebrations/pending", response_model=List[CelebrationEventResponse])
+@router.get("/celebrations/pending", response_model=list[CelebrationEventResponse])
 async def get_pending_celebrations(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get unshown celebration events."""
     engine = GamificationEngine(db)
@@ -94,8 +116,8 @@ async def get_pending_celebrations(
 @router.post("/celebrations/{celebration_id}/shown")
 async def mark_celebration_shown(
     celebration_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Mark a celebration as shown."""
     engine = GamificationEngine(db)
@@ -105,8 +127,8 @@ async def mark_celebration_shown(
 
 @router.get("/garden", response_model=GardenStateResponse)
 async def get_garden(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get user's Business Garden state."""
     engine = GamificationEngine(db)
@@ -122,8 +144,8 @@ async def get_garden(
 @router.post("/garden/action")
 async def garden_action(
     action: str,  # sale, lead, review, referral, milestone
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Trigger a garden update action."""
     engine = GamificationEngine(db)
@@ -134,9 +156,9 @@ async def garden_action(
 
 @router.get("/companion/message")
 async def get_companion_message(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     context: str = "welcome",
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Get a personalized companion message."""
     engine = GamificationEngine(db)
@@ -158,8 +180,8 @@ async def get_companion_message(
 @router.post("/mood", response_model=MoodCheckinResponse)
 async def mood_checkin(
     data: MoodCheckinRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Record daily mood check-in and get companion response."""
     from app.domains.gamification.models import DailyMoodLog
@@ -174,6 +196,7 @@ async def mood_checkin(
     # Generate AI companion response
     try:
         from app.domains.agents.ai_reply import generate_raw_ai_response
+
         companion_response = await generate_raw_ai_response(
             db=db,
             business_id=await resolve_business_id(db, current_user),
@@ -182,8 +205,11 @@ async def mood_checkin(
             max_tokens=200,
             temperature=0.8,
         )
-        log.ai_response = companion_response or "Entendido. Estoy acá para lo que necesites. 💪"
+        log.ai_response = (
+            companion_response or "Entendido. Estoy acá para lo que necesites. 💪"
+        )
     except Exception:
+        logger.exception("mood_checkin: error inesperado")
         log.ai_response = "Entendido. Estoy acá para lo que necesites. 💪"
 
     db.add(log)
@@ -197,11 +223,13 @@ async def mood_checkin(
         await resolve_business_id(db, current_user),
     )
     profile.user_mood_today = data.mood
-    profile.mood_history.append({
-        "date": log.created_at.isoformat(),
-        "mood": data.mood,
-        "energy": data.energy_level,
-    })
+    profile.mood_history.append(
+        {
+            "date": log.created_at.isoformat(),
+            "mood": data.mood,
+            "energy": data.energy_level,
+        }
+    )
     await db.commit()
 
     return log
@@ -209,25 +237,30 @@ async def mood_checkin(
 
 @router.get("/mood/history")
 async def mood_history(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     limit: int = 30,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Get mood history."""
-    from sqlalchemy import select, desc
+    from sqlalchemy import desc, select
+
     from app.domains.gamification.models import DailyMoodLog
+
     result = await db.execute(
-        select(DailyMoodLog).where(
+        select(DailyMoodLog)
+        .where(
             DailyMoodLog.user_id == current_user.id,
-        ).order_by(desc(DailyMoodLog.created_at)).limit(limit)
+        )
+        .order_by(desc(DailyMoodLog.created_at))
+        .limit(limit)
     )
     return list(result.scalars().all())
 
 
 @router.post("/seed-achievements")
 async def seed_achievements(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Seed default achievements (admin only)."""
     await GamificationSeeder.seed_achievements(db)
@@ -238,14 +271,15 @@ async def seed_achievements(
 #  Leaderboard
 # ============================================================
 
-@router.get("/leaderboard", response_model=List[LeaderboardEntryResponse])
+
+@router.get("/leaderboard", response_model=list[LeaderboardEntryResponse])
 async def get_leaderboard(
     business_id: uuid.UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     metric: str = DEFAULT_METRIC,
     period: str = "all_time",
     limit: int = 50,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Get the social leaderboard for a business."""
     svc = LeaderboardService(db)
@@ -261,9 +295,9 @@ async def get_leaderboard(
 @router.get("/leaderboard/me", response_model=UserRankResponse)
 async def get_my_rank(
     business_id: uuid.UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     metric: str = DEFAULT_METRIC,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Get current user's rank within their business."""
     svc = LeaderboardService(db)
@@ -279,9 +313,9 @@ async def get_my_rank(
 @router.get("/leaderboard/nearby", response_model=NearbyUsersResponse)
 async def get_nearby(
     business_id: uuid.UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     metric: str = DEFAULT_METRIC,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Get users ranked near the current user (±2 positions)."""
     svc = LeaderboardService(db)
@@ -297,8 +331,8 @@ async def get_nearby(
 @router.get("/leaderboard/team-stats", response_model=TeamStatsResponse)
 async def get_team_stats(
     business_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get aggregated team stats for a business."""
     svc = LeaderboardService(db)

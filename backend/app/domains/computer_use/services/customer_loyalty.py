@@ -5,15 +5,18 @@ Fase 12: Fideliza clientes → upsell → retención → aumenta LTV.
 
 import logging
 import uuid
-from typing import List, Dict, Any, Optional, Tuple
-from datetime import datetime, timedelta
+from datetime import timedelta
 from enum import Enum
+from typing import Any, ClassVar
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
 
 class EmailSequenceType(str, Enum):
     """Tipos de secuencias de email."""
+
     WELCOME = "welcome"  # Post-compra
     ONBOARDING = "onboarding"  # Introducción
     UPSELL = "upsell"  # Vender más
@@ -23,6 +26,7 @@ class EmailSequenceType(str, Enum):
 
 class CustomerSegment(str, Enum):
     """Segmentación de clientes."""
+
     NEW = "new"  # <30 days
     ACTIVE = "active"  # Recent activity
     AT_RISK = "at_risk"  # Inactivos
@@ -37,7 +41,7 @@ class EmailSequence:
         sequence_id: str,
         name: str,
         sequence_type: EmailSequenceType,
-        emails: List[Dict[str, str]],  # [{delay_days, subject, body}, ...]
+        emails: list[dict[str, str]],  # [{delay_days, subject, body}, ...]
     ):
         self.sequence_id = sequence_id
         self.name = name
@@ -45,7 +49,7 @@ class EmailSequence:
         self.emails = emails
 
         self.status = "active"  # active, paused
-        self.created_at = datetime.utcnow()
+        self.created_at = utc_now()
         self.stats = {
             "sent": 0,
             "opened": 0,
@@ -53,7 +57,7 @@ class EmailSequence:
             "conversions": 0,
         }
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "sequence_id": self.sequence_id,
             "name": self.name,
@@ -81,7 +85,7 @@ class UpsellOpportunity:
         self.urgency_hours = urgency_hours
 
         self.score = self._calculate_upsell_score()
-        self.created_at = datetime.utcnow()
+        self.created_at = utc_now()
         self.expires_at = self.created_at + timedelta(hours=urgency_hours)
         self.sent = False
 
@@ -90,7 +94,7 @@ class UpsellOpportunity:
         # Mock: basaría en histórico de compras, LTV, etc
         return 0.65
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "customer_id": self.customer_id,
             "from_product": self.product_purchased,
@@ -105,7 +109,7 @@ class CustomerLoyaltyEngine:
     """Gestiona retención + upsells + loyalty."""
 
     # Email sequences predefinidas
-    WELCOME_SEQUENCE = [
+    WELCOME_SEQUENCE: ClassVar[list] = [
         {
             "delay_days": 0,
             "subject": "¡Bienvenido! Aquí está tu acceso",
@@ -123,7 +127,7 @@ class CustomerLoyaltyEngine:
         },
     ]
 
-    UPSELL_SEQUENCE = [
+    UPSELL_SEQUENCE: ClassVar[list] = [
         {
             "delay_days": 0,
             "subject": "Eleva tu juego: {upsell_product}",
@@ -136,7 +140,7 @@ class CustomerLoyaltyEngine:
         },
     ]
 
-    WIN_BACK_SEQUENCE = [
+    WIN_BACK_SEQUENCE: ClassVar[list] = [
         {
             "delay_days": 0,
             "subject": "Te extrañamos - 20% OFF para volver",
@@ -151,18 +155,18 @@ class CustomerLoyaltyEngine:
 
     def __init__(self):
         self.logger = logger
-        self.sequences: Dict[str, EmailSequence] = {}
-        self.upsell_queue: List[UpsellOpportunity] = []
+        self.sequences: dict[str, EmailSequence] = {}
+        self.upsell_queue: list[UpsellOpportunity] = []
 
     async def create_email_sequence(
         self,
         name: str,
         sequence_type: EmailSequenceType,
-        emails: Optional[List[Dict[str, str]]] = None,
+        emails: list[dict[str, str]] | None = None,
     ) -> EmailSequence:
         """Crea secuencia de emails automática."""
         try:
-            sequence_id = f"seq_{sequence_type.value}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
+            sequence_id = f"seq_{sequence_type.value}_{utc_now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
 
             # Usar template default
             if not emails:
@@ -198,12 +202,15 @@ class CustomerLoyaltyEngine:
         customer_name: str,
         customer_email: str,
         product: str,
-    ) -> Tuple[bool, str]:
+    ) -> tuple[bool, str]:
         """Inicia secuencia de bienvenida post-compra."""
         try:
             # Obtener o crear sequence
             welcome_seq = list(self.sequences.values())
-            if not welcome_seq or welcome_seq[0].sequence_type != EmailSequenceType.WELCOME:
+            if (
+                not welcome_seq
+                or welcome_seq[0].sequence_type != EmailSequenceType.WELCOME
+            ):
                 welcome_seq = await self.create_email_sequence(
                     name="Welcome Sequence",
                     sequence_type=EmailSequenceType.WELCOME,
@@ -225,8 +232,8 @@ class CustomerLoyaltyEngine:
 
             return success, welcome_seq.sequence_id
 
-        except Exception as e:
-            self.logger.error(f"Error triggering welcome: {e}")
+        except Exception:
+            self.logger.exception("Error triggering welcome")
             return False, ""
 
     async def create_upsell_offer(
@@ -283,15 +290,15 @@ class CustomerLoyaltyEngine:
 
             return success
 
-        except Exception as e:
-            self.logger.error(f"Error sending upsell: {e}")
+        except Exception:
+            self.logger.exception("Error sending upsell")
             return False
 
     async def detect_at_risk_customers(
         self,
-        customers: List[Any],
+        customers: list[Any],
         days_inactive: int = 30,
-    ) -> List[Any]:
+    ) -> list[Any]:
         """Detecta clientes en riesgo de churn."""
         at_risk = []
 
@@ -306,8 +313,8 @@ class CustomerLoyaltyEngine:
 
     async def send_win_back_campaign(
         self,
-        customers: List[Any],
-    ) -> Dict[str, int]:
+        customers: list[Any],
+    ) -> dict[str, int]:
         """Envía campaña win-back a at-risk customers."""
         try:
             stats = {"sent": 0, "failed": 0}
@@ -324,26 +331,30 @@ class CustomerLoyaltyEngine:
                 else:
                     stats["failed"] += 1
 
-            self.logger.info(f"Win-back campaign: {stats['sent']} sent, {stats['failed']} failed")
+            self.logger.info(
+                f"Win-back campaign: {stats['sent']} sent, {stats['failed']} failed"
+            )
 
             return stats
 
-        except Exception as e:
-            self.logger.error(f"Error in win-back: {e}")
+        except Exception:
+            self.logger.exception("Error in win-back")
             return {"sent": 0, "failed": len(customers)}
 
     async def calculate_lifetime_value(
         self,
         customer_id: str,
-        purchases: List[Dict[str, float]],
+        purchases: list[dict[str, float]],
         churn_probability: float = 0.1,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calcula lifetime value del cliente."""
         try:
             # LTV = (Avg Purchase Value × Purchase Frequency) / Churn Rate
             total_spent = sum(p.get("amount", 0) for p in purchases)
             avg_purchase = total_spent / len(purchases) if purchases else 0
-            purchase_frequency = len(purchases) / 12  # per month (assuming 1 year history)
+            purchase_frequency = (
+                len(purchases) / 12
+            )  # per month (assuming 1 year history)
 
             ltv = (avg_purchase * purchase_frequency) / (churn_probability or 0.1)
 
@@ -356,8 +367,8 @@ class CustomerLoyaltyEngine:
                 "retention_score": 1 - churn_probability,
             }
 
-        except Exception as e:
-            self.logger.error(f"Error calculating LTV: {e}")
+        except Exception:
+            self.logger.exception("Error calculating LTV")
             return {}
 
     async def _send_email(

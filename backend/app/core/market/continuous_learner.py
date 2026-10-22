@@ -1,12 +1,13 @@
 """Continuous Learner — Watch external agent systems for updates."""
 
+import json
+import logging
 import os
 import subprocess
-import json
-from datetime import datetime
-from typing import Dict, List, Any
-import logging
 from pathlib import Path
+from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -20,16 +21,16 @@ class ContinuousLearner:
         self.version_file = "backend/app/core/market/.versions.json"
         self.versions = self._load_versions()
 
-    def monitor_external_systems(self) -> Dict[str, Any]:
+    def monitor_external_systems(self) -> dict[str, Any]:
         """Check for updates in external systems."""
         updates = {
             "realEstate": self._check_realEstate_updates(),
             "comercial": self._check_comercial_updates(),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
         return updates
 
-    def _check_realEstate_updates(self) -> Dict[str, Any]:
+    def _check_realEstate_updates(self) -> dict[str, Any]:
         """Check Real Estate Agent system for new agents/rules."""
         if not os.path.exists(self.realEstate_repo):
             return {"status": "repo_not_found", "version": "0.0.0"}
@@ -41,8 +42,11 @@ class ContinuousLearner:
                 capture_output=True,
                 text=True,
                 timeout=10,
+                check=False,
             )
-            commit_hash = result.stdout.strip()[:8] if result.returncode == 0 else "unknown"
+            commit_hash = (
+                result.stdout.strip()[:8] if result.returncode == 0 else "unknown"
+            )
 
             # Check for new agent definitions
             agents_path = Path(self.realEstate_repo) / "agents"
@@ -64,7 +68,7 @@ class ContinuousLearner:
                     "commit": commit_hash,
                     "agents": new_agents,
                     "tools": new_tools,
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": utc_now().isoformat(),
                 }
                 self._save_versions()
                 logger.info(f"Real Estate system updated: {commit_hash}")
@@ -78,10 +82,10 @@ class ContinuousLearner:
                 "version": f"1.0.{len(new_agents)}",
             }
         except Exception as e:
-            logger.error(f"Error checking Real Estate updates: {e}")
+            logger.exception("Error checking Real Estate updates")
             return {"status": "error", "error": str(e)}
 
-    def _check_comercial_updates(self) -> Dict[str, Any]:
+    def _check_comercial_updates(self) -> dict[str, Any]:
         """Check Commercial Advisor system for new agents/rules."""
         if not os.path.exists(self.comercial_repo):
             return {"status": "repo_not_found", "version": "0.0.0"}
@@ -93,8 +97,11 @@ class ContinuousLearner:
                 capture_output=True,
                 text=True,
                 timeout=10,
+                check=False,
             )
-            commit_hash = result.stdout.strip()[:8] if result.returncode == 0 else "unknown"
+            commit_hash = (
+                result.stdout.strip()[:8] if result.returncode == 0 else "unknown"
+            )
 
             # Check for specialized agents
             agents_path = Path(self.comercial_repo) / "core" / "agents"
@@ -109,7 +116,7 @@ class ContinuousLearner:
                 self.versions["comercial"] = {
                     "commit": commit_hash,
                     "agents": new_agents,
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": utc_now().isoformat(),
                 }
                 self._save_versions()
                 logger.info(f"Commercial Advisor system updated: {commit_hash}")
@@ -122,10 +129,10 @@ class ContinuousLearner:
                 "version": f"1.0.{len(new_agents)}",
             }
         except Exception as e:
-            logger.error(f"Error checking Commercial Advisor updates: {e}")
+            logger.exception("Error checking Commercial Advisor updates")
             return {"status": "error", "error": str(e)}
 
-    def sync_from_external_systems(self) -> Dict[str, Any]:
+    def sync_from_external_systems(self) -> dict[str, Any]:
         """Sync new agents/tools from external systems."""
         updates = self.monitor_external_systems()
 
@@ -144,6 +151,7 @@ class ContinuousLearner:
                 )
                 logger.info("Real Estate agents synced")
             except Exception as e:
+                logger.exception("sync_from_external_systems: error inesperado")
                 sync_result["errors"].append(f"Real Estate sync failed: {e}")
 
         if updates["comercial"]["status"] == "ok" and updates["comercial"]["updated"]:
@@ -154,18 +162,19 @@ class ContinuousLearner:
                 )
                 logger.info("Commercial Advisor agents synced")
             except Exception as e:
+                logger.exception("sync_from_external_systems: error inesperado")
                 sync_result["errors"].append(f"Commercial Advisor sync failed: {e}")
 
         return sync_result
 
-    def _load_versions(self) -> Dict[str, Any]:
+    def _load_versions(self) -> dict[str, Any]:
         """Load version tracking file."""
         if os.path.exists(self.version_file):
             try:
                 with open(self.version_file, "r") as f:
                     return json.load(f)
-            except Exception as e:
-                logger.error(f"Error loading versions: {e}")
+            except Exception:
+                logger.exception("Error loading versions")
         return {}
 
     def _save_versions(self) -> None:
@@ -174,13 +183,15 @@ class ContinuousLearner:
             os.makedirs(os.path.dirname(self.version_file), exist_ok=True)
             with open(self.version_file, "w") as f:
                 json.dump(self.versions, f, indent=2)
-        except Exception as e:
-            logger.error(f"Error saving versions: {e}")
+        except Exception:
+            logger.exception("Error saving versions")
 
     def rollback_to_version(self, system: str, version: str) -> bool:
         """Rollback to previous version."""
         try:
-            repo = self.realEstate_repo if system == "realEstate" else self.comercial_repo
+            repo = (
+                self.realEstate_repo if system == "realEstate" else self.comercial_repo
+            )
             subprocess.run(
                 ["git", "-C", repo, "checkout", version],
                 timeout=10,
@@ -188,15 +199,15 @@ class ContinuousLearner:
             )
             logger.info(f"Rolled back {system} to {version}")
             return True
-        except Exception as e:
-            logger.error(f"Rollback failed: {e}")
+        except Exception:
+            logger.exception("Rollback failed")
             return False
 
-    def get_learning_status(self) -> Dict[str, Any]:
+    def get_learning_status(self) -> dict[str, Any]:
         """Get current learning/sync status."""
         return {
             "versions": self.versions,
-            "last_check": datetime.utcnow().isoformat(),
+            "last_check": utc_now().isoformat(),
             "realEstate_connected": os.path.exists(self.realEstate_repo),
             "comercial_connected": os.path.exists(self.comercial_repo),
         }

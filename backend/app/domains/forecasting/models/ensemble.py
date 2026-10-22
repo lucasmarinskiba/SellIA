@@ -7,37 +7,50 @@ which yields a coherent, non-crossing predictive distribution.
 
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 import pandas as pd
 
 from app.domains.forecasting.models.base import DEFAULT_QUANTILES, Forecaster
 from app.domains.forecasting.types import ForecastResult, TimeSeries
 
+logger = logging.getLogger(__name__)
+
 
 class EnsembleForecaster(Forecaster):
     name = "ensemble"
 
-    def __init__(self, members: list[Forecaster], weights: dict[str, float] | None = None):
+    def __init__(
+        self, members: list[Forecaster], weights: dict[str, float] | None = None
+    ):
         self.members = members
         self.weights = weights or {}
 
-    def fit(self, ts: TimeSeries) -> "EnsembleForecaster":
+    def fit(self, ts: TimeSeries) -> EnsembleForecaster:
         self._fitted: list[Forecaster] = []
         for m in self.members:
             try:
                 self._fitted.append(m.fit(ts))
-            except Exception:  # noqa: BLE001
+            except Exception:
+                logger.exception("fit: error ignorado")
                 continue
         if not self._fitted:
             raise RuntimeError("ensemble: no member fit successfully")
-        w = np.array([max(self.weights.get(m.name, 0.0), 0.0) for m in self._fitted], dtype=float)
+        w = np.array(
+            [max(self.weights.get(m.name, 0.0), 0.0) for m in self._fitted], dtype=float
+        )
         if w.sum() <= 0:
             w = np.ones(len(self._fitted))
         self._w = w / w.sum()
-        self.active_weights = {m.name: float(wi) for m, wi in zip(self._fitted, self._w)}
+        self.active_weights = {
+            m.name: float(wi) for m, wi in zip(self._fitted, self._w)
+        }
         return self
 
-    def predict(self, horizon, future_index, future_exog=None, quantiles=DEFAULT_QUANTILES):
+    def predict(
+        self, horizon, future_index, future_exog=None, quantiles=DEFAULT_QUANTILES
+    ):
         future_index = pd.DatetimeIndex(future_index)
         results = []
         for m in self._fitted:
@@ -74,7 +87,13 @@ class EnsembleForecaster(Forecaster):
             q_out = {k: stacked[i] for i, k in enumerate(keys)}
 
         return ForecastResult(
-            self.name, horizon, future_index, np.clip(mean, 0.0, None), q_out,
-            diagnostics={"weights": self.active_weights,
-                         "members": [r.model_name for _, r in keep]},
+            self.name,
+            horizon,
+            future_index,
+            np.clip(mean, 0.0, None),
+            q_out,
+            diagnostics={
+                "weights": self.active_weights,
+                "members": [r.model_name for _, r in keep],
+            },
         )

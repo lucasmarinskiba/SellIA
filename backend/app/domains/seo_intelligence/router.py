@@ -1,28 +1,29 @@
 """SEO Intelligence API — /api/v1/businesses/{business_id}/seo/*"""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cache import cached
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.core.cache import cached
 from app.domains.seo_intelligence.schemas import (
+    CompetitorAnalysisCreate,
+    CompetitorAnalysisOut,
     KeywordCreate,
     KeywordOut,
     PageOptimizationCreate,
-    PageOptimizationUpdate,
     PageOptimizationOut,
-    CompetitorAnalysisCreate,
-    CompetitorAnalysisOut,
-    SEORecommendationOut,
+    PageOptimizationUpdate,
     SEOHealthResponse,
+    SEORecommendationOut,
 )
 from app.domains.seo_intelligence.service import (
+    CompetitorAnalysisService,
     KeywordService,
     PageOptimizationService,
-    CompetitorAnalysisService,
     SEORecommendationService,
 )
 from app.domains.users.models import User
@@ -35,8 +36,8 @@ router = APIRouter(prefix="/{business_id}/seo", tags=["SEO Intelligence"])
 async def add_keyword(
     business_id: UUID,
     body: KeywordCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Add keyword to track."""
     svc = KeywordService(db)
@@ -57,10 +58,10 @@ async def add_keyword(
 @cached(ttl_seconds=3600, key_prefix="keywords")
 async def list_keywords(
     business_id: UUID,
-    platform: str | None = Query(None),
-    limit: int = Query(100, ge=1, le=1000),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    platform: Annotated[str | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=1000)] = 100,
 ):
     """List tracked keywords (cached 1h)."""
     svc = KeywordService(db)
@@ -71,13 +72,17 @@ async def list_keywords(
 @cached(ttl_seconds=900, key_prefix="trending")
 async def get_trending_keywords(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get rising trend keywords (cached 15min)."""
     svc = KeywordService(db)
     keywords = await svc.get_trending_keywords(business_id)
-    return {"trending_keywords": [{"keyword": k.keyword, "trend": k.trend} for k in keywords]}
+    return {
+        "trending_keywords": [
+            {"keyword": k.keyword, "trend": k.trend} for k in keywords
+        ]
+    }
 
 
 # Page Optimization
@@ -85,8 +90,8 @@ async def get_trending_keywords(
 async def create_page(
     business_id: UUID,
     body: PageOptimizationCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create page optimization record."""
     svc = PageOptimizationService(db)
@@ -105,8 +110,8 @@ async def update_page(
     business_id: UUID,
     page_id: UUID,
     body: PageOptimizationUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Update page metrics."""
     svc = PageOptimizationService(db)
@@ -124,8 +129,8 @@ async def update_page(
 @cached(ttl_seconds=3600, key_prefix="seo_health")
 async def get_seo_health(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get overall SEO health (cached 1h)."""
     svc = PageOptimizationService(db)
@@ -138,20 +143,22 @@ async def get_seo_health(
 async def analyze_competitor(
     business_id: UUID,
     body: CompetitorAnalysisCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Analyze competitor."""
     svc = CompetitorAnalysisService(db)
-    return await svc.analyze_competitor(business_id, body.competitor_name, body.competitor_url)
+    return await svc.analyze_competitor(
+        business_id, body.competitor_name, body.competitor_url
+    )
 
 
 @router.get("/competitors", response_model=list[CompetitorAnalysisOut])
 @cached(ttl_seconds=3600, key_prefix="competitors")
 async def list_competitors(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """List analyzed competitors (cached 1h)."""
     svc = CompetitorAnalysisService(db)
@@ -162,10 +169,10 @@ async def list_competitors(
 @router.get("/recommendations", response_model=list[SEORecommendationOut])
 async def list_recommendations(
     business_id: UUID,
-    status: str | None = Query(None),
-    priority: str | None = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    status: Annotated[str | None, Query()] = None,
+    priority: Annotated[str | None, Query()] = None,
 ):
     """List SEO recommendations."""
     svc = SEORecommendationService(db)
@@ -176,9 +183,9 @@ async def list_recommendations(
 async def update_recommendation_status(
     business_id: UUID,
     rec_id: UUID,
-    status: str = Query(..., pattern="^(open|in_progress|completed|rejected)$"),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    status: Annotated[str, Query(pattern="^(open|in_progress|completed|rejected)$")],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Update recommendation status."""
     svc = SEORecommendationService(db)

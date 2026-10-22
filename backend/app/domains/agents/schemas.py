@@ -1,13 +1,14 @@
 """Agentes IA - Schemas"""
 
 import uuid
-from uuid import UUID
 from datetime import datetime
-from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, ConfigDict
+from typing import Any
+from uuid import UUID
 
+from pydantic import BaseModel, ConfigDict, Field
 
 # ========== Personality Schemas ==========
+
 
 class AgentPersonalityBase(BaseModel):
     slug: str
@@ -15,7 +16,7 @@ class AgentPersonalityBase(BaseModel):
     emoji: str = "🤖"
     tagline: str
     description: str
-    expertise: List[str] = Field(default_factory=list)
+    expertise: list[str] = Field(default_factory=list)
     color: str = "#FF6B35"
     display_order: int = 0
 
@@ -30,20 +31,21 @@ class AgentPersonalityResponse(AgentPersonalityBase):
 
 # ========== Config Schemas ==========
 
+
 class AgentConfigCreate(BaseModel):
     personality_id: UUID
-    custom_instructions: Optional[str] = None
-    tone_override: Optional[str] = None
-    voice_personality_id: Optional[UUID] = None
-    extra_data: Dict[str, Any] = Field(default_factory=dict)
+    custom_instructions: str | None = None
+    tone_override: str | None = None
+    voice_personality_id: UUID | None = None
+    extra_data: dict[str, Any] = Field(default_factory=dict)
 
 
 class AgentConfigUpdate(BaseModel):
-    is_enabled: Optional[bool] = None
-    custom_instructions: Optional[str] = None
-    tone_override: Optional[str] = None
-    voice_personality_id: Optional[UUID] = None
-    extra_data: Optional[Dict[str, Any]] = None
+    is_enabled: bool | None = None
+    custom_instructions: str | None = None
+    tone_override: str | None = None
+    voice_personality_id: UUID | None = None
+    extra_data: dict[str, Any] | None = None
 
 
 class AgentConfigResponse(BaseModel):
@@ -51,24 +53,25 @@ class AgentConfigResponse(BaseModel):
     business_id: UUID
     personality_id: UUID
     is_enabled: bool
-    custom_instructions: Optional[str]
-    tone_override: Optional[str]
-    voice_personality_id: Optional[UUID]
-    extra_data: Dict[str, Any]
+    custom_instructions: str | None
+    tone_override: str | None
+    voice_personality_id: UUID | None
+    extra_data: dict[str, Any]
     created_at: datetime
     updated_at: datetime
     personality: AgentPersonalityResponse
-    voice_personality: Optional[AgentPersonalityResponse] = None
+    voice_personality: AgentPersonalityResponse | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
 # ========== Conversation & Message Schemas ==========
 
+
 class AgentConversationCreate(BaseModel):
     business_id: UUID
     personality_id: UUID
-    title: Optional[str] = None
+    title: str | None = None
 
 
 class AgentMessageCreate(BaseModel):
@@ -80,9 +83,9 @@ class AgentMessageResponse(BaseModel):
     conversation_id: UUID
     role: str
     content: str
-    model_used: Optional[str]
-    tokens_used: Optional[int]
-    extra_data: Dict[str, Any]
+    model_used: str | None
+    tokens_used: int | None
+    extra_data: dict[str, Any]
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -93,76 +96,80 @@ class AgentConversationResponse(BaseModel):
     user_id: UUID
     business_id: UUID
     personality_id: UUID
-    title: Optional[str]
+    title: str | None
     message_count: int
     is_active: bool
     created_at: datetime
     updated_at: datetime
-    personality: Optional[AgentPersonalityResponse] = None
+    personality: AgentPersonalityResponse | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class AgentConversationDetailResponse(AgentConversationResponse):
-    messages: List[AgentMessageResponse] = Field(default_factory=list)
+    messages: list[AgentMessageResponse] = Field(default_factory=list)
 
 
 # ========== Auto-Pilot Voice Config ==========
 
+
 class AutopilotVoiceConfig(BaseModel):
     personality_slug: str
-    voice_personality_slug: Optional[str] = None
-    custom_instructions: Optional[str] = None
+    voice_personality_slug: str | None = None
+    custom_instructions: str | None = None
 
 
 class AutopilotVoiceConfigResponse(BaseModel):
-    configs: Dict[str, AutopilotVoiceConfig]
+    configs: dict[str, AutopilotVoiceConfig]
 
 
 # ========== Chat Response ==========
+
 
 class AgentChatResponse(BaseModel):
     message: AgentMessageResponse
     conversation_id: UUID
     tokens_used: int = 0
-    action_triggered: Optional[str] = None
+    action_triggered: str | None = None
 
 
 # ========== ReAct Chat ==========
 
+
 class ReactChatRequest(BaseModel):
     message: str
-    business_id: Optional[UUID] = None
-    conversation_history: List[Dict[str, str]] = Field(default_factory=list)
+    business_id: UUID | None = None
+    conversation_history: list[dict[str, str]] = Field(default_factory=list)
 
 
 class ReactChatResponse(BaseModel):
     response: str
     iterations: int
-    tool_calls: List[Dict[str, Any]] = Field(default_factory=list)
+    tool_calls: list[dict[str, Any]] = Field(default_factory=list)
     tokens_used: int = 0
-    model: Optional[str] = None
-    provider: Optional[str] = None
+    model: str | None = None
+    provider: str | None = None
 
 
 # ========== Planning ==========
 
+
 class PlanStepResponse(BaseModel):
     id: str
     description: str
-    required_tools: List[str] = Field(default_factory=list)
-    dependencies: List[str] = Field(default_factory=list)
+    required_tools: list[str] = Field(default_factory=list)
+    dependencies: list[str] = Field(default_factory=list)
 
 
 class PlanRequest(BaseModel):
     task_description: str
-    business_id: Optional[UUID] = None
-    context: Dict[str, Any] = Field(default_factory=dict)
+    business_id: UUID | None = None
+    context: dict[str, Any] = Field(default_factory=dict)
 
 
 class PlanResponse(BaseModel):
-    plan: List[PlanStepResponse]
-    results: List[Dict[str, Any]] = Field(default_factory=list)
+    plan: list[PlanStepResponse]
+    results: list[dict[str, Any]] = Field(default_factory=list)
     status: str
     completed_steps: int = 0
     failed_steps: int = 0
@@ -170,10 +177,11 @@ class PlanResponse(BaseModel):
 
 # ========== Swarm Schemas ==========
 
+
 class SwarmExecuteRequest(BaseModel):
     task: str
-    agents: List[str] = Field(default_factory=list)
-    context: Dict[str, Any] = Field(default_factory=dict)
+    agents: list[str] = Field(default_factory=list)
+    context: dict[str, Any] = Field(default_factory=dict)
     consensus_required: bool = True
     max_rounds: int = 5
 
@@ -183,15 +191,15 @@ class SwarmAgentContribution(BaseModel):
     role: str
     content: str
     message_type: str
-    target_agent: Optional[str] = None
-    thought: Optional[str] = None
+    target_agent: str | None = None
+    thought: str | None = None
     round: int
 
 
 class SwarmExecuteResponse(BaseModel):
     session_id: str
     final_response: str
-    agent_contributions: List[SwarmAgentContribution]
+    agent_contributions: list[SwarmAgentContribution]
     reasoning: str
     consensus_reached: bool
     rounds: int
@@ -214,15 +222,15 @@ class SwarmSessionResponse(BaseModel):
     id: uuid.UUID
     task: str
     business_id: uuid.UUID
-    conversation_id: Optional[uuid.UUID] = None
-    agents_involved: List[str] = Field(default_factory=list)
-    shared_context: Dict[str, Any] = Field(default_factory=dict)
+    conversation_id: uuid.UUID | None = None
+    agents_involved: list[str] = Field(default_factory=list)
+    shared_context: dict[str, Any] = Field(default_factory=dict)
     round_count: int
     consensus_reached: bool
-    final_response: Optional[str] = None
+    final_response: str | None = None
     created_at: datetime
     updated_at: datetime
-    messages: List[SwarmMessageResponse] = Field(default_factory=list)
+    messages: list[SwarmMessageResponse] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -238,4 +246,4 @@ class SwarmSuggestedAgent(BaseModel):
 
 
 class SwarmSuggestResponse(BaseModel):
-    suggested_agents: List[SwarmSuggestedAgent]
+    suggested_agents: list[SwarmSuggestedAgent]

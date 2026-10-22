@@ -1,10 +1,13 @@
 """Mission WebSocket Endpoint"""
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
-from typing import Optional
+import logging
+
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 
 from app.core.deps import get_current_user_ws
 from app.domains.missions.websocket_manager import mission_ws_manager
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Mission WebSocket"])
 
@@ -12,16 +15,16 @@ router = APIRouter(tags=["Mission WebSocket"])
 @router.websocket("/ws/missions")
 async def mission_websocket(
     websocket: WebSocket,
-    token: Optional[str] = Query(None),
+    token: str | None = Query(None),
 ):
     """WebSocket for real-time mission progress updates.
-    
+
     Connect with: wss://host/ws/missions?token=<jwt>
-    
+
     Incoming messages:
     - {"type": "ping"} -> pong response
     - {"type": "approve_step", "mission_id": "...", "step_id": "..."} -> approve a waiting step
-    
+
     Outgoing messages:
     - {"type": "mission_progress", "mission_id": "...", "step_id": "...", "status": "..."}
     - {"type": "mission_status", "mission_id": "...", "status": "...", "message": "..."}
@@ -34,6 +37,7 @@ async def mission_websocket(
             await websocket.close(code=4001, reason="Unauthorized")
             return
     except Exception:
+        logger.exception("mission_websocket: error inesperado")
         await websocket.close(code=4001, reason="Unauthorized")
         return
 
@@ -46,7 +50,9 @@ async def mission_websocket(
             msg_type = data.get("type", "")
 
             if msg_type == "ping":
-                await websocket.send_json({"type": "pong", "timestamp": str(__import__('datetime').datetime.utcnow())})
+                await websocket.send_json(
+                    {"type": "pong", "timestamp": str(__import__("datetime").utc_now())}
+                )
 
             elif msg_type == "approve_step":
                 # Handle step approval via websocket
@@ -54,27 +60,34 @@ async def mission_websocket(
                 step_id = data.get("step_id")
                 # Import here to avoid circular dependencies
                 from app.core.database import AsyncSessionLocal
-                from app.domains.missions.services import MissionService
                 from app.domains.missions.schemas import MissionStepUpdate
+                from app.domains.missions.services import MissionService
+
                 async with AsyncSessionLocal() as db:
                     service = MissionService(db)
                     await service.update_step(
-                        mission_id=__import__('uuid').UUID(mission_id),
-                        step_id=__import__('uuid').UUID(step_id),
+                        mission_id=__import__("uuid").UUID(mission_id),
+                        step_id=__import__("uuid").UUID(step_id),
                         user_id=user.id,
-                        data=MissionStepUpdate(status="completed", approved_by_user=True),
+                        data=MissionStepUpdate(
+                            status="completed", approved_by_user=True
+                        ),
                     )
-                await mission_ws_manager.broadcast(user_id, {
-                    "type": "step_approved",
-                    "mission_id": mission_id,
-                    "step_id": step_id,
-                })
+                await mission_ws_manager.broadcast(
+                    user_id,
+                    {
+                        "type": "step_approved",
+                        "mission_id": mission_id,
+                        "step_id": step_id,
+                    },
+                )
 
     except WebSocketDisconnect:
         mission_ws_manager.disconnect(user_id, websocket)
     except Exception as e:
+        logger.exception("mission_websocket: error inesperado")
         mission_ws_manager.disconnect(user_id, websocket)
         try:
             await websocket.close(code=1011, reason=str(e))
         except Exception:
-            pass
+            logger.exception("mission_websocket: error inesperado")

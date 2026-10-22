@@ -2,18 +2,17 @@
 FOMO Engine Service - Star Player Logic
 """
 
-from typing import Optional, List
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import select, func, and_, desc
+from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.fomo.models import (
+    FOMOABTest,
     FOMOCampaign,
     FOMOEvent,
-    FOMOABTest,
     FOMOMetric,
     SocialProofEvent,
 )
@@ -28,7 +27,7 @@ class FOMOService:
         campaign_type: str,
         headline: str,
         config: dict,
-        trigger_type: Optional[str] = None,
+        trigger_type: str | None = None,
         **kwargs,
     ) -> FOMOCampaign:
         campaign = FOMOCampaign(
@@ -38,7 +37,7 @@ class FOMOService:
             headline=headline,
             config=config,
             trigger_type=trigger_type,
-            status='draft',
+            status="draft",
             **kwargs,
         )
         db.add(campaign)
@@ -51,20 +50,24 @@ class FOMOService:
         campaign = await db.scalar(stmt)
         if not campaign:
             raise ValueError(f"Campaign {campaign_id} not found")
-        campaign.status = 'active'
+        campaign.status = "active"
         campaign.is_active = True
-        campaign.updated_at = datetime.now(timezone.utc)
+        campaign.updated_at = datetime.now(UTC)
         await db.flush()
         return campaign
 
     @staticmethod
-    async def get_campaigns(db: AsyncSession, user_id: UUID) -> List[FOMOCampaign]:
-        stmt = select(FOMOCampaign).where(FOMOCampaign.user_id == user_id).order_by(FOMOCampaign.created_at.desc())
+    async def get_campaigns(db: AsyncSession, user_id: UUID) -> list[FOMOCampaign]:
+        stmt = (
+            select(FOMOCampaign)
+            .where(FOMOCampaign.user_id == user_id)
+            .order_by(FOMOCampaign.created_at.desc())
+        )
         result = await db.execute(stmt)
         return result.scalars().all()
 
     @staticmethod
-    async def get_campaign(db: AsyncSession, campaign_id: UUID) -> Optional[FOMOCampaign]:
+    async def get_campaign(db: AsyncSession, campaign_id: UUID) -> FOMOCampaign | None:
         stmt = select(FOMOCampaign).where(FOMOCampaign.id == campaign_id)
         return await db.scalar(stmt)
 
@@ -74,9 +77,9 @@ class FOMOService:
         db: AsyncSession,
         campaign_id: UUID,
         event_type: str,
-        customer_id: Optional[UUID] = None,
-        product_id: Optional[UUID] = None,
-        metadata: Optional[dict] = None,
+        customer_id: UUID | None = None,
+        product_id: UUID | None = None,
+        metadata: dict | None = None,
     ) -> FOMOEvent:
         event = FOMOEvent(
             campaign_id=campaign_id,
@@ -90,7 +93,9 @@ class FOMOService:
         return event
 
     @staticmethod
-    async def get_recent_events(db: AsyncSession, campaign_id: UUID, limit: int = 10) -> List[FOMOEvent]:
+    async def get_recent_events(
+        db: AsyncSession, campaign_id: UUID, limit: int = 10
+    ) -> list[FOMOEvent]:
         stmt = (
             select(FOMOEvent)
             .where(FOMOEvent.campaign_id == campaign_id)
@@ -104,11 +109,14 @@ class FOMOService:
     async def get_event_count(
         db: AsyncSession,
         campaign_id: UUID,
-        event_type: Optional[str] = None,
+        event_type: str | None = None,
         hours: int = 24,
     ) -> int:
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
-        where_clause = [FOMOEvent.campaign_id == campaign_id, FOMOEvent.created_at > cutoff]
+        cutoff = datetime.now(UTC) - timedelta(hours=hours)
+        where_clause = [
+            FOMOEvent.campaign_id == campaign_id,
+            FOMOEvent.created_at > cutoff,
+        ]
         if event_type:
             where_clause.append(FOMOEvent.event_type == event_type)
 
@@ -128,35 +136,39 @@ class FOMOService:
             campaign_id=campaign_id,
             variant_a=variant_a,
             variant_b=variant_b,
-            status='running',
+            status="running",
         )
         db.add(test)
         await db.flush()
         return test
 
     @staticmethod
-    async def record_ab_test_view(db: AsyncSession, test_id: UUID, variant: str) -> None:
+    async def record_ab_test_view(
+        db: AsyncSession, test_id: UUID, variant: str
+    ) -> None:
         stmt = select(FOMOABTest).where(FOMOABTest.id == test_id)
         test = await db.scalar(stmt)
         if not test:
             raise ValueError(f"Test {test_id} not found")
 
-        if variant == 'A':
+        if variant == "A":
             test.variant_a_views += 1
-        elif variant == 'B':
+        elif variant == "B":
             test.variant_b_views += 1
         await db.flush()
 
     @staticmethod
-    async def record_ab_test_conversion(db: AsyncSession, test_id: UUID, variant: str) -> None:
+    async def record_ab_test_conversion(
+        db: AsyncSession, test_id: UUID, variant: str
+    ) -> None:
         stmt = select(FOMOABTest).where(FOMOABTest.id == test_id)
         test = await db.scalar(stmt)
         if not test:
             raise ValueError(f"Test {test_id} not found")
 
-        if variant == 'A':
+        if variant == "A":
             test.variant_a_conversions += 1
-        elif variant == 'B':
+        elif variant == "B":
             test.variant_b_conversions += 1
         await db.flush()
 
@@ -167,27 +179,35 @@ class FOMOService:
         if not test:
             raise ValueError(f"Test {test_id} not found")
 
-        rate_a = test.variant_a_conversions / test.variant_a_views if test.variant_a_views > 0 else 0
-        rate_b = test.variant_b_conversions / test.variant_b_views if test.variant_b_views > 0 else 0
+        rate_a = (
+            test.variant_a_conversions / test.variant_a_views
+            if test.variant_a_views > 0
+            else 0
+        )
+        rate_b = (
+            test.variant_b_conversions / test.variant_b_views
+            if test.variant_b_views > 0
+            else 0
+        )
 
         winner = None
         if rate_a > rate_b * 1.1:
-            winner = 'A'
+            winner = "A"
         elif rate_b > rate_a * 1.1:
-            winner = 'B'
+            winner = "B"
 
         return {
-            'variant_a': {
-                'views': test.variant_a_views,
-                'conversions': test.variant_a_conversions,
-                'rate': float(rate_a),
+            "variant_a": {
+                "views": test.variant_a_views,
+                "conversions": test.variant_a_conversions,
+                "rate": float(rate_a),
             },
-            'variant_b': {
-                'views': test.variant_b_views,
-                'conversions': test.variant_b_conversions,
-                'rate': float(rate_b),
+            "variant_b": {
+                "views": test.variant_b_views,
+                "conversions": test.variant_b_conversions,
+                "rate": float(rate_b),
             },
-            'winner': winner,
+            "winner": winner,
         }
 
     # ========== METRICS & ANALYTICS ==========
@@ -196,9 +216,9 @@ class FOMOService:
         db: AsyncSession,
         campaign_id: UUID,
         event_type: str,  # 'impression' | 'conversion'
-        revenue: Optional[Decimal] = None,
+        revenue: Decimal | None = None,
     ) -> None:
-        today = datetime.now(timezone.utc).date()
+        today = datetime.now(UTC).date()
 
         stmt = select(FOMOMetric).where(
             and_(
@@ -213,9 +233,9 @@ class FOMOService:
             db.add(metric)
             await db.flush()
 
-        if event_type == 'impression':
+        if event_type == "impression":
             metric.impressions += 1
-        elif event_type == 'conversion':
+        elif event_type == "conversion":
             metric.conversions += 1
             if revenue:
                 metric.revenue += revenue
@@ -223,8 +243,10 @@ class FOMOService:
         await db.flush()
 
     @staticmethod
-    async def get_metrics(db: AsyncSession, campaign_id: UUID, days: int = 30) -> List[dict]:
-        cutoff = datetime.now(timezone.utc).date() - timedelta(days=days)
+    async def get_metrics(
+        db: AsyncSession, campaign_id: UUID, days: int = 30
+    ) -> list[dict]:
+        cutoff = datetime.now(UTC).date() - timedelta(days=days)
 
         stmt = (
             select(FOMOMetric)
@@ -241,12 +263,14 @@ class FOMOService:
 
         return [
             {
-                'date': m.date.isoformat(),
-                'impressions': m.impressions,
-                'conversions': m.conversions,
-                'revenue': float(m.revenue),
-                'conversion_rate': (m.conversions / m.impressions * 100) if m.impressions > 0 else 0,
-                'aov': float(m.revenue / m.conversions) if m.conversions > 0 else 0,
+                "date": m.date.isoformat(),
+                "impressions": m.impressions,
+                "conversions": m.conversions,
+                "revenue": float(m.revenue),
+                "conversion_rate": (
+                    (m.conversions / m.impressions * 100) if m.impressions > 0 else 0
+                ),
+                "aov": float(m.revenue / m.conversions) if m.conversions > 0 else 0,
             }
             for m in metrics
         ]
@@ -254,11 +278,11 @@ class FOMOService:
     @staticmethod
     async def get_summary_metrics(db: AsyncSession, campaign_id: UUID) -> dict:
         stmt = select(
-            func.sum(FOMOMetric.conversions).label('total_conversions'),
-            func.sum(FOMOMetric.revenue).label('total_revenue'),
+            func.sum(FOMOMetric.conversions).label("total_conversions"),
+            func.sum(FOMOMetric.revenue).label("total_revenue"),
             func.avg(
                 FOMOMetric.conversions / func.nullif(FOMOMetric.impressions, 0)
-            ).label('avg_conversion_rate'),
+            ).label("avg_conversion_rate"),
         ).where(FOMOMetric.campaign_id == campaign_id)
 
         result = await db.execute(stmt)
@@ -269,20 +293,24 @@ class FOMOService:
         avg_cr = float((row[2] or 0) * 100)
 
         return {
-            'total_conversions': total_conversions,
-            'total_revenue': total_revenue,
-            'avg_conversion_rate': avg_cr,
-            'avg_aov': total_revenue / total_conversions if total_conversions > 0 else 0,
+            "total_conversions": total_conversions,
+            "total_revenue": total_revenue,
+            "avg_conversion_rate": avg_cr,
+            "avg_aov": (
+                total_revenue / total_conversions if total_conversions > 0 else 0
+            ),
         }
 
     @staticmethod
-    async def get_active_campaigns(db: AsyncSession, page_path: Optional[str] = None, plan_id: Optional[str] = None) -> List[FOMOCampaign]:
+    async def get_active_campaigns(
+        db: AsyncSession, page_path: str | None = None, plan_id: str | None = None
+    ) -> list[FOMOCampaign]:
         """Get campaigns active for a given page."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         query = select(FOMOCampaign).where(
             and_(
                 FOMOCampaign.is_active == True,
-                FOMOCampaign.status == 'active',
+                FOMOCampaign.status == "active",
             )
         )
         if page_path:
@@ -300,7 +328,9 @@ class FOMOService:
         return active
 
     @staticmethod
-    async def get_recent_social_proof(db: AsyncSession, limit: int = 10) -> List[SocialProofEvent]:
+    async def get_recent_social_proof(
+        db: AsyncSession, limit: int = 10
+    ) -> list[SocialProofEvent]:
         result = await db.execute(
             select(SocialProofEvent)
             .order_by(desc(SocialProofEvent.created_at))
@@ -309,7 +339,9 @@ class FOMOService:
         return result.scalars().all()
 
     @staticmethod
-    async def create_social_proof_event(db: AsyncSession, data: dict) -> SocialProofEvent:
+    async def create_social_proof_event(
+        db: AsyncSession, data: dict
+    ) -> SocialProofEvent:
         event = SocialProofEvent(**data)
         db.add(event)
         await db.commit()

@@ -8,16 +8,12 @@ FOOM Amplification: Aggressive FOOM mechanics for SellIA acquisition
 - Exclusivity tiering
 """
 
-from datetime import datetime, timedelta, timezone
-from typing import Dict, List
-from decimal import Decimal
-
 
 class SocialProofAmplification:
     """Amplify social proof signals across all channels"""
 
     @staticmethod
-    def generate_social_proof_assets() -> Dict:
+    def generate_social_proof_assets() -> dict:
         """Generate social proof content for every FOOM touchpoint"""
         return {
             "proof_types": {
@@ -67,7 +63,7 @@ class SocialProofAmplification:
         }
 
     @staticmethod
-    def create_testimonial_automation() -> Dict:
+    def create_testimonial_automation() -> dict:
         """Automate collection + distribution of testimonials"""
         return {
             "collection_triggers": [
@@ -118,7 +114,7 @@ class ScarcityAutomation:
     """Automate scarcity messaging across product"""
 
     @staticmethod
-    def create_scarcity_triggers() -> Dict:
+    def create_scarcity_triggers() -> dict:
         """Real-time scarcity mechanics"""
         return {
             "seat_scarcity": {
@@ -150,7 +146,10 @@ class ScarcityAutomation:
                 "mechanism": "Limited-time discounts",
                 "offers": [
                     {"discount": "30% OFF", "duration": "48 hours"},
-                    {"discount": "40% OFF first 3 months", "limit": "first 100 signups"},
+                    {
+                        "discount": "40% OFF first 3 months",
+                        "limit": "first 100 signups",
+                    },
                     {"discount": "50% OFF annually", "limit": "early bird"},
                 ],
             },
@@ -162,7 +161,7 @@ class ScarcityAutomation:
         }
 
     @staticmethod
-    def create_countdown_timers() -> Dict:
+    def create_countdown_timers() -> dict:
         """Automated countdown urgency"""
         return {
             "trial_countdown": {
@@ -191,7 +190,7 @@ class SuccessStoryPackaging:
     """Package user wins as viral narratives"""
 
     @staticmethod
-    def create_success_story_angles() -> List[Dict]:
+    def create_success_story_angles() -> list[dict]:
         """Multiple angles for same success story"""
         return [
             {
@@ -233,7 +232,7 @@ class SuccessStoryPackaging:
         ]
 
     @staticmethod
-    def create_content_repurposing() -> Dict:
+    def create_content_repurposing() -> dict:
         """Repurpose one story across 20+ formats"""
         return {
             "source": "User case study (30 min interview)",
@@ -271,7 +270,7 @@ class CompetitivePositioning:
     """Position SellIA vs alternatives"""
 
     @staticmethod
-    def create_comparison_content() -> Dict:
+    def create_comparison_content() -> dict:
         """Aggressive comparison marketing"""
         return {
             "comparisons": [
@@ -311,7 +310,7 @@ class ExclusivityTiering:
     """Create exclusivity ladder"""
 
     @staticmethod
-    def create_vip_program() -> Dict:
+    def create_vip_program() -> dict:
         """VIP tiers with escalating benefits"""
         return {
             "tiers": [
@@ -324,14 +323,22 @@ class ExclusivityTiering:
                 {
                     "tier": "Pro+",
                     "price": "$199/month",
-                    "benefits": ["Everything Pro", "Custom branding", "Priority support"],
+                    "benefits": [
+                        "Everything Pro",
+                        "Custom branding",
+                        "Priority support",
+                    ],
                     "exclusivity": "For power users",
                     "limit": "500 users max",
                 },
                 {
                     "tier": "Founder",
                     "price": "$499/month",
-                    "benefits": ["Everything Pro+", "Dedicated account manager", "Custom integrations"],
+                    "benefits": [
+                        "Everything Pro+",
+                        "Dedicated account manager",
+                        "Custom integrations",
+                    ],
                     "exclusivity": "For top 100 users",
                     "limit": "100 users max",
                     "perks": "Revenue share, early features, board input",
@@ -339,7 +346,11 @@ class ExclusivityTiering:
                 {
                     "tier": "Enterprise",
                     "price": "Custom",
-                    "benefits": ["Everything + custom everything", "SLA 99.9%", "Custom training"],
+                    "benefits": [
+                        "Everything + custom everything",
+                        "SLA 99.9%",
+                        "Custom training",
+                    ],
                     "exclusivity": "By invitation only",
                     "limit": "Handpicked",
                 },
@@ -365,7 +376,7 @@ class FearOfMissingOut:
     """Active FOMO loop creation"""
 
     @staticmethod
-    def create_fomo_sequences() -> Dict:
+    def create_fomo_sequences() -> dict:
         """Multi-touch FOMO sequences"""
         return {
             "signup_fomo": {

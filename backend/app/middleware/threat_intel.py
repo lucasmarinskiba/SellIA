@@ -1,16 +1,16 @@
+from datetime import UTC, datetime, timedelta
+
 from fastapi import Request
+from sqlalchemy import select
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from datetime import datetime, timezone, timedelta
-from sqlalchemy import select
-
-from app.core.threat_intel import assess_client_risk, device_fingerprint
 from app.core.cloudflare import (
     get_cloudflare_info,
     validate_cloudflare_origin,
 )
 from app.core.country_block import get_blocked_countries, is_country_blocked
 from app.core.database import AsyncSessionLocal
+from app.core.threat_intel import assess_client_risk, device_fingerprint
 from app.domains.security.models import BlockedIP
 
 
@@ -67,6 +67,7 @@ class ThreatIntelMiddleware(BaseHTTPMiddleware):
         blocked_countries = await get_blocked_countries()
         if is_country_blocked(country, blocked_countries):
             from fastapi.responses import JSONResponse
+
             return JSONResponse(
                 status_code=403,
                 content={
@@ -92,7 +93,7 @@ class ThreatIntelMiddleware(BaseHTTPMiddleware):
                     block = BlockedIP(
                         ip_address=client_ip,
                         reason="threat_intel",
-                        blocked_until=datetime.now(timezone.utc) + timedelta(hours=24),
+                        blocked_until=datetime.now(UTC) + timedelta(hours=24),
                     )
                     db.add(block)
                     await db.commit()

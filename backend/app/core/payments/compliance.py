@@ -17,24 +17,28 @@ Note: For production AML/KYC, integrate with services like:
 - Socure
 """
 
+import hashlib
 import logging
 import os
 import re
-from typing import Dict, Any, Optional, List
-from datetime import datetime, timedelta
 from enum import Enum
-import hashlib
+from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
 # Configuration
 HIGH_VALUE_THRESHOLD = float(os.getenv("HIGH_VALUE_THRESHOLD", "5000.0"))
-SUSPICIOUS_ACTIVITY_THRESHOLD = float(os.getenv("SUSPICIOUS_ACTIVITY_THRESHOLD", "10000.0"))
+SUSPICIOUS_ACTIVITY_THRESHOLD = float(
+    os.getenv("SUSPICIOUS_ACTIVITY_THRESHOLD", "10000.0")
+)
 ENABLE_AML_CHECKS = os.getenv("ENABLE_AML_CHECKS", "true").lower() == "true"
 
 
 class ComplianceRisk(str, Enum):
     """Risk levels."""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -48,9 +52,9 @@ class ComplianceChecker:
     def validate_customer_data(
         customer_name: str,
         customer_email: str,
-        customer_phone: Optional[str] = None,
-        customer_country: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        customer_phone: str | None = None,
+        customer_country: str | None = None,
+    ) -> dict[str, Any]:
         """
         Validate customer data for compliance.
 
@@ -99,7 +103,9 @@ class ComplianceChecker:
                 warnings.append("Invalid phone format")
 
             # Check country restrictions
-            if customer_country and ComplianceChecker._is_restricted_country(customer_country):
+            if customer_country and ComplianceChecker._is_restricted_country(
+                customer_country
+            ):
                 issues.append(f"Country {customer_country} restricted")
                 risk_level = ComplianceRisk.CRITICAL
 
@@ -113,11 +119,12 @@ class ComplianceChecker:
                 "risk_level": risk_level.value,
                 "issues": issues,
                 "warnings": warnings,
-                "requires_kyc": risk_level in [ComplianceRisk.HIGH, ComplianceRisk.CRITICAL],
+                "requires_kyc": risk_level
+                in [ComplianceRisk.HIGH, ComplianceRisk.CRITICAL],
             }
 
         except Exception as e:
-            logger.error(f"Error validating customer: {str(e)}")
+            logger.exception("Error validating customer")
             return {
                 "status": "error",
                 "error": str(e),
@@ -130,9 +137,9 @@ class ComplianceChecker:
         amount_usd: float,
         currency: str = "USD",
         payment_method: str = "card",
-        ip_address: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        ip_address: str | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Screen transaction for suspicious activity.
 
@@ -214,18 +221,18 @@ class ComplianceChecker:
                 "risk_score": risk_score,
                 "risk_level": risk_level.value,
                 "flags": flags,
-                "timestamp": datetime.utcnow(),
+                "timestamp": utc_now(),
             }
 
         except Exception as e:
-            logger.error(f"Error screening transaction: {str(e)}")
+            logger.exception("Error screening transaction")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
     def mask_payment_data(
-        card_number: Optional[str] = None,
-        account_number: Optional[str] = None,
-    ) -> Dict[str, str]:
+        card_number: str | None = None,
+        account_number: str | None = None,
+    ) -> dict[str, str]:
         """
         Mask sensitive payment data for logging/display.
 
@@ -259,8 +266,8 @@ class ComplianceChecker:
         customer_email: str,
         transaction_id: str,
         severity: str,
-        details: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        details: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Log compliance/security event for audit trail.
 
@@ -280,13 +287,13 @@ class ComplianceChecker:
         """
         try:
             event_id = hashlib.sha256(
-                f"{customer_email}{transaction_id}{datetime.utcnow().isoformat()}".encode()
+                f"{customer_email}{transaction_id}{utc_now().isoformat()}".encode()
             ).hexdigest()[:16]
 
             logger.log(
                 logging.WARNING if severity == "warning" else logging.INFO,
                 f"Compliance event: {event_type} | Customer: {customer_email} | "
-                f"TX: {transaction_id} | Severity: {severity}"
+                f"TX: {transaction_id} | Severity: {severity}",
             )
 
             # TODO: Store event in compliance audit log database table
@@ -297,11 +304,11 @@ class ComplianceChecker:
                 "event_id": event_id,
                 "event_type": event_type,
                 "severity": severity,
-                "timestamp": datetime.utcnow(),
+                "timestamp": utc_now(),
             }
 
         except Exception as e:
-            logger.error(f"Error logging compliance event: {str(e)}")
+            logger.exception("Error logging compliance event")
             return {"status": "error", "error": str(e)}
 
     # Private helper methods
@@ -323,8 +330,15 @@ class ComplianceChecker:
     def _is_suspicious_name(name: str) -> bool:
         """Check for suspicious patterns in name."""
         suspicious_patterns = [
-            "test", "demo", "admin", "user", "123", "aaa",
-            "xxx", "123456", "password"
+            "test",
+            "demo",
+            "admin",
+            "user",
+            "123",
+            "aaa",
+            "xxx",
+            "123456",
+            "password",
         ]
         name_lower = name.lower()
         return any(pattern in name_lower for pattern in suspicious_patterns)
@@ -333,8 +347,12 @@ class ComplianceChecker:
     def _is_disposable_email(email: str) -> bool:
         """Check if email domain is disposable."""
         disposable_domains = [
-            "tempmail.com", "guerrillamail.com", "10minutemail.com",
-            "throwaway.email", "mailinator.com", "temp-mail.org"
+            "tempmail.com",
+            "guerrillamail.com",
+            "10minutemail.com",
+            "throwaway.email",
+            "mailinator.com",
+            "temp-mail.org",
         ]
         domain = email.split("@")[1].lower() if "@" in email else ""
         return domain in disposable_domains
@@ -360,7 +378,7 @@ class PciDssCompliance:
     """PCI-DSS compliance checks and enforcement."""
 
     @staticmethod
-    def validate_pci_compliance() -> Dict[str, Any]:
+    def validate_pci_compliance() -> dict[str, Any]:
         """
         Validate system PCI-DSS compliance.
 
@@ -381,32 +399,32 @@ class PciDssCompliance:
             {
                 "requirement": "1.1: Network segmentation",
                 "status": "pass",
-                "details": "Database isolated from public internet"
+                "details": "Database isolated from public internet",
             },
             {
                 "requirement": "2.1: Default credentials changed",
                 "status": "pass",
-                "details": "All default passwords changed"
+                "details": "All default passwords changed",
             },
             {
                 "requirement": "3.2: Encryption at rest",
                 "status": "pass",
-                "details": "Sensitive data encrypted in database"
+                "details": "Sensitive data encrypted in database",
             },
             {
                 "requirement": "4.1: Encryption in transit",
                 "status": "pass",
-                "details": "TLS 1.2+ for all connections"
+                "details": "TLS 1.2+ for all connections",
             },
             {
                 "requirement": "6.2: Patch management",
                 "status": "pass",
-                "details": "Regular security updates applied"
+                "details": "Regular security updates applied",
             },
             {
                 "requirement": "10.1: Audit logging",
                 "status": "pass",
-                "details": "All access logged and monitored"
+                "details": "All access logged and monitored",
             },
         ]
 
@@ -416,13 +434,13 @@ class PciDssCompliance:
             "status": "compliant" if critical_issues == 0 else "non_compliant",
             "checks": checks,
             "critical_issues": critical_issues,
-            "last_audit": datetime.utcnow(),
+            "last_audit": utc_now(),
         }
 
     @staticmethod
     def ensure_data_minimization(
         stored_card_data: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Ensure PCI-DSS data minimization (don't store card data).
 
@@ -443,5 +461,5 @@ class PciDssCompliance:
         return {
             "compliant": len(issues) == 0,
             "issues": issues,
-            "recommendation": "Use Stripe payment elements or tokenization"
+            "recommendation": "Use Stripe payment elements or tokenization",
         }

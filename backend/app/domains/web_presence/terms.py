@@ -13,10 +13,12 @@ fixable problem, and it is visible without any external service.
 
 from __future__ import annotations
 
+import itertools
 import re
 import unicodedata
 from collections import Counter
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 #: Weight per position. A term in the title is a claim about the whole page;
 #: the same term buried in the body is just prose.
@@ -33,32 +35,214 @@ _WORD_RE = re.compile(r"[^\W\d_]+", re.UNICODE)
 # is worse. Kept short and obvious rather than exhaustive.
 STOPWORDS: set[str] = {
     # español
-    "a", "al", "algo", "algun", "alguna", "algunas", "alguno", "algunos", "ante", "antes",
-    "aqui", "asi", "aun", "aunque", "bien", "cada", "casi", "como", "con", "contra", "cual",
-    "cuales", "cuando", "cuanto", "de", "del", "desde", "donde", "dos", "el", "ella", "ellas",
-    "ellos", "en", "entre", "era", "eres", "es", "esa", "esas", "ese", "eso", "esos", "esta",
-    "estan", "estar", "estas", "este", "esto", "estos", "estoy", "fue", "fueron", "ha", "hace",
-    "hacer", "hacia", "han", "hasta", "hay", "la", "las", "le", "les", "lo", "los", "mas", "me",
-    "mi", "mientras", "mucho", "muy", "nada", "ni", "no", "nos", "nosotros", "nuestra",
-    "nuestro", "o", "os", "otra", "otras", "otro", "otros", "para", "pero", "poco", "por",
-    "porque", "que", "quien", "se", "sea", "segun", "ser", "si", "sin", "sobre", "solo", "son",
-    "su", "sus", "tambien", "tan", "tanto", "te", "tiene", "tienen", "todo", "todos", "tu",
-    "tus", "un", "una", "uno", "unos", "usted", "va", "vos", "y", "ya", "yo",
+    "a",
+    "al",
+    "algo",
+    "algun",
+    "alguna",
+    "algunas",
+    "alguno",
+    "algunos",
+    "ante",
+    "antes",
+    "aqui",
+    "asi",
+    "aun",
+    "aunque",
+    "bien",
+    "cada",
+    "casi",
+    "como",
+    "con",
+    "contra",
+    "cual",
+    "cuales",
+    "cuando",
+    "cuanto",
+    "de",
+    "del",
+    "desde",
+    "donde",
+    "dos",
+    "el",
+    "ella",
+    "ellas",
+    "ellos",
+    "en",
+    "entre",
+    "era",
+    "eres",
+    "es",
+    "esa",
+    "esas",
+    "ese",
+    "eso",
+    "esos",
+    "esta",
+    "estan",
+    "estar",
+    "estas",
+    "este",
+    "esto",
+    "estos",
+    "estoy",
+    "fue",
+    "fueron",
+    "ha",
+    "hace",
+    "hacer",
+    "hacia",
+    "han",
+    "hasta",
+    "hay",
+    "la",
+    "las",
+    "le",
+    "les",
+    "lo",
+    "los",
+    "mas",
+    "me",
+    "mi",
+    "mientras",
+    "mucho",
+    "muy",
+    "nada",
+    "ni",
+    "no",
+    "nos",
+    "nosotros",
+    "nuestra",
+    "nuestro",
+    "o",
+    "os",
+    "otra",
+    "otras",
+    "otro",
+    "otros",
+    "para",
+    "pero",
+    "poco",
+    "por",
+    "porque",
+    "que",
+    "quien",
+    "se",
+    "sea",
+    "segun",
+    "ser",
+    "si",
+    "sin",
+    "sobre",
+    "solo",
+    "son",
+    "su",
+    "sus",
+    "tambien",
+    "tan",
+    "tanto",
+    "te",
+    "tiene",
+    "tienen",
+    "todo",
+    "todos",
+    "tu",
+    "tus",
+    "un",
+    "una",
+    "uno",
+    "unos",
+    "usted",
+    "va",
+    "vos",
+    "y",
+    "ya",
+    "yo",
     # english
-    "a", "about", "all", "an", "and", "any", "are", "as", "at", "be", "been", "but", "by",
-    "can", "do", "does", "for", "from", "get", "has", "have", "how", "i", "if", "in", "is",
-    "it", "its", "more", "my", "no", "not", "of", "on", "one", "or", "our", "out", "so",
-    "than", "that", "the", "their", "them", "then", "there", "these", "they", "this", "to",
-    "up", "use", "was", "we", "were", "what", "when", "which", "who", "will", "with", "you",
+    "about",
+    "all",
+    "an",
+    "and",
+    "any",
+    "are",
+    "as",
+    "at",
+    "be",
+    "been",
+    "but",
+    "by",
+    "can",
+    "do",
+    "does",
+    "for",
+    "from",
+    "get",
+    "has",
+    "have",
+    "how",
+    "i",
+    "if",
+    "in",
+    "is",
+    "it",
+    "its",
+    "more",
+    "my",
+    "not",
+    "of",
+    "on",
+    "one",
+    "or",
+    "our",
+    "out",
+    "so",
+    "than",
+    "that",
+    "the",
+    "their",
+    "them",
+    "then",
+    "there",
+    "these",
+    "they",
+    "this",
+    "to",
+    "up",
+    "use",
+    "was",
+    "we",
+    "were",
+    "what",
+    "when",
+    "which",
+    "who",
+    "will",
+    "with",
+    "you",
     "your",
     # ruido habitual de e-commerce que no describe el negocio
-    "aqui", "click", "clic", "envio", "gratis", "home", "inicio", "mas", "menu", "pagina",
-    "productos", "ver",
+    "click",
+    "clic",
+    "envio",
+    "gratis",
+    "home",
+    "inicio",
+    "menu",
+    "pagina",
+    "productos",
+    "ver",
     # saludos y muletillas de título: aparecen en el <title> de medio internet y
     # dispararían el chequeo "el título promete algo que la página no dice" sin
     # describir ningún tema real.
-    "welcome", "bienvenido", "bienvenida", "bienvenidos", "official", "oficial", "web",
-    "sitio", "site",
+    "welcome",
+    "bienvenido",
+    "bienvenida",
+    "bienvenidos",
+    "official",
+    "oficial",
+    "web",
+    "sitio",
+    "site",
 }
 
 
@@ -67,20 +251,22 @@ def _normalize(word: str) -> str:
     original casing/accents are irrelevant once we are counting topics."""
     lowered = word.lower()
     return "".join(
-        c for c in unicodedata.normalize("NFD", lowered)
+        c
+        for c in unicodedata.normalize("NFD", lowered)
         if unicodedata.category(c) != "Mn"
     )
 
 
 def _tokens(text: str) -> list[str]:
     return [
-        norm for norm in (_normalize(w) for w in _WORD_RE.findall(text or ""))
+        norm
+        for norm in (_normalize(w) for w in _WORD_RE.findall(text or ""))
         if len(norm) > 2 and norm not in STOPWORDS
     ]
 
 
 def _bigrams(tokens: list[str]) -> list[str]:
-    return [f"{a} {b}" for a, b in zip(tokens, tokens[1:])]
+    return [f"{a} {b}" for a, b in itertools.pairwise(tokens)]
 
 
 def extract(
@@ -123,8 +309,12 @@ def extract(
     promised_not_delivered = [t for t in title_tokens if t not in body_set]
 
     top = [
-        {"term": term, "score": score, "in_title": term in title_tokens,
-         "in_body": term.split(" ")[0] in body_set}
+        {
+            "term": term,
+            "score": score,
+            "in_title": term in title_tokens,
+            "in_body": term.split(" ")[0] in body_set,
+        }
         for term, score in scores.most_common(limit)
     ]
 

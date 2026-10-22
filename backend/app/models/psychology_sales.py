@@ -1,9 +1,21 @@
 """Phase 31 Psychology Sales models."""
 
-from datetime import datetime
 from uuid import uuid4
-from sqlalchemy import Column, String, DateTime, Boolean, Integer, Float, ForeignKey, Text, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+
+from app.core.clock import utc_now
 from app.core.database import Base
 
 
@@ -13,12 +25,16 @@ class DiscoveryResponse(Base):
     __tablename__ = "discovery_responses"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)  # str in Python, uuid in the DB (deals.id)
+    deal_id = Column(
+        UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False
+    )  # str in Python, uuid in the DB (deals.id)
 
     # Question & response
     question = Column(Text, nullable=False)
     response_text = Column(Text, nullable=False)
-    question_category = Column(String(50))  # rapport, problem, impact, status_quo, desired, authority
+    question_category = Column(
+        String(50)
+    )  # rapport, problem, impact, status_quo, desired, authority
 
     # Analysis
     sentiment = Column(String(50))  # positive, neutral, negative
@@ -26,7 +42,7 @@ class DiscoveryResponse(Base):
     pain_points = Column(JSONB)  # ["losing $50k/mo", "team burnout"]
     needs_identified = Column(JSONB)  # ["cost reduction", "faster implementation"]
 
-    asked_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    asked_at = Column(DateTime, default=utc_now, nullable=False)
 
     __table_args__ = (
         Index("idx_deal_category", "deal_id", "question_category"),
@@ -40,13 +56,15 @@ class NeedNarrative(Base):
     __tablename__ = "need_narratives"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)  # str in Python, uuid in the DB (deals.id)
+    deal_id = Column(
+        UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False
+    )  # str in Python, uuid in the DB (deals.id)
 
     narrative = Column(Text, nullable=False)
     financial_impact_calculated = Column(Float)  # Annual impact in dollars
     pain_points = Column(JSONB)  # Pain points identified
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
 
     __table_args__ = (
         Index("idx_deal_impact", "deal_id", "financial_impact_calculated"),
@@ -59,7 +77,9 @@ class ObjectionHandling(Base):
     __tablename__ = "objection_handling"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)  # str in Python, uuid in the DB (deals.id)
+    deal_id = Column(
+        UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False
+    )  # str in Python, uuid in the DB (deals.id)
 
     # Objection details
     objection_text = Column(Text, nullable=False)
@@ -75,7 +95,7 @@ class ObjectionHandling(Base):
     resolved = Column(Boolean, default=False)
     resolution_type = Column(String(50))  # overcome, postponed, lost
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
 
     __table_args__ = (
         Index("idx_deal_type", "deal_id", "objection_type"),
@@ -89,7 +109,9 @@ class CloseAttempt(Base):
     __tablename__ = "close_attempts"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)  # str in Python, uuid in the DB (deals.id)
+    deal_id = Column(
+        UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False
+    )  # str in Python, uuid in the DB (deals.id)
 
     # Close details
     close_step = Column(Integer, nullable=False)  # 1-5
@@ -104,7 +126,7 @@ class CloseAttempt(Base):
     committed = Column(Boolean, default=False)
     commitment_type = Column(String(50))  # small_yes, medium_yes, full_yes, objection
 
-    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    timestamp = Column(DateTime, default=utc_now, nullable=False)
 
     __table_args__ = (
         Index("idx_deal_step", "deal_id", "close_step"),
@@ -118,7 +140,9 @@ class SalesConversation(Base):
     __tablename__ = "sales_conversations"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)  # str in Python, uuid in the DB (deals.id)
+    deal_id = Column(
+        UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False
+    )  # str in Python, uuid in the DB (deals.id)
 
     # Conversation flow
     conversation_json = Column(JSONB)  # Full transcript with sentiment
@@ -136,7 +160,7 @@ class SalesConversation(Base):
     deal_value = Column(Float)
     sales_cycle_days = Column(Integer)
 
-    started_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    started_at = Column(DateTime, default=utc_now, nullable=False)
     closed_at = Column(DateTime)
 
     __table_args__ = (
@@ -173,7 +197,7 @@ class SalesRepPerformance(Base):
     sales_cycle_avg_days = Column(Integer)
     aov = Column(Float)  # Average deal value
 
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     __table_args__ = (
         Index("idx_rep_id", "rep_id"),

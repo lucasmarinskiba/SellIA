@@ -5,10 +5,9 @@ Tareas periodicas que escanean competidores y generan alertas.
 """
 
 from celery import shared_task
-from datetime import datetime, timezone
 
-from app.core.database import AsyncSessionLocal
 from app.core.async_bridge import run_async
+from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
 from app.domains.competitive.intelligence_engine import CompetitiveIntelligenceEngine
 
@@ -18,9 +17,11 @@ logger = get_logger(__name__)
 @shared_task(name="competitive.intelligence_scanner")
 def competitive_intelligence_scanner():
     """Cada 6 horas: scrapea todos los monitores activos y detecta cambios."""
+
     async def _run():
         async with AsyncSessionLocal() as db:
             from sqlalchemy import select
+
             from app.domains.competitive.models import CompetitiveMonitor
 
             engine = CompetitiveIntelligenceEngine(db)
@@ -39,8 +40,8 @@ def competitive_intelligence_scanner():
                     scrape_res = await engine.scrape_competitor(monitor.id)
                     if scrape_res.get("status") == "ok":
                         scraped += 1
-                except Exception as e:
-                    logger.error(f"Error scrapeando {monitor.competitor_name}: {e}")
+                except Exception:
+                    logger.exception(f"Error scrapeando {monitor.competitor_name}")
                     continue
 
             # Detectar cambios por negocio
@@ -53,10 +54,10 @@ def competitive_intelligence_scanner():
                         try:
                             await engine.create_alert(business_id, change)
                             alerts_created += 1
-                        except Exception as e:
-                            logger.error(f"Error creando alerta para {business_id}: {e}")
-                except Exception as e:
-                    logger.error(f"Error detectando cambios para {business_id}: {e}")
+                        except Exception:
+                            logger.exception(f"Error creando alerta para {business_id}")
+                except Exception:
+                    logger.exception(f"Error detectando cambios para {business_id}")
 
             logger.info(
                 f"[Inteligencia Competitiva] monitores={len(monitors)}, "

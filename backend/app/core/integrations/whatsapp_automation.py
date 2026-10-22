@@ -21,11 +21,11 @@ Scheduling:
 """
 
 import logging
-import httpx
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
-import json
 import re
+from datetime import datetime, timedelta
+from typing import Any
+
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -38,10 +38,10 @@ class WhatsAppAutomation:
     def __init__(
         self,
         mode: str = "api",  # "api" o "computer_use"
-        waba_token: Optional[str] = None,
-        waba_phone_id: Optional[str] = None,
-        computer_vision_engine: Optional[Any] = None,
-        calendar_service: Optional[Any] = None,
+        waba_token: str | None = None,
+        waba_phone_id: str | None = None,
+        computer_vision_engine: Any | None = None,
+        calendar_service: Any | None = None,
     ):
         self.mode = mode  # API or Computer Use
         self.waba_token = waba_token
@@ -53,7 +53,9 @@ class WhatsAppAutomation:
 
     # ========== WEBHOOK HANDLING (API MODE) ==========
 
-    async def handle_incoming_message(self, webhook_payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def handle_incoming_message(
+        self, webhook_payload: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Procesa mensaje incoming desde WhatsApp Business API.
 
@@ -73,8 +75,10 @@ class WhatsAppAutomation:
         try:
             # Extraer mensaje
             sender_id = webhook_payload["entry"][0]["messaging"][0]["sender"]["id"]
-            message_text = webhook_payload["entry"][0]["messaging"][0]["message"]["text"]
-            timestamp = webhook_payload["entry"][0]["messaging"][0]["timestamp"]
+            message_text = webhook_payload["entry"][0]["messaging"][0]["message"][
+                "text"
+            ]
+            webhook_payload["entry"][0]["messaging"][0]["timestamp"]
 
             logger.info(f"Message from {sender_id}: {message_text}")
 
@@ -89,7 +93,7 @@ class WhatsAppAutomation:
 
             elif message_type == "scheduling":
                 # Extraer fecha/hora, agendar
-                logger.info(f"Scheduling request detected")
+                logger.info("Scheduling request detected")
                 return await self._handle_scheduling_request(sender_id, message_text)
 
             else:
@@ -97,7 +101,7 @@ class WhatsAppAutomation:
                 return await self._generate_response(sender_id, message_text)
 
         except Exception as e:
-            logger.error(f"Handle message failed: {str(e)}")
+            logger.exception("Handle message failed")
             return {"status": "error", "error": str(e)}
 
     def _classify_message(self, text: str) -> str:
@@ -105,17 +109,35 @@ class WhatsAppAutomation:
 
         text_lower = text.lower()
 
-        urgency_keywords = ["urgente", "problema", "no funciona", "reclamar", "abogado", "chargeback", "fraude"]
+        urgency_keywords = [
+            "urgente",
+            "problema",
+            "no funciona",
+            "reclamar",
+            "abogado",
+            "chargeback",
+            "fraude",
+        ]
         if any(keyword in text_lower for keyword in urgency_keywords):
             return "urgency"
 
-        scheduling_keywords = ["mañana", "hoy", "hora", "podemos", "disponible", "cuando", "qué hora", "meeting", "llamada"]
+        scheduling_keywords = [
+            "mañana",
+            "hoy",
+            "hora",
+            "podemos",
+            "disponible",
+            "cuando",
+            "qué hora",
+            "meeting",
+            "llamada",
+        ]
         if any(keyword in text_lower for keyword in scheduling_keywords):
             return "scheduling"
 
         return "standard"
 
-    async def _route_to_human(self, sender_id: str, message: str) -> Dict[str, Any]:
+    async def _route_to_human(self, sender_id: str, message: str) -> dict[str, Any]:
         """Ruta mensaje urgente a humano."""
 
         logger.warning(f"Routing to human: {sender_id}")
@@ -130,18 +152,24 @@ class WhatsAppAutomation:
             "message": message,
         }
 
-    async def _handle_scheduling_request(self, sender_id: str, message: str) -> Dict[str, Any]:
+    async def _handle_scheduling_request(
+        self, sender_id: str, message: str
+    ) -> dict[str, Any]:
         """Extrae fecha/hora del mensaje, agendando en Google Calendar."""
 
         logger.info(f"Scheduling request: {message}")
 
         # Extraer fecha/hora con regex
         time_match = re.search(r"(\d{1,2}):(\d{2})", message)
-        date_match = re.search(r"(mañana|hoy|próximo|siguiente|día|lunes|martes|miércoles|jueves|viernes|sábado|domingo)", message, re.IGNORECASE)
+        date_match = re.search(
+            r"(mañana|hoy|próximo|siguiente|día|lunes|martes|miércoles|jueves|viernes|sábado|domingo)",
+            message,
+            re.IGNORECASE,
+        )
 
         if not (time_match and date_match):
             # Pedir clarificación
-            response = await self._send_message(
+            await self._send_message(
                 sender_id,
                 "Para agendar, porfa indicá: fecha (ej: mañana, lunes) y hora (ej: 15:30). Ejemplo: 'Mañana a las 3pm'",
             )
@@ -171,7 +199,7 @@ class WhatsAppAutomation:
 
             if calendar_result["status"] == "success":
                 # Confirmar al usuario
-                response = await self._send_message(
+                await self._send_message(
                     sender_id,
                     f"✅ Agendado! Nos vemos {scheduled_datetime.strftime('%A a las %H:%M')}. Te enviaré link de llamada 10 min antes.",
                 )
@@ -183,7 +211,7 @@ class WhatsAppAutomation:
                     "calendar_event": calendar_result.get("event_id"),
                 }
             else:
-                response = await self._send_message(
+                await self._send_message(
                     sender_id,
                     "⚠️ Error al agendar. Intenta de nuevo o contacta soporte.",
                 )
@@ -191,7 +219,7 @@ class WhatsAppAutomation:
 
         return {"status": "error", "reason": "calendar_service_not_configured"}
 
-    async def _generate_response(self, sender_id: str, message: str) -> Dict[str, Any]:
+    async def _generate_response(self, sender_id: str, message: str) -> dict[str, Any]:
         """Genera respuesta (bot o Computer Use)."""
 
         logger.info(f"Generating response for: {message}")
@@ -201,7 +229,7 @@ class WhatsAppAutomation:
 
         if bot_response:
             logger.info("Using bot response")
-            result = await self._send_message(sender_id, bot_response)
+            await self._send_message(sender_id, bot_response)
             return {"status": "bot_response", "response": bot_response}
 
         # Opción 2: Computer Use + CV (si disponible)
@@ -213,17 +241,19 @@ class WhatsAppAutomation:
             )
 
             if cv_response["status"] == "success":
-                response_text = cv_response.get("suggestion", {}).get("next_action", "No entiendo, podés reformular?")
-                result = await self._send_message(sender_id, response_text)
+                response_text = cv_response.get("suggestion", {}).get(
+                    "next_action", "No entiendo, podés reformular?"
+                )
+                await self._send_message(sender_id, response_text)
                 return {"status": "cv_response", "response": response_text}
 
         # Fallback: respuesta genérica
         default_response = "Gracias por tu mensaje! En breve nos ponemos en contacto. Si es urgente, escribí 'urgente'."
-        result = await self._send_message(sender_id, default_response)
+        await self._send_message(sender_id, default_response)
 
         return {"status": "default_response", "response": default_response}
 
-    def _check_bot_response(self, message: str) -> Optional[str]:
+    def _check_bot_response(self, message: str) -> str | None:
         """Busca bot response prediseñado para el mensaje."""
 
         message_lower = message.lower()
@@ -247,7 +277,7 @@ class WhatsAppAutomation:
 
         return None
 
-    async def _send_message(self, recipient_id: str, text: str) -> Dict[str, Any]:
+    async def _send_message(self, recipient_id: str, text: str) -> dict[str, Any]:
         """Envía mensaje via WhatsApp API o Computer Use."""
 
         if self.mode == "api":
@@ -255,7 +285,7 @@ class WhatsAppAutomation:
         else:
             return await self._send_via_computer_use(recipient_id, text)
 
-    async def _send_via_api(self, recipient_id: str, text: str) -> Dict[str, Any]:
+    async def _send_via_api(self, recipient_id: str, text: str) -> dict[str, Any]:
         """Envía via WhatsApp Business API."""
 
         logger.info(f"Sending via API to {recipient_id}")
@@ -277,16 +307,21 @@ class WhatsAppAutomation:
 
             if response.status_code == 200:
                 logger.info(f"Message sent to {recipient_id}")
-                return {"status": "success", "message_id": response.json().get("messages", [{}])[0].get("id")}
+                return {
+                    "status": "success",
+                    "message_id": response.json().get("messages", [{}])[0].get("id"),
+                }
             else:
                 logger.error(f"Send failed: {response.status_code}")
                 return {"status": "error"}
 
-        except Exception as e:
-            logger.error(f"Send via API failed: {str(e)}")
+        except Exception:
+            logger.exception("Send via API failed")
             return {"status": "error"}
 
-    async def _send_via_computer_use(self, recipient_id: str, text: str) -> Dict[str, Any]:
+    async def _send_via_computer_use(
+        self, recipient_id: str, text: str
+    ) -> dict[str, Any]:
         """Envía via Computer Use (WhatsApp Web)."""
 
         logger.info(f"Sending via Computer Use to {recipient_id}")
@@ -297,7 +332,11 @@ class WhatsAppAutomation:
         # 3. Clickea, escribe mensaje
         # 4. Envía
 
-        return {"status": "scheduled_for_computer_use", "recipient": recipient_id, "text": text}
+        return {
+            "status": "scheduled_for_computer_use",
+            "recipient": recipient_id,
+            "text": text,
+        }
 
     async def close(self):
         """Cierra conexión HTTP."""
@@ -308,9 +347,9 @@ class WhatsAppBotBuilder:
     """Builder para crear bots personalizados sin code."""
 
     def __init__(self):
-        self.bots: Dict[str, Dict[str, str]] = {}
+        self.bots: dict[str, dict[str, str]] = {}
 
-    def add_bot(self, bot_name: str, patterns: List[str], response: str) -> None:
+    def add_bot(self, bot_name: str, patterns: list[str], response: str) -> None:
         """Agrega bot prediseñado."""
 
         self.bots[bot_name] = {
@@ -320,23 +359,23 @@ class WhatsAppBotBuilder:
 
         logger.info(f"Bot added: {bot_name}")
 
-    def get_response(self, message: str) -> Optional[str]:
+    def get_response(self, message: str) -> str | None:
         """Obtiene respuesta si hay match."""
 
         message_lower = message.lower()
 
-        for bot_name, config in self.bots.items():
+        for config in self.bots.values():
             for pattern in config["patterns"]:
                 if pattern.lower() in message_lower:
                     return config["response"]
 
         return None
 
-    def export_config(self) -> Dict[str, Any]:
+    def export_config(self) -> dict[str, Any]:
         """Exporta configuración de bots."""
         return self.bots
 
-    def import_config(self, config: Dict[str, Any]) -> None:
+    def import_config(self, config: dict[str, Any]) -> None:
         """Importa configuración de bots."""
         self.bots = config
         logger.info(f"Imported {len(self.bots)} bots")

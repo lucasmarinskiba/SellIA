@@ -12,6 +12,7 @@ Resend firma sus webhooks con Svix (no HMAC simple tipo Meta/Shopify):
 Docs: https://resend.com/docs/dashboard/webhooks/event-types
       https://docs.svix.com/receiving/verifying-payloads/how-manual
 """
+
 import base64
 import hashlib
 import hmac
@@ -21,7 +22,7 @@ import time
 
 from fastapi import APIRouter, Header, HTTPException, Request
 
-from app.core.email_sender import EmailSender, EmailProvider
+from app.core.email_sender import EmailProvider, EmailSender
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/webhooks/resend", tags=["resend-webhooks"])
@@ -45,10 +46,12 @@ def verify_svix_signature(
         return False
 
     if not secret.startswith("whsec_"):
-        logger.error("RESEND_WEBHOOK_SECRET con formato inesperado (debe empezar con whsec_)")
+        logger.error(
+            "RESEND_WEBHOOK_SECRET con formato inesperado (debe empezar con whsec_)"
+        )
         return False
 
-    secret_bytes = base64.b64decode(secret[len("whsec_"):])
+    secret_bytes = base64.b64decode(secret[len("whsec_") :])
     signed_content = f"{svix_id}.{svix_timestamp}.{raw_body.decode('utf-8')}"
     expected = base64.b64encode(
         hmac.new(secret_bytes, signed_content.encode("utf-8"), hashlib.sha256).digest()
@@ -78,7 +81,9 @@ async def receive_resend_webhook(
         logger.error("RESEND_WEBHOOK_SECRET no configurado - rechazando webhook")
         raise HTTPException(status_code=503, detail="Resend webhook no configurado")
 
-    if not verify_svix_signature(raw_body, svix_id, svix_timestamp, svix_signature, secret):
+    if not verify_svix_signature(
+        raw_body, svix_id, svix_timestamp, svix_signature, secret
+    ):
         raise HTTPException(status_code=401, detail="Firma inválida")
 
     payload = await request.json()
@@ -96,13 +101,19 @@ async def receive_resend_webhook(
     if event_type == "email.opened" and tracking_id:
         result = await sender.mark_opened(tracking_id)
     elif event_type == "email.clicked" and tracking_id:
-        result = await sender.mark_clicked(tracking_id, data.get("click", {}).get("link", ""))
+        result = await sender.mark_clicked(
+            tracking_id, data.get("click", {}).get("link", "")
+        )
     elif event_type in ("email.bounced", "email.delivery_delayed") and email_to:
-        result = await sender.mark_bounced(email_to, data.get("bounce", {}).get("message", event_type))
+        result = await sender.mark_bounced(
+            email_to, data.get("bounce", {}).get("message", event_type)
+        )
     elif event_type == "email.complained" and email_to:
         result = await sender.mark_unsubscribed(email_to)
     else:
-        logger.info(f"Resend webhook: evento {event_type} recibido, sin handler específico")
+        logger.info(
+            f"Resend webhook: evento {event_type} recibido, sin handler específico"
+        )
         result = {"status": "received", "event_type": event_type}
 
     return {"status": "ok", "event_type": event_type, "handled": result}

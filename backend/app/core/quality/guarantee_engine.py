@@ -5,8 +5,7 @@ Asegura: si X no sucede en 30 días, devolvemos dinero. Zero risk.
 """
 
 import logging
-from typing import Dict, List, Any
-from datetime import datetime, timedelta
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +14,7 @@ class GuaranteeEngine:
     """Garantías que aseguran cierre venta."""
 
     # Tipos de garantía
-    GUARANTEES = {
+    GUARANTEES: ClassVar[dict] = {
         "money_back": {
             "duration_days": 30,
             "condition": "If not satisfied",
@@ -48,7 +47,7 @@ class GuaranteeEngine:
 
     @staticmethod
     def generate_guarantee_statement(
-        product: Dict[str, Any],
+        product: dict[str, Any],
         guarantee_type: str = "money_back",
     ) -> str:
         """Genera statement de garantía para usar en venta."""
@@ -85,10 +84,10 @@ We only win if you win.
     @staticmethod
     async def monitor_guarantee_conditions(
         sale_id: str,
-        buyer: Dict[str, Any],
-        product: Dict[str, Any],
+        buyer: dict[str, Any],
+        product: dict[str, Any],
         guarantee_type: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Monitorea si condiciones de garantía se cumplen.
 
@@ -98,7 +97,7 @@ We only win if you win.
         logger.info(f"Monitoring guarantee for sale {sale_id}")
 
         guarantee = GuaranteeEngine.GUARANTEES.get(guarantee_type, {})
-        duration_days = guarantee.get("duration_days", 30)
+        guarantee.get("duration_days", 30)
 
         # Simular chequeo de condiciones
         conditions_met = True
@@ -143,7 +142,9 @@ We only win if you win.
         }
 
     @staticmethod
-    async def _process_refund(sale_id: str, amount: float, reason: str) -> Dict[str, Any]:
+    async def _process_refund(
+        sale_id: str, amount: float, reason: str
+    ) -> dict[str, Any]:
         """Procesa reembolso automático (Stripe API)."""
 
         logger.info(f"Processing refund for sale {sale_id}: ${amount}")
@@ -160,9 +161,9 @@ We only win if you win.
 
     @staticmethod
     def calculate_guarantee_roi(
-        customers: List[Dict[str, Any]],
+        customers: list[dict[str, Any]],
         guarantee_type: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calcula ROI de garantía (higher conversion - refunds)."""
 
         total_customers = len(customers)

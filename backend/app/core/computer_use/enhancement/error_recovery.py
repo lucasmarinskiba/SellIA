@@ -22,14 +22,14 @@ Características:
 Líneas: 600+ código
 """
 
-import logging
 import asyncio
+import logging
 import time
-from typing import Dict, Any, Optional, Callable, List, Tuple
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from dataclasses import dataclass, field
-import json
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +38,10 @@ logger = logging.getLogger(__name__)
 # ERROR CLASSIFICATIONS
 # ============================================================================
 
+
 class ErrorCategory(str, Enum):
     """Categoría de error."""
+
     NETWORK_TIMEOUT = "network_timeout"
     PAGE_NOT_LOADED = "page_not_loaded"
     AUTH_FAILED = "auth_failed"
@@ -55,6 +57,7 @@ class ErrorCategory(str, Enum):
 
 class RecoveryStrategy(str, Enum):
     """Estrategia de recuperación."""
+
     RETRY = "retry"
     REFRESH_PAGE = "refresh_page"
     NAVIGATE_HOME = "navigate_home"
@@ -69,42 +72,46 @@ class RecoveryStrategy(str, Enum):
 # DATA STRUCTURES
 # ============================================================================
 
+
 @dataclass
 class ErrorEvent:
     """Evento de error."""
+
     timestamp: datetime
     category: ErrorCategory
     message: str
-    platform: Optional[str] = None
-    url: Optional[str] = None
-    stack_trace: Optional[str] = None
-    http_status: Optional[int] = None
+    platform: str | None = None
+    url: str | None = None
+    stack_trace: str | None = None
+    http_status: int | None = None
     retry_count: int = 0
-    user_action: Optional[str] = None
-    screen_state: Optional[str] = None
+    user_action: str | None = None
+    screen_state: str | None = None
 
 
 @dataclass
 class RecoveryAttempt:
     """Intento de recuperación."""
+
     error_id: str
     strategy: RecoveryStrategy
     timestamp: datetime
     attempt_number: int
     wait_time_ms: int = 0
     success: bool = False
-    result: Optional[Any] = None
-    next_attempt_at: Optional[datetime] = None
+    result: Any | None = None
+    next_attempt_at: datetime | None = None
 
 
 @dataclass
 class CircuitBreakerState:
     """Estado de circuit breaker."""
+
     platform: str
     is_open: bool = False
     failure_count: int = 0
-    last_failure_time: Optional[datetime] = None
-    reset_at: Optional[datetime] = None
+    last_failure_time: datetime | None = None
+    reset_at: datetime | None = None
     failure_threshold: int = 5
     reset_timeout_ms: int = 60000
 
@@ -113,59 +120,99 @@ class CircuitBreakerState:
 # ERROR DETECTOR
 # ============================================================================
 
+
 class ErrorDetector:
     """Detectar y clasificar errores."""
 
     def __init__(self):
         self.error_patterns = self._build_error_patterns()
 
-    def _build_error_patterns(self) -> Dict[ErrorCategory, List[str]]:
+    def _build_error_patterns(self) -> dict[ErrorCategory, list[str]]:
         """Patrones de error para detectar."""
         return {
             ErrorCategory.NETWORK_TIMEOUT: [
-                "timeout", "timed out", "no response", "connection refused",
-                "ECONNREFUSED", "ETIMEDOUT", "socket hang up"
+                "timeout",
+                "timed out",
+                "no response",
+                "connection refused",
+                "ECONNREFUSED",
+                "ETIMEDOUT",
+                "socket hang up",
             ],
             ErrorCategory.PAGE_NOT_LOADED: [
-                "page not loaded", "empty response", "blank page", "404", "not found",
-                "content not available", "ERR_FAILED", "ERR_NAME_NOT_RESOLVED"
+                "page not loaded",
+                "empty response",
+                "blank page",
+                "404",
+                "not found",
+                "content not available",
+                "ERR_FAILED",
+                "ERR_NAME_NOT_RESOLVED",
             ],
             ErrorCategory.AUTH_FAILED: [
-                "invalid credentials", "login failed", "authentication failed",
-                "unauthorized", "401", "403 forbidden", "access denied",
-                "invalid email or password"
+                "invalid credentials",
+                "login failed",
+                "authentication failed",
+                "unauthorized",
+                "401",
+                "403 forbidden",
+                "access denied",
+                "invalid email or password",
             ],
             ErrorCategory.RATE_LIMITED: [
-                "rate limit", "too many requests", "429", "try again later",
-                "quota exceeded", "throttled", "slow down"
+                "rate limit",
+                "too many requests",
+                "429",
+                "try again later",
+                "quota exceeded",
+                "throttled",
+                "slow down",
             ],
             ErrorCategory.JS_ERROR: [
-                "javascript error", "uncaught", "syntax error", "reference error",
-                "type error", "null is not an object", "undefined"
+                "javascript error",
+                "uncaught",
+                "syntax error",
+                "reference error",
+                "type error",
+                "null is not an object",
+                "undefined",
             ],
             ErrorCategory.CAPTCHA_DETECTED: [
-                "captcha", "recaptcha", "verify you", "robot check",
-                "unusual activity", "confirm you're human", "security check"
+                "captcha",
+                "recaptcha",
+                "verify you",
+                "robot check",
+                "unusual activity",
+                "confirm you're human",
+                "security check",
             ],
             ErrorCategory.SESSION_EXPIRED: [
-                "session expired", "please log in again", "session timeout",
-                "you have been logged out", "session invalid"
+                "session expired",
+                "please log in again",
+                "session timeout",
+                "you have been logged out",
+                "session invalid",
             ],
             ErrorCategory.ELEMENT_NOT_FOUND: [
-                "element not found", "no such element", "not visible", "not clickable"
+                "element not found",
+                "no such element",
+                "not visible",
+                "not clickable",
             ],
             ErrorCategory.ELEMENT_MOVED: [
-                "stale element", "element moved", "detached from dom",
-                "no longer attached to dom"
+                "stale element",
+                "element moved",
+                "detached from dom",
+                "no longer attached to dom",
             ],
         }
 
     async def detect(
         self,
         error_message: str,
-        http_status: Optional[int] = None,
-        console_output: Optional[str] = None
-    ) -> Tuple[ErrorCategory, str]:
+        http_status: int | None = None,
+        console_output: str | None = None,
+    ) -> tuple[ErrorCategory, str]:
         """
         Detectar categoría de error.
 
@@ -210,24 +257,21 @@ class ErrorDetector:
 # ERROR RECOVERY MANAGER
 # ============================================================================
 
+
 class ErrorRecoveryManager:
     """Gestor central de recuperación de errores."""
 
     def __init__(self, computer_use_engine):
         self.computer_use = computer_use_engine
         self.error_detector = ErrorDetector()
-        self.recovery_history: List[RecoveryAttempt] = []
-        self.circuit_breakers: Dict[str, CircuitBreakerState] = {}
+        self.recovery_history: list[RecoveryAttempt] = []
+        self.circuit_breakers: dict[str, CircuitBreakerState] = {}
         self.max_retries = 5
         self.base_backoff_ms = 1000
 
     async def handle_error(
-        self,
-        error: Exception,
-        action: str,
-        platform: Optional[str] = None,
-        **kwargs
-    ) -> Dict[str, Any]:
+        self, error: Exception, action: str, platform: str | None = None, **kwargs
+    ) -> dict[str, Any]:
         """
         Manejar error y recuperar.
 
@@ -243,7 +287,7 @@ class ErrorRecoveryManager:
                 message=normalized_msg,
                 platform=platform,
                 user_action=action,
-                stack_trace=str(error.__traceback__)
+                stack_trace=str(error.__traceback__),
             )
 
             logger.error(f"Error detected: {category} - {normalized_msg}")
@@ -255,7 +299,7 @@ class ErrorRecoveryManager:
                     "success": False,
                     "action": "circuit_break",
                     "error_category": category,
-                    "message": "Platform circuit breaker is open"
+                    "message": "Platform circuit breaker is open",
                 }
 
             # Determinar estrategia de recuperación
@@ -267,24 +311,22 @@ class ErrorRecoveryManager:
                 strategy=strategy,
                 action=action,
                 platform=platform,
-                **kwargs
+                **kwargs,
             )
 
             return result
 
         except Exception as recovery_error:
-            logger.error(f"Recovery itself failed: {str(recovery_error)}", exc_info=True)
+            logger.exception("Recovery itself failed")
             return {
                 "success": False,
                 "action": "escalate_human",
                 "error_category": "recovery_failed",
-                "message": f"Recovery failed: {str(recovery_error)}"
+                "message": f"Recovery failed: {recovery_error!s}",
             }
 
     def _select_recovery_strategy(
-        self,
-        category: ErrorCategory,
-        context: Dict[str, Any]
+        self, category: ErrorCategory, context: dict[str, Any]
     ) -> RecoveryStrategy:
         """Seleccionar estrategia de recuperación."""
         strategies = {
@@ -308,15 +350,17 @@ class ErrorRecoveryManager:
         error_event: ErrorEvent,
         strategy: RecoveryStrategy,
         action: str,
-        platform: Optional[str] = None,
-        **kwargs
-    ) -> Dict[str, Any]:
+        platform: str | None = None,
+        **kwargs,
+    ) -> dict[str, Any]:
         """Ejecutar estrategia de recuperación."""
         retry_count = 0
 
         while retry_count < self.max_retries:
             try:
-                logger.info(f"Recovery attempt {retry_count+1}/{self.max_retries}: {strategy}")
+                logger.info(
+                    f"Recovery attempt {retry_count+1}/{self.max_retries}: {strategy}"
+                )
 
                 if strategy == RecoveryStrategy.RETRY:
                     result = await self._retry_action(**kwargs)
@@ -339,7 +383,7 @@ class ErrorRecoveryManager:
                         "action": "escalate_human",
                         "error_category": error_event.category.value,
                         "message": "Human escalation required",
-                        "details": error_event.message
+                        "details": error_event.message,
                     }
 
                 elif strategy == RecoveryStrategy.SKIP_ACTION:
@@ -347,7 +391,7 @@ class ErrorRecoveryManager:
                         "success": False,
                         "action": "skip",
                         "error_category": error_event.category.value,
-                        "message": "Action skipped due to unrecoverable error"
+                        "message": "Action skipped due to unrecoverable error",
                     }
 
                 # Registrar intento
@@ -356,7 +400,7 @@ class ErrorRecoveryManager:
                     strategy=strategy,
                     timestamp=datetime.now(),
                     attempt_number=retry_count + 1,
-                    success=result.get("success", False)
+                    success=result.get("success", False),
                 )
                 self.recovery_history.append(attempt)
 
@@ -367,7 +411,9 @@ class ErrorRecoveryManager:
                 retry_count += 1
 
             except Exception as e:
-                logger.warning(f"Recovery attempt {retry_count+1} failed: {str(e)}")
+                logger.warning(
+                    f"Recovery attempt {retry_count+1} failed: {e!s}", exc_info=True
+                )
                 retry_count += 1
 
         # Abrir circuit breaker si es necesario
@@ -378,10 +424,10 @@ class ErrorRecoveryManager:
             "success": False,
             "action": "max_retries_exceeded",
             "error_category": error_event.category.value,
-            "message": f"Failed after {self.max_retries} recovery attempts"
+            "message": f"Failed after {self.max_retries} recovery attempts",
         }
 
-    async def _retry_action(self, **kwargs) -> Dict[str, Any]:
+    async def _retry_action(self, **kwargs) -> dict[str, Any]:
         """Reintentar acción."""
         action_callable = kwargs.get("action_callable")
         if action_callable:
@@ -389,28 +435,31 @@ class ErrorRecoveryManager:
                 result = await action_callable()
                 return {"success": True, "result": result}
             except Exception as e:
+                logger.exception("_retry_action: error inesperado")
                 return {"success": False, "error": str(e)}
         return {"success": False, "error": "No action callable provided"}
 
-    async def _refresh_and_retry(self, **kwargs) -> Dict[str, Any]:
+    async def _refresh_and_retry(self, **kwargs) -> dict[str, Any]:
         """Refrescar página y reintentar."""
         try:
             await self.computer_use.refresh_page()
             await asyncio.sleep(2)
             return await self._retry_action(**kwargs)
         except Exception as e:
-            return {"success": False, "error": f"Refresh failed: {str(e)}"}
+            logger.exception("_refresh_and_retry: error inesperado")
+            return {"success": False, "error": f"Refresh failed: {e!s}"}
 
-    async def _navigate_home_and_retry(self, **kwargs) -> Dict[str, Any]:
+    async def _navigate_home_and_retry(self, **kwargs) -> dict[str, Any]:
         """Navegar a inicio y reintentar."""
         try:
             await self.computer_use.navigate("/")
             await asyncio.sleep(3)
             return await self._retry_action(**kwargs)
         except Exception as e:
-            return {"success": False, "error": f"Navigation failed: {str(e)}"}
+            logger.exception("_navigate_home_and_retry: error inesperado")
+            return {"success": False, "error": f"Navigation failed: {e!s}"}
 
-    async def _relogin_and_retry(self, **kwargs) -> Dict[str, Any]:
+    async def _relogin_and_retry(self, **kwargs) -> dict[str, Any]:
         """Re-login y reintentar."""
         try:
             # Obtener credenciales de contexto
@@ -434,15 +483,12 @@ class ErrorRecoveryManager:
             return await self._retry_action(**kwargs)
 
         except Exception as e:
-            return {"success": False, "error": f"Re-login failed: {str(e)}"}
+            logger.exception("_relogin_and_retry: error inesperado")
+            return {"success": False, "error": f"Re-login failed: {e!s}"}
 
-    async def _wait_and_retry(
-        self,
-        attempt_number: int,
-        **kwargs
-    ) -> Dict[str, Any]:
+    async def _wait_and_retry(self, attempt_number: int, **kwargs) -> dict[str, Any]:
         """Esperar con backoff y reintentar."""
-        wait_time_ms = int(self.base_backoff_ms * (2 ** attempt_number))
+        wait_time_ms = int(self.base_backoff_ms * (2**attempt_number))
         # Agregar jitter
         wait_time_ms += int((wait_time_ms * 0.1) * (hash(str(kwargs)) % 10 / 10))
 
@@ -486,7 +532,9 @@ class ErrorRecoveryManager:
         if state.failure_count >= state.failure_threshold:
             logger.error(f"Circuit breaker opened for {platform}")
             state.is_open = True
-            state.reset_at = datetime.now() + timedelta(milliseconds=state.reset_timeout_ms)
+            state.reset_at = datetime.now() + timedelta(
+                milliseconds=state.reset_timeout_ms
+            )
 
     def reset_circuit_breaker(self, platform: str) -> None:
         """Resetear circuit breaker."""
@@ -500,6 +548,7 @@ class ErrorRecoveryManager:
 # RESILIENCE PATTERNS
 # ============================================================================
 
+
 class ResilientAction:
     """Acción resiliente con reintentos automáticos."""
 
@@ -508,7 +557,7 @@ class ResilientAction:
         action_callable: Callable,
         recovery_manager: ErrorRecoveryManager,
         max_retries: int = 3,
-        timeout_ms: int = 30000
+        timeout_ms: int = 30000,
     ):
         self.action_callable = action_callable
         self.recovery_manager = recovery_manager
@@ -517,48 +566,47 @@ class ResilientAction:
         self.attempt_count = 0
         self.start_time = None
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def execute(self, **kwargs) -> dict[str, Any]:
         """Ejecutar con recuperación automática."""
         self.start_time = time.time()
 
         try:
             # Ejecutar con timeout
             result = await asyncio.wait_for(
-                self.action_callable(),
-                timeout=self.timeout_ms / 1000
+                self.action_callable(), timeout=self.timeout_ms / 1000
             )
             return {
                 "success": True,
                 "result": result,
-                "attempt": self.attempt_count + 1
+                "attempt": self.attempt_count + 1,
             }
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning("Action timeout")
             return await self.recovery_manager.handle_error(
                 TimeoutError("Action timeout"),
                 action=self.action_callable.__name__,
                 action_callable=self.action_callable,
-                **kwargs
+                **kwargs,
             )
 
         except Exception as e:
-            logger.warning(f"Action failed: {str(e)}")
+            logger.warning(f"Action failed: {e!s}", exc_info=True)
             return await self.recovery_manager.handle_error(
                 e,
                 action=self.action_callable.__name__,
                 action_callable=self.action_callable,
-                **kwargs
+                **kwargs,
             )
 
 
 __all__ = [
-    "ErrorDetector",
-    "ErrorRecoveryManager",
-    "ResilientAction",
-    "ErrorCategory",
-    "RecoveryStrategy",
-    "ErrorEvent",
-    "RecoveryAttempt",
     "CircuitBreakerState",
+    "ErrorCategory",
+    "ErrorDetector",
+    "ErrorEvent",
+    "ErrorRecoveryManager",
+    "RecoveryAttempt",
+    "RecoveryStrategy",
+    "ResilientAction",
 ]

@@ -1,38 +1,39 @@
 """Intelligence Router — Emotion & Negotiation APIs"""
 
+from typing import Annotated
 from uuid import UUID
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.agents.emotion_engine import EmotionDetector, EmotionTimeline
 from app.domains.agents.negotiation_engine import NegotiationEngine
 from app.domains.agents.schemas_intelligence import (
     EmotionDetectRequest,
     EmotionDetectResponse,
-    EmotionTimelineResponse,
     EmotionTimelineItem,
-    NegotiationStartRequest,
+    EmotionTimelineResponse,
     NegotiationOfferRequest,
     NegotiationResponse,
+    NegotiationStartRequest,
     NegotiationStateResponse,
 )
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/intelligence", tags=["intelligence"])
 
 
 # ========== Emotion ==========
 
+
 @router.post("/emotion/detect", response_model=EmotionDetectResponse)
 async def detect_emotion(
     data: EmotionDetectRequest,
-    business_id: Optional[UUID] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    business_id: UUID | None = None,
 ):
     """Detect emotion in a customer message."""
     if not business_id and current_user.businesses:
@@ -60,11 +61,13 @@ async def detect_emotion(
     )
 
 
-@router.get("/emotion/timeline/{conversation_id}", response_model=EmotionTimelineResponse)
+@router.get(
+    "/emotion/timeline/{conversation_id}", response_model=EmotionTimelineResponse
+)
 async def get_emotion_timeline(
     conversation_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get emotion timeline for a conversation."""
     timeline = await EmotionTimeline.get_emotion_timeline(db, conversation_id)
@@ -84,11 +87,16 @@ async def get_emotion_timeline(
 
 # ========== Negotiation ==========
 
-@router.post("/negotiate/start", response_model=NegotiationStateResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/negotiate/start",
+    response_model=NegotiationStateResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def start_negotiation(
     data: NegotiationStartRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Start a new negotiation session."""
     engine = NegotiationEngine(db)
@@ -106,8 +114,8 @@ async def start_negotiation(
 @router.post("/negotiate/offer", response_model=NegotiationResponse)
 async def process_negotiation_offer(
     data: NegotiationOfferRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Process a customer offer in an active negotiation."""
     engine = NegotiationEngine(db)
@@ -131,11 +139,13 @@ async def process_negotiation_offer(
     return neg_resp
 
 
-@router.get("/negotiate/state/{conversation_id}", response_model=NegotiationStateResponse)
+@router.get(
+    "/negotiate/state/{conversation_id}", response_model=NegotiationStateResponse
+)
 async def get_negotiation_state(
     conversation_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get the active negotiation state for a conversation."""
     engine = NegotiationEngine(db)

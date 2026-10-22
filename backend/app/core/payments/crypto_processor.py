@@ -19,40 +19,32 @@ Env vars:
 - EXCHANGE_RATE_API: CoinGecko or similar API for rates
 """
 
-import os
-import logging
 import hashlib
-import json
-import requests
-from typing import Dict, Any, Optional, List
+import logging
+import os
 from datetime import datetime, timedelta
-from enum import Enum
 from decimal import Decimal
+from enum import Enum
+from typing import Any
+
+import requests
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
 # Configuration
-TRON_RPC_URL = os.getenv(
-    "TRON_RPC_URL",
-    "https://api.trongrid.io"
-)
-BSC_RPC_URL = os.getenv(
-    "BSC_RPC_URL",
-    "https://bsc-dataseed.binance.org"
-)
+TRON_RPC_URL = os.getenv("TRON_RPC_URL", "https://api.trongrid.io")
+BSC_RPC_URL = os.getenv("BSC_RPC_URL", "https://bsc-dataseed.binance.org")
 USDT_TRC20_CONTRACT = os.getenv(
-    "USDT_TRC20_CONTRACT",
-    "TR7NHqjeKQxGTCi8q282JBPL8otQmuoEXGm"  # Tron USDT mainnet
+    "USDT_TRC20_CONTRACT", "TR7NHqjeKQxGTCi8q282JBPL8otQmuoEXGm"  # Tron USDT mainnet
 )
 USDT_BEP20_CONTRACT = os.getenv(
     "USDT_BEP20_CONTRACT",
-    "0x55d398326f99059fF775485246999027B3197955"  # BSC USDT mainnet
+    "0x55d398326f99059fF775485246999027B3197955",  # BSC USDT mainnet
 )
 DEPOSIT_WALLET_ADDRESS = os.getenv("DEPOSIT_WALLET_ADDRESS", "")
-EXCHANGE_RATE_API = os.getenv(
-    "EXCHANGE_RATE_API",
-    "https://api.coingecko.com/api/v3"
-)
+EXCHANGE_RATE_API = os.getenv("EXCHANGE_RATE_API", "https://api.coingecko.com/api/v3")
 
 # Confirm thresholds
 MIN_CONFIRMATIONS_TRON = 25
@@ -62,12 +54,14 @@ DUST_ATTACK_THRESHOLD = 1  # Reject if < 1 USDT
 
 class Blockchain(str, Enum):
     """Supported blockchains for USDT."""
+
     TRON = "tron"
     BSC = "bsc"  # Binance Smart Chain
 
 
 class TransactionStatus(str, Enum):
     """Transaction statuses."""
+
     PENDING = "pending"
     CONFIRMED = "confirmed"
     FAILED = "failed"
@@ -83,7 +77,7 @@ class CryptoProcessor:
     def generate_payment_address(
         customer_id: str,
         blockchain: str = "tron",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate a payment address (usually merchant deposit address).
 
@@ -114,7 +108,7 @@ class CryptoProcessor:
 
             # Generate invoice ID for tracking
             invoice_id = hashlib.sha256(
-                f"{customer_id}-{datetime.utcnow().isoformat()}".encode()
+                f"{customer_id}-{utc_now().isoformat()}".encode()
             ).hexdigest()[:16]
 
             logger.info(
@@ -128,7 +122,7 @@ class CryptoProcessor:
                 "blockchain": blockchain,
                 "customer_id": customer_id,
                 "invoice_id": invoice_id,
-                "expires_at": datetime.utcnow() + timedelta(hours=24),
+                "expires_at": utc_now() + timedelta(hours=24),
                 "confirmation_threshold": (
                     MIN_CONFIRMATIONS_TRON
                     if blockchain == "tron"
@@ -137,7 +131,7 @@ class CryptoProcessor:
             }
 
         except Exception as e:
-            logger.error(f"Error generating address: {str(e)}")
+            logger.exception("Error generating address")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -145,8 +139,8 @@ class CryptoProcessor:
         tx_hash: str,
         blockchain: str,
         expected_amount_usdt: float,
-        customer_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        customer_id: str | None = None,
+    ) -> dict[str, Any]:
         """
         Verify a blockchain transaction.
 
@@ -183,15 +177,15 @@ class CryptoProcessor:
                 raise ValueError(f"Unsupported blockchain: {blockchain}")
 
         except Exception as e:
-            logger.error(f"Error verifying transaction: {str(e)}")
+            logger.exception("Error verifying transaction")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
     def _verify_tron_transaction(
         tx_hash: str,
         expected_amount: float,
-        customer_id: Optional[str],
-    ) -> Dict[str, Any]:
+        customer_id: str | None,
+    ) -> dict[str, Any]:
         """Verify USDT transaction on Tron."""
         try:
             # Get transaction info from Tron
@@ -221,7 +215,7 @@ class CryptoProcessor:
             transaction = tx["transaction"]
 
             # Parse transaction details
-            contract_ret = transaction.get("ret", [{}])[0]
+            transaction.get("ret", [{}])[0]
             contract_params = (
                 transaction.get("raw_data", {})
                 .get("contract", [{}])[0]
@@ -234,7 +228,9 @@ class CryptoProcessor:
             amount_raw = int(contract_params.get("amount", 0))
 
             # Convert to USDT (6 decimals)
-            amount_usdt = Decimal(amount_raw) / Decimal(10 ** CryptoProcessor.USDT_DECIMALS)
+            amount_usdt = Decimal(amount_raw) / Decimal(
+                10**CryptoProcessor.USDT_DECIMALS
+            )
 
             # Get block info for confirmations
             block_height = transaction.get("blockNumber", 0)
@@ -271,15 +267,15 @@ class CryptoProcessor:
             }
 
         except Exception as e:
-            logger.error(f"Tron verification error: {str(e)}")
+            logger.exception("Tron verification error")
             return {"status": "error", "tx_hash": tx_hash, "error": str(e)}
 
     @staticmethod
     def _verify_bsc_transaction(
         tx_hash: str,
         expected_amount: float,
-        customer_id: Optional[str],
-    ) -> Dict[str, Any]:
+        customer_id: str | None,
+    ) -> dict[str, Any]:
         """Verify USDT transaction on Binance Smart Chain."""
         try:
             # Build JSON-RPC request for BSC
@@ -343,18 +339,18 @@ class CryptoProcessor:
                 "confirmed": is_confirmed and not is_failed,
                 "block_number": block_number,
                 "gas_used": gas_used,
-                "timestamp": datetime.utcnow(),
+                "timestamp": utc_now(),
             }
 
         except Exception as e:
-            logger.error(f"BSC verification error: {str(e)}")
+            logger.exception("BSC verification error")
             return {"status": "error", "tx_hash": tx_hash, "error": str(e)}
 
     @staticmethod
     def get_exchange_rate(
         from_currency: str = "usdt",
         to_currency: str = "usd",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get USDT/USD exchange rate.
 
@@ -394,11 +390,11 @@ class CryptoProcessor:
                 "rate": rate,
                 "from": from_currency.upper(),
                 "to": to_currency.upper(),
-                "timestamp": datetime.utcnow(),
+                "timestamp": utc_now(),
             }
 
         except Exception as e:
-            logger.error(f"Error getting exchange rate: {str(e)}")
+            logger.exception("Error getting exchange rate")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -410,10 +406,15 @@ class CryptoProcessor:
                 timeout=10,
             )
             if response.status_code == 200:
-                return response.json().get("block_header", {}).get("raw_data", {}).get("number", 0)
+                return (
+                    response.json()
+                    .get("block_header", {})
+                    .get("raw_data", {})
+                    .get("number", 0)
+                )
             return 0
-        except Exception as e:
-            logger.error(f"Error getting Tron block height: {str(e)}")
+        except Exception:
+            logger.exception("Error getting Tron block height")
             return 0
 
     @staticmethod
@@ -430,8 +431,8 @@ class CryptoProcessor:
             if response.status_code == 200:
                 return int(response.json().get("result", "0"), 16)
             return 0
-        except Exception as e:
-            logger.error(f"Error getting BSC block number: {str(e)}")
+        except Exception:
+            logger.exception("Error getting BSC block number")
             return 0
 
 
@@ -444,7 +445,7 @@ class CryptoDepositMonitor:
         blockchain: str,
         expected_amount_usdt: float,
         timeout_minutes: int = 60,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Check if deposit has been completed.
 

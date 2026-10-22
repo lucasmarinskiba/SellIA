@@ -2,22 +2,14 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
-from datetime import datetime, timedelta
+from datetime import datetime
+from typing import Any
 
 import numpy as np
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.neural_network import MLPRegressor, MLPClassifier
 
-from .base_networks import (
-    NeuralNetworkBase,
-    NetworkConfig,
-    TrainingConfig,
-    ActivationFunction,
-    SimpleFeedForwardNetwork,
-)
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -31,12 +23,12 @@ class SalesPrediction:
     estimated_timeline_days: int
     confidence: float  # 0-1
     deal_size_estimate: float
-    risk_factors: List[str] = field(default_factory=list)
-    opportunity_factors: List[str] = field(default_factory=list)
-    recommended_actions: List[str] = field(default_factory=list)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    risk_factors: list[str] = field(default_factory=list)
+    opportunity_factors: list[str] = field(default_factory=list)
+    recommended_actions: list[str] = field(default_factory=list)
+    timestamp: datetime = field(default_factory=utc_now)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "will_close": self.will_close,
             "close_probability": float(self.close_probability),
@@ -56,14 +48,14 @@ class ChurnPrediction:
 
     will_churn: bool
     churn_probability: float  # 0-1
-    estimated_churn_days: Optional[int]
+    estimated_churn_days: int | None
     confidence: float
-    churn_reasons: List[str] = field(default_factory=list)
-    retention_actions: List[str] = field(default_factory=list)
-    retention_offer: Optional[str] = None
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    churn_reasons: list[str] = field(default_factory=list)
+    retention_actions: list[str] = field(default_factory=list)
+    retention_offer: str | None = None
+    timestamp: datetime = field(default_factory=utc_now)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "will_churn": self.will_churn,
             "churn_probability": float(self.churn_probability),
@@ -82,19 +74,22 @@ class DemandForecast:
 
     next_30_days_revenue: float
     next_30_days_transactions: int
-    daily_forecast: List[float]  # 30 values
-    confidence_interval: Tuple[float, float]
+    daily_forecast: list[float]  # 30 values
+    confidence_interval: tuple[float, float]
     growth_trend: float  # -1 to 1
     seasonality_factor: float
-    external_factors: List[str] = field(default_factory=list)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    external_factors: list[str] = field(default_factory=list)
+    timestamp: datetime = field(default_factory=utc_now)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "next_30_days_revenue": float(self.next_30_days_revenue),
             "next_30_days_transactions": int(self.next_30_days_transactions),
             "daily_forecast": [float(x) for x in self.daily_forecast],
-            "confidence_interval": (float(self.confidence_interval[0]), float(self.confidence_interval[1])),
+            "confidence_interval": (
+                float(self.confidence_interval[0]),
+                float(self.confidence_interval[1]),
+            ),
             "growth_trend": float(self.growth_trend),
             "seasonality_factor": float(self.seasonality_factor),
             "external_factors": self.external_factors,
@@ -116,9 +111,9 @@ class LeadQuality:
     need_score: float  # 0-100
     recommendation: str  # "hot", "warm", "cold"
     next_best_action: str
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "quality_score": float(self.quality_score),
             "close_probability": float(self.close_probability),
@@ -141,12 +136,12 @@ class ContactTiming:
     best_hour: int  # 0-23
     best_day_of_week: str  # Monday-Sunday
     response_probability: float  # 0-1
-    alternative_times: List[Dict[str, Any]] = field(default_factory=list)
-    avoid_times: List[Dict[str, Any]] = field(default_factory=list)
+    alternative_times: list[dict[str, Any]] = field(default_factory=list)
+    avoid_times: list[dict[str, Any]] = field(default_factory=list)
     timezone_adjusted: bool = False
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "best_hour": self.best_hour,
             "best_day_of_week": self.best_day_of_week,
@@ -166,20 +161,24 @@ class PriceElasticity:
     optimal_price: float
     current_price: float
     price_sensitivity: str  # "high", "medium", "low"
-    demand_curve: List[Tuple[float, float]]  # (price, demand) pairs
+    demand_curve: list[tuple[float, float]]  # (price, demand) pairs
     revenue_impact_if_increase_10pct: float
     revenue_impact_if_decrease_10pct: float
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "elasticity_coefficient": float(self.elasticity_coefficient),
             "optimal_price": float(self.optimal_price),
             "current_price": float(self.current_price),
             "price_sensitivity": self.price_sensitivity,
             "demand_curve": [(float(p), float(d)) for p, d in self.demand_curve],
-            "revenue_impact_if_increase_10pct": float(self.revenue_impact_if_increase_10pct),
-            "revenue_impact_if_decrease_10pct": float(self.revenue_impact_if_decrease_10pct),
+            "revenue_impact_if_increase_10pct": float(
+                self.revenue_impact_if_increase_10pct
+            ),
+            "revenue_impact_if_decrease_10pct": float(
+                self.revenue_impact_if_decrease_10pct
+            ),
             "timestamp": self.timestamp.isoformat(),
         }
 
@@ -188,13 +187,25 @@ class SalesPredictionNetwork:
     """Predicts if customer will close and timeline."""
 
     def __init__(self):
-        self.close_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
-        self.timeline_regressor = RandomForestRegressor(n_estimators=100, random_state=42)
-        self.deal_size_regressor = RandomForestRegressor(n_estimators=100, random_state=42)
+        self.close_classifier = RandomForestClassifier(
+            n_estimators=100, random_state=42
+        )
+        self.timeline_regressor = RandomForestRegressor(
+            n_estimators=100, random_state=42
+        )
+        self.deal_size_regressor = RandomForestRegressor(
+            n_estimators=100, random_state=42
+        )
         self.is_trained = False
         self.scaler = StandardScaler()
 
-    def fit(self, X: np.ndarray, y_close: np.ndarray, y_timeline: np.ndarray, y_deal: np.ndarray) -> "SalesPredictionNetwork":
+    def fit(
+        self,
+        X: np.ndarray,
+        y_close: np.ndarray,
+        y_timeline: np.ndarray,
+        y_deal: np.ndarray,
+    ) -> "SalesPredictionNetwork":
         """Train the network."""
         X_scaled = self.scaler.fit_transform(X)
         self.close_classifier.fit(X_scaled, y_close)
@@ -204,7 +215,7 @@ class SalesPredictionNetwork:
         logger.info("Sales prediction network trained")
         return self
 
-    def predict(self, X: np.ndarray) -> List[SalesPrediction]:
+    def predict(self, X: np.ndarray) -> list[SalesPrediction]:
         """Predict sales outcomes."""
         if not self.is_trained:
             raise ValueError("Network must be trained first")
@@ -257,12 +268,18 @@ class ChurnPredictionNetwork:
     """Predicts customer churn and timing."""
 
     def __init__(self):
-        self.churn_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
-        self.timeline_regressor = RandomForestRegressor(n_estimators=100, random_state=42)
+        self.churn_classifier = RandomForestClassifier(
+            n_estimators=100, random_state=42
+        )
+        self.timeline_regressor = RandomForestRegressor(
+            n_estimators=100, random_state=42
+        )
         self.is_trained = False
         self.scaler = StandardScaler()
 
-    def fit(self, X: np.ndarray, y_churn: np.ndarray, y_timeline: np.ndarray) -> "ChurnPredictionNetwork":
+    def fit(
+        self, X: np.ndarray, y_churn: np.ndarray, y_timeline: np.ndarray
+    ) -> "ChurnPredictionNetwork":
         """Train the network."""
         X_scaled = self.scaler.fit_transform(X)
         self.churn_classifier.fit(X_scaled, y_churn)
@@ -271,7 +288,7 @@ class ChurnPredictionNetwork:
         logger.info("Churn prediction network trained")
         return self
 
-    def predict(self, X: np.ndarray) -> List[ChurnPrediction]:
+    def predict(self, X: np.ndarray) -> list[ChurnPrediction]:
         """Predict churn."""
         if not self.is_trained:
             raise ValueError("Network must be trained first")
@@ -328,7 +345,7 @@ class DemandForecastingNetwork:
         logger.info("Demand forecasting network trained")
         return self
 
-    def predict(self, X: np.ndarray) -> List[DemandForecast]:
+    def predict(self, X: np.ndarray) -> list[DemandForecast]:
         """Forecast demand."""
         if not self.is_trained:
             raise ValueError("Network must be trained first")
@@ -339,7 +356,10 @@ class DemandForecastingNetwork:
         predictions = []
         for i in range(len(X)):
             total_revenue = max(0, forecasts[i])
-            daily = [max(0, total_revenue / 30 * (1 + np.random.normal(0, 0.1))) for _ in range(30)]
+            daily = [
+                max(0, total_revenue / 30 * (1 + np.random.normal(0, 0.1)))
+                for _ in range(30)
+            ]
             transactions = int(total_revenue / 100) if total_revenue > 0 else 0
 
             trend = np.mean(daily[-7:]) - np.mean(daily[:7])
@@ -349,7 +369,10 @@ class DemandForecastingNetwork:
                 next_30_days_revenue=float(total_revenue),
                 next_30_days_transactions=transactions,
                 daily_forecast=daily,
-                confidence_interval=(float(total_revenue * 0.8), float(total_revenue * 1.2)),
+                confidence_interval=(
+                    float(total_revenue * 0.8),
+                    float(total_revenue * 1.2),
+                ),
                 growth_trend=float(trend),
                 seasonality_factor=1.0,
             )
@@ -362,12 +385,18 @@ class LeadQualityNetwork:
     """Scores lead quality using BANT framework."""
 
     def __init__(self):
-        self.quality_regressor = RandomForestRegressor(n_estimators=100, random_state=42)
-        self.close_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
+        self.quality_regressor = RandomForestRegressor(
+            n_estimators=100, random_state=42
+        )
+        self.close_classifier = RandomForestClassifier(
+            n_estimators=100, random_state=42
+        )
         self.is_trained = False
         self.scaler = StandardScaler()
 
-    def fit(self, X: np.ndarray, y_quality: np.ndarray, y_close: np.ndarray) -> "LeadQualityNetwork":
+    def fit(
+        self, X: np.ndarray, y_quality: np.ndarray, y_close: np.ndarray
+    ) -> "LeadQualityNetwork":
         """Train the network."""
         X_scaled = self.scaler.fit_transform(X)
         self.quality_regressor.fit(X_scaled, y_quality)
@@ -376,7 +405,7 @@ class LeadQualityNetwork:
         logger.info("Lead quality network trained")
         return self
 
-    def predict(self, X: np.ndarray) -> List[LeadQuality]:
+    def predict(self, X: np.ndarray) -> list[LeadQuality]:
         """Predict lead quality."""
         if not self.is_trained:
             raise ValueError("Network must be trained first")
@@ -396,7 +425,11 @@ class LeadQualityNetwork:
             need = 80 + np.random.normal(0, 10)
 
             recommendation = "hot" if score > 75 else ("warm" if score > 50 else "cold")
-            action = "Schedule demo" if score > 75 else ("Nurture relationship" if score > 50 else "Re-qualify")
+            action = (
+                "Schedule demo"
+                if score > 75
+                else ("Nurture relationship" if score > 50 else "Re-qualify")
+            )
 
             pred = LeadQuality(
                 quality_score=float(np.clip(score, 0, 100)),
@@ -424,7 +457,9 @@ class ContactTimingNetwork:
         self.is_trained = False
         self.scaler = StandardScaler()
 
-    def fit(self, X: np.ndarray, y_hour: np.ndarray, y_day: np.ndarray) -> "ContactTimingNetwork":
+    def fit(
+        self, X: np.ndarray, y_hour: np.ndarray, y_day: np.ndarray
+    ) -> "ContactTimingNetwork":
         """Train the network."""
         X_scaled = self.scaler.fit_transform(X)
         self.hour_classifier.fit(X_scaled, y_hour)
@@ -433,7 +468,7 @@ class ContactTimingNetwork:
         logger.info("Contact timing network trained")
         return self
 
-    def predict(self, X: np.ndarray) -> List[ContactTiming]:
+    def predict(self, X: np.ndarray) -> list[ContactTiming]:
         """Predict best contact timing."""
         if not self.is_trained:
             raise ValueError("Network must be trained first")
@@ -442,7 +477,15 @@ class ContactTimingNetwork:
         hours = self.hour_classifier.predict(X_scaled)
         days = self.day_classifier.predict(X_scaled)
 
-        days_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        days_names = [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday",
+        ]
 
         predictions = []
         for i in range(len(X)):
@@ -451,7 +494,11 @@ class ContactTimingNetwork:
 
             alt_times = [
                 {"hour": (best_hour + 2) % 24, "day": best_day, "probability": 0.65},
-                {"hour": best_hour, "day": days_names[(int(days[i]) + 1) % 7], "probability": 0.60},
+                {
+                    "hour": best_hour,
+                    "day": days_names[(int(days[i]) + 1) % 7],
+                    "probability": 0.60,
+                },
             ]
 
             avoid = [
@@ -487,7 +534,7 @@ class PriceElasticityNetwork:
         logger.info("Price elasticity network trained")
         return self
 
-    def predict(self, X: np.ndarray, current_price: float) -> List[PriceElasticity]:
+    def predict(self, X: np.ndarray, current_price: float) -> list[PriceElasticity]:
         """Predict price elasticity."""
         if not self.is_trained:
             raise ValueError("Network must be trained first")
@@ -498,18 +545,34 @@ class PriceElasticityNetwork:
         predictions = []
         for i in range(len(X)):
             demand = demands[i]
-            elasticity = -1.5 + np.random.normal(0, 0.3)  # Typical elasticity -0.5 to -2.5
+            elasticity = -1.5 + np.random.normal(
+                0, 0.3
+            )  # Typical elasticity -0.5 to -2.5
 
             demand_10_up = demand * (1 + elasticity * 0.1)
             demand_10_down = demand * (1 - elasticity * 0.1)
 
-            revenue_impact_up = (current_price * 1.1 * demand_10_up - current_price * demand) / (current_price * demand)
-            revenue_impact_down = (current_price * 0.9 * demand_10_down - current_price * demand) / (current_price * demand)
+            revenue_impact_up = (
+                current_price * 1.1 * demand_10_up - current_price * demand
+            ) / (current_price * demand)
+            revenue_impact_down = (
+                current_price * 0.9 * demand_10_down - current_price * demand
+            ) / (current_price * demand)
 
-            sensitivity = "high" if abs(elasticity) > 1.5 else ("medium" if abs(elasticity) > 0.8 else "low")
+            sensitivity = (
+                "high"
+                if abs(elasticity) > 1.5
+                else ("medium" if abs(elasticity) > 0.8 else "low")
+            )
             optimal = current_price * 1.05 if elasticity > -1 else current_price
 
-            curve = [(current_price * (0.8 + i * 0.1), demand / (1 + abs(elasticity) * (i - 2) * 0.1)) for i in range(5)]
+            curve = [
+                (
+                    current_price * (0.8 + i * 0.1),
+                    demand / (1 + abs(elasticity) * (i - 2) * 0.1),
+                )
+                for i in range(5)
+            ]
 
             pred = PriceElasticity(
                 elasticity_coefficient=float(elasticity),

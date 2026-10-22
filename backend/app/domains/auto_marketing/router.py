@@ -1,19 +1,21 @@
 """Phase X8: Auto-Marketing & Growth Agent API."""
+
+from typing import Annotated
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
-from app.core.database import get_db
-from app.domains.auto_marketing.service import AutoMarketingAgent
-from app.domains.auto_marketing.models import MarketingChannel
 
+from app.core.database import get_db
+from app.domains.auto_marketing.models import MarketingChannel
+from app.domains.auto_marketing.service import AutoMarketingAgent
 
 router = APIRouter(prefix="/api/v1/auto-marketing", tags=["auto-marketing"])
 
 
 @router.get("/content-calendar")
 async def get_content_calendar(
+    db: Annotated[AsyncSession, Depends(get_db)],
     days: int = 30,
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Generate optimized 30-day content calendar across channels."""
     calendar = await AutoMarketingAgent.generate_content_calendar(db, days)
@@ -22,7 +24,11 @@ async def get_content_calendar(
         "total_posts": len(calendar),
         "by_channel": {
             ch: len([c for c in calendar if c["channel"] == ch])
-            for ch in [MarketingChannel.INSTAGRAM, MarketingChannel.LINKEDIN, MarketingChannel.TIKTOK]
+            for ch in [
+                MarketingChannel.INSTAGRAM,
+                MarketingChannel.LINKEDIN,
+                MarketingChannel.TIKTOK,
+            ]
         },
         "calendar": calendar[:10],  # First 10 days
     }
@@ -33,7 +39,7 @@ async def create_results_post(
     result_metric: str,
     time_frame: str,
     customer_type: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Create high-impact results post for maximum engagement."""
     content = await AutoMarketingAgent.create_results_post(
@@ -62,7 +68,7 @@ async def launch_experiment(
     channel: MarketingChannel,
     variant_a: str,
     variant_b: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Launch A/B test to find optimal messaging."""
     experiment = await AutoMarketingAgent.launch_growth_hack(
@@ -98,7 +104,7 @@ async def find_influencers(
 @router.get("/channel-performance/{channel}")
 async def get_performance(
     channel: MarketingChannel,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Measure channel ROI and growth metrics."""
     metrics = await AutoMarketingAgent.measure_channel_performance(db, channel)

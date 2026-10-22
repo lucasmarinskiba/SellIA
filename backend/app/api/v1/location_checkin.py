@@ -92,9 +92,13 @@ async def visitor_checkin(
     try:
         checkin_type = CheckinType[request.checkin_type.upper()]
     except KeyError:
-        raise HTTPException(status_code=422, detail=f"checkin_type inválido: {request.checkin_type}") from None
+        raise HTTPException(
+            status_code=422, detail=f"checkin_type inválido: {request.checkin_type}"
+        ) from None
     if checkin_type == CheckinType.STAFF_CHECKIN:
-        raise HTTPException(status_code=422, detail="El personal ficha en /staff/checkin")
+        raise HTTPException(
+            status_code=422, detail="El personal ficha en /staff/checkin"
+        )
 
     try:
         checkin = await db.run_sync(
@@ -106,13 +110,13 @@ async def visitor_checkin(
                 visitor_email=request.visitor_email,
                 visitor_name=request.visitor_name,
                 qr_code=request.qr_code,
-                db=sync_db
+                db=sync_db,
             )
         )
         return {
             "status": "checked_in",
             "checkin_id": str(checkin.id),
-            "checkin_time": checkin.checkin_time.isoformat()
+            "checkin_time": checkin.checkin_time.isoformat(),
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -138,13 +142,15 @@ async def visitor_checkout(
             lambda sync_db: LocationCheckinService.checkout_visitor(
                 checkin_id=request.checkin_id,
                 visited_sections=request.visited_sections,
-                db=sync_db
+                db=sync_db,
             )
         )
         return {
             "status": "checked_out",
             "dwell_seconds": checkin.dwell_seconds,
-            "dwell_minutes": checkin.dwell_seconds // 60 if checkin.dwell_seconds else 0
+            "dwell_minutes": (
+                checkin.dwell_seconds // 60 if checkin.dwell_seconds else 0
+            ),
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -162,7 +168,9 @@ async def submit_feedback(
     if request.checkin_id is not None:
         checkin = await db.get(LocationCheckin, request.checkin_id)
         if checkin is None or checkin.location_id != request.location_id:
-            raise HTTPException(status_code=404, detail="Check-in no encontrado en esta sucursal")
+            raise HTTPException(
+                status_code=404, detail="Check-in no encontrado en esta sucursal"
+            )
 
     try:
         feedback = await db.run_sync(
@@ -173,14 +181,14 @@ async def submit_feedback(
                 comment=request.comment,
                 topics=request.topics,
                 checkin_id=request.checkin_id,
-                db=sync_db
+                db=sync_db,
             )
         )
         return {
             "status": "feedback_submitted",
             "feedback_id": str(feedback.id),
             "sentiment": feedback.sentiment,
-            "requires_followup": feedback.requires_followup
+            "requires_followup": feedback.requires_followup,
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -195,11 +203,16 @@ async def staff_checkin(
     """Staff shift start."""
     # Checking yourself in takes membership; checking someone else in takes a manager.
     location = await require_location_access(
-        db, request.location_id, current_user, manage=request.staff_id != current_user.id
+        db,
+        request.location_id,
+        current_user,
+        manage=request.staff_id != current_user.id,
     )
     business_id = location.business_id
     if not await is_business_participant(db, business_id, request.staff_id):
-        raise HTTPException(status_code=400, detail="La persona no pertenece a este negocio")
+        raise HTTPException(
+            status_code=400, detail="La persona no pertenece a este negocio"
+        )
 
     try:
         checkin = await db.run_sync(
@@ -209,13 +222,13 @@ async def staff_checkin(
                 staff_id=request.staff_id,
                 staff_name=request.staff_name,
                 staff_role=request.staff_role,
-                db=sync_db
+                db=sync_db,
             )
         )
         return {
             "status": "staff_checked_in",
             "staff_checkin_id": str(checkin.id),
-            "checkin_time": checkin.checkin_time.isoformat()
+            "checkin_time": checkin.checkin_time.isoformat(),
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -230,8 +243,12 @@ async def staff_checkout(
     """Staff shift end, record performance."""
     shift = await db.get(StaffCheckin, request.staff_checkin_id)
     if shift is None:
-        raise HTTPException(status_code=404, detail="Check-in de personal no encontrado")
-    await require_business_access(db, shift.business_id, current_user, manage=shift.staff_id != current_user.id)
+        raise HTTPException(
+            status_code=404, detail="Check-in de personal no encontrado"
+        )
+    await require_business_access(
+        db, shift.business_id, current_user, manage=shift.staff_id != current_user.id
+    )
     # A second check-out would overwrite the shift's end time and its performance counters.
     if shift.checkout_time is not None:
         raise HTTPException(status_code=409, detail="Este turno ya tiene check-out")
@@ -243,16 +260,20 @@ async def staff_checkout(
                 visitors_engaged=request.visitors_engaged,
                 demos_conducted=request.demos_conducted,
                 sales_assisted=request.sales_assisted,
-                db=sync_db
+                db=sync_db,
             )
         )
-        dwell = (checkin.checkout_time - checkin.checkin_time).total_seconds() / 3600 if checkin.checkout_time else 0
+        dwell = (
+            (checkin.checkout_time - checkin.checkin_time).total_seconds() / 3600
+            if checkin.checkout_time
+            else 0
+        )
         return {
             "status": "staff_checked_out",
             "hours_worked": round(dwell, 2),
             "visitors_engaged": checkin.visitors_engaged,
             "demos": checkin.demos_conducted,
-            "sales": checkin.sales_assisted
+            "sales": checkin.sales_assisted,
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -271,9 +292,7 @@ async def get_checkin_summary(
     try:
         return await db.run_sync(
             lambda sync_db: LocationCheckinService.get_location_checkin_summary(
-                location_id=location_id,
-                hours=hours,
-                db=sync_db
+                location_id=location_id, hours=hours, db=sync_db
             )
         )
     except Exception as e:
@@ -289,15 +308,14 @@ async def get_staff_performance(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Get staff member's performance metrics."""
-    await require_location_access(db, location_id, current_user, manage=staff_id != current_user.id)
+    await require_location_access(
+        db, location_id, current_user, manage=staff_id != current_user.id
+    )
 
     try:
         return await db.run_sync(
             lambda sync_db: LocationCheckinService.get_staff_performance(
-                location_id=location_id,
-                staff_id=staff_id,
-                days=days,
-                db=sync_db
+                location_id=location_id, staff_id=staff_id, days=days, db=sync_db
             )
         )
     except Exception as e:

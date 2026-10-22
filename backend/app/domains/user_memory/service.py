@@ -1,15 +1,14 @@
 """User Memory Service"""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
-from typing import Optional, List, Dict, Any
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, insert
-from sqlalchemy.orm import sessionmaker
 
 from app.domains.user_memory.models import UserMemory, UserMemoryEvent, UserPreference
-from app.domains.user_memory.schemas import UserMemoryUpdate, UserMemoryEventCreate, UserPreferenceUpdate
+from app.domains.user_memory.schemas import UserMemoryEventCreate, UserMemoryUpdate
 
 
 class UserMemoryService:
@@ -33,14 +32,16 @@ class UserMemoryService:
 
         return memory
 
-    async def get_memory(self, user_id: UUID) -> Optional[UserMemory]:
+    async def get_memory(self, user_id: UUID) -> UserMemory | None:
         """Get UserMemory del usuario"""
         result = await self.db.execute(
             select(UserMemory).where(UserMemory.user_id == user_id)
         )
         return result.scalar_one_or_none()
 
-    async def update_memory(self, user_id: UUID, update_data: UserMemoryUpdate) -> UserMemory:
+    async def update_memory(
+        self, user_id: UUID, update_data: UserMemoryUpdate
+    ) -> UserMemory:
         """Update UserMemory con nuevos datos"""
         memory = await self.get_or_create(user_id)
 
@@ -51,8 +52,8 @@ class UserMemoryService:
             if value is not None:
                 setattr(memory, key, value)
 
-        memory.updated_at = datetime.now(timezone.utc)
-        memory.last_activity_at = datetime.now(timezone.utc)
+        memory.updated_at = datetime.now(UTC)
+        memory.last_activity_at = datetime.now(UTC)
 
         self.db.add(memory)
         await self.db.commit()
@@ -60,14 +61,20 @@ class UserMemoryService:
 
         return memory
 
-    async def log_event(self, user_id: UUID, event_data: UserMemoryEventCreate) -> UserMemoryEvent:
+    async def log_event(
+        self, user_id: UUID, event_data: UserMemoryEventCreate
+    ) -> UserMemoryEvent:
         """Log un evento de memoria (mensaje, acción, etc.)"""
         event = UserMemoryEvent(
             user_id=user_id,
             event_type=event_data.event_type,
             event_data=event_data.event_data,
-            conversation_id=UUID(event_data.conversation_id) if event_data.conversation_id else None,
-            business_id=UUID(event_data.business_id) if event_data.business_id else None,
+            conversation_id=(
+                UUID(event_data.conversation_id) if event_data.conversation_id else None
+            ),
+            business_id=(
+                UUID(event_data.business_id) if event_data.business_id else None
+            ),
             agent_id=UUID(event_data.agent_id) if event_data.agent_id else None,
         )
         self.db.add(event)
@@ -90,7 +97,7 @@ class UserMemoryService:
 
         if interest not in memory.key_interests:
             memory.key_interests.append(interest)
-            memory.updated_at = datetime.now(timezone.utc)
+            memory.updated_at = datetime.now(UTC)
             self.db.add(memory)
             await self.db.commit()
             await self.db.refresh(memory)
@@ -103,33 +110,40 @@ class UserMemoryService:
 
         if challenge not in memory.key_challenges:
             memory.key_challenges.append(challenge)
-            memory.updated_at = datetime.now(timezone.utc)
+            memory.updated_at = datetime.now(UTC)
             self.db.add(memory)
             await self.db.commit()
             await self.db.refresh(memory)
 
         return memory
 
-    async def add_favorite_agent(self, user_id: UUID, agent_id: UUID, agent_name: str) -> UserMemory:
+    async def add_favorite_agent(
+        self, user_id: UUID, agent_id: UUID, agent_name: str
+    ) -> UserMemory:
         """Track favorite agent usage"""
         memory = await self.get_or_create(user_id)
 
         # Find or create agent entry in favorite_agents
-        agent_entry = next((a for a in memory.favorite_agents if a.get("agent_id") == str(agent_id)), None)
+        agent_entry = next(
+            (a for a in memory.favorite_agents if a.get("agent_id") == str(agent_id)),
+            None,
+        )
 
         if agent_entry:
             agent_entry["count"] = agent_entry.get("count", 0) + 1
-            agent_entry["last_used"] = datetime.now(timezone.utc).isoformat()
+            agent_entry["last_used"] = datetime.now(UTC).isoformat()
         else:
-            memory.favorite_agents.append({
-                "agent_id": str(agent_id),
-                "agent_name": agent_name,
-                "count": 1,
-                "first_used": datetime.now(timezone.utc).isoformat(),
-                "last_used": datetime.now(timezone.utc).isoformat(),
-            })
+            memory.favorite_agents.append(
+                {
+                    "agent_id": str(agent_id),
+                    "agent_name": agent_name,
+                    "count": 1,
+                    "first_used": datetime.now(UTC).isoformat(),
+                    "last_used": datetime.now(UTC).isoformat(),
+                }
+            )
 
-        memory.updated_at = datetime.now(timezone.utc)
+        memory.updated_at = datetime.now(UTC)
         self.db.add(memory)
         await self.db.commit()
         await self.db.refresh(memory)
@@ -143,14 +157,16 @@ class UserMemoryService:
         new_score = min(1.0, max(0.0, memory.engagement_score + delta))
         memory.engagement_score = new_score
 
-        memory.updated_at = datetime.now(timezone.utc)
+        memory.updated_at = datetime.now(UTC)
         self.db.add(memory)
         await self.db.commit()
         await self.db.refresh(memory)
 
         return memory
 
-    async def set_preference(self, user_id: UUID, preference_key: str, preference_value: Dict[str, Any]) -> UserPreference:
+    async def set_preference(
+        self, user_id: UUID, preference_key: str, preference_value: dict[str, Any]
+    ) -> UserPreference:
         """Set o update una preferencia granular"""
         result = await self.db.execute(
             select(UserPreference).where(
@@ -162,7 +178,7 @@ class UserMemoryService:
 
         if pref:
             pref.preference_value = preference_value
-            pref.updated_at = datetime.now(timezone.utc)
+            pref.updated_at = datetime.now(UTC)
         else:
             pref = UserPreference(
                 user_id=user_id,
@@ -176,7 +192,9 @@ class UserMemoryService:
 
         return pref
 
-    async def get_preference(self, user_id: UUID, preference_key: str) -> Optional[UserPreference]:
+    async def get_preference(
+        self, user_id: UUID, preference_key: str
+    ) -> UserPreference | None:
         """Get una preferencia granular"""
         result = await self.db.execute(
             select(UserPreference).where(
@@ -186,7 +204,9 @@ class UserMemoryService:
         )
         return result.scalar_one_or_none()
 
-    async def get_recent_events(self, user_id: UUID, limit: int = 50) -> List[UserMemoryEvent]:
+    async def get_recent_events(
+        self, user_id: UUID, limit: int = 50
+    ) -> list[UserMemoryEvent]:
         """Get últimos eventos del usuario"""
         result = await self.db.execute(
             select(UserMemoryEvent)

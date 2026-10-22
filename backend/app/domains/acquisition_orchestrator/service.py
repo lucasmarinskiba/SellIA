@@ -55,7 +55,7 @@ class AcquisitionOrchestrator:
                 "type": "close",
                 "subject": "Ready to lock in your price?",
                 "delay_hours": 168,
-            }
+            },
         }
 
         # STEP 4: LOCK IN RETENTION (X11)
@@ -74,7 +74,7 @@ class AcquisitionOrchestrator:
                 "X9: User profiled",
                 "X10: FOMO campaign generated",
                 "X12: Closing sequence started",
-                "X11: Loyalty enrolled"
+                "X11: Loyalty enrolled",
             ],
             "current_touch": 1,
             "estimated_deal_value": 2999,
@@ -85,7 +85,7 @@ class AcquisitionOrchestrator:
                 "fomo": fomo_campaign,
                 "closing": closing_sequence,
                 "loyalty": loyalty,
-            }
+            },
         }
 
     @staticmethod

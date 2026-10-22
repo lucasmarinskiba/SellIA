@@ -5,9 +5,11 @@ Brain decide. Computer Use ejecuta.
 Loop infinito: Analyze → Decide → Execute → Monitor → Learn → Repeat.
 """
 
-import logging
-from typing import Dict, List, Any, Optional
 import asyncio
+import logging
+from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -22,10 +24,10 @@ class BrainComputerUseCoordinator:
         """
         self.brain = brain_engine
         self.computer_use = computer_use_agent
-        self.execution_history: List[Dict[str, Any]] = []
-        self.learning_log: List[Dict[str, Any]] = []
+        self.execution_history: list[dict[str, Any]] = []
+        self.learning_log: list[dict[str, Any]] = []
 
-    async def run_sales_cycle(self, product: Dict[str, Any]) -> Dict[str, Any]:
+    async def run_sales_cycle(self, product: dict[str, Any]) -> dict[str, Any]:
         """
         Ciclo de venta automático end-to-end.
 
@@ -46,11 +48,15 @@ class BrainComputerUseCoordinator:
 
         # Análisis mercado
         market_analysis = await self.brain.analyze_market(product)
-        logger.info(f"Market: {market_analysis.get('demand_level')} demand, {market_analysis.get('competition_level')} competition")
+        logger.info(
+            f"Market: {market_analysis.get('demand_level')} demand, {market_analysis.get('competition_level')} competition"
+        )
 
         # Genera estrategia
         strategy = await self.brain.generate_strategy(product, market_analysis)
-        logger.info(f"Strategy: {strategy.get('segment')} segment, channels: {strategy.get('recommended_channels')}")
+        logger.info(
+            f"Strategy: {strategy.get('segment')} segment, channels: {strategy.get('recommended_channels')}"
+        )
 
         # Detecta problemas
         problems = await self.brain.detect_problems(product, market_analysis)
@@ -73,11 +79,13 @@ class BrainComputerUseCoordinator:
             execution_results.append(result)
 
             # Log for learning
-            self.execution_history.append({
-                "action": action,
-                "result": result,
-                "timestamp": self._current_timestamp(),
-            })
+            self.execution_history.append(
+                {
+                    "action": action,
+                    "result": result,
+                    "timestamp": self._current_timestamp(),
+                }
+            )
 
         # ========== FASE 3: MONITORING + FEEDBACK ==========
         logger.info("PHASE 3: Monitor results + feedback to brain")
@@ -89,19 +97,19 @@ class BrainComputerUseCoordinator:
         logger.info("PHASE 4: Brain learns + optimizes")
 
         learning_feedback = await self.brain.analyze_execution_results(
-            actions=actions,
-            results=execution_results,
-            monitoring=monitoring_data
+            actions=actions, results=execution_results, monitoring=monitoring_data
         )
 
-        self.learning_log.append({
-            "cycle": len(self.learning_log) + 1,
-            "product": product.get("name"),
-            "actions": len(actions),
-            "success_rate": monitoring_data.get("success_rate"),
-            "learnings": learning_feedback.get("learnings"),
-            "next_improvements": learning_feedback.get("next_improvements"),
-        })
+        self.learning_log.append(
+            {
+                "cycle": len(self.learning_log) + 1,
+                "product": product.get("name"),
+                "actions": len(actions),
+                "success_rate": monitoring_data.get("success_rate"),
+                "learnings": learning_feedback.get("learnings"),
+                "next_improvements": learning_feedback.get("next_improvements"),
+            }
+        )
 
         logger.info(f"Learning: {learning_feedback.get('summary')}")
 
@@ -116,7 +124,9 @@ class BrainComputerUseCoordinator:
             "learning_feedback": learning_feedback,
         }
 
-    async def _execute_brain_action(self, brain_action: Dict[str, Any], product: Dict[str, Any]) -> Dict[str, Any]:
+    async def _execute_brain_action(
+        self, brain_action: dict[str, Any], product: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Ejecuta acción ordenada por Brain vía Computer Use.
 
@@ -133,7 +143,9 @@ class BrainComputerUseCoordinator:
                 # Brain decide: "list on MercadoLibre"
                 # Computer Use: ejecuta script
                 platform = action_params.get("platform")
-                script = self.computer_use.get_script(f"{platform}_create_listing", product)
+                script = self.computer_use.get_script(
+                    f"{platform}_create_listing", product
+                )
                 result = await self.computer_use.run_automation_script(script)
 
             elif action_type == "create_ads_campaign":
@@ -141,7 +153,9 @@ class BrainComputerUseCoordinator:
                 # Computer Use: ejecuta
                 platform = action_params.get("platform")
                 campaign_config = action_params.get("config", {})
-                script = self.computer_use.get_script(f"{platform}_create_campaign", campaign_config)
+                script = self.computer_use.get_script(
+                    f"{platform}_create_campaign", campaign_config
+                )
                 result = await self.computer_use.run_automation_script(script)
 
             elif action_type == "schedule_social_post":
@@ -149,7 +163,9 @@ class BrainComputerUseCoordinator:
                 # Computer Use: ejecuta
                 platform = action_params.get("platform")
                 post_config = action_params.get("config", {})
-                script = self.computer_use.get_script(f"{platform}_schedule_post", post_config)
+                script = self.computer_use.get_script(
+                    f"{platform}_schedule_post", post_config
+                )
                 result = await self.computer_use.run_automation_script(script)
 
             elif action_type == "dynamic_price_update":
@@ -157,7 +173,9 @@ class BrainComputerUseCoordinator:
                 # Computer Use: ejecuta
                 price = action_params.get("new_price")
                 platform = action_params.get("platform")
-                script = self.computer_use.get_script(f"{platform}_update_price", {"price": price})
+                script = self.computer_use.get_script(
+                    f"{platform}_update_price", {"price": price}
+                )
                 result = await self.computer_use.run_automation_script(script)
 
             elif action_type == "extract_competitor_data":
@@ -168,23 +186,34 @@ class BrainComputerUseCoordinator:
                 for url in competitors:
                     script = [
                         {"type": "navigate", "params": {"url": url}},
-                        {"type": "extract_data", "params": {"selector": ".price", "attribute": "innerText"}},
-                        {"type": "extract_data", "params": {"selector": ".rating", "attribute": "innerText"}},
+                        {
+                            "type": "extract_data",
+                            "params": {"selector": ".price", "attribute": "innerText"},
+                        },
+                        {
+                            "type": "extract_data",
+                            "params": {"selector": ".rating", "attribute": "innerText"},
+                        },
                     ]
-                    competitor_data = await self.computer_use.run_automation_script(script)
+                    competitor_data = await self.computer_use.run_automation_script(
+                        script
+                    )
                     data.append(competitor_data)
                 result = {"status": "success", "competitor_data": data}
 
             else:
-                result = {"status": "error", "message": f"Unknown action type: {action_type}"}
+                result = {
+                    "status": "error",
+                    "message": f"Unknown action type: {action_type}",
+                }
 
             return result
 
         except Exception as e:
-            logger.error(f"Error executing action {action_type}: {str(e)}")
+            logger.exception(f"Error executing action {action_type}")
             return {"status": "error", "action": action_type, "error": str(e)}
 
-    async def _monitor_execution(self, results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    async def _monitor_execution(self, results: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Monitorea resultados ejecución.
 
@@ -204,16 +233,19 @@ class BrainComputerUseCoordinator:
             "results": results,
         }
 
-        logger.info(f"Monitoring: {successes}/{total} actions successful ({success_rate}%)")
+        logger.info(
+            f"Monitoring: {successes}/{total} actions successful ({success_rate}%)"
+        )
 
         return monitoring
 
     def _current_timestamp(self) -> str:
         """Timestamp actual."""
-        from datetime import datetime
-        return datetime.utcnow().isoformat()
+        return utc_now().isoformat()
 
-    async def run_continuous_optimization(self, account_id: str, interval_hours: int = 6):
+    async def run_continuous_optimization(
+        self, account_id: str, interval_hours: int = 6
+    ):
         """
         Loop infinito: cada N horas, Brain analiza + optimiza.
 
@@ -237,34 +269,40 @@ class BrainComputerUseCoordinator:
                 # Brain: selecciona acciones próximas
                 next_actions = await self.brain.select_actions(improvements)
 
-                logger.info(f"Iteration {iteration}: {len(next_actions)} improvements identified")
+                logger.info(
+                    f"Iteration {iteration}: {len(next_actions)} improvements identified"
+                )
 
                 # Computer Use: ejecuta mejoras
                 for action in next_actions:
                     await self._execute_brain_action(action, {})
 
                 # Learning: guardar en log
-                self.learning_log.append({
-                    "iteration": iteration,
-                    "improvements": len(next_actions),
-                    "timestamp": self._current_timestamp(),
-                })
+                self.learning_log.append(
+                    {
+                        "iteration": iteration,
+                        "improvements": len(next_actions),
+                        "timestamp": self._current_timestamp(),
+                    }
+                )
 
-            except Exception as e:
-                logger.error(f"Error in optimization iteration {iteration}: {str(e)}")
+            except Exception:
+                logger.exception(f"Error in optimization iteration {iteration}")
 
             # Esperar próxima iteración
             await asyncio.sleep(interval_hours * 3600)
 
-    def get_learning_summary(self) -> Dict[str, Any]:
+    def get_learning_summary(self) -> dict[str, Any]:
         """Retorna resumen de learnings acumulados."""
 
         return {
             "total_cycles": len(self.learning_log),
             "total_actions": len(self.execution_history),
             "avg_success_rate": (
-                sum(l.get("success_rate", 0) for l in self.learning_log) / len(self.learning_log)
-                if self.learning_log else 0
+                sum(l.get("success_rate", 0) for l in self.learning_log)
+                / len(self.learning_log)
+                if self.learning_log
+                else 0
             ),
             "learning_log": self.learning_log[-10:],  # Últimas 10 iteraciones
         }

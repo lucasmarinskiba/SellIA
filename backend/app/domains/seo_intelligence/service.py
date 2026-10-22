@@ -3,19 +3,17 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Optional
 
-from sqlalchemy import and_, desc, select, func
+from sqlalchemy import and_, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
 from app.domains.seo_intelligence.models import (
-    Keyword,
-    Ranking,
-    PageOptimization,
     CompetitorAnalysis,
+    Keyword,
+    PageOptimization,
     SEORecommendation,
 )
 
@@ -34,7 +32,7 @@ class KeywordService:
         keyword: str,
         search_volume: int = 0,
         difficulty: int = 0,
-        cpc: Decimal = Decimal("0"),
+        cpc: Decimal = Decimal(0),
         competition: str = "medium",
         intent: str = "commercial",
         trend: str = "stable",
@@ -64,14 +62,14 @@ class KeywordService:
         if not kw:
             raise ValueError(f"Keyword {keyword_id} not found")
         kw.current_rank = rank
-        kw.tracked_at = datetime.now(timezone.utc)
+        kw.tracked_at = datetime.now(UTC)
         await self.db.commit()
         return kw
 
     async def list_keywords(
         self,
         business_id: uuid.UUID,
-        platform: Optional[str] = None,
+        platform: str | None = None,
         limit: int = 100,
     ) -> list[Keyword]:
         """List tracked keywords."""
@@ -84,15 +82,19 @@ class KeywordService:
     async def get_trending_keywords(self, business_id: uuid.UUID) -> list[Keyword]:
         """Get rising trend keywords."""
         keywords = (
-            await self.db.execute(
-                select(Keyword).where(
-                    and_(
-                        Keyword.business_id == business_id,
-                        Keyword.trend == "rising",
+            (
+                await self.db.execute(
+                    select(Keyword).where(
+                        and_(
+                            Keyword.business_id == business_id,
+                            Keyword.trend == "rising",
+                        )
                     )
                 )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return keywords
 
 
@@ -108,8 +110,8 @@ class PageOptimizationService:
         page_url: str,
         page_title: str,
         page_type: str,
-        meta_description: Optional[str] = None,
-        keywords_targeted: Optional[list] = None,
+        meta_description: str | None = None,
+        keywords_targeted: list | None = None,
     ) -> PageOptimization:
         """Create page optimization record."""
         page = PageOptimization(
@@ -127,11 +129,11 @@ class PageOptimizationService:
     async def update_page(
         self,
         page_id: uuid.UUID,
-        page_speed_ms: Optional[int] = None,
-        mobile_score: Optional[int] = None,
-        optimization_score: Optional[int] = None,
-        organic_traffic_30d: Optional[int] = None,
-        organic_revenue_30d: Optional[Decimal] = None,
+        page_speed_ms: int | None = None,
+        mobile_score: int | None = None,
+        optimization_score: int | None = None,
+        organic_traffic_30d: int | None = None,
+        organic_revenue_30d: Decimal | None = None,
     ) -> PageOptimization:
         """Update page metrics."""
         page = (
@@ -153,17 +155,23 @@ class PageOptimizationService:
         if organic_revenue_30d is not None:
             page.organic_revenue_30d = organic_revenue_30d
 
-        page.last_updated = datetime.now(timezone.utc)
+        page.last_updated = datetime.now(UTC)
         await self.db.commit()
         return page
 
     async def seo_health(self, business_id: uuid.UUID) -> dict:
         """Get overall SEO health."""
         pages = (
-            await self.db.execute(
-                select(PageOptimization).where(PageOptimization.business_id == business_id)
+            (
+                await self.db.execute(
+                    select(PageOptimization).where(
+                        PageOptimization.business_id == business_id
+                    )
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         total_pages = len(pages)
         indexed_pages = sum(1 for p in pages if p.indexed)
@@ -177,7 +185,9 @@ class PageOptimizationService:
         high = sum(1 for p in pages if 30 <= p.optimization_score < 60)
 
         return {
-            "overall_score": sum(p.optimization_score for p in pages) // total_pages if pages else 0,
+            "overall_score": (
+                sum(p.optimization_score for p in pages) // total_pages if pages else 0
+            ),
             "indexed_pages": indexed_pages,
             "total_pages": total_pages,
             "avg_page_speed_ms": avg_speed,
@@ -219,9 +229,9 @@ class CompetitorAnalysisService:
         backlinks: int,
         referring_domains: int,
         organic_keywords: int,
-        top_keywords: Optional[list] = None,
+        top_keywords: list | None = None,
         monthly_traffic: int = 0,
-        monthly_revenue: Decimal = Decimal("0"),
+        monthly_revenue: Decimal = Decimal(0),
     ) -> CompetitorAnalysis:
         """Update competitor metrics."""
         analysis = (
@@ -239,18 +249,25 @@ class CompetitorAnalysisService:
         analysis.top_keywords = top_keywords or []
         analysis.estimated_monthly_traffic = monthly_traffic
         analysis.estimated_monthly_revenue = monthly_revenue
-        analysis.analyzed_at = datetime.now(timezone.utc)
+        analysis.analyzed_at = datetime.now(UTC)
         await self.db.commit()
         return analysis
 
-    async def list_competitors(self, business_id: uuid.UUID) -> list[CompetitorAnalysis]:
+    async def list_competitors(
+        self, business_id: uuid.UUID
+    ) -> list[CompetitorAnalysis]:
         """List analyzed competitors."""
         competitors = (
-            await self.db.execute(
-                select(CompetitorAnalysis).where(CompetitorAnalysis.business_id == business_id)
-                .order_by(desc(CompetitorAnalysis.domain_authority))
+            (
+                await self.db.execute(
+                    select(CompetitorAnalysis)
+                    .where(CompetitorAnalysis.business_id == business_id)
+                    .order_by(desc(CompetitorAnalysis.domain_authority))
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return competitors
 
 
@@ -267,8 +284,8 @@ class SEORecommendationService:
         recommendation_type: str,
         priority: str,
         description: str,
-        current_value: Optional[str] = None,
-        recommended_value: Optional[str] = None,
+        current_value: str | None = None,
+        recommended_value: str | None = None,
         potential_impact: str = "medium",
     ) -> SEORecommendation:
         """Create SEO recommendation."""
@@ -289,11 +306,13 @@ class SEORecommendationService:
     async def list_recommendations(
         self,
         business_id: uuid.UUID,
-        status: Optional[str] = None,
-        priority: Optional[str] = None,
+        status: str | None = None,
+        priority: str | None = None,
     ) -> list[SEORecommendation]:
         """List recommendations."""
-        query = select(SEORecommendation).where(SEORecommendation.business_id == business_id)
+        query = select(SEORecommendation).where(
+            SEORecommendation.business_id == business_id
+        )
         if status:
             query = query.where(SEORecommendation.status == status)
         if priority:
@@ -311,7 +330,9 @@ class SEORecommendationService:
         """Update recommendation status."""
         rec = (
             await self.db.execute(
-                select(SEORecommendation).where(SEORecommendation.id == recommendation_id)
+                select(SEORecommendation).where(
+                    SEORecommendation.id == recommendation_id
+                )
             )
         ).scalar_one_or_none()
         if not rec:

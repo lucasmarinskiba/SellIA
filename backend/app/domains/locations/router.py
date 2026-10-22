@@ -1,14 +1,15 @@
 """Phase 5A: Location Endpoints."""
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import UUID
-from pydantic import BaseModel
-from typing import List, Optional
+
 from datetime import datetime
+from typing import Annotated
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import get_db
 from app.domains.locations.service import LocationService
-from app.domains.locations.models import LocationProfile, BusinessModel
-
 
 router = APIRouter(prefix="/api/v1/locations", tags=["locations"])
 
@@ -19,9 +20,9 @@ class LocationCreateRequest(BaseModel):
     latitude: float
     longitude: float
     location_type: str
-    phone: Optional[str] = None
-    email: Optional[str] = None
-    hours_json: Optional[dict] = None
+    phone: str | None = None
+    email: str | None = None
+    hours_json: dict | None = None
     capacity: int = 0
     geofence_radius_km: float = 5
 
@@ -34,8 +35,8 @@ class LocationResponse(BaseModel):
     latitude: float
     longitude: float
     location_type: str
-    phone: Optional[str]
-    email: Optional[str]
+    phone: str | None
+    email: str | None
     capacity: int
     geofence_radius_km: float
     is_active: bool
@@ -62,7 +63,7 @@ class BusinessModelResponse(BaseModel):
 async def create_location(
     business_id: UUID,
     req: LocationCreateRequest,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> LocationResponse:
     loc = await LocationService.create_location(
         db=db,
@@ -82,7 +83,10 @@ async def create_location(
 
 
 @router.get("/list")
-async def list_locations(business_id: UUID, db: AsyncSession = Depends(get_db)) -> List[LocationResponse]:
+async def list_locations(
+    business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> list[LocationResponse]:
     locs = await LocationService.list_locations(db, business_id)
     return [LocationResponse.from_orm(loc) for loc in locs]
 
@@ -91,7 +95,7 @@ async def list_locations(business_id: UUID, db: AsyncSession = Depends(get_db)) 
 async def location_metrics(
     business_id: UUID,
     location_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     metrics = await LocationService.get_location_metrics(db, business_id, location_id)
     return metrics
@@ -100,7 +104,7 @@ async def location_metrics(
 @router.post("/detect-model")
 async def detect_business_model(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> BusinessModelResponse:
     model = await LocationService.detect_business_model(db, business_id)
     return BusinessModelResponse.from_orm(model)
@@ -111,12 +115,12 @@ def log_offline_conversion(
     business_id: UUID,
     location_id: UUID,
     visit_type: str,
-    user_id: Optional[UUID] = None,
-    entry_method: Optional[str] = None,
-    phone: Optional[str] = None,
-    email: Optional[str] = None,
-    notes: Optional[str] = None,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    user_id: UUID | None = None,
+    entry_method: str | None = None,
+    phone: str | None = None,
+    email: str | None = None,
+    notes: str | None = None,
 ) -> dict:
     conversion = LocationService.log_offline_conversion(
         db=db,
@@ -137,8 +141,8 @@ def log_visit(
     business_id: UUID,
     location_id: UUID,
     user_id: UUID,
-    entry_channel: Optional[str] = None,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    entry_channel: str | None = None,
 ) -> dict:
     visit = LocationService.log_location_visit(
         db=db,
@@ -153,9 +157,13 @@ def log_visit(
 @router.post("/visit-end")
 def end_visit(
     visit_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     visit = LocationService.end_location_visit(db, visit_id)
     if not visit:
         raise HTTPException(status_code=404, detail="Visit not found")
-    return {"id": visit.id, "dwell_minutes": visit.dwell_minutes, "message": "Visit ended"}
+    return {
+        "id": visit.id,
+        "dwell_minutes": visit.dwell_minutes,
+        "message": "Visit ended",
+    }

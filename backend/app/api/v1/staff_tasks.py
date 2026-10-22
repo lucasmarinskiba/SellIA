@@ -31,7 +31,11 @@ from app.core.business_access import (
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.domains.staff.task_models import StaffTask, TaskNotification
-from app.domains.staff.task_service import StaffTaskService, TaskNotificationService, ShiftReadinessService
+from app.domains.staff.task_service import (
+    StaffTaskService,
+    TaskNotificationService,
+    ShiftReadinessService,
+)
 from app.domains.users.models import User
 
 router = APIRouter(prefix="/api/v1", tags=["staff-tasks"])
@@ -78,13 +82,17 @@ async def assign_task(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Assign task to staff member."""
-    location = await require_location_access(db, request.location_id, current_user, manage=True)
+    location = await require_location_access(
+        db, request.location_id, current_user, manage=True
+    )
     business_id = location.business_id
     if not await is_business_participant(db, business_id, request.assigned_to_staff_id):
-        raise HTTPException(status_code=400, detail="La persona asignada no pertenece a este negocio")
+        raise HTTPException(
+            status_code=400, detail="La persona asignada no pertenece a este negocio"
+        )
 
     def _assign(sync_db: Session) -> dict:
-        due_date = datetime.fromisoformat(request.due_date.replace('Z', '+00:00'))
+        due_date = datetime.fromisoformat(request.due_date.replace("Z", "+00:00"))
 
         result = StaffTaskService.assign_task(
             location_id=request.location_id,
@@ -99,14 +107,14 @@ async def assign_task(
             related_checkin_id=request.related_checkin_id,
             related_product_id=request.related_product_id,
             assigned_by_staff_id=current_user.id,
-            db=sync_db
+            db=sync_db,
         )
 
         # Send notification
         TaskNotificationService.notify_task_assigned(
             task_id=UUID(result["task_id"]),
             staff_id=request.assigned_to_staff_id,
-            db=sync_db
+            db=sync_db,
         )
 
         return result
@@ -128,7 +136,9 @@ async def get_staff_tasks(
     """Get tasks assigned to staff."""
     scope = await staff_scope(db, staff_id, current_user)
     if location_id is not None:
-        await require_location_access(db, location_id, current_user, manage=staff_id != current_user.id)
+        await require_location_access(
+            db, location_id, current_user, manage=staff_id != current_user.id
+        )
 
     try:
         tasks = await db.run_sync(
@@ -136,7 +146,7 @@ async def get_staff_tasks(
                 staff_id=staff_id,
                 location_id=location_id,
                 status_filter=status,
-                db=sync_db
+                db=sync_db,
             )
         )
         tasks = [t for t in tasks if t.business_id in scope]
@@ -152,7 +162,9 @@ async def get_staff_tasks(
                 "description": t.description,
                 "estimated_duration_minutes": t.estimated_duration_minutes,
                 "assigned_at": t.assigned_at.isoformat(),
-                "acknowledged_at": t.acknowledged_at.isoformat() if t.acknowledged_at else None,
+                "acknowledged_at": (
+                    t.acknowledged_at.isoformat() if t.acknowledged_at else None
+                ),
                 "started_at": t.started_at.isoformat() if t.started_at else None,
             }
             for t in tasks
@@ -161,7 +173,7 @@ async def get_staff_tasks(
         return {
             "staff_id": str(staff_id),
             "total_tasks": len(task_list),
-            "tasks": task_list
+            "tasks": task_list,
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -177,7 +189,11 @@ async def acknowledge_task(
     await _require_task_actor(db, await _get_task(db, task_id), current_user)
 
     try:
-        return await db.run_sync(lambda sync_db: StaffTaskService.acknowledge_task(task_id=task_id, db=sync_db))
+        return await db.run_sync(
+            lambda sync_db: StaffTaskService.acknowledge_task(
+                task_id=task_id, db=sync_db
+            )
+        )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -192,7 +208,9 @@ async def start_task(
     await _require_task_actor(db, await _get_task(db, task_id), current_user)
 
     try:
-        return await db.run_sync(lambda sync_db: StaffTaskService.start_task(task_id=task_id, db=sync_db))
+        return await db.run_sync(
+            lambda sync_db: StaffTaskService.start_task(task_id=task_id, db=sync_db)
+        )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -207,7 +225,9 @@ async def complete_task(
     """Mark task as completed."""
     # The service used the body's id while the path's id was what got authorised.
     if request.task_id != task_id:
-        raise HTTPException(status_code=400, detail="task_id del path y del body no coinciden")
+        raise HTTPException(
+            status_code=400, detail="task_id del path y del body no coinciden"
+        )
     await _require_task_actor(db, await _get_task(db, task_id), current_user)
 
     try:
@@ -216,7 +236,7 @@ async def complete_task(
                 task_id=task_id,
                 completion_notes=request.completion_notes,
                 completion_evidence=request.completion_evidence,
-                db=sync_db
+                db=sync_db,
             )
         )
     except Exception as e:
@@ -236,7 +256,9 @@ async def cancel_task(
 
     try:
         return await db.run_sync(
-            lambda sync_db: StaffTaskService.cancel_task(task_id=task_id, reason=reason, db=sync_db)
+            lambda sync_db: StaffTaskService.cancel_task(
+                task_id=task_id, reason=reason, db=sync_db
+            )
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -255,9 +277,7 @@ async def get_location_task_queue(
     try:
         return await db.run_sync(
             lambda sync_db: StaffTaskService.get_task_queue(
-                location_id=location_id,
-                max_results=max_results,
-                db=sync_db
+                location_id=location_id, max_results=max_results, db=sync_db
             )
         )
     except Exception as e:
@@ -275,17 +295,19 @@ async def auto_assign_shift_tasks(
     """Auto-assign pending tasks to staff for shift."""
     location = await require_location_access(db, location_id, current_user, manage=True)
     if not await is_business_participant(db, location.business_id, staff_id):
-        raise HTTPException(status_code=400, detail="La persona asignada no pertenece a este negocio")
+        raise HTTPException(
+            status_code=400, detail="La persona asignada no pertenece a este negocio"
+        )
 
     try:
-        shift_start_dt = datetime.fromisoformat(shift_start.replace('Z', '+00:00'))
+        shift_start_dt = datetime.fromisoformat(shift_start.replace("Z", "+00:00"))
 
         return await db.run_sync(
             lambda sync_db: StaffTaskService.auto_assign_tasks_to_shift(
                 location_id=location_id,
                 staff_id=staff_id,
                 shift_start=shift_start_dt,
-                db=sync_db
+                db=sync_db,
             )
         )
     except Exception as e:
@@ -302,8 +324,13 @@ async def get_task_notifications(
     await _require_task_actor(db, await _get_task(db, task_id), current_user)
 
     try:
+
         def _load(sync_db: Session) -> list:
-            return sync_db.query(TaskNotification).filter(TaskNotification.task_id == task_id).all()
+            return (
+                sync_db.query(TaskNotification)
+                .filter(TaskNotification.task_id == task_id)
+                .all()
+            )
 
         notifications = await db.run_sync(_load)
 
@@ -318,10 +345,7 @@ async def get_task_notifications(
             for n in notifications
         ]
 
-        return {
-            "task_id": str(task_id),
-            "notifications": notif_list
-        }
+        return {"task_id": str(task_id), "notifications": notif_list}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -338,15 +362,17 @@ async def mark_notification_read(
         raise HTTPException(status_code=404, detail="Notificación no encontrada")
     # "Read" is the recipient's own receipt (a manager may see the history, not sign for it).
     if notification.staff_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Solo quien recibió la notificación puede marcarla como leída")
+        raise HTTPException(
+            status_code=403,
+            detail="Solo quien recibió la notificación puede marcarla como leída",
+        )
     task = await _get_task(db, notification.task_id)
     await require_business_access(db, task.business_id, current_user)
 
     try:
         return await db.run_sync(
             lambda sync_db: TaskNotificationService.mark_notification_read(
-                notification_id=notification_id,
-                db=sync_db
+                notification_id=notification_id, db=sync_db
             )
         )
     except Exception as e:
@@ -363,14 +389,16 @@ async def get_shift_readiness_report(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Generate shift readiness report."""
-    location = await require_location_access(db, location_id, current_user, manage=staff_id != current_user.id)
+    location = await require_location_access(
+        db, location_id, current_user, manage=staff_id != current_user.id
+    )
     business_id = location.business_id
 
     try:
-        shift_start_dt = datetime.fromisoformat(shift_start.replace('Z', '+00:00'))
+        shift_start_dt = datetime.fromisoformat(shift_start.replace("Z", "+00:00"))
         shift_end_dt = None
         if shift_end:
-            shift_end_dt = datetime.fromisoformat(shift_end.replace('Z', '+00:00'))
+            shift_end_dt = datetime.fromisoformat(shift_end.replace("Z", "+00:00"))
 
         return await db.run_sync(
             lambda sync_db: ShiftReadinessService.generate_shift_report(
@@ -379,7 +407,7 @@ async def get_shift_readiness_report(
                 staff_id=staff_id,
                 shift_start=shift_start_dt,
                 shift_end=shift_end_dt,
-                db=sync_db
+                db=sync_db,
             )
         )
     except Exception as e:
@@ -401,10 +429,7 @@ async def get_staff_task_performance(
     try:
         return await db.run_sync(
             lambda sync_db: ShiftReadinessService.get_staff_performance(
-                staff_id=staff_id,
-                days=days,
-                db=sync_db,
-                business_ids=scope
+                staff_id=staff_id, days=days, db=sync_db, business_ids=scope
             )
         )
     except Exception as e:

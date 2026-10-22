@@ -1,17 +1,18 @@
 """Business Document RAG Schemas"""
 
-from uuid import UUID
 from datetime import datetime
-from typing import Optional, Dict, Any, List
-from pydantic import BaseModel, Field, ConfigDict
+from typing import Any
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class DocumentChunkResponse(BaseModel):
     id: UUID
     chunk_index: int
-    page_number: Optional[int] = None
+    page_number: int | None = None
     content: str
-    chunk_metadata: Dict[str, Any] = Field(default_factory=dict)
+    chunk_metadata: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -23,7 +24,7 @@ class BusinessDocumentBase(BaseModel):
     file_size: int = 0
     status: str = "processing"
     chunk_count: int = 0
-    extra_data: Dict[str, Any] = Field(default_factory=dict)
+    extra_data: dict[str, Any] = Field(default_factory=dict)
 
 
 class BusinessDocumentCreate(BaseModel):
@@ -41,7 +42,7 @@ class BusinessDocumentResponse(BusinessDocumentBase):
 
 
 class BusinessDocumentDetailResponse(BusinessDocumentResponse):
-    chunks: List[DocumentChunkResponse] = Field(default_factory=list)
+    chunks: list[DocumentChunkResponse] = Field(default_factory=list)
 
 
 class DocumentSearchRequest(BaseModel):
@@ -55,11 +56,11 @@ class DocumentSearchResult(BaseModel):
     title: str
     content: str
     chunk_index: int
-    page_number: Optional[int] = None
+    page_number: int | None = None
     score: float
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class DocumentSearchResponse(BaseModel):
     query: str
-    results: List[DocumentSearchResult] = Field(default_factory=list)
+    results: list[DocumentSearchResult] = Field(default_factory=list)

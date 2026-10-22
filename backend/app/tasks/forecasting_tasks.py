@@ -1,11 +1,10 @@
 """Demand-forecasting Celery tasks."""
 
-
 from celery import shared_task
 from sqlalchemy import select
 
-from app.core.database import AsyncSessionLocal
 from app.core.async_bridge import run_async
+from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
 from app.domains.businesses.models import Business
 from app.domains.forecasting.service import ForecastingService
@@ -13,14 +12,21 @@ from app.domains.forecasting.service import ForecastingService
 logger = get_logger(__name__)
 
 
-@shared_task(name="app.tasks.forecasting_tasks.nightly_forecasts", time_limit=3600, soft_time_limit=3300)
+@shared_task(
+    name="app.tasks.forecasting_tasks.nightly_forecasts",
+    time_limit=3600,
+    soft_time_limit=3300,
+)
 def nightly_forecasts():
     """Retrain + forecast every active business's demand series."""
+
     async def _run():
         async with AsyncSessionLocal() as db:
             businesses = (
-                await db.execute(select(Business).where(Business.is_active == True))
-            ).scalars().all()
+                (await db.execute(select(Business).where(Business.is_active == True)))
+                .scalars()
+                .all()
+            )
 
         summary = {"businesses": 0, "series_ok": 0}
         for biz in businesses:
@@ -40,11 +46,14 @@ def nightly_forecasts():
 @shared_task(name="app.tasks.forecasting_tasks.weekly_accuracy_eval", time_limit=1800)
 def weekly_accuracy_eval():
     """Score past forecasts against realised demand."""
+
     async def _run():
         async with AsyncSessionLocal() as db:
             businesses = (
-                await db.execute(select(Business).where(Business.is_active == True))
-            ).scalars().all()
+                (await db.execute(select(Business).where(Business.is_active == True)))
+                .scalars()
+                .all()
+            )
         rows = 0
         for biz in businesses:
             try:

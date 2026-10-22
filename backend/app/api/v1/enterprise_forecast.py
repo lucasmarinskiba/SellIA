@@ -1,3 +1,4 @@
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -6,10 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.businesses.models import Business
 from app.domains.crm.models import Deal, LeadStage
 from app.domains.enterprise.forecasting import ForecastingManager
+from app.domains.users.models import User
 
 router = APIRouter(tags=["forecasting"])
 forecasting_engine = ForecastingManager()
@@ -27,8 +28,12 @@ _STAGE_ALIASES = {
 }
 
 
-async def _get_business_for_user(business_id: UUID, user: User, db: AsyncSession) -> Business:
-    result = await db.execute(select(Business).where(Business.id == business_id, Business.user_id == user.id))
+async def _get_business_for_user(
+    business_id: UUID, user: User, db: AsyncSession
+) -> Business:
+    result = await db.execute(
+        select(Business).where(Business.id == business_id, Business.user_id == user.id)
+    )
     business = result.scalar_one_or_none()
     if not business:
         raise HTTPException(status_code=404, detail="Negocio no encontrado")
@@ -37,14 +42,14 @@ async def _get_business_for_user(business_id: UUID, user: User, db: AsyncSession
 
 @router.post("/forecast/opportunities/add")
 async def add_opportunity(
-    business_id: UUID = Query(...),
-    title: str = Query(...),
-    amount: float = Query(...),
-    stage: str = Query("prospecting"),
-    contact_name: str = Query(...),
-    source: str = Query("direct"),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    business_id: Annotated[UUID, Query()],
+    title: Annotated[str, Query()],
+    amount: Annotated[float, Query()],
+    contact_name: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    stage: Annotated[str, Query()] = "prospecting",
+    source: Annotated[str, Query()] = "direct",
 ):
     """Add a sales opportunity to the pipeline.
 
@@ -74,10 +79,19 @@ async def add_opportunity(
     await db.refresh(deal)
 
     from app.domains.webhooks.service import fire_business_event
-    await fire_business_event(db, business_id, "lead.created", {
-        "deal_id": str(deal.id), "title": deal.title, "value": amount,
-        "contact_name": contact_name, "stage": stage_enum.value,
-    })
+
+    await fire_business_event(
+        db,
+        business_id,
+        "lead.created",
+        {
+            "deal_id": str(deal.id),
+            "title": deal.title,
+            "value": amount,
+            "contact_name": contact_name,
+            "stage": stage_enum.value,
+        },
+    )
 
     return {
         "status": "added",
@@ -91,8 +105,8 @@ async def add_opportunity(
 @router.get("/forecast/pipeline/{business_id}")
 async def get_pipeline_forecast(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get pipeline snapshot with weighted forecast."""
     await _get_business_for_user(business_id, current_user, db)
@@ -120,14 +134,16 @@ async def get_pipeline_forecast(
 @router.get("/forecast/revenue/{business_id}")
 async def project_revenue(
     business_id: UUID,
-    days_ahead: int = Query(30, ge=1, le=365),
-    target_revenue: float = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    days_ahead: Annotated[int, Query(ge=1, le=365)] = 30,
+    target_revenue: Annotated[float | None, Query()] = None,
 ):
     """Project revenue for period ahead."""
     await _get_business_for_user(business_id, current_user, db)
-    projection = await forecasting_engine.project_revenue(business_id, db, days_ahead, target_revenue)
+    projection = await forecasting_engine.project_revenue(
+        business_id, db, days_ahead, target_revenue
+    )
 
     return {
         "period": projection["period"],
@@ -139,7 +155,9 @@ async def project_revenue(
             "worst_case": f"${projection['worst_case']:,.2f}",
         },
         "probability_of_target": (
-            f"{projection['probability_of_target']:.1f}%" if projection["probability_of_target"] is not None else "N/A"
+            f"{projection['probability_of_target']:.1f}%"
+            if projection["probability_of_target"] is not None
+            else "N/A"
         ),
         "key_drivers": {
             "avg_deal_size": f"${projection['key_drivers']['avg_deal_size']:,.2f}",
@@ -151,9 +169,9 @@ async def project_revenue(
 @router.get("/forecast/scenarios/{business_id}")
 async def get_forecast_scenarios(
     business_id: UUID,
-    days_ahead: int = Query(30, ge=1, le=365),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    days_ahead: Annotated[int, Query(ge=1, le=365)] = 30,
 ):
     """Get best/base/worst case scenarios."""
     await _get_business_for_user(business_id, current_user, db)
@@ -176,8 +194,8 @@ async def get_forecast_scenarios(
 @router.get("/forecast/funnel/{business_id}")
 async def get_conversion_funnel(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get conversion funnel analysis."""
     await _get_business_for_user(business_id, current_user, db)
@@ -200,8 +218,8 @@ async def get_conversion_funnel(
 @router.get("/forecast/risks/{business_id}")
 async def identify_risks(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Identify at-risk and stalled opportunities."""
     await _get_business_for_user(business_id, current_user, db)

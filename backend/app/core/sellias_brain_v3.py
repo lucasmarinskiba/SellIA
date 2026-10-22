@@ -11,24 +11,21 @@ Status: 15,000+ lines, 100% production ready
 """
 
 import logging
-from typing import Dict, List, Any, Tuple
-from datetime import datetime
+from typing import Any
 
-from app.core.agents.virtue_agent import VirtueAgent
-from app.core.agents.values_alignment_agent import ValuesAlignmentAgent
-from app.core.agents.ethical_framework import EthicalFramework
 from app.core.agents.authenticity_engine import AuthenticityEngine
-
-from app.core.responses.comment_response_engine import CommentResponseEngine
-
+from app.core.agents.ethical_framework import EthicalFramework
+from app.core.agents.values_alignment_agent import ValuesAlignmentAgent
+from app.core.agents.virtue_agent import VirtueAgent
+from app.core.clock import utc_now
 from app.core.growth.bootstrap_growth import BootstrapGrowth
-from app.core.growth.viral_mechanics import ViralMechanics
 from app.core.growth.momentum_tracker import MomentumTracker
-
-from app.core.performance.query_optimizer import QueryOptimizer
+from app.core.growth.viral_mechanics import ViralMechanics
 from app.core.performance.latency_reducer import LatencyReducer
-from app.core.performance.scalability_engine import ScalabilityEngine
 from app.core.performance.monitoring_stack import MonitoringStack
+from app.core.performance.query_optimizer import QueryOptimizer
+from app.core.performance.scalability_engine import ScalabilityEngine
+from app.core.responses.comment_response_engine import CommentResponseEngine
 
 logger = logging.getLogger(__name__)
 
@@ -57,11 +54,11 @@ class SellIABrainV3:
         self.brand_personality = brand_personality
         self.system_config = self._initialize_config()
 
-    def _initialize_config(self) -> Dict[str, Any]:
+    def _initialize_config(self) -> dict[str, Any]:
         """Initialize system configuration."""
         return {
             "version": "3.0.0",
-            "initialized_at": datetime.utcnow().isoformat(),
+            "initialized_at": utc_now().isoformat(),
             "blocks_loaded": ["A", "B", "C", "D"],
             "production_ready": True,
             "features": {
@@ -75,34 +72,37 @@ class SellIABrainV3:
     def validate_sales_message(
         self,
         message: str,
-        product: Dict[str, Any],
-        delivery: Dict[str, Any],
-        audience: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        product: dict[str, Any],
+        delivery: dict[str, Any],
+        audience: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Validate sales message across all ethical dimensions.
 
         Returns comprehensive report on: virtue, values alignment, ethics, authenticity
         """
 
-        virtue_score = self.virtue_agent.score_virtue(message, product, delivery, audience)
+        virtue_score = self.virtue_agent.score_virtue(
+            message, product, delivery, audience
+        )
         ethical_score = self.ethics_framework.ethical_score(message, product, audience)
-        authenticity_score = self.authenticity_engine.authenticity_score(message, audience, [])
+        authenticity_score = self.authenticity_engine.authenticity_score(
+            message, audience, []
+        )
 
         values_alignment = self.values_agent.alignment_report(
-            {"primary_values": audience.get("values", [])},
-            [{"description": message}]
+            {"primary_values": audience.get("values", [])}, [{"description": message}]
         )
 
         all_passed = (
-            virtue_score.get("passed", False) and
-            ethical_score.get("passed", False) and
-            authenticity_score.get("passed", False)
+            virtue_score.get("passed", False)
+            and ethical_score.get("passed", False)
+            and authenticity_score.get("passed", False)
         )
 
         return {
             "message_approved": all_passed,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "scores": {
                 "virtue": virtue_score["virtue_score"],
                 "ethics": ethical_score["ethical_score"],
@@ -110,7 +110,8 @@ class SellIABrainV3:
                 "values_alignment": values_alignment.get("total_recommendations", 0),
             },
             "recommendations": [
-                s for d in [
+                s
+                for d in [
                     virtue_score.get("violations", []),
                     ethical_score.get("issues", []),
                     authenticity_score.get("issues", []),
@@ -122,10 +123,10 @@ class SellIABrainV3:
     def generate_comment_response(
         self,
         comment_text: str,
-        author_profile: Dict[str, Any],
-        post_context: Dict[str, Any],
-        product_context: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        author_profile: dict[str, Any],
+        post_context: dict[str, Any],
+        product_context: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Generate complete response to comment with intelligence.
 
@@ -153,9 +154,7 @@ class SellIABrainV3:
         )
 
         # Step 3: Ensure values alignment
-        user_values = self.values_agent.extract_user_values(
-            author_profile, [], []
-        )
+        user_values = self.values_agent.extract_user_values(author_profile, [], [])
         values_check = self.values_agent.score_recommendation_alignment(
             {"description": response["response_text"]},
             user_values,
@@ -178,7 +177,7 @@ class SellIABrainV3:
         current_customers: int,
         product_category: str,
         target_month_1: int = 50,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Plan growth from zero to target."""
 
         bootstrap_plan = self.bootstrap_growth.generate_bootstrap_plan(
@@ -189,7 +188,7 @@ class SellIABrainV3:
             product_category, {"customer_ltv": 500}
         )
 
-        unit_economics = {
+        {
             "viral_coefficient": referral_loop["viral_coefficient"],
             "monthly_retention": 0.85,
         }
@@ -209,11 +208,11 @@ class SellIABrainV3:
             ],
         }
 
-    def monitor_system_health(self) -> Dict[str, Any]:
+    def monitor_system_health(self) -> dict[str, Any]:
         """Monitor system performance & health."""
 
         return {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "status": "healthy",
             "modules_active": {
                 "virtue_enforcement": True,
@@ -231,7 +230,7 @@ class SellIABrainV3:
             "recommendations": [],
         }
 
-    def get_system_status(self) -> Dict[str, Any]:
+    def get_system_status(self) -> dict[str, Any]:
         """Get complete system status."""
 
         return {
@@ -250,6 +249,7 @@ class SellIABrainV3:
 # ============================================================================
 # FACTORY FUNCTION
 # ============================================================================
+
 
 def create_sellias_brain() -> SellIABrainV3:
     """Factory function to create SellIA Brain v3 instance."""

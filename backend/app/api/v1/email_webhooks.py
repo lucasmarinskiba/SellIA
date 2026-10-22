@@ -4,25 +4,31 @@ Email Webhook Handlers
 - Open/click/bounce/unsubscribe tracking
 - Lead scoring updates on engagement
 """
-from fastapi import APIRouter, Request, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
-from app.db.models import WorkflowExecution, EmailLog, WebhookEvent, Lead
-from app.db.database import AsyncSessionLocal
-from datetime import datetime
+
+import base64
+import hashlib
+import hmac
 import logging
 import os
-import hmac
-import hashlib
-import base64
+from datetime import datetime
+
+from fastapi import APIRouter, HTTPException, Request
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.db.database import AsyncSessionLocal
+from app.db.models import Lead, WebhookEvent, WorkflowExecution
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/webhooks", tags=["webhooks"])
 
+
 # ============================================================
 # SIGNATURE VERIFICATION
 # ============================================================
-def verify_sendgrid_signature(request_body: bytes, signature: str, timestamp: str) -> bool:
+def verify_sendgrid_signature(
+    request_body: bytes, signature: str, timestamp: str
+) -> bool:
     """Verify SendGrid webhook signature with HMAC-SHA256."""
     webhook_key = os.getenv("SENDGRID_WEBHOOK_KEY", "")
     if not webhook_key:
@@ -35,6 +41,7 @@ def verify_sendgrid_signature(request_body: bytes, signature: str, timestamp: st
     ).decode()
 
     return hmac.compare_digest(signature, expected_signature)
+
 
 # ============================================================
 # SENDGRID WEBHOOK HANDLER
@@ -75,9 +82,13 @@ async def handle_sendgrid_webhook(request: Request) -> dict:
                 if event_type == "open":
                     await _handle_email_opened(session, email, timestamp)
                 elif event_type == "click":
-                    await _handle_email_clicked(session, email, event.get("url"), timestamp)
+                    await _handle_email_clicked(
+                        session, email, event.get("url"), timestamp
+                    )
                 elif event_type == "bounce":
-                    await _handle_email_bounced(session, email, event.get("reason", "unknown"), timestamp)
+                    await _handle_email_bounced(
+                        session, email, event.get("reason", "unknown"), timestamp
+                    )
                 elif event_type == "unsubscribe":
                     await _handle_email_unsubscribed(session, email, timestamp)
 
@@ -88,7 +99,7 @@ async def handle_sendgrid_webhook(request: Request) -> dict:
                     email=email,
                     payload=event,
                     processed=True,
-                    processed_at=datetime.now()
+                    processed_at=datetime.now(),
                 )
                 session.add(webhook_event)
 
@@ -97,19 +108,25 @@ async def handle_sendgrid_webhook(request: Request) -> dict:
         return {"status": "ok", "events_processed": len(events)}
 
     except Exception as e:
-        logger.error(f"SendGrid webhook error: {e}")
+        logger.exception("SendGrid webhook error")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # ============================================================
 # EVENT HANDLERS
 # ============================================================
-async def _handle_email_opened(session: AsyncSession, email: str, timestamp: int) -> None:
+async def _handle_email_opened(
+    session: AsyncSession, email: str, timestamp: int
+) -> None:
     """Mark email as opened, update lead engagement score."""
 
     # Find workflow execution by email
-    stmt = select(WorkflowExecution).where(
-        WorkflowExecution.lead_email == email
-    ).order_by(WorkflowExecution.created_at.desc()).limit(1)
+    stmt = (
+        select(WorkflowExecution)
+        .where(WorkflowExecution.lead_email == email)
+        .order_by(WorkflowExecution.created_at.desc())
+        .limit(1)
+    )
 
     result = await session.execute(stmt)
     execution = result.scalar_one_or_none()
@@ -134,12 +151,18 @@ async def _handle_email_opened(session: AsyncSession, email: str, timestamp: int
     else:
         logger.warning(f"No workflow execution found for email: {email}")
 
-async def _handle_email_clicked(session: AsyncSession, email: str, url: str, timestamp: int) -> None:
+
+async def _handle_email_clicked(
+    session: AsyncSession, email: str, url: str, timestamp: int
+) -> None:
     """Mark email as clicked, significant engagement signal."""
 
-    stmt = select(WorkflowExecution).where(
-        WorkflowExecution.lead_email == email
-    ).order_by(WorkflowExecution.created_at.desc()).limit(1)
+    stmt = (
+        select(WorkflowExecution)
+        .where(WorkflowExecution.lead_email == email)
+        .order_by(WorkflowExecution.created_at.desc())
+        .limit(1)
+    )
 
     result = await session.execute(stmt)
     execution = result.scalar_one_or_none()
@@ -159,13 +182,18 @@ async def _handle_email_clicked(session: AsyncSession, email: str, url: str, tim
             lead.score = min(100, (lead.score or 0) + 15)
             lead.status = "engaged"
             lead.last_contacted = datetime.now()
-            logger.info(f"Lead {lead.email} clicked link. Score now: {lead.score}, Status: engaged")
+            logger.info(
+                f"Lead {lead.email} clicked link. Score now: {lead.score}, Status: engaged"
+            )
 
         logger.info(f"Email clicked: {email} -> {url}")
     else:
         logger.warning(f"No workflow execution found for email: {email}")
 
-async def _handle_email_bounced(session: AsyncSession, email: str, reason: str, timestamp: int) -> None:
+
+async def _handle_email_bounced(
+    session: AsyncSession, email: str, reason: str, timestamp: int
+) -> None:
     """Mark email as bounced, disable future sending."""
 
     # Find lead and mark as bounced
@@ -180,8 +208,8 @@ async def _handle_email_bounced(session: AsyncSession, email: str, reason: str, 
 
     # Mark all pending executions as bounced
     exec_stmt = select(WorkflowExecution).where(
-        (WorkflowExecution.lead_email == email) &
-        (WorkflowExecution.email_status.in_(["scheduled", "sent"]))
+        (WorkflowExecution.lead_email == email)
+        & (WorkflowExecution.email_status.in_(["scheduled", "sent"]))
     )
     exec_result = await session.execute(exec_stmt)
     executions = exec_result.scalars().all()
@@ -191,7 +219,10 @@ async def _handle_email_bounced(session: AsyncSession, email: str, reason: str, 
         execution.bounce_reason = reason
         execution.bounced_at = datetime.fromtimestamp(timestamp)
 
-async def _handle_email_unsubscribed(session: AsyncSession, email: str, timestamp: int) -> None:
+
+async def _handle_email_unsubscribed(
+    session: AsyncSession, email: str, timestamp: int
+) -> None:
     """Mark lead as unsubscribed."""
 
     # Find lead
@@ -204,15 +235,14 @@ async def _handle_email_unsubscribed(session: AsyncSession, email: str, timestam
         logger.info(f"Lead {email} unsubscribed")
 
     # Mark all executions as unsubscribed
-    exec_stmt = select(WorkflowExecution).where(
-        WorkflowExecution.lead_email == email
-    )
+    exec_stmt = select(WorkflowExecution).where(WorkflowExecution.lead_email == email)
     exec_result = await session.execute(exec_stmt)
     executions = exec_result.scalars().all()
 
     for execution in executions:
         if execution.email_status in ["scheduled", "sent", "delivered"]:
             execution.email_status = "unsubscribed"
+
 
 # ============================================================
 # MANUAL WEBHOOK SIMULATOR (for testing)
@@ -225,18 +255,24 @@ async def test_email_opened(email: str) -> dict:
         await session.commit()
     return {"status": "ok", "event": "open", "email": email}
 
+
 @router.post("/sendgrid/test-click")
 async def test_email_clicked(email: str, url: str = "https://example.com") -> dict:
     """Simulate email click event (testing only)."""
     async with AsyncSessionLocal() as session:
-        await _handle_email_clicked(session, email, url, int(datetime.now().timestamp()))
+        await _handle_email_clicked(
+            session, email, url, int(datetime.now().timestamp())
+        )
         await session.commit()
     return {"status": "ok", "event": "click", "email": email, "url": url}
+
 
 @router.post("/sendgrid/test-bounce")
 async def test_email_bounced(email: str, reason: str = "hard_bounce") -> dict:
     """Simulate email bounce event (testing only)."""
     async with AsyncSessionLocal() as session:
-        await _handle_email_bounced(session, email, reason, int(datetime.now().timestamp()))
+        await _handle_email_bounced(
+            session, email, reason, int(datetime.now().timestamp())
+        )
         await session.commit()
     return {"status": "ok", "event": "bounce", "email": email, "reason": reason}

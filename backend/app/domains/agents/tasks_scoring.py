@@ -3,18 +3,17 @@
 Periodic task to update deal scores and generate alerts.
 """
 
-import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
+
 from celery import shared_task
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import AsyncSessionLocal
 from app.core.async_bridge import run_async
+from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
-from app.domains.channels.models import Conversation
-from app.domains.agents.service_scoring import DealScoringService
 from app.domains.agents.deal_scorer import DealScorer
+from app.domains.agents.service_scoring import DealScoringService
+from app.domains.channels.models import Conversation
 
 logger = get_logger(__name__)
 
@@ -25,7 +24,7 @@ def update_deal_scores_task():
 
     async def _run():
         async with AsyncSessionLocal() as db:
-            cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+            cutoff = datetime.now(UTC) - timedelta(days=7)
 
             # Find active conversations from last 7 days
             result = await db.execute(
@@ -36,7 +35,9 @@ def update_deal_scores_task():
             )
             conversations = result.scalars().all()
 
-            logger.info(f"Updating deal scores for {len(conversations)} active conversations")
+            logger.info(
+                f"Updating deal scores for {len(conversations)} active conversations"
+            )
 
             service = DealScoringService(db)
             scorer = DealScorer(db)
@@ -51,6 +52,7 @@ def update_deal_scores_task():
 
                     # Find previous score
                     from app.domains.agents.models_scoring import DealScore
+
                     prev_result = await db.execute(
                         select(DealScore)
                         .where(DealScore.conversation_id == conv.id)
@@ -62,6 +64,7 @@ def update_deal_scores_task():
 
                     # Determine customer_id
                     from app.domains.memory.models import ConversationMemoryChunk
+
                     chunk_result = await db.execute(
                         select(ConversationMemoryChunk.user_id)
                         .where(ConversationMemoryChunk.conversation_id == conv.id)
@@ -127,7 +130,9 @@ def update_deal_scores_task():
                             alerts_created += 1
 
                 except Exception as exc:
-                    logger.warning(f"Failed to score conversation {conv.id}: {exc}")
+                    logger.warning(
+                        f"Failed to score conversation {conv.id}: {exc}", exc_info=True
+                    )
                     continue
 
             logger.info(

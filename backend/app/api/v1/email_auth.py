@@ -1,13 +1,15 @@
 """Email authentication API endpoints."""
 
-from typing import Optional, List
-from fastapi import APIRouter, HTTPException, Depends
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.dependencies import verify_admin_token
 from app.domains.auth.email_auth import EmailAuthManager
-from app.dependencies import get_current_user, verify_admin_token
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/api/v1/auth", tags=["email-auth"])
 
@@ -25,15 +27,15 @@ class EmailVerificationResponse(BaseModel):
     success: bool
     message: str
     user_id: str
-    error_code: Optional[str] = None
+    error_code: str | None = None
 
 
 class ApprovalRequestBody(BaseModel):
     user_id: str
     email: EmailStr
     full_name: str
-    company: Optional[str] = None
-    role: Optional[str] = None
+    company: str | None = None
+    role: str | None = None
 
 
 class ApprovalResponse(BaseModel):
@@ -46,23 +48,23 @@ class ApprovalResponse(BaseModel):
 class AdminApprovalAction(BaseModel):
     approval_id: str
     action: str  # "approve" or "reject"
-    notes: Optional[str] = None
-    rejection_reason: Optional[str] = None
+    notes: str | None = None
+    rejection_reason: str | None = None
 
 
 class PendingApprovalItem(BaseModel):
     id: str
     email: str
     full_name: str
-    company: Optional[str]
-    role: Optional[str]
+    company: str | None
+    role: str | None
     requested_at: str
 
 
 class ApprovalStatusResponse(BaseModel):
     approval_status: str  # pending, approved, rejected
-    approved_at: Optional[str]
-    rejection_reason: Optional[str]
+    approved_at: str | None
+    rejection_reason: str | None
     auto_approved: bool
 
 
@@ -74,7 +76,7 @@ class ApprovalStatusResponse(BaseModel):
 @router.post("/verify-email", response_model=EmailVerificationResponse)
 def verify_email(
     request: EmailVerificationRequest,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Verify email with token."""
     email_auth = EmailAuthManager(db)
@@ -93,7 +95,7 @@ def verify_email(
 @router.post("/request-approval", response_model=ApprovalResponse)
 def request_approval(
     request: ApprovalRequestBody,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Request account approval after email verification."""
     email_auth = EmailAuthManager(db)
@@ -105,7 +107,11 @@ def request_approval(
         role=request.role,
     )
 
-    message = "Approval request submitted" if not result.auto_approved else "Account auto-approved!"
+    message = (
+        "Approval request submitted"
+        if not result.auto_approved
+        else "Account auto-approved!"
+    )
 
     return ApprovalResponse(
         success=True,
@@ -118,7 +124,7 @@ def request_approval(
 @router.get("/approval-status/{user_id}", response_model=ApprovalStatusResponse)
 def get_approval_status(
     user_id: str,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Get account approval status for user."""
     email_auth = EmailAuthManager(db)
@@ -133,8 +139,8 @@ def get_approval_status(
 @router.post("/admin/approve-account")
 def admin_approve_account(
     request: AdminApprovalAction,
-    current_user=Depends(verify_admin_token),
-    db: Session = Depends(get_db),
+    current_user: Annotated[User, Depends(verify_admin_token)],
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Admin action: approve or reject account."""
     email_auth = EmailAuthManager(db)
@@ -155,15 +161,17 @@ def admin_approve_account(
         raise HTTPException(status_code=400, detail="Invalid action")
 
     if not success:
-        raise HTTPException(status_code=400, detail="Approval not found or already processed")
+        raise HTTPException(
+            status_code=400, detail="Approval not found or already processed"
+        )
 
     return {"success": True, "action": request.action}
 
 
-@router.get("/admin/pending-approvals", response_model=List[PendingApprovalItem])
+@router.get("/admin/pending-approvals", response_model=list[PendingApprovalItem])
 def get_pending_approvals(
-    current_user=Depends(verify_admin_token),
-    db: Session = Depends(get_db),
+    current_user: Annotated[User, Depends(verify_admin_token)],
+    db: Annotated[Session, Depends(get_db)],
 ):
     """List pending account approvals."""
     email_auth = EmailAuthManager(db)

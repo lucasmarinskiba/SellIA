@@ -1,15 +1,17 @@
 """FOMO testing, preview, and conversion tracking service."""
 
+from datetime import timedelta
 from uuid import UUID
-from datetime import datetime, timedelta
-from sqlalchemy import select, func, desc
+
+from sqlalchemy import desc, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import utc_now
 from app.core.logger import get_logger
-from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO
-from app.domains.seo_config.fomo_models import ConversionEvent, FOMABTest, FOMADecayLog
 from app.domains.seo_config.analytics_models import PublicationLinkMetrics
+from app.domains.seo_config.fomo_models import ConversionEvent
+from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO
 
 logger = get_logger(__name__)
 
@@ -65,7 +67,9 @@ class FOMAConversionService:
             await self.db.commit()
         except IntegrityError:
             await self.db.rollback()
-            logger.info(f"Duplicate conversion ignored: {link_id} on {platform_name} ({external_event_id})")
+            logger.info(
+                f"Duplicate conversion ignored: {link_id} on {platform_name} ({external_event_id})"
+            )
             return None
         await self.db.refresh(event)
 
@@ -79,7 +83,7 @@ class FOMAConversionService:
         hours_back: int = 24,
     ) -> list[ConversionEvent]:
         """Get recent conversions for ticker."""
-        cutoff = datetime.utcnow() - timedelta(hours=hours_back)
+        cutoff = utc_now() - timedelta(hours=hours_back)
 
         result = await self.db.execute(
             select(ConversionEvent)

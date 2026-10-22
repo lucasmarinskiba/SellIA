@@ -5,13 +5,15 @@ Lead Progression Service
 - No-engagement timeout triggers
 - Lead scoring on actions
 """
+
 import logging
-from datetime import datetime, timedelta
-from sqlalchemy import select, and_
+from datetime import datetime
+
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import Lead, WorkflowExecution, Workflow
 from app.core.scheduler import EmailScheduler
+from app.db.models import Lead, Workflow, WorkflowExecution
 
 logger = logging.getLogger(__name__)
 
@@ -19,12 +21,13 @@ logger = logging.getLogger(__name__)
 # LEAD STATUS FLOW
 # ============================================================
 LEAD_STATUS_FLOW = {
-    "new": "contacted",          # After first email sent
-    "contacted": "engaged",      # After email open/click
-    "engaged": "qualified",      # After response/meeting
-    "qualified": "won",          # Closed deal
+    "new": "contacted",  # After first email sent
+    "contacted": "engaged",  # After email open/click
+    "engaged": "qualified",  # After response/meeting
+    "qualified": "won",  # Closed deal
     # Terminal states: bounced, unsubscribed, lost
 }
+
 
 # ============================================================
 # PROGRESSION SERVICE
@@ -36,10 +39,7 @@ class ProgressionService:
         self.scheduler = scheduler
 
     async def on_email_sent(
-        self,
-        session: AsyncSession,
-        execution_id: int,
-        lead_id: int
+        self, session: AsyncSession, execution_id: int, lead_id: int
     ) -> None:
         """Email sent → update lead status to 'contacted'."""
         lead_stmt = select(Lead).where(Lead.id == lead_id)
@@ -56,10 +56,7 @@ class ProgressionService:
             logger.info(f"📧 Lead {lead_id} status: new → contacted")
 
     async def on_email_opened(
-        self,
-        session: AsyncSession,
-        execution_id: int,
-        lead_id: int
+        self, session: AsyncSession, execution_id: int, lead_id: int
     ) -> None:
         """Email opened → +5 score, potentially engaged."""
         lead_stmt = select(Lead).where(Lead.id == lead_id)
@@ -84,11 +81,7 @@ class ProgressionService:
         await session.commit()
 
     async def on_email_clicked(
-        self,
-        session: AsyncSession,
-        execution_id: int,
-        lead_id: int,
-        url: str
+        self, session: AsyncSession, execution_id: int, lead_id: int, url: str
     ) -> None:
         """Email clicked → +15 score, set engaged."""
         lead_stmt = select(Lead).where(Lead.id == lead_id)
@@ -109,10 +102,7 @@ class ProgressionService:
         logger.info(f"🔗 Lead {lead_id} clicked. Score: {lead.score}, Status: engaged")
 
     async def on_email_bounced(
-        self,
-        session: AsyncSession,
-        lead_id: int,
-        reason: str
+        self, session: AsyncSession, lead_id: int, reason: str
     ) -> None:
         """Email bounced → terminal state."""
         lead_stmt = select(Lead).where(Lead.id == lead_id)
@@ -131,11 +121,7 @@ class ProgressionService:
         await session.commit()
         logger.warning(f"❌ Lead {lead_id} bounced: {reason}")
 
-    async def on_email_unsubscribed(
-        self,
-        session: AsyncSession,
-        lead_id: int
-    ) -> None:
+    async def on_email_unsubscribed(self, session: AsyncSession, lead_id: int) -> None:
         """Email unsubscribed → terminal state."""
         lead_stmt = select(Lead).where(Lead.id == lead_id)
         result = await session.execute(lead_stmt)
@@ -153,10 +139,7 @@ class ProgressionService:
         logger.info(f"🚫 Lead {lead_id} unsubscribed")
 
     async def check_no_engagement_timeout(
-        self,
-        session: AsyncSession,
-        lead_id: int,
-        days_threshold: int = 7
+        self, session: AsyncSession, lead_id: int, days_threshold: int = 7
     ) -> bool:
         """
         Check if lead has no engagement for X days.
@@ -177,7 +160,7 @@ class ProgressionService:
         session: AsyncSession,
         lead_id: int,
         workflow_id: int,
-        scheduler: EmailScheduler
+        scheduler: EmailScheduler,
     ) -> dict:
         """Trigger no-engagement email sequence."""
         # Get lead + workflow
@@ -198,8 +181,7 @@ class ProgressionService:
 
         steps = workflow.steps or []
         no_eng_step = next(
-            (s for s in steps if s.get("trigger_type") == "no_engagement"),
-            None
+            (s for s in steps if s.get("trigger_type") == "no_engagement"), None
         )
 
         if not no_eng_step:
@@ -219,6 +201,7 @@ class ProgressionService:
 
         # Create execution + queue
         from app.db.models import WorkflowExecution
+
         execution = WorkflowExecution(
             workflow_id=workflow_id,
             lead_id=lead_id,
@@ -226,7 +209,7 @@ class ProgressionService:
             step_number=no_eng_step.get("step_number", 99),
             email_status="scheduled",
             email_subject=subject,
-            email_body=body
+            email_body=body,
         )
         session.add(execution)
         await session.flush()
@@ -237,7 +220,7 @@ class ProgressionService:
             subject=subject,
             body=body,
             send_at=None,  # Send immediately
-            priority=5
+            priority=5,
         )
 
         execution.tracking_id = task_id
@@ -248,15 +231,11 @@ class ProgressionService:
         return {
             "status": "queued",
             "execution_id": execution.id,
-            "tracking_id": task_id
+            "tracking_id": task_id,
         }
 
     async def on_status_change(
-        self,
-        session: AsyncSession,
-        lead_id: int,
-        old_status: str,
-        new_status: str
+        self, session: AsyncSession, lead_id: int, old_status: str, new_status: str
     ) -> None:
         """Status change → trigger matching workflow step."""
         logger.info(f"📍 Lead {lead_id} status: {old_status} → {new_status}")
@@ -264,22 +243,21 @@ class ProgressionService:
         # Find workflows with STATUS_CHANGE trigger
         # (In prod: query DB, for now mock)
         # Workflow step with trigger_status == new_status
-        pass
 
     async def _progress_workflow_if_ready(
-        self,
-        session: AsyncSession,
-        lead_id: int,
-        trigger: str
+        self, session: AsyncSession, lead_id: int, trigger: str
     ) -> None:
         """
         Check if lead is ready for next workflow step.
         Called after email open/click.
         """
         # Get latest execution
-        exec_stmt = select(WorkflowExecution).where(
-            WorkflowExecution.lead_id == lead_id
-        ).order_by(WorkflowExecution.created_at.desc()).limit(1)
+        exec_stmt = (
+            select(WorkflowExecution)
+            .where(WorkflowExecution.lead_id == lead_id)
+            .order_by(WorkflowExecution.created_at.desc())
+            .limit(1)
+        )
 
         exec_result = await session.execute(exec_stmt)
         execution = exec_result.scalar_one_or_none()
@@ -298,7 +276,9 @@ class ProgressionService:
         # Check if next step exists
         steps = workflow.steps or []
         next_step_num = execution.step_number + 1
-        next_step = next((s for s in steps if s.get("step_number") == next_step_num), None)
+        next_step = next(
+            (s for s in steps if s.get("step_number") == next_step_num), None
+        )
 
         if not next_step:
             logger.info(f"Workflow complete for lead {lead_id} (no more steps)")
@@ -316,16 +296,12 @@ class ProgressionService:
 
         logger.info(f"Lead {lead_id} ready for workflow step {next_step_num}")
 
-    async def _halt_workflows(
-        self,
-        session: AsyncSession,
-        lead_id: int
-    ) -> None:
+    async def _halt_workflows(self, session: AsyncSession, lead_id: int) -> None:
         """Stop all pending emails for lead (bounced/unsubscribed)."""
         exec_stmt = select(WorkflowExecution).where(
             and_(
                 WorkflowExecution.lead_id == lead_id,
-                WorkflowExecution.email_status.in_(["scheduled", "sent", "delivered"])
+                WorkflowExecution.email_status.in_(["scheduled", "sent", "delivered"]),
             )
         )
 
@@ -336,10 +312,12 @@ class ProgressionService:
             execution.email_status = "halted"
             logger.info(f"⏸️ Halted email for lead {lead_id}")
 
+
 # ============================================================
 # GLOBAL SERVICE
 # ============================================================
 progression_service: ProgressionService = None
+
 
 async def init_progression_service(scheduler: EmailScheduler) -> ProgressionService:
     """Initialize service."""
@@ -347,9 +325,9 @@ async def init_progression_service(scheduler: EmailScheduler) -> ProgressionServ
     progression_service = ProgressionService(scheduler)
     return progression_service
 
+
 async def get_progression_service() -> ProgressionService:
     """Get service."""
-    global progression_service
     if not progression_service:
         raise RuntimeError("Progression service not initialized")
     return progression_service

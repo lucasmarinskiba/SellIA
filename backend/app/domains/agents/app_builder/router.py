@@ -1,31 +1,33 @@
 """App MVP Builder API Router"""
 
+from typing import Annotated
 from uuid import UUID
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
-from app.domains.users.models import User
-from app.domains.agents.app_builder.service import AppBuilderService
 from app.domains.agents.app_builder.schemas import (
     AppBuildJobCreate,
-    AppBuildJobResponse,
     AppBuildJobDetailResponse,
+    AppBuildJobResponse,
     AppBuildPreviewResponse,
 )
+from app.domains.agents.app_builder.service import AppBuilderService
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/app-builder", tags=["app-builder"])
 
 
-@router.post("/generate", response_model=AppBuildJobResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/generate", response_model=AppBuildJobResponse, status_code=status.HTTP_201_CREATED
+)
 async def generate_app(
     data: AppBuildJobCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Inicia la generación de una aplicación MVP completa."""
     svc = AppBuilderService(db)
@@ -39,11 +41,11 @@ async def generate_app(
 
 @router.get("/jobs", response_model=list[AppBuildJobResponse])
 async def list_jobs(
-    business_id: UUID = Query(...),
-    limit: int = Query(100, ge=1, le=500),
-    offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ):
     svc = AppBuilderService(db)
     return await svc.list_jobs(business_id, limit, offset)
@@ -52,8 +54,8 @@ async def list_jobs(
 @router.get("/jobs/{job_id}", response_model=AppBuildJobDetailResponse)
 async def get_job(
     job_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     svc = AppBuilderService(db)
     job = await svc.get_job(job_id)
@@ -61,8 +63,14 @@ async def get_job(
         raise HTTPException(status_code=404, detail="Trabajo no encontrado")
     # Cargar features
     from sqlalchemy import select
+
     from app.domains.agents.app_builder.models import AppFeature
-    result = await db.execute(select(AppFeature).where(AppFeature.job_id == job_id).order_by(AppFeature.priority.desc()))
+
+    result = await db.execute(
+        select(AppFeature)
+        .where(AppFeature.job_id == job_id)
+        .order_by(AppFeature.priority.desc())
+    )
     features = result.scalars().all()
     base = {
         "id": job.id,
@@ -84,8 +92,8 @@ async def get_job(
 @router.get("/jobs/{job_id}/download")
 async def download_zip(
     job_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     svc = AppBuilderService(db)
     path = await svc.get_app_code(job_id)
@@ -97,8 +105,8 @@ async def download_zip(
 @router.get("/jobs/{job_id}/preview", response_model=AppBuildPreviewResponse)
 async def preview_job(
     job_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     svc = AppBuilderService(db)
     job = await svc.get_job(job_id)

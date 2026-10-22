@@ -2,15 +2,15 @@
 Social Growth Toolkit Router
 """
 
-from typing import Annotated, Optional
-from uuid import UUID
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.social_growth import service as social_service
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/social-growth", tags=["social-growth"])
 
@@ -29,18 +29,47 @@ async def create_audit(
 ):
     """Run a social media profile audit (mock AI analysis for now)."""
     # In production, this would call an external API or AI service
-    scores = {"bio": 72, "content": 65, "engagement": 58, "consistency": 80, "overall": 69}
+    scores = {
+        "bio": 72,
+        "content": 65,
+        "engagement": 58,
+        "consistency": 80,
+        "overall": 69,
+    }
     findings = [
-        {"area": "bio", "issue": "Falta CTA claro", "suggestion": "Agregá 'DM para info' o un Linktree", "priority": "high"},
-        {"area": "content", "issue": "Poco uso de Reels", "suggestion": "Publicá al menos 3 Reels por semana", "priority": "medium"},
-        {"area": "engagement", "issue": "Respuestas lentas", "suggestion": "Respondé en menos de 1 hora", "priority": "high"},
+        {
+            "area": "bio",
+            "issue": "Falta CTA claro",
+            "suggestion": "Agregá 'DM para info' o un Linktree",
+            "priority": "high",
+        },
+        {
+            "area": "content",
+            "issue": "Poco uso de Reels",
+            "suggestion": "Publicá al menos 3 Reels por semana",
+            "priority": "medium",
+        },
+        {
+            "area": "engagement",
+            "issue": "Respuestas lentas",
+            "suggestion": "Respondé en menos de 1 hora",
+            "priority": "high",
+        },
     ]
     recommendations = [
-        {"action": "Optimizar bio con keywords", "expected_impact": "+20% descubrimiento"},
-        {"action": "Crear carrusel educativo semanal", "expected_impact": "+35% guardados"},
+        {
+            "action": "Optimizar bio con keywords",
+            "expected_impact": "+20% descubrimiento",
+        },
+        {
+            "action": "Crear carrusel educativo semanal",
+            "expected_impact": "+35% guardados",
+        },
         {"action": "Usar Stories con encuestas", "expected_impact": "+50% interacción"},
     ]
-    audit = await social_service.create_audit(db, current_user.id, platform, handle, findings, recommendations, scores)
+    audit = await social_service.create_audit(
+        db, current_user.id, platform, handle, findings, recommendations, scores
+    )
     return {
         "overall_score": audit.overall_score,
         "scores": {
@@ -62,7 +91,9 @@ async def get_latest_audit(
 ):
     audit = await social_service.get_latest_audit(db, current_user.id, platform)
     if not audit:
-        raise HTTPException(status_code=404, detail="No audit found. Run POST /audit first.")
+        raise HTTPException(
+            status_code=404, detail="No audit found. Run POST /audit first."
+        )
     return {
         "overall_score": audit.overall_score,
         "scores": {

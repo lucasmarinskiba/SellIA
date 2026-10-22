@@ -1,13 +1,14 @@
 """Utilities for content generation: compression, hashing, download."""
 
-import io
-import hashlib
 import base64
-from typing import Optional
-from pathlib import Path
+import hashlib
+import io
+import logging
 
 import aiohttp
 from PIL import Image
+
+logger = logging.getLogger(__name__)
 
 
 def hash_prompt(prompt: str) -> str:
@@ -66,15 +67,17 @@ def get_image_size_kb(image_bytes: bytes) -> float:
     return len(image_bytes) / 1024
 
 
-async def download_url(url: str, timeout: int = 60) -> Optional[bytes]:
+async def download_url(url: str, timeout: int = 60) -> bytes | None:
     """Descarga contenido de una URL."""
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, timeout=aiohttp.ClientTimeout(total=timeout)) as resp:
-                if resp.status == 200:
-                    return await resp.read()
-                return None
+        async with aiohttp.ClientSession() as session, session.get(
+            url, timeout=aiohttp.ClientTimeout(total=timeout)
+        ) as resp:
+            if resp.status == 200:
+                return await resp.read()
+            return None
     except Exception:
+        logger.exception("download_url: error inesperado")
         return None
 
 
@@ -111,5 +114,5 @@ def sanitize_filename(name: str) -> str:
     """Sanitiza nombre de archivo."""
     invalid = '<>:"/\\|?*'
     for char in invalid:
-        name = name.replace(char, '_')
+        name = name.replace(char, "_")
     return name.strip()[:100]

@@ -1,9 +1,22 @@
 """Phase X7: Perception Engineering Agent - Psychology-Driven Perception Shift."""
-import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, Text, JSON, Enum
-from app.db.models import Base
+
 import enum
+import uuid
+from datetime import UTC, datetime
+
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    Float,
+    Integer,
+    String,
+    Text,
+)
+
+from app.db.models import Base
 
 
 class PerceptionDimension(str, enum.Enum):
@@ -57,11 +70,13 @@ class ProductPerception(Base):
     actual_unique_features = Column(JSON, default=list)  # Real differentiators
 
     # Customer segment perception
-    target_segment = Column(String(100), nullable=True)  # "luxury_buyers", "budget", "professionals"
+    target_segment = Column(
+        String(100), nullable=True
+    )  # "luxury_buyers", "budget", "professionals"
     segment_perception_gap = Column(Float, default=0)  # Difference: target - current
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class PerceptionShiftCampaign(Base):
@@ -84,8 +99,12 @@ class PerceptionShiftCampaign(Base):
     authority_claim = Column(String(200), nullable=True)  # Expert backing
 
     # Psychological leverage
-    cognitive_bias_leveraged = Column(String(100), nullable=True)  # anchoring, availability, etc
-    emotional_trigger = Column(String(100), nullable=True)  # fear, desire, belonging, etc
+    cognitive_bias_leveraged = Column(
+        String(100), nullable=True
+    )  # anchoring, availability, etc
+    emotional_trigger = Column(
+        String(100), nullable=True
+    )  # fear, desire, belonging, etc
     call_to_action = Column(String(200), nullable=False)
 
     # Targeting
@@ -99,7 +118,7 @@ class PerceptionShiftCampaign(Base):
     conversion_lift = Column(Float, default=0)  # % sales increase
     is_active = Column(Boolean, default=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 
 class ValuePerceptionOptimizer(Base):
@@ -115,8 +134,12 @@ class ValuePerceptionOptimizer(Base):
 
     # Optimization tactics
     anchoring_high_price = Column(Float, nullable=True)  # "Compare to $500 alternative"
-    bundled_value_add = Column(Text, nullable=True)  # Free things adding to perceived value
-    comparison_competitors = Column(JSON, default=list)  # [{"competitor": "X", "price": 1000}]
+    bundled_value_add = Column(
+        Text, nullable=True
+    )  # Free things adding to perceived value
+    comparison_competitors = Column(
+        JSON, default=list
+    )  # [{"competitor": "X", "price": 1000}]
 
     # Reframing options
     reframe_as_investment = Column(Text, nullable=True)  # Not cost, but investment
@@ -128,7 +151,7 @@ class ValuePerceptionOptimizer(Base):
     recommended_price = Column(Float)  # Price that matches perception
     expected_conversion_increase = Column(Float)  # % increase if repositioned
 
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class PerceptionNarrative(Base):
@@ -141,12 +164,16 @@ class PerceptionNarrative(Base):
     hero = Column(String(200))  # Who is the hero? (product or customer)
     villain = Column(String(200))  # What problem/competitor?
     transformation = Column(Text)  # Before/after customer story
-    proof_points = Column(JSON, default=list)  # Evidence: [testimonials, metrics, awards]
+    proof_points = Column(
+        JSON, default=list
+    )  # Evidence: [testimonials, metrics, awards]
     emotional_appeal = Column(String(100))  # Pride, belonging, fear, joy, etc
     call_to_identity = Column(String(200))  # "Be someone who..." (identity-based)
 
     # Variant narratives
-    narrative_variants = Column(JSON, default=list)  # [{"segment": "luxury", "narrative": "..."}]
+    narrative_variants = Column(
+        JSON, default=list
+    )  # [{"segment": "luxury", "narrative": "..."}]
     primary_narrative = Column(Text)
     backup_narrative = Column(Text, nullable=True)
 
@@ -155,4 +182,4 @@ class PerceptionNarrative(Base):
     sentiment_score = Column(Float, default=0)  # -1 to 1 (negative to positive)
     persuasion_score = Column(Float, default=0)  # 0-1 how persuasive
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))

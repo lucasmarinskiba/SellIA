@@ -4,43 +4,48 @@ Orchestrates expert selection and prompt execution for sales conversations
 Production-ready implementation with async support
 """
 
-from typing import Optional, Dict, List, Any, Callable, AsyncGenerator
-from dataclasses import dataclass
-from enum import Enum
 import asyncio
-import json
+import logging
+from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
+from typing import Any
 
+from expert_selector import ExpertSelection, ExpertSelector, SalesScenario
 from prompt_registry import ExpertType, SalesContext
-from expert_selector import ExpertSelector, SalesScenario, ExpertSelection
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
 class PromptExecutionContext:
     """Context for prompt execution"""
+
     scenario: SalesScenario
     expert_selection: ExpertSelection
     customer_message: str
-    conversation_history: List[Dict[str, str]]
-    additional_context: Dict[str, Any]
+    conversation_history: list[dict[str, str]]
+    additional_context: dict[str, Any]
     timestamp: datetime
 
 
 @dataclass
 class PromptExecutionResult:
     """Result of prompt execution"""
+
     expert_type: ExpertType
     expert_voice: str
     suggested_response: str
     tactical_approach: str
-    success_metrics: List[str]
+    success_metrics: list[str]
     confidence_score: float
     execution_time_ms: float
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
 
 
 class PromptExecutionMode(Enum):
     """How to execute the prompt"""
+
     PURE_VOICE = "pure_voice"  # Use expert voice directly
     HYBRID = "hybrid"  # Mix expert voice with brand voice
     FRAMEWORK_ONLY = "framework_only"  # Just the tactical framework
@@ -52,7 +57,9 @@ class ExpertOrchestrator:
     Handles: selection, execution, validation, feedback
     """
 
-    def __init__(self, execution_mode: PromptExecutionMode = PromptExecutionMode.HYBRID):
+    def __init__(
+        self, execution_mode: PromptExecutionMode = PromptExecutionMode.HYBRID
+    ):
         self.selector = ExpertSelector()
         self.execution_mode = execution_mode
         self.execution_history = []
@@ -62,8 +69,8 @@ class ExpertOrchestrator:
         self,
         scenario: SalesScenario,
         customer_message: str,
-        conversation_history: Optional[List[Dict[str, str]]] = None,
-        additional_context: Optional[Dict[str, Any]] = None
+        conversation_history: list[dict[str, str]] | None = None,
+        additional_context: dict[str, Any] | None = None,
     ) -> PromptExecutionResult:
         """
         Execute expert prompt for sales situation
@@ -88,7 +95,7 @@ class ExpertOrchestrator:
                 customer_message=customer_message,
                 conversation_history=conversation_history,
                 additional_context=additional_context,
-                timestamp=datetime.now()
+                timestamp=datetime.now(),
             )
 
             # Step 3: Execute prompt
@@ -106,9 +113,12 @@ class ExpertOrchestrator:
             return result
 
         except Exception as e:
-            raise PromptExecutionError(f"Failed to execute expert prompt: {str(e)}")
+            logger.exception("execute_expert_prompt: error inesperado")
+            raise PromptExecutionError(f"Failed to execute expert prompt: {e!s}")
 
-    async def _execute_prompt_internal(self, context: PromptExecutionContext) -> PromptExecutionResult:
+    async def _execute_prompt_internal(
+        self, context: PromptExecutionContext
+    ) -> PromptExecutionResult:
         """Internal prompt execution"""
 
         expert_type = context.expert_selection.primary_expert
@@ -125,13 +135,12 @@ class ExpertOrchestrator:
         elif self.execution_mode == PromptExecutionMode.FRAMEWORK_ONLY:
             suggested_response = tactical_approach
         else:  # HYBRID
-            suggested_response = self._hybrid_voice(expert_voice, tactical_approach, expert_type)
+            suggested_response = self._hybrid_voice(
+                expert_voice, tactical_approach, expert_type
+            )
 
         # Calculate confidence score
-        confidence_score = min(
-            context.expert_selection.scenario_fit_score,
-            1.0
-        )
+        confidence_score = min(context.expert_selection.scenario_fit_score, 1.0)
 
         # Build metadata
         metadata = {
@@ -140,8 +149,10 @@ class ExpertOrchestrator:
             "customer_type": context.scenario.customer_type,
             "deal_stage": context.scenario.deal_stage,
             "conversation_turns": len(context.conversation_history),
-            "secondary_experts": [e.value for e in context.expert_selection.secondary_experts],
-            "reasoning": context.expert_selection.reasoning
+            "secondary_experts": [
+                e.value for e in context.expert_selection.secondary_experts
+            ],
+            "reasoning": context.expert_selection.reasoning,
         }
 
         return PromptExecutionResult(
@@ -152,10 +163,12 @@ class ExpertOrchestrator:
             success_metrics=success_metrics,
             confidence_score=confidence_score,
             execution_time_ms=0,  # Will be set by caller
-            metadata=metadata
+            metadata=metadata,
         )
 
-    def _generate_expert_voice(self, expert_type: ExpertType, context: PromptExecutionContext) -> str:
+    def _generate_expert_voice(
+        self, expert_type: ExpertType, context: PromptExecutionContext
+    ) -> str:
         """Generate response in expert's voice"""
 
         expert_voices = {
@@ -189,7 +202,10 @@ class ExpertOrchestrator:
         return "Apply expert methodology to situation"
 
     def _build_tactical_response(
-        self, expert_type: ExpertType, tactics: List[str], context: PromptExecutionContext
+        self,
+        expert_type: ExpertType,
+        tactics: list[str],
+        context: PromptExecutionContext,
     ) -> str:
         """Build tactical approach for expert"""
         lines = ["TACTICAL APPROACH:", ""]
@@ -201,37 +217,32 @@ class ExpertOrchestrator:
 
     def _extract_success_metrics(
         self, expert_type: ExpertType, context: PromptExecutionContext
-    ) -> List[str]:
+    ) -> list[str]:
         """Extract success metrics for this situation"""
-
-        default_metrics = [
-            "Customer moves to next stage of buying process",
-            "No additional objections raised",
-            "Explicit commitment to next step obtained",
-            "Customer tonality becomes more positive"
-        ]
 
         # Context-specific metrics
         if context.scenario.deal_stage == "decision":
             return [
                 "Verbal or written commitment secured",
                 "Deal closes within 48 hours",
-                "Customer stops comparing alternatives"
+                "Customer stops comparing alternatives",
             ]
         elif context.scenario.deal_stage == "consideration":
             return [
                 "Customer requests product demo",
                 "Customer asks implementation questions",
-                "Customer mentions specific use cases"
+                "Customer mentions specific use cases",
             ]
         else:  # awareness
             return [
                 "Customer shows high engagement",
                 "Customer asks discovery questions",
-                "Customer schedules follow-up meeting"
+                "Customer schedules follow-up meeting",
             ]
 
-    def _hybrid_voice(self, expert_voice: str, tactical: str, expert_type: ExpertType) -> str:
+    def _hybrid_voice(
+        self, expert_voice: str, tactical: str, expert_type: ExpertType
+    ) -> str:
         """Mix expert voice with tactical approach"""
         return f"{expert_voice}\n\n{tactical}"
 
@@ -303,7 +314,10 @@ class ExpertOrchestrator:
         return "Certainty sells before features do. Know exactly what outcome you're driving them toward and hold that with total conviction. Persistence past the first no is what separates a close from a lost deal—most people quit right before the yes."
 
     def _log_execution(
-        self, context: PromptExecutionContext, result: PromptExecutionResult, execution_time_ms: float
+        self,
+        context: PromptExecutionContext,
+        result: PromptExecutionResult,
+        execution_time_ms: float,
     ):
         """Log execution for analytics"""
         log_entry = {
@@ -311,11 +325,11 @@ class ExpertOrchestrator:
             "expert_type": context.expert_selection.primary_expert.value,
             "scenario": context.scenario.context.value,
             "execution_time_ms": execution_time_ms,
-            "confidence_score": result.confidence_score
+            "confidence_score": result.confidence_score,
         }
         self.execution_history.append(log_entry)
 
-    def get_execution_analytics(self) -> Dict[str, Any]:
+    def get_execution_analytics(self) -> dict[str, Any]:
         """Get analytics on executions"""
         if not self.execution_history:
             return {"total_executions": 0}
@@ -333,13 +347,13 @@ class ExpertOrchestrator:
             "average_execution_time_ms": total_time / len(self.execution_history),
             "average_confidence": sum(
                 log["confidence_score"] for log in self.execution_history
-            ) / len(self.execution_history)
+            )
+            / len(self.execution_history),
         }
 
 
 class PromptExecutionError(Exception):
     """Error during prompt execution"""
-    pass
 
 
 async def demonstrate_orchestration():
@@ -356,7 +370,7 @@ async def demonstrate_orchestration():
         customer_personality="driver",
         price_sensitivity=4,
         relationship_stage="warm",
-        competitive_pressure=8
+        competitive_pressure=8,
     )
 
     # Execute prompt
@@ -365,32 +379,35 @@ async def demonstrate_orchestration():
         customer_message="I think your price is still too high compared to alternatives",
         conversation_history=[
             {"role": "customer", "content": "Tell me more about ROI"},
-            {"role": "sales", "content": "Here's how we deliver 3x ROI in 12 months..."}
+            {
+                "role": "sales",
+                "content": "Here's how we deliver 3x ROI in 12 months...",
+            },
         ],
         additional_context={
             "company_revenue": "10M",
-            "key_pain_point": "operational_efficiency"
-        }
+            "key_pain_point": "operational_efficiency",
+        },
     )
 
-    print(f"ORCHESTRATION RESULT")
-    print(f"=" * 50)
+    print("ORCHESTRATION RESULT")
+    print("=" * 50)
     print(f"Expert Selected: {result.expert_type.value}")
     print(f"Confidence Score: {result.confidence_score:.2f}")
     print(f"Execution Time: {result.execution_time_ms:.2f}ms")
-    print(f"\nEXPERT VOICE:")
+    print("\nEXPERT VOICE:")
     print(f"{result.expert_voice}")
-    print(f"\nTACTICAL APPROACH:")
+    print("\nTACTICAL APPROACH:")
     print(f"{result.tactical_approach}")
-    print(f"\nSUCCESS METRICS:")
+    print("\nSUCCESS METRICS:")
     for metric in result.success_metrics:
         print(f"  - {metric}")
-    print(f"\nMETADATA:")
+    print("\nMETADATA:")
     print(f"  {result.metadata}")
 
     # Analytics
     analytics = orchestrator.get_execution_analytics()
-    print(f"\nANALYTICS:")
+    print("\nANALYTICS:")
     print(f"  Total Executions: {analytics['total_executions']}")
     print(f"  Avg Execution Time: {analytics['average_execution_time_ms']:.2f}ms")
 
@@ -399,9 +416,9 @@ async def demonstrate_orchestration():
 __all__ = [
     "ExpertOrchestrator",
     "PromptExecutionContext",
-    "PromptExecutionResult",
+    "PromptExecutionError",
     "PromptExecutionMode",
-    "PromptExecutionError"
+    "PromptExecutionResult",
 ]
 
 

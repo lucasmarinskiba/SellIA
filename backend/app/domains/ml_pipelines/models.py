@@ -1,15 +1,23 @@
 """Phase 2: ML Pipelines - Predictive Models."""
+
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, DateTime, ForeignKey, Float, Integer, Boolean
-from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
+from datetime import UTC, datetime
+
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
+
 from app.core.database import Base
 
 
 class LeadScoringModel(Base):
     __tablename__ = "lead_scoring_models"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     # No ForeignKey: there is no `customers` table. The id is supplied by the caller (a user, lead or
     # contact), so it stays a plain indexed UUID instead of a constraint that can never be created.
     lead_id = Column(UUID(as_uuid=True), nullable=False, unique=True)
@@ -31,16 +39,23 @@ class LeadScoringModel(Base):
     tier = Column(String(20), default="cold")  # hot, warm, cold
 
     # Reasoning
-    top_factors = Column(ARRAY(String), nullable=True)  # ["high_engagement", "demo_attended", ...]
+    top_factors = Column(
+        ARRAY(String), nullable=True
+    )  # ["high_engagement", "demo_attended", ...]
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
 
 
 class ChurnPredictionModel(Base):
     __tablename__ = "churn_prediction_models"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     # No ForeignKey: there is no `customers` table. The id is supplied by the caller (a user, lead or
     # contact), so it stays a plain indexed UUID instead of a constraint that can never be created.
     customer_id = Column(UUID(as_uuid=True), nullable=False, unique=True)
@@ -53,7 +68,9 @@ class ChurnPredictionModel(Base):
     total_lifetime_value = Column(Float, default=0)
     support_tickets = Column(Integer, default=0)
     nps_score = Column(Integer, nullable=True)
-    engagement_trend = Column(String(20), default="stable")  # increasing, stable, declining
+    engagement_trend = Column(
+        String(20), default="stable"
+    )  # increasing, stable, declining
 
     # Prediction
     churn_probability = Column(Float, default=0)  # 0-1
@@ -61,16 +78,23 @@ class ChurnPredictionModel(Base):
     days_until_churn = Column(Integer, nullable=True)
 
     # Retention actions
-    recommended_action = Column(String(100), nullable=True)  # "special_offer", "loyalty_program", "check_in"
+    recommended_action = Column(
+        String(100), nullable=True
+    )  # "special_offer", "loyalty_program", "check_in"
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
 
 
 class CLVModel(Base):
     __tablename__ = "clv_models"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     # No ForeignKey: there is no `customers` table. The id is supplied by the caller (a user, lead or
     # contact), so it stays a plain indexed UUID instead of a constraint that can never be created.
     customer_id = Column(UUID(as_uuid=True), nullable=False, unique=True)
@@ -90,17 +114,24 @@ class CLVModel(Base):
 
     # Propensity models
     upsell_propensity = Column(Float, default=0)  # 0-1: likelihood to buy higher tier
-    crosssell_propensity = Column(Float, default=0)  # 0-1: likelihood to buy complementary
+    crosssell_propensity = Column(
+        Float, default=0
+    )  # 0-1: likelihood to buy complementary
     expansion_propensity = Column(Float, default=0)  # 0-1: likelihood to increase spend
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
 
 
 class ChannelRoutingModel(Base):
     __tablename__ = "channel_routing_models"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     # No ForeignKey: there is no `customers` table. The id is supplied by the caller (a user, lead or
     # contact), so it stays a plain indexed UUID instead of a constraint that can never be created.
     customer_id = Column(UUID(as_uuid=True), nullable=False, unique=True)
@@ -113,7 +144,9 @@ class ChannelRoutingModel(Base):
     in_app_affinity = Column(Float, default=0.15)
 
     # Recommended channel
-    primary_channel = Column(String(20), default="email")  # email, sms, whatsapp, phone, in_app
+    primary_channel = Column(
+        String(20), default="email"
+    )  # email, sms, whatsapp, phone, in_app
     secondary_channel = Column(String(20), nullable=True)
 
     # Response metrics per channel
@@ -127,5 +160,5 @@ class ChannelRoutingModel(Base):
     sms_optimal_hour = Column(Integer, nullable=True)
     whatsapp_optimal_hour = Column(Integer, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))

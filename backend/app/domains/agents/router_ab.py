@@ -3,17 +3,17 @@
 Endpoints for creating, running, and analyzing prompt experiments.
 """
 
+from typing import Annotated
 from uuid import UUID
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.agents.ab_service import ABTestEngine
 from app.domains.agents.schemas_ab import PromptExperimentCreate
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/ab", tags=["ab-testing"])
 
@@ -43,8 +43,8 @@ def _to_response(experiment) -> dict:
 @router.post("/experiments", status_code=status.HTTP_201_CREATED)
 async def create_experiment(
     payload: PromptExperimentCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create a new prompt A/B experiment."""
     experiment = await ABTestEngine.create_experiment(
@@ -65,11 +65,11 @@ async def create_experiment(
 
 @router.get("/experiments")
 async def list_experiments(
-    status: Optional[str] = Query(None),
-    limit: int = Query(50, ge=1, le=200),
-    offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    status: Annotated[str | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ):
     """List prompt experiments for the current user's business."""
     result = await ABTestEngine.list_experiments(
@@ -88,8 +88,8 @@ async def list_experiments(
 @router.get("/experiments/{experiment_id}")
 async def get_experiment(
     experiment_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get a single experiment with computed stats."""
     experiment = await ABTestEngine.get_experiment(db, experiment_id)
@@ -108,8 +108,8 @@ async def get_experiment(
 @router.post("/experiments/{experiment_id}/start")
 async def start_experiment(
     experiment_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Start a draft or paused experiment."""
     experiment = await ABTestEngine.get_experiment(db, experiment_id)
@@ -128,8 +128,8 @@ async def start_experiment(
 @router.post("/experiments/{experiment_id}/pause")
 async def pause_experiment(
     experiment_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Pause a running experiment."""
     experiment = await ABTestEngine.get_experiment(db, experiment_id)
@@ -148,8 +148,8 @@ async def pause_experiment(
 @router.post("/experiments/{experiment_id}/analyze")
 async def analyze_experiment(
     experiment_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Analyze an experiment and return statistics."""
     experiment = await ABTestEngine.get_experiment(db, experiment_id)
@@ -169,8 +169,8 @@ async def analyze_experiment(
 async def promote_experiment(
     experiment_id: UUID,
     variant: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Manually promote a variant and close the experiment."""
     experiment = await ABTestEngine.get_experiment(db, experiment_id)
@@ -189,11 +189,11 @@ async def promote_experiment(
 @router.get("/experiments/{experiment_id}/results")
 async def get_experiment_results(
     experiment_id: UUID,
-    variant: Optional[str] = Query(None),
-    limit: int = Query(100, ge=1, le=1000),
-    offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    variant: Annotated[str | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=1000)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ):
     """Get raw results for an experiment."""
     experiment = await ABTestEngine.get_experiment(db, experiment_id)

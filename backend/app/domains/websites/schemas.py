@@ -1,14 +1,15 @@
-from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
-from app.domains.websites.models import WebsiteTemplate, WebsiteStatus
+from pydantic import BaseModel, Field
+
+from app.domains.websites.models import WebsiteStatus, WebsiteTemplate
 
 
 class DomainBase(BaseModel):
     subdomain: str = Field(..., min_length=3, max_length=63)
-    custom_domain: Optional[str] = None
+    custom_domain: str | None = None
 
 
 class DomainCreate(DomainBase):
@@ -16,8 +17,8 @@ class DomainCreate(DomainBase):
 
 
 class DomainUpdate(BaseModel):
-    custom_domain: Optional[str] = None
-    is_verified: Optional[bool] = None
+    custom_domain: str | None = None
+    is_verified: bool | None = None
 
 
 class DomainResponse(DomainBase):
@@ -25,7 +26,7 @@ class DomainResponse(DomainBase):
     website_id: UUID
     is_primary: bool
     is_verified: bool
-    dns_records: Dict[str, Any]
+    dns_records: dict[str, Any]
     created_at: datetime
     updated_at: datetime
 
@@ -35,12 +36,12 @@ class DomainResponse(DomainBase):
 
 class WebsiteBase(BaseModel):
     template: WebsiteTemplate = WebsiteTemplate.MODERN
-    title: Optional[str] = None
-    description: Optional[str] = None
-    hero_image_url: Optional[str] = None
-    meta_title: Optional[str] = None
-    meta_description: Optional[str] = None
-    meta_keywords: Optional[str] = None
+    title: str | None = None
+    description: str | None = None
+    hero_image_url: str | None = None
+    meta_title: str | None = None
+    meta_description: str | None = None
+    meta_keywords: str | None = None
 
 
 class WebsiteCreate(WebsiteBase):
@@ -48,33 +49,33 @@ class WebsiteCreate(WebsiteBase):
 
 
 class WebsiteUpdate(BaseModel):
-    template: Optional[WebsiteTemplate] = None
-    title: Optional[str] = None
-    description: Optional[str] = None
-    hero_image_url: Optional[str] = None
-    meta_title: Optional[str] = None
-    meta_description: Optional[str] = None
-    meta_keywords: Optional[str] = None
-    og_image_url: Optional[str] = None
-    config: Optional[Dict[str, Any]] = None
-    pages: Optional[Dict[str, Any]] = None
-    status: Optional[WebsiteStatus] = None
+    template: WebsiteTemplate | None = None
+    title: str | None = None
+    description: str | None = None
+    hero_image_url: str | None = None
+    meta_title: str | None = None
+    meta_description: str | None = None
+    meta_keywords: str | None = None
+    og_image_url: str | None = None
+    config: dict[str, Any] | None = None
+    pages: dict[str, Any] | None = None
+    status: WebsiteStatus | None = None
 
 
 class WebsiteResponse(WebsiteBase):
     id: UUID
     business_id: UUID
     status: WebsiteStatus
-    meta_title: Optional[str]
-    meta_description: Optional[str]
-    meta_keywords: Optional[str]
-    og_image_url: Optional[str]
-    config: Dict[str, Any]
-    pages: Dict[str, Any]
-    domain: Optional[DomainResponse] = None
+    meta_title: str | None
+    meta_description: str | None
+    meta_keywords: str | None
+    og_image_url: str | None
+    config: dict[str, Any]
+    pages: dict[str, Any]
+    domain: DomainResponse | None = None
     created_at: datetime
     updated_at: datetime
-    published_at: Optional[datetime]
+    published_at: datetime | None
 
     class Config:
         from_attributes = True
@@ -82,6 +83,6 @@ class WebsiteResponse(WebsiteBase):
 
 class OnboardingCompleteRequest(BaseModel):
     business_name: str
-    business_description: Optional[str] = None
+    business_description: str | None = None
     website_template: WebsiteTemplate = WebsiteTemplate.MODERN
     subdomain: str = Field(..., min_length=3, max_length=63)

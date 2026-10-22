@@ -4,11 +4,20 @@ Pricing: Plan-based, ~$0.10/creative
 Strengths: Meta Ads, Google Ads, TikTok Ads optimized creatives
 """
 
-from typing import Dict, Any
+import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
-from ..utils import download_url, compress_image, smart_quality_for_size, get_image_size_kb
+
+from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
+from ..utils import (
+    compress_image,
+    download_url,
+    get_image_size_kb,
+    smart_quality_for_size,
+)
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -18,7 +27,7 @@ class AdCreativeProvider(BaseProvider):
 
     name = "AdCreative.ai"
     slug = "adcreative"
-    supports = [ContentType.IMAGE]
+    supports: ClassVar[list] = [ContentType.IMAGE]
 
     @property
     def is_available(self) -> bool:
@@ -27,12 +36,14 @@ class AdCreativeProvider(BaseProvider):
     def estimate_cost(self, config: GenerationConfig) -> float:
         return 0.10 * config.num_variations
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {"adcreative-banner": 0.10}
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         if not self.is_available:
-            return GenerationResult(success=False, error_message="ADCREATIVE_API_KEY no configurada")
+            return GenerationResult(
+                success=False, error_message="ADCREATIVE_API_KEY no configurada"
+            )
 
         try:
             import aiohttp
@@ -48,22 +59,30 @@ class AdCreativeProvider(BaseProvider):
                 "size": config.extra_params.get("size", "1080x1080"),
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    "https://api.adcreative.ai/v1/creatives",
-                    headers=headers,
-                    json=payload,
-                ) as resp:
-                    data = await resp.json()
+            async with aiohttp.ClientSession() as session, session.post(
+                "https://api.adcreative.ai/v1/creatives",
+                headers=headers,
+                json=payload,
+            ) as resp:
+                data = await resp.json()
 
-            image_url = data.get("creative", {}).get("url") if isinstance(data.get("creative"), dict) else data.get("url")
+            image_url = (
+                data.get("creative", {}).get("url")
+                if isinstance(data.get("creative"), dict)
+                else data.get("url")
+            )
             if not image_url:
-                return GenerationResult(success=False, error_message="AdCreative no devolvió creative")
+                return GenerationResult(
+                    success=False, error_message="AdCreative no devolvió creative"
+                )
 
             image_bytes = await download_url(image_url)
             compressed = None
             if image_bytes:
-                compressed = compress_image(image_bytes, quality=smart_quality_for_size(get_image_size_kb(image_bytes)))
+                compressed = compress_image(
+                    image_bytes,
+                    quality=smart_quality_for_size(get_image_size_kb(image_bytes)),
+                )
 
             return GenerationResult(
                 success=True,
@@ -76,4 +95,5 @@ class AdCreativeProvider(BaseProvider):
             )
 
         except Exception as e:
+            logger.exception("generate: error inesperado")
             return GenerationResult(success=False, error_message=str(e))

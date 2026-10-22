@@ -1,14 +1,16 @@
 """Cross-platform FOMO pattern synthesis."""
 
-from uuid import UUID
-from datetime import datetime, timedelta
-from sqlalchemy import select, func
-from sqlalchemy.ext.asyncio import AsyncSession
 from collections import defaultdict
+from datetime import timedelta
+from uuid import UUID
 
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.clock import utc_now
 from app.core.logger import get_logger
-from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO
 from app.domains.seo_config.analytics_models import PublicationLinkMetrics
+from app.domains.seo_config.models import PublicationLinkFOMO
 
 logger = get_logger(__name__)
 
@@ -32,7 +34,7 @@ class FOMAPatternSynthesizer:
             ...
         }
         """
-        end_date = datetime.utcnow().date()
+        end_date = utc_now().date()
         start_date = end_date - timedelta(days=days)
 
         result = await self.db.execute(
@@ -109,9 +111,9 @@ class FOMAPatternSynthesizer:
 
         recommendations = []
         all_platforms = set()
-        for platform in best_triggers.keys():
+        for platform in best_triggers:
             all_platforms.add(platform)
-        for platform in patterns.keys():
+        for platform in patterns:
             all_platforms.add(platform)
 
         for platform in all_platforms:
@@ -134,17 +136,19 @@ class FOMAPatternSynthesizer:
                 if other_trigger != current_trigger:
                     improvement = other_ctr - current_ctr
                     if improvement > 5.0:  # Only recommend if >5% improvement
-                        recommendations.append({
-                            "platform": platform,
-                            "current_trigger": current_trigger,
-                            "current_ctr": float(current_ctr),
-                            "recommended_trigger": other_trigger,
-                            "recommended_platform": other_platform,
-                            "expected_ctr": float(other_ctr),
-                            "potential_improvement": float(improvement),
-                            "confidence": 0.75,
-                            "reasoning": f"{other_trigger} performs {improvement:.1f}% better on {other_platform}",
-                        })
+                        recommendations.append(
+                            {
+                                "platform": platform,
+                                "current_trigger": current_trigger,
+                                "current_ctr": float(current_ctr),
+                                "recommended_trigger": other_trigger,
+                                "recommended_platform": other_platform,
+                                "expected_ctr": float(other_ctr),
+                                "potential_improvement": float(improvement),
+                                "confidence": 0.75,
+                                "reasoning": f"{other_trigger} performs {improvement:.1f}% better on {other_platform}",
+                            }
+                        )
 
         # Sort by potential improvement
         recommendations.sort(key=lambda x: x["potential_improvement"], reverse=True)
@@ -184,11 +188,13 @@ class FOMAPatternSynthesizer:
             platform = row[0]
             count = row[1]
             ctr = float(row[2]) if row[2] else 0.0
-            platforms.append({
-                "platform": platform,
-                "samples": count,
-                "avg_ctr": ctr,
-            })
+            platforms.append(
+                {
+                    "platform": platform,
+                    "samples": count,
+                    "avg_ctr": ctr,
+                }
+            )
             total_ctr += ctr
 
         avg_across_platforms = total_ctr / len(platforms) if platforms else 0.0

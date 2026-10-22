@@ -5,16 +5,17 @@ Cada plataforma = connector independiente. Mismo interface.
 Fácil agregar: MercadoLibre, Shopify, Meta Ads, WhatsApp, etc.
 """
 
-from abc import ABC, abstractmethod
-from typing import Dict, List, Any, Optional
-from enum import Enum
 import logging
+from abc import ABC, abstractmethod
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 class ConnectorType(str, Enum):
     """Tipo connector."""
+
     MARKETPLACE = "marketplace"  # MercadoLibre, Amazon, Shopify
     ADS = "ads"  # Facebook/Meta Ads, Google Ads
     MESSAGING = "messaging"  # WhatsApp, Twilio, Email
@@ -27,7 +28,9 @@ class ConnectorType(str, Enum):
 class BaseConnector(ABC):
     """Base class para todos los connectors."""
 
-    def __init__(self, name: str, connector_type: ConnectorType, config: Dict[str, Any]):
+    def __init__(
+        self, name: str, connector_type: ConnectorType, config: dict[str, Any]
+    ):
         self.name = name
         self.connector_type = connector_type
         self.config = config
@@ -36,41 +39,33 @@ class BaseConnector(ABC):
     @abstractmethod
     async def authenticate(self) -> bool:
         """Autentica con la plataforma."""
-        pass
 
     @abstractmethod
-    async def list_products(self) -> List[Dict[str, Any]]:
+    async def list_products(self) -> list[dict[str, Any]]:
         """Lista productos/anuncios/items."""
-        pass
 
     @abstractmethod
-    async def create_listing(self, product: Dict[str, Any]) -> Dict[str, Any]:
+    async def create_listing(self, product: dict[str, Any]) -> dict[str, Any]:
         """Crea listing/anuncio en plataforma."""
-        pass
 
     @abstractmethod
-    async def get_orders(self) -> List[Dict[str, Any]]:
+    async def get_orders(self) -> list[dict[str, Any]]:
         """Obtiene órdenes."""
-        pass
 
     @abstractmethod
-    async def send_message(self, recipient: str, message: str) -> Dict[str, Any]:
+    async def send_message(self, recipient: str, message: str) -> dict[str, Any]:
         """Envía mensaje (WhatsApp, SMS, email, etc)."""
-        pass
 
     @abstractmethod
-    async def create_campaign(self, campaign: Dict[str, Any]) -> Dict[str, Any]:
+    async def create_campaign(self, campaign: dict[str, Any]) -> dict[str, Any]:
         """Crea campaña ads."""
-        pass
 
     @abstractmethod
-    async def get_metrics(self) -> Dict[str, Any]:
+    async def get_metrics(self) -> dict[str, Any]:
         """Obtiene métricas (impressions, clicks, conversiones, etc)."""
-        pass
 
-    async def sync_inventory(self, inventory: Dict[str, int]) -> bool:
+    async def sync_inventory(self, inventory: dict[str, int]) -> bool:
         """Sincroniza inventario a plataforma."""
-        pass
 
     def is_ready(self) -> bool:
         """¿Connector está listo para usar?"""
@@ -81,18 +76,18 @@ class ConnectorRegistry:
     """Registro de connectors disponibles."""
 
     def __init__(self):
-        self.connectors: Dict[str, BaseConnector] = {}
+        self.connectors: dict[str, BaseConnector] = {}
 
     def register(self, connector: BaseConnector):
         """Registra connector."""
         self.connectors[connector.name] = connector
         logger.info(f"Connector registered: {connector.name}")
 
-    async def get_connector(self, name: str) -> Optional[BaseConnector]:
+    async def get_connector(self, name: str) -> BaseConnector | None:
         """Obtiene connector por nombre."""
         return self.connectors.get(name)
 
-    async def authenticate_all(self) -> Dict[str, bool]:
+    async def authenticate_all(self) -> dict[str, bool]:
         """Autentica todos los connectors."""
         results = {}
         for name, connector in self.connectors.items():
@@ -100,12 +95,14 @@ class ConnectorRegistry:
                 success = await connector.authenticate()
                 results[name] = success
                 logger.info(f"{name}: {'✅' if success else '❌'}")
-            except Exception as e:
-                logger.error(f"{name} auth failed: {str(e)}")
+            except Exception:
+                logger.exception(f"{name} auth failed")
                 results[name] = False
         return results
 
-    async def sync_product_across_platforms(self, product: Dict[str, Any]) -> Dict[str, Any]:
+    async def sync_product_across_platforms(
+        self, product: dict[str, Any]
+    ) -> dict[str, Any]:
         """Publica producto en todos los connectors habilitados."""
         results = {}
         for name, connector in self.connectors.items():
@@ -115,11 +112,13 @@ class ConnectorRegistry:
                     results[name] = result
                     logger.info(f"Product listed on {name}: {result.get('listing_id')}")
                 except Exception as e:
-                    logger.error(f"Error listing on {name}: {str(e)}")
+                    logger.exception(f"Error listing on {name}")
                     results[name] = {"status": "error", "error": str(e)}
         return results
 
-    async def broadcast_message(self, recipients: List[str], message: str) -> Dict[str, Any]:
+    async def broadcast_message(
+        self, recipients: list[str], message: str
+    ) -> dict[str, Any]:
         """Envía mensaje por todos los canales (WhatsApp, SMS, email)."""
         results = {}
         for name, connector in self.connectors.items():
@@ -128,11 +127,11 @@ class ConnectorRegistry:
                     for recipient in recipients:
                         result = await connector.send_message(recipient, message)
                         results[f"{name}_{recipient}"] = result
-                except Exception as e:
-                    logger.error(f"Error sending via {name}: {str(e)}")
+                except Exception:
+                    logger.exception(f"Error sending via {name}")
         return results
 
-    async def get_unified_metrics(self) -> Dict[str, Any]:
+    async def get_unified_metrics(self) -> dict[str, Any]:
         """Obtiene métricas consolidadas de todas las plataformas."""
         unified = {
             "total_impressions": 0,
@@ -150,7 +149,7 @@ class ConnectorRegistry:
                 unified["total_clicks"] += metrics.get("clicks", 0)
                 unified["total_conversions"] += metrics.get("conversions", 0)
                 unified["total_revenue"] += metrics.get("revenue", 0)
-            except Exception as e:
-                logger.error(f"Error fetching metrics from {name}: {str(e)}")
+            except Exception:
+                logger.exception(f"Error fetching metrics from {name}")
 
         return unified

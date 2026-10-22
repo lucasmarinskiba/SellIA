@@ -3,24 +3,25 @@
 Handles brand kit generation via DALL-E 3 / Stable Diffusion.
 """
 
-import uuid
-import json
-import zipfile
+import asyncio
 import io
-from datetime import datetime, timezone
+import json
+import uuid
+import zipfile
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Any
 
 import httpx
-from sqlalchemy import select, desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
+from app.core.fileio import write_file
 from app.core.logger import get_logger
-from app.domains.agents.brand_visual.models import BrandKitJob, BrandAsset
+from app.domains.agents.brand_visual.models import BrandAsset, BrandKitJob
 from app.domains.agents.prompts.business_context_adapter import (
-    get_agent_prompt_context,
     format_business_context_for_prompt,
+    get_agent_prompt_context,
 )
 
 logger = get_logger(__name__)
@@ -40,7 +41,7 @@ class BrandVisualService:
         business_id: uuid.UUID,
         brand_name: str,
         industry: str,
-        style_preferences: Optional[Dict[str, Any]] = None,
+        style_preferences: dict[str, Any] | None = None,
     ) -> BrandKitJob:
         """Generate a complete brand kit."""
         settings = get_settings()
@@ -56,7 +57,7 @@ class BrandVisualService:
         await self.db.commit()
         await self.db.refresh(job)
 
-        assets: List[BrandAsset] = []
+        assets: list[BrandAsset] = []
 
         # 1. Generate 3 logo concepts via DALL-E 3
         logo_urls = await self._generate_logos(
@@ -139,7 +140,9 @@ class BrandVisualService:
 
         job.assets = {
             "logos": logo_urls,
-            "templates": [a.file_url for a in assets if a.asset_type == "social_template"],
+            "templates": [
+                a.file_url for a in assets if a.asset_type == "social_template"
+            ],
             "mockups": [a.file_url for a in assets if a.asset_type == "mockup"],
             "guidelines": f"/storage/media/brand/guidelines_{job.id}.md",
         }
@@ -148,13 +151,13 @@ class BrandVisualService:
         await self.db.refresh(job)
         return job
 
-    async def get_brand_kit(self, job_id: uuid.UUID) -> Optional[BrandKitJob]:
+    async def get_brand_kit(self, job_id: uuid.UUID) -> BrandKitJob | None:
         result = await self.db.execute(
             select(BrandKitJob).where(BrandKitJob.id == job_id)
         )
         return result.scalar_one_or_none()
 
-    async def list_kits(self, business_id: uuid.UUID) -> List[BrandKitJob]:
+    async def list_kits(self, business_id: uuid.UUID) -> list[BrandKitJob]:
         result = await self.db.execute(
             select(BrandKitJob)
             .where(BrandKitJob.business_id == business_id)
@@ -162,7 +165,7 @@ class BrandVisualService:
         )
         return result.scalars().all()
 
-    async def get_assets(self, job_id: uuid.UUID) -> List[BrandAsset]:
+    async def get_assets(self, job_id: uuid.UUID) -> list[BrandAsset]:
         result = await self.db.execute(
             select(BrandAsset).where(BrandAsset.job_id == job_id)
         )
@@ -176,7 +179,9 @@ class BrandVisualService:
             for asset in assets:
                 local_path = STORAGE_DIR / Path(asset.file_url).name
                 if local_path.exists():
-                    zf.write(local_path, arcname=f"{asset.asset_type}/{local_path.name}")
+                    zf.write(
+                        local_path, arcname=f"{asset.asset_type}/{local_path.name}"
+                    )
                 else:
                     # For remote URLs, add a text reference
                     zf.writestr(
@@ -194,10 +199,10 @@ class BrandVisualService:
         self,
         brand_name: str,
         industry: str,
-        style_preferences: Dict[str, Any],
+        style_preferences: dict[str, Any],
         settings: Any,
-    ) -> List[str]:
-        urls: List[str] = []
+    ) -> list[str]:
+        urls: list[str] = []
         style = style_preferences.get("style", "modern minimalistic")
         for idx in range(1, 4):
             prompt = (
@@ -217,9 +222,9 @@ class BrandVisualService:
         business_id: uuid.UUID,
         brand_name: str,
         industry: str,
-        style_preferences: Dict[str, Any],
+        style_preferences: dict[str, Any],
         settings: Any,
-    ) -> List[Dict[str, str]]:
+    ) -> list[dict[str, str]]:
         """Generate a 5-color palette. Uses OpenAI if available, else heuristic."""
         ctx = await get_agent_prompt_context(self.db, business_id)
         context_block = format_business_context_for_prompt(ctx)
@@ -259,7 +264,7 @@ class BrandVisualService:
                     content = data["choices"][0]["message"]["content"]
                     return json.loads(content)
             except Exception as e:
-                logger.warning(f"OpenAI palette generation failed: {e}")
+                logger.warning(f"OpenAI palette generation failed: {e}", exc_info=True)
 
         # Fallback palette
         return [
@@ -275,9 +280,9 @@ class BrandVisualService:
         business_id: uuid.UUID,
         brand_name: str,
         industry: str,
-        style_preferences: Dict[str, Any],
+        style_preferences: dict[str, Any],
         settings: Any,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Return typography recommendations."""
         ctx = await get_agent_prompt_context(self.db, business_id)
         context_block = format_business_context_for_prompt(ctx)
@@ -318,12 +323,29 @@ class BrandVisualService:
                     content = data["choices"][0]["message"]["content"]
                     return json.loads(content)
             except Exception as e:
-                logger.warning(f"OpenAI typography generation failed: {e}")
+                logger.warning(
+                    f"OpenAI typography generation failed: {e}", exc_info=True
+                )
 
         return [
-            {"name": "Inter", "category": "sans-serif", "usage": "Headings & UI", "weights": [400, 600, 700]},
-            {"name": "Merriweather", "category": "serif", "usage": "Body text", "weights": [400, 700]},
-            {"name": "JetBrains Mono", "category": "monospace", "usage": "Code & data", "weights": [400]},
+            {
+                "name": "Inter",
+                "category": "sans-serif",
+                "usage": "Headings & UI",
+                "weights": [400, 600, 700],
+            },
+            {
+                "name": "Merriweather",
+                "category": "serif",
+                "usage": "Body text",
+                "weights": [400, 700],
+            },
+            {
+                "name": "JetBrains Mono",
+                "category": "monospace",
+                "usage": "Code & data",
+                "weights": [400],
+            },
         ]
 
     async def _generate_social_template(
@@ -331,7 +353,7 @@ class BrandVisualService:
         brand_name: str,
         industry: str,
         platform: str,
-        colors: List[Dict[str, str]],
+        colors: list[dict[str, str]],
         settings: Any,
     ) -> str:
         primary_color = colors[0]["hex"] if colors else "#1E3A8A"
@@ -340,13 +362,15 @@ class BrandVisualService:
             f"{industry} industry. Primary color {primary_color}. "
             f"Clean layout with space for headline and body text. Modern design."
         )
-        return await self._generate_image(prompt, settings, f"template_{platform}") or ""
+        return (
+            await self._generate_image(prompt, settings, f"template_{platform}") or ""
+        )
 
     async def _generate_mockup(
         self,
         brand_name: str,
         industry: str,
-        style_preferences: Dict[str, Any],
+        style_preferences: dict[str, Any],
         settings: Any,
     ) -> str:
         prompt = (
@@ -355,7 +379,9 @@ class BrandVisualService:
         )
         return await self._generate_image(prompt, settings, "mockup") or ""
 
-    async def _generate_image(self, prompt: str, settings: Any, suffix: str) -> Optional[str]:
+    async def _generate_image(
+        self, prompt: str, settings: Any, suffix: str
+    ) -> str | None:
         """Generate image via DALL-E 3 or Stable Diffusion fallback."""
         job_id = uuid.uuid4()
         file_name = f"brand_{job_id}_{suffix}.png"
@@ -385,11 +411,12 @@ class BrandVisualService:
                     # Download and store locally
                     img_resp = await client.get(image_url, timeout=httpx.Timeout(60.0))
                     img_resp.raise_for_status()
-                    with open(file_path, "wb") as f:
-                        f.write(img_resp.content)
+                    await asyncio.to_thread(
+                        write_file, file_path, "wb", data=img_resp.content
+                    )
                     return f"/storage/media/brand/{file_name}"
             except Exception as e:
-                logger.warning(f"DALL-E 3 generation failed: {e}")
+                logger.warning(f"DALL-E 3 generation failed: {e}", exc_info=True)
 
         # Fallback: Stable Diffusion via Stability AI
         if settings.STABILITY_API_KEY:
@@ -408,11 +435,14 @@ class BrandVisualService:
                         },
                     )
                     response.raise_for_status()
-                    with open(file_path, "wb") as f:
-                        f.write(response.content)
+                    await asyncio.to_thread(
+                        write_file, file_path, "wb", data=response.content
+                    )
                     return f"/storage/media/brand/{file_name}"
             except Exception as e:
-                logger.warning(f"Stable Diffusion generation failed: {e}")
+                logger.warning(
+                    f"Stable Diffusion generation failed: {e}", exc_info=True
+                )
 
         # Development fallback
         logger.info("Image generation fallback: returning placeholder")
@@ -422,24 +452,26 @@ class BrandVisualService:
         self,
         brand_name: str,
         industry: str,
-        colors: List[Dict[str, str]],
-        fonts: List[Dict[str, Any]],
-        logo_urls: List[str],
+        colors: list[dict[str, str]],
+        fonts: list[dict[str, Any]],
+        logo_urls: list[str],
     ) -> str:
         lines = [
             f"# Brand Guidelines — {brand_name}",
-            f"",
-            f"## Industry",
+            "",
+            "## Industry",
             f"{industry}",
-            f"",
-            f"## Color Palette",
+            "",
+            "## Color Palette",
         ]
         for c in colors:
             lines.append(f"- **{c.get('name', 'Color')}**: {c.get('hex', '')}")
         lines.append("")
         lines.append("## Typography")
         for f in fonts:
-            lines.append(f"- **{f.get('name', '')}** ({f.get('category', '')}) — {f.get('usage', '')}")
+            lines.append(
+                f"- **{f.get('name', '')}** ({f.get('category', '')}) — {f.get('usage', '')}"
+            )
         lines.append("")
         lines.append("## Logos")
         for idx, url in enumerate(logo_urls, 1):

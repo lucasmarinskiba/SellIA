@@ -6,15 +6,16 @@ Output: Lista de problemas específicos + severity + root cause.
 """
 
 import logging
-from typing import Dict, List, Any
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 class ProblemSeverity(str, Enum):
     """Severidad problema."""
+
     CRITICAL = "critical"  # Venta = 0%
     HIGH = "high"  # Venta < 1%
     MEDIUM = "medium"  # Venta 1-3%
@@ -24,13 +25,14 @@ class ProblemSeverity(str, Enum):
 @dataclass
 class DetectedProblem:
     """Problema detectado."""
+
     id: str
     name: str
     severity: ProblemSeverity
     description: str
     root_cause: str
     affected_stage: str  # awareness, consideration, decision, retention
-    metrics_affected: List[str]
+    metrics_affected: list[str]
     business_impact: str
 
 
@@ -40,10 +42,10 @@ class ProblemDetector:
     @staticmethod
     def analyze(
         product_name: str,
-        market_analysis: Dict[str, Any],
-        performance_data: Dict[str, Any],
-        strategy: Dict[str, Any],
-    ) -> List[DetectedProblem]:
+        market_analysis: dict[str, Any],
+        performance_data: dict[str, Any],
+        strategy: dict[str, Any],
+    ) -> list[DetectedProblem]:
         """
         Analiza sistema completo, identifica problemas.
 
@@ -235,7 +237,7 @@ class ProblemSolver:
     """Resuelve problemas usando conocimiento de grandes mentes."""
 
     @staticmethod
-    def solve(problem: DetectedProblem, business_minds: List[str]) -> Dict[str, Any]:
+    def solve(problem: DetectedProblem, business_minds: list[str]) -> dict[str, Any]:
         """
         Resuelve problema usando frameworks de grandes mentes.
 
@@ -247,73 +249,110 @@ class ProblemSolver:
 
         # Mapeo problema -> mentes relevantes
         problem_to_minds = {
-            "prob_001": ["jobs", "hermozi"],  # Awareness → Jobs (marketing), Hermozi (growth)
-            "prob_002": ["jobs", "ries"],  # Positioning → Jobs (clarity), Ries (positioning)
+            "prob_001": [
+                "jobs",
+                "hermozi",
+            ],  # Awareness → Jobs (marketing), Hermozi (growth)
+            "prob_002": [
+                "jobs",
+                "ries",
+            ],  # Positioning → Jobs (clarity), Ries (positioning)
             "prob_003": ["buffett", "jobs"],  # Precio → Buffett (value), Jobs (premium)
-            "prob_004": ["hermozi", "belfort"],  # Conversion → Hermozi (CRO), Belfort (closer)
+            "prob_004": [
+                "hermozi",
+                "belfort",
+            ],  # Conversion → Hermozi (CRO), Belfort (closer)
             "prob_005": ["cialdini", "belfort"],  # Social proof → Cialdini, Belfort
-            "prob_006": ["cardone", "hermozi"],  # Speed → Cardone (aggressive), Hermozi (velocity)
+            "prob_006": [
+                "cardone",
+                "hermozi",
+            ],  # Speed → Cardone (aggressive), Hermozi (velocity)
             "prob_007": ["hermozi", "ux_expert"],  # Checkout → Hermozi (CRO)
-            "prob_008": ["hermozi", "belfort"],  # Email → Hermozi (sequences), Belfort (follow-up)
-            "prob_009": ["amazon", "jobs"],  # Retention → Amazon (obsession), Jobs (quality)
-            "prob_010": ["jobs", "buffett"],  # Competencia → Jobs (differentiate), Buffett (moat)
+            "prob_008": [
+                "hermozi",
+                "belfort",
+            ],  # Email → Hermozi (sequences), Belfort (follow-up)
+            "prob_009": [
+                "amazon",
+                "jobs",
+            ],  # Retention → Amazon (obsession), Jobs (quality)
+            "prob_010": [
+                "jobs",
+                "buffett",
+            ],  # Competencia → Jobs (differentiate), Buffett (moat)
         }
 
         minds_to_use = problem_to_minds.get(problem.id, ["hermozi"])
 
         # Generar soluciones por mente
         if "hermozi" in minds_to_use:
-            solutions.append({
-                "mind": "Andrew Hermozi (Growth Expert)",
-                "framework": "Growth loops + Funnel optimization",
-                "solution": f"Optimiza {problem.affected_stage} → A/B test → Double winners → Escala",
-                "action": "Identifica lever clave (price, copy, channel) → test → scale",
-            })
+            solutions.append(
+                {
+                    "mind": "Andrew Hermozi (Growth Expert)",
+                    "framework": "Growth loops + Funnel optimization",
+                    "solution": f"Optimiza {problem.affected_stage} → A/B test → Double winners → Escala",
+                    "action": "Identifica lever clave (price, copy, channel) → test → scale",
+                }
+            )
 
         if "belfort" in minds_to_use:
-            solutions.append({
-                "mind": "Jordan Belfort (Closer Master)",
-                "framework": "Straight line selling (Rapport → Diagnosis → Reframe → Close)",
-                "solution": "Mapa psicológico cliente → Objeción anticipada → Cierre inevitable",
-                "action": "Refactor messaging hacia certeza emocional, no lógica",
-            })
+            solutions.append(
+                {
+                    "mind": "Jordan Belfort (Closer Master)",
+                    "framework": "Straight line selling (Rapport → Diagnosis → Reframe → Close)",
+                    "solution": "Mapa psicológico cliente → Objeción anticipada → Cierre inevitable",
+                    "action": "Refactor messaging hacia certeza emocional, no lógica",
+                }
+            )
 
         if "jobs" in minds_to_use:
-            solutions.append({
-                "mind": "Steve Jobs (Clarity + Quality)",
-                "framework": "Simplify + Obsess quality",
-                "solution": "Claridad extrema en propuesta + calidad sin compromiso",
-                "action": "Una frase > 10 párrafos. Producto debe brillar solo",
-            })
+            solutions.append(
+                {
+                    "mind": "Steve Jobs (Clarity + Quality)",
+                    "framework": "Simplify + Obsess quality",
+                    "solution": "Claridad extrema en propuesta + calidad sin compromiso",
+                    "action": "Una frase > 10 párrafos. Producto debe brillar solo",
+                }
+            )
 
         if "buffett" in minds_to_use:
-            solutions.append({
-                "mind": "Warren Buffett (Moat + Value)",
-                "framework": "Competitive advantage + Fair value",
-                "solution": "Define moat único (calidad, servicio, relación) + precio justo",
-                "action": "Por qué nadie puede competir? Enfatiza eso",
-            })
+            solutions.append(
+                {
+                    "mind": "Warren Buffett (Moat + Value)",
+                    "framework": "Competitive advantage + Fair value",
+                    "solution": "Define moat único (calidad, servicio, relación) + precio justo",
+                    "action": "Por qué nadie puede competir? Enfatiza eso",
+                }
+            )
 
         if "cialdini" in minds_to_use:
-            solutions.append({
-                "mind": "Robert Cialdini (Persuasion Science)",
-                "framework": "Social proof + Scarcity + Authority + Reciprocity",
-                "solution": "Activa levers psicológicos: reviews, urgencia, expertise, generosidad",
-                "action": "Muestra reviews, stock limitado, autoridad (premios, clientes famosos), regalo",
-            })
+            solutions.append(
+                {
+                    "mind": "Robert Cialdini (Persuasion Science)",
+                    "framework": "Social proof + Scarcity + Authority + Reciprocity",
+                    "solution": "Activa levers psicológicos: reviews, urgencia, expertise, generosidad",
+                    "action": "Muestra reviews, stock limitado, autoridad (premios, clientes famosos), regalo",
+                }
+            )
 
         if "cardone" in minds_to_use:
-            solutions.append({
-                "mind": "Grant Cardone (Aggressive Growth)",
-                "framework": "10X thinking + Relentless follow-up",
-                "solution": "Objetivo 10x (10k leads, 1k closed) + 10x follow-up",
-                "action": "Contact infinito, ofertas constantes, no asumir no",
-            })
+            solutions.append(
+                {
+                    "mind": "Grant Cardone (Aggressive Growth)",
+                    "framework": "10X thinking + Relentless follow-up",
+                    "solution": "Objetivo 10x (10k leads, 1k closed) + 10x follow-up",
+                    "action": "Contact infinito, ofertas constantes, no asumir no",
+                }
+            )
 
         return {
             "problem": problem.name,
             "severity": problem.severity.value,
             "root_cause": problem.root_cause,
             "solutions_by_mind": solutions,
-            "recommended_priority": 1 if problem.severity == ProblemSeverity.CRITICAL else 2 if problem.severity == ProblemSeverity.HIGH else 3,
+            "recommended_priority": (
+                1
+                if problem.severity == ProblemSeverity.CRITICAL
+                else 2 if problem.severity == ProblemSeverity.HIGH else 3
+            ),
         }

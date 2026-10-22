@@ -7,6 +7,7 @@ the auth/users/businesses/catalog/agents family of routers that only exist here.
 Each extra router is mounted defensively: a missing dependency or broken import
 in one domain must never take down the whole service.
 """
+
 import logging
 
 from app.sellbot import app  # noqa: F401  (re-exported below)
@@ -49,7 +50,9 @@ _try_include("app.domains.data_science.api.router", "/api/v1", ["data-science"])
 _try_include("app.api.v1.channel_setup.router", "/api/v1", ["channel-setup"])
 _try_include("app.domains.integrations.api.router", "/api/v1", ["integrations-status"])
 _try_include("app.domains.authority.api.router", "/api/v1", ["authority-builder"])
-_try_include("app.domains.platform_commerce.api.router", "/api/v1", ["platform-commerce"])
+_try_include(
+    "app.domains.platform_commerce.api.router", "/api/v1", ["platform-commerce"]
+)
 _try_include("app.domains.chatbots.api.router", "/api/v1", ["chatbots"])
 _try_include("app.domains.preferences.api.router", "/api/v1", ["preferences"])
 _try_include("app.domains.team_performance.api.router", "/api/v1", ["team-performance"])
@@ -68,7 +71,9 @@ _try_include("app.api.v1.services.router", "/api/v1/services", ["services"])
 _try_include("app.api.v1.shipments.router", "/api/v1/shipments", ["shipments"])
 _try_include("app.api.v1.automations.router", "/api/v1/automations", ["automations"])
 _try_include("app.domains.crm.router.router", "/api/v1", ["crm"])
-_try_include("app.domains.objectives.router.router", "/api/v1/businesses", ["objectives"])
+_try_include(
+    "app.domains.objectives.router.router", "/api/v1/businesses", ["objectives"]
+)
 _try_include("app.domains.consumo.router.router", "/api/v1", ["consumo"])
 _try_include("app.domains.alerts.router.router", "/api/v1", ["alerts"])
 _try_include("app.domains.gamification.router.router", "/api/v1", ["gamification"])
@@ -99,8 +104,12 @@ _try_include("app.domains.marketplace.router.router", "/api/v1", ["marketplace"]
 _try_include("app.domains.competitive.router.router", "/api/v1", ["battlecards"])
 _try_include("app.domains.feedback.router.router", "/api/v1", ["feedback"])
 _try_include("app.api.v1.assistant.router", "/api/v1/assistant", ["assistant"])
-_try_include("app.domains.gamification.ambassador_router.router", "/api/v1", ["ambassador"])
-_try_include("app.domains.agents.lead_qualifier.router.router", "/api/v1", ["lead-qualifier"])
+_try_include(
+    "app.domains.gamification.ambassador_router.router", "/api/v1", ["ambassador"]
+)
+_try_include(
+    "app.domains.agents.lead_qualifier.router.router", "/api/v1", ["lead-qualifier"]
+)
 _try_include("app.api.v1.bookings.router", "/api/v1", ["bookings"])
 # payments.py's router already declares prefix="/api/v1" internally — pass "" here to avoid doubling it
 _try_include("app.api.v1.payments.router", "", ["payments"])
@@ -122,12 +131,18 @@ _try_include("app.api.v1.unified_dashboard.router", "", ["unified-dashboard"])
 _try_include("app.api.v1.dynamic_pricing.router", "", ["pricing"])
 _try_include("app.api.v1.feedback_alerts.router", "", ["feedback-alerts"])
 _try_include("app.api.v1.staff_tasks.router", "", ["staff-tasks"])
-_try_include("app.domains.channel_integration.router.router", "/api/v1", ["channel-integration"])
+_try_include(
+    "app.domains.channel_integration.router.router", "/api/v1", ["channel-integration"]
+)
 _try_include("app.api.v1.offline_sequences.router", "/api/v1", ["offline-sequences"])
 _try_include("app.api.v1.websites.router", "/api/v1/websites", ["websites"])
 _try_include("app.api.v1.seo.router", "/api/v1/seo", ["seo"])
-_try_include("app.domains.seo_config.router.router", "/api/v1/businesses", ["seo-config"])
-_try_include("app.domains.seo_config.router.public_router", "/api/v1/businesses", ["seo-config"])
+_try_include(
+    "app.domains.seo_config.router.router", "/api/v1/businesses", ["seo-config"]
+)
+_try_include(
+    "app.domains.seo_config.router.public_router", "/api/v1/businesses", ["seo-config"]
+)
 _try_include("app.api.v1.analytics_tracking.router", "/api/v1", ["analytics"])
 _try_include("app.api.v1.products.router", "/api/v1", ["products"])
 _try_include("app.domains.webhooks.router.router", "/api/v1", ["webhooks"])
@@ -147,44 +162,80 @@ _try_include("app.api.v1.brain.router", "/api/v1", ["brain-registry"])
 _try_include("app.api.v1.proximity_tracking.router", "/api/v1", ["proximity"])
 _try_include("app.api.v1.channels.router", "/api/v1/businesses", ["channels"])
 _try_include("app.api.v1.catalog.router", "/api/v1/catalog", ["catalog"])
-_try_include("app.api.v1.subscriptions.router", "/api/v1/subscriptions", ["subscriptions"])
+_try_include(
+    "app.api.v1.subscriptions.router", "/api/v1/subscriptions", ["subscriptions"]
+)
 _try_include("app.api.v1.agents.router", "/api/v1/agents", ["agents"])
 _try_include("app.api.v1.metadata.router", "/api/v1/metadata", ["metadata"])
 _try_include("app.api.v1.embeddings.router", "/api/v1/embeddings", ["embeddings"])
 _try_include("app.api.v1.analytics.router", "/api/v1/analytics", ["analytics"])
-_try_include("app.api.v1.ml_optimization.router", "/api/v1/ml-optimization", ["ml-optimization"])
-_try_include("app.api.v1.agent_orchestration.router", "/api/v1", ["agent-orchestration"])
+_try_include(
+    "app.api.v1.ml_optimization.router", "/api/v1/ml-optimization", ["ml-optimization"]
+)
+_try_include(
+    "app.api.v1.agent_orchestration.router", "/api/v1", ["agent-orchestration"]
+)
 _try_include("app.api.v1.negotiation.router", "/api/v1", ["negotiation"])
-_try_include("app.api.v1.revenue_intelligence.router", "/api/v1", ["revenue-intelligence"])
+_try_include(
+    "app.api.v1.revenue_intelligence.router", "/api/v1", ["revenue-intelligence"]
+)
 _try_include("app.api.v1.ab_testing.router", "/api/v1", ["ab-testing"])
 _try_include("app.api.v1.integrations.router", "/api/v1", ["integrations"])
-_try_include("app.api.v1.business_intelligence.router", "/api/v1", ["business-intelligence"])
-_try_include("app.api.v1.advanced_automation.router", "/api/v1", ["advanced-automation"])
-_try_include("app.api.v1.lead_generation_agent.router", "/api/v1", ["lead-generation-agent"])
+_try_include(
+    "app.api.v1.business_intelligence.router", "/api/v1", ["business-intelligence"]
+)
+_try_include(
+    "app.api.v1.advanced_automation.router", "/api/v1", ["advanced-automation"]
+)
+_try_include(
+    "app.api.v1.lead_generation_agent.router", "/api/v1", ["lead-generation-agent"]
+)
 _try_include("app.api.v1.launch_scale.router", "/api/v1", ["launch-scale"])
 _try_include("app.api.v1.coaching_adaptive.router", "/api/v1", ["coaching-adaptive"])
-_try_include("app.api.v1.enterprise_analytics.router", "/api/v1", ["analytics-enterprise"])
-_try_include("app.api.v1.enterprise_integrations.router", "/api/v1", ["integrations-enterprise"])
+_try_include(
+    "app.api.v1.enterprise_analytics.router", "/api/v1", ["analytics-enterprise"]
+)
+_try_include(
+    "app.api.v1.enterprise_integrations.router", "/api/v1", ["integrations-enterprise"]
+)
 _try_include("app.api.v1.enterprise_teams.router", "/api/v1", ["teams-enterprise"])
-_try_include("app.api.v1.enterprise_forecast.router", "/api/v1", ["forecast-enterprise"])
+_try_include(
+    "app.api.v1.enterprise_forecast.router", "/api/v1", ["forecast-enterprise"]
+)
 _try_include("app.api.v1.enterprise_testing.router", "/api/v1", ["testing-enterprise"])
-_try_include("app.api.v1.enterprise_knowledge.router", "/api/v1", ["knowledge-enterprise"])
+_try_include(
+    "app.api.v1.enterprise_knowledge.router", "/api/v1", ["knowledge-enterprise"]
+)
 # enterprise_webhooks.router removed: pure in-memory mock (fake Webhook/
 # WebhookLog dataclasses, nothing ever delivered), 100% superseded by the
 # real app.domains.webhooks system (HMAC-signed delivery, real DB, wired at
 # /api/v1/webhooks) which is now actually triggered from real events -- see
 # app/domains/webhooks/service.py's fire_business_event().
-_try_include("app.api.v1.enterprise_collaboration.router", "/api/v1", ["collaboration-enterprise"])
-_try_include("app.api.v1.enterprise_deal_intelligence.router", "/api/v1", ["intelligence-enterprise"])
-_try_include("app.api.v1.enterprise_voice_agent.router", "/api/v1", ["voice-agent-enterprise"])
+_try_include(
+    "app.api.v1.enterprise_collaboration.router",
+    "/api/v1",
+    ["collaboration-enterprise"],
+)
+_try_include(
+    "app.api.v1.enterprise_deal_intelligence.router",
+    "/api/v1",
+    ["intelligence-enterprise"],
+)
+_try_include(
+    "app.api.v1.enterprise_voice_agent.router", "/api/v1", ["voice-agent-enterprise"]
+)
 _try_include("app.api.v1.oauth_platforms.router", "/api/v1", ["oauth-platforms"])
 _try_include("app.api.v1.seo_analyzer.router", "/api/v1", ["seo-analyzer"])
 _try_include("app.api.v1.authority_building.router", "/api/v1", ["authority-building"])
 _try_include("app.api.v1.team_collaboration.router", "/api/v1", ["team-collaboration"])
 _try_include("app.api.v1.deal_intelligence.router", "/api/v1", ["deal-intelligence"])
-_try_include("app.api.v1.revenue_orchestration.router", "/api/v1", ["revenue-orchestration"])
+_try_include(
+    "app.api.v1.revenue_orchestration.router", "/api/v1", ["revenue-orchestration"]
+)
 _try_include("app.api.v1.churn_prevention.router", "/api/v1", ["churn-prevention"])
-_try_include("app.api.v1.marketplace_expansion.router", "/api/v1", ["marketplace-expansion"])
+_try_include(
+    "app.api.v1.marketplace_expansion.router", "/api/v1", ["marketplace-expansion"]
+)
 _try_include("app.api.v1.signup.router", "/api/v1", ["auth"])
 _try_include("app.api.v1.memory.router", "/api/v1/memory", ["memory"])
 _try_include("app.api.v1.dashboard.router", "/api/v1", ["dashboard"])
@@ -201,35 +252,73 @@ _try_include("app.api.v1.listings.router", "/api/v1", ["listings"])
 _try_include("app.domains.finance.router.router", "/api/v1/businesses", ["finance"])
 _try_include("app.domains.ledger.router.router", "/api/v1/businesses", ["ledger"])
 _try_include("app.domains.ad_budget.router.router", "/api/v1/businesses", ["ad-budget"])
-_try_include("app.domains.forecasting.router.router", "/api/v1/businesses", ["forecasting"])
+_try_include(
+    "app.domains.forecasting.router.router", "/api/v1/businesses", ["forecasting"]
+)
 _try_include("app.domains.cashflow.router.router", "/api/v1/businesses", ["cashflow"])
-_try_include("app.domains.orchestrator.router.router", "/api/v1/businesses", ["orchestrator"])
+_try_include(
+    "app.domains.orchestrator.router.router", "/api/v1/businesses", ["orchestrator"]
+)
 _try_include("app.domains.hr.router.router", "/api/v1/businesses", ["hr"])
 _try_include("app.domains.legal.router.router", "/api/v1/businesses", ["legal"])
-_try_include("app.domains.procurement.router.router", "/api/v1/businesses", ["procurement"])
+_try_include(
+    "app.domains.procurement.router.router", "/api/v1/businesses", ["procurement"]
+)
 _try_include("app.domains.invoicing.router.router", "/api/v1/businesses", ["invoicing"])
-_try_include("app.domains.seo_intelligence.router.router", "/api/v1/businesses", ["seo"])
+_try_include(
+    "app.domains.seo_intelligence.router.router", "/api/v1/businesses", ["seo"]
+)
 _try_include("app.domains.fomo_seo.router.router", "/api/v1/businesses", ["fomo-seo"])
-_try_include("app.domains.seo_optimization.router.router", "/api/v1/businesses", ["seo-optimization"])
-_try_include("app.domains.seo_agents.router.router", "/api/v1/businesses", ["seo-agents"])
-_try_include("app.domains.brand_transformation.router.router", "/api/v1/businesses", ["brand-transformation"])
-_try_include("app.domains.financial_dashboard.router.router", "/api/v1/businesses", ["financial-dashboard"])
+_try_include(
+    "app.domains.seo_optimization.router.router",
+    "/api/v1/businesses",
+    ["seo-optimization"],
+)
+_try_include(
+    "app.domains.seo_agents.router.router", "/api/v1/businesses", ["seo-agents"]
+)
+_try_include(
+    "app.domains.brand_transformation.router.router",
+    "/api/v1/businesses",
+    ["brand-transformation"],
+)
+_try_include(
+    "app.domains.financial_dashboard.router.router",
+    "/api/v1/businesses",
+    ["financial-dashboard"],
+)
 _try_include("app.domains.fomo.router.router", "", ["fomo"])
 _try_include("app.domains.fomo.growth_foom_routes.router", "", ["growth-foom"])
 _try_include("app.domains.fomo.customer_fomo_routes.router", "", ["customer-fomo"])
 _try_include("app.domains.fomo.ai_copywriter_routes.router", "", ["fomo-ai-copywriter"])
-_try_include("app.domains.fomo.ai_segmentation_routes.router", "", ["fomo-ai-segmentation"])
-_try_include("app.domains.fomo.ai_timing_optimizer_routes.router", "", ["fomo-ai-timing"])
-_try_include("app.domains.fomo.ai_scarcity_calibration_routes.router", "", ["fomo-ai-scarcity"])
-_try_include("app.domains.fomo.ai_churn_prevention_routes.router", "", ["fomo-ai-churn"])
-_try_include("app.domains.fomo.ai_autonomous_campaign_routes.router", "", ["fomo-ai-autonomous"])
-_try_include("app.domains.fomo.ai_competitor_monitor_routes.router", "", ["fomo-ai-competitor"])
-_try_include("app.domains.fomo.ai_orchestrator_routes.router", "", ["fomo-ai-orchestrator"])
+_try_include(
+    "app.domains.fomo.ai_segmentation_routes.router", "", ["fomo-ai-segmentation"]
+)
+_try_include(
+    "app.domains.fomo.ai_timing_optimizer_routes.router", "", ["fomo-ai-timing"]
+)
+_try_include(
+    "app.domains.fomo.ai_scarcity_calibration_routes.router", "", ["fomo-ai-scarcity"]
+)
+_try_include(
+    "app.domains.fomo.ai_churn_prevention_routes.router", "", ["fomo-ai-churn"]
+)
+_try_include(
+    "app.domains.fomo.ai_autonomous_campaign_routes.router", "", ["fomo-ai-autonomous"]
+)
+_try_include(
+    "app.domains.fomo.ai_competitor_monitor_routes.router", "", ["fomo-ai-competitor"]
+)
+_try_include(
+    "app.domains.fomo.ai_orchestrator_routes.router", "", ["fomo-ai-orchestrator"]
+)
 # trade_signals: supervised copy-trade — agent proposes, user approves, backend
 # never executes. Had a full test suite (tests/test_trade_signals_api.py) but
 # was never actually mounted; every request 404'd. See that file's fixture
 # docstring for the related get_store/Redis test-isolation fix.
-_try_include("app.api.v1.trade_signals.router", "/api/v1/computer-use", ["trade-signals"])
+_try_include(
+    "app.api.v1.trade_signals.router", "/api/v1/computer-use", ["trade-signals"]
+)
 
 # The Computer Use domain (app/domains/computer_use, ~80 files/17.7k lines:
 # session management, platform automation scripts, browser control, lead
@@ -244,14 +333,44 @@ _try_include("app.api.v1.trade_signals.router", "/api/v1/computer-use", ["trade-
 # down the others -- exactly what surfaces which of these 8 are actually
 # import-clean vs still broken, the same way it did for the enterprise_*
 # cluster earlier this session.
-_try_include("app.api.v1.computer_use.router", "/api/v1/computer_use", ["computer-use-sessions"])
-_try_include("app.api.v1.computer_use_extended.router", "/api/v1/computer_use", ["computer-use-extended"])
-_try_include("app.api.v1.computer_use_ad_orchestrator.router", "/api/v1/computer_use", ["computer-use-ads"])
-_try_include("app.api.v1.computer_use_audit_log.router", "/api/v1/computer_use", ["computer-use-audit"])
-_try_include("app.api.v1.computer_use_brain.router", "/api/v1/computer_use", ["computer-use-brain"])
-_try_include("app.api.v1.computer_use_lead_scoring.router", "/api/v1/computer_use", ["computer-use-lead-scoring"])
-_try_include("app.api.v1.computer_use_task_scheduler.router", "/api/v1/computer_use", ["computer-use-tasks"])
-_try_include("app.api.v1.computer_use_webhooks.router", "/api/v1/computer_use", ["computer-use-webhooks"])
+_try_include(
+    "app.api.v1.computer_use.router", "/api/v1/computer_use", ["computer-use-sessions"]
+)
+_try_include(
+    "app.api.v1.computer_use_extended.router",
+    "/api/v1/computer_use",
+    ["computer-use-extended"],
+)
+_try_include(
+    "app.api.v1.computer_use_ad_orchestrator.router",
+    "/api/v1/computer_use",
+    ["computer-use-ads"],
+)
+_try_include(
+    "app.api.v1.computer_use_audit_log.router",
+    "/api/v1/computer_use",
+    ["computer-use-audit"],
+)
+_try_include(
+    "app.api.v1.computer_use_brain.router",
+    "/api/v1/computer_use",
+    ["computer-use-brain"],
+)
+_try_include(
+    "app.api.v1.computer_use_lead_scoring.router",
+    "/api/v1/computer_use",
+    ["computer-use-lead-scoring"],
+)
+_try_include(
+    "app.api.v1.computer_use_task_scheduler.router",
+    "/api/v1/computer_use",
+    ["computer-use-tasks"],
+)
+_try_include(
+    "app.api.v1.computer_use_webhooks.router",
+    "/api/v1/computer_use",
+    ["computer-use-webhooks"],
+)
 
 # "Phase 33" cluster: every file below failed to import for a mechanical
 # reason (a `from backend.app...` path that only ever worked if the repo

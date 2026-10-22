@@ -8,13 +8,12 @@ en sitios configurados.
 Now integrated with persistent DB storage via CredentialService.
 """
 
-import re
-from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
+from typing import Any
 from urllib.parse import urlparse
 
+from app.core.encryption import decrypt_value, encrypt_value
 from app.core.logger import get_logger
-from app.core.encryption import encrypt_value, decrypt_value
 
 logger = get_logger(__name__)
 
@@ -22,30 +21,32 @@ logger = get_logger(__name__)
 @dataclass
 class SiteCredential:
     """Credenciales para un sitio específico."""
+
     site_domain: str
     username: str
     password_encrypted: str
-    login_url: Optional[str] = None
-    username_selector: Optional[str] = None
-    password_selector: Optional[str] = None
-    submit_selector: Optional[str] = None
-    extra_fields: Optional[Dict[str, str]] = None
+    login_url: str | None = None
+    username_selector: str | None = None
+    password_selector: str | None = None
+    submit_selector: str | None = None
+    extra_fields: dict[str, str] | None = None
 
 
 class CredentialManager:
     """Gestor de credenciales para auto-login.
-    
+
     Falls back to in-memory storage if no DB session is provided.
     When db_session is available, uses persistent CredentialService.
     """
 
     def __init__(self, db_session=None, user_id=None):
-        self._credentials: Dict[str, SiteCredential] = {}
+        self._credentials: dict[str, SiteCredential] = {}
         self._db = db_session
         self._user_id = user_id
         self._service = None
         if db_session and user_id:
             from app.domains.credentials.service import CredentialService
+
             self._service = CredentialService(db_session)
 
     def add_credential(self, credential: SiteCredential) -> None:
@@ -54,13 +55,14 @@ class CredentialManager:
         self._credentials[domain] = credential
         logger.info(f"Credential added for {domain}")
 
-    def get_credential(self, url: str) -> Optional[SiteCredential]:
+    def get_credential(self, url: str) -> SiteCredential | None:
         """Obtiene credenciales para una URL."""
         domain = self._normalize_domain(urlparse(url).hostname or "")
-        
+
         # Try persistent storage first
         if self._service and self._user_id:
             import asyncio
+
             try:
                 cred = asyncio.get_event_loop().run_until_complete(
                     self._service.get(self._user_id, domain)
@@ -69,12 +71,16 @@ class CredentialManager:
                     return SiteCredential(
                         site_domain=domain,
                         username=cred.get("username", ""),
-                        password_encrypted=encrypt_value(cred.get("password", "")) if cred.get("password") else "",
+                        password_encrypted=(
+                            encrypt_value(cred.get("password", ""))
+                            if cred.get("password")
+                            else ""
+                        ),
                         login_url=url,
                     )
             except Exception as e:
-                logger.debug(f"DB credential lookup failed: {e}")
-        
+                logger.debug(f"DB credential lookup failed: {e}", exc_info=True)
+
         return self._credentials.get(domain)
 
     def has_credential(self, url: str) -> bool:
@@ -84,34 +90,37 @@ class CredentialManager:
     def _normalize_domain(self, domain: str) -> str:
         """Normaliza un dominio."""
         domain = domain.lower().strip()
-        if domain.startswith("www."):
-            domain = domain[4:]
+        domain = domain.removeprefix("www.")
         return domain
 
-    async def attempt_login(self, page, url: str) -> Dict[str, Any]:
+    async def attempt_login(self, page, url: str) -> dict[str, Any]:
         """Attempt to log in using stored credentials."""
         domain = self._normalize_domain(urlparse(url).hostname or "")
-        
+
         # Try persistent credentials first
         if self._service and self._user_id:
             cred = await self._service.get(self._user_id, domain)
             if cred and cred.get("username") and cred.get("password"):
-                return await self._perform_login(page, url, cred["username"], cred["password"], domain)
-        
+                return await self._perform_login(
+                    page, url, cred["username"], cred["password"], domain
+                )
+
         # Fall back to in-memory
         cred = self._credentials.get(domain)
         if cred and cred.username:
             password = decrypt_value(cred.password_encrypted) or ""
             return await self._perform_login(page, url, cred.username, password, domain)
-        
+
         return {"success": False, "reason": "no_credentials"}
 
-    async def _perform_login(self, page, url: str, username: str, password: str, domain: str) -> Dict[str, Any]:
+    async def _perform_login(
+        self, page, url: str, username: str, password: str, domain: str
+    ) -> dict[str, Any]:
         """Perform the actual login on the page."""
         try:
             await page.goto(url, wait_until="domcontentloaded", timeout=15000)
             await page.wait_for_timeout(2000)
-            
+
             # Find and fill username
             username_selectors = [
                 "input[type='email']",
@@ -128,8 +137,9 @@ class CredentialManager:
                     await page.fill(sel, username, timeout=2000)
                     break
                 except Exception:
+                    logger.exception("_perform_login: error inesperado")
                     continue
-            
+
             # Find and fill password
             password_selectors = [
                 "input[type='password']",
@@ -143,8 +153,9 @@ class CredentialManager:
                     await page.fill(sel, password, timeout=2000)
                     break
                 except Exception:
+                    logger.exception("_perform_login: error inesperado")
                     continue
-            
+
             # Click submit
             submit_selectors = [
                 "button[type='submit']",
@@ -160,24 +171,39 @@ class CredentialManager:
                     await page.click(sel, timeout=3000)
                     break
                 except Exception:
+                    logger.exception("_perform_login: error inesperado")
                     continue
-            
+
             await page.wait_for_timeout(3000)
-            
+
             # Mark as used in DB if applicable
             if self._service and self._user_id:
                 result = await self._service.db.execute(
-                    __import__('sqlalchemy').select(__import__('app.domains.credentials.models', fromlist=['SiteCredential']).SiteCredential)
+                    __import__("sqlalchemy")
+                    .select(
+                        __import__(
+                            "app.domains.credentials.models",
+                            fromlist=["SiteCredential"],
+                        ).SiteCredential
+                    )
                     .where(
-                        __import__('app.domains.credentials.models', fromlist=['SiteCredential']).SiteCredential.user_id == self._user_id,
-                        __import__('app.domains.credentials.models', fromlist=['SiteCredential']).SiteCredential.domain == domain,
+                        __import__(
+                            "app.domains.credentials.models",
+                            fromlist=["SiteCredential"],
+                        ).SiteCredential.user_id
+                        == self._user_id,
+                        __import__(
+                            "app.domains.credentials.models",
+                            fromlist=["SiteCredential"],
+                        ).SiteCredential.domain
+                        == domain,
                     )
                 )
                 db_cred = result.scalar_one_or_none()
                 if db_cred:
                     await self._service.mark_used(db_cred.id, success=True)
-            
+
             return {"success": True, "domain": domain}
         except Exception as e:
-            logger.error(f"Login attempt failed for {domain}: {e}")
+            logger.exception(f"Login attempt failed for {domain}")
             return {"success": False, "reason": "login_failed", "error": str(e)}

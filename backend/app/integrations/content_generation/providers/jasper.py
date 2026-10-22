@@ -4,10 +4,14 @@ Pricing: ~$0.01/generation
 Strengths: Emails, sequences, blog posts, brand voice consistency
 """
 
-from typing import Dict, Any
+import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
+
+from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -17,7 +21,7 @@ class JasperProvider(BaseProvider):
 
     name = "Jasper"
     slug = "jasper"
-    supports = [ContentType.COPY]
+    supports: ClassVar[list] = [ContentType.COPY]
 
     @property
     def is_available(self) -> bool:
@@ -26,12 +30,14 @@ class JasperProvider(BaseProvider):
     def estimate_cost(self, config: GenerationConfig) -> float:
         return 0.01
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {"jasper-generation": 0.01}
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         if not self.is_available:
-            return GenerationResult(success=False, error_message="JASPER_API_KEY no configurada")
+            return GenerationResult(
+                success=False, error_message="JASPER_API_KEY no configurada"
+            )
 
         try:
             import aiohttp
@@ -46,17 +52,18 @@ class JasperProvider(BaseProvider):
                 "language": config.extra_params.get("language", "es"),
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    "https://api.jasper.ai/v1/generate",
-                    headers=headers,
-                    json=payload,
-                ) as resp:
-                    data = await resp.json()
+            async with aiohttp.ClientSession() as session, session.post(
+                "https://api.jasper.ai/v1/generate",
+                headers=headers,
+                json=payload,
+            ) as resp:
+                data = await resp.json()
 
             text = data.get("text") or data.get("content")
             if not text:
-                return GenerationResult(success=False, error_message="Jasper no devolvió texto")
+                return GenerationResult(
+                    success=False, error_message="Jasper no devolvió texto"
+                )
 
             return GenerationResult(
                 success=True,
@@ -68,4 +75,5 @@ class JasperProvider(BaseProvider):
             )
 
         except Exception as e:
+            logger.exception("generate: error inesperado")
             return GenerationResult(success=False, error_message=str(e))

@@ -1,7 +1,9 @@
 """Market Context Injector — Customize agent instructions per market."""
 
-from typing import Dict, Any
 import logging
+from typing import Any
+
+from app.core.market.market_detector import BusinessModel, Industry, MarketProfile
 
 logger = logging.getLogger(__name__)
 
@@ -13,24 +15,30 @@ class MarketContextInjector:
     def inject_market_context(
         prompt: str,
         market_profile: "MarketProfile",
-        rules: Dict[str, Any],
+        rules: dict[str, Any],
     ) -> str:
         """Inject market-specific context into prompt."""
 
         context_blocks = []
 
         # Add industry context
-        industry_context = MarketContextInjector._get_industry_context(market_profile.industry)
+        industry_context = MarketContextInjector._get_industry_context(
+            market_profile.industry
+        )
         if industry_context:
             context_blocks.append(industry_context)
 
         # Add market type context
-        market_context = MarketContextInjector._get_market_type_context(market_profile.market_type)
+        market_context = MarketContextInjector._get_market_type_context(
+            market_profile.market_type
+        )
         if market_context:
             context_blocks.append(market_context)
 
         # Add business model context
-        model_context = MarketContextInjector._get_business_model_context(market_profile.business_model)
+        model_context = MarketContextInjector._get_business_model_context(
+            market_profile.business_model
+        )
         if model_context:
             context_blocks.append(model_context)
 
@@ -41,16 +49,20 @@ class MarketContextInjector:
         context_blocks.append(cycle_context)
 
         # Add buyer motivation context
-        motivation_context = f"Buyer motivation profile: {market_profile.buyer_motivation.value}"
+        motivation_context = (
+            f"Buyer motivation profile: {market_profile.buyer_motivation.value}"
+        )
         context_blocks.append(motivation_context)
 
         # Combine with original prompt
-        full_prompt = "\n".join([
-            "### MARKET CONTEXT ###",
-            "\n".join(context_blocks),
-            "\n### ORIGINAL PROMPT ###",
-            prompt,
-        ])
+        full_prompt = "\n".join(
+            [
+                "### MARKET CONTEXT ###",
+                "\n".join(context_blocks),
+                "\n### ORIGINAL PROMPT ###",
+                prompt,
+            ]
+        )
 
         return full_prompt
 
@@ -58,7 +70,7 @@ class MarketContextInjector:
     def customize_agent_system_prompt(
         agent_id: str,
         market_profile: "MarketProfile",
-        rules: Dict[str, Any],
+        rules: dict[str, Any],
     ) -> str:
         """Generate market-customized system prompt for agent."""
 
@@ -134,26 +146,32 @@ class MarketContextInjector:
         return base_prompts.get(agent_id, "You are a specialized sales agent.")
 
     @staticmethod
-    def inject_guardrails(prompt: str, market_profile: "MarketProfile", rules: Dict[str, Any]) -> str:
+    def inject_guardrails(
+        prompt: str, market_profile: "MarketProfile", rules: dict[str, Any]
+    ) -> str:
         """Inject market-specific guardrails."""
 
         guardrails = []
 
         # Finance guardrails
         if market_profile.industry.value == "finance":
-            guardrails.extend([
-                "⚠️ REGULATORY: Always verify AML/KYC compliance before proceeding.",
-                "⚠️ SUITABILITY: Ensure recommendations match client risk profile.",
-                "⚠️ DISCLOSURE: Always disclose fees and potential conflicts.",
-            ])
+            guardrails.extend(
+                [
+                    "⚠️ REGULATORY: Always verify AML/KYC compliance before proceeding.",
+                    "⚠️ SUITABILITY: Ensure recommendations match client risk profile.",
+                    "⚠️ DISCLOSURE: Always disclose fees and potential conflicts.",
+                ]
+            )
 
         # Real estate guardrails
         if market_profile.industry.value == "real_estate":
-            guardrails.extend([
-                "⚠️ LEGAL: Verify property title and liens before marketing.",
-                "⚠️ INSPECTION: Always schedule professional inspection.",
-                "⚠️ DISCLOSURE: Full disclosure of property condition required.",
-            ])
+            guardrails.extend(
+                [
+                    "⚠️ LEGAL: Verify property title and liens before marketing.",
+                    "⚠️ INSPECTION: Always schedule professional inspection.",
+                    "⚠️ DISCLOSURE: Full disclosure of property condition required.",
+                ]
+            )
 
         if guardrails:
             guardrail_section = "\n## GUARDRAILS ##\n" + "\n".join(guardrails)

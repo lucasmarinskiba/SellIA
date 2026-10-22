@@ -5,10 +5,14 @@ Strengths: 256K context, Spanish-native, OpenAI-compatible API,
            automatic context caching (up to 75% savings)
 """
 
-from typing import Dict, Any
+import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
+
+from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -18,7 +22,7 @@ class KimiProvider(BaseProvider):
 
     name = "Kimi (Moonshot AI)"
     slug = "kimi"
-    supports = [ContentType.COPY]
+    supports: ClassVar[list] = [ContentType.COPY]
 
     @property
     def is_available(self) -> bool:
@@ -31,10 +35,12 @@ class KimiProvider(BaseProvider):
         prompt_chars = len(config.prompt)
         estimated_input_tokens = prompt_chars // 4
         estimated_output_tokens = estimated_input_tokens * 2
-        cost = (estimated_input_tokens * 0.60 + estimated_output_tokens * 2.50) / 1_000_000
+        cost = (
+            estimated_input_tokens * 0.60 + estimated_output_tokens * 2.50
+        ) / 1_000_000
         return max(cost, 0.0001)
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {
             "input_tokens_per_1m": 0.60,
             "output_tokens_per_1m": 2.50,
@@ -49,8 +55,8 @@ class KimiProvider(BaseProvider):
             )
 
         try:
-            from langchain_openai import ChatOpenAI
             from langchain_core.messages import HumanMessage, SystemMessage
+            from langchain_openai import ChatOpenAI
 
             model = config.extra_params.get("model", "kimi-k2-5")
             temperature = config.extra_params.get("temperature", 0.7)
@@ -74,7 +80,9 @@ class KimiProvider(BaseProvider):
             text = response.content
 
             # Estimar costo real basado en usage si está disponible
-            usage = response.usage_metadata if hasattr(response, "usage_metadata") else {}
+            usage = (
+                response.usage_metadata if hasattr(response, "usage_metadata") else {}
+            )
             input_tokens = usage.get("input_tokens", len(config.prompt) // 4)
             output_tokens = usage.get("output_tokens", len(text) // 4)
             cost = (input_tokens * 0.60 + output_tokens * 2.50) / 1_000_000
@@ -94,4 +102,5 @@ class KimiProvider(BaseProvider):
             )
 
         except Exception as e:
+            logger.exception("generate: error inesperado")
             return GenerationResult(success=False, error_message=str(e))

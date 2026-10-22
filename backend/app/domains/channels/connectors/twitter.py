@@ -1,13 +1,14 @@
 """X (Twitter) Connector — DMs, mentions, replies."""
 
 import asyncio
-import httpx
 from typing import Any
 
-from app.domains.channels.connectors.base import BaseChannelConnector
-from app.domains.channels.schemas import WebhookPayload
-from app.domains.channels.models import ChannelPlatform
+import httpx
+
 from app.core.logger import get_logger
+from app.domains.channels.connectors.base import BaseChannelConnector
+from app.domains.channels.models import ChannelPlatform
+from app.domains.channels.schemas import WebhookPayload
 
 logger = get_logger(__name__)
 
@@ -50,8 +51,17 @@ class XConnector(BaseChannelConnector):
                     )
                 if response.status_code == 429:
                     retry_after = int(response.headers.get("retry-after", "2"))
-                    wait = retry_after if retry_after else (self.BASE_BACKOFF * (2**attempt))
-                    logger.warning("X rate limit hit, waiting %ss before retry %s/%s", wait, attempt + 1, self.MAX_RETRIES)
+                    wait = (
+                        retry_after
+                        if retry_after
+                        else (self.BASE_BACKOFF * (2**attempt))
+                    )
+                    logger.warning(
+                        "X rate limit hit, waiting %ss before retry %s/%s",
+                        wait,
+                        attempt + 1,
+                        self.MAX_RETRIES,
+                    )
                     await asyncio.sleep(wait)
                     continue
                 response.raise_for_status()
@@ -59,21 +69,35 @@ class XConnector(BaseChannelConnector):
             except httpx.HTTPStatusError as exc:
                 if exc.response.status_code >= 500:
                     wait = self.BASE_BACKOFF * (2**attempt)
-                    logger.warning("X server error %s, retrying in %ss (%s/%s)", exc.response.status_code, wait, attempt + 1, self.MAX_RETRIES)
+                    logger.warning(
+                        "X server error %s, retrying in %ss (%s/%s)",
+                        exc.response.status_code,
+                        wait,
+                        attempt + 1,
+                        self.MAX_RETRIES,
+                    )
                     await asyncio.sleep(wait)
                     last_exception = exc
                     continue
                 raise
             except httpx.RequestError as exc:
                 wait = self.BASE_BACKOFF * (2**attempt)
-                logger.warning("X request error, retrying in %ss (%s/%s): %s", wait, attempt + 1, self.MAX_RETRIES, exc)
+                logger.warning(
+                    "X request error, retrying in %ss (%s/%s): %s",
+                    wait,
+                    attempt + 1,
+                    self.MAX_RETRIES,
+                    exc,
+                )
                 await asyncio.sleep(wait)
                 last_exception = exc
         if last_exception:
             raise last_exception
         raise RuntimeError("Max retries exceeded for X API request")
 
-    async def send_message(self, recipient_id: str, content: str, content_type: str = "text") -> dict[str, Any]:
+    async def send_message(
+        self, recipient_id: str, content: str, content_type: str = "text"
+    ) -> dict[str, Any]:
         if not self.bearer_token:
             raise ValueError("Faltan credenciales de X (bearer_token)")
 
@@ -83,7 +107,9 @@ class XConnector(BaseChannelConnector):
         if content_type != "text":
             payload["attachments"] = [{"media_key": content}]
 
-        response = await self._request_with_backoff("POST", url, headers=headers, json=payload)
+        response = await self._request_with_backoff(
+            "POST", url, headers=headers, json=payload
+        )
         data = response.json()
         logger.info("X DM sent to %s", recipient_id)
         return data
@@ -144,8 +170,8 @@ class XConnector(BaseChannelConnector):
             headers = self._get_bearer_headers()
             response = await self._request_with_backoff("GET", url, headers=headers)
             return response.status_code == 200
-        except Exception as exc:
-            logger.error("X credential validation failed: %s", exc)
+        except Exception:
+            logger.exception("X credential validation failed: %s")
             return False
 
     async def get_user_profile(self, username: str) -> dict[str, Any]:

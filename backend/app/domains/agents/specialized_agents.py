@@ -1,14 +1,12 @@
 """Specialized sales agents for different pipeline stages."""
 
-from typing import Dict, Any
 import asyncio
-from datetime import datetime
 
 from app.domains.agents.base_agent import (
-    SalesAgent,
-    AgentType,
     AgentContext,
     AgentDecision,
+    AgentType,
+    SalesAgent,
 )
 
 
@@ -75,9 +73,7 @@ class QualificationAgent(SalesAgent):
         bant_score = (budget_score + authority_score + need_score + timeline_score) / 4
 
         next_agent = (
-            AgentType.PROPOSAL
-            if bant_score >= 0.7
-            else AgentType.OBJECTION_HANDLING
+            AgentType.PROPOSAL if bant_score >= 0.7 else AgentType.OBJECTION_HANDLING
         )
 
         decision = AgentDecision(
@@ -210,7 +206,9 @@ class ClosingAgent(SalesAgent):
 
     async def evaluate(self, context: AgentContext) -> bool:
         """Suitable when ready to close."""
-        return context.current_stage == "negotiation" and context.close_probability >= 0.8
+        return (
+            context.current_stage == "negotiation" and context.close_probability >= 0.8
+        )
 
     async def execute(self, context: AgentContext) -> AgentDecision:
         """Send for signature and trigger onboarding."""

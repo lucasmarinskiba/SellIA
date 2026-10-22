@@ -1,18 +1,19 @@
 """SEO Auto-Optimization API."""
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cache import cached
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.core.cache import cached
 from app.domains.seo_optimization.service import (
-    TitleOptimizationService,
-    MetaOptimizationService,
     ContentOptimizationService,
+    MetaOptimizationService,
     OptimizationTaskService,
+    TitleOptimizationService,
 )
 from app.domains.users.models import User
 
@@ -22,11 +23,11 @@ router = APIRouter(prefix="/{business_id}/seo-optimization", tags=["SEO Optimiza
 @router.post("/titles/generate")
 async def generate_title_variants(
     business_id: UUID,
-    page_url: str = Query(...),
-    current_title: str = Query(...),
-    keyword_target: str = Query(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    page_url: Annotated[str, Query()],
+    current_title: Annotated[str, Query()],
+    keyword_target: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Generate title tag variants."""
     svc = TitleOptimizationService(db)
@@ -48,12 +49,12 @@ async def generate_title_variants(
 @router.post("/meta/generate")
 async def generate_meta_variants(
     business_id: UUID,
-    page_url: str = Query(...),
-    current_meta: str = Query(...),
-    keyword_target: str = Query(...),
-    cta: str = Query(default="Learn more"),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    page_url: Annotated[str, Query()],
+    current_meta: Annotated[str, Query()],
+    keyword_target: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    cta: Annotated[str, Query()] = "Learn more",
 ):
     """Generate meta description variants."""
     svc = MetaOptimizationService(db)
@@ -73,13 +74,13 @@ async def generate_meta_variants(
 @router.post("/content/analyze")
 async def analyze_content(
     business_id: UUID,
-    page_url: str = Query(...),
-    keyword_target: str = Query(...),
-    word_count: int = Query(...),
-    keyword_density: float = Query(...),
-    readability: float = Query(default=60.0),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    page_url: Annotated[str, Query()],
+    keyword_target: Annotated[str, Query()],
+    word_count: Annotated[int, Query()],
+    keyword_density: Annotated[float, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    readability: Annotated[float, Query()] = 60.0,
 ):
     """Analyze content and generate recommendations."""
     svc = ContentOptimizationService(db)
@@ -102,11 +103,11 @@ async def analyze_content(
 @router.post("/tasks")
 async def create_optimization_task(
     business_id: UUID,
-    page_url: str = Query(...),
-    task_type: str = Query(...),
-    priority: str = Query(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    page_url: Annotated[str, Query()],
+    task_type: Annotated[str, Query()],
+    priority: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create optimization task."""
     svc = OptimizationTaskService(db)
@@ -123,9 +124,9 @@ async def create_optimization_task(
 @cached(ttl_seconds=300, key_prefix="pending_tasks")
 async def list_pending_tasks(
     business_id: UUID,
-    priority: str | None = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    priority: Annotated[str | None, Query()] = None,
 ):
     """List pending optimization tasks (cached 5min)."""
     svc = OptimizationTaskService(db)
@@ -149,9 +150,9 @@ async def list_pending_tasks(
 async def execute_task(
     business_id: UUID,
     task_id: UUID,
-    executed_by: str = Query(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    executed_by: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Execute optimization task."""
     svc = OptimizationTaskService(db)
@@ -167,11 +168,11 @@ async def execute_task(
 async def track_results(
     business_id: UUID,
     task_id: UUID,
-    pre_rank: int = Query(...),
-    post_rank: int = Query(...),
-    traffic_change_pct: float = Query(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    pre_rank: Annotated[int, Query()],
+    post_rank: Annotated[int, Query()],
+    traffic_change_pct: Annotated[float, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Track optimization results."""
     svc = OptimizationTaskService(db)
@@ -188,8 +189,8 @@ async def track_results(
 @cached(ttl_seconds=3600, key_prefix="opt_dashboard")
 async def optimization_dashboard(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get optimization impact dashboard (cached 1h)."""
     svc = OptimizationTaskService(db)

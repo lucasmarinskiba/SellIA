@@ -12,7 +12,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -45,7 +45,7 @@ class PostingService:
         self.db = db
         self.ledger = LedgerService(db)
 
-    def _cash_subtype(self, gateway: Optional[str]) -> str:
+    def _cash_subtype(self, gateway: str | None) -> str:
         if not gateway:
             return "cash"
         return GATEWAY_CASH_SUBTYPE.get(gateway.lower().strip(), "cash")
@@ -57,14 +57,14 @@ class PostingService:
         *,
         order_id: uuid.UUID,
         total_amount: Decimal,
-        tax_amount: Optional[Decimal] = None,
-        discount_amount: Optional[Decimal] = None,
-        processing_fee: Optional[Decimal] = None,
-        gateway: Optional[str] = None,
+        tax_amount: Decimal | None = None,
+        discount_amount: Decimal | None = None,
+        processing_fee: Decimal | None = None,
+        gateway: str | None = None,
         currency: str = "ARS",
         is_service: bool = False,
-        entry_date: Optional[datetime] = None,
-        customer_id: Optional[uuid.UUID] = None,
+        entry_date: datetime | None = None,
+        customer_id: uuid.UUID | None = None,
     ) -> Any:
         """Revenue recognition for a paid order.
 
@@ -84,22 +84,50 @@ class PostingService:
         cash_subtype = self._cash_subtype(gateway)
 
         lines: list[dict[str, Any]] = [
-            {"account_subtype": cash_subtype, "debit": total,
-             "description": f"Cobro orden {order_id}"},
-            {"account_subtype": rev_subtype, "credit": net_revenue,
-             "description": "Venta neta", "contact_type": "customer", "contact_id": customer_id},
+            {
+                "account_subtype": cash_subtype,
+                "debit": total,
+                "description": f"Cobro orden {order_id}",
+            },
+            {
+                "account_subtype": rev_subtype,
+                "credit": net_revenue,
+                "description": "Venta neta",
+                "contact_type": "customer",
+                "contact_id": customer_id,
+            },
         ]
         if tax > 0:
-            lines.append({"account_subtype": "vat_output", "credit": tax,
-                          "description": "IVA débito fiscal"})
+            lines.append(
+                {
+                    "account_subtype": "vat_output",
+                    "credit": tax,
+                    "description": "IVA débito fiscal",
+                }
+            )
         if discount > 0:
-            lines.append({"account_subtype": "sales_discounts", "debit": discount,
-                          "description": "Descuento otorgado"})
+            lines.append(
+                {
+                    "account_subtype": "sales_discounts",
+                    "debit": discount,
+                    "description": "Descuento otorgado",
+                }
+            )
         if fee > 0:
-            lines.append({"account_subtype": "payment_processing_fees", "debit": fee,
-                          "description": f"Comisión {gateway or 'pasarela'}"})
-            lines.append({"account_subtype": cash_subtype, "credit": fee,
-                          "description": "Retención de comisión"})
+            lines.append(
+                {
+                    "account_subtype": "payment_processing_fees",
+                    "debit": fee,
+                    "description": f"Comisión {gateway or 'pasarela'}",
+                }
+            )
+            lines.append(
+                {
+                    "account_subtype": cash_subtype,
+                    "credit": fee,
+                    "description": "Retención de comisión",
+                }
+            )
 
         return await self.ledger.post_entry(
             business_id,
@@ -119,12 +147,12 @@ class PostingService:
         *,
         order_id: uuid.UUID,
         amount: Decimal,
-        tax_amount: Optional[Decimal] = None,
-        gateway: Optional[str] = None,
+        tax_amount: Decimal | None = None,
+        gateway: str | None = None,
         currency: str = "ARS",
         is_service: bool = False,
-        entry_date: Optional[datetime] = None,
-        refund_ref: Optional[str] = None,
+        entry_date: datetime | None = None,
+        refund_ref: str | None = None,
     ) -> Any:
         amt = _q(amount)
         tax = _q(tax_amount or 0)
@@ -134,12 +162,25 @@ class PostingService:
         ref = refund_ref or str(order_id)
 
         lines: list[dict[str, Any]] = [
-            {"account_subtype": rev_subtype, "debit": net, "description": "Reversión de venta"},
-            {"account_subtype": cash_subtype, "credit": amt, "description": f"Reembolso orden {order_id}"},
+            {
+                "account_subtype": rev_subtype,
+                "debit": net,
+                "description": "Reversión de venta",
+            },
+            {
+                "account_subtype": cash_subtype,
+                "credit": amt,
+                "description": f"Reembolso orden {order_id}",
+            },
         ]
         if tax > 0:
-            lines.append({"account_subtype": "vat_output", "debit": tax,
-                          "description": "Reversión IVA débito"})
+            lines.append(
+                {
+                    "account_subtype": "vat_output",
+                    "debit": tax,
+                    "description": "Reversión IVA débito",
+                }
+            )
 
         return await self.ledger.post_entry(
             business_id,
@@ -162,17 +203,26 @@ class PostingService:
         spend_ref: str,
         on_credit: bool = False,
         currency: str = "ARS",
-        entry_date: Optional[datetime] = None,
-        campaign: Optional[str] = None,
+        entry_date: datetime | None = None,
+        campaign: str | None = None,
     ) -> Any:
         amt = _q(amount)
-        subtype = AD_PLATFORM_SUBTYPE.get((platform or "").lower().strip(), "ad_spend_other")
+        subtype = AD_PLATFORM_SUBTYPE.get(
+            (platform or "").lower().strip(), "ad_spend_other"
+        )
         credit_subtype = "accounts_payable" if on_credit else "cash"
         lines = [
-            {"account_subtype": subtype, "debit": amt,
-             "description": f"Ads {platform}" + (f" — {campaign}" if campaign else "")},
-            {"account_subtype": credit_subtype, "credit": amt,
-             "description": f"Pago ads {platform}"},
+            {
+                "account_subtype": subtype,
+                "debit": amt,
+                "description": f"Ads {platform}"
+                + (f" — {campaign}" if campaign else ""),
+            },
+            {
+                "account_subtype": credit_subtype,
+                "credit": amt,
+                "description": f"Pago ads {platform}",
+            },
         ]
         return await self.ledger.post_entry(
             business_id,
@@ -192,11 +242,11 @@ class PostingService:
         *,
         charge_ref: str,
         amount: Decimal,
-        tax_amount: Optional[Decimal] = None,
-        gateway: Optional[str] = None,
+        tax_amount: Decimal | None = None,
+        gateway: str | None = None,
         currency: str = "ARS",
         deferred: bool = False,
-        entry_date: Optional[datetime] = None,
+        entry_date: datetime | None = None,
     ) -> Any:
         amt = _q(amount)
         tax = _q(tax_amount or 0)
@@ -204,12 +254,25 @@ class PostingService:
         cash_subtype = self._cash_subtype(gateway)
         rev_subtype = "deferred_revenue" if deferred else "subscription_revenue"
         lines = [
-            {"account_subtype": cash_subtype, "debit": amt, "description": "Cobro suscripción"},
-            {"account_subtype": rev_subtype, "credit": net, "description": "Ingreso suscripción"},
+            {
+                "account_subtype": cash_subtype,
+                "debit": amt,
+                "description": "Cobro suscripción",
+            },
+            {
+                "account_subtype": rev_subtype,
+                "credit": net,
+                "description": "Ingreso suscripción",
+            },
         ]
         if tax > 0:
-            lines.append({"account_subtype": "vat_output", "credit": tax,
-                          "description": "IVA débito"})
+            lines.append(
+                {
+                    "account_subtype": "vat_output",
+                    "credit": tax,
+                    "description": "IVA débito",
+                }
+            )
         return await self.ledger.post_entry(
             business_id,
             lines,
@@ -229,42 +292,62 @@ class PostingService:
         expense_subtype: str,
         amount: Decimal,
         expense_ref: str,
-        vat_credit: Optional[Decimal] = None,
+        vat_credit: Decimal | None = None,
         on_credit: bool = False,
         currency: str = "ARS",
-        entry_date: Optional[datetime] = None,
-        vendor_id: Optional[uuid.UUID] = None,
-        memo: Optional[str] = None,
+        entry_date: datetime | None = None,
+        vendor_id: uuid.UUID | None = None,
+        memo: str | None = None,
     ) -> Any:
         amt = _q(amount)
         vat = _q(vat_credit or 0)
         net = _q(amt - vat)
         credit_subtype = "accounts_payable" if on_credit else "cash"
         lines: list[dict[str, Any]] = [
-            {"account_subtype": expense_subtype, "debit": net,
-             "description": memo or expense_subtype,
-             "contact_type": "vendor", "contact_id": vendor_id},
+            {
+                "account_subtype": expense_subtype,
+                "debit": net,
+                "description": memo or expense_subtype,
+                "contact_type": "vendor",
+                "contact_id": vendor_id,
+            },
         ]
         if vat > 0:
-            lines.append({"account_subtype": "vat_input", "debit": vat,
-                          "description": "IVA crédito fiscal"})
-        lines.append({"account_subtype": credit_subtype, "credit": amt,
-                      "description": "Pago" if not on_credit else "A pagar",
-                      "contact_type": "vendor", "contact_id": vendor_id})
+            lines.append(
+                {
+                    "account_subtype": "vat_input",
+                    "debit": vat,
+                    "description": "IVA crédito fiscal",
+                }
+            )
+        lines.append(
+            {
+                "account_subtype": credit_subtype,
+                "credit": amt,
+                "description": "Pago" if not on_credit else "A pagar",
+                "contact_type": "vendor",
+                "contact_id": vendor_id,
+            }
+        )
         return await self.ledger.post_entry(
             business_id,
             lines,
             entry_date=entry_date,
             memo=memo or f"Gasto {expense_subtype}",
-            source=JournalSource.ADJUSTMENT.value if expense_subtype == "misc_expenses"
-            else JournalSource.MANUAL.value,
+            source=(
+                JournalSource.ADJUSTMENT.value
+                if expense_subtype == "misc_expenses"
+                else JournalSource.MANUAL.value
+            ),
             source_ref=expense_ref,
             idempotency_key=f"expense:{business_id}:{expense_ref}",
             currency=currency,
         )
 
     # ------------------------------------------------------------------
-    async def backfill_orders(self, business_id: uuid.UUID, limit: int = 500) -> dict[str, Any]:
+    async def backfill_orders(
+        self, business_id: uuid.UUID, limit: int = 500
+    ) -> dict[str, Any]:
         """One-shot: post ledger entries for already-paid orders that predate
         the ledger going live. Safe to re-run (idempotent per order)."""
         from sqlalchemy import select
@@ -272,10 +355,12 @@ class PostingService:
         from app.domains.orders.models import Order, PaymentStatus
 
         res = await self.db.execute(
-            select(Order).where(
+            select(Order)
+            .where(
                 Order.business_id == business_id,
                 Order.payment_status == PaymentStatus.COMPLETED,
-            ).limit(limit)
+            )
+            .limit(limit)
         )
         orders = res.scalars().all()
         posted = 0
@@ -284,7 +369,7 @@ class PostingService:
                 await self.post_order_paid(
                     business_id,
                     order_id=o.id,
-                    total_amount=o.total_amount or Decimal("0"),
+                    total_amount=o.total_amount or Decimal(0),
                     tax_amount=o.tax_amount,
                     discount_amount=o.discount_amount,
                     gateway=o.payment_gateway or o.payment_method,

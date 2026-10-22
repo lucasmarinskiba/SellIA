@@ -1,10 +1,10 @@
 """AI/ML intelligence layer — deal prediction + lead scoring."""
 
 from dataclasses import dataclass
-from typing import Optional
 from datetime import datetime, timedelta
 from enum import Enum
-import json
+
+from app.core.clock import utc_now
 
 
 class DealOutcome(str, Enum):
@@ -74,8 +74,8 @@ class AIIntelligenceManager:
         deal_value: float,
         engagement_velocity: float,  # activities/day
         has_proposal: bool,
-        contact_seniority: Optional[str] = None,
-        industry: Optional[str] = None,
+        contact_seniority: str | None = None,
+        industry: str | None = None,
     ) -> DealPrediction:
         """
         Predict deal outcome using ML model.
@@ -115,7 +115,13 @@ class AIIntelligenceManager:
         seniority_boost = 0.15 if contact_seniority == "c_level" else 0.05
 
         # Calculate final probability
-        close_prob = base_prob + engagement_boost + proposal_boost + seniority_boost - days_penalty
+        close_prob = (
+            base_prob
+            + engagement_boost
+            + proposal_boost
+            + seniority_boost
+            - days_penalty
+        )
         close_prob = max(0.0, min(1.0, close_prob))  # Clamp 0-1
 
         # Risk factors
@@ -147,7 +153,7 @@ class AIIntelligenceManager:
             "closed_won": 0,
         }
         days_remaining = stage_days_to_close.get(stage.lower(), 30)
-        estimated_close = datetime.utcnow() + timedelta(days=days_remaining)
+        estimated_close = utc_now() + timedelta(days=days_remaining)
 
         prediction = DealPrediction(
             deal_id=deal_id,
@@ -155,7 +161,8 @@ class AIIntelligenceManager:
             estimated_close_date=estimated_close,
             risk_factors=risk_factors,
             recommended_actions=actions,
-            confidence=0.75 + (engagement_velocity * 0.1),  # More activity = more confident
+            confidence=0.75
+            + (engagement_velocity * 0.1),  # More activity = more confident
         )
 
         self.predictions[deal_id] = prediction
@@ -164,10 +171,10 @@ class AIIntelligenceManager:
     def score_lead(
         self,
         contact_id: str,
-        company_size: Optional[int] = None,
-        industry: Optional[str] = None,
-        email_engagement: Optional[dict] = None,  # {opens, clicks, replies}
-        seniority: Optional[str] = None,
+        company_size: int | None = None,
+        industry: str | None = None,
+        email_engagement: dict | None = None,  # {opens, clicks, replies}
+        seniority: str | None = None,
         has_budget: bool = False,
         has_authority: bool = False,
         is_ideal_customer_profile: bool = False,
@@ -214,7 +221,9 @@ class AIIntelligenceManager:
             engagement_score = (opens * 0.05) + (clicks * 0.05) + (replies * 0.05)
             score += min(engagement_score, 15)
             if engagement_score > 0:
-                reasons.append(f"Active email engagement ({opens} opens, {clicks} clicks)")
+                reasons.append(
+                    f"Active email engagement ({opens} opens, {clicks} clicks)"
+                )
 
         # Seniority bonus (10 points)
         if seniority == "c_level":
@@ -260,7 +269,7 @@ class AIIntelligenceManager:
         total_revenue: float,
         mrr_change: float,  # Month-over-month MRR change
         days_since_last_activity: int,
-        nps_score: Optional[float] = None,
+        nps_score: float | None = None,
         support_tickets_open: int = 0,
         feature_adoption: float = 0.5,  # 0-1
     ) -> CustomerHealth:
@@ -297,7 +306,7 @@ class AIIntelligenceManager:
         elif support_tickets_open > 5:
             health_score -= 15
         else:
-            health_score -= (support_tickets_open * 3)
+            health_score -= support_tickets_open * 3
 
         # NPS (±15 points)
         if nps_score:
@@ -340,7 +349,9 @@ class AIIntelligenceManager:
         self.health_scores[account_id] = health
         return health
 
-    def detect_anomalies(self, deal_id: str, recent_activities: list[dict]) -> list[str]:
+    def detect_anomalies(
+        self, deal_id: str, recent_activities: list[dict]
+    ) -> list[str]:
         """
         Detect unusual deal behavior.
 
@@ -357,8 +368,12 @@ class AIIntelligenceManager:
             return anomalies
 
         # Activity trend
-        activities_today = len([a for a in recent_activities if a.get("days_ago", 999) == 0])
-        activities_last_week = len([a for a in recent_activities if a.get("days_ago", 999) <= 7])
+        activities_today = len(
+            [a for a in recent_activities if a.get("days_ago", 999) == 0]
+        )
+        activities_last_week = len(
+            [a for a in recent_activities if a.get("days_ago", 999) <= 7]
+        )
 
         if activities_today > 5 and activities_last_week < 10:
             anomalies.append("Sudden activity spike — deal heating up?")

@@ -8,11 +8,11 @@ from __future__ import annotations
 
 import os
 import uuid
-from typing import Any, Optional
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Any
 
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
 
 from app.core.logger import get_logger
 
@@ -20,21 +20,21 @@ logger = get_logger(__name__)
 
 # Configuración de umbrales del sistema
 CONFIG_THRESHOLDS = {
-    "high_load_conversations": 50,      # conversaciones activas simultáneas
-    "high_load_tasks_queued": 100,      # tareas en cola Celery
-    "api_rate_limit_warning": 0.8,      # % de límite de API utilizado
-    "db_connection_warning": 0.85,      # % de pool de conexiones usado
-    "response_time_warning_ms": 3000,   # ms de tiempo de respuesta aceptable
-    "low_balance_threshold": 5.0,       # USD de crédito mínimo en proveedor AI
+    "high_load_conversations": 50,  # conversaciones activas simultáneas
+    "high_load_tasks_queued": 100,  # tareas en cola Celery
+    "api_rate_limit_warning": 0.8,  # % de límite de API utilizado
+    "db_connection_warning": 0.85,  # % de pool de conexiones usado
+    "response_time_warning_ms": 3000,  # ms de tiempo de respuesta aceptable
+    "low_balance_threshold": 5.0,  # USD de crédito mínimo en proveedor AI
 }
 
 # Configuraciones adaptativas por escenario
 ADAPTIVE_CONFIGS = {
     "high_load": {
-        "llm_temperature": 0.2,         # más determinista bajo carga
-        "llm_max_tokens": 500,          # respuestas más cortas
-        "cache_ttl_seconds": 300,       # cache más agresivo
-        "batch_size": 5,                # lotes más pequeños
+        "llm_temperature": 0.2,  # más determinista bajo carga
+        "llm_max_tokens": 500,  # respuestas más cortas
+        "cache_ttl_seconds": 300,  # cache más agresivo
+        "batch_size": 5,  # lotes más pequeños
         "preferred_model": "gpt-4o-mini",
     },
     "normal_load": {
@@ -62,7 +62,9 @@ class SelfConfigEngine:
         self._current_config: dict[str, Any] = ADAPTIVE_CONFIGS["normal_load"].copy()
         self._config_history: list[dict] = []
 
-    async def run_config_cycle(self, business_id: Optional[uuid.UUID] = None) -> dict[str, Any]:
+    async def run_config_cycle(
+        self, business_id: uuid.UUID | None = None
+    ) -> dict[str, Any]:
         """Ejecuta un ciclo completo de auto-configuración."""
         logger.info("[SelfConfig] Iniciando ciclo de auto-configuración")
 
@@ -73,7 +75,7 @@ class SelfConfigEngine:
         channel_config = await self._configure_channel_limits(business_id)
 
         result = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "load_state": load_state,
             "metrics": metrics,
             "config_applied": config_applied,
@@ -88,7 +90,9 @@ class SelfConfigEngine:
         logger.info(f"[SelfConfig] Ciclo completado. Estado: {load_state}")
         return result
 
-    async def _collect_system_metrics(self, business_id: Optional[uuid.UUID]) -> dict[str, Any]:
+    async def _collect_system_metrics(
+        self, business_id: uuid.UUID | None
+    ) -> dict[str, Any]:
         """Recolecta métricas actuales del sistema."""
         metrics: dict[str, Any] = {
             "active_conversations": 0,
@@ -96,11 +100,12 @@ class SelfConfigEngine:
             "tasks_queued": 0,
             "avg_response_time_ms": 0,
             "db_connections_used": 0,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
         try:
             from app.domains.channels.models import Conversation
+
             conv_query = select(func.count(Conversation.id)).where(
                 Conversation.is_active == True
             )
@@ -109,23 +114,29 @@ class SelfConfigEngine:
             result = await self.db.execute(conv_query)
             metrics["active_conversations"] = result.scalar() or 0
         except Exception as e:
-            logger.warning(f"[SelfConfig] No se pudo obtener conversaciones activas: {e}")
+            logger.warning(
+                f"[SelfConfig] No se pudo obtener conversaciones activas: {e}",
+                exc_info=True,
+            )
 
         try:
             from app.domains.crm.models import Deal
-            deals_query = select(func.count(Deal.id)).where(
-                Deal.is_active == True
-            )
+
+            deals_query = select(func.count(Deal.id)).where(Deal.is_active == True)
             if business_id:
                 deals_query = deals_query.where(Deal.business_id == business_id)
             result = await self.db.execute(deals_query)
             metrics["pending_deals"] = result.scalar() or 0
         except Exception as e:
-            logger.warning(f"[SelfConfig] No se pudo obtener deals pendientes: {e}")
+            logger.warning(
+                f"[SelfConfig] No se pudo obtener deals pendientes: {e}", exc_info=True
+            )
 
         try:
             import redis.asyncio as aioredis
+
             from app.core.config import get_settings
+
             settings = get_settings()
             r = aioredis.from_url(settings.REDIS_URL)
             queue_lengths = await asyncio.gather(
@@ -137,7 +148,9 @@ class SelfConfigEngine:
             total = sum(q for q in queue_lengths if isinstance(q, int))
             metrics["tasks_queued"] = total
         except Exception as e:
-            logger.warning(f"[SelfConfig] No se pudo obtener cola Redis: {e}")
+            logger.warning(
+                f"[SelfConfig] No se pudo obtener cola Redis: {e}", exc_info=True
+            )
 
         return metrics
 
@@ -146,8 +159,10 @@ class SelfConfigEngine:
         conversations = metrics.get("active_conversations", 0)
         tasks = metrics.get("tasks_queued", 0)
 
-        if (conversations >= CONFIG_THRESHOLDS["high_load_conversations"] or
-                tasks >= CONFIG_THRESHOLDS["high_load_tasks_queued"]):
+        if (
+            conversations >= CONFIG_THRESHOLDS["high_load_conversations"]
+            or tasks >= CONFIG_THRESHOLDS["high_load_tasks_queued"]
+        ):
             return "high_load"
         elif conversations < 10 and tasks < 10:
             return "low_load"
@@ -156,11 +171,15 @@ class SelfConfigEngine:
 
     def _apply_adaptive_config(self, load_state: str, metrics: dict) -> dict[str, Any]:
         """Aplica la configuración adaptativa según el estado de carga."""
-        new_config = ADAPTIVE_CONFIGS.get(load_state, ADAPTIVE_CONFIGS["normal_load"]).copy()
+        new_config = ADAPTIVE_CONFIGS.get(
+            load_state, ADAPTIVE_CONFIGS["normal_load"]
+        ).copy()
 
         if load_state != self._current_config.get("_load_state"):
             prev_state = self._current_config.get("_load_state", "unknown")
-            logger.info(f"[SelfConfig] Cambiando configuración: {prev_state} → {load_state}")
+            logger.info(
+                f"[SelfConfig] Cambiando configuración: {prev_state} → {load_state}"
+            )
             self._current_config = {**new_config, "_load_state": load_state}
 
         return new_config
@@ -175,7 +194,9 @@ class SelfConfigEngine:
             provider_status["openai"] = {
                 "available": True,
                 "key_configured": True,
-                "preferred_model": self._current_config.get("preferred_model", "gpt-4o-mini"),
+                "preferred_model": self._current_config.get(
+                    "preferred_model", "gpt-4o-mini"
+                ),
             }
         else:
             provider_status["openai"] = {"available": False, "key_configured": False}
@@ -207,11 +228,15 @@ class SelfConfigEngine:
             provider_status["active_provider"] = "ollama"
         else:
             provider_status["active_provider"] = "none"
-            logger.warning("[SelfConfig] ¡Sin proveedor AI disponible! Verificar API keys.")
+            logger.warning(
+                "[SelfConfig] ¡Sin proveedor AI disponible! Verificar API keys."
+            )
 
         return provider_status
 
-    async def _configure_channel_limits(self, business_id: Optional[uuid.UUID]) -> dict[str, Any]:
+    async def _configure_channel_limits(
+        self, business_id: uuid.UUID | None
+    ) -> dict[str, Any]:
         """Ajusta límites de mensajería por canal según carga."""
         channel_config: dict[str, Any] = {
             "whatsapp": {"rate_limit_per_minute": 20, "batch_delay_ms": 500},
@@ -222,10 +247,8 @@ class SelfConfigEngine:
 
         load_state = self._current_config.get("_load_state", "normal_load")
         if load_state == "high_load":
-            for ch in channel_config:
-                channel_config[ch]["rate_limit_per_minute"] = int(
-                    channel_config[ch]["rate_limit_per_minute"] * 0.7
-                )
+            for ch, cfg in channel_config.items():
+                cfg["rate_limit_per_minute"] = int(cfg["rate_limit_per_minute"] * 0.7)
                 logger.info(f"[SelfConfig] Canal {ch} throttled por alta carga")
 
         return channel_config

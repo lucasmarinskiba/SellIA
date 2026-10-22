@@ -1,22 +1,21 @@
 """Distributed tracing with OpenTelemetry + Jaeger."""
 
-from opentelemetry import trace, metrics
+import logging
+import uuid
+
+from fastapi import Request
+from opentelemetry import metrics, trace
 from opentelemetry.exporter.jaeger.thrift import JaegerExporter
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.sdk.metrics import MeterProvider
-from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.exporter.prometheus import PrometheusMetricReader
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 from opentelemetry.instrumentation.redis import RedisInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
-from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from starlette.middleware.base import BaseHTTPMiddleware
-from fastapi import Request
-import uuid
-import logging
-
 
 logger = logging.getLogger(__name__)
 
@@ -39,9 +38,7 @@ def init_tracing(service_name: str = "sellia-backend", jaeger_host: str = "local
 
     # Tracer provider with batch processor
     trace_provider = TracerProvider()
-    trace_provider.add_span_processor(
-        BatchSpanProcessor(jaeger_exporter)
-    )
+    trace_provider.add_span_processor(BatchSpanProcessor(jaeger_exporter))
     trace.set_tracer_provider(trace_provider)
 
     # Prometheus metrics reader
@@ -69,10 +66,7 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request: Request, call_next):
-        correlation_id = request.headers.get(
-            "X-Correlation-ID",
-            str(uuid.uuid4())
-        )
+        correlation_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
 
         # Store in request state for use in handlers
         request.state.correlation_id = correlation_id
@@ -86,7 +80,9 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
             span.set_attribute("http.method", request.method)
             span.set_attribute("http.url", str(request.url))
             span.set_attribute("correlation_id", correlation_id)
-            span.set_attribute("client_ip", request.client.host if request.client else "unknown")
+            span.set_attribute(
+                "client_ip", request.client.host if request.client else "unknown"
+            )
 
             try:
                 response = await call_next(request)
@@ -127,7 +123,7 @@ class RequestTimingMiddleware(BaseHTTPMiddleware):
                     "path": request.url.path,
                     "duration_ms": duration_ms,
                     "status_code": response.status_code,
-                }
+                },
             )
 
         return response

@@ -4,8 +4,7 @@ Módulo de lógica pura para recomendaciones de logística, carriers,
 cotizaciones estimadas y requisitos cross-border.
 """
 
-from typing import List, Dict, Any, Optional
-
+from typing import Any
 
 # ─── Datos de carriers ─────────────────────────────────────────────────────────
 
@@ -95,8 +94,15 @@ CROSS_BORDER_REQUIREMENTS = {
         "currency": "BRL",
         "customs_duties_pct": 60,
         "icms_tax_pct": 17,
-        "required_docs": ["Factura comercial", "Certificado de origen", "DNI del destinatario (CPF)"],
-        "restrictions": ["Sin envío de electrónica por correo común", "Límite de envío simplificado: USD 50"],
+        "required_docs": [
+            "Factura comercial",
+            "Certificado de origen",
+            "DNI del destinatario (CPF)",
+        ],
+        "restrictions": [
+            "Sin envío de electrónica por correo común",
+            "Límite de envío simplificado: USD 50",
+        ],
         "recommended_carriers": ["dhl", "fedex"],
         "estimated_clearance_days": 5,
     },
@@ -107,7 +113,9 @@ CROSS_BORDER_REQUIREMENTS = {
         "customs_duties_pct": 6,
         "icms_tax_pct": 0,
         "required_docs": ["Factura comercial", "Certificado de origen"],
-        "restrictions": ["Mercosur: exención parcial de aranceles para productos originarios"],
+        "restrictions": [
+            "Mercosur: exención parcial de aranceles para productos originarios"
+        ],
         "recommended_carriers": ["dhl", "fedex", "andreani"],
         "estimated_clearance_days": 3,
     },
@@ -128,8 +136,14 @@ CROSS_BORDER_REQUIREMENTS = {
         "currency": "MXN",
         "customs_duties_pct": 0,
         "icms_tax_pct": 16,
-        "required_docs": ["Factura comercial", "Certificado de origen", "RFC del destinatario"],
-        "restrictions": ["TLC con México facilita importación de productos originarios"],
+        "required_docs": [
+            "Factura comercial",
+            "Certificado de origen",
+            "RFC del destinatario",
+        ],
+        "restrictions": [
+            "TLC con México facilita importación de productos originarios"
+        ],
         "recommended_carriers": ["dhl", "fedex", "ups"],
         "estimated_clearance_days": 4,
     },
@@ -139,7 +153,10 @@ CROSS_BORDER_REQUIREMENTS = {
         "currency": "USD",
         "customs_duties_pct": 0,
         "icms_tax_pct": 0,
-        "required_docs": ["Factura comercial", "EIN o SSN del destinatario (si aplica)"],
+        "required_docs": [
+            "Factura comercial",
+            "EIN o SSN del destinatario (si aplica)",
+        ],
         "restrictions": ["De minimis: exento hasta USD 800 por envío"],
         "recommended_carriers": ["dhl", "fedex", "ups"],
         "estimated_clearance_days": 2,
@@ -151,7 +168,10 @@ CROSS_BORDER_REQUIREMENTS = {
         "customs_duties_pct": 0,
         "icms_tax_pct": 21,
         "required_docs": ["Factura comercial", "EORI del destinatario"],
-        "restrictions": ["IVA aplica sobre valor CIF + flete", "Mercosur-EU: aranceles reducidos"],
+        "restrictions": [
+            "IVA aplica sobre valor CIF + flete",
+            "Mercosur-EU: aranceles reducidos",
+        ],
         "recommended_carriers": ["dhl", "ups"],
         "estimated_clearance_days": 3,
     },
@@ -161,52 +181,232 @@ CROSS_BORDER_REQUIREMENTS = {
 
 CARRIER_SETUP_STEPS = {
     "andreani": [
-        {"step": 1, "title": "Crear cuenta en Andreani", "description": "Registrarse en andreani.com con CUIT y datos fiscales.", "estimated_minutes": 15},
-        {"step": 2, "title": "Validar identidad comercial", "description": "Subir constancia de inscripción en AFIP y comprobante de domicilio.", "estimated_minutes": 10},
-        {"step": 3, "title": "Solicitar API Key", "description": "Enviar solicitud de integración API al equipo comercial de Andreani.", "estimated_minutes": 5},
-        {"step": 4, "title": "Configurar cotizador", "description": "Definir zonas de envío (CABA, GBA, Interior) y tipos de servicio.", "estimated_minutes": 20},
-        {"step": 5, "title": "Integrar con Shopify/ML", "description": "Instalar app de Andreani o conectar vía API al e-commerce.", "estimated_minutes": 30},
-        {"step": 6, "title": "Test de envío", "description": "Generar etiqueta de prueba y rastrear un envío de prueba.", "estimated_minutes": 10},
+        {
+            "step": 1,
+            "title": "Crear cuenta en Andreani",
+            "description": "Registrarse en andreani.com con CUIT y datos fiscales.",
+            "estimated_minutes": 15,
+        },
+        {
+            "step": 2,
+            "title": "Validar identidad comercial",
+            "description": "Subir constancia de inscripción en AFIP y comprobante de domicilio.",
+            "estimated_minutes": 10,
+        },
+        {
+            "step": 3,
+            "title": "Solicitar API Key",
+            "description": "Enviar solicitud de integración API al equipo comercial de Andreani.",
+            "estimated_minutes": 5,
+        },
+        {
+            "step": 4,
+            "title": "Configurar cotizador",
+            "description": "Definir zonas de envío (CABA, GBA, Interior) y tipos de servicio.",
+            "estimated_minutes": 20,
+        },
+        {
+            "step": 5,
+            "title": "Integrar con Shopify/ML",
+            "description": "Instalar app de Andreani o conectar vía API al e-commerce.",
+            "estimated_minutes": 30,
+        },
+        {
+            "step": 6,
+            "title": "Test de envío",
+            "description": "Generar etiqueta de prueba y rastrear un envío de prueba.",
+            "estimated_minutes": 10,
+        },
     ],
     "dhl": [
-        {"step": 1, "title": "Crear cuenta DHL Express", "description": "Registrarse en dhl.com/express como business account.", "estimated_minutes": 20},
-        {"step": 2, "title": "Verificación KYC", "description": "Validar identidad fiscal y propósito del envío internacional.", "estimated_minutes": 30},
-        {"step": 3, "title": "Solicitar cuenta API MyDHL", "description": "Solicitar acceso a MyDHL API para integración automatizada.", "estimated_minutes": 10},
-        {"step": 4, "title": "Configurar preferencias de envío", "description": "Definir incoterms (DDP/DDU), seguro y embalaje estándar.", "estimated_minutes": 20},
-        {"step": 5, "title": "Integrar con plataforma", "description": "Conectar DHL API vía plugin o custom integration.", "estimated_minutes": 45},
-        {"step": 6, "title": "Declaración aduanera", "description": "Configurar HS codes por producto para despacho automático.", "estimated_minutes": 30},
+        {
+            "step": 1,
+            "title": "Crear cuenta DHL Express",
+            "description": "Registrarse en dhl.com/express como business account.",
+            "estimated_minutes": 20,
+        },
+        {
+            "step": 2,
+            "title": "Verificación KYC",
+            "description": "Validar identidad fiscal y propósito del envío internacional.",
+            "estimated_minutes": 30,
+        },
+        {
+            "step": 3,
+            "title": "Solicitar cuenta API MyDHL",
+            "description": "Solicitar acceso a MyDHL API para integración automatizada.",
+            "estimated_minutes": 10,
+        },
+        {
+            "step": 4,
+            "title": "Configurar preferencias de envío",
+            "description": "Definir incoterms (DDP/DDU), seguro y embalaje estándar.",
+            "estimated_minutes": 20,
+        },
+        {
+            "step": 5,
+            "title": "Integrar con plataforma",
+            "description": "Conectar DHL API vía plugin o custom integration.",
+            "estimated_minutes": 45,
+        },
+        {
+            "step": 6,
+            "title": "Declaración aduanera",
+            "description": "Configurar HS codes por producto para despacho automático.",
+            "estimated_minutes": 30,
+        },
     ],
     "fedex": [
-        {"step": 1, "title": "Crear cuenta FedEx", "description": "Registrarse en fedex.com como business account.", "estimated_minutes": 20},
-        {"step": 2, "title": "Verificación comercial", "description": "Validar datos fiscales y volumen estimado de envíos mensuales.", "estimated_minutes": 25},
-        {"step": 3, "title": "Solicitar FedEx Developer Portal", "description": "Crear app en FedEx Developer para obtener API keys.", "estimated_minutes": 15},
-        {"step": 4, "title": "Configurar servicios", "description": "Seleccionar servicios (International Priority, Economy, etc.).", "estimated_minutes": 20},
-        {"step": 5, "title": "Integrar FedEx Ship Manager", "description": "Conectar vía FedEx Web Services o plugin de e-commerce.", "estimated_minutes": 40},
-        {"step": 6, "title": "Test internacional", "description": "Simular envío internacional con documentación completa.", "estimated_minutes": 20},
+        {
+            "step": 1,
+            "title": "Crear cuenta FedEx",
+            "description": "Registrarse en fedex.com como business account.",
+            "estimated_minutes": 20,
+        },
+        {
+            "step": 2,
+            "title": "Verificación comercial",
+            "description": "Validar datos fiscales y volumen estimado de envíos mensuales.",
+            "estimated_minutes": 25,
+        },
+        {
+            "step": 3,
+            "title": "Solicitar FedEx Developer Portal",
+            "description": "Crear app en FedEx Developer para obtener API keys.",
+            "estimated_minutes": 15,
+        },
+        {
+            "step": 4,
+            "title": "Configurar servicios",
+            "description": "Seleccionar servicios (International Priority, Economy, etc.).",
+            "estimated_minutes": 20,
+        },
+        {
+            "step": 5,
+            "title": "Integrar FedEx Ship Manager",
+            "description": "Conectar vía FedEx Web Services o plugin de e-commerce.",
+            "estimated_minutes": 40,
+        },
+        {
+            "step": 6,
+            "title": "Test internacional",
+            "description": "Simular envío internacional con documentación completa.",
+            "estimated_minutes": 20,
+        },
     ],
     "ups": [
-        {"step": 1, "title": "Crear cuenta UPS", "description": "Registrarse en ups.com como shipper business.", "estimated_minutes": 20},
-        {"step": 2, "title": "Verificación fiscal", "description": "Validar CUIT/empresa para habilitar envíos internacionales.", "estimated_minutes": 25},
-        {"step": 3, "title": "Solicitar UPS Developer Kit", "description": "Solicitar acceso a UPS API (XML/REST) para rate & ship.", "estimated_minutes": 15},
-        {"step": 4, "title": "Configurar preferencias", "description": "Definir tipos de servicio, seguro y opciones de notificación.", "estimated_minutes": 20},
-        {"step": 5, "title": "Integrar con e-commerce", "description": "Conectar UPS API o usar plugin oficial de Shopify/WooCommerce.", "estimated_minutes": 40},
-        {"step": 6, "title": "Prueba de envío", "description": "Generar etiqueta de prueba y rastrear paquete de test.", "estimated_minutes": 15},
+        {
+            "step": 1,
+            "title": "Crear cuenta UPS",
+            "description": "Registrarse en ups.com como shipper business.",
+            "estimated_minutes": 20,
+        },
+        {
+            "step": 2,
+            "title": "Verificación fiscal",
+            "description": "Validar CUIT/empresa para habilitar envíos internacionales.",
+            "estimated_minutes": 25,
+        },
+        {
+            "step": 3,
+            "title": "Solicitar UPS Developer Kit",
+            "description": "Solicitar acceso a UPS API (XML/REST) para rate & ship.",
+            "estimated_minutes": 15,
+        },
+        {
+            "step": 4,
+            "title": "Configurar preferencias",
+            "description": "Definir tipos de servicio, seguro y opciones de notificación.",
+            "estimated_minutes": 20,
+        },
+        {
+            "step": 5,
+            "title": "Integrar con e-commerce",
+            "description": "Conectar UPS API o usar plugin oficial de Shopify/WooCommerce.",
+            "estimated_minutes": 40,
+        },
+        {
+            "step": 6,
+            "title": "Prueba de envío",
+            "description": "Generar etiqueta de prueba y rastrear paquete de test.",
+            "estimated_minutes": 15,
+        },
     ],
     "oca": [
-        {"step": 1, "title": "Crear cuenta OCA", "description": "Registrarse en oca.com.ar con datos fiscales.", "estimated_minutes": 15},
-        {"step": 2, "title": "Validar cuenta", "description": "Confirmar email y teléfono comercial.", "estimated_minutes": 10},
-        {"step": 3, "title": "Solicitar integración API", "description": "Contactar a soporte de OCA para obtener credenciales de API.", "estimated_minutes": 10},
-        {"step": 4, "title": "Configurar cotizador", "description": "Definir CPs de origen, destino y modalidades de entrega.", "estimated_minutes": 20},
-        {"step": 5, "title": "Integrar con tienda", "description": "Instalar módulo de OCA o conectar vía API REST.", "estimated_minutes": 30},
-        {"step": 6, "title": "Test de envío", "description": "Generar etiqueta y rastrear paquete de prueba.", "estimated_minutes": 10},
+        {
+            "step": 1,
+            "title": "Crear cuenta OCA",
+            "description": "Registrarse en oca.com.ar con datos fiscales.",
+            "estimated_minutes": 15,
+        },
+        {
+            "step": 2,
+            "title": "Validar cuenta",
+            "description": "Confirmar email y teléfono comercial.",
+            "estimated_minutes": 10,
+        },
+        {
+            "step": 3,
+            "title": "Solicitar integración API",
+            "description": "Contactar a soporte de OCA para obtener credenciales de API.",
+            "estimated_minutes": 10,
+        },
+        {
+            "step": 4,
+            "title": "Configurar cotizador",
+            "description": "Definir CPs de origen, destino y modalidades de entrega.",
+            "estimated_minutes": 20,
+        },
+        {
+            "step": 5,
+            "title": "Integrar con tienda",
+            "description": "Instalar módulo de OCA o conectar vía API REST.",
+            "estimated_minutes": 30,
+        },
+        {
+            "step": 6,
+            "title": "Test de envío",
+            "description": "Generar etiqueta y rastrear paquete de prueba.",
+            "estimated_minutes": 10,
+        },
     ],
     "correo_argentino": [
-        {"step": 1, "title": "Crear cuenta en Correo Argentino", "description": "Registrarse en correoargentino.com.ar como usuario Mi Correo.", "estimated_minutes": 15},
-        {"step": 2, "title": "Verificar identidad", "description": "Validar CUIT/DNI vía trámite online o presencial.", "estimated_minutes": 20},
-        {"step": 3, "title": "Solicitar Mercado Envíos (si aplica)", "description": "Para integración automática, usar Mercado Envíos con Correo Argentino.", "estimated_minutes": 10},
-        {"step": 4, "title": "Configurar envíos", "description": "Definir tipos de envío (a domicilio, sucursal, internacional).", "estimated_minutes": 15},
-        {"step": 5, "title": "Imprimir etiquetas manuales o auto", "description": "Configurar impresión de etiquetas o usar integración con plataforma.", "estimated_minutes": 10},
-        {"step": 6, "title": "Test de envío", "description": "Realizar envío de prueba y rastreo.", "estimated_minutes": 10},
+        {
+            "step": 1,
+            "title": "Crear cuenta en Correo Argentino",
+            "description": "Registrarse en correoargentino.com.ar como usuario Mi Correo.",
+            "estimated_minutes": 15,
+        },
+        {
+            "step": 2,
+            "title": "Verificar identidad",
+            "description": "Validar CUIT/DNI vía trámite online o presencial.",
+            "estimated_minutes": 20,
+        },
+        {
+            "step": 3,
+            "title": "Solicitar Mercado Envíos (si aplica)",
+            "description": "Para integración automática, usar Mercado Envíos con Correo Argentino.",
+            "estimated_minutes": 10,
+        },
+        {
+            "step": 4,
+            "title": "Configurar envíos",
+            "description": "Definir tipos de envío (a domicilio, sucursal, internacional).",
+            "estimated_minutes": 15,
+        },
+        {
+            "step": 5,
+            "title": "Imprimir etiquetas manuales o auto",
+            "description": "Configurar impresión de etiquetas o usar integración con plataforma.",
+            "estimated_minutes": 10,
+        },
+        {
+            "step": 6,
+            "title": "Test de envío",
+            "description": "Realizar envío de prueba y rastreo.",
+            "estimated_minutes": 10,
+        },
     ],
 }
 
@@ -214,7 +414,9 @@ CARRIER_SETUP_STEPS = {
 class ShippingConnectorAssistant:
     """Asistente de recomendaciones y configuración de carriers de envío."""
 
-    def get_carrier_recommendations(self, context: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def get_carrier_recommendations(
+        self, context: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Recomendar carriers según país, alcance y tipo de producto.
 
         Args:
@@ -264,22 +466,26 @@ class ShippingConnectorAssistant:
                 score += 1
                 reasons.append("Descuento por volumen probable")
 
-            recommendations.append({
-                "carrier_slug": slug,
-                "carrier_name": data["name"],
-                "score": score,
-                "reasons": reasons,
-                "integration_difficulty": data["integration_difficulty"],
-                "avg_delivery_days": data["avg_delivery_days"].get(reach),
-                "pricing_tier": data["pricing_tier"],
-                "api_available": data["api_available"],
-                "website": data["website"],
-            })
+            recommendations.append(
+                {
+                    "carrier_slug": slug,
+                    "carrier_name": data["name"],
+                    "score": score,
+                    "reasons": reasons,
+                    "integration_difficulty": data["integration_difficulty"],
+                    "avg_delivery_days": data["avg_delivery_days"].get(reach),
+                    "pricing_tier": data["pricing_tier"],
+                    "api_available": data["api_available"],
+                    "website": data["website"],
+                }
+            )
 
         recommendations.sort(key=lambda x: x["score"], reverse=True)
         return recommendations
 
-    def generate_setup_steps(self, carrier: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def generate_setup_steps(
+        self, carrier: str, context: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Devolver paso a paso para configurar un carrier específico.
 
         Args:
@@ -317,8 +523,8 @@ class ShippingConnectorAssistant:
         origin: str,
         destination: str,
         weight_kg: float,
-        dimensions: Optional[Dict[str, float]] = None,
-    ) -> Dict[str, Any]:
+        dimensions: dict[str, float] | None = None,
+    ) -> dict[str, Any]:
         """Estimar costos de envío por carrier.
 
         Args:
@@ -342,10 +548,10 @@ class ShippingConnectorAssistant:
 
         estimates = []
         for slug, data in CARRIER_DATA.items():
-            if destination not in data["coverage"] and is_international:
-                # Si es internacional y el carrier no cubre destino, solo carriers internacionales
-                if data["reach"] != "international":
-                    continue
+            if (destination not in data["coverage"] and is_international) and data[
+                "reach"
+            ] != "international":
+                continue
 
             tier = data["pricing_tier"]
             pricing = PRICING_TIERS.get(tier, PRICING_TIERS["mid"])
@@ -359,18 +565,22 @@ class ShippingConnectorAssistant:
                 cost *= 2.5
 
             # Ajuste por volumen (estimado)
-            if dimensions and (dimensions.get("length_cm", 0) > 100 or volumetric_weight > 20):
+            if dimensions and (
+                dimensions.get("length_cm", 0) > 100 or volumetric_weight > 20
+            ):
                 cost *= 1.3
 
-            estimates.append({
-                "carrier_slug": slug,
-                "carrier_name": data["name"],
-                "estimated_cost_ars": round(cost, 2),
-                "currency": "ARS",
-                "estimated_delivery_days": data["avg_delivery_days"].get(reach),
-                "reach": reach,
-                "weight_used_kg": round(volumetric_weight, 2),
-            })
+            estimates.append(
+                {
+                    "carrier_slug": slug,
+                    "carrier_name": data["name"],
+                    "estimated_cost_ars": round(cost, 2),
+                    "currency": "ARS",
+                    "estimated_delivery_days": data["avg_delivery_days"].get(reach),
+                    "reach": reach,
+                    "weight_used_kg": round(volumetric_weight, 2),
+                }
+            )
 
         estimates.sort(key=lambda x: x["estimated_cost_ars"])
         return {
@@ -381,7 +591,7 @@ class ShippingConnectorAssistant:
             "estimates": estimates,
         }
 
-    def get_cross_border_requirements(self, target_country: str) -> Dict[str, Any]:
+    def get_cross_border_requirements(self, target_country: str) -> dict[str, Any]:
         """Obtener requisitos aduaneros, fiscales y documentación para un país destino.
 
         Args:

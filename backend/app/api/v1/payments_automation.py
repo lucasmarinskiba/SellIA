@@ -7,9 +7,10 @@ Endpoints:
 - POST /api/v1/payments/refund (procesar refund)
 """
 
-from fastapi import APIRouter, Request, HTTPException
-from typing import Dict, Any
 import logging
+from typing import Any
+
+from fastapi import APIRouter, HTTPException, Request
 
 logger = logging.getLogger(__name__)
 
@@ -18,11 +19,11 @@ router = APIRouter(prefix="/api/v1/payments", tags=["payments"])
 
 @router.post("/checkout")
 async def create_payment_checkout(
-    product: Dict[str, Any],
-    buyer: Dict[str, Any],
-    metadata: Dict[str, Any] = None,
+    product: dict[str, Any],
+    buyer: dict[str, Any],
+    metadata: dict[str, Any] | None = None,
     stripe_service=None,  # Inyectado desde DI
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Crea Stripe checkout automáticamente.
 
@@ -50,16 +51,16 @@ async def create_payment_checkout(
             raise HTTPException(status_code=400, detail=result.get("error"))
 
     except Exception as e:
-        logger.error(f"Checkout creation failed: {str(e)}")
+        logger.exception("Checkout creation failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/subscription/checkout")
 async def create_subscription_checkout(
-    plan: Dict[str, Any],
-    buyer: Dict[str, Any],
+    plan: dict[str, Any],
+    buyer: dict[str, Any],
     stripe_service=None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Crea checkout para suscripción.
 
@@ -85,7 +86,7 @@ async def create_subscription_checkout(
             raise HTTPException(status_code=400, detail=result.get("error"))
 
     except Exception as e:
-        logger.error(f"Subscription checkout failed: {str(e)}")
+        logger.exception("Subscription checkout failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -93,7 +94,7 @@ async def create_subscription_checkout(
 async def stripe_webhook(
     request: Request,
     stripe_service=None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Endpoint para webhooks de Stripe.
 
@@ -113,7 +114,7 @@ async def stripe_webhook(
         return result
 
     except Exception as e:
-        logger.error(f"Webhook processing failed: {str(e)}")
+        logger.exception("Webhook processing failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -122,7 +123,7 @@ async def process_refund(
     payment_intent_id: str,
     reason: str = "requested_by_customer",
     stripe_service=None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Procesa refund automáticamente.
 
@@ -148,7 +149,7 @@ async def process_refund(
             raise HTTPException(status_code=400, detail=result.get("error"))
 
     except Exception as e:
-        logger.error(f"Refund processing failed: {str(e)}")
+        logger.exception("Refund processing failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -159,7 +160,7 @@ async def create_invoice(
     description: str,
     due_date_days: int = 30,
     stripe_service=None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Crea invoice automáticamente.
 
@@ -184,7 +185,7 @@ async def create_invoice(
             raise HTTPException(status_code=400, detail=result.get("error"))
 
     except Exception as e:
-        logger.error(f"Invoice creation failed: {str(e)}")
+        logger.exception("Invoice creation failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -192,7 +193,7 @@ async def create_invoice(
 async def get_customer_balance(
     customer_id: str,
     stripe_service=None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Obtiene balance + history de customer.
     """
@@ -208,5 +209,5 @@ async def get_customer_balance(
             raise HTTPException(status_code=400)
 
     except Exception as e:
-        logger.error(f"Get balance failed: {str(e)}")
+        logger.exception("Get balance failed")
         raise HTTPException(status_code=500, detail=str(e))

@@ -1,28 +1,31 @@
 """Affiliate Strategy Engine — Select best strategies for product/market."""
 
-from typing import Dict, List, Optional
 from dataclasses import dataclass
+
 from .affiliate_sales_methods import AffiliateMethod, get_best_methods_for_product
+
 
 @dataclass
 class AffiliateStrategy:
     """Complete affiliate strategy for product."""
+
     product_id: str
     product_name: str
     platform: str
-    target_audience: List[str]
-    primary_methods: List[AffiliateMethod]
-    secondary_methods: List[AffiliateMethod]
+    target_audience: list[str]
+    primary_methods: list[AffiliateMethod]
+    secondary_methods: list[AffiliateMethod]
     estimated_monthly_revenue: float
     time_to_first_sale: str
-    required_resources: Dict[str, int]  # budget, time, channels
-    success_metrics: Dict[str, float]
+    required_resources: dict[str, int]  # budget, time, channels
+    success_metrics: dict[str, float]
+
 
 class AffiliateStrategyEngine:
     """Engine for selecting optimal affiliate strategies."""
 
     def __init__(self):
-        self.strategies: Dict[str, AffiliateStrategy] = {}
+        self.strategies: dict[str, AffiliateStrategy] = {}
 
     def generate_strategy(
         self,
@@ -30,7 +33,7 @@ class AffiliateStrategyEngine:
         product_name: str,
         product_type: str,
         platform: str,
-        target_audience: List[str],
+        target_audience: list[str],
         budget: str = "medium",
         timeline: str = "3_months",
     ) -> AffiliateStrategy:
@@ -47,9 +50,7 @@ class AffiliateStrategyEngine:
             target_audience=target_audience,
             primary_methods=primary,
             secondary_methods=secondary,
-            estimated_monthly_revenue=self._estimate_revenue(
-                primary, product_type
-            ),
+            estimated_monthly_revenue=self._estimate_revenue(primary, product_type),
             time_to_first_sale=self._estimate_time_to_sale(primary),
             required_resources=self._estimate_resources(primary, budget),
             success_metrics=self._define_metrics(product_type),
@@ -58,7 +59,9 @@ class AffiliateStrategyEngine:
         self.strategies[product_id] = strategy
         return strategy
 
-    def _estimate_revenue(self, methods: List[AffiliateMethod], product_type: str) -> float:
+    def _estimate_revenue(
+        self, methods: list[AffiliateMethod], product_type: str
+    ) -> float:
         """Estimate monthly revenue from methods."""
         if not methods:
             return 0
@@ -66,7 +69,7 @@ class AffiliateStrategyEngine:
         base_revenue = 1000  # Conservative base
         return base_revenue * (avg_roi / 5)  # Scale by ROI
 
-    def _estimate_time_to_sale(self, methods: List[AffiliateMethod]) -> str:
+    def _estimate_time_to_sale(self, methods: list[AffiliateMethod]) -> str:
         """Estimate time to first sale."""
         if not methods:
             return "unknown"
@@ -79,7 +82,9 @@ class AffiliateStrategyEngine:
             return "weeks"
         return "months"
 
-    def _estimate_resources(self, methods: List[AffiliateMethod], budget: str) -> Dict[str, int]:
+    def _estimate_resources(
+        self, methods: list[AffiliateMethod], budget: str
+    ) -> dict[str, int]:
         """Estimate required resources."""
         budget_map = {"low": 500, "medium": 2000, "high": 10000}
         effort = sum(m.effort_level for m in methods) / len(methods) if methods else 5
@@ -89,7 +94,7 @@ class AffiliateStrategyEngine:
             "channels_required": len(methods),
         }
 
-    def _define_metrics(self, product_type: str) -> Dict[str, float]:
+    def _define_metrics(self, product_type: str) -> dict[str, float]:
         """Define success metrics."""
         return {
             "clicks_target": 1000,
@@ -98,7 +103,7 @@ class AffiliateStrategyEngine:
             "roi_target": 3.0,
         }
 
-    def recommend_quick_wins(self) -> List[AffiliateMethod]:
+    def recommend_quick_wins(self) -> list[AffiliateMethod]:
         """Recommend quick-win methods (fast to setup, good ROI)."""
         all_strategies = list(self.strategies.values())
         quick_wins = []
@@ -114,7 +119,9 @@ class AffiliateStrategyEngine:
         )
         return sorted_wins[:5]
 
-    def optimize_strategy(self, product_id: str, performance_data: Dict) -> AffiliateStrategy:
+    def optimize_strategy(
+        self, product_id: str, performance_data: dict
+    ) -> AffiliateStrategy:
         """Optimize strategy based on performance data."""
         strategy = self.strategies.get(product_id)
         if not strategy:

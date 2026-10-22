@@ -6,8 +6,9 @@ variant, because there is no such thing as "the platform's links".
 
 from __future__ import annotations
 
+import logging
 import uuid
-from typing import Any, Optional
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -21,13 +22,15 @@ from app.domains.users.models import User
 from . import analyzer, fetcher, service, suggestions
 from .models import PLATFORM_KINDS, BusinessLink
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/web-presence", tags=["Web Presence"])
 
 
 class LinkIn(BaseModel):
     platform: str = Field(..., max_length=40)
     url: str = Field(..., max_length=1024)
-    label: Optional[str] = Field(None, max_length=200)
+    label: str | None = Field(None, max_length=200)
     is_primary: bool = False
 
 
@@ -48,8 +51,8 @@ async def list_platforms() -> dict[str, Any]:
 
 @router.get("/suggested-links")
 async def suggested_links(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """Platforms already connected in /dashboard/platforms that don't have a
     matching link here yet -- with a real, ready-to-add URL for the ones we
@@ -57,13 +60,17 @@ async def suggested_links(
     from app.domains.authority.service import business_ids_for
 
     business_ids = await business_ids_for(db, user.id)
-    return {"suggestions": await suggestions.suggest_links_from_channels(db, user.id, business_ids)}
+    return {
+        "suggestions": await suggestions.suggest_links_from_channels(
+            db, user.id, business_ids
+        )
+    }
 
 
 @router.get("/links")
 async def get_links(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     links = await service.list_links(db, user.id)
     return {"links": [service.serialize_link(link) for link in links]}
@@ -72,8 +79,8 @@ async def get_links(
 @router.post("/links")
 async def add_link(
     payload: LinkIn,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     try:
         link = await service.upsert_link(
@@ -92,8 +99,8 @@ async def add_link(
 @router.delete("/links/{link_id}")
 async def remove_link(
     link_id: uuid.UUID,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, bool]:
     deleted = await service.delete_link(db, user.id, link_id)
     if not deleted:
@@ -104,8 +111,8 @@ async def remove_link(
 @router.post("/links/{link_id}/audit")
 async def audit_one(
     link_id: uuid.UUID,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     result = await db.execute(
         select(BusinessLink).where(
@@ -120,15 +127,18 @@ async def audit_one(
 
 @router.post("/audit-all")
 async def audit_everything(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     links = await service.audit_all(db, user.id)
     return {"links": [service.serialize_link(link) for link in links]}
 
 
 @router.post("/analyze-url")
-async def analyze_any_url(payload: UrlIn, _: User = Depends(get_current_user)) -> dict[str, Any]:
+async def analyze_any_url(
+    payload: UrlIn,
+    _: Annotated[User, Depends(get_current_user)],
+) -> dict[str, Any]:
     """One-off audit of any public URL (a competitor's page, a listing you are
     about to publish). Not stored -- use POST /links to keep it."""
     result = await fetcher.fetch(payload.url)
@@ -156,17 +166,17 @@ async def analyze_any_url(payload: UrlIn, _: User = Depends(get_current_user)) -
 @router.post("/compare")
 async def compare_with_competitor(
     payload: UrlIn,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """Your main page against a competitor's, on the signals that can actually
     be read from both pages -- plus which topics their page covers that yours
     never mentions. No estimated 'domain authority' anywhere: that number needs
     a paid backlink index (see docs/INTEGRACIONES.md)."""
     links = await service.list_links(db, user.id)
-    mine = next((link for link in links if link.is_primary and link.audit), None) or next(
-        (link for link in links if link.audit), None
-    )
+    mine = next(
+        (link for link in links if link.is_primary and link.audit), None
+    ) or next((link for link in links if link.audit), None)
     if mine is None:
         raise HTTPException(
             status_code=400,
@@ -185,7 +195,9 @@ async def compare_with_competitor(
     theirs_dict = theirs.as_dict()
     mine_dict = mine.audit or {}
 
-    def row(label: str, mine_value: Any, their_value: Any, higher_is_better: bool = True) -> dict[str, Any]:
+    def row(
+        label: str, mine_value: Any, their_value: Any, higher_is_better: bool = True
+    ) -> dict[str, Any]:
         return {
             "label": label,
             "mine": mine_value,
@@ -194,26 +206,51 @@ async def compare_with_competitor(
         }
 
     my_terms = {t["term"] for t in (mine_dict.get("terms") or {}).get("top_terms", [])}
-    their_terms = [t["term"] for t in (theirs_dict.get("terms") or {}).get("top_terms", [])]
+    their_terms = [
+        t["term"] for t in (theirs_dict.get("terms") or {}).get("top_terms", [])
+    ]
 
     return {
         "ok": True,
-        "mine": {"url": mine.url, "score": mine.seo_score, "title": mine_dict.get("title")},
+        "mine": {
+            "url": mine.url,
+            "score": mine.seo_score,
+            "title": mine_dict.get("title"),
+        },
         "theirs": {
             "url": result.final_url,
             "score": analyzer.score_page(theirs, result.elapsed_ms),
             "title": theirs_dict.get("title"),
         },
         "rows": [
-            row("Palabras de contenido", mine_dict.get("word_count"), theirs_dict.get("word_count")),
-            row("Tipos de datos estructurados",
-                len(mine_dict.get("json_ld_types", [])), len(theirs_dict.get("json_ld_types", []))),
-            row("Enlaces internos", mine_dict.get("internal_links"), theirs_dict.get("internal_links")),
-            row("Imágenes sin alt",
-                mine_dict.get("images_without_alt"), theirs_dict.get("images_without_alt"), False),
+            row(
+                "Palabras de contenido",
+                mine_dict.get("word_count"),
+                theirs_dict.get("word_count"),
+            ),
+            row(
+                "Tipos de datos estructurados",
+                len(mine_dict.get("json_ld_types", [])),
+                len(theirs_dict.get("json_ld_types", [])),
+            ),
+            row(
+                "Enlaces internos",
+                mine_dict.get("internal_links"),
+                theirs_dict.get("internal_links"),
+            ),
+            row(
+                "Imágenes sin alt",
+                mine_dict.get("images_without_alt"),
+                theirs_dict.get("images_without_alt"),
+                False,
+            ),
             row("Tiempo de respuesta (ms)", mine.response_ms, result.elapsed_ms, False),
-            row("Hallazgos abiertos",
-                len(mine_dict.get("issues", [])), len(theirs_dict.get("issues", [])), False),
+            row(
+                "Hallazgos abiertos",
+                len(mine_dict.get("issues", [])),
+                len(theirs_dict.get("issues", [])),
+                False,
+            ),
         ],
         "topics_they_cover": [t for t in their_terms if t not in my_terms][:10],
         "their_schema": theirs_dict.get("json_ld_types", []),
@@ -222,24 +259,24 @@ async def compare_with_competitor(
 
 @router.get("/seo-report")
 async def get_seo_report(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     return await service.seo_report(db, user.id)
 
 
 @router.get("/authority-report")
 async def get_authority_report(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     return await service.authority_report(db, user.id)
 
 
 @router.get("/structured-data")
 async def get_structured_data(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     """The exact JSON-LD this account should paste into its site, built from its
     own real business data and its own real profile URLs."""
@@ -256,7 +293,9 @@ async def get_structured_data(
             ),
         }
 
-    business_name = user.full_name or (user.email.split("@")[0] if user.email else "Mi negocio")
+    business_name = user.full_name or (
+        user.email.split("@")[0] if user.email else "Mi negocio"
+    )
     city = country = description = None
     has_physical = False
     try:
@@ -271,8 +310,8 @@ async def get_structured_data(
             city = ctx.city
             country = ctx.country
             has_physical = bool(ctx.has_physical_location)
-    except Exception:  # noqa: BLE001 -- schema is still generated without context
-        pass
+    except Exception:
+        logger.exception("get_structured_data: error ignorado")
 
     node = service.build_structured_data(
         business_name=business_name,

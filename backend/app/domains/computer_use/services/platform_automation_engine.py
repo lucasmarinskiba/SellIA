@@ -5,17 +5,18 @@ Automatiza envío de respuestas sin dependencia de Computer Use.
 """
 
 import logging
-from typing import Optional, Dict, Any, Tuple
 from enum import Enum
+from typing import Any
 
-from app.domains.computer_use.platform_scripts.registry import get_script_for_task
 from app.domains.computer_use.browser_service import BrowserService
+from app.domains.computer_use.platform_scripts.registry import get_script_for_task
 
 logger = logging.getLogger(__name__)
 
 
 class PlatformAutomationType(str, Enum):
     """Tipos de automation disponibles."""
+
     WHATSAPP_WEB = "whatsapp_web"
     FACEBOOK_MESSENGER = "messenger"
     INSTAGRAM_DM = "instagram_dm"
@@ -27,7 +28,7 @@ class PlatformAutomationType(str, Enum):
 class PlatformAutomationEngine:
     """Ejecuta scripts de automatización en plataformas de mensajería."""
 
-    def __init__(self, browser_service: Optional[BrowserService] = None):
+    def __init__(self, browser_service: BrowserService | None = None):
         self.browser_service = browser_service or BrowserService()
         self.logger = logger
 
@@ -36,7 +37,7 @@ class PlatformAutomationEngine:
         platform: PlatformAutomationType,
         recipient_identifier: str,  # nombre, usuario, teléfono, etc
         response_text: str,
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """
         Envía respuesta via browser automation.
 
@@ -60,20 +61,24 @@ class PlatformAutomationEngine:
             steps = script.get_task_steps("respond_message", params)
 
             # Ejecutar steps en navegador
-            await self.browser_service.start(headless=False)  # No headless para user browser
+            await self.browser_service.start(
+                headless=False
+            )  # No headless para user browser
 
             success = await self._execute_steps(steps)
 
             await self.browser_service.stop()
 
             if success:
-                self.logger.info(f"Message sent to {recipient_identifier} via {platform.value}")
+                self.logger.info(
+                    f"Message sent to {recipient_identifier} via {platform.value}"
+                )
                 return True, f"sent_{platform.value}_{recipient_identifier}"
             else:
                 return False, None
 
-        except Exception as e:
-            self.logger.error(f"Error sending response: {e}")
+        except Exception:
+            self.logger.exception("Error sending response")
             return False, None
 
     async def respond_to_comment(
@@ -82,7 +87,7 @@ class PlatformAutomationEngine:
         post_id: str,
         comment_text: str,
         response_text: str,
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """Responde a comentarios en posts."""
         try:
             script = get_script_for_task(platform.value, "respond_comment")
@@ -104,13 +109,15 @@ class PlatformAutomationEngine:
             await self.browser_service.stop()
 
             if success:
-                self.logger.info(f"Comment response posted to {post_id} via {platform.value}")
+                self.logger.info(
+                    f"Comment response posted to {post_id} via {platform.value}"
+                )
                 return True, f"replied_{platform.value}_{post_id}"
 
             return False, None
 
-        except Exception as e:
-            self.logger.error(f"Error responding to comment: {e}")
+        except Exception:
+            self.logger.exception("Error responding to comment")
             return False, None
 
     # ── Private ──────────────────────────────────────────────
@@ -120,23 +127,38 @@ class PlatformAutomationEngine:
         platform: PlatformAutomationType,
         recipient_identifier: str,
         response_text: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Prepara parámetros según plataforma."""
         if platform == PlatformAutomationType.WHATSAPP_WEB:
             # recipient_identifier puede ser nombre o número
             if recipient_identifier.isdigit():
-                return {"phone_number": recipient_identifier, "message_text": response_text}
+                return {
+                    "phone_number": recipient_identifier,
+                    "message_text": response_text,
+                }
             else:
-                return {"customer_name": recipient_identifier, "response_text": response_text}
+                return {
+                    "customer_name": recipient_identifier,
+                    "response_text": response_text,
+                }
 
         elif platform == PlatformAutomationType.FACEBOOK_MESSENGER:
-            return {"customer_name": recipient_identifier, "response_text": response_text}
+            return {
+                "customer_name": recipient_identifier,
+                "response_text": response_text,
+            }
 
         elif platform == PlatformAutomationType.INSTAGRAM_DM:
-            return {"customer_username": recipient_identifier, "response_text": response_text}
+            return {
+                "customer_username": recipient_identifier,
+                "response_text": response_text,
+            }
 
         elif platform == PlatformAutomationType.TIKTOK_DM:
-            return {"creator_username": recipient_identifier, "message_text": response_text}
+            return {
+                "creator_username": recipient_identifier,
+                "message_text": response_text,
+            }
 
         else:
             return {"recipient": recipient_identifier, "message": response_text}
@@ -150,8 +172,8 @@ class PlatformAutomationEngine:
 
                 action = step.action
                 target = step.target
-                value = step.value if hasattr(step, 'value') else None
-                wait_ms = step.wait_ms if hasattr(step, 'wait_ms') else None
+                value = step.value if hasattr(step, "value") else None
+                wait_ms = step.wait_ms if hasattr(step, "wait_ms") else None
                 description = step.description
 
                 self.logger.debug(f"Step {i + 1}: {description}")
@@ -162,6 +184,7 @@ class PlatformAutomationEngine:
 
                 elif action == "wait":
                     import asyncio
+
                     await asyncio.sleep((wait_ms or 1000) / 1000.0)
 
                 elif action == "click":
@@ -178,12 +201,12 @@ class PlatformAutomationEngine:
 
             return True
 
-        except Exception as e:
-            self.logger.error(f"Error executing steps: {e}")
+        except Exception:
+            self.logger.exception("Error executing steps")
             return False
 
 
 def get_platform_automation_engine(
-    browser_service: Optional[BrowserService] = None,
+    browser_service: BrowserService | None = None,
 ) -> PlatformAutomationEngine:
     return PlatformAutomationEngine(browser_service)

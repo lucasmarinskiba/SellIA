@@ -1,9 +1,9 @@
 """Phase 15: Auto-scaling and performance optimization."""
 
-from dataclasses import dataclass
-from typing import Dict, Any, List
-from enum import Enum
 import logging
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -27,23 +27,25 @@ class ChannelAllocation:
 @dataclass
 class OptimizationRecommendation:
     strategy: OptimizationStrategy
-    channel_allocations: List[ChannelAllocation]
+    channel_allocations: list[ChannelAllocation]
     total_recommended_budget: float
     expected_total_revenue: float
     expected_roi: float
     rationale: str
-    actions: List[str]
+    actions: list[str]
 
 
 class PerformanceOptimizer:
     """Auto-optimize seller performance"""
 
-    def analyze_performance(self, seller_metrics: Dict[str, Any]) -> OptimizationStrategy:
+    def analyze_performance(
+        self, seller_metrics: dict[str, Any]
+    ) -> OptimizationStrategy:
         """Determine optimal strategy based on current performance"""
 
         roi = seller_metrics.get("roi", 1.0)
         growth_rate = seller_metrics.get("growth_rate", 0.0)
-        market_position = seller_metrics.get("market_position", "competitive")
+        seller_metrics.get("market_position", "competitive")
 
         if roi > 3.0 and growth_rate > 0.20:
             return OptimizationStrategy.AGGRESSIVE
@@ -56,7 +58,7 @@ class PerformanceOptimizer:
 
     def optimize_channel_spend(
         self, seller_id: str, total_budget: float, strategy: OptimizationStrategy
-    ) -> List[ChannelAllocation]:
+    ) -> list[ChannelAllocation]:
         """Recommend budget allocation across channels"""
 
         allocations = []
@@ -68,7 +70,7 @@ class PerformanceOptimizer:
                 "instagram": 0.25,
                 "google_ads": 0.25,
                 "facebook_ads": 0.15,
-                "linkedin": 0.05
+                "linkedin": 0.05,
             }
         elif strategy == OptimizationStrategy.GROWTH:
             channels = {
@@ -76,7 +78,7 @@ class PerformanceOptimizer:
                 "instagram": 0.20,
                 "google_ads": 0.20,
                 "facebook_ads": 0.15,
-                "linkedin": 0.10
+                "linkedin": 0.10,
             }
         elif strategy == OptimizationStrategy.BALANCED:
             channels = {
@@ -84,14 +86,10 @@ class PerformanceOptimizer:
                 "whatsapp": 0.20,
                 "email": 0.15,
                 "instagram": 0.15,
-                "linkedin": 0.10
+                "linkedin": 0.10,
             }
         else:  # CONSERVATIVE
-            channels = {
-                "google_maps": 0.50,
-                "whatsapp": 0.30,
-                "email": 0.20
-            }
+            channels = {"google_maps": 0.50, "whatsapp": 0.30, "email": 0.20}
 
         for channel, pct in channels.items():
             budget = total_budget * pct
@@ -100,7 +98,7 @@ class PerformanceOptimizer:
                 recommended_budget=budget,
                 expected_leads=int(budget / 10),  # $10 per lead estimate
                 expected_revenue=int(budget * 2.5),  # 2.5x ROI target
-                confidence=0.85
+                confidence=0.85,
             )
             allocations.append(allocation)
 
@@ -109,15 +107,15 @@ class PerformanceOptimizer:
     def generate_optimization_plan(
         self,
         seller_id: str,
-        current_metrics: Dict[str, Any],
-        total_budget: float = 1000.0
+        current_metrics: dict[str, Any],
+        total_budget: float = 1000.0,
     ) -> OptimizationRecommendation:
         """Generate complete optimization plan"""
 
         strategy = self.analyze_performance(current_metrics)
         allocations = self.optimize_channel_spend(seller_id, total_budget, strategy)
 
-        total_expected_leads = sum(a.expected_leads for a in allocations)
+        sum(a.expected_leads for a in allocations)
         total_expected_revenue = sum(a.expected_revenue for a in allocations)
         expected_roi = total_expected_revenue / total_budget if total_budget > 0 else 0
 
@@ -131,30 +129,34 @@ class PerformanceOptimizer:
             expected_total_revenue=total_expected_revenue,
             expected_roi=expected_roi,
             rationale=rationale,
-            actions=actions
+            actions=actions,
         )
 
         return recommendation
 
-    def _generate_rationale(self, strategy: OptimizationStrategy, metrics: Dict) -> str:
+    def _generate_rationale(self, strategy: OptimizationStrategy, metrics: dict) -> str:
         """Generate explanation for strategy"""
         if strategy == OptimizationStrategy.AGGRESSIVE:
             return "High ROI and growth momentum justify increased spend to capture market share"
         elif strategy == OptimizationStrategy.GROWTH:
-            return "Good performance metrics support gradual budget increase for scaling"
+            return (
+                "Good performance metrics support gradual budget increase for scaling"
+            )
         elif strategy == OptimizationStrategy.BALANCED:
             return "Current metrics indicate steady performance - maintain current trajectory"
         else:
             return "Conservative approach recommended - focus on cost efficiency and proven channels"
 
-    def _generate_actions(self, strategy: OptimizationStrategy, allocations: List) -> List[str]:
+    def _generate_actions(
+        self, strategy: OptimizationStrategy, allocations: list
+    ) -> list[str]:
         """Generate specific implementation steps"""
         total_leads = sum(a.expected_leads for a in allocations)
         actions = [
             f"1. Allocate budget across {len(allocations)} top channels",
             f"2. Monitor daily leads: target {total_leads} leads",
-            f"3. Track conversion rate weekly",
-            f"4. Adjust bids based on actual ROI",
-            f"5. Review performance bi-weekly"
+            "3. Track conversion rate weekly",
+            "4. Adjust bids based on actual ROI",
+            "5. Review performance bi-weekly",
         ]
         return actions[:5]

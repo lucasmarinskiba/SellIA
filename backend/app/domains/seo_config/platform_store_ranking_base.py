@@ -31,17 +31,20 @@ class StorePositioningConnector(ABC):
         self.credentials = credentials
 
     @abstractmethod
-    async def get_store_signals(self, store_external_id: str | None = None) -> list[RankingSignal]:
+    async def get_store_signals(
+        self, store_external_id: str | None = None
+    ) -> list[RankingSignal]:
         """Fetch store-level signals. Every sub-call independently try/excepted —
         one missing permission yields measured=False for that signal only."""
         ...
 
     @abstractmethod
-    async def validate_credentials(self) -> bool:
-        ...
+    async def validate_credentials(self) -> bool: ...
 
     @abstractmethod
-    def score_signals(self, signal_map: dict[str, RankingSignal]) -> dict[str, float | None]:
+    def score_signals(
+        self, signal_map: dict[str, RankingSignal]
+    ) -> dict[str, float | None]:
         """Map signals into StorePositioningScore sub-scores (traffic_score,
         engagement_score, new_visitor_score, content_performance_score).
         A pillar with no honest signal stays None."""

@@ -1,53 +1,84 @@
-import httpx
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from datetime import UTC, datetime, timedelta
+from typing import Annotated
 from uuid import UUID
-from typing import Any
-from datetime import datetime, timezone, timedelta
+
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
+from app.core.encryption import encrypt_value
+from app.core.security import get_password_hash
+from app.domains.security.models import WebhookEventLog
+from app.domains.subscriptions.billing import (
+    cancel_preapproval,
+    create_checkout_preference,
+    create_preapproval,
+    get_preapproval_status,
+    process_mercadopago_webhook,
+    process_preapproval_webhook,
+)
+from app.domains.subscriptions.crypto_billing import (
+    check_crypto_payment_status,
+    generate_crypto_payment,
+)
 from app.domains.subscriptions.models import (
-    SubscriptionPlan, Subscription, UserAPIKey, SubscriptionStatus,
-    PaymentTransaction, Invoice, PaymentStatus, PaymentProvider,
-    BankTransferPayment, BankTransferStatus, CancellationFeedback,
+    BankTransferPayment,
+    BankTransferStatus,
+    CancellationFeedback,
+    Invoice,
+    PaymentProvider,
+    PaymentStatus,
+    PaymentTransaction,
+    Subscription,
+    SubscriptionPlan,
+    SubscriptionStatus,
+    UserAPIKey,
 )
 from app.domains.subscriptions.schemas import (
-    SubscriptionPlanResponse, SubscriptionWithPlanResponse,
-    UserAPIKeyCreate, UserAPIKeyResponse, CheckLimitResponse,
-    CheckoutRequest, CheckoutResponse,
-    CryptoPaymentRequest, CryptoPaymentResponse, CryptoPaymentStatusResponse,
-    RegionDetectResponse, UserRegionUpdate,
-    BillingDetailsUpdate, BillingDetailsResponse,
-    PaymentTransactionResponse, InvoiceResponse,
-    BankTransferOrderCreate, BankTransferOrderResponse,
-    BankTransferConfirmRequest, BankTransferConfirmResponse,
+    AdminSubscriptionResponse,
     BankTransferAdminApproveRequest,
-    CancellationRequest, CancellationFeedbackResponse,
-    PreapprovalCreateRequest, PreapprovalResponse, PreapprovalStatusResponse,
-    RetentionSummary, RevenueSummary, AdminSubscriptionResponse, AdminBankTransferFilter,
+    BankTransferConfirmRequest,
+    BankTransferConfirmResponse,
+    BankTransferOrderCreate,
+    BankTransferOrderResponse,
+    BillingDetailsResponse,
+    BillingDetailsUpdate,
+    CancellationFeedbackResponse,
+    CancellationRequest,
+    CheckLimitResponse,
+    CheckoutRequest,
+    CheckoutResponse,
+    CryptoPaymentRequest,
+    CryptoPaymentResponse,
+    CryptoPaymentStatusResponse,
+    InvoiceResponse,
+    PreapprovalCreateRequest,
+    PreapprovalResponse,
+    PreapprovalStatusResponse,
+    RegionDetectResponse,
+    RetentionSummary,
+    RevenueSummary,
+    SubscriptionPlanResponse,
+    SubscriptionWithPlanResponse,
+    UserAPIKeyCreate,
+    UserAPIKeyResponse,
+    UserRegionUpdate,
 )
 from app.domains.subscriptions.services import (
-    get_or_create_subscription, check_subscription_limit, create_default_plans, track_usage,
-    get_region_from_country, get_plan_price, generate_invoice_number, create_invoice,
-    REGION_MAP,
-)
-from app.domains.subscriptions.billing import (
-    create_checkout_preference, create_preapproval, get_preapproval_status,
-    cancel_preapproval, process_preapproval_webhook, process_mercadopago_webhook,
+    check_subscription_limit,
+    get_or_create_subscription,
+    get_plan_price,
+    get_region_from_country,
 )
 from app.domains.subscriptions.stripe_billing import (
-    construct_webhook_event, process_stripe_webhook,
+    construct_webhook_event,
+    process_stripe_webhook,
 )
-from app.domains.security.models import WebhookEventLog
-from app.domains.subscriptions.crypto_billing import (
-    generate_crypto_payment, check_crypto_payment_status, verify_crypto_payment, get_usdt_contract_address
-)
-from app.core.security import get_password_hash
-from app.core.encryption import encrypt_value
+from app.domains.users.models import User
 
 router = APIRouter()
 settings = get_settings()
@@ -55,12 +86,14 @@ settings = get_settings()
 
 @router.get("/plans", response_model=list[SubscriptionPlanResponse])
 async def list_plans(
-    region: str = Query(None, description="AR | LATAM | INTL"),
-    cycle: str = Query("monthly", description="monthly | yearly"),
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    region: Annotated[str | None, Query(description="AR | LATAM | INTL")] = None,
+    cycle: Annotated[str, Query(description="monthly | yearly")] = "monthly",
 ):
     result = await db.execute(
-        select(SubscriptionPlan).where(SubscriptionPlan.is_active == True).order_by(SubscriptionPlan.display_order)
+        select(SubscriptionPlan)
+        .where(SubscriptionPlan.is_active == True)
+        .order_by(SubscriptionPlan.display_order)
     )
     plans = result.scalars().all()
 
@@ -76,8 +109,8 @@ async def list_plans(
 
 @router.get("/my-subscription", response_model=SubscriptionWithPlanResponse)
 async def get_my_subscription(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     sub = await get_or_create_subscription(db, current_user.id)
     # Eager load plan
@@ -98,25 +131,32 @@ async def get_my_subscription(
 
 @router.get("/my-usage")
 async def get_my_usage(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get current usage for all limited metrics."""
-    from app.domains.subscriptions.models import UsageTracking
-    from sqlalchemy import func
-    from datetime import datetime, timezone
+    from datetime import datetime
 
-    current_month = datetime.now(timezone.utc).strftime("%Y-%m")
+    from sqlalchemy import func
+
+    from app.domains.subscriptions.models import UsageTracking
+
+    current_month = datetime.now(UTC).strftime("%Y-%m")
 
     # Get user's subscription plan
     sub = await get_or_create_subscription(db, current_user.id)
-    plan = await db.execute(select(SubscriptionPlan).where(SubscriptionPlan.id == sub.plan_id))
+    plan = await db.execute(
+        select(SubscriptionPlan).where(SubscriptionPlan.id == sub.plan_id)
+    )
     plan = plan.scalar_one_or_none()
     limits = plan.limits or {} if plan else {}
 
     # Aggregate usage per metric
     result = await db.execute(
-        select(UsageTracking.metric_type, func.coalesce(func.sum(UsageTracking.quantity), 0))
+        select(
+            UsageTracking.metric_type,
+            func.coalesce(func.sum(UsageTracking.quantity), 0),
+        )
         .where(
             UsageTracking.user_id == current_user.id,
             UsageTracking.period_month == current_month,
@@ -125,28 +165,41 @@ async def get_my_usage(
     )
     usage_map = {row[0]: row[1] for row in result.all()}
 
-    metrics = ["conversations_per_month", "channels", "products", "agents", "storage_mb", "ai_tokens_monthly"]
+    metrics = [
+        "conversations_per_month",
+        "channels",
+        "products",
+        "agents",
+        "storage_mb",
+        "ai_tokens_monthly",
+    ]
     usage_report = []
     for metric in metrics:
         limit = limits.get(metric, 0)
         used = usage_map.get(metric, 0)
-        usage_report.append({
-            "metric": metric,
-            "used": used,
-            "limit": limit,
-            "unlimited": limit == -1,
-            "remaining": "unlimited" if limit == -1 else max(0, limit - used),
-        })
+        usage_report.append(
+            {
+                "metric": metric,
+                "used": used,
+                "limit": limit,
+                "unlimited": limit == -1,
+                "remaining": "unlimited" if limit == -1 else max(0, limit - used),
+            }
+        )
 
-    return {"period_month": current_month, "plan_slug": plan.slug if plan else "free", "usage": usage_report}
+    return {
+        "period_month": current_month,
+        "plan_slug": plan.slug if plan else "free",
+        "usage": usage_report,
+    }
 
 
 @router.get("/check-limit/{metric_type}", response_model=CheckLimitResponse)
 async def check_limit(
     metric_type: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     quantity: int = 1,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     result = await check_subscription_limit(db, current_user.id, metric_type, quantity)
     return CheckLimitResponse(**result)
@@ -154,15 +207,18 @@ async def check_limit(
 
 # ========== Checkout ==========
 
+
 @router.post("/create-checkout", response_model=CheckoutResponse)
 async def create_checkout(
     data: CheckoutRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create a checkout session for upgrading to a plan."""
     result = await db.execute(
-        select(SubscriptionPlan).where(SubscriptionPlan.slug == data.plan_slug, SubscriptionPlan.is_active == True)
+        select(SubscriptionPlan).where(
+            SubscriptionPlan.slug == data.plan_slug, SubscriptionPlan.is_active == True
+        )
     )
     plan = result.scalar_one_or_none()
     if not plan:
@@ -174,7 +230,9 @@ async def create_checkout(
 
     if data.payment_provider == PaymentProvider.MERCADOPAGO.value:
         if currency != "ARS":
-            raise HTTPException(status_code=400, detail="MercadoPago solo disponible para pagos en ARS")
+            raise HTTPException(
+                status_code=400, detail="MercadoPago solo disponible para pagos en ARS"
+            )
 
         try:
             preference = await create_checkout_preference(
@@ -193,14 +251,17 @@ async def create_checkout(
                 init_point=preference.get("init_point"),
                 sandbox_init_point=preference.get("sandbox_init_point"),
             )
-        except Exception as e:
+        except Exception:
+            logger.exception("create_checkout: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).exception("Error creating checkout")
             raise HTTPException(status_code=500, detail="Internal server error")
 
     elif data.payment_provider == "bank_transfer":
         # Create a bank transfer order (Cocos Capital / manual transfer)
         from app.domains.subscriptions.services import generate_bank_transfer_order
+
         try:
             order = await generate_bank_transfer_order(
                 db=db,
@@ -219,13 +280,17 @@ async def create_checkout(
                 preference_id=str(order.id),
                 init_point=f"/dashboard/transferencia/{order.id}",  # Frontend route
             )
-        except Exception as e:
+        except Exception:
+            logger.exception("create_checkout: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).exception("Error creating bank transfer order")
             raise HTTPException(status_code=500, detail="Internal server error")
 
     elif data.payment_provider == PaymentProvider.CRYPTO.value:
-        raise HTTPException(status_code=400, detail="Crypto usa el endpoint /create-crypto-payment")
+        raise HTTPException(
+            status_code=400, detail="Crypto usa el endpoint /create-crypto-payment"
+        )
 
     else:
         raise HTTPException(status_code=400, detail="Proveedor de pago no soportado")
@@ -233,15 +298,18 @@ async def create_checkout(
 
 # ========== MercadoPago Preapproval ==========
 
+
 @router.post("/preapproval", response_model=PreapprovalResponse)
 async def create_preapproval_subscription(
     data: PreapprovalCreateRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create a MercadoPago preapproval for automatic recurring billing (ARS only)."""
     result = await db.execute(
-        select(SubscriptionPlan).where(SubscriptionPlan.slug == data.plan_slug, SubscriptionPlan.is_active == True)
+        select(SubscriptionPlan).where(
+            SubscriptionPlan.slug == data.plan_slug, SubscriptionPlan.is_active == True
+        )
     )
     plan = result.scalar_one_or_none()
     if not plan:
@@ -252,10 +320,14 @@ async def create_preapproval_subscription(
     price, currency = get_plan_price(plan, user_region, data.billing_cycle)
 
     if currency != "ARS":
-        raise HTTPException(status_code=400, detail="Preapproval solo disponible para pagos en ARS")
+        raise HTTPException(
+            status_code=400, detail="Preapproval solo disponible para pagos en ARS"
+        )
 
     if not current_user.email:
-        raise HTTPException(status_code=400, detail="El usuario no tiene email configurado")
+        raise HTTPException(
+            status_code=400, detail="El usuario no tiene email configurado"
+        )
 
     try:
         preapproval = await create_preapproval(
@@ -267,8 +339,10 @@ async def create_preapproval_subscription(
             user_email=current_user.email,
             billing_cycle=data.billing_cycle,
         )
-    except Exception as e:
+    except Exception:
+        logger.exception("create_preapproval_subscription: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).exception("Error creating preapproval")
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -286,11 +360,13 @@ async def create_preapproval_subscription(
     )
 
 
-@router.get("/preapproval/{preapproval_id}/status", response_model=PreapprovalStatusResponse)
+@router.get(
+    "/preapproval/{preapproval_id}/status", response_model=PreapprovalStatusResponse
+)
 async def get_preapproval(
     preapproval_id: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get MercadoPago preapproval status."""
     try:
@@ -299,10 +375,13 @@ async def get_preapproval(
         if e.response.status_code == 404:
             raise HTTPException(status_code=404, detail="Preapproval no encontrado")
         from app.core.logger import get_logger
+
         get_logger(__name__).exception("Error querying MercadoPago")
         raise HTTPException(status_code=500, detail="Internal server error")
-    except Exception as e:
+    except Exception:
+        logger.exception("get_preapproval: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).exception("Error querying MercadoPago")
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -328,8 +407,8 @@ async def get_preapproval(
 @router.delete("/preapproval/{preapproval_id}")
 async def delete_preapproval(
     preapproval_id: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Cancel a MercadoPago preapproval."""
     sub_result = await db.execute(
@@ -344,8 +423,10 @@ async def delete_preapproval(
 
     try:
         await cancel_preapproval(preapproval_id)
-    except Exception as e:
+    except Exception:
+        logger.exception("delete_preapproval: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).exception("Error cancelling preapproval")
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -358,14 +439,17 @@ async def delete_preapproval(
 
 # ========== Crypto Payments ==========
 
+
 @router.post("/create-crypto-payment", response_model=CryptoPaymentResponse)
 async def create_crypto_payment(
     data: CryptoPaymentRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await db.execute(
-        select(SubscriptionPlan).where(SubscriptionPlan.slug == data.plan_slug, SubscriptionPlan.is_active == True)
+        select(SubscriptionPlan).where(
+            SubscriptionPlan.slug == data.plan_slug, SubscriptionPlan.is_active == True
+        )
     )
     plan = result.scalar_one_or_none()
     if not plan:
@@ -376,7 +460,9 @@ async def create_crypto_payment(
     price, currency = get_plan_price(plan, user_region, data.billing_cycle)
 
     if currency != "USD":
-        raise HTTPException(status_code=400, detail="Crypto solo disponible para pagos en USD")
+        raise HTTPException(
+            status_code=400, detail="Crypto solo disponible para pagos en USD"
+        )
 
     try:
         crypto = generate_crypto_payment(
@@ -386,8 +472,10 @@ async def create_crypto_payment(
             subscription_id=str(sub.id),
             network=data.crypto_network,
         )
-    except Exception as e:
+    except Exception:
+        logger.exception("create_crypto_payment: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).exception("Error generating crypto payment")
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -423,11 +511,14 @@ async def create_crypto_payment(
     )
 
 
-@router.get("/crypto-payment/{transaction_id}/status", response_model=CryptoPaymentStatusResponse)
+@router.get(
+    "/crypto-payment/{transaction_id}/status",
+    response_model=CryptoPaymentStatusResponse,
+)
 async def get_crypto_payment_status(
     transaction_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await db.execute(
         select(PaymentTransaction).where(
@@ -442,7 +533,9 @@ async def get_crypto_payment_status(
     # If we have an on-chain tx hash, query the network for fresh status
     if tx.crypto_tx_hash and tx.crypto_network:
         try:
-            onchain = await check_crypto_payment_status(tx.crypto_tx_hash, tx.crypto_network)
+            onchain = await check_crypto_payment_status(
+                tx.crypto_tx_hash, tx.crypto_network
+            )
             return CryptoPaymentStatusResponse(
                 transaction_id=tx.id,
                 status=onchain.get("status", tx.status),
@@ -452,7 +545,7 @@ async def get_crypto_payment_status(
                 amount_received=onchain.get("amount"),
             )
         except Exception:
-            pass
+            logger.exception("get_crypto_payment_status: error inesperado")
 
     return CryptoPaymentStatusResponse(
         transaction_id=tx.id,
@@ -469,18 +562,25 @@ async def get_crypto_payment_status(
 # Moved to app/core/integrations/mercadopago_webhook.py so api/v1/payments.py's
 # webhook handler can share the same real verification instead of trusting
 # its body unconditionally (that handler had none at all -- see that commit).
-from app.core.integrations.mercadopago_webhook import verify_mercadopago_signature as _verify_mercadopago_signature
+import logging
+
+from app.core.integrations.mercadopago_webhook import (
+    verify_mercadopago_signature as _verify_mercadopago_signature,
+)
+
+logger = logging.getLogger(__name__)
 
 
 @router.post("/webhook/mercadopago")
 async def mercadopago_webhook(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Receive MercadoPago IPN/webhook notifications."""
     try:
         body = await request.json()
     except Exception:
+        logger.exception("mercadopago_webhook: error inesperado")
         body = {}
 
     topic = body.get("topic") or body.get("type")
@@ -522,15 +622,21 @@ async def mercadopago_webhook(
                 user_id = UUID(user_id_str)
 
                 result = await db.execute(
-                    select(Subscription).where(Subscription.user_id == user_id).with_for_update()
+                    select(Subscription)
+                    .where(Subscription.user_id == user_id)
+                    .with_for_update()
                 )
                 sub = result.scalar_one_or_none()
                 if sub:
-                    sub.mercadopago_preapproval_id = preapproval_info.get("preapproval_id")
+                    sub.mercadopago_preapproval_id = preapproval_info.get(
+                        "preapproval_id"
+                    )
 
                     if preapproval_status == "authorized":
                         plan_result = await db.execute(
-                            select(SubscriptionPlan).where(SubscriptionPlan.slug == plan_slug)
+                            select(SubscriptionPlan).where(
+                                SubscriptionPlan.slug == plan_slug
+                            )
                         )
                         new_plan = plan_result.scalar_one_or_none()
                         if new_plan:
@@ -539,34 +645,58 @@ async def mercadopago_webhook(
                             sub.billing_cycle = billing_cycle
                             sub.payment_provider = "mercadopago"
                             sub.auto_renew = True
-                            sub.current_period_start = datetime.now(timezone.utc)
-                            sub.current_period_end = datetime.now(timezone.utc) + timedelta(days=30 if billing_cycle == "monthly" else 365)
-                            sub.next_billing_date = preapproval_info.get("next_payment_date")
+                            sub.current_period_start = datetime.now(UTC)
+                            sub.current_period_end = datetime.now(UTC) + timedelta(
+                                days=30 if billing_cycle == "monthly" else 365
+                            )
+                            sub.next_billing_date = preapproval_info.get(
+                                "next_payment_date"
+                            )
 
-                            user_result = await db.execute(select(User).where(User.id == user_id))
+                            user_result = await db.execute(
+                                select(User).where(User.id == user_id)
+                            )
                             user_obj = user_result.scalar_one_or_none()
                             if user_obj and user_obj.email:
                                 from app.core.email_service import send_email
-                                from app.domains.subscriptions.email_templates import preapproval_activated
-                                price, currency = get_plan_price(new_plan, get_region_from_country(user_obj.country_code), billing_cycle)
+                                from app.domains.subscriptions.email_templates import (
+                                    preapproval_activated,
+                                )
+
+                                price, currency = get_plan_price(
+                                    new_plan,
+                                    get_region_from_country(user_obj.country_code),
+                                    billing_cycle,
+                                )
                                 subject, html, text = preapproval_activated(
                                     plan_name=new_plan.name,
                                     amount=price,
                                     currency=currency,
-                                    next_payment=sub.current_period_end.strftime("%d/%m/%Y") if sub.current_period_end else "",
+                                    next_payment=(
+                                        sub.current_period_end.strftime("%d/%m/%Y")
+                                        if sub.current_period_end
+                                        else ""
+                                    ),
                                 )
                                 await send_email(user_obj.email, subject, html, text)
 
                     elif preapproval_status in ("paused", "cancelled"):
                         sub.auto_renew = False
                         sub.status = SubscriptionStatus.PAST_DUE
-                        user_result = await db.execute(select(User).where(User.id == user_id))
+                        user_result = await db.execute(
+                            select(User).where(User.id == user_id)
+                        )
                         user_obj = user_result.scalar_one_or_none()
                         if user_obj and user_obj.email:
                             from app.core.email_service import send_email
-                            from app.domains.subscriptions.email_templates import preapproval_payment_failed
+                            from app.domains.subscriptions.email_templates import (
+                                preapproval_payment_failed,
+                            )
+
                             plan_result = await db.execute(
-                                select(SubscriptionPlan).where(SubscriptionPlan.id == sub.plan_id)
+                                select(SubscriptionPlan).where(
+                                    SubscriptionPlan.id == sub.plan_id
+                                )
                             )
                             plan_obj = plan_result.scalar_one_or_none()
                             subject, html, text = preapproval_payment_failed(
@@ -577,7 +707,11 @@ async def mercadopago_webhook(
                     await db.commit()
 
             # Log processed event
-            db.add(WebhookEventLog(provider="mercadopago", event_id=event_id, event_type=topic))
+            db.add(
+                WebhookEventLog(
+                    provider="mercadopago", event_id=event_id, event_type=topic
+                )
+            )
             await db.commit()
             return {"status": "processed", "preapproval_status": preapproval_status}
 
@@ -585,7 +719,11 @@ async def mercadopago_webhook(
         payment_info = await process_mercadopago_webhook(topic, data_id, data_id)
 
         if payment_info.get("status") == "ignored":
-            db.add(WebhookEventLog(provider="mercadopago", event_id=event_id, event_type=topic))
+            db.add(
+                WebhookEventLog(
+                    provider="mercadopago", event_id=event_id, event_type=topic
+                )
+            )
             await db.commit()
             return {"status": "ignored"}
 
@@ -597,7 +735,9 @@ async def mercadopago_webhook(
             user_id = UUID(user_id_str)
 
             result = await db.execute(
-                select(Subscription).where(Subscription.user_id == user_id).with_for_update()
+                select(Subscription)
+                .where(Subscription.user_id == user_id)
+                .with_for_update()
             )
             sub = result.scalar_one_or_none()
             if sub:
@@ -605,26 +745,32 @@ async def mercadopago_webhook(
 
                 if payment_status in ("approved", "authorized"):
                     plan_result = await db.execute(
-                        select(SubscriptionPlan).where(SubscriptionPlan.slug == plan_slug)
+                        select(SubscriptionPlan).where(
+                            SubscriptionPlan.slug == plan_slug
+                        )
                     )
                     new_plan = plan_result.scalar_one_or_none()
                     if new_plan:
                         sub.plan_id = new_plan.id
                         sub.status = SubscriptionStatus.ACTIVE
-                        sub.current_period_start = datetime.now(timezone.utc)
-                        sub.current_period_end = datetime.now(timezone.utc) + timedelta(days=30)
+                        sub.current_period_start = datetime.now(UTC)
+                        sub.current_period_end = datetime.now(UTC) + timedelta(days=30)
                 elif payment_status in ("rejected", "cancelled", "refunded"):
                     sub.status = SubscriptionStatus.PAST_DUE
 
                 await db.commit()
 
-        db.add(WebhookEventLog(provider="mercadopago", event_id=event_id, event_type=topic))
+        db.add(
+            WebhookEventLog(provider="mercadopago", event_id=event_id, event_type=topic)
+        )
         await db.commit()
         return {"status": "processed", "payment_status": payment_status}
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
+        logger.exception("mercadopago_webhook: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).exception("MercadoPago webhook error")
         return {"status": "error", "detail": "Internal server error"}
 
@@ -632,7 +778,7 @@ async def mercadopago_webhook(
 @router.post("/webhook/stripe")
 async def stripe_webhook(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Receive Stripe webhook notifications."""
     payload = await request.body()
@@ -667,22 +813,34 @@ async def stripe_webhook(
                 user_id = UUID(user_id_str)
 
                 sub_result = await db.execute(
-                    select(Subscription).where(Subscription.user_id == user_id).with_for_update()
+                    select(Subscription)
+                    .where(Subscription.user_id == user_id)
+                    .with_for_update()
                 )
                 sub = sub_result.scalar_one_or_none()
                 if sub:
                     if event_type == "checkout.session.completed":
-                        sub.stripe_subscription_id = result.get("stripe_subscription_id")
+                        sub.stripe_subscription_id = result.get(
+                            "stripe_subscription_id"
+                        )
                         sub.stripe_customer_id = result.get("stripe_customer_id")
                         plan_result = await db.execute(
-                            select(SubscriptionPlan).where(SubscriptionPlan.slug == plan_slug)
+                            select(SubscriptionPlan).where(
+                                SubscriptionPlan.slug == plan_slug
+                            )
                         )
                         new_plan = plan_result.scalar_one_or_none()
                         if new_plan:
                             sub.plan_id = new_plan.id
                             sub.status = SubscriptionStatus.ACTIVE
-                            sub.current_period_start = datetime.now(timezone.utc)
-                            sub.current_period_end = datetime.now(timezone.utc) + timedelta(days=30 if result.get("billing_cycle") == "monthly" else 365)
+                            sub.current_period_start = datetime.now(UTC)
+                            sub.current_period_end = datetime.now(UTC) + timedelta(
+                                days=(
+                                    30
+                                    if result.get("billing_cycle") == "monthly"
+                                    else 365
+                                )
+                            )
                     elif event_type == "invoice.payment_failed":
                         sub.status = SubscriptionStatus.PAST_DUE
                     elif event_type == "customer.subscription.deleted":
@@ -691,13 +849,17 @@ async def stripe_webhook(
 
                     await db.commit()
 
-        db.add(WebhookEventLog(provider="stripe", event_id=event_id, event_type=event_type))
+        db.add(
+            WebhookEventLog(provider="stripe", event_id=event_id, event_type=event_type)
+        )
         await db.commit()
         return {"status": "processed", "event_type": event_type}
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
+        logger.exception("stripe_webhook: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).exception("Stripe webhook error")
         return {"status": "error", "detail": "Internal server error"}
 
@@ -706,17 +868,20 @@ async def stripe_webhook(
 # Bank Transfer (Cocos Capital / Manual)
 # =============================================================================
 
+
 @router.post("/create-bank-transfer", response_model=BankTransferOrderResponse)
 async def create_bank_transfer_order(
     data: BankTransferOrderCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create a bank transfer payment order."""
     from app.domains.subscriptions.services import generate_bank_transfer_order
 
     result = await db.execute(
-        select(SubscriptionPlan).where(SubscriptionPlan.slug == data.plan_slug, SubscriptionPlan.is_active == True)
+        select(SubscriptionPlan).where(
+            SubscriptionPlan.slug == data.plan_slug, SubscriptionPlan.is_active == True
+        )
     )
     plan = result.scalar_one_or_none()
     if not plan:
@@ -739,12 +904,14 @@ async def create_bank_transfer_order(
     return BankTransferOrderResponse.model_validate(order)
 
 
-@router.post("/confirm-bank-transfer/{order_id}", response_model=BankTransferConfirmResponse)
+@router.post(
+    "/confirm-bank-transfer/{order_id}", response_model=BankTransferConfirmResponse
+)
 async def confirm_bank_transfer(
     order_id: UUID,
     data: BankTransferConfirmRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """User confirms they have made the bank transfer."""
     result = await db.execute(
@@ -761,7 +928,7 @@ async def confirm_bank_transfer(
         raise HTTPException(status_code=400, detail=f"Orden ya está {order.status}")
 
     order.status = BankTransferStatus.PAID.value
-    order.paid_at = datetime.now(timezone.utc)
+    order.paid_at = datetime.now(UTC)
     if data.proof_image_url:
         order.proof_image_url = data.proof_image_url
 
@@ -771,6 +938,7 @@ async def confirm_bank_transfer(
     if current_user.email:
         from app.core.email_service import send_email
         from app.domains.subscriptions.email_templates import transfer_confirmed
+
         subject, html, text = transfer_confirmed(
             order_number=order.order_number,
             plan_name=current_user.preferred_currency or "SellIA",
@@ -787,8 +955,8 @@ async def confirm_bank_transfer(
 async def approve_bank_transfer(
     order_id: UUID,
     data: BankTransferAdminApproveRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Admin approves a bank transfer payment."""
     if not current_user.is_superuser:
@@ -806,21 +974,27 @@ async def approve_bank_transfer(
 
     if data.approved:
         order.status = BankTransferStatus.CONFIRMED.value
-        order.confirmed_by_admin_at = datetime.now(timezone.utc)
+        order.confirmed_by_admin_at = datetime.now(UTC)
         order.confirmed_by_admin_id = current_user.id
 
         # Activate subscription
         if order.subscription_id and order.plan_id:
-            sub_result = await db.execute(select(Subscription).where(Subscription.id == order.subscription_id))
+            sub_result = await db.execute(
+                select(Subscription).where(Subscription.id == order.subscription_id)
+            )
             sub = sub_result.scalar_one_or_none()
-            plan_result = await db.execute(select(SubscriptionPlan).where(SubscriptionPlan.id == order.plan_id))
+            plan_result = await db.execute(
+                select(SubscriptionPlan).where(SubscriptionPlan.id == order.plan_id)
+            )
             plan = plan_result.scalar_one_or_none()
             if sub and plan:
                 sub.plan_id = plan.id
                 sub.status = SubscriptionStatus.ACTIVE
                 sub.payment_provider = "bank_transfer"
-                sub.current_period_start = datetime.now(timezone.utc)
-                sub.current_period_end = datetime.now(timezone.utc) + timedelta(days=30 if order.billing_cycle == "monthly" else 365)
+                sub.current_period_start = datetime.now(UTC)
+                sub.current_period_end = datetime.now(UTC) + timedelta(
+                    days=30 if order.billing_cycle == "monthly" else 365
+                )
                 sub.billing_cycle = order.billing_cycle or "monthly"
     else:
         order.status = BankTransferStatus.CANCELLED.value
@@ -832,14 +1006,24 @@ async def approve_bank_transfer(
     order_user = user_result.scalar_one_or_none()
     if order_user and order_user.email:
         from app.core.email_service import send_email
-        from app.domains.subscriptions.email_templates import transfer_approved, transfer_rejected
+        from app.domains.subscriptions.email_templates import (
+            transfer_approved,
+            transfer_rejected,
+        )
+
         if data.approved:
-            plan_result = await db.execute(select(SubscriptionPlan).where(SubscriptionPlan.id == order.plan_id))
+            plan_result = await db.execute(
+                select(SubscriptionPlan).where(SubscriptionPlan.id == order.plan_id)
+            )
             plan = plan_result.scalar_one_or_none()
             subject, html, text = transfer_approved(
                 order_number=order.order_number,
                 plan_name=plan.name if plan else "SellIA",
-                period_end=sub.current_period_end.strftime("%d/%m/%Y") if sub and sub.current_period_end else "",
+                period_end=(
+                    sub.current_period_end.strftime("%d/%m/%Y")
+                    if sub and sub.current_period_end
+                    else ""
+                ),
             )
         else:
             subject, html, text = transfer_rejected(
@@ -854,8 +1038,8 @@ async def approve_bank_transfer(
 
 @router.get("/admin/pending-transfers", response_model=list[BankTransferOrderResponse])
 async def list_pending_transfers(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """List all pending bank transfers (admin only)."""
     if not current_user.is_superuser:
@@ -873,11 +1057,12 @@ async def list_pending_transfers(
 # Cancellation with Feedback
 # =============================================================================
 
+
 @router.post("/cancel", response_model=CancellationFeedbackResponse)
 async def cancel_subscription(
     data: CancellationRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Cancel subscription with mandatory feedback."""
     sub = await get_or_create_subscription(db, current_user.id)
@@ -898,7 +1083,9 @@ async def cancel_subscription(
     sub.cancel_at_period_end = True
 
     # If free plan, cancel immediately
-    plan_result = await db.execute(select(SubscriptionPlan).where(SubscriptionPlan.id == sub.plan_id))
+    plan_result = await db.execute(
+        select(SubscriptionPlan).where(SubscriptionPlan.id == sub.plan_id)
+    )
     plan = plan_result.scalar_one_or_none()
     if plan and plan.slug == "free":
         sub.status = SubscriptionStatus.CANCELLED
@@ -910,9 +1097,14 @@ async def cancel_subscription(
     if current_user.email and plan:
         from app.core.email_service import send_email
         from app.domains.subscriptions.email_templates import subscription_cancelled
+
         subject, html, text = subscription_cancelled(
             plan_name=plan.name,
-            period_end=sub.current_period_end.strftime("%d/%m/%Y") if sub.current_period_end else "próximos días",
+            period_end=(
+                sub.current_period_end.strftime("%d/%m/%Y")
+                if sub.current_period_end
+                else "próximos días"
+            ),
         )
         await send_email(current_user.email, subject, html, text)
 
@@ -923,52 +1115,58 @@ async def cancel_subscription(
 # Retention Dashboard (Admin)
 # =============================================================================
 
+
 @router.get("/admin/retention", response_model=RetentionSummary)
 async def get_retention_dashboard(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get cancellation analytics (admin only)."""
     if not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="Solo administradores")
 
+    from datetime import datetime
+
     from sqlalchemy import func
-    from datetime import datetime, timezone, timedelta
 
     # Total cancellations
     total_result = await db.execute(select(func.count(CancellationFeedback.id)))
     total = total_result.scalar() or 0
 
     # This month
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     month_result = await db.execute(
-        select(func.count(CancellationFeedback.id))
-        .where(CancellationFeedback.cancelled_at >= month_start)
+        select(func.count(CancellationFeedback.id)).where(
+            CancellationFeedback.cancelled_at >= month_start
+        )
     )
     month_count = month_result.scalar() or 0
 
     # Average NPS
     nps_result = await db.execute(
-        select(func.avg(CancellationFeedback.rating_nps))
-        .where(CancellationFeedback.rating_nps.isnot(None))
+        select(func.avg(CancellationFeedback.rating_nps)).where(
+            CancellationFeedback.rating_nps.isnot(None)
+        )
     )
     avg_nps = nps_result.scalar()
 
     # Top reasons
     reasons_result = await db.execute(
-        select(CancellationFeedback.reason_category, func.count(CancellationFeedback.id))
+        select(
+            CancellationFeedback.reason_category, func.count(CancellationFeedback.id)
+        )
         .group_by(CancellationFeedback.reason_category)
         .order_by(func.count(CancellationFeedback.id).desc())
         .limit(5)
     )
-    top_reasons = [
-        {"reason": row[0], "count": row[1]} for row in reasons_result.all()
-    ]
+    top_reasons = [{"reason": row[0], "count": row[1]} for row in reasons_result.all()]
 
     # Top competitors
     competitors_result = await db.execute(
-        select(CancellationFeedback.competitor_name, func.count(CancellationFeedback.id))
+        select(
+            CancellationFeedback.competitor_name, func.count(CancellationFeedback.id)
+        )
         .where(CancellationFeedback.competitor_name.isnot(None))
         .group_by(CancellationFeedback.competitor_name)
         .order_by(func.count(CancellationFeedback.id).desc())
@@ -980,8 +1178,9 @@ async def get_retention_dashboard(
 
     # Churn rate: cancellations / total active users
     active_result = await db.execute(
-        select(func.count(Subscription.id))
-        .where(Subscription.status == SubscriptionStatus.ACTIVE)
+        select(func.count(Subscription.id)).where(
+            Subscription.status == SubscriptionStatus.ACTIVE
+        )
     )
     active_count = active_result.scalar() or 1
     churn_rate = (month_count / active_count) * 100 if active_count > 0 else 0
@@ -998,8 +1197,8 @@ async def get_retention_dashboard(
 
 @router.get("/admin/feedbacks", response_model=list[CancellationFeedbackResponse])
 async def list_cancellation_feedbacks(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """List all cancellation feedbacks (admin only)."""
     if not current_user.is_superuser:
@@ -1013,23 +1212,23 @@ async def list_cancellation_feedbacks(
 
 @router.get("/admin/revenue", response_model=RevenueSummary)
 async def get_admin_revenue(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get revenue metrics (admin only)."""
     if not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="Solo administradores")
 
-    from sqlalchemy import func
-    from datetime import datetime, timezone
+    from datetime import datetime
 
-    now = datetime.now(timezone.utc)
+    from sqlalchemy import func
+
+    now = datetime.now(UTC)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
     # Total revenue this month from confirmed bank transfers
     transfer_revenue = await db.execute(
-        select(func.coalesce(func.sum(BankTransferPayment.amount), 0))
-        .where(
+        select(func.coalesce(func.sum(BankTransferPayment.amount), 0)).where(
             BankTransferPayment.status == BankTransferStatus.CONFIRMED.value,
             BankTransferPayment.confirmed_by_admin_at >= month_start,
         )
@@ -1038,8 +1237,7 @@ async def get_admin_revenue(
 
     # Total revenue this month from MP payments (one-time + preapproval)
     mp_revenue = await db.execute(
-        select(func.coalesce(func.sum(PaymentTransaction.amount), 0))
-        .where(
+        select(func.coalesce(func.sum(PaymentTransaction.amount), 0)).where(
             PaymentTransaction.provider == PaymentProvider.MERCADOPAGO.value,
             PaymentTransaction.status == PaymentStatus.COMPLETED.value,
             PaymentTransaction.created_at >= month_start,
@@ -1049,8 +1247,7 @@ async def get_admin_revenue(
 
     # Crypto revenue
     crypto_revenue = await db.execute(
-        select(func.coalesce(func.sum(PaymentTransaction.amount), 0))
-        .where(
+        select(func.coalesce(func.sum(PaymentTransaction.amount), 0)).where(
             PaymentTransaction.provider == PaymentProvider.CRYPTO.value,
             PaymentTransaction.status == PaymentStatus.COMPLETED.value,
             PaymentTransaction.created_at >= month_start,
@@ -1074,15 +1271,17 @@ async def get_admin_revenue(
 
     # Pending transfers count
     pending_count_result = await db.execute(
-        select(func.count(BankTransferPayment.id))
-        .where(BankTransferPayment.status == BankTransferStatus.PAID.value)
+        select(func.count(BankTransferPayment.id)).where(
+            BankTransferPayment.status == BankTransferStatus.PAID.value
+        )
     )
     pending_count = pending_count_result.scalar() or 0
 
     # Active subscriptions count
     active_count_result = await db.execute(
-        select(func.count(Subscription.id))
-        .where(Subscription.status == SubscriptionStatus.ACTIVE)
+        select(func.count(Subscription.id)).where(
+            Subscription.status == SubscriptionStatus.ACTIVE
+        )
     )
     active_count = active_count_result.scalar() or 0
 
@@ -1102,13 +1301,13 @@ async def get_admin_revenue(
 
 @router.get("/admin/bank-transfers", response_model=list[BankTransferOrderResponse])
 async def list_admin_bank_transfers(
-    status: str = Query(None),
-    date_from: str = Query(None),
-    date_to: str = Query(None),
-    page: int = Query(1, ge=1),
-    limit: int = Query(50, ge=1, le=200),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    status: Annotated[str | None, Query()] = None,
+    date_from: Annotated[str | None, Query()] = None,
+    date_to: Annotated[str | None, Query()] = None,
+    page: Annotated[int, Query(ge=1)] = 1,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
 ):
     """List all bank transfers with filters (admin only)."""
     if not current_user.is_superuser:
@@ -1120,6 +1319,7 @@ async def list_admin_bank_transfers(
         query = query.where(BankTransferPayment.status == status)
     if date_from:
         from datetime import datetime as dt
+
         try:
             df = dt.fromisoformat(date_from)
             query = query.where(BankTransferPayment.created_at >= df)
@@ -1127,6 +1327,7 @@ async def list_admin_bank_transfers(
             pass
     if date_to:
         from datetime import datetime as dt
+
         try:
             dt_to = dt.fromisoformat(date_to)
             query = query.where(BankTransferPayment.created_at <= dt_to)
@@ -1140,13 +1341,13 @@ async def list_admin_bank_transfers(
 
 @router.get("/admin/subscriptions", response_model=list[AdminSubscriptionResponse])
 async def list_admin_subscriptions(
-    plan_slug: str = Query(None),
-    provider: str = Query(None),
-    status: str = Query(None),
-    page: int = Query(1, ge=1),
-    limit: int = Query(50, ge=1, le=200),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    plan_slug: Annotated[str | None, Query()] = None,
+    provider: Annotated[str | None, Query()] = None,
+    status: Annotated[str | None, Query()] = None,
+    page: Annotated[int, Query(ge=1)] = 1,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
 ):
     """List all subscriptions with user info (admin only)."""
     if not current_user.is_superuser:
@@ -1171,34 +1372,43 @@ async def list_admin_subscriptions(
 
     rows = []
     for sub, user, plan in result.all():
-        rows.append(AdminSubscriptionResponse(
-            id=sub.id,
-            user_id=sub.user_id,
-            user_email=user.email,
-            user_full_name=user.full_name,
-            plan_id=sub.plan_id,
-            plan_name=plan.name,
-            plan_slug=plan.slug,
-            status=sub.status.value if hasattr(sub.status, "value") else str(sub.status),
-            billing_cycle=sub.billing_cycle,
-            payment_provider=sub.payment_provider,
-            next_billing_date=sub.next_billing_date,
-            current_period_end=sub.current_period_end,
-            auto_renew=sub.auto_renew,
-            created_at=sub.created_at,
-        ))
+        rows.append(
+            AdminSubscriptionResponse(
+                id=sub.id,
+                user_id=sub.user_id,
+                user_email=user.email,
+                user_full_name=user.full_name,
+                plan_id=sub.plan_id,
+                plan_name=plan.name,
+                plan_slug=plan.slug,
+                status=(
+                    sub.status.value
+                    if hasattr(sub.status, "value")
+                    else str(sub.status)
+                ),
+                billing_cycle=sub.billing_cycle,
+                payment_provider=sub.payment_provider,
+                next_billing_date=sub.next_billing_date,
+                current_period_end=sub.current_period_end,
+                auto_renew=sub.auto_renew,
+                created_at=sub.created_at,
+            )
+        )
     return rows
 
 
 # ========== Invoices ==========
 
+
 @router.get("/invoices", response_model=list[InvoiceResponse])
 async def list_invoices(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await db.execute(
-        select(Invoice).where(Invoice.user_id == current_user.id).order_by(Invoice.created_at.desc())
+        select(Invoice)
+        .where(Invoice.user_id == current_user.id)
+        .order_by(Invoice.created_at.desc())
     )
     return result.scalars().all()
 
@@ -1206,11 +1416,13 @@ async def list_invoices(
 @router.get("/invoices/{invoice_id}/download")
 async def download_invoice(
     invoice_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await db.execute(
-        select(Invoice).where(Invoice.id == invoice_id, Invoice.user_id == current_user.id)
+        select(Invoice).where(
+            Invoice.id == invoice_id, Invoice.user_id == current_user.id
+        )
     )
     invoice = result.scalar_one_or_none()
     if not invoice:
@@ -1224,11 +1436,12 @@ async def download_invoice(
 
 # ========== Billing Details ==========
 
+
 @router.put("/billing-details", response_model=BillingDetailsResponse)
 async def update_billing_details(
     data: BillingDetailsUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     if data.tax_id is not None:
         current_user.tax_id = data.tax_id
@@ -1251,6 +1464,7 @@ async def update_billing_details(
 
 # ========== Region Detection ==========
 
+
 @router.get("/region-detect", response_model=RegionDetectResponse)
 async def detect_region(request: Request):
     client_host = request.client.host if request.client else None
@@ -1259,13 +1473,17 @@ async def detect_region(request: Request):
     if client_host and client_host not in ("127.0.0.1", "localhost", "::1"):
         try:
             import httpx
+
             async with httpx.AsyncClient(timeout=10.0) as client:
-                resp = await client.get(f"http://ip-api.com/json/{client_host}?fields=status,country,countryCode")
+                resp = await client.get(
+                    f"http://ip-api.com/json/{client_host}?fields=status,country,countryCode"
+                )
                 if resp.status_code == 200:
                     data = resp.json()
                     if data.get("status") == "success":
                         detected_country = data.get("countryCode")
         except Exception:
+            logger.exception("detect_region: error inesperado")
             detected_country = None
 
     region = get_region_from_country(detected_country)
@@ -1280,11 +1498,12 @@ async def detect_region(request: Request):
 
 # ========== User Region ==========
 
+
 @router.put("/user-region", response_model=BillingDetailsResponse)
 async def update_user_region(
     data: UserRegionUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     current_user.country_code = data.country_code
     current_user.preferred_currency = data.preferred_currency
@@ -1305,11 +1524,14 @@ async def update_user_region(
 
 # ========== API Keys ==========
 
-@router.post("/api-keys", response_model=UserAPIKeyResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/api-keys", response_model=UserAPIKeyResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_api_key(
     key_in: UserAPIKeyCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     encrypted_hash = get_password_hash(key_in.api_key)[:255]
     encrypted_fernet = encrypt_value(key_in.api_key)
@@ -1328,8 +1550,8 @@ async def create_api_key(
 
 @router.get("/api-keys", response_model=list[UserAPIKeyResponse])
 async def list_api_keys(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await db.execute(
         select(UserAPIKey).where(
@@ -1343,8 +1565,8 @@ async def list_api_keys(
 @router.delete("/api-keys/{key_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_api_key(
     key_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     result = await db.execute(
         select(UserAPIKey).where(
@@ -1357,4 +1579,3 @@ async def delete_api_key(
         raise HTTPException(status_code=404, detail="API key no encontrada")
     key.is_active = False
     await db.commit()
-    return None

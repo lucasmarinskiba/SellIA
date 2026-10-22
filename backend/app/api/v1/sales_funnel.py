@@ -1,24 +1,35 @@
 """Sales Funnel API — REST endpoints para pipeline completo."""
 
+from typing import Annotated, Any
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Dict, Any
 
 from app.database import get_db
-from app.domains.computer_use.services.sales_funnel_orchestrator import get_sales_funnel_orchestrator
-from app.domains.computer_use.services.lead_generator import get_lead_generator, LeadQuality
-from app.domains.computer_use.services.outreach_orchestrator import get_outreach_orchestrator, OutreachChannel
-from app.domains.computer_use.services.customer_loyalty import get_customer_loyalty_engine
+from app.domains.computer_use.services.customer_loyalty import (
+    get_customer_loyalty_engine,
+)
+from app.domains.computer_use.services.lead_generator import (
+    LeadQuality,
+    get_lead_generator,
+)
+from app.domains.computer_use.services.outreach_orchestrator import (
+    OutreachChannel,
+    get_outreach_orchestrator,
+)
+from app.domains.computer_use.services.sales_funnel_orchestrator import (
+    get_sales_funnel_orchestrator,
+)
 
 router = APIRouter(prefix="/sales-funnel", tags=["Sales Funnel"])
 
 
 @router.post("/run-pipeline")
 async def run_complete_pipeline(
-    leads: List[Dict[str, Any]],
-    product_info: Dict[str, Any],
-    db: AsyncSession = Depends(get_db),
-) -> Dict[str, Any]:
+    leads: list[dict[str, Any]],
+    product_info: dict[str, Any],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict[str, Any]:
     """
     Ejecuta pipeline completo: Find → Contact → Respond → Close → Pay → Grow → Loyalty
 
@@ -44,13 +55,14 @@ async def run_complete_pipeline(
         return result
 
     except Exception as e:
+        logger.exception("run_complete_pipeline: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/import-leads")
 async def import_leads(
-    leads: List[Dict[str, Any]],
-) -> Dict[str, Any]:
+    leads: list[dict[str, Any]],
+) -> dict[str, Any]:
     """
     Importa + enriquece leads (Fase 11).
 
@@ -88,14 +100,15 @@ async def import_leads(
         }
 
     except Exception as e:
+        logger.exception("import_leads: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/send-outreach")
 async def send_outreach(
-    leads: List[Dict[str, Any]],
+    leads: list[dict[str, Any]],
     channel: str = "email",  # email, whatsapp, linkedin
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Envía outreach a leads (Fase 11).
 
@@ -121,7 +134,7 @@ async def send_outreach(
 
         # Crear campaign
         campaign = await outreach.create_campaign(
-            name=f"Outreach {datetime.utcnow().strftime('%Y%m%d%H%M')}",
+            name=f"Outreach {utc_now().strftime('%Y%m%d%H%M')}",
             target_quality="hot",
             channel=OutreachChannel(channel),
         )
@@ -130,7 +143,7 @@ async def send_outreach(
         contacted = 0
         for lead in imported:
             if lead.quality.value == "hot":
-                success, msg_id = await outreach.send_outreach(
+                success, _msg_id = await outreach.send_outreach(
                     campaign=campaign,
                     lead=lead,
                     sender_name="SellIA Bot",
@@ -150,14 +163,15 @@ async def send_outreach(
         }
 
     except Exception as e:
+        logger.exception("send_outreach: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/send-email-sequence")
 async def send_email_sequence(
-    customers: List[Dict[str, Any]],
+    customers: list[dict[str, Any]],
     sequence_type: str = "welcome",  # welcome, upsell, win_back
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Envía secuencias de email (Fase 12).
 
@@ -185,7 +199,7 @@ async def send_email_sequence(
         sent = 0
         for customer in customers:
             if sequence_type == "welcome":
-                success, seq_id = await loyalty.trigger_welcome_sequence(
+                success, _seq_id = await loyalty.trigger_welcome_sequence(
                     customer_id=customer.get("id", ""),
                     customer_name=customer.get("name", ""),
                     customer_email=customer.get("email", ""),
@@ -218,14 +232,15 @@ async def send_email_sequence(
         }
 
     except Exception as e:
+        logger.exception("send_email_sequence: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/pipeline-status/{campaign_id}")
 async def get_pipeline_status(
     campaign_id: str,
-    db: AsyncSession = Depends(get_db),
-) -> Dict[str, Any]:
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict[str, Any]:
     """Obtiene status de campaign."""
     try:
         orchestrator = get_sales_funnel_orchestrator(db)
@@ -234,11 +249,12 @@ async def get_pipeline_status(
         return await orchestrator.get_pipeline_status()
 
     except Exception as e:
+        logger.exception("get_pipeline_status: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/dashboard")
-async def get_dashboard_metrics() -> Dict[str, Any]:
+async def get_dashboard_metrics() -> dict[str, Any]:
     """
     Dashboard metrics: leads, conversions, revenue, growth.
 
@@ -301,8 +317,13 @@ async def get_dashboard_metrics() -> Dict[str, Any]:
         }
 
     except Exception as e:
+        logger.exception("get_dashboard_metrics: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 # Importar datetime
-from datetime import datetime
+import logging
+
+from app.core.clock import utc_now
+
+logger = logging.getLogger(__name__)

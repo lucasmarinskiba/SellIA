@@ -1,8 +1,9 @@
 """FOMO Workflow Integration - Trigger workflows from FOMO campaigns"""
 
-from datetime import datetime
-from typing import Dict, List, Any, Optional
 from enum import Enum
+from typing import Any
+
+from app.core.clock import utc_now
 
 
 class FOOMWorkflowTrigger(str, Enum):
@@ -32,12 +33,14 @@ class FOOMToWorkflowIntegration:
     """Map FOMO events to workflow triggers"""
 
     @staticmethod
-    def create_visitor_workflow_trigger(campaign_id: str, visitor_data: Dict[str, Any]) -> Dict[str, Any]:
+    def create_visitor_workflow_trigger(
+        campaign_id: str, visitor_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Create workflow trigger for new visitor"""
         return {
             "workflow_trigger": FOOMWorkflowTrigger.VISITOR_ARRIVED.value,
             "campaign_id": campaign_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "payload": {
                 "visitor_id": visitor_data.get("session_id"),
                 "page_url": visitor_data.get("page_url"),
@@ -50,21 +53,20 @@ class FOOMToWorkflowIntegration:
                     "template_id": "new_visitor_welcome",
                     "conditions": [
                         {"field": "first_visit", "operator": "equals", "value": True}
-                    ]
+                    ],
                 }
-            ]
+            ],
         }
 
     @staticmethod
     def create_purchase_workflow_trigger(
-        campaign_id: str,
-        purchase_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        campaign_id: str, purchase_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Create workflow trigger for purchase completion"""
         return {
             "workflow_trigger": FOOMWorkflowTrigger.PURCHASE_DETECTED.value,
             "campaign_id": campaign_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "payload": {
                 "order_id": purchase_data.get("order_id"),
                 "customer_email": purchase_data.get("customer_email"),
@@ -87,20 +89,19 @@ class FOOMToWorkflowIntegration:
                     "type": WorkflowActionType.SEND_EMAIL.value,
                     "template_id": "post_purchase_recommendation",
                     "delay_minutes": 1440,  # 1 day later
-                }
-            ]
+                },
+            ],
         }
 
     @staticmethod
     def create_cart_abandoned_workflow_trigger(
-        campaign_id: str,
-        cart_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        campaign_id: str, cart_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Create workflow trigger for abandoned cart"""
         return {
             "workflow_trigger": FOOMWorkflowTrigger.CART_ABANDONED.value,
             "campaign_id": campaign_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "payload": {
                 "cart_id": cart_data.get("cart_id"),
                 "customer_email": cart_data.get("customer_email"),
@@ -125,25 +126,26 @@ class FOOMToWorkflowIntegration:
                     "delay_minutes": 1440,
                     "conditions": [
                         {"field": "has_phone", "operator": "equals", "value": True}
-                    ]
-                }
-            ]
+                    ],
+                },
+            ],
         }
 
     @staticmethod
     def create_cart_recovered_workflow_trigger(
-        campaign_id: str,
-        recovery_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        campaign_id: str, recovery_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Create workflow trigger for cart recovery"""
         return {
             "workflow_trigger": FOOMWorkflowTrigger.CART_RECOVERED.value,
             "campaign_id": campaign_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "payload": {
                 "order_id": recovery_data.get("order_id"),
                 "customer_email": recovery_data.get("customer_email"),
-                "recovery_source": recovery_data.get("recovery_source"),  # email/sms/direct
+                "recovery_source": recovery_data.get(
+                    "recovery_source"
+                ),  # email/sms/direct
                 "recovered_value": float(recovery_data.get("recovered_value", 0)),
             },
             "workflow_actions": [
@@ -156,26 +158,27 @@ class FOOMToWorkflowIntegration:
                     "type": WorkflowActionType.SEND_EMAIL.value,
                     "template_id": "thank_you_cart_recovered",
                     "delay_minutes": 5,
-                }
-            ]
+                },
+            ],
         }
 
     @staticmethod
     def create_conversion_milestone_trigger(
-        campaign_id: str,
-        milestone_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        campaign_id: str, milestone_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Create workflow trigger when conversion milestone is reached"""
         milestone_number = milestone_data.get("milestone_number")
         return {
             "workflow_trigger": FOOMWorkflowTrigger.CONVERSION_MILESTONE.value,
             "campaign_id": campaign_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "milestone_number": milestone_number,
             "payload": {
                 "conversions": milestone_data.get("conversions"),
                 "revenue": float(milestone_data.get("revenue", 0)),
-                "time_to_milestone_minutes": milestone_data.get("time_to_milestone_minutes"),
+                "time_to_milestone_minutes": milestone_data.get(
+                    "time_to_milestone_minutes"
+                ),
             },
             "workflow_actions": [
                 {
@@ -189,26 +192,27 @@ class FOOMToWorkflowIntegration:
                     "template_id": f"milestone_{milestone_number}_celebrate",
                     "recipient": "campaign_owner",
                     "delay_minutes": 5,
-                }
-            ]
+                },
+            ],
         }
 
     @staticmethod
     def create_revenue_milestone_trigger(
-        campaign_id: str,
-        milestone_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        campaign_id: str, milestone_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Create workflow trigger when revenue milestone is reached"""
         milestone_amount = milestone_data.get("milestone_amount")
         return {
             "workflow_trigger": FOOMWorkflowTrigger.REVENUE_MILESTONE.value,
             "campaign_id": campaign_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "milestone_amount": milestone_amount,
             "payload": {
                 "total_revenue": float(milestone_data.get("total_revenue", 0)),
                 "conversions": milestone_data.get("conversions"),
-                "time_to_milestone_minutes": milestone_data.get("time_to_milestone_minutes"),
+                "time_to_milestone_minutes": milestone_data.get(
+                    "time_to_milestone_minutes"
+                ),
             },
             "workflow_actions": [
                 {
@@ -217,7 +221,7 @@ class FOOMToWorkflowIntegration:
                     "recipient": "campaign_owner",
                     "delay_minutes": 0,
                 }
-            ]
+            ],
         }
 
 
@@ -225,7 +229,7 @@ class WorkflowConditionBuilder:
     """Build complex conditional logic for workflow actions"""
 
     @staticmethod
-    def build_customer_segment_condition(segment: str) -> Dict[str, Any]:
+    def build_customer_segment_condition(segment: str) -> dict[str, Any]:
         """Build condition for customer segment"""
         segments = {
             "high_value": {"lifetime_value": {"operator": "gte", "value": 1000}},
@@ -237,41 +241,49 @@ class WorkflowConditionBuilder:
         return segments.get(segment, {})
 
     @staticmethod
-    def build_behavior_condition(behavior: str) -> Dict[str, Any]:
+    def build_behavior_condition(behavior: str) -> dict[str, Any]:
         """Build condition based on user behavior"""
         behaviors = {
             "high_engagement": {
                 "emails_opened": {"operator": "gte", "value": 5},
-                "links_clicked": {"operator": "gte", "value": 2}
+                "links_clicked": {"operator": "gte", "value": 2},
             },
             "browsed_but_not_purchased": {
                 "page_views": {"operator": "gte", "value": 3},
-                "purchases": {"operator": "equals", "value": 0}
+                "purchases": {"operator": "equals", "value": 0},
             },
             "cart_abandoner": {
                 "carts_abandoned": {"operator": "gte", "value": 1},
-                "purchases": {"operator": "lt", "value": 1}
+                "purchases": {"operator": "lt", "value": 1},
             },
             "quick_buyer": {
                 "time_to_purchase_minutes": {"operator": "lte", "value": 30}
-            }
+            },
         }
         return behaviors.get(behavior, {})
 
     @staticmethod
-    def build_time_based_condition(condition: str) -> Dict[str, Any]:
+    def build_time_based_condition(condition: str) -> dict[str, Any]:
         """Build time-based conditions"""
         conditions = {
             "business_hours": {
-                "hour_of_day": {"operator": "gte", "value": 9, "operator_max": "lte", "value_max": 17},
-                "day_of_week": {"operator": "not_in", "value": ["Saturday", "Sunday"]}
+                "hour_of_day": {
+                    "operator": "gte",
+                    "value": 9,
+                    "operator_max": "lte",
+                    "value_max": 17,
+                },
+                "day_of_week": {"operator": "not_in", "value": ["Saturday", "Sunday"]},
             },
             "peak_hours": {
-                "hour_of_day": {"operator": "gte", "value": 18, "operator_max": "lte", "value_max": 21}
+                "hour_of_day": {
+                    "operator": "gte",
+                    "value": 18,
+                    "operator_max": "lte",
+                    "value_max": 21,
+                }
             },
-            "night_time": {
-                "hour_of_day": {"operator": "lt", "value": 9}
-            }
+            "night_time": {"hour_of_day": {"operator": "lt", "value": 9}},
         }
         return conditions.get(condition, {})
 
@@ -280,7 +292,7 @@ class WorkflowActionSequence:
     """Define multi-step workflow sequences triggered by FOMO"""
 
     @staticmethod
-    def cart_abandonment_sequence() -> List[Dict[str, Any]]:
+    def cart_abandonment_sequence() -> list[dict[str, Any]]:
         """Complete 3-email cart abandonment workflow"""
         return [
             {
@@ -298,8 +310,8 @@ class WorkflowActionSequence:
                 "subject": "2 personas más compraron esto",
                 "condition": {
                     "cart_recovered": False,  # Only send if cart not recovered
-                    "email_opened": True  # Only if first email was opened
-                }
+                    "email_opened": True,  # Only if first email was opened
+                },
             },
             {
                 "step": 3,
@@ -309,12 +321,12 @@ class WorkflowActionSequence:
                 "condition": {
                     "cart_recovered": False,
                     "has_phone": True,
-                }
-            }
+                },
+            },
         ]
 
     @staticmethod
-    def post_purchase_sequence() -> List[Dict[str, Any]]:
+    def post_purchase_sequence() -> list[dict[str, Any]]:
         """Complete post-purchase workflow"""
         return [
             {
@@ -334,23 +346,19 @@ class WorkflowActionSequence:
                 "action_type": WorkflowActionType.SEND_EMAIL.value,
                 "template_id": "post_purchase_recommendation",
                 "delay_minutes": 1440,
-                "condition": {
-                    "email_opened_previous": True
-                }
+                "condition": {"email_opened_previous": True},
             },
             {
                 "step": 4,
                 "action_type": WorkflowActionType.SEND_EMAIL.value,
                 "template_id": "post_purchase_review_request",
                 "delay_minutes": 10080,  # 7 days
-                "condition": {
-                    "order_delivered": True
-                }
-            }
+                "condition": {"order_delivered": True},
+            },
         ]
 
     @staticmethod
-    def churn_prevention_sequence() -> List[Dict[str, Any]]:
+    def churn_prevention_sequence() -> list[dict[str, Any]]:
         """Churn prevention workflow for at-risk customers"""
         return [
             {
@@ -365,7 +373,7 @@ class WorkflowActionSequence:
                 "action_type": WorkflowActionType.SEND_SMS.value,
                 "template_id": "win_back_reminder",
                 "delay_minutes": 120,
-                "condition": {"email_not_opened": True}
+                "condition": {"email_not_opened": True},
             },
             {
                 "step": 3,
@@ -373,6 +381,6 @@ class WorkflowActionSequence:
                 "channel": "#sales",
                 "message": "Customer {{customer_name}} at risk - consider outreach",
                 "delay_minutes": 1440,
-                "condition": {"no_conversion_after_offer": True}
-            }
+                "condition": {"no_conversion_after_offer": True},
+            },
         ]

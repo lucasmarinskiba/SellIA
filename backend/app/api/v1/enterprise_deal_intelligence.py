@@ -1,3 +1,4 @@
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -6,10 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.businesses.models import Business
 from app.domains.crm.models import Deal
-from app.domains.enterprise.forecasting import ForecastingManager, DealOutcomeAnalyzer
+from app.domains.enterprise.forecasting import DealOutcomeAnalyzer, ForecastingManager
+from app.domains.users.models import User
 
 router = APIRouter()
 
@@ -17,8 +18,12 @@ forecasting = ForecastingManager()
 outcome_analyzer = DealOutcomeAnalyzer()
 
 
-async def _get_business_for_user(business_id: UUID, user: User, db: AsyncSession) -> Business:
-    result = await db.execute(select(Business).where(Business.id == business_id, Business.user_id == user.id))
+async def _get_business_for_user(
+    business_id: UUID, user: User, db: AsyncSession
+) -> Business:
+    result = await db.execute(
+        select(Business).where(Business.id == business_id, Business.user_id == user.id)
+    )
     business = result.scalar_one_or_none()
     if not business:
         raise HTTPException(status_code=404, detail="Negocio no encontrado")
@@ -37,8 +42,8 @@ async def _get_owned_deal(deal_id: UUID, user: User, db: AsyncSession) -> Deal:
 @router.post("/intelligence/analyze-deals/{business_id}")
 async def analyze_deals(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Analyze all open deals for win probability and risk assessment."""
     await _get_business_for_user(business_id, current_user, db)
@@ -49,8 +54,8 @@ async def analyze_deals(
 @router.get("/intelligence/deal-score/{deal_id}")
 async def get_deal_score(
     deal_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get current deal score and risk assessment."""
     deal = await _get_owned_deal(deal_id, current_user, db)
@@ -63,9 +68,9 @@ async def get_deal_score(
 @router.post("/intelligence/forecast-revenue/{business_id}")
 async def forecast_revenue(
     business_id: UUID,
-    periods: list[int] = Query([30, 60, 90]),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    periods: Annotated[list[int], Query()] = (30, 60, 90),
 ):
     """Generate revenue forecast for multiple periods."""
     await _get_business_for_user(business_id, current_user, db)
@@ -76,8 +81,8 @@ async def forecast_revenue(
 @router.get("/intelligence/at-risk-deals/{business_id}")
 async def get_at_risk_deals(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get summary of all at-risk deals for this business."""
     await _get_business_for_user(business_id, current_user, db)
@@ -89,25 +94,41 @@ async def get_at_risk_deals(
 async def record_deal_outcome(
     deal_id: UUID,
     outcome: str,
-    final_value: float = None,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    final_value: float | None = None,
     days_to_close: int = 0,
     forecasted_probability: float = 0.5,
-    win_loss_reason: str = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    win_loss_reason: str | None = None,
 ):
     """Record deal outcome (won/lost) for forecast-accuracy tracking."""
     deal = await _get_owned_deal(deal_id, current_user, db)
     result = await outcome_analyzer.record_outcome(
-        db, deal_id, deal.business_id, outcome, final_value, days_to_close, forecasted_probability, win_loss_reason,
+        db,
+        deal_id,
+        deal.business_id,
+        outcome,
+        final_value,
+        days_to_close,
+        forecasted_probability,
+        win_loss_reason,
     )
 
     if outcome in ("won", "lost"):
         from app.domains.webhooks.service import fire_business_event
-        await fire_business_event(db, deal.business_id, f"deal.{outcome}", {
-            "deal_id": str(deal_id), "title": deal.title, "final_value": final_value,
-            "days_to_close": days_to_close, "reason": win_loss_reason,
-        })
+
+        await fire_business_event(
+            db,
+            deal.business_id,
+            f"deal.{outcome}",
+            {
+                "deal_id": str(deal_id),
+                "title": deal.title,
+                "final_value": final_value,
+                "days_to_close": days_to_close,
+                "reason": win_loss_reason,
+            },
+        )
 
         # Real conversion signal for sales-agent message A/B tests (see
         # api/v1/enterprise_testing.py): a deal reaching won/lost is the
@@ -115,13 +136,18 @@ async def record_deal_outcome(
         # not a proxy. No-op if this deal's conversation was never enrolled
         # in a running experiment.
         if deal.conversation_id:
-            from app.domains.channels.models import Conversation
             from app.domains.agents.ab_service import ABTestEngine
-            conv_result = await db.execute(select(Conversation).where(Conversation.id == deal.conversation_id))
+            from app.domains.channels.models import Conversation
+
+            conv_result = await db.execute(
+                select(Conversation).where(Conversation.id == deal.conversation_id)
+            )
             conversation = conv_result.scalar_one_or_none()
             if conversation:
                 await ABTestEngine.record_conversation_outcome(
-                    db, conversation, "personality_ab",
+                    db,
+                    conversation,
+                    "personality_ab",
                     "converted" if outcome == "won" else "lost",
                     revenue=final_value if outcome == "won" else None,
                 )
@@ -132,8 +158,8 @@ async def record_deal_outcome(
 @router.get("/intelligence/accuracy-metrics/{business_id}")
 async def get_accuracy_metrics(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get forecast accuracy metrics for this business."""
     await _get_business_for_user(business_id, current_user, db)
@@ -144,8 +170,8 @@ async def get_accuracy_metrics(
 @router.get("/intelligence/win-loss-summary/{business_id}")
 async def get_win_loss_summary(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get win/loss analysis and patterns."""
     await _get_business_for_user(business_id, current_user, db)
@@ -156,8 +182,8 @@ async def get_win_loss_summary(
 @router.get("/intelligence/dashboard/{business_id}")
 async def get_intelligence_dashboard(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Comprehensive deal intelligence dashboard."""
     await _get_business_for_user(business_id, current_user, db)

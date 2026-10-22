@@ -15,30 +15,25 @@ Status: 1,200L production-ready affiliate engine
 """
 
 import logging
-from typing import Dict, List, Any, Optional
-from datetime import datetime
+from typing import Any
 
+from app.core.affiliate_automation_engine import (
+    create_automation_engine,
+)
 from app.core.affiliate_platform_analyzer import (
     create_market_analyzer,
-    AffiliateMarketAnalyzer,
 )
 from app.core.affiliate_sales_methods import (
     create_methods_library,
-    AffiliateMethodsLibrary,
-)
-from app.core.commission_tracker import (
-    create_commission_tracker,
-    CommissionTracker,
-    AffiliateSale,
-    SaleStatus,
 )
 from app.core.affiliate_strategy_engine import (
     create_strategy_engine,
-    AffiliateStrategyEngine,
 )
-from app.core.affiliate_automation_engine import (
-    create_automation_engine,
-    AffiliateAutomationEngine,
+from app.core.clock import utc_now
+from app.core.commission_tracker import (
+    AffiliateSale,
+    SaleStatus,
+    create_commission_tracker,
 )
 
 logger = logging.getLogger(__name__)
@@ -55,14 +50,14 @@ class AffiliateSalesEngine:
         self.strategy_engine = create_strategy_engine()
         self.automation_engine = create_automation_engine()
 
-        self.created_at = datetime.utcnow()
+        self.created_at = utc_now()
         self.status = "initialized"
         logger.info("Affiliate Sales Engine initialized")
 
-    def get_system_status(self) -> Dict[str, Any]:
+    def get_system_status(self) -> dict[str, Any]:
         """Get complete system status."""
         return {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "status": self.status,
             "initialized": True,
             "version": "1.0",
@@ -83,25 +78,30 @@ class AffiliateSalesEngine:
             },
         }
 
-    def analyze_opportunity(self, niche: str, budget: float = 0) -> Dict[str, Any]:
+    def analyze_opportunity(self, niche: str, budget: float = 0) -> dict[str, Any]:
         """Analyze affiliate opportunity in niche."""
         return {
             "niche": niche,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "analysis": {
                 "platforms": self.market_analyzer.get_market_summary(),
-                "recommended_methods": self.methods_library.get_quick_start_methods()[:3],
-                "strategy": self.strategy_engine.generate_full_strategy(niche, budget, 5000),
+                "recommended_methods": self.methods_library.get_quick_start_methods()[
+                    :3
+                ],
+                "strategy": self.strategy_engine.generate_full_strategy(
+                    niche, budget, 5000
+                ),
             },
         }
 
-    def start_affiliate_program(self, niche: str, budget: float = 0,
-                               email: Optional[str] = None) -> Dict[str, Any]:
+    def start_affiliate_program(
+        self, niche: str, budget: float = 0, email: str | None = None
+    ) -> dict[str, Any]:
         """Start complete affiliate program for niche."""
         logger.info(f"Starting affiliate program for niche: {niche}")
 
         # Step 1: Analyze opportunity
-        opportunity = self.analyze_opportunity(niche, budget)
+        self.analyze_opportunity(niche, budget)
 
         # Step 2: Select strategy
         strategy = self.strategy_engine.generate_full_strategy(niche, budget, 5000)
@@ -112,7 +112,7 @@ class AffiliateSalesEngine:
         return {
             "status": "affiliate_program_started",
             "niche": niche,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "strategy_selected": strategy,
             "automation_workflows": len(workflows["sub_workflows"]),
             "next_steps": [
@@ -127,43 +127,50 @@ class AffiliateSalesEngine:
             ],
         }
 
-    def recommend_products_for_niche(self, niche: str,
-                                     min_commission: float = 0.30) -> List[Dict[str, Any]]:
+    def recommend_products_for_niche(
+        self, niche: str, min_commission: float = 0.30
+    ) -> list[dict[str, Any]]:
         """Recommend high-profit products for niche."""
         return self.market_analyzer.hotmart.find_high_profit_niches(min_commission)
 
-    def get_method_details(self, method_id: str) -> Dict[str, Any]:
+    def get_method_details(self, method_id: str) -> dict[str, Any]:
         """Get detailed guide for specific method."""
         method = self.methods_library.get_method(method_id)
         if not method:
             return {"error": f"Method {method_id} not found"}
         return method
 
-    def list_all_methods_by_category(self, category: str) -> List[Dict[str, Any]]:
+    def list_all_methods_by_category(self, category: str) -> list[dict[str, Any]]:
         """Get methods by category."""
         return self.methods_library.get_methods_by_category(category)
 
-    def get_quick_start_methods(self) -> List[Dict[str, Any]]:
+    def get_quick_start_methods(self) -> list[dict[str, Any]]:
         """Get easiest methods to start with."""
         return self.methods_library.get_quick_start_methods()
 
-    def get_high_income_methods(self) -> List[Dict[str, Any]]:
+    def get_high_income_methods(self) -> list[dict[str, Any]]:
         """Get methods with highest income potential."""
         return self.methods_library.get_high_income_methods()
 
-    def record_sale(self, product_id: str, method: str, channel: str,
-                   amount: float, commission_pct: float,
-                   cost: float = 0.0, customer_id: Optional[str] = None) -> Dict[str, Any]:
+    def record_sale(
+        self,
+        product_id: str,
+        method: str,
+        channel: str,
+        amount: float,
+        commission_pct: float,
+        cost: float = 0.0,
+        customer_id: str | None = None,
+    ) -> dict[str, Any]:
         """Record an affiliate sale."""
-        from app.core.commission_tracker import AffiliateProduct
 
         # Create sale object
         sale = AffiliateSale(
-            sale_id=f"sale_{datetime.utcnow().timestamp()}",
+            sale_id=f"sale_{utc_now().timestamp()}",
             product_id=product_id,
             method=method,
             channel=channel,
-            sale_date=datetime.utcnow(),
+            sale_date=utc_now(),
             sale_amount=amount,
             commission_pct=commission_pct,
             commission_earned=amount * commission_pct,
@@ -178,28 +185,32 @@ class AffiliateSalesEngine:
             "status": "sale_recorded",
             "sale_id": sale.sale_id,
             "commission_earned": f"${sale.commission_earned:.2f}",
-            "roi": f"{((sale.commission_earned - cost) / cost * 100):.1f}%" if cost > 0 else "0%",
+            "roi": (
+                f"{((sale.commission_earned - cost) / cost * 100):.1f}%"
+                if cost > 0
+                else "0%"
+            ),
         }
 
-    def get_dashboard(self) -> Dict[str, Any]:
+    def get_dashboard(self) -> dict[str, Any]:
         """Get affiliate dashboard."""
         return self.commission_tracker.get_dashboard()
 
-    def get_performance_by_method(self, method: str) -> Dict[str, Any]:
+    def get_performance_by_method(self, method: str) -> dict[str, Any]:
         """Get performance metrics for method."""
         return self.commission_tracker.get_method_performance(method)
 
-    def get_performance_by_channel(self, channel: str) -> Dict[str, Any]:
+    def get_performance_by_channel(self, channel: str) -> dict[str, Any]:
         """Get performance metrics for channel."""
         return self.commission_tracker.get_channel_performance(channel)
 
-    def run_daily_optimization(self) -> Dict[str, Any]:
+    def run_daily_optimization(self) -> dict[str, Any]:
         """Run daily optimization routine."""
         logger.info("Running daily affiliate optimization")
 
         dashboard = self.commission_tracker.get_dashboard()
         report = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "optimization_actions": [],
         }
 
@@ -207,30 +218,34 @@ class AffiliateSalesEngine:
         top_methods = dashboard.get("top_methods", [])
         if top_methods:
             best_method = top_methods[0]
-            report["optimization_actions"].append({
-                "action": "Double down on top method",
-                "method": best_method[0],
-                "reason": f"Highest performer: ${best_method[1]}/month",
-            })
+            report["optimization_actions"].append(
+                {
+                    "action": "Double down on top method",
+                    "method": best_method[0],
+                    "reason": f"Highest performer: ${best_method[1]}/month",
+                }
+            )
 
         # Check conversion rates
         conversion_rates = dashboard.get("conversion_rates", {})
         for method, rate_str in conversion_rates.get("by_method", {}).items():
             rate = float(rate_str.rstrip("%"))
             if rate < 0.5:
-                report["optimization_actions"].append({
-                    "action": "Pivot or optimize",
-                    "method": method,
-                    "reason": f"Low conversion rate: {rate}%",
-                    "recommendation": "Test new offer or messaging",
-                })
+                report["optimization_actions"].append(
+                    {
+                        "action": "Pivot or optimize",
+                        "method": method,
+                        "reason": f"Low conversion rate: {rate}%",
+                        "recommendation": "Test new offer or messaging",
+                    }
+                )
 
         return report
 
-    def get_comprehensive_report(self) -> Dict[str, Any]:
+    def get_comprehensive_report(self) -> dict[str, Any]:
         """Get comprehensive affiliate system report."""
         return {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "system_status": self.get_system_status(),
             "dashboard": self.get_dashboard(),
             "daily_optimization": self.run_daily_optimization(),
@@ -250,12 +265,13 @@ class AffiliateSalesOrchestrator:
         """Initialize orchestrator."""
         self.engine = AffiliateSalesEngine()
         self.sellias_brain = sellias_brain
-        self.active_programs: Dict[str, Dict[str, Any]] = {}
+        self.active_programs: dict[str, dict[str, Any]] = {}
 
-    def start_new_campaign(self, niche: str, email: str, budget: float = 0,
-                          target_income: float = 5000) -> Dict[str, Any]:
+    def start_new_campaign(
+        self, niche: str, email: str, budget: float = 0, target_income: float = 5000
+    ) -> dict[str, Any]:
         """Start new affiliate campaign."""
-        campaign_id = f"campaign_{datetime.utcnow().timestamp()}"
+        campaign_id = f"campaign_{utc_now().timestamp()}"
 
         campaign = {
             "campaign_id": campaign_id,
@@ -263,7 +279,7 @@ class AffiliateSalesOrchestrator:
             "email": email,
             "budget": budget,
             "target_income": target_income,
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": utc_now().isoformat(),
             "status": "launching",
             "program": self.engine.start_affiliate_program(niche, budget, email),
         }
@@ -273,18 +289,18 @@ class AffiliateSalesOrchestrator:
 
         return campaign
 
-    def get_campaign_status(self, campaign_id: str) -> Optional[Dict[str, Any]]:
+    def get_campaign_status(self, campaign_id: str) -> dict[str, Any] | None:
         """Get campaign status."""
         return self.active_programs.get(campaign_id)
 
-    def list_active_campaigns(self) -> List[Dict[str, Any]]:
+    def list_active_campaigns(self) -> list[dict[str, Any]]:
         """List all active campaigns."""
         return list(self.active_programs.values())
 
-    def get_system_summary(self) -> Dict[str, Any]:
+    def get_system_summary(self) -> dict[str, Any]:
         """Get summary of affiliate system."""
         return {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "system": self.engine.get_system_status(),
             "active_campaigns": len(self.active_programs),
             "available_features": [
@@ -303,6 +319,7 @@ class AffiliateSalesOrchestrator:
 # ============================================================================
 # FACTORY FUNCTIONS
 # ============================================================================
+
 
 def create_affiliate_engine() -> AffiliateSalesEngine:
     """Factory to create affiliate sales engine."""

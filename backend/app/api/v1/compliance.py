@@ -1,20 +1,25 @@
 """Compliance API."""
 
+from typing import Annotated
 from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.businesses.models import Business
 from app.domains.compliance.compliance_service import ComplianceService
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/api/v1", tags=["compliance"])
 
 
-async def _get_business_for_user(business_id: UUID, user: User, db: AsyncSession) -> Business:
+async def _get_business_for_user(
+    business_id: UUID, user: User, db: AsyncSession
+) -> Business:
     """Same convention as websites.py/catalog.py/channels.py/conversations.py.
 
     Every route below had zero authentication until this fix -- anyone
@@ -50,11 +55,13 @@ async def set_consent(
     customer_id: UUID,
     business_id: UUID,
     request: SetConsentRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
-    return await ComplianceService.set_consent(business_id, customer_id, request.consent_type, request.consented, db)
+    return await ComplianceService.set_consent(
+        business_id, customer_id, request.consent_type, request.consented, db
+    )
 
 
 @router.post("/customers/{customer_id}/export-data")
@@ -62,11 +69,13 @@ async def request_export(
     customer_id: UUID,
     business_id: UUID,
     request: ExportRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
-    return await ComplianceService.request_data_export(business_id, customer_id, request.export_format, db)
+    return await ComplianceService.request_data_export(
+        business_id, customer_id, request.export_format, db
+    )
 
 
 @router.post("/customers/{customer_id}/delete-data")
@@ -74,19 +83,21 @@ async def request_deletion(
     customer_id: UUID,
     business_id: UUID,
     request: DeletionRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
-    return await ComplianceService.request_data_deletion(business_id, customer_id, request.deletion_type, db)
+    return await ComplianceService.request_data_deletion(
+        business_id, customer_id, request.deletion_type, db
+    )
 
 
 @router.get("/customers/{customer_id}/consent-status")
 async def get_consent_status(
     customer_id: UUID,
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
     return await ComplianceService.get_consent_status(business_id, customer_id, db)

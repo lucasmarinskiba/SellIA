@@ -2,7 +2,6 @@
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -30,7 +29,7 @@ class CashFlowForecastOut(BaseModel):
     min_balance: Decimal = Field(decimal_places=2)
     max_balance: Decimal = Field(decimal_places=2)
     min_balance_date: date
-    runway_days: Optional[int] = None
+    runway_days: int | None = None
     assumptions: dict = {}
     computed_at: datetime
     points: list[CashFlowPointOut]

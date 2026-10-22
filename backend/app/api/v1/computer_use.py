@@ -4,36 +4,48 @@ Endpoints REST para gestión de sesiones + WebSocket bidireccional
 para streaming en tiempo real de screenshots y acciones.
 """
 
+import asyncio
 import json
 import os
-from datetime import datetime
-from typing import Optional
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, status, Query
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+    WebSocket,
+    WebSocketDisconnect,
+    status,
+)
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func
 
+from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
-from app.core.security import decode_access_token
-from app.core.config import get_settings
-import asyncio
-
 from app.core.logger import get_logger
-from app.domains.users.models import User
+from app.core.security import decode_access_token
 from app.domains.businesses.models import Business
-from app.domains.computer_use.models import ComputerUseSession, ComputerUseStep, ComputerUseMessage
+from app.domains.computer_use.models import (
+    ComputerUseMessage,
+    ComputerUseSession,
+    ComputerUseStep,
+)
 from app.domains.computer_use.schemas import (
-    ComputerUseSessionCreate,
-    ComputerUseSessionResponse,
-    ComputerUseSessionListResponse,
-    ComputerUseStepResponse,
     ComputerUseMessageResponse,
     ComputerUseOrchestratorResult,
+    ComputerUseSessionCreate,
+    ComputerUseSessionListResponse,
+    ComputerUseSessionResponse,
+    ComputerUseStepResponse,
 )
-from app.domains.computer_use.session_manager import ComputerUseSessionManager, get_session_manager, remove_session_manager
+from app.domains.computer_use.session_manager import (
+    get_session_manager,
+)
 from app.domains.computer_use.ws_manager import ws_manager
+from app.domains.users.models import User
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -42,7 +54,10 @@ router = APIRouter()
 
 # ========== Helpers ==========
 
-async def _get_session_or_404(db: AsyncSession, session_id: UUID, user_id: UUID) -> ComputerUseSession:
+
+async def _get_session_or_404(
+    db: AsyncSession, session_id: UUID, user_id: UUID
+) -> ComputerUseSession:
     result = await db.execute(
         select(ComputerUseSession).where(
             ComputerUseSession.id == session_id,
@@ -55,7 +70,7 @@ async def _get_session_or_404(db: AsyncSession, session_id: UUID, user_id: UUID)
     return session
 
 
-async def _auth_ws_token(token: str) -> Optional[dict]:
+async def _auth_ws_token(token: str) -> dict | None:
     """Valida token JWT para WebSocket."""
     if not token:
         return None
@@ -67,11 +82,16 @@ async def _auth_ws_token(token: str) -> Optional[dict]:
 
 # ========== REST Endpoints ==========
 
-@router.post("/sessions", response_model=ComputerUseSessionResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/sessions",
+    response_model=ComputerUseSessionResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_session(
     data: ComputerUseSessionCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Crea una nueva sesión de Computer Use."""
     if not settings.COMPUTER_USE_ENABLED:
@@ -86,12 +106,17 @@ async def create_session(
     )
     active_count = result.scalar() or 0
     if active_count >= 3:
-        raise HTTPException(status_code=429, detail="Tenés 3 sesiones activas. Detené una antes de crear otra.")
+        raise HTTPException(
+            status_code=429,
+            detail="Tenés 3 sesiones activas. Detené una antes de crear otra.",
+        )
 
     # Verify business if provided
     if data.business_id:
         result = await db.execute(
-            select(Business).where(Business.id == data.business_id, Business.owner_id == current_user.id)
+            select(Business).where(
+                Business.id == data.business_id, Business.owner_id == current_user.id
+            )
         )
         if not result.scalar_one_or_none():
             raise HTTPException(status_code=404, detail="Negocio no encontrado")
@@ -115,10 +140,10 @@ async def create_session(
 
 @router.get("/sessions", response_model=ComputerUseSessionListResponse)
 async def list_sessions(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
     limit: int = 20,
     offset: int = 0,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
 ):
     """Lista las sesiones de Computer Use del usuario actual."""
     result = await db.execute(
@@ -144,22 +169,24 @@ async def list_sessions(
 @router.get("/sessions/{session_id}", response_model=ComputerUseSessionResponse)
 async def get_session(
     session_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Obtiene detalle de una sesión."""
     session = await _get_session_or_404(db, session_id, current_user.id)
     return session
 
 
-@router.get("/sessions/{session_id}/steps", response_model=list[ComputerUseStepResponse])
+@router.get(
+    "/sessions/{session_id}/steps", response_model=list[ComputerUseStepResponse]
+)
 async def list_session_steps(
     session_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Lista los pasos de una sesión."""
-    session = await _get_session_or_404(db, session_id, current_user.id)
+    await _get_session_or_404(db, session_id, current_user.id)
     result = await db.execute(
         select(ComputerUseStep)
         .where(ComputerUseStep.session_id == session_id)
@@ -169,14 +196,16 @@ async def list_session_steps(
     return [ComputerUseStepResponse.model_validate(s) for s in steps]
 
 
-@router.get("/sessions/{session_id}/messages", response_model=list[ComputerUseMessageResponse])
+@router.get(
+    "/sessions/{session_id}/messages", response_model=list[ComputerUseMessageResponse]
+)
 async def list_session_messages(
     session_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Lista los mensajes de chat de supervisión de una sesión."""
-    session = await _get_session_or_404(db, session_id, current_user.id)
+    await _get_session_or_404(db, session_id, current_user.id)
     result = await db.execute(
         select(ComputerUseMessage)
         .where(ComputerUseMessage.session_id == session_id)
@@ -189,8 +218,8 @@ async def list_session_messages(
 @router.delete("/sessions/{session_id}")
 async def delete_session(
     session_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Elimina una sesión y sus datos asociados."""
     session = await _get_session_or_404(db, session_id, current_user.id)
@@ -208,22 +237,25 @@ async def delete_session(
 @router.post("/sessions/{session_id}/start")
 async def start_session(
     session_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Inicia una sesión de Computer Use (debe conectarse vía WebSocket después)."""
     session = await _get_session_or_404(db, session_id, current_user.id)
 
     if session.status not in ("pending", "paused"):
-        raise HTTPException(status_code=400, detail=f"No se puede iniciar una sesión en estado '{session.status}'")
+        raise HTTPException(
+            status_code=400,
+            detail=f"No se puede iniciar una sesión en estado '{session.status}'",
+        )
 
     # Determine API key and provider
     api_key = None
     provider = "openai"
 
     # Try to get user's API key
-    from app.domains.subscriptions.models import UserAPIKey
     from app.core.encryption import decrypt_value
+    from app.domains.subscriptions.models import UserAPIKey
 
     for prov in ["openai", "anthropic"]:
         result = await db.execute(
@@ -240,7 +272,7 @@ async def start_session(
                 provider = prov
                 break
             except Exception:
-                pass
+                logger.exception("start_session: error inesperado")
 
     # Fallback to global settings
     if not api_key:
@@ -251,18 +283,23 @@ async def start_session(
             api_key = settings.ANTHROPIC_API_KEY
             provider = "anthropic"
         else:
-            raise HTTPException(status_code=400, detail="No hay API key de IA configurada para Computer Use")
+            raise HTTPException(
+                status_code=400,
+                detail="No hay API key de IA configurada para Computer Use",
+            )
 
     # Create session manager (V2 with all enhancements)
     from app.domains.computer_use.session_manager_v2 import ComputerUseSessionManagerV2
-    from app.domains.computer_use.services.browser_pool import get_browser_pool
 
     # Load profile if set
     profile = None
     if session.profile_id:
         from app.domains.computer_use.models_extended import ComputerUseBrowserProfile
+
         profile_result = await db.execute(
-            select(ComputerUseBrowserProfile).where(ComputerUseBrowserProfile.id == session.profile_id)
+            select(ComputerUseBrowserProfile).where(
+                ComputerUseBrowserProfile.id == session.profile_id
+            )
         )
         profile_row = profile_result.scalar_one_or_none()
         if profile_row:
@@ -280,10 +317,13 @@ async def start_session(
     # Load proxy if set
     proxy = None
     if session.proxy_config_id:
-        from app.domains.computer_use.models_extended import ComputerUseProxyConfig
         from app.core.encryption import decrypt_value
+        from app.domains.computer_use.models_extended import ComputerUseProxyConfig
+
         proxy_result = await db.execute(
-            select(ComputerUseProxyConfig).where(ComputerUseProxyConfig.id == session.proxy_config_id)
+            select(ComputerUseProxyConfig).where(
+                ComputerUseProxyConfig.id == session.proxy_config_id
+            )
         )
         proxy_row = proxy_result.scalar_one_or_none()
         if proxy_row:
@@ -296,12 +336,13 @@ async def start_session(
                 try:
                     proxy["password"] = decrypt_value(proxy_row.password_encrypted)
                 except Exception:
-                    pass
+                    logger.exception("start_session: error inesperado")
 
     # Load webhooks
     webhooks = []
     try:
         from app.domains.computer_use.models_extended import ComputerUseWebhook
+
         wh_result = await db.execute(
             select(ComputerUseWebhook).where(
                 ComputerUseWebhook.user_id == current_user.id,
@@ -311,7 +352,7 @@ async def start_session(
         for wh in wh_result.scalars().all():
             webhooks.append({"url": wh.url, "secret": wh.secret, "events": wh.events})
     except Exception:
-        pass
+        logger.exception("start_session: error inesperado")
 
     manager = ComputerUseSessionManagerV2(
         session_id=session_id,
@@ -329,6 +370,7 @@ async def start_session(
 
     # Start in background (user must connect via WS)
     import asyncio
+
     asyncio.create_task(manager.start())
 
     ws_url = f"/api/v1/ws/computer-use/{session_id}"
@@ -343,12 +385,13 @@ async def start_session(
 
 # ========== Orchestrator Integration ==========
 
+
 async def create_computer_use_from_orchestrator(
     db: AsyncSession,
     user_id: UUID,
-    business_id: Optional[UUID],
+    business_id: UUID | None,
     task: str,
-    start_url: Optional[str] = None,
+    start_url: str | None = None,
 ) -> ComputerUseOrchestratorResult:
     """Crea una sesión de Computer Use desde el orchestrator y devuelve datos de conexión."""
     session = ComputerUseSession(
@@ -378,17 +421,22 @@ async def create_computer_use_from_orchestrator(
 
 from fastapi.responses import FileResponse
 
+
 @router.get("/sessions/{session_id}/screenshots/{step_number}")
 async def get_screenshot(
     session_id: UUID,
     step_number: int,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Sirve un screenshot de un paso específico."""
-    session = await _get_session_or_404(db, session_id, current_user.id)
+    await _get_session_or_404(db, session_id, current_user.id)
     screenshot_path = os.path.join(
-        os.getcwd(), "storage", "screenshots", str(session_id), f"step_{step_number}.jpg"
+        os.getcwd(),
+        "storage",
+        "screenshots",
+        str(session_id),
+        f"step_{step_number}.jpg",
     )
     if not os.path.exists(screenshot_path):
         raise HTTPException(status_code=404, detail="Screenshot no encontrado")
@@ -397,12 +445,13 @@ async def get_screenshot(
 
 # ========== WebSocket Endpoint ==========
 
+
 @router.websocket("/ws/computer-use/{session_id}")
 async def computer_use_websocket(
     websocket: WebSocket,
     session_id: UUID,
-    token: str = Query(...),
-    db: AsyncSession = Depends(get_db),
+    token: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """WebSocket bidireccional para supervisión en tiempo real de Computer Use.
 
@@ -440,42 +489,57 @@ async def computer_use_websocket(
     # Find or create session manager
     manager = get_session_manager(str(session_id))
 
-    if not manager:
-        if session.status == "pending":
-            await websocket.send_json({
+    if not manager and session.status == "pending":
+        await websocket.send_json(
+            {
                 "type": "status",
-                "data": {"status": "pending", "message": "Iniciando sesión...", "step": 0, "total_steps": settings.COMPUTER_USE_MAX_STEPS},
-            })
-            try:
-                await start_session(session_id, db, type("User", (), {"id": user_id})())
-                for _ in range(10):
-                    await asyncio.sleep(0.5)
-                    manager = get_session_manager(str(session_id))
-                    if manager:
-                        break
-            except Exception as e:
-                logger.error(f"Auto-start failed: {e}")
-                await websocket.send_json({"type": "error", "data": {"message": f"No se pudo iniciar: {str(e)}"}})
-                await ws_manager.disconnect(str(session_id))
-                await websocket.close()
-                return
+                "data": {
+                    "status": "pending",
+                    "message": "Iniciando sesión...",
+                    "step": 0,
+                    "total_steps": settings.COMPUTER_USE_MAX_STEPS,
+                },
+            }
+        )
+        try:
+            await start_session(session_id, db, type("User", (), {"id": user_id})())
+            for _ in range(10):
+                await asyncio.sleep(0.5)
+                manager = get_session_manager(str(session_id))
+                if manager:
+                    break
+        except Exception as e:
+            logger.exception("Auto-start failed")
+            await websocket.send_json(
+                {"type": "error", "data": {"message": f"No se pudo iniciar: {e!s}"}}
+            )
+            await ws_manager.disconnect(str(session_id))
+            await websocket.close()
+            return
 
     if not manager:
-        await websocket.send_json({"type": "error", "data": {"message": "No se pudo iniciar el gestor de sesión"}})
+        await websocket.send_json(
+            {
+                "type": "error",
+                "data": {"message": "No se pudo iniciar el gestor de sesión"},
+            }
+        )
         await ws_manager.disconnect(str(session_id))
         await websocket.close()
         return
 
     # Send current status
-    await websocket.send_json({
-        "type": "status",
-        "data": {
-            "status": manager.status,
-            "message": "Conectado a la Caja de Cristal",
-            "step": manager.current_step,
-            "total_steps": settings.COMPUTER_USE_MAX_STEPS,
-        },
-    })
+    await websocket.send_json(
+        {
+            "type": "status",
+            "data": {
+                "status": manager.status,
+                "message": "Conectado a la Caja de Cristal",
+                "step": manager.current_step,
+                "total_steps": settings.COMPUTER_USE_MAX_STEPS,
+            },
+        }
+    )
 
     # Listen for client messages
     try:
@@ -484,7 +548,9 @@ async def computer_use_websocket(
             try:
                 msg = json.loads(raw)
             except json.JSONDecodeError:
-                await websocket.send_json({"type": "error", "data": {"message": "Mensaje JSON inválido"}})
+                await websocket.send_json(
+                    {"type": "error", "data": {"message": "Mensaje JSON inválido"}}
+                )
                 continue
 
             msg_type = msg.get("type")
@@ -497,29 +563,51 @@ async def computer_use_websocket(
                     await manager.resume()
                 elif action == "stop":
                     await manager.stop()
-                    await websocket.send_json({
-                        "type": "status",
-                        "data": {"status": "stopped", "message": "Sesión detenida", "step": manager.current_step, "total_steps": settings.COMPUTER_USE_MAX_STEPS},
-                    })
+                    await websocket.send_json(
+                        {
+                            "type": "status",
+                            "data": {
+                                "status": "stopped",
+                                "message": "Sesión detenida",
+                                "step": manager.current_step,
+                                "total_steps": settings.COMPUTER_USE_MAX_STEPS,
+                            },
+                        }
+                    )
                 else:
-                    await websocket.send_json({"type": "error", "data": {"message": f"Control desconocido: {action}"}})
+                    await websocket.send_json(
+                        {
+                            "type": "error",
+                            "data": {"message": f"Control desconocido: {action}"},
+                        }
+                    )
 
             elif msg_type == "chat":
                 message = msg.get("message", "").strip()
                 if message:
                     await manager.send_chat_message(message)
-                    await websocket.send_json({
-                        "type": "chat",
-                        "data": {"role": "system", "content": "Mensaje enviado al agente"},
-                    })
+                    await websocket.send_json(
+                        {
+                            "type": "chat",
+                            "data": {
+                                "role": "system",
+                                "content": "Mensaje enviado al agente",
+                            },
+                        }
+                    )
 
             else:
-                await websocket.send_json({"type": "error", "data": {"message": f"Tipo de mensaje desconocido: {msg_type}"}})
+                await websocket.send_json(
+                    {
+                        "type": "error",
+                        "data": {"message": f"Tipo de mensaje desconocido: {msg_type}"},
+                    }
+                )
 
     except WebSocketDisconnect:
         logger.info(f"WebSocket disconnected for session {session_id}")
-    except Exception as e:
-        logger.error(f"WebSocket error for session {session_id}: {e}")
+    except Exception:
+        logger.exception(f"WebSocket error for session {session_id}")
     finally:
         await ws_manager.disconnect(str(session_id))
         logger.info(f"WebSocket closed for session {session_id}")

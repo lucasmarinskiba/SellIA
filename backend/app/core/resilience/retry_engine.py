@@ -9,19 +9,23 @@ Flujo:
 5. Logging completo + métricas
 """
 
-import logging
 import asyncio
-from typing import Callable, Optional, Any, Dict, List
+import logging
+import uuid
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from dataclasses import dataclass, field
-import uuid
+from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
 
 class RetryPolicy(Enum):
     """Políticas de retry predefinidas."""
+
     DEFAULT = "default"  # 3 retries, exp backoff
     AGGRESSIVE = "aggressive"  # 5 retries, faster backoff
     CONSERVATIVE = "conservative"  # 1 retry, longer wait
@@ -30,6 +34,7 @@ class RetryPolicy(Enum):
 
 class CircuitBreakerState(Enum):
     """Estados del circuit breaker."""
+
     CLOSED = "closed"  # Funcionando normalmente
     OPEN = "open"  # Falló: rechaza nuevas requests
     HALF_OPEN = "half_open"  # Probando si se recuperó
@@ -38,6 +43,7 @@ class CircuitBreakerState(Enum):
 @dataclass
 class RetryConfig:
     """Configuración de retry."""
+
     max_retries: int = 3
     initial_delay: float = 1.0  # segundos
     max_delay: float = 30.0  # segundos (cap)
@@ -54,21 +60,23 @@ class RetryConfig:
 @dataclass
 class RetryAttempt:
     """Información de un intento de retry."""
+
     attempt_number: int
     delay_seconds: float
-    timestamp: datetime = field(default_factory=datetime.utcnow)
-    error: Optional[str] = None
-    status_code: Optional[int] = None
+    timestamp: datetime = field(default_factory=utc_now)
+    error: str | None = None
+    status_code: int | None = None
 
 
 @dataclass
 class RetryHistory:
     """Historial de retries para una operación."""
+
     operation_id: str
     operation_name: str
-    attempts: List[RetryAttempt] = field(default_factory=list)
+    attempts: list[RetryAttempt] = field(default_factory=list)
     final_status: str = "pending"  # success, failed, timeout
-    final_error: Optional[str] = None
+    final_error: str | None = None
     total_duration: float = 0.0  # segundos
 
 
@@ -81,8 +89,8 @@ class CircuitBreaker:
         self.state = CircuitBreakerState.CLOSED
         self.failure_count = 0
         self.success_count = 0
-        self.last_failure_time: Optional[datetime] = None
-        self.last_state_change = datetime.utcnow()
+        self.last_failure_time: datetime | None = None
+        self.last_state_change = utc_now()
 
     def record_success(self) -> None:
         """Registra éxito."""
@@ -96,7 +104,7 @@ class CircuitBreaker:
     def record_failure(self) -> None:
         """Registra fallo."""
         self.failure_count += 1
-        self.last_failure_time = datetime.utcnow()
+        self.last_failure_time = utc_now()
 
         if self.state == CircuitBreakerState.CLOSED:
             if self.failure_count >= self.config.failure_threshold:
@@ -112,7 +120,7 @@ class CircuitBreaker:
         if self.state == CircuitBreakerState.OPEN:
             # Intenta recuperación después de recovery_timeout
             if self.last_failure_time:
-                elapsed = (datetime.utcnow() - self.last_failure_time).total_seconds()
+                elapsed = (utc_now() - self.last_failure_time).total_seconds()
                 if elapsed > self.config.recovery_timeout:
                     self._try_half_open()
                     return True
@@ -124,14 +132,16 @@ class CircuitBreaker:
     def _open_circuit(self) -> None:
         """Abre el circuit."""
         self.state = CircuitBreakerState.OPEN
-        self.last_state_change = datetime.utcnow()
-        logger.warning(f"Circuit breaker '{self.name}' OPENED. Failures: {self.failure_count}")
+        self.last_state_change = utc_now()
+        logger.warning(
+            f"Circuit breaker '{self.name}' OPENED. Failures: {self.failure_count}"
+        )
 
     def _try_half_open(self) -> None:
         """Transita a half-open."""
         self.state = CircuitBreakerState.HALF_OPEN
         self.success_count = 0
-        self.last_state_change = datetime.utcnow()
+        self.last_state_change = utc_now()
         logger.info(f"Circuit breaker '{self.name}' HALF-OPEN. Testing recovery...")
 
     def _close_circuit(self) -> None:
@@ -139,17 +149,19 @@ class CircuitBreaker:
         self.state = CircuitBreakerState.CLOSED
         self.failure_count = 0
         self.success_count = 0
-        self.last_state_change = datetime.utcnow()
+        self.last_state_change = utc_now()
         logger.info(f"Circuit breaker '{self.name}' CLOSED. Service recovered.")
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Retorna status del circuit breaker."""
         return {
             "name": self.name,
             "state": self.state.value,
             "failure_count": self.failure_count,
             "success_count": self.success_count,
-            "last_failure": self.last_failure_time.isoformat() if self.last_failure_time else None,
+            "last_failure": (
+                self.last_failure_time.isoformat() if self.last_failure_time else None
+            ),
             "last_state_change": self.last_state_change.isoformat(),
         }
 
@@ -158,17 +170,21 @@ class RetryEngine:
     """Motor de retry con exponential backoff + circuit breaker."""
 
     def __init__(self):
-        self.circuit_breakers: Dict[str, CircuitBreaker] = {}
-        self.retry_history: Dict[str, RetryHistory] = {}
+        self.circuit_breakers: dict[str, CircuitBreaker] = {}
+        self.retry_history: dict[str, RetryHistory] = {}
         self.default_config = RetryConfig()
 
     def get_config(self, policy: RetryPolicy = RetryPolicy.DEFAULT) -> RetryConfig:
         """Retorna configuración según política."""
         configs = {
             RetryPolicy.DEFAULT: RetryConfig(max_retries=3),
-            RetryPolicy.AGGRESSIVE: RetryConfig(max_retries=5, initial_delay=0.5, exponential_base=1.5),
+            RetryPolicy.AGGRESSIVE: RetryConfig(
+                max_retries=5, initial_delay=0.5, exponential_base=1.5
+            ),
             RetryPolicy.CONSERVATIVE: RetryConfig(max_retries=1, initial_delay=5.0),
-            RetryPolicy.PAYMENT: RetryConfig(max_retries=3, initial_delay=2.0, max_delay=60.0),
+            RetryPolicy.PAYMENT: RetryConfig(
+                max_retries=3, initial_delay=2.0, max_delay=60.0
+            ),
         }
         return configs.get(policy, self.default_config)
 
@@ -178,7 +194,7 @@ class RetryEngine:
         *args,
         policy: RetryPolicy = RetryPolicy.DEFAULT,
         operation_name: str = "operation",
-        circuit_breaker_name: Optional[str] = None,
+        circuit_breaker_name: str | None = None,
         **kwargs,
     ) -> Any:
         """
@@ -199,7 +215,7 @@ class RetryEngine:
         config = self.get_config(policy)
         operation_id = str(uuid.uuid4())
         history = RetryHistory(operation_id=operation_id, operation_name=operation_name)
-        start_time = datetime.utcnow()
+        start_time = utc_now()
 
         # Obtener o crear circuit breaker
         if circuit_breaker_name:
@@ -215,12 +231,11 @@ class RetryEngine:
             f"Starting retry execution: {operation_name} (id: {operation_id}, policy: {policy.value})"
         )
 
+        last_exc: BaseException | None = None
         for attempt in range(config.max_retries + 1):
             # Circuit breaker check
             if circuit_breaker and not circuit_breaker.can_attempt():
-                error_msg = (
-                    f"Circuit breaker '{circuit_breaker_name}' is OPEN. Rejecting attempt."
-                )
+                error_msg = f"Circuit breaker '{circuit_breaker_name}' is OPEN. Rejecting attempt."
                 logger.error(error_msg)
                 history.final_status = "circuit_breaker_open"
                 history.final_error = error_msg
@@ -228,7 +243,9 @@ class RetryEngine:
                 raise RuntimeError(error_msg)
 
             try:
-                logger.debug(f"Attempt {attempt + 1}/{config.max_retries + 1} for {operation_name}")
+                logger.debug(
+                    f"Attempt {attempt + 1}/{config.max_retries + 1} for {operation_name}"
+                )
 
                 # Ejecutar con timeout
                 result = await asyncio.wait_for(
@@ -237,7 +254,7 @@ class RetryEngine:
                 )
 
                 # Éxito
-                elapsed = (datetime.utcnow() - start_time).total_seconds()
+                elapsed = (utc_now() - start_time).total_seconds()
                 history.final_status = "success"
                 history.total_duration = elapsed
                 self.retry_history[operation_id] = history
@@ -251,12 +268,15 @@ class RetryEngine:
                 )
                 return result
 
-            except asyncio.TimeoutError as e:
+            except TimeoutError as exc:
+                last_exc = exc
                 error_msg = f"Timeout after {config.timeout}s"
                 self._record_attempt(history, attempt, config, error_msg, timeout=True)
 
             except Exception as e:
+                logger.exception("execute_with_retry: error inesperado")
                 error_msg = str(e)
+                last_exc = e
                 status_code = getattr(e, "status_code", None)
                 self._record_attempt(history, attempt, config, error_msg, status_code)
 
@@ -270,7 +290,7 @@ class RetryEngine:
                 await asyncio.sleep(delay)
             else:
                 # Agotamos retries
-                elapsed = (datetime.utcnow() - start_time).total_seconds()
+                elapsed = (utc_now() - start_time).total_seconds()
                 history.final_status = "failed"
                 history.final_error = error_msg
                 history.total_duration = elapsed
@@ -284,16 +304,18 @@ class RetryEngine:
                     f"(attempts: {config.max_retries + 1}, duration: {elapsed:.2f}s, "
                     f"error: {error_msg})"
                 )
-                raise
+                assert last_exc is not None
+                raise last_exc
 
     def _calculate_delay(self, attempt: int, config: RetryConfig) -> float:
         """Calcula delay con exponential backoff + jitter."""
-        delay = config.initial_delay * (config.exponential_base ** attempt)
+        delay = config.initial_delay * (config.exponential_base**attempt)
         delay = min(delay, config.max_delay)  # Cap
 
         if config.jitter:
             # Jitter: ± 10%
             import random
+
             jitter_factor = random.uniform(0.9, 1.1)
             delay *= jitter_factor
 
@@ -305,7 +327,7 @@ class RetryEngine:
         attempt: int,
         config: RetryConfig,
         error: str,
-        status_code: Optional[int] = None,
+        status_code: int | None = None,
         timeout: bool = False,
     ) -> None:
         """Registra intento fallido."""
@@ -322,22 +344,22 @@ class RetryEngine:
         )
         history.attempts.append(retry_attempt)
 
-    def get_history(self, operation_id: str) -> Optional[RetryHistory]:
+    def get_history(self, operation_id: str) -> RetryHistory | None:
         """Obtiene historial de una operación."""
         return self.retry_history.get(operation_id)
 
-    def get_circuit_breaker_status(self, name: str) -> Optional[Dict[str, Any]]:
+    def get_circuit_breaker_status(self, name: str) -> dict[str, Any] | None:
         """Obtiene status de un circuit breaker."""
         cb = self.circuit_breakers.get(name)
         return cb.get_status() if cb else None
 
-    def get_all_circuit_breakers_status(self) -> Dict[str, Dict[str, Any]]:
+    def get_all_circuit_breakers_status(self) -> dict[str, dict[str, Any]]:
         """Obtiene status de todos los circuit breakers."""
         return {name: cb.get_status() for name, cb in self.circuit_breakers.items()}
 
     def clear_history(self, older_than_hours: int = 24) -> int:
         """Limpia historial viejo."""
-        cutoff = datetime.utcnow() - timedelta(hours=older_than_hours)
+        cutoff = utc_now() - timedelta(hours=older_than_hours)
         removed = 0
 
         for op_id, history in list(self.retry_history.items()):
@@ -358,7 +380,7 @@ retry_engine = RetryEngine()
 
 def retry(
     policy: RetryPolicy = RetryPolicy.DEFAULT,
-    circuit_breaker_name: Optional[str] = None,
+    circuit_breaker_name: str | None = None,
 ):
     """Decorador para retry automático en funciones async."""
 

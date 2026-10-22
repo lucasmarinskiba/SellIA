@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
 
@@ -15,7 +15,9 @@ router = APIRouter(prefix="/integrations", tags=["Integrations"])
 
 
 @router.get("/status")
-async def integrations_status(_: User = Depends(get_current_user)) -> dict[str, Any]:
+async def integrations_status(
+    _: Annotated[User, Depends(get_current_user)],
+) -> dict[str, Any]:
     """Which external APIs each tool needs and which are actually set here.
 
     Authenticated because it maps this deployment's configuration surface;

@@ -10,29 +10,35 @@ goes through `select()` + `await db.execute()` / `await db.commit()`.
 import asyncio
 import logging
 import os
-from datetime import datetime, timezone, timedelta
-from uuid import UUID
-from typing import Optional, Dict, List, Any
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from uuid import UUID
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.payments.payment_models import (
-    Transaction, Refund, Settlement, PaymentReconciliation, PaymentMetrics,
-    TransactionStatus, RefundStatus, PaymentMethod
-)
 from app.core.payments.mercadopago_processor import MercadoPagoProcessor
+from app.domains.payments.payment_models import (
+    PaymentMethod,
+    PaymentMetrics,
+    PaymentReconciliation,
+    Refund,
+    RefundStatus,
+    Transaction,
+    TransactionStatus,
+)
 
 logger = logging.getLogger(__name__)
 
 # Backend's own public URL, used so MercadoPago calls back the
 # business-scoped webhook (/api/v1/businesses/{business_id}/webhooks/mercadopago)
 # instead of the generic global one.
-BACKEND_PUBLIC_URL = os.getenv("BACKEND_PUBLIC_URL", "https://sellia-production.up.railway.app")
+BACKEND_PUBLIC_URL = os.getenv(
+    "BACKEND_PUBLIC_URL", "https://sellia-production.up.railway.app"
+)
 
 
-def _as_aware_utc(dt: Optional[datetime]) -> Optional[datetime]:
+def _as_aware_utc(dt: datetime | None) -> datetime | None:
     """Normalize a possibly-naive datetime to timezone-aware UTC.
 
     transactions.created_at (and its sibling timestamp columns) were
@@ -45,7 +51,7 @@ def _as_aware_utc(dt: Optional[datetime]) -> Optional[datetime]:
     if dt is None:
         return None
     if dt.tzinfo is None:
-        return dt.replace(tzinfo=timezone.utc)
+        return dt.replace(tzinfo=UTC)
     return dt
 
 
@@ -58,14 +64,14 @@ class PaymentService:
         amount: Decimal,
         currency: str,
         method: str,
-        customer_id: Optional[UUID] = None,
-        order_id: Optional[UUID] = None,
-        location_id: Optional[UUID] = None,
-        conversation_id: Optional[UUID] = None,
-        description: Optional[str] = None,
-        reference_id: Optional[str] = None,
-        metadata: Optional[Dict] = None,
-        db: AsyncSession = None
+        customer_id: UUID | None = None,
+        order_id: UUID | None = None,
+        location_id: UUID | None = None,
+        conversation_id: UUID | None = None,
+        description: str | None = None,
+        reference_id: str | None = None,
+        metadata: dict | None = None,
+        db: AsyncSession = None,
     ) -> dict:
         """Create payment transaction."""
         if not db:
@@ -83,14 +89,16 @@ class PaymentService:
             description=description,
             reference_id=reference_id,
             transaction_metadata=metadata or {},
-            status=TransactionStatus.PENDING
+            status=TransactionStatus.PENDING,
         )
 
         db.add(transaction)
         await db.commit()
         await db.refresh(transaction)
 
-        logger.info(f"Transaction created: {transaction.id} | Amount: {amount} {currency}")
+        logger.info(
+            f"Transaction created: {transaction.id} | Amount: {amount} {currency}"
+        )
 
         return {
             "transaction_id": str(transaction.id),
@@ -104,12 +112,12 @@ class PaymentService:
         business_id: UUID,
         customer_email: str,
         customer_name: str,
-        items: List[Dict],
+        items: list[dict],
         amount: Decimal,
         currency: str = "USD",
-        order_id: Optional[UUID] = None,
-        conversation_id: Optional[UUID] = None,
-        db: AsyncSession = None
+        order_id: UUID | None = None,
+        conversation_id: UUID | None = None,
+        db: AsyncSession = None,
     ) -> dict:
         """Create MercadoPago checkout preference.
 
@@ -138,7 +146,9 @@ class PaymentService:
         # Create MercadoPago preference — notification_url points at the
         # business-scoped webhook so the payment status flows back to the
         # right conversation/business instead of a generic global endpoint.
-        notification_url = f"{BACKEND_PUBLIC_URL}/api/v1/businesses/{business_id}/webhooks/mercadopago"
+        notification_url = (
+            f"{BACKEND_PUBLIC_URL}/api/v1/businesses/{business_id}/webhooks/mercadopago"
+        )
         # MercadoPagoProcessor uses the blocking `requests` lib — push it off
         # the event loop so one checkout call doesn't stall every other
         # request the server is handling concurrently.
@@ -172,9 +182,7 @@ class PaymentService:
 
     @staticmethod
     async def process_mercadopago_webhook(
-        business_id: UUID,
-        event_data: Dict,
-        db: AsyncSession = None
+        business_id: UUID, event_data: dict, db: AsyncSession = None
     ) -> dict:
         """Process MercadoPago webhook notification."""
         if not db:
@@ -184,30 +192,40 @@ class PaymentService:
         data = event_data.get("data", {})
         payment_id = data.get("id")
 
-        logger.info(f"Processing MercadoPago webhook: {event_type} | Payment: {payment_id}")
+        logger.info(
+            f"Processing MercadoPago webhook: {event_type} | Payment: {payment_id}"
+        )
 
         if event_type == "payment":
             return await PaymentService._handle_payment_webhook(business_id, data, db)
         elif event_type == "merchant_order":
-            return await PaymentService._handle_merchant_order_webhook(business_id, data, db)
+            return await PaymentService._handle_merchant_order_webhook(
+                business_id, data, db
+            )
 
         return {"status": "acknowledged"}
 
     @staticmethod
-    async def _handle_payment_webhook(business_id: UUID, data: Dict, db: AsyncSession) -> dict:
+    async def _handle_payment_webhook(
+        business_id: UUID, data: dict, db: AsyncSession
+    ) -> dict:
         """Handle payment webhook."""
         payment_id = data.get("id")
         status = data.get("status")
         external_reference = data.get("external_reference")
 
         if not external_reference:
-            logger.warning(f"Payment webhook missing external_reference (payment {payment_id})")
+            logger.warning(
+                f"Payment webhook missing external_reference (payment {payment_id})"
+            )
             return {"status": "error", "error": "Missing external_reference"}
 
         try:
             transaction_uuid = UUID(external_reference)
         except (ValueError, TypeError):
-            logger.warning(f"Payment webhook external_reference is not a UUID: {external_reference}")
+            logger.warning(
+                f"Payment webhook external_reference is not a UUID: {external_reference}"
+            )
             return {"status": "error", "error": "Invalid external_reference"}
 
         result = await db.execute(
@@ -223,12 +241,12 @@ class PaymentService:
         transaction.mercadopago_payment_id = payment_id
         transaction.mercadopago_status = status
         transaction.webhook_notification_received = True
-        transaction.webhook_notification_date = datetime.now(timezone.utc)
+        transaction.webhook_notification_date = datetime.now(UTC)
 
         # Update status based on payment status
         if status == "approved":
             transaction.status = TransactionStatus.APPROVED
-            transaction.approved_at = datetime.now(timezone.utc)
+            transaction.approved_at = datetime.now(UTC)
         elif status in ("rejected", "failed"):
             transaction.status = TransactionStatus.REJECTED
         elif status == "pending":
@@ -238,46 +256,71 @@ class PaymentService:
 
         if transaction.status == TransactionStatus.APPROVED:
             from app.domains.webhooks.service import fire_business_event
-            await fire_business_event(db, business_id, "payment.received", {
-                "transaction_id": str(transaction.id),
-                "payment_id": payment_id,
-                "amount": float(transaction.amount) if transaction.amount is not None else None,
-                "currency": getattr(transaction, "currency", None),
-            })
 
-        logger.info(f"Transaction {transaction.id} updated to status: {transaction.status}")
+            await fire_business_event(
+                db,
+                business_id,
+                "payment.received",
+                {
+                    "transaction_id": str(transaction.id),
+                    "payment_id": payment_id,
+                    "amount": (
+                        float(transaction.amount)
+                        if transaction.amount is not None
+                        else None
+                    ),
+                    "currency": getattr(transaction, "currency", None),
+                },
+            )
+
+        logger.info(
+            f"Transaction {transaction.id} updated to status: {transaction.status}"
+        )
 
         # Keep the payments dashboard (PaymentMetrics) truthful — nothing
         # else writes to that table, so it stays at zero forever otherwise.
         try:
             await PaymentService._update_payment_metrics(transaction.business_id, db)
-        except Exception as e:
-            logger.error(f"PaymentMetrics update failed for transaction {transaction.id}: {e}")
+        except Exception:
+            logger.exception(
+                f"PaymentMetrics update failed for transaction {transaction.id}"
+            )
 
         # Sale confirmed on a bot-originated conversation → close the loop:
         # tag the subscriber (so the business's own chat flow can branch on
         # it, mirrors sellia_qualified/sellia_disqualified) and thank the
         # customer. Best-effort — a notification failure must never make the
         # webhook itself fail (MercadoPago retries on non-2xx).
-        if transaction.status == TransactionStatus.APPROVED and transaction.conversation_id:
+        if (
+            transaction.status == TransactionStatus.APPROVED
+            and transaction.conversation_id
+        ):
             try:
                 await PaymentService._notify_purchase_confirmed(transaction, db)
-            except Exception as e:
-                logger.error(f"Post-purchase notification failed for transaction {transaction.id}: {e}")
+            except Exception:
+                logger.exception(
+                    f"Post-purchase notification failed for transaction {transaction.id}"
+                )
 
         return {
             "status": "processed",
             "transaction_id": str(transaction.id),
-            "conversation_id": str(transaction.conversation_id) if transaction.conversation_id else None,
+            "conversation_id": (
+                str(transaction.conversation_id)
+                if transaction.conversation_id
+                else None
+            ),
             "payment_status": status,
         }
 
     @staticmethod
-    async def _notify_purchase_confirmed(transaction: Transaction, db: AsyncSession) -> None:
+    async def _notify_purchase_confirmed(
+        transaction: Transaction, db: AsyncSession
+    ) -> None:
         """Tag the subscriber as a buyer + send a thank-you message."""
-        from app.domains.channels.services import send_outbound_message
         from app.domains.channels.connectors import get_connector
-        from app.domains.channels.models import Conversation, ChannelConnection
+        from app.domains.channels.models import ChannelConnection, Conversation
+        from app.domains.channels.services import send_outbound_message
 
         conv_result = await db.execute(
             select(Conversation).where(Conversation.id == transaction.conversation_id)
@@ -287,13 +330,17 @@ class PaymentService:
             return
 
         channel_result = await db.execute(
-            select(ChannelConnection).where(ChannelConnection.id == conversation.channel_connection_id)
+            select(ChannelConnection).where(
+                ChannelConnection.id == conversation.channel_connection_id
+            )
         )
         channel = channel_result.scalar_one_or_none()
         if not channel:
             return
 
-        connector = get_connector(channel.platform, channel.credentials, channel.settings)
+        connector = get_connector(
+            channel.platform, channel.credentials, channel.settings
+        )
         if hasattr(connector, "tag_subscriber"):
             await connector.tag_subscriber(conversation.external_id, "sellia_purchased")
 
@@ -318,19 +365,29 @@ class PaymentService:
         all_txns = txns_result.scalars().all()
 
         approved = [t for t in all_txns if t.status == TransactionStatus.APPROVED]
-        failed = [t for t in all_txns if t.status in (TransactionStatus.REJECTED, TransactionStatus.FAILED)]
+        failed = [
+            t
+            for t in all_txns
+            if t.status in (TransactionStatus.REJECTED, TransactionStatus.FAILED)
+        ]
 
-        total_revenue = sum((t.amount for t in approved), Decimal("0"))
-        avg_value = (total_revenue / len(approved)) if approved else Decimal("0")
-        success_rate = int(round((len(approved) / len(all_txns)) * 100)) if all_txns else 0
+        total_revenue = sum((t.amount for t in approved), Decimal(0))
+        avg_value = (total_revenue / len(approved)) if approved else Decimal(0)
+        success_rate = round((len(approved) / len(all_txns)) * 100) if all_txns else 0
 
-        method_breakdown: Dict[str, float] = {}
+        method_breakdown: dict[str, float] = {}
         for t in approved:
-            method_breakdown[t.method] = method_breakdown.get(t.method, 0.0) + float(t.amount)
+            method_breakdown[t.method] = method_breakdown.get(t.method, 0.0) + float(
+                t.amount
+            )
 
-        week_ago = datetime.now(timezone.utc) - timedelta(days=7)
-        txns_7d = [t for t in approved if t.created_at and _as_aware_utc(t.created_at) >= week_ago]
-        revenue_7d = sum((t.amount for t in txns_7d), Decimal("0"))
+        week_ago = datetime.now(UTC) - timedelta(days=7)
+        txns_7d = [
+            t
+            for t in approved
+            if t.created_at and _as_aware_utc(t.created_at) >= week_ago
+        ]
+        revenue_7d = sum((t.amount for t in txns_7d), Decimal(0))
 
         refunds_result = await db.execute(
             select(Refund).where(
@@ -339,7 +396,7 @@ class PaymentService:
             )
         )
         refunds = refunds_result.scalars().all()
-        refund_rate = int(round((len(refunds) / len(approved)) * 100)) if approved else 0
+        refund_rate = round((len(refunds) / len(approved)) * 100) if approved else 0
 
         metrics_result = await db.execute(
             select(PaymentMetrics).where(PaymentMetrics.business_id == business_id)
@@ -362,12 +419,16 @@ class PaymentService:
         await db.commit()
 
     @staticmethod
-    async def _handle_merchant_order_webhook(business_id: UUID, data: Dict, db: AsyncSession) -> dict:
+    async def _handle_merchant_order_webhook(
+        business_id: UUID, data: dict, db: AsyncSession
+    ) -> dict:
         """Handle merchant order webhook."""
         order_id = data.get("id")
         external_reference = data.get("external_reference")
 
-        logger.info(f"Merchant order webhook: {order_id} | Reference: {external_reference}")
+        logger.info(
+            f"Merchant order webhook: {order_id} | Reference: {external_reference}"
+        )
 
         return {"status": "processed", "order_id": order_id}
 
@@ -377,7 +438,7 @@ class PaymentService:
         business_id: UUID,
         amount: Decimal,
         reason: str,
-        db: AsyncSession = None
+        db: AsyncSession = None,
     ) -> dict:
         """Create refund request."""
         if not db:
@@ -403,7 +464,7 @@ class PaymentService:
             business_id=business_id,
             amount=amount,
             reason=reason,
-            status=RefundStatus.REQUESTED
+            status=RefundStatus.REQUESTED,
         )
 
         db.add(refund)
@@ -419,7 +480,7 @@ class PaymentService:
             if mp_result.get("status") == "refunded":
                 refund.mercadopago_refund_id = mp_result.get("refund_id")
                 refund.status = RefundStatus.APPROVED
-                refund.processed_at = datetime.now(timezone.utc)
+                refund.processed_at = datetime.now(UTC)
 
                 # Update transaction status
                 if amount == transaction.amount:
@@ -441,9 +502,9 @@ class PaymentService:
     @staticmethod
     async def reconcile_transaction(
         order_id: UUID,
-        transaction_id: Optional[UUID],
+        transaction_id: UUID | None,
         business_id: UUID,
-        db: AsyncSession = None
+        db: AsyncSession = None,
     ) -> dict:
         """Reconcile order with payment transaction."""
         if not db:
@@ -473,7 +534,7 @@ class PaymentService:
             status="matched",
             matched=True,
             match_confidence=100,
-            match_reason="manual"
+            match_reason="manual",
         )
 
         db.add(reconciliation)
@@ -492,11 +553,11 @@ class PaymentService:
     @staticmethod
     async def get_transactions(
         business_id: UUID,
-        status: Optional[str] = None,
-        location_id: Optional[UUID] = None,
+        status: str | None = None,
+        location_id: UUID | None = None,
         limit: int = 50,
-        db: AsyncSession = None
-    ) -> List[dict]:
+        db: AsyncSession = None,
+    ) -> list[dict]:
         """Get transactions."""
         if not db:
             raise ValueError("Database session required")
@@ -522,7 +583,9 @@ class PaymentService:
                 "method": t.method,
                 "status": t.status,
                 "order_id": str(t.order_id) if t.order_id else None,
-                "conversation_id": str(t.conversation_id) if t.conversation_id else None,
+                "conversation_id": (
+                    str(t.conversation_id) if t.conversation_id else None
+                ),
                 "created_at": t.created_at.isoformat() if t.created_at else None,
                 "approved_at": t.approved_at.isoformat() if t.approved_at else None,
             }
@@ -531,15 +594,13 @@ class PaymentService:
 
     @staticmethod
     async def get_settlement_metrics(
-        business_id: UUID,
-        period_days: int = 30,
-        db: AsyncSession = None
+        business_id: UUID, period_days: int = 30, db: AsyncSession = None
     ) -> dict:
         """Get settlement metrics for period."""
         if not db:
             raise ValueError("Database session required")
 
-        start_date = datetime.now(timezone.utc) - timedelta(days=period_days)
+        start_date = datetime.now(UTC) - timedelta(days=period_days)
 
         result = await db.execute(
             select(Transaction).where(
@@ -574,14 +635,25 @@ class PaymentService:
             "net_amount": float(net_amount),
             "total_refunded": float(total_refunded),
             "net_after_refunds": float(net_after_refunds),
-            "success_rate": (len([t for t in transactions if t.status == TransactionStatus.APPROVED]) / len(transactions) * 100) if transactions else 0,
+            "success_rate": (
+                (
+                    len(
+                        [
+                            t
+                            for t in transactions
+                            if t.status == TransactionStatus.APPROVED
+                        ]
+                    )
+                    / len(transactions)
+                    * 100
+                )
+                if transactions
+                else 0
+            ),
         }
 
     @staticmethod
-    async def get_payment_metrics(
-        business_id: UUID,
-        db: AsyncSession = None
-    ) -> dict:
+    async def get_payment_metrics(business_id: UUID, db: AsyncSession = None) -> dict:
         """Get payment metrics."""
         if not db:
             raise ValueError("Database session required")

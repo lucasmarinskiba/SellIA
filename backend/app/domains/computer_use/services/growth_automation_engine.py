@@ -4,20 +4,25 @@ Orquesta: trending detection → content generation → scheduling → analytics
 """
 
 import logging
-from typing import Dict, Any, List, Optional, Tuple
-from datetime import datetime, timedelta
+from datetime import timedelta
+from typing import Any
 
-from app.domains.computer_use.services.trending_analyzer import get_trending_analyzer, TrendingTopic
-from app.domains.computer_use.services.content_generator import get_content_generator, ContentStyle
-from app.domains.computer_use.services.publish_scheduler import (
-    get_publish_scheduler,
-    PublishingStrategy,
-    ScheduledPost,
+from app.core.clock import utc_now
+from app.domains.computer_use.services.content_generator import (
+    ContentStyle,
+    get_content_generator,
 )
 from app.domains.computer_use.services.growth_analytics import get_growth_analytics
 from app.domains.computer_use.services.platform_automation_engine import (
     get_platform_automation_engine,
-    PlatformAutomationType,
+)
+from app.domains.computer_use.services.publish_scheduler import (
+    PublishingStrategy,
+    ScheduledPost,
+    get_publish_scheduler,
+)
+from app.domains.computer_use.services.trending_analyzer import (
+    get_trending_analyzer,
 )
 
 logger = logging.getLogger(__name__)
@@ -38,9 +43,9 @@ class GrowthAutomationEngine:
         self,
         platform: str,  # instagram, tiktok
         account_id: str,
-        product_info: Dict[str, Any],
+        product_info: dict[str, Any],
         posting_strategy: PublishingStrategy = PublishingStrategy.TWICE_DAILY,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Ejecuta ciclo diario automático:
         1. Detecta trending topics
@@ -88,12 +93,14 @@ class GrowthAutomationEngine:
                     strategy=posting_strategy,
                 )
 
-                posts_to_publish.append({
-                    "post": post,
-                    "trending_topic": topic,
-                    "image_theme": image_theme,
-                    "style": style.value,
-                })
+                posts_to_publish.append(
+                    {
+                        "post": post,
+                        "trending_topic": topic,
+                        "image_theme": image_theme,
+                        "style": style.value,
+                    }
+                )
 
                 self.logger.info(f"Generated post for trend: {topic.topic}")
 
@@ -101,25 +108,33 @@ class GrowthAutomationEngine:
             publish_results = []
 
             for post_data in posts_to_publish:
-                success, message_id = await self._publish_post(
+                success, _message_id = await self._publish_post(
                     platform=platform,
                     post=post_data["post"],
                 )
 
-                publish_results.append({
-                    "post_id": post_data["post"].post_id,
-                    "success": success,
-                    "topic": post_data["trending_topic"].topic,
-                    "scheduled_time": post_data["post"].scheduled_time.isoformat(),
-                })
+                publish_results.append(
+                    {
+                        "post_id": post_data["post"].post_id,
+                        "success": success,
+                        "topic": post_data["trending_topic"].topic,
+                        "scheduled_time": post_data["post"].scheduled_time.isoformat(),
+                    }
+                )
 
                 if success:
-                    await self.publisher.update_post_status(post_data["post"].post_id, "published")
+                    await self.publisher.update_post_status(
+                        post_data["post"].post_id, "published"
+                    )
 
             # 4. GET ANALYTICS
             metrics = await self.analytics.get_account_metrics(platform, account_id)
-            top_posts = await self.analytics.get_top_posts(platform, account_id, limit=3)
-            recommendations = await self.analytics.analyze_content_performance(platform, account_id)
+            top_posts = await self.analytics.get_top_posts(
+                platform, account_id, limit=3
+            )
+            recommendations = await self.analytics.analyze_content_performance(
+                platform, account_id
+            )
 
             result = {
                 "status": "success",
@@ -136,26 +151,30 @@ class GrowthAutomationEngine:
                 },
                 "top_posts": top_posts,
                 "recommendations": recommendations["recommendations"],
-                "next_cycle": (datetime.utcnow() + timedelta(hours=6)).isoformat(),
+                "next_cycle": (utc_now() + timedelta(hours=6)).isoformat(),
             }
 
-            self.logger.info(f"Daily growth cycle completed: {len(posts_to_publish)} posts created")
+            self.logger.info(
+                f"Daily growth cycle completed: {len(posts_to_publish)} posts created"
+            )
 
             return result
 
         except Exception as e:
-            self.logger.error(f"Error in daily growth cycle: {e}")
+            self.logger.exception("Error in daily growth cycle")
             return {"status": "error", "message": str(e)}
 
     async def get_growth_recommendations(
         self,
         platform: str,
         account_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Obtiene recomendaciones de crecimiento."""
         try:
             # Analizar performance
-            performance = await self.analytics.analyze_content_performance(platform, account_id)
+            performance = await self.analytics.analyze_content_performance(
+                platform, account_id
+            )
             metrics = await self.analytics.get_account_metrics(platform, account_id)
 
             # Predecir growth
@@ -190,8 +209,8 @@ class GrowthAutomationEngine:
                 ],
             }
 
-        except Exception as e:
-            self.logger.error(f"Error getting recommendations: {e}")
+        except Exception:
+            self.logger.exception("Error getting recommendations")
             return {}
 
     # ── Private ──────────────────────────────────────────
@@ -210,14 +229,12 @@ class GrowthAutomationEngine:
         self,
         platform: str,
         post: ScheduledPost,
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """Publica post usando browser automation."""
         try:
             # Usar platform automation para publicar
-            if platform == "instagram":
-                platform_type = PlatformAutomationType.INSTAGRAM_DM  # placeholder
-            elif platform == "tiktok":
-                platform_type = PlatformAutomationType.TIKTOK_DM  # placeholder
+            if platform == "instagram" or platform == "tiktok":
+                pass  # placeholder
             else:
                 return False, None
 
@@ -228,8 +245,8 @@ class GrowthAutomationEngine:
 
             return True, post.post_id
 
-        except Exception as e:
-            self.logger.error(f"Error publishing post: {e}")
+        except Exception:
+            self.logger.exception("Error publishing post")
             return False, None
 
 

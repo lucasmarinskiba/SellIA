@@ -3,24 +3,27 @@ Servicio de notificaciones push Web Push.
 Usa VAPID para autenticación con los servidores push de navegadores.
 """
 
-import os
 import json
-import base64
-from datetime import datetime, timezone
-from typing import Optional
+import os
+from datetime import UTC, datetime
 
 try:
-    from pywebpush import webpush, WebPushException
+    from pywebpush import WebPushException, webpush
+
     WEBPUSH_AVAILABLE = True
 except ImportError:
     webpush = None
     WebPushException = Exception
     WEBPUSH_AVAILABLE = False
 
+import logging
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.security.models import PushSubscription
+
+logger = logging.getLogger(__name__)
 
 # VAPID keys (generar con: openssl ecparam -genkey -name prime256v1 -noout -out vapid_private.pem)
 VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY", "")
@@ -53,11 +56,13 @@ async def send_push_notification(
     """
     if not WEBPUSH_AVAILABLE:
         from app.core.logger import get_logger
+
         get_logger(__name__).warning("pywebpush no instalado. Push omitido.")
         return
 
     if not VAPID_PRIVATE_KEY:
         from app.core.logger import get_logger
+
         get_logger(__name__).warning("VAPID_PRIVATE_KEY no configurada. Push omitido.")
         return
 
@@ -72,16 +77,18 @@ async def send_push_notification(
     if not subscriptions:
         return
 
-    payload = json.dumps({
-        "title": title,
-        "body": body,
-        "icon": icon,
-        "badge": badge,
-        "url": url,
-        "tag": tag,
-        "requireInteraction": require_interaction,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    })
+    payload = json.dumps(
+        {
+            "title": title,
+            "body": body,
+            "icon": icon,
+            "badge": badge,
+            "url": url,
+            "tag": tag,
+            "requireInteraction": require_interaction,
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+    )
 
     for sub in subscriptions:
         try:
@@ -104,9 +111,12 @@ async def send_push_notification(
                 await db.commit()
             else:
                 from app.core.logger import get_logger
+
                 get_logger(__name__).error(f"Error enviando push: {e}")
         except Exception as e:
+            logger.exception("send_push_notification: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Error inesperado: {e}")
 
 

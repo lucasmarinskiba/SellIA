@@ -1,9 +1,8 @@
 """Email + SMS Campaign Sequences - Multi-touch automation"""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional
-from uuid import UUID
+from typing import ClassVar
 
 from app.domains.notifications.service import email_service, sms_service
 
@@ -17,7 +16,7 @@ class SequenceType(str, Enum):
 
 
 class EmailSequence:
-    SEQUENCES = {
+    SEQUENCES: ClassVar[dict] = {
         "cart_abandoned_1": {
             "subject": "😱 Olvidaste tu carrito...",
             "delay_hours": 0,
@@ -84,28 +83,28 @@ class EmailSequence:
                 "total": cart_value,
                 "offer": "COMPLETA15",
                 "discount": "15% OFF",
-            }
+            },
         )
 
         # SMS 2: After 2 hours
         await asyncio.sleep(7200)
         await sms_service.send(
             to=user_phone,
-            message=f"🔥 ${cart_value} de tu carrito expira HOY. Usa COMPLETA15"
+            message=f"🔥 ${cart_value} de tu carrito expira HOY. Usa COMPLETA15",
         )
 
         # Email 3: After 24 hours
         await asyncio.sleep(82800)
         await email_service.send(
             to=user_email,
-            subject=f"⏰ Última oportunidad",
+            subject="⏰ Última oportunidad",
             template="cart_abandoned_2",
             context={
                 "items": items,
                 "total": cart_value,
                 "offer": "20% OFF",
                 "countdown": "6 horas",
-            }
+            },
         )
 
     @staticmethod
@@ -117,8 +116,16 @@ class EmailSequence:
         """4-touch escalating rescue sequence"""
 
         steps = [
-            {"delay": 0, "channel": "sms", "message": "¿Necesitas ayuda? Responde o llama"},
-            {"delay": 7200, "channel": "email", "subject": "Queremos ayudarte a vender MÁS"},
+            {
+                "delay": 0,
+                "channel": "sms",
+                "message": "¿Necesitas ayuda? Responde o llama",
+            },
+            {
+                "delay": 7200,
+                "channel": "email",
+                "subject": "Queremos ayudarte a vender MÁS",
+            },
             {"delay": 86400, "channel": "sms", "message": "VUELVE30 = 30% OFF Pro"},
             {"delay": 172800, "channel": "email", "subject": "Último intento: 40% OFF"},
         ]
@@ -129,9 +136,7 @@ class EmailSequence:
                 await sms_service.send(to=user_phone, message=step["message"])
             else:
                 await email_service.send(
-                    to=user_email,
-                    subject=step["subject"],
-                    template="churn_sequence"
+                    to=user_email, subject=step["subject"], template="churn_sequence"
                 )
 
     @staticmethod
@@ -152,14 +157,13 @@ class EmailSequence:
                 "feature": feature_name,
                 "url": feature_url,
                 "benefit": "Automatiza aún más tu negocio",
-            }
+            },
         )
 
         # SMS 2: After 3 hours
         await asyncio.sleep(10800)
         await sms_service.send(
-            to=user_phone,
-            message=f"✨ {feature_name} ya disponible para Pro"
+            to=user_phone, message=f"✨ {feature_name} ya disponible para Pro"
         )
 
         # Email 3: Tutorial
@@ -171,7 +175,7 @@ class EmailSequence:
             context={
                 "feature": feature_name,
                 "video_url": f"{feature_url}/tutorial",
-            }
+            },
         )
 
     @staticmethod
@@ -187,7 +191,9 @@ class EmailSequence:
         - At expiration: final email
         """
 
-        hours_until_expiration = (trial_expires_at - datetime.now(timezone.utc)).total_seconds() / 3600
+        hours_until_expiration = (
+            trial_expires_at - datetime.now(UTC)
+        ).total_seconds() / 3600
 
         # Email 1: 7 days before
         await asyncio.sleep(max(0, (hours_until_expiration - 168) * 3600))
@@ -195,14 +201,14 @@ class EmailSequence:
             to=user_email,
             subject="Trial expira en 7 días",
             template="trial_expiration_7d",
-            context={"discount": "50% OFF primer mes"}
+            context={"discount": "50% OFF primer mes"},
         )
 
         # SMS 2: 6 hours before
         await asyncio.sleep(max(0, 162 * 3600))
         await sms_service.send(
             to=user_phone,
-            message="Trial expira HOY. Activa Pro para no perder acceso 🚨 TRIAL50"
+            message="Trial expira HOY. Activa Pro para no perder acceso 🚨 TRIAL50",
         )
 
         # Email 3: At expiration
@@ -211,7 +217,7 @@ class EmailSequence:
             to=user_email,
             subject="¿Fue útil SellIA?",
             template="trial_expired",
-            context={"discount": "60% OFF por 3 meses"}
+            context={"discount": "60% OFF por 3 meses"},
         )
 
 

@@ -2,14 +2,16 @@
 Product Tour Router
 """
 
+from datetime import UTC
 from typing import Annotated
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.product_tours.models import TourStep, UserTourProgress
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/tours", tags=["tours"])
 
@@ -22,8 +24,11 @@ async def get_db():
 @router.get("/{tour_id}/steps")
 async def get_tour_steps(tour_id: str, db: Annotated[AsyncSession, Depends(get_db)]):
     from sqlalchemy import select
+
     result = await db.execute(
-        select(TourStep).where(TourStep.tour_id == tour_id, TourStep.is_active == True).order_by(TourStep.step_order)
+        select(TourStep)
+        .where(TourStep.tour_id == tour_id, TourStep.is_active == True)
+        .order_by(TourStep.step_order)
     )
     steps = result.scalars().all()
     return [
@@ -51,6 +56,7 @@ async def update_progress(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     from sqlalchemy import select
+
     result = await db.execute(
         select(UserTourProgress).where(
             UserTourProgress.user_id == current_user.id,
@@ -72,11 +78,15 @@ async def update_progress(
         progress.is_completed = data.get("is_completed", False)
         progress.is_skipped = data.get("is_skipped", False)
         if progress.is_completed:
-            from datetime import datetime, timezone
-            progress.completed_at = datetime.now(timezone.utc)
+            from datetime import datetime
+
+            progress.completed_at = datetime.now(UTC)
 
     await db.commit()
-    return {"current_step": progress.current_step, "is_completed": progress.is_completed}
+    return {
+        "current_step": progress.current_step,
+        "is_completed": progress.is_completed,
+    }
 
 
 @router.get("/my-progress")
@@ -85,6 +95,7 @@ async def get_my_progress(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     from sqlalchemy import select
+
     result = await db.execute(
         select(UserTourProgress).where(UserTourProgress.user_id == current_user.id)
     )

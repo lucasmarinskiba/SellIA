@@ -1,15 +1,20 @@
 from sqlalchemy import create_engine
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
-from app.core.config import get_settings
 from sqlalchemy.pool import NullPool
+
+from app.core.config import get_settings
 
 settings = get_settings()
 
 # Build connect_args for SSL in production
 connect_args = {}
-if settings.ENVIRONMENT == "production" and settings.DB_SSL_MODE not in ("disable", "allow"):
+if settings.ENVIRONMENT == "production" and settings.DB_SSL_MODE not in (
+    "disable",
+    "allow",
+):
     import ssl
+
     ssl_context = ssl.create_default_context()
     if settings.DB_SSL_MODE in ("verify-ca", "verify-full") and settings.DB_SSL_CA:
         ssl_context.load_verify_locations(settings.DB_SSL_CA)

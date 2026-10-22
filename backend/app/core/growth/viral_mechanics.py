@@ -1,8 +1,7 @@
 """Viral Mechanics — Referral loops, network effects, organic amplification."""
 
 import logging
-from typing import Dict, List, Any
-from enum import Enum
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +10,7 @@ class ViralMechanics:
     """Viral growth mechanics."""
 
     # Referral incentive models
-    REFERRAL_MODELS = {
+    REFERRAL_MODELS: ClassVar[dict] = {
         "both_benefit": {"referrer": "reward", "referee": "discount"},
         "referrer_only": {"referrer": "cash", "referee": None},
         "tiered": {"referrer": "tiered_rewards", "referee": "escalating_discount"},
@@ -20,8 +19,8 @@ class ViralMechanics:
     @staticmethod
     def design_referral_loop(
         product_name: str,
-        unit_economics: Dict[str, float],
-    ) -> Dict[str, Any]:
+        unit_economics: dict[str, float],
+    ) -> dict[str, Any]:
         """
         Design referral loop maximizing viral coefficient.
 
@@ -36,7 +35,7 @@ class ViralMechanics:
 
         # Incentive calculation
         customer_lifetime_value = unit_economics.get("customer_ltv", 500)
-        acquisition_cost_without_referral = unit_economics.get("acquisition_cost", 50)
+        unit_economics.get("acquisition_cost", 50)
 
         # Referral incentive budget (can't exceed 50% of LTV)
         max_referral_budget = customer_lifetime_value * 0.5
@@ -50,11 +49,13 @@ class ViralMechanics:
             "conversion_rate": conversion_rate,
             "referrer_incentive": f"${referral_incentive}",
             "referee_incentive": f"${referral_incentive}",
-            "doubling_time_days": int(30 / viral_coefficient) if viral_coefficient > 0 else None,
+            "doubling_time_days": (
+                int(30 / viral_coefficient) if viral_coefficient > 0 else None
+            ),
         }
 
     @staticmethod
-    def create_content_amplification_strategy() -> Dict[str, Any]:
+    def create_content_amplification_strategy() -> dict[str, Any]:
         """Strategy for users to share content."""
 
         return {
@@ -81,25 +82,38 @@ class ViralMechanics:
         daily_active_users: int,
         invitations_sent: int,
         new_signups_from_invites: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate viral coefficient from actual data."""
 
-        viral_coefficient = (invitations_sent / daily_active_users) * (new_signups_from_invites / invitations_sent) if daily_active_users > 0 else 0
+        viral_coefficient = (
+            (invitations_sent / daily_active_users)
+            * (new_signups_from_invites / invitations_sent)
+            if daily_active_users > 0
+            else 0
+        )
 
         return {
             "viral_coefficient": round(viral_coefficient, 2),
             "status": "exponential" if viral_coefficient > 1.0 else "linear",
             "growth_mode": "viral" if viral_coefficient > 1.5 else "steady",
             "dau": daily_active_users,
-            "invites_per_dau": round(invitations_sent / daily_active_users, 2) if daily_active_users > 0 else 0,
-            "conversion_from_invites": round(new_signups_from_invites / invitations_sent * 100, 1) if invitations_sent > 0 else 0,
+            "invites_per_dau": (
+                round(invitations_sent / daily_active_users, 2)
+                if daily_active_users > 0
+                else 0
+            ),
+            "conversion_from_invites": (
+                round(new_signups_from_invites / invitations_sent * 100, 1)
+                if invitations_sent > 0
+                else 0
+            ),
         }
 
     @staticmethod
     def optimize_viral_loop(
         current_k: float,
         bottleneck: str,  # "invites" or "conversion"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Suggest optimizations to improve viral coefficient."""
 
         if bottleneck == "invites":

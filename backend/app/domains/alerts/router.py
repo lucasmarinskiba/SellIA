@@ -1,44 +1,51 @@
 """Alerts API Router"""
 
+from typing import Annotated
 from uuid import UUID
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
-from app.domains.businesses.models import Business
-from app.domains.users.models import User
-from app.domains.alerts.service import AlertService
-from app.domains.channels.token_rotation import RotationNotPossible
 from app.domains.alerts.schemas import (
-    AlertRuleCreate, AlertRuleUpdate, AlertRuleResponse,
-    AlertResponse, AlertStatsResponse,
-    RecommendationResponse, RecommendationApplyRequest,
+    AlertResponse,
+    AlertRuleCreate,
+    AlertRuleResponse,
+    AlertRuleUpdate,
+    AlertStatsResponse,
+    RecommendationApplyRequest,
+    RecommendationResponse,
 )
+from app.domains.alerts.service import AlertService
+from app.domains.businesses.models import Business
+from app.domains.channels.token_rotation import RotationNotPossible
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 
 # ========== Alert Rules ==========
 
+
 @router.get("/rules", response_model=list[AlertRuleResponse])
 async def list_rules(
-    business_id: UUID = Query(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     svc = AlertService(db)
     return await svc.list_rules(business_id)
 
 
-@router.post("/rules", response_model=AlertRuleResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/rules", response_model=AlertRuleResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_rule(
     data: AlertRuleCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     svc = AlertService(db)
     return await svc.create_rule(data)
@@ -48,8 +55,8 @@ async def create_rule(
 async def update_rule(
     rule_id: UUID,
     data: AlertRuleUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     svc = AlertService(db)
     rule = await svc.update_rule(rule_id, data)
@@ -61,8 +68,8 @@ async def update_rule(
 @router.delete("/rules/{rule_id}")
 async def delete_rule(
     rule_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     svc = AlertService(db)
     if not await svc.delete_rule(rule_id):
@@ -72,15 +79,16 @@ async def delete_rule(
 
 # ========== Alerts ==========
 
+
 @router.get("", response_model=list[AlertResponse])
 async def list_alerts(
-    business_id: UUID = Query(...),
-    status: Optional[str] = None,
-    severity: Optional[str] = None,
-    limit: int = Query(100, ge=1, le=500),
-    offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    status: str | None = None,
+    severity: str | None = None,
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ):
     svc = AlertService(db)
     return await svc.list_alerts(business_id, status, severity, limit, offset)
@@ -88,9 +96,9 @@ async def list_alerts(
 
 @router.get("/stats", response_model=AlertStatsResponse)
 async def get_alert_stats(
-    business_id: UUID = Query(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     svc = AlertService(db)
     return await svc.get_stats(business_id)
@@ -99,8 +107,8 @@ async def get_alert_stats(
 @router.patch("/{alert_id}/read", response_model=AlertResponse)
 async def mark_alert_read(
     alert_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     svc = AlertService(db)
     alert = await svc.mark_read(alert_id)
@@ -112,8 +120,8 @@ async def mark_alert_read(
 @router.patch("/{alert_id}/dismiss", response_model=AlertResponse)
 async def dismiss_alert(
     alert_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     svc = AlertService(db)
     alert = await svc.dismiss_alert(alert_id)
@@ -125,8 +133,8 @@ async def dismiss_alert(
 @router.delete("/{alert_id}")
 async def delete_alert(
     alert_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     svc = AlertService(db)
     if not await svc.delete_alert(alert_id):
@@ -136,12 +144,20 @@ async def delete_alert(
 
 # ========== Recommendations ==========
 
-async def _require_business_owner(db: AsyncSession, business_id: UUID, user: User) -> None:
+
+async def _require_business_owner(
+    db: AsyncSession, business_id: UUID, user: User
+) -> None:
     """404 unless ``user`` owns ``business_id``: recommendations can change things (e.g. rotate a
-    webhook token), so being logged in is not enough to read or answer someone else's."""
+    webhook token), so being logged in is not enough to read or answer someone else's.
+    """
     if getattr(user, "is_superuser", False):
         return
-    owned = await db.execute(select(Business.id).where(Business.id == business_id, Business.user_id == user.id))
+    owned = await db.execute(
+        select(Business.id).where(
+            Business.id == business_id, Business.user_id == user.id
+        )
+    )
     if owned.first() is None:
         raise HTTPException(status_code=404, detail="Recomendación no encontrada")
 
@@ -152,13 +168,14 @@ async def _owned_recommendation(db: AsyncSession, rec_id: UUID, user: User):
         raise HTTPException(status_code=404, detail="Recomendación no encontrada")
     await _require_business_owner(db, rec.business_id, user)
 
+
 @router.get("/recommendations", response_model=list[RecommendationResponse])
 async def list_recommendations(
-    business_id: UUID = Query(...),
-    status: Optional[str] = Query("pending"),
-    limit: int = Query(100, ge=1, le=500),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    status: Annotated[str | None, Query()] = "pending",
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
 ):
     await _require_business_owner(db, business_id, current_user)
     svc = AlertService(db)
@@ -169,8 +186,8 @@ async def list_recommendations(
 async def apply_recommendation(
     rec_id: UUID,
     req: RecommendationApplyRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     await _owned_recommendation(db, rec_id, current_user)
     svc = AlertService(db)
@@ -187,8 +204,8 @@ async def apply_recommendation(
 @router.post("/recommendations/{rec_id}/dismiss", response_model=RecommendationResponse)
 async def dismiss_recommendation(
     rec_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     await _owned_recommendation(db, rec_id, current_user)
     svc = AlertService(db)

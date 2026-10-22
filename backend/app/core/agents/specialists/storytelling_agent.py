@@ -9,15 +9,15 @@ Specialties:
 """
 
 import logging
-from typing import Dict, List, Any, Optional
 from enum import Enum
-from datetime import datetime
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
 
 class StoryType(str, Enum):
     """Types of stories."""
+
     ORIGIN = "origin"  # How company started
     MISSION = "mission"  # What company stands for
     CUSTOMER = "customer"  # Customer success story
@@ -28,6 +28,7 @@ class StoryType(str, Enum):
 
 class CommunicationFramework(str, Enum):
     """Communication story frameworks."""
+
     HEROS_JOURNEY = "heros_journey"  # Hero's Journey framework
     PIXAR = "pixar"  # Pixar story structure
     TED = "ted"  # TED talk structure
@@ -38,7 +39,7 @@ class CommunicationFramework(str, Enum):
 class StorytellingAgent:
     """Expert in storytelling and communication."""
 
-    HEROS_JOURNEY = {
+    HEROS_JOURNEY: ClassVar[dict] = {
         "structure": [
             {
                 "stage": "1. Ordinary World",
@@ -115,7 +116,7 @@ class StorytellingAgent:
         ],
     }
 
-    PIXAR_STRUCTURE = {
+    PIXAR_STRUCTURE: ClassVar[dict] = {
         "formula": "Once upon a time... Every day... One day... Because of that... Because of that... Until finally... And the moral is...",
         "breakdown": [
             {
@@ -156,7 +157,7 @@ class StorytellingAgent:
         ],
     }
 
-    TED_TALK_STRUCTURE = {
+    TED_TALK_STRUCTURE: ClassVar[dict] = {
         "elements": [
             {
                 "section": "Hook (first 30 seconds)",
@@ -219,7 +220,7 @@ class StorytellingAgent:
         "visuals": "Minimal, high-quality, support story",
     }
 
-    CUSTOMER_STORY_FRAMEWORK = {
+    CUSTOMER_STORY_FRAMEWORK: ClassVar[dict] = {
         "hero": {
             "focus": "Customer is the hero, not you",
             "elements": [
@@ -269,7 +270,7 @@ class StorytellingAgent:
         },
     }
 
-    BRAND_STORY_ARCHETYPES = {
+    BRAND_STORY_ARCHETYPES: ClassVar[dict] = {
         "origin_story": {
             "elements": [
                 "Why founder started company",
@@ -309,7 +310,7 @@ class StorytellingAgent:
         },
     }
 
-    PITCH_DECK_STRUCTURE = {
+    PITCH_DECK_STRUCTURE: ClassVar[dict] = {
         "slides": [
             {
                 "slide": 1,
@@ -376,11 +377,8 @@ class StorytellingAgent:
 
     @staticmethod
     def craft_brand_story(
-        company_name: str,
-        founder_origin: str,
-        mission: str,
-        target_audience: str
-    ) -> Dict[str, Any]:
+        company_name: str, founder_origin: str, mission: str, target_audience: str
+    ) -> dict[str, Any]:
         """Craft compelling brand story."""
         return {
             "company": company_name,
@@ -410,32 +408,34 @@ class StorytellingAgent:
         customer_role: str,
         initial_challenge: str,
         solution_provided: str,
-        results: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        results: dict[str, Any],
+    ) -> dict[str, Any]:
         """Create structured customer case study."""
         case_study = StorytellingAgent.CUSTOMER_STORY_FRAMEWORK.copy()
-        case_study.update({
-            "customer": customer_name,
-            "role": customer_role,
-            "challenge": initial_challenge,
-            "solution": solution_provided,
-            "results": results,
-            "structure": [
-                "1. Introduction (who, what, context)",
-                "2. Challenge (problem, stakes, impact)",
-                "3. Solution (how we helped, implementation)",
-                "4. Results (quantified + qualitative)",
-                "5. Quote (testimonial from customer)",
-                "6. Call to action (similar customers)",
-            ],
-            "formats": [
-                "1-page PDF",
-                "Video testimonial (3-5 min)",
-                "Blog post",
-                "Case study page on website",
-                "LinkedIn article",
-            ],
-        })
+        case_study.update(
+            {
+                "customer": customer_name,
+                "role": customer_role,
+                "challenge": initial_challenge,
+                "solution": solution_provided,
+                "results": results,
+                "structure": [
+                    "1. Introduction (who, what, context)",
+                    "2. Challenge (problem, stakes, impact)",
+                    "3. Solution (how we helped, implementation)",
+                    "4. Results (quantified + qualitative)",
+                    "5. Quote (testimonial from customer)",
+                    "6. Call to action (similar customers)",
+                ],
+                "formats": [
+                    "1-page PDF",
+                    "Video testimonial (3-5 min)",
+                    "Blog post",
+                    "Case study page on website",
+                    "LinkedIn article",
+                ],
+            }
+        )
 
         return case_study
 
@@ -445,8 +445,8 @@ class StorytellingAgent:
         problem: str,
         solution: str,
         market_size: str,
-        target_customer: str
-    ) -> Dict[str, Any]:
+        target_customer: str,
+    ) -> dict[str, Any]:
         """Build compelling pitch narrative."""
         return {
             "company": company,
@@ -470,10 +470,8 @@ class StorytellingAgent:
 
     @staticmethod
     def design_investor_pitch(
-        company: str,
-        funding_amount: float,
-        use_of_funds: Dict[str, float]
-    ) -> Dict[str, Any]:
+        company: str, funding_amount: float, use_of_funds: dict[str, float]
+    ) -> dict[str, Any]:
         """Design investor pitch deck."""
         return {
             "company": company,
@@ -517,16 +515,18 @@ class StorytellingAgent:
         ordinary_world: str,
         call_to_adventure: str,
         climax: str,
-        resolution: str
-    ) -> Dict[str, Any]:
+        resolution: str,
+    ) -> dict[str, Any]:
         """Apply Hero's Journey framework to your story."""
         journey = []
         for stage in StorytellingAgent.HEROS_JOURNEY["structure"]:
-            journey.append({
-                "stage": stage["stage"],
-                "description": stage["description"],
-                "in_your_story": "",
-            })
+            journey.append(
+                {
+                    "stage": stage["stage"],
+                    "description": stage["description"],
+                    "in_your_story": "",
+                }
+            )
 
         return {
             "protagonist": protagonist,
@@ -539,9 +539,8 @@ class StorytellingAgent:
 
     @staticmethod
     def create_content_narratives(
-        primary_story: str,
-        target_segments: List[str]
-    ) -> Dict[str, Any]:
+        primary_story: str, target_segments: list[str]
+    ) -> dict[str, Any]:
         """Create tailored narratives for different audience segments."""
         return {
             "primary_story": primary_story,
@@ -565,7 +564,7 @@ class StorytellingAgent:
         }
 
     @staticmethod
-    def storytelling_workshop_guide() -> Dict[str, Any]:
+    def storytelling_workshop_guide() -> dict[str, Any]:
         """Guide for storytelling workshop."""
         return {
             "duration": "Half day",

@@ -1,14 +1,19 @@
 """Service to sync FOMO copy to platform APIs."""
 
 from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO, PlatformSyncLog
-from app.domains.seo_config.platform_sync_mercadolibre import MercadoLibreListingSync
-from app.domains.seo_config.platform_sync_base import PlatformListingSyncConnector
+from app.domains.seo_config.models import (
+    PlatformSyncLog,
+    PublicationLink,
+    PublicationLinkFOMO,
+)
 from app.domains.seo_config.platform_algorithm_knowledge import canonical_platform
+from app.domains.seo_config.platform_sync_base import PlatformListingSyncConnector
+from app.domains.seo_config.platform_sync_mercadolibre import MercadoLibreListingSync
 
 logger = get_logger(__name__)
 
@@ -39,12 +44,16 @@ class PlatformListingSyncService:
             logger.warning(f"No connector implemented for platform: {platform_name}")
             return None
         if not connection_id:
-            logger.warning(f"No connection_id to sync {platform_name} listing (link has none set)")
+            logger.warning(
+                f"No connection_id to sync {platform_name} listing (link has none set)"
+            )
             return None
 
         try:
             # Get connection credentials from integrations table
-            from app.domains.integrations.integration_models import IntegrationConnection
+            from app.domains.integrations.integration_models import (
+                IntegrationConnection,
+            )
 
             result = await self.db.execute(
                 select(IntegrationConnection).where(
@@ -60,7 +69,9 @@ class PlatformListingSyncService:
             # was created/synced — never confirmed against this business before
             # using its credentials to write to an external listing.
             if connection.business_id != business_id:
-                logger.warning(f"Connection {connection_id} does not belong to business {business_id}")
+                logger.warning(
+                    f"Connection {connection_id} does not belong to business {business_id}"
+                )
                 return None
 
             # Parse credentials
@@ -79,8 +90,8 @@ class PlatformListingSyncService:
 
             return connector
 
-        except Exception as e:
-            logger.error(f"Error getting connector for {platform_name}: {str(e)[:200]}")
+        except Exception:
+            logger.exception(f"Error getting connector for {platform_name}")
             return None
 
     async def sync_fomo_to_listing(
@@ -105,7 +116,9 @@ class PlatformListingSyncService:
             # so get_connector always got None and every sync silently no-opped as
             # "skipped: no connector" — this feature never actually ran. The link's
             # own connection is the only sensible default.
-            connector = await self.get_connector(business_id, link.platform_source, connection_id or link.connection_id)
+            connector = await self.get_connector(
+                business_id, link.platform_source, connection_id or link.connection_id
+            )
             if not connector:
                 sync_log.status = "skipped"
                 sync_log.error_message = f"No connector for {link.platform_source}"
@@ -150,16 +163,14 @@ class PlatformListingSyncService:
         except Exception as e:
             sync_log.status = "failed"
             sync_log.error_message = str(e)[:200]
-            logger.error(f"Sync failed for link {link.id}: {str(e)[:200]}")
+            logger.exception(f"Sync failed for link {link.id}")
 
         self.db.add(sync_log)
         await self.db.commit()
         await self.db.refresh(sync_log)
         return sync_log
 
-    async def sync_all_links(
-        self, business_id: UUID
-    ) -> dict:
+    async def sync_all_links(self, business_id: UUID) -> dict:
         """Sync FOMO copy for all active links in a business."""
         result = await self.db.execute(
             select(PublicationLink).where(

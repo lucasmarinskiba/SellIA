@@ -1,10 +1,12 @@
 """Phase 19: User Onboarding & Setup Wizard."""
 
+import logging
 from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional
 from datetime import datetime
 from enum import Enum
-import logging
+from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -28,8 +30,8 @@ class UserOnboardingSession:
     campaign_created: bool = False
     first_leads_generated: bool = False
     estimated_monthly_leads: int = 0
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    completed_at: Optional[datetime] = None
+    created_at: datetime = field(default_factory=utc_now)
+    completed_at: datetime | None = None
 
 
 @dataclass
@@ -52,7 +54,7 @@ class OnboardingAnswers:
     geographic_scope: str
 
     # Step 4: Channels
-    preferred_channels: List[str]
+    preferred_channels: list[str]
 
     # Step 5: Goals
     monthly_lead_goal: int
@@ -64,10 +66,10 @@ class OnboardingEngine:
 
     def create_session(self, user_id: str) -> UserOnboardingSession:
         """Create onboarding session"""
-        session_id = f"onb_{user_id}_{datetime.utcnow().timestamp()}"
+        session_id = f"onb_{user_id}_{utc_now().timestamp()}"
         return UserOnboardingSession(user_id=user_id, session_id=session_id)
 
-    def get_step_content(self, step: OnboardingStep) -> Dict[str, Any]:
+    def get_step_content(self, step: OnboardingStep) -> dict[str, Any]:
         """Get questions/content for step"""
 
         if step == OnboardingStep.PROFILE:
@@ -77,33 +79,63 @@ class OnboardingEngine:
                     {"field": "user_name", "label": "Your name", "type": "text"},
                     {"field": "user_email", "label": "Email", "type": "email"},
                     {"field": "user_phone", "label": "Phone", "type": "tel"},
-                    {"field": "company_name", "label": "Business name", "type": "text"}
+                    {"field": "company_name", "label": "Business name", "type": "text"},
                 ],
-                "time_minutes": 2
+                "time_minutes": 2,
             }
 
         elif step == OnboardingStep.PRODUCT:
             return {
                 "title": "What do you sell/offer?",
                 "questions": [
-                    {"field": "product_name", "label": "Product/Service name", "type": "text"},
-                    {"field": "product_description", "label": "Description (50 words)", "type": "textarea"},
-                    {"field": "category", "label": "Category", "type": "select",
-                     "options": ["Services", "Products", "Digital", "Consulting", "Other"]},
-                    {"field": "unique_value", "label": "What makes you different?", "type": "text"}
+                    {
+                        "field": "product_name",
+                        "label": "Product/Service name",
+                        "type": "text",
+                    },
+                    {
+                        "field": "product_description",
+                        "label": "Description (50 words)",
+                        "type": "textarea",
+                    },
+                    {
+                        "field": "category",
+                        "label": "Category",
+                        "type": "select",
+                        "options": [
+                            "Services",
+                            "Products",
+                            "Digital",
+                            "Consulting",
+                            "Other",
+                        ],
+                    },
+                    {
+                        "field": "unique_value",
+                        "label": "What makes you different?",
+                        "type": "text",
+                    },
                 ],
-                "time_minutes": 5
+                "time_minutes": 5,
             }
 
         elif step == OnboardingStep.TARGET:
             return {
                 "title": "Who are your customers?",
                 "questions": [
-                    {"field": "target_audience", "label": "Target audience", "type": "textarea"},
+                    {
+                        "field": "target_audience",
+                        "label": "Target audience",
+                        "type": "textarea",
+                    },
                     {"field": "price_range", "label": "Price range", "type": "text"},
-                    {"field": "geographic_scope", "label": "Where do you operate?", "type": "text"}
+                    {
+                        "field": "geographic_scope",
+                        "label": "Where do you operate?",
+                        "type": "text",
+                    },
                 ],
-                "time_minutes": 3
+                "time_minutes": 3,
             }
 
         elif step == OnboardingStep.CHANNELS:
@@ -115,26 +147,34 @@ class OnboardingEngine:
                     {"name": "LinkedIn", "description": "Professional network"},
                     {"name": "Email", "description": "Direct marketing"},
                     {"name": "WhatsApp", "description": "Direct messaging"},
-                    {"name": "Marketplace", "description": "E-commerce platforms"}
+                    {"name": "Marketplace", "description": "E-commerce platforms"},
                 ],
-                "time_minutes": 3
+                "time_minutes": 3,
             }
 
         elif step == OnboardingStep.GOALS:
             return {
                 "title": "What are your goals?",
                 "questions": [
-                    {"field": "monthly_lead_goal", "label": "Monthly leads target", "type": "number"},
-                    {"field": "annual_revenue_target", "label": "Annual revenue target", "type": "number"}
+                    {
+                        "field": "monthly_lead_goal",
+                        "label": "Monthly leads target",
+                        "type": "number",
+                    },
+                    {
+                        "field": "annual_revenue_target",
+                        "label": "Annual revenue target",
+                        "type": "number",
+                    },
                 ],
-                "time_minutes": 2
+                "time_minutes": 2,
             }
 
         return {}
 
     def complete_step(
-        self, session: OnboardingSession, step: OnboardingStep, answers: Dict
-    ) -> OnboardingSession:
+        self, session: UserOnboardingSession, step: OnboardingStep, answers: dict
+    ) -> UserOnboardingSession:
         """Mark step complete"""
 
         if step == OnboardingStep.PROFILE:
@@ -143,8 +183,14 @@ class OnboardingEngine:
             session.product_complete = True
 
         # Move to next step
-        steps = [OnboardingStep.PROFILE, OnboardingStep.PRODUCT, OnboardingStep.TARGET,
-                OnboardingStep.CHANNELS, OnboardingStep.GOALS, OnboardingStep.COMPLETE]
+        steps = [
+            OnboardingStep.PROFILE,
+            OnboardingStep.PRODUCT,
+            OnboardingStep.TARGET,
+            OnboardingStep.CHANNELS,
+            OnboardingStep.GOALS,
+            OnboardingStep.COMPLETE,
+        ]
         current_idx = steps.index(step)
         if current_idx < len(steps) - 1:
             session.current_step = steps[current_idx + 1]
@@ -152,11 +198,11 @@ class OnboardingEngine:
         logger.info(f"Onboarding step complete: {step} for {session.user_id}")
         return session
 
-    def finish_onboarding(self, session: OnboardingSession) -> Dict[str, Any]:
+    def finish_onboarding(self, session: UserOnboardingSession) -> dict[str, Any]:
         """Complete onboarding"""
 
         session.current_step = OnboardingStep.COMPLETE
-        session.completed_at = datetime.utcnow()
+        session.completed_at = utc_now()
 
         return {
             "status": "success",
@@ -165,16 +211,22 @@ class OnboardingEngine:
                 "First lead generation starting automatically",
                 "Check your dashboard for leads",
                 "Configure your integrations",
-                "Start contacting leads"
+                "Start contacting leads",
             ],
-            "first_leads_in": "1-2 hours"
+            "first_leads_in": "1-2 hours",
         }
 
-    def get_onboarding_progress(self, session: OnboardingSession) -> Dict[str, Any]:
+    def get_onboarding_progress(self, session: UserOnboardingSession) -> dict[str, Any]:
         """Get progress"""
 
-        steps = [OnboardingStep.PROFILE, OnboardingStep.PRODUCT, OnboardingStep.TARGET,
-                OnboardingStep.CHANNELS, OnboardingStep.GOALS, OnboardingStep.COMPLETE]
+        steps = [
+            OnboardingStep.PROFILE,
+            OnboardingStep.PRODUCT,
+            OnboardingStep.TARGET,
+            OnboardingStep.CHANNELS,
+            OnboardingStep.GOALS,
+            OnboardingStep.COMPLETE,
+        ]
         current_idx = steps.index(session.current_step)
         progress = (current_idx / len(steps)) * 100
 
@@ -182,6 +234,6 @@ class OnboardingEngine:
             "progress_percent": progress,
             "current_step": session.current_step.value,
             "completed_steps": steps[:current_idx],
-            "remaining_steps": steps[current_idx + 1:],
-            "estimated_completion_minutes": 15 - (current_idx * 3)
+            "remaining_steps": steps[current_idx + 1 :],
+            "estimated_completion_minutes": 15 - (current_idx * 3),
         }

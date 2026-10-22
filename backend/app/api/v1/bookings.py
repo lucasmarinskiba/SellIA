@@ -14,20 +14,23 @@ tool's webhook config.
 
 import hashlib
 import hmac
-from datetime import datetime, timezone
-from typing import Any, Optional
+import logging
+from datetime import datetime
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.domains.channels.models import BookingEvent, Conversation
 from app.domains.agents.lead_qualifier.models import LeadQualification
+from app.domains.channels.models import BookingEvent, Conversation
+from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 
@@ -42,8 +45,8 @@ def _webhook_token(business_id: UUID) -> str:
 
 @router.get("/webhook-token")
 async def get_webhook_token(
-    business_id: UUID = Query(...),
-    current_user: User = Depends(get_current_user),
+    business_id: Annotated[UUID, Query()],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Returns the URL a business pastes into Calendly/cal.com's webhook config."""
     token = _webhook_token(business_id)
@@ -57,8 +60,8 @@ async def get_webhook_token(
 async def receive_booking_webhook(
     business_id: UUID,
     request: Request,
-    token: str = Query(...),
-    db: AsyncSession = Depends(get_db),
+    token: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Generic inbound booking webhook (Calendly 'invitee.created' shape or similar)."""
     expected = _webhook_token(business_id)
@@ -79,8 +82,9 @@ async def receive_booking_webhook(
     scheduled_at = None
     if scheduled_at_raw:
         try:
-            scheduled_at = datetime.fromisoformat(str(scheduled_at_raw).replace("Z", "+00:00"))
+            scheduled_at = datetime.fromisoformat(str(scheduled_at_raw))
         except Exception:
+            logger.exception("receive_booking_webhook: error inesperado")
             scheduled_at = None
 
     conversation_id = None
@@ -113,9 +117,9 @@ async def receive_booking_webhook(
 
 @router.get("/metrics")
 async def booking_metrics(
-    business_id: UUID = Query(...),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    business_id: Annotated[UUID, Query()],
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Real booking-rate metric computed from DB rows (no mocked numbers)."""
     qualified_result = await db.execute(
@@ -134,7 +138,9 @@ async def booking_metrics(
     )
     bookings = bookings_result.scalar() or 0
 
-    booking_rate = round((bookings / qualified_leads) * 100, 1) if qualified_leads else 0.0
+    booking_rate = (
+        round((bookings / qualified_leads) * 100, 1) if qualified_leads else 0.0
+    )
 
     return {
         "business_id": str(business_id),

@@ -22,7 +22,7 @@ that nothing keeps honest.
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 #: pillar key -> (label, weight). Weights sum to 1.0.
 PILLARS: dict[str, tuple[str, float]] = {
@@ -73,18 +73,26 @@ def identidad_from(
     if has_value_proposition and has_target_audience:
         score += 20
     else:
-        missing.append("Definir propuesta de valor y público objetivo en el cuestionario")
+        missing.append(
+            "Definir propuesta de valor y público objetivo en el cuestionario"
+        )
 
-    return _pillar(score, {
-        "has_hub": has_hub,
-        "org_schema": org_schema,
-        "same_as": same_as,
-        "has_value_proposition": has_value_proposition,
-        "has_target_audience": has_target_audience,
-    }, missing)
+    return _pillar(
+        score,
+        {
+            "has_hub": has_hub,
+            "org_schema": org_schema,
+            "same_as": same_as,
+            "has_value_proposition": has_value_proposition,
+            "has_target_audience": has_target_audience,
+        },
+        missing,
+    )
 
 
-def identidad(authority_report: dict[str, Any], context: dict[str, Any] | None) -> dict[str, Any]:
+def identidad(
+    authority_report: dict[str, Any], context: dict[str, Any] | None
+) -> dict[str, Any]:
     """Does the market have something to recognise? A hub, a declared identity,
     and a stated promise are what turn a set of accounts into a brand."""
     checks = {c["key"]: c["passed"] for c in authority_report.get("checks", [])}
@@ -103,9 +111,16 @@ def red_from(
     *, profiles: int, linked_from_hub: int, linking_back: int, back_verifiable: int
 ) -> dict[str, Any]:
     if profiles == 0:
-        return _pillar(0.0, {
-            "profiles": 0, "linked_from_hub": 0, "linking_back": 0, "back_verifiable": 0,
-        }, ["Sumá tus redes y tiendas para poder conectarlas con tu web"])
+        return _pillar(
+            0.0,
+            {
+                "profiles": 0,
+                "linked_from_hub": 0,
+                "linking_back": 0,
+                "back_verifiable": 0,
+            },
+            ["Sumá tus redes y tiendas para poder conectarlas con tu web"],
+        )
 
     score = (linked_from_hub / profiles) * 60
     if back_verifiable:
@@ -117,14 +132,20 @@ def red_from(
             f"Enlazá desde tu web los {profiles - linked_from_hub} perfiles que todavía no enlazás"
         )
     if back_verifiable and linking_back < back_verifiable:
-        missing.append("Poné el link a tu web en la bio de los perfiles que no la enlazan")
+        missing.append(
+            "Poné el link a tu web en la bio de los perfiles que no la enlazan"
+        )
 
-    return _pillar(score, {
-        "profiles": profiles,
-        "linked_from_hub": linked_from_hub,
-        "linking_back": linking_back,
-        "back_verifiable": back_verifiable,
-    }, missing)
+    return _pillar(
+        score,
+        {
+            "profiles": profiles,
+            "linked_from_hub": linked_from_hub,
+            "linking_back": linking_back,
+            "back_verifiable": back_verifiable,
+        },
+        missing,
+    )
 
 
 def red(authority_report: dict[str, Any]) -> dict[str, Any]:
@@ -135,7 +156,9 @@ def red(authority_report: dict[str, Any]) -> dict[str, Any]:
         profiles=len(profiles),
         linked_from_hub=sum(1 for p in profiles if p.get("linked_from_hub")),
         linking_back=sum(1 for p in profiles if p.get("links_back_to_hub") is True),
-        back_verifiable=sum(1 for p in profiles if p.get("links_back_to_hub") is not None),
+        back_verifiable=sum(
+            1 for p in profiles if p.get("links_back_to_hub") is not None
+        ),
     )
 
 
@@ -150,7 +173,10 @@ def prueba_social_from(
     # start on purpose -- 0 to 5 changes whether a stranger trusts you, 200 to
     # 205 does not.
     if reviews:
-        score += min(50.0, 8 + 22 * min(1.0, (reviews - 1) / 4) + 15 * min(1.0, (reviews - 5) / 15))
+        score += min(
+            50.0,
+            8 + 22 * min(1.0, (reviews - 1) / 4) + 15 * min(1.0, (reviews - 5) / 15),
+        )
     else:
         missing.append(
             "Conseguí tus primeras reseñas: sin ninguna, un desconocido no tiene en qué apoyarse"
@@ -163,7 +189,9 @@ def prueba_social_from(
         answer_rate = answered / reviews
         score += answer_rate * 15
         if answer_rate < 0.8:
-            missing.append("Respondé todas las reseñas, también las malas: se lee como responsabilidad")
+            missing.append(
+                "Respondé todas las reseñas, también las malas: se lee como responsabilidad"
+            )
 
     if testimonials:
         score += min(10.0, testimonials * 3.0)
@@ -173,13 +201,17 @@ def prueba_social_from(
     if awards:
         score += min(5.0, awards * 2.5)
 
-    return _pillar(score, {
-        "reviews": reviews,
-        "rating": rating,
-        "answered_reviews": answered,
-        "testimonials": testimonials,
-        "awards": awards,
-    }, missing)
+    return _pillar(
+        score,
+        {
+            "reviews": reviews,
+            "rating": rating,
+            "answered_reviews": answered,
+            "testimonials": testimonials,
+            "awards": awards,
+        },
+        missing,
+    )
 
 
 def prueba_social(trust: dict[str, Any] | None) -> dict[str, Any]:
@@ -196,11 +228,14 @@ def prueba_social(trust: dict[str, Any] | None) -> dict[str, Any]:
 
 # ── respuesta ───────────────────────────────────────────────────────────────
 def respuesta_from(
-    *, inbound: int, answered: int, median_minutes: Optional[float]
+    *, inbound: int, answered: int, median_minutes: float | None
 ) -> dict[str, Any]:
     if inbound == 0:
-        return _pillar(0.0, {"inbound": 0, "answered": 0, "median_minutes": None},
-                       ["Todavía no entraron consultas: conectá un canal para empezar a medirlo"])
+        return _pillar(
+            0.0,
+            {"inbound": 0, "answered": 0, "median_minutes": None},
+            ["Todavía no entraron consultas: conectá un canal para empezar a medirlo"],
+        )
 
     rate = answered / inbound
     score = rate * 70
@@ -219,17 +254,25 @@ def respuesta_from(
     elif median_minutes <= 1440:
         score += 7
     else:
-        missing.append("La mitad de tus clientes espera más de un día: es la fuga más cara que tenés")
+        missing.append(
+            "La mitad de tus clientes espera más de un día: es la fuga más cara que tenés"
+        )
 
-    return _pillar(score, {
-        "inbound": inbound,
-        "answered": answered,
-        "response_rate": round(rate * 100, 1),
-        "median_minutes": median_minutes,
-    }, missing)
+    return _pillar(
+        score,
+        {
+            "inbound": inbound,
+            "answered": answered,
+            "response_rate": round(rate * 100, 1),
+            "median_minutes": median_minutes,
+        },
+        missing,
+    )
 
 
-def respuesta(conversations: dict[str, Any], median_minutes: float | None) -> dict[str, Any]:
+def respuesta(
+    conversations: dict[str, Any], median_minutes: float | None
+) -> dict[str, Any]:
     """Answering, and answering fast, is the authority signal a small business
     can move this week -- unlike backlinks or awards."""
     return respuesta_from(
@@ -241,12 +284,23 @@ def respuesta(conversations: dict[str, Any], median_minutes: float | None) -> di
 
 # ── contenido ───────────────────────────────────────────────────────────────
 def contenido_from(
-    *, pages: int, average_seo_score: float, average_words: float, pages_with_schema: int
+    *,
+    pages: int,
+    average_seo_score: float,
+    average_words: float,
+    pages_with_schema: int,
 ) -> dict[str, Any]:
     if pages == 0:
-        return _pillar(0.0, {
-            "pages": 0, "average_seo_score": 0, "average_words": 0, "pages_with_schema": 0,
-        }, ["Cargá y analizá al menos una página tuya"])
+        return _pillar(
+            0.0,
+            {
+                "pages": 0,
+                "average_seo_score": 0,
+                "average_words": 0,
+                "pages_with_schema": 0,
+            },
+            ["Cargá y analizá al menos una página tuya"],
+        )
 
     # Half the pillar is page quality, a quarter depth, a quarter structure.
     score = average_seo_score * 0.5
@@ -255,25 +309,35 @@ def contenido_from(
 
     missing: list[str] = []
     if average_words < 300:
-        missing.append("Tus páginas tienen poco texto: sumá descripción real, casos y preguntas frecuentes")
+        missing.append(
+            "Tus páginas tienen poco texto: sumá descripción real, casos y preguntas frecuentes"
+        )
     if pages_with_schema < pages:
         missing.append(f"{pages - pages_with_schema} página(s) sin datos estructurados")
     if pages < 3:
-        missing.append("Publicá más páginas útiles: una sola página deja poco por donde entrar")
+        missing.append(
+            "Publicá más páginas útiles: una sola página deja poco por donde entrar"
+        )
 
-    return _pillar(score, {
-        "pages": pages,
-        "average_seo_score": round(average_seo_score, 1),
-        "average_words": round(average_words),
-        "pages_with_schema": pages_with_schema,
-    }, missing)
+    return _pillar(
+        score,
+        {
+            "pages": pages,
+            "average_seo_score": round(average_seo_score, 1),
+            "average_words": round(average_words),
+            "pages_with_schema": pages_with_schema,
+        },
+        missing,
+    )
 
 
 def contenido(seo_report: dict[str, Any]) -> dict[str, Any]:
     """Pages that actually say something, with structure a crawler understands."""
     pages = [p for p in seo_report.get("pages", []) if p.get("score") is not None]
     if not pages:
-        return contenido_from(pages=0, average_seo_score=0, average_words=0, pages_with_schema=0)
+        return contenido_from(
+            pages=0, average_seo_score=0, average_words=0, pages_with_schema=0
+        )
 
     words = [p.get("word_count") or 0 for p in pages]
     return contenido_from(

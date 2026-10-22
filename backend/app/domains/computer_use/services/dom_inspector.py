@@ -4,8 +4,8 @@ Extrae información estructurada del DOM para ayudar al agente a
 tomar decisiones más precisas: botones, links, inputs, y su estado.
 """
 
-from typing import List, Dict, Any, Optional
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
+from typing import Any, ClassVar
 
 from app.core.logger import get_logger
 
@@ -15,13 +15,14 @@ logger = get_logger(__name__)
 @dataclass
 class DOMElement:
     """Representación simplificada de un elemento DOM."""
+
     tag: str
     text: str
-    id: Optional[str]
-    classes: List[str]
+    id: str | None
+    classes: list[str]
     xpath: str
-    attributes: Dict[str, str]
-    bounding_box: Optional[Dict[str, float]]  # x, y, width, height
+    attributes: dict[str, str]
+    bounding_box: dict[str, float] | None  # x, y, width, height
     is_visible: bool
     is_interactive: bool
 
@@ -29,10 +30,24 @@ class DOMElement:
 class DOMInspector:
     """Inspector del DOM para Computer Use."""
 
-    INTERACTIVE_TAGS = {"button", "a", "input", "select", "textarea", "label"}
-    INTERACTIVE_ROLES = {"button", "link", "textbox", "checkbox", "radio", "menuitem"}
+    INTERACTIVE_TAGS: ClassVar[set] = {
+        "button",
+        "a",
+        "input",
+        "select",
+        "textarea",
+        "label",
+    }
+    INTERACTIVE_ROLES: ClassVar[set] = {
+        "button",
+        "link",
+        "textbox",
+        "checkbox",
+        "radio",
+        "menuitem",
+    }
 
-    async def extract_interactive_elements(self, page) -> List[DOMElement]:
+    async def extract_interactive_elements(self, page) -> list[DOMElement]:
         """Extrae todos los elementos interactivos de la página."""
         try:
             elements = await page.query_selector_all(
@@ -45,17 +60,20 @@ class DOMInspector:
                     if info and info.is_visible:
                         result.append(info)
                 except Exception:
+                    logger.exception("extract_interactive_elements: error inesperado")
                     continue
             return result
         except Exception as e:
-            logger.warning(f"DOM extraction failed: {e}")
+            logger.warning(f"DOM extraction failed: {e}", exc_info=True)
             return []
 
-    async def _extract_element_info(self, element, index: int) -> Optional[DOMElement]:
+    async def _extract_element_info(self, element, index: int) -> DOMElement | None:
         """Extrae información de un elemento individual."""
         try:
             tag = await element.evaluate("el => el.tagName.toLowerCase()")
-            text = await element.evaluate("el => el.textContent?.trim()?.substring(0, 100) || ''")
+            text = await element.evaluate(
+                "el => el.textContent?.trim()?.substring(0, 100) || ''"
+            )
             elem_id = await element.evaluate("el => el.id || null")
             classes = await element.evaluate("el => Array.from(el.classList)")
             xpath = await element.evaluate("""
@@ -79,9 +97,11 @@ class DOMInspector:
             # Interactive check
             role = await element.evaluate("el => el.getAttribute('role')")
             is_interactive = (
-                tag in self.INTERACTIVE_TAGS or
-                role in self.INTERACTIVE_ROLES or
-                await element.evaluate("el => el.onclick !== null || el.getAttribute('onclick') !== null")
+                tag in self.INTERACTIVE_TAGS
+                or role in self.INTERACTIVE_ROLES
+                or await element.evaluate(
+                    "el => el.onclick !== null || el.getAttribute('onclick') !== null"
+                )
             )
 
             # Key attributes
@@ -103,9 +123,10 @@ class DOMInspector:
                 is_interactive=is_interactive,
             )
         except Exception:
+            logger.exception("_extract_element_info: error inesperado")
             return None
 
-    async def find_clickable_by_text(self, page, text: str) -> Optional[Dict[str, Any]]:
+    async def find_clickable_by_text(self, page, text: str) -> dict[str, Any] | None:
         """Encuentra un elemento clickeable por su texto."""
         try:
             # Try exact match first
@@ -130,19 +151,19 @@ class DOMInspector:
                 }
             return {"found": False}
         except Exception as e:
-            logger.warning(f"Find clickable failed: {e}")
+            logger.warning(f"Find clickable failed: {e}", exc_info=True)
             return {"found": False, "error": str(e)}
 
-    async def get_page_accessibility_tree(self, page) -> Dict[str, Any]:
+    async def get_page_accessibility_tree(self, page) -> dict[str, Any]:
         """Obtiene un árbol de accesibilidad simplificado."""
         try:
             tree = await page.accessibility.snapshot()
             return self._simplify_tree(tree)
         except Exception as e:
-            logger.warning(f"Accessibility tree failed: {e}")
+            logger.warning(f"Accessibility tree failed: {e}", exc_info=True)
             return {}
 
-    def _simplify_tree(self, node: Dict[str, Any]) -> Dict[str, Any]:
+    def _simplify_tree(self, node: dict[str, Any]) -> dict[str, Any]:
         """Simplifica el árbol de accesibilidad."""
         result = {
             "role": node.get("role", "unknown"),
@@ -158,7 +179,7 @@ class DOMInspector:
             ]
         return result
 
-    async def get_form_state(self, page) -> List[Dict[str, Any]]:
+    async def get_form_state(self, page) -> list[dict[str, Any]]:
         """Obtiene el estado actual de todos los formularios."""
         try:
             return await page.evaluate("""
@@ -178,5 +199,5 @@ class DOMInspector:
                 }
             """)
         except Exception as e:
-            logger.warning(f"Form state extraction failed: {e}")
+            logger.warning(f"Form state extraction failed: {e}", exc_info=True)
             return []

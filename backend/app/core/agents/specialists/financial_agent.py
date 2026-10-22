@@ -9,16 +9,16 @@ Specialties:
 """
 
 import logging
-from typing import Dict, List, Any, Optional, Tuple
-from enum import Enum
-from datetime import datetime, timedelta
 from dataclasses import dataclass
+from enum import Enum
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
 
 class PricingStrategy(str, Enum):
     """Pricing strategies."""
+
     COST_PLUS = "cost_plus"
     VALUE_BASED = "value_based"
     COMPETITIVE = "competitive"
@@ -30,6 +30,7 @@ class PricingStrategy(str, Enum):
 
 class FinancialMetric(str, Enum):
     """Financial metrics to track."""
+
     ARR = "arr"  # Annual Recurring Revenue
     MRR = "mrr"  # Monthly Recurring Revenue
     GROSS_MARGIN = "gross_margin"
@@ -44,18 +45,19 @@ class FinancialMetric(str, Enum):
 @dataclass
 class PricingModel:
     """Pricing model definition."""
+
     name: str
     description: str
-    tiers: List[Dict[str, Any]]
-    value_prop_per_tier: Dict[str, str]
+    tiers: list[dict[str, Any]]
+    value_prop_per_tier: dict[str, str]
     positioning: str
-    psychological_factors: List[str]
+    psychological_factors: list[str]
 
 
 class FinancialAgent:
     """Expert in financial modeling and pricing."""
 
-    PRICING_STRATEGIES = {
+    PRICING_STRATEGIES: ClassVar[dict] = {
         PricingStrategy.COST_PLUS: {
             "name": "Cost-Plus Pricing",
             "description": "Price = Cost + Markup",
@@ -73,7 +75,6 @@ class FinancialAgent:
             "best_for": "B2B services, consulting, manufacturing",
             "typical_markup": "50-200%",
         },
-
         PricingStrategy.VALUE_BASED: {
             "name": "Value-Based Pricing",
             "description": "Price based on perceived value to customer",
@@ -95,7 +96,6 @@ class FinancialAgent:
             "best_for": "B2B SaaS, premium products",
             "implementation": "Assess customer ROI, perform pricing research",
         },
-
         PricingStrategy.COMPETITIVE: {
             "name": "Competitive Pricing",
             "description": "Price based on competitor pricing",
@@ -116,7 +116,6 @@ class FinancialAgent:
             ],
             "best_for": "Commoditized products, competitive markets",
         },
-
         PricingStrategy.TIERED: {
             "name": "Tiered Pricing",
             "description": "Multiple price points for different customer segments",
@@ -143,7 +142,6 @@ class FinancialAgent:
             ],
             "best_for": "SaaS, software, subscriptions",
         },
-
         PricingStrategy.DYNAMIC: {
             "name": "Dynamic Pricing",
             "description": "Price changes based on demand, supply, or context",
@@ -165,7 +163,6 @@ class FinancialAgent:
             ],
             "best_for": "E-commerce, services, digital products",
         },
-
         PricingStrategy.USAGE_BASED: {
             "name": "Usage-Based Pricing",
             "description": "Price based on actual product usage",
@@ -188,7 +185,7 @@ class FinancialAgent:
         },
     }
 
-    FINANCIAL_MODELS = {
+    FINANCIAL_MODELS: ClassVar[dict] = {
         "monthly_projection": {
             "description": "Project revenue, costs, and profitability by month",
             "components": [
@@ -221,7 +218,7 @@ class FinancialAgent:
         },
     }
 
-    GROSS_MARGIN_LEVERS = {
+    GROSS_MARGIN_LEVERS: ClassVar[dict] = {
         "pricing": {
             "tactics": [
                 "Increase price (if market allows)",
@@ -260,7 +257,7 @@ class FinancialAgent:
         },
     }
 
-    PSYCHOLOGICAL_PRICING = {
+    PSYCHOLOGICAL_PRICING: ClassVar[dict] = {
         "charm_pricing": {
             "description": "End price in 9 or 7 ($9.99 vs $10)",
             "effect": "Appears 20-30% cheaper",
@@ -295,7 +292,7 @@ class FinancialAgent:
         },
     }
 
-    PRICING_RESEARCH_METHODS = {
+    PRICING_RESEARCH_METHODS: ClassVar[dict] = {
         "van_westendorp_price_sensitivity": {
             "description": "Survey to find optimal price",
             "questions": [
@@ -334,11 +331,8 @@ class FinancialAgent:
 
     @staticmethod
     def recommend_pricing_strategy(
-        product_type: str,
-        target_market: str,
-        competition: str,
-        business_model: str
-    ) -> Dict[str, Any]:
+        product_type: str, target_market: str, competition: str, business_model: str
+    ) -> dict[str, Any]:
         """Recommend pricing strategy."""
         recommendation = {
             "product_type": product_type,
@@ -364,10 +358,10 @@ class FinancialAgent:
     @staticmethod
     def create_pricing_model(
         product_name: str,
-        target_segments: List[str],
-        value_per_segment: Dict[str, float],
-        strategy: str
-    ) -> Dict[str, Any]:
+        target_segments: list[str],
+        value_per_segment: dict[str, float],
+        strategy: str,
+    ) -> dict[str, Any]:
         """Create detailed pricing model."""
         return {
             "product": product_name,
@@ -391,10 +385,8 @@ class FinancialAgent:
 
     @staticmethod
     def price_sensitivity_analysis(
-        current_price: float,
-        elasticity: float,
-        unit_economics: Dict[str, float]
-    ) -> Dict[str, Any]:
+        current_price: float, elasticity: float, unit_economics: dict[str, float]
+    ) -> dict[str, Any]:
         """Analyze price elasticity and impacts."""
         analysis = {
             "current_price": current_price,
@@ -422,8 +414,8 @@ class FinancialAgent:
         gross_margin_percent: float,
         monthly_fixed_costs: float,
         starting_cash: float,
-        timeline_months: int = 24
-    ) -> Dict[str, Any]:
+        timeline_months: int = 24,
+    ) -> dict[str, Any]:
         """Build financial projection model."""
         projection = {
             "assumptions": {
@@ -448,7 +440,9 @@ class FinancialAgent:
 
         for month in range(1, timeline_months + 1):
             # Revenue (grows each month)
-            revenue = monthly_revenue * ((1 + growth_rate_percent / 100) ** ((month - 1) / 12))
+            revenue = monthly_revenue * (
+                (1 + growth_rate_percent / 100) ** ((month - 1) / 12)
+            )
 
             # COGS (variable cost)
             cogs = revenue * (1 - gross_margin_percent / 100)
@@ -467,31 +461,34 @@ class FinancialAgent:
 
             cumulative_revenue += revenue
 
-            projection["monthly_projections"].append({
-                "month": month,
-                "revenue": round(revenue, 2),
-                "cogs": round(cogs, 2),
-                "gross_profit": round(gross_profit, 2),
-                "operating_costs": operating_costs,
-                "net_profit": round(net_profit, 2),
-                "cash_balance": round(cash, 2),
-            })
+            projection["monthly_projections"].append(
+                {
+                    "month": month,
+                    "revenue": round(revenue, 2),
+                    "cogs": round(cogs, 2),
+                    "gross_profit": round(gross_profit, 2),
+                    "operating_costs": operating_costs,
+                    "net_profit": round(net_profit, 2),
+                    "cash_balance": round(cash, 2),
+                }
+            )
 
             # Track breakeven
             if net_profit > 0 and projection["key_metrics"]["breakeven_month"] is None:
                 projection["key_metrics"]["breakeven_month"] = month
-                projection["key_metrics"]["breakeven_revenue"] = round(cumulative_revenue, 2)
+                projection["key_metrics"]["breakeven_revenue"] = round(
+                    cumulative_revenue, 2
+                )
 
             # Track peak burn
             if net_profit < 0:
                 projection["key_metrics"]["peak_burn"] = max(
-                    projection["key_metrics"]["peak_burn"],
-                    abs(net_profit)
+                    projection["key_metrics"]["peak_burn"], abs(net_profit)
                 )
 
         projection["key_metrics"]["ending_cash"] = round(cash, 2)
         projection["key_metrics"]["runway_months"] = (
-            (cash / monthly_fixed_costs) if monthly_fixed_costs > 0 else float('inf')
+            (cash / monthly_fixed_costs) if monthly_fixed_costs > 0 else float("inf")
         )
 
         return projection
@@ -502,8 +499,8 @@ class FinancialAgent:
         monthly_churn: float,
         annual_retention: float,
         cac: float,
-        cogs_percent: float
-    ) -> Dict[str, Any]:
+        cogs_percent: float,
+    ) -> dict[str, Any]:
         """Calculate detailed unit economics."""
         # Customer lifetime (months)
         lifetime_months = 12 / (12 * monthly_churn) if monthly_churn > 0 else 120
@@ -545,10 +542,10 @@ class FinancialAgent:
 
     @staticmethod
     def compare_pricing_scenarios(
-        scenario_a: Dict[str, Any],
-        scenario_b: Dict[str, Any],
-        scenario_c: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        scenario_a: dict[str, Any],
+        scenario_b: dict[str, Any],
+        scenario_c: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Compare different pricing scenarios."""
         return {
             "scenarios": {
@@ -567,10 +564,8 @@ class FinancialAgent:
 
     @staticmethod
     def optimize_gross_margin(
-        current_cogs_percent: float,
-        current_price: float,
-        target_margin: float
-    ) -> Dict[str, Any]:
+        current_cogs_percent: float, current_price: float, target_margin: float
+    ) -> dict[str, Any]:
         """Identify ways to improve gross margin."""
         current_margin = 1 - current_cogs_percent
 
@@ -583,17 +578,28 @@ class FinancialAgent:
                 {
                     "lever": "Price increase",
                     "impact": "Direct margin increase",
-                    "options": [f"${current_price * x:.0f} ({(x-1)*100:+.0f}%)" for x in [1.1, 1.2, 1.3]],
+                    "options": [
+                        f"${current_price * x:.0f} ({(x-1)*100:+.0f}%)"
+                        for x in [1.1, 1.2, 1.3]
+                    ],
                 },
                 {
                     "lever": "COGS reduction",
                     "impact": "Lower manufacturing/delivery costs",
-                    "tactics": ["Supplier negotiation", "Automation", "Scale efficiency"],
+                    "tactics": [
+                        "Supplier negotiation",
+                        "Automation",
+                        "Scale efficiency",
+                    ],
                 },
                 {
                     "lever": "Product mix",
                     "impact": "Shift to higher-margin items",
-                    "tactics": ["Feature deprecation", "Upsell premium", "Bundle differently"],
+                    "tactics": [
+                        "Feature deprecation",
+                        "Upsell premium",
+                        "Bundle differently",
+                    ],
                 },
             ],
         }

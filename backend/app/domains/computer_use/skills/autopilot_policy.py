@@ -19,7 +19,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class AutopilotMode(str, Enum):
@@ -28,15 +28,15 @@ class AutopilotMode(str, Enum):
 
 
 class RiskLevel(str, Enum):
-    SAFE = "safe"        # navegar, screenshot, scroll, leer
-    MEDIUM = "medium"    # escribir, click en botones, programar
-    HIGH = "high"        # publicar, enviar, postear contenido público
+    SAFE = "safe"  # navegar, screenshot, scroll, leer
+    MEDIUM = "medium"  # escribir, click en botones, programar
+    HIGH = "high"  # publicar, enviar, postear contenido público
     CRITICAL = "critical"  # pagar, gastar ads, descargar, credenciales
 
 
 @dataclass(frozen=True)
 class PolicyDecision:
-    allow: bool                 # ejecutar ya
+    allow: bool  # ejecutar ya
     require_confirmation: bool  # pausar y pedir OK humano
     risk: RiskLevel
     reason: str
@@ -63,7 +63,9 @@ _PUBLISH_SELECTOR = re.compile(
 )
 
 
-def classify_action_risk(action_type: str, params: Dict[str, Any], reason: str = "") -> RiskLevel:
+def classify_action_risk(
+    action_type: str, params: dict[str, Any], reason: str = ""
+) -> RiskLevel:
     """Clasifica el nivel de riesgo de una acción de Computer Use."""
     params = params or {}
     blob = f"{reason} {params.get('text', '')} {params.get('selector', '')} {params.get('value', '')}"
@@ -71,20 +73,35 @@ def classify_action_risk(action_type: str, params: Dict[str, Any], reason: str =
     if _CRITICAL_WORDS.search(blob):
         return RiskLevel.CRITICAL
 
-    if action_type in ("done", "error", "screenshot", "scroll", "wait",
-                       "wait_for_selector", "navigate"):
+    if action_type in (
+        "done",
+        "error",
+        "screenshot",
+        "scroll",
+        "wait",
+        "wait_for_selector",
+        "navigate",
+    ):
         # navigate a esquemas peligrosos lo bloquea ActionValidator; aquí es safe.
         return RiskLevel.SAFE
 
-    if action_type in ("click", "double_click", "right_click", "click_selector",
-                       "click_text", "press_key"):
+    if action_type in (
+        "click",
+        "double_click",
+        "right_click",
+        "click_selector",
+        "click_text",
+        "press_key",
+    ):
         target = f"{params.get('selector', '')} {params.get('text', '')} {params.get('key', '')}"
         if _PUBLISH_SELECTOR.search(target) or _HIGH_RISK_WORDS.search(blob):
             return RiskLevel.HIGH
         return RiskLevel.MEDIUM
 
     if action_type in ("type", "fill"):
-        if _HIGH_RISK_WORDS.search(blob) or _PUBLISH_SELECTOR.search(params.get("selector", "")):
+        if _HIGH_RISK_WORDS.search(blob) or _PUBLISH_SELECTOR.search(
+            params.get("selector", "")
+        ):
             return RiskLevel.HIGH
         return RiskLevel.MEDIUM
 
@@ -98,7 +115,9 @@ class AutopilotPolicy:
     def __init__(self, mode: AutopilotMode | str = AutopilotMode.SUPERVISED):
         self.mode = AutopilotMode(mode) if not isinstance(mode, AutopilotMode) else mode
 
-    def evaluate(self, action_type: str, params: Dict[str, Any], reason: str = "") -> PolicyDecision:
+    def evaluate(
+        self, action_type: str, params: dict[str, Any], reason: str = ""
+    ) -> PolicyDecision:
         risk = classify_action_risk(action_type, params, reason)
 
         # Críticas: nunca automáticas. Gastan dinero, exponen credenciales o

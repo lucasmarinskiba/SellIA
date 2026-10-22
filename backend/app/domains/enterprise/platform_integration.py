@@ -7,15 +7,20 @@
 4. SEOOptimizationEngine - Keyword ranking + listing A/B testing
 """
 
-from typing import List, Dict, Optional, Any, Tuple
+import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
-import hashlib
-import json
+from typing import Any
+
+from app.core.clock import utc_now
+
+logger = logging.getLogger(__name__)
+
 
 class Platform(Enum):
     """Supported marketplace platforms."""
+
     MERCADO_LIBRE = "mercado_libre"
     AMAZON = "amazon"
     HOTMART = "hotmart"
@@ -23,6 +28,7 @@ class Platform(Enum):
 
 class PricingStrategy(Enum):
     """Dynamic pricing strategies."""
+
     UNDERCUT_COMPETITOR = "undercut_competitor"  # -5% to -15%
     MAINTAIN_MARGIN = "maintain_margin"  # cost * 1.5-2x
     SCARCITY_PREMIUM = "scarcity_premium"  # cost * 2.5-3x (low stock)
@@ -33,6 +39,7 @@ class PricingStrategy(Enum):
 @dataclass
 class Product:
     """Master product catalog."""
+
     id: str
     sku: str
     title: str
@@ -40,7 +47,7 @@ class Product:
     category: str
     cost: float
     price_base: float  # Target price
-    images: List[str]
+    images: list[str]
     brand: str
     stock_total: int
     stock_reserved: int  # Reserved across all platforms
@@ -49,6 +56,7 @@ class Product:
 @dataclass
 class PlatformListing:
     """Per-platform listing mapping."""
+
     id: str
     product_id: str
     platform: Platform
@@ -60,12 +68,13 @@ class PlatformListing:
     rating: float  # 0-5
     rating_count: int
     last_sync_at: datetime
-    best_seller_rank: Optional[int] = None
+    best_seller_rank: int | None = None
 
 
 @dataclass
 class CompetitorPrice:
     """Competitor price data."""
+
     competitor_name: str
     platform: Platform
     product_name: str
@@ -73,12 +82,13 @@ class CompetitorPrice:
     stock_level: int
     rating: float
     sales_velocity: float  # Units per day
-    best_seller_rank: Optional[int] = None
+    best_seller_rank: int | None = None
 
 
 @dataclass
 class PricingRecommendation:
     """AI-optimized price recommendation."""
+
     product_id: str
     platform: Platform
     recommended_price: float
@@ -94,7 +104,9 @@ class PlatformSyncEngine:
     def __init__(self, db):
         self.db = db
 
-    def create_product(self, product: Product, platforms: List[Platform]) -> Dict[str, Any]:
+    def create_product(
+        self, product: Product, platforms: list[Platform]
+    ) -> dict[str, Any]:
         """Create product on specified platforms."""
         results = {}
 
@@ -108,7 +120,7 @@ class PlatformSyncEngine:
 
         return results
 
-    def _create_ml_listing(self, product: Product) -> Dict[str, Any]:
+    def _create_ml_listing(self, product: Product) -> dict[str, Any]:
         """Create Mercado Libre listing."""
         return {
             "platform_sku": f"ML-{product.sku}",
@@ -120,7 +132,7 @@ class PlatformSyncEngine:
             "current_price": product.price_base,
         }
 
-    def _create_amazon_listing(self, product: Product) -> Dict[str, Any]:
+    def _create_amazon_listing(self, product: Product) -> dict[str, Any]:
         """Create Amazon listing."""
         return {
             "platform_sku": f"AMZN-{product.sku}",
@@ -133,7 +145,7 @@ class PlatformSyncEngine:
             "current_price": product.price_base,
         }
 
-    def _create_hotmart_listing(self, product: Product) -> Dict[str, Any]:
+    def _create_hotmart_listing(self, product: Product) -> dict[str, Any]:
         """Create Hotmart (digital) listing."""
         return {
             "platform_sku": f"HM-{product.sku}",
@@ -147,7 +159,7 @@ class PlatformSyncEngine:
             "capacity_limit": 500,
         }
 
-    def sync_inventory(self, product_id: str, new_stock: int) -> Dict[str, bool]:
+    def sync_inventory(self, product_id: str, new_stock: int) -> dict[str, bool]:
         """Real-time inventory sync across all platforms."""
         # Reserve inventory first (prevent overselling)
         reserved = self._calculate_reserved_stock(product_id)
@@ -162,13 +174,16 @@ class PlatformSyncEngine:
         for platform in platforms:
             try:
                 # Distribute stock proportionally across platforms
-                platform_allocation = self._allocate_stock(product_id, platform, available)
+                platform_allocation = self._allocate_stock(
+                    product_id, platform, available
+                )
                 sync_results[platform.value] = self._push_stock_to_platform(
                     product_id, platform, platform_allocation
                 )
             except Exception as e:
+                logger.exception("sync_inventory: error inesperado")
                 sync_results[platform.value] = False
-                print(f"Sync failed for {platform.value}: {str(e)}")
+                print(f"Sync failed for {platform.value}: {e!s}")
 
         return sync_results
 
@@ -178,7 +193,9 @@ class PlatformSyncEngine:
         # Usually ships within 24-48h
         return 50  # Mock: typically 50 units reserved
 
-    def _allocate_stock(self, product_id: str, platform: Platform, available: int) -> int:
+    def _allocate_stock(
+        self, product_id: str, platform: Platform, available: int
+    ) -> int:
         """Allocate stock based on platform performance."""
         # Mercado Libre: 40% (LATAM leader)
         # Amazon: 35% (global, but region-limited)
@@ -190,7 +207,9 @@ class PlatformSyncEngine:
         }
         return int(available * allocation_map[platform])
 
-    def _push_stock_to_platform(self, product_id: str, platform: Platform, quantity: int) -> bool:
+    def _push_stock_to_platform(
+        self, product_id: str, platform: Platform, quantity: int
+    ) -> bool:
         """Push stock update to platform API."""
         # Mock: would call actual platform API
         return True
@@ -240,7 +259,7 @@ Support: 24/7 customer service
 ⚡ ORDER NOW - Price drops daily
         """
 
-    def _generate_amazon_bullets(self, product: Product) -> List[str]:
+    def _generate_amazon_bullets(self, product: Product) -> list[str]:
         """Generate 5 Amazon bullet points for A9."""
         return [
             f"#1 Best Seller in {product.category} - Trusted by 50k+ customers",
@@ -285,7 +304,7 @@ class DynamicPricingEngine:
         self.db = db
 
     def calculate_optimal_price(
-        self, product: Product, competitors: List[CompetitorPrice], platform: Platform
+        self, product: Product, competitors: list[CompetitorPrice], platform: Platform
     ) -> PricingRecommendation:
         """Calculate optimal price based on competitors + demand + inventory."""
         strategy, price, reasoning = self._run_pricing_strategy(
@@ -302,25 +321,26 @@ class DynamicPricingEngine:
             strategy=strategy,
             reasoning=reasoning,
             expected_conversion_lift=expected_lift,
-            margin_impact=margin_pct - (((product.price_base - product.cost) / product.cost) * 100),
+            margin_impact=margin_pct
+            - (((product.price_base - product.cost) / product.cost) * 100),
         )
 
     def _run_pricing_strategy(
-        self, product: Product, competitors: List[CompetitorPrice], platform: Platform
-    ) -> Tuple[PricingStrategy, float, str]:
+        self, product: Product, competitors: list[CompetitorPrice], platform: Platform
+    ) -> tuple[PricingStrategy, float, str]:
         """Select pricing strategy based on market conditions."""
 
         # Get competitor average price
         if competitors:
-            avg_competitor_price = sum(c.price for c in competitors) / len(competitors)
+            sum(c.price for c in competitors) / len(competitors)
             lowest_competitor = min(c.price for c in competitors)
         else:
-            avg_competitor_price = product.price_base
             lowest_competitor = product.price_base
 
         # Check inventory level
-        stock_level = product.stock_total - (product.stock_total * 0.10)  # Account for reserved
-        is_low_stock = stock_level < 50
+        stock_level = product.stock_total - (
+            product.stock_total * 0.10
+        )  # Account for reserved
         is_high_stock = stock_level > 200
 
         # Check sales velocity (mock: daily units)
@@ -348,7 +368,9 @@ class DynamicPricingEngine:
 
         else:
             # Maintain margin: balanced inventory + moderate demand
-            price = max(product.cost * 1.8, lowest_competitor * 0.98)  # Maintain 80% margin minimum
+            price = max(
+                product.cost * 1.8, lowest_competitor * 0.98
+            )  # Maintain 80% margin minimum
             strategy = PricingStrategy.MAINTAIN_MARGIN
             reasoning = "Balanced conditions - optimize for margin"
 
@@ -372,12 +394,14 @@ class DynamicPricingEngine:
         else:
             return max(-0.5, pct_change * -2)  # Cap at -50% drop
 
-    def reprice_all_products(self, platform: Platform, frequency: str = "hourly") -> Dict[str, Any]:
+    def reprice_all_products(
+        self, platform: Platform, frequency: str = "hourly"
+    ) -> dict[str, Any]:
         """Batch reprice all active listings on platform."""
         # Mock: would fetch all products + competitor prices
         results = {
             "platform": platform.value,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "frequency": frequency,
             "products_repriced": 150,
             "price_changes": {
@@ -397,20 +421,27 @@ class FOOMTriggerEngine:
         self.db = db
 
     def generate_listing_urgency(
-        self, product: Product, platform: Platform, inventory: int, sales_velocity: float, rank: Optional[int] = None
-    ) -> Dict[str, str]:
+        self,
+        product: Product,
+        platform: Platform,
+        inventory: int,
+        sales_velocity: float,
+        rank: int | None = None,
+    ) -> dict[str, str]:
         """Generate platform-optimized urgency messages."""
 
         if platform == Platform.MERCADO_LIBRE:
             return self._generate_ml_urgency(product, inventory, sales_velocity, rank)
         elif platform == Platform.AMAZON:
-            return self._generate_amazon_urgency(product, inventory, sales_velocity, rank)
+            return self._generate_amazon_urgency(
+                product, inventory, sales_velocity, rank
+            )
         elif platform == Platform.HOTMART:
             return self._generate_hotmart_urgency(product, inventory, sales_velocity)
 
     def _generate_ml_urgency(
-        self, product: Product, inventory: int, sales_velocity: float, rank: Optional[int]
-    ) -> Dict[str, str]:
+        self, product: Product, inventory: int, sales_velocity: float, rank: int | None
+    ) -> dict[str, str]:
         """Mercado Libre urgency (scarcity + bestseller)."""
         urgency_lines = []
 
@@ -426,7 +457,9 @@ class FOOMTriggerEngine:
             urgency_lines.append(f"🥇 #{rank} MEJOR VENDEDOR en categoría")
 
         return {
-            "urgency_badge": "🔥 OFERTA LIMITADA" if inventory < 30 else "⭐ BESTSELLER",
+            "urgency_badge": (
+                "🔥 OFERTA LIMITADA" if inventory < 30 else "⭐ BESTSELLER"
+            ),
             "scarcity_message": urgency_lines[0] if urgency_lines else None,
             "social_proof": urgency_lines[1] if len(urgency_lines) > 1 else None,
             "authority": urgency_lines[2] if len(urgency_lines) > 2 else None,
@@ -434,21 +467,29 @@ class FOOMTriggerEngine:
         }
 
     def _generate_amazon_urgency(
-        self, product: Product, inventory: int, sales_velocity: float, rank: Optional[int]
-    ) -> Dict[str, str]:
+        self, product: Product, inventory: int, sales_velocity: float, rank: int | None
+    ) -> dict[str, str]:
         """Amazon urgency (A9 optimized - stock countdown)."""
         return {
             "badge": "Best Seller" if rank and rank <= 1 else "Limited Stock",
             "stock_countdown": f"Only {max(1, inventory // 10)} left at this price",
-            "sales_velocity": f"{int(sales_velocity)}/day selling fast" if sales_velocity > 50 else None,
-            "choice_badge": "Amazon's Choice" if rank and rank <= 5 and sales_velocity > 50 else None,
+            "sales_velocity": (
+                f"{int(sales_velocity)}/day selling fast"
+                if sales_velocity > 50
+                else None
+            ),
+            "choice_badge": (
+                "Amazon's Choice"
+                if rank and rank <= 5 and sales_velocity > 50
+                else None
+            ),
             "lightning_deal": "Limited Time Offer" if inventory < 20 else None,
             "call_to_action": "✓ Secure your order before stock runs out",
         }
 
     def _generate_hotmart_urgency(
         self, product: Product, inventory: int, sales_velocity: float
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Hotmart urgency (pre-launch + affiliate FOOM)."""
         return {
             "pre_launch_timer": "🚀 Launching in 3 days | Early bird gets 40% off",
@@ -469,7 +510,7 @@ class SEOOptimizationEngine:
 
     def research_keywords(
         self, product_category: str, platform: Platform
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Research high-volume, low-competition keywords."""
 
         if platform == Platform.MERCADO_LIBRE:
@@ -481,7 +522,7 @@ class SEOOptimizationEngine:
 
         return keywords
 
-    def _research_ml_keywords(self, category: str) -> List[Dict[str, Any]]:
+    def _research_ml_keywords(self, category: str) -> list[dict[str, Any]]:
         """Mercado Libre keyword research."""
         return [
             {
@@ -510,7 +551,7 @@ class SEOOptimizationEngine:
             },
         ]
 
-    def _research_amazon_keywords(self, category: str) -> List[Dict[str, Any]]:
+    def _research_amazon_keywords(self, category: str) -> list[dict[str, Any]]:
         """Amazon A9 keyword research."""
         return [
             {
@@ -539,7 +580,7 @@ class SEOOptimizationEngine:
             },
         ]
 
-    def _research_hotmart_keywords(self, category: str) -> List[Dict[str, Any]]:
+    def _research_hotmart_keywords(self, category: str) -> list[dict[str, Any]]:
         """Hotmart keyword research (affiliate-focused)."""
         return [
             {
@@ -561,8 +602,8 @@ class SEOOptimizationEngine:
         ]
 
     def optimize_listing(
-        self, product: Product, platform: Platform, keywords: List[str]
-    ) -> Dict[str, str]:
+        self, product: Product, platform: Platform, keywords: list[str]
+    ) -> dict[str, str]:
         """Generate optimized title, bullets, description."""
 
         if platform == Platform.MERCADO_LIBRE:
@@ -572,7 +613,9 @@ class SEOOptimizationEngine:
         else:  # HOTMART
             return self._optimize_hotmart_listing(product, keywords)
 
-    def _optimize_ml_listing(self, product: Product, keywords: List[str]) -> Dict[str, str]:
+    def _optimize_ml_listing(
+        self, product: Product, keywords: list[str]
+    ) -> dict[str, str]:
         """Optimize for Mercado Libre ranking (sales velocity + reviews)."""
         primary_keyword = keywords[0] if keywords else product.category
 
@@ -581,13 +624,15 @@ class SEOOptimizationEngine:
             "description_hook": f"El MEJOR {primary_keyword} del mercado - Comprado por +1000 clientes satisfechos",
             "key_benefits": [
                 "✓ Certificado por mejor vendedor",
-                f"✓ +1000 reseñas positivas",
+                "✓ +1000 reseñas positivas",
                 "✓ Garantía de satisfacción 30 días",
                 "✓ Envío EXPRESS gratis",
             ],
         }
 
-    def _optimize_amazon_listing(self, product: Product, keywords: List[str]) -> Dict[str, str]:
+    def _optimize_amazon_listing(
+        self, product: Product, keywords: list[str]
+    ) -> dict[str, str]:
         """Optimize for Amazon A9 algorithm (keywords + conversion)."""
         primary_kw = keywords[0] if keywords else product.category
         secondary_kw = keywords[1] if len(keywords) > 1 else "bestseller"
@@ -597,12 +642,14 @@ class SEOOptimizationEngine:
             "bullet_1": f"#{1} {primary_kw} on Amazon - Trusted by 50,000+ customers",
             "bullet_2": f"Premium {secondary_kw} quality with 30-day money-back guarantee",
             "bullet_3": "Free 2-day shipping with Prime - Limited stock at this price",
-            "bullet_4": f"500+ verified 5-star reviews - Amazon's Choice certified",
+            "bullet_4": "500+ verified 5-star reviews - Amazon's Choice certified",
             "bullet_5": "24/7 customer support - Satisfaction guaranteed or full refund",
             "backend_search_terms": ",".join(keywords),
         }
 
-    def _optimize_hotmart_listing(self, product: Product, keywords: List[str]) -> Dict[str, str]:
+    def _optimize_hotmart_listing(
+        self, product: Product, keywords: list[str]
+    ) -> dict[str, str]:
         """Optimize for Hotmart pre-launch (urgency + affiliate appeal)."""
         return {
             "title": f"🚀 {product.title} | Early Bird -40% | {keywords[0] if keywords else 'Digital Course'}",
@@ -611,7 +658,7 @@ class SEOOptimizationEngine:
             "urgency_line": "⏰ Early bird pricing ends in 72 hours - Next tier will cost 2x",
         }
 
-    def track_rankings(self, product_id: str, platform: Platform) -> Dict[str, Any]:
+    def track_rankings(self, product_id: str, platform: Platform) -> dict[str, Any]:
         """Track daily ranking position + keyword performance."""
         return {
             "product_id": product_id,

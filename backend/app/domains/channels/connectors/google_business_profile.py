@@ -5,12 +5,11 @@ Sync: operating hours, photos, posts, service areas.
 """
 
 import logging
-from typing import Any, Optional
-from uuid import UUID
+from typing import Any
 
-from app.domains.channels.schemas import WebhookPayload
-from app.domains.channels.connectors.base import BaseChannelConnector
 from app.domains.businesses.location_models import Location, LocationHoursWeekly
+from app.domains.channels.connectors.base import BaseChannelConnector
+from app.domains.channels.schemas import WebhookPayload
 
 logger = logging.getLogger(__name__)
 
@@ -32,15 +31,12 @@ class GoogleBusinessProfileConnector(BaseChannelConnector):
         return bool(self.api_key and self.account_id)
 
     async def send_message(
-        self,
-        recipient_id: str,
-        content: str,
-        content_type: str = "text"
+        self, recipient_id: str, content: str, content_type: str = "text"
     ) -> dict[str, Any]:
         """Google Business Profile doesn't send messages (read-only for our purposes)."""
         return {
             "status": "unsupported",
-            "message": "Google Business Profile connector is for syncing business info, not messaging"
+            "message": "Google Business Profile connector is for syncing business info, not messaging",
         }
 
     async def parse_webhook(self, raw_payload: dict[str, Any]) -> WebhookPayload:
@@ -57,13 +53,11 @@ class GoogleBusinessProfileConnector(BaseChannelConnector):
             sender_name="Google Business Profile",
             message_content=str(data),
             message_type="notification",
-            metadata=raw_payload
+            metadata=raw_payload,
         )
 
     async def sync_location_hours(
-        self,
-        location: Location,
-        hours: LocationHoursWeekly
+        self, location: Location, hours: LocationHoursWeekly
     ) -> dict[str, Any]:
         """Sync location operating hours to Google Business Profile.
 
@@ -81,9 +75,7 @@ class GoogleBusinessProfileConnector(BaseChannelConnector):
         # In real implementation: call Google My Business API
         # POST /accounts/{accountId}/locations/{locationId}/businessProfile
 
-        sync_data = {
-            "regularHours": self._convert_hours_to_gbp_format(hours)
-        }
+        sync_data = {"regularHours": self._convert_hours_to_gbp_format(hours)}
 
         logger.info(f"Synced hours for location {location.id} to GBP: {sync_data}")
 
@@ -91,13 +83,11 @@ class GoogleBusinessProfileConnector(BaseChannelConnector):
             "status": "success",
             "location_id": str(location.id),
             "gmb_id": location.gmb_id,
-            "synced_fields": ["regularHours"]
+            "synced_fields": ["regularHours"],
         }
 
     async def sync_location_photos(
-        self,
-        location: Location,
-        photo_urls: list[str]
+        self, location: Location, photo_urls: list[str]
     ) -> dict[str, Any]:
         """Upload or sync location photos to Google Business Profile.
 
@@ -124,7 +114,7 @@ class GoogleBusinessProfileConnector(BaseChannelConnector):
             "location_id": str(location.id),
             "gmb_id": location.gmb_id,
             "photos_uploaded": len(uploaded),
-            "total_photos": len(photo_urls)
+            "total_photos": len(photo_urls),
         }
 
     async def sync_location_post(
@@ -132,7 +122,7 @@ class GoogleBusinessProfileConnector(BaseChannelConnector):
         location: Location,
         post_content: str,
         post_type: str = "STANDARD",
-        call_to_action_url: Optional[str] = None
+        call_to_action_url: str | None = None,
     ) -> dict[str, Any]:
         """Create post on location's Google Business Profile.
 
@@ -158,14 +148,14 @@ class GoogleBusinessProfileConnector(BaseChannelConnector):
             "location_id": str(location.id),
             "gmb_id": location.gmb_id,
             "post_type": post_type,
-            "post_content": post_content[:100] + "..." if len(post_content) > 100 else post_content,
-            "posted_at": "now"
+            "post_content": (
+                post_content[:100] + "..." if len(post_content) > 100 else post_content
+            ),
+            "posted_at": "now",
         }
 
     async def get_location_insights(
-        self,
-        location: Location,
-        metric_types: list[str] = None
+        self, location: Location, metric_types: list[str] | None = None
     ) -> dict[str, Any]:
         """Get location performance metrics (views, actions, etc).
 
@@ -193,11 +183,13 @@ class GoogleBusinessProfileConnector(BaseChannelConnector):
             "metrics": {
                 "QUERIES": {"total": 150, "trend": "+12%"},
                 "VIEWS": {"total": 450, "trend": "+8%"},
-                "ACTIONS": {"phone_calls": 12, "directions": 34, "website_clicks": 23}
-            }
+                "ACTIONS": {"phone_calls": 12, "directions": 34, "website_clicks": 23},
+            },
         }
 
-    def _convert_hours_to_gbp_format(self, hours: LocationHoursWeekly) -> dict[str, Any]:
+    def _convert_hours_to_gbp_format(
+        self, hours: LocationHoursWeekly
+    ) -> dict[str, Any]:
         """Convert LocationHoursWeekly to Google Business Profile format.
 
         GBP format:
@@ -208,14 +200,22 @@ class GoogleBusinessProfileConnector(BaseChannelConnector):
         """
         gbp_hours = {}
 
-        day_names = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+        day_names = [
+            "monday",
+            "tuesday",
+            "wednesday",
+            "thursday",
+            "friday",
+            "saturday",
+            "sunday",
+        ]
 
         for day in day_names:
             day_hours = getattr(hours, day, None)
             if day_hours:
                 gbp_hours[day] = {
                     "openTime": day_hours.open,
-                    "closeTime": day_hours.close
+                    "closeTime": day_hours.close,
                 }
             else:
                 gbp_hours[day] = None
@@ -223,9 +223,7 @@ class GoogleBusinessProfileConnector(BaseChannelConnector):
         return gbp_hours
 
     async def sync_service_area(
-        self,
-        location: Location,
-        service_areas: list[dict[str, Any]]
+        self, location: Location, service_areas: list[dict[str, Any]]
     ) -> dict[str, Any]:
         """Sync service areas (delivery zones, service radius) to GBP.
 
@@ -239,7 +237,9 @@ class GoogleBusinessProfileConnector(BaseChannelConnector):
         if not location.gmb_id:
             return {"status": "error", "message": "No GMB ID configured"}
 
-        logger.info(f"Syncing {len(service_areas)} service areas to GBP for location {location.id}")
+        logger.info(
+            f"Syncing {len(service_areas)} service areas to GBP for location {location.id}"
+        )
 
         # In real implementation: POST /accounts/{accountId}/locations/{locationId}/serviceArea
 
@@ -247,5 +247,5 @@ class GoogleBusinessProfileConnector(BaseChannelConnector):
             "status": "success",
             "location_id": str(location.id),
             "gmb_id": location.gmb_id,
-            "service_areas_synced": len(service_areas)
+            "service_areas_synced": len(service_areas),
         }

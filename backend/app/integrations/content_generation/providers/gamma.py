@@ -4,10 +4,14 @@ Pricing: Plan-based, ~$0.05/doc
 Strengths: Interactive docs, landing pages, guides, presentations
 """
 
-from typing import Dict, Any
+import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
+
+from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -17,7 +21,7 @@ class GammaProvider(BaseProvider):
 
     name = "Gamma"
     slug = "gamma"
-    supports = [ContentType.COPY]
+    supports: ClassVar[list] = [ContentType.COPY]
 
     @property
     def is_available(self) -> bool:
@@ -26,12 +30,14 @@ class GammaProvider(BaseProvider):
     def estimate_cost(self, config: GenerationConfig) -> float:
         return 0.05
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {"gamma-doc": 0.05}
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         if not self.is_available:
-            return GenerationResult(success=False, error_message="GAMMA_API_KEY no configurada")
+            return GenerationResult(
+                success=False, error_message="GAMMA_API_KEY no configurada"
+            )
 
         try:
             import aiohttp
@@ -46,17 +52,18 @@ class GammaProvider(BaseProvider):
                 "type": config.extra_params.get("doc_type", "presentation"),
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    "https://api.gamma.app/v1/documents",
-                    headers=headers,
-                    json=payload,
-                ) as resp:
-                    data = await resp.json()
+            async with aiohttp.ClientSession() as session, session.post(
+                "https://api.gamma.app/v1/documents",
+                headers=headers,
+                json=payload,
+            ) as resp:
+                data = await resp.json()
 
             doc_url = data.get("url") or data.get("document", {}).get("url")
             if not doc_url:
-                return GenerationResult(success=False, error_message="Gamma no devolvió documento")
+                return GenerationResult(
+                    success=False, error_message="Gamma no devolvió documento"
+                )
 
             return GenerationResult(
                 success=True,
@@ -68,4 +75,5 @@ class GammaProvider(BaseProvider):
             )
 
         except Exception as e:
+            logger.exception("generate: error inesperado")
             return GenerationResult(success=False, error_message=str(e))

@@ -1,15 +1,17 @@
 """Credential Service — Encrypt/decrypt and manage platform credentials."""
 
-import uuid
+import logging
 import os
-from typing import Optional, List
-from datetime import datetime, timezone
+import uuid
+from datetime import UTC, datetime
 
 from cryptography.fernet import Fernet
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .models import SiteCredential, AuthType
+from .models import AuthType, SiteCredential
+
+logger = logging.getLogger(__name__)
 
 
 class CredentialService:
@@ -25,23 +27,30 @@ class CredentialService:
         if not key:
             # Fallback: derive from secret key (not ideal for production but works for dev)
             from app.core.config import get_settings
+
             settings = get_settings()
-            base = settings.SECRET_KEY[:32] if hasattr(settings, "SECRET_KEY") else "default-secret-key-32-chars-long!!"
+            base = (
+                settings.SECRET_KEY[:32]
+                if hasattr(settings, "SECRET_KEY")
+                else "default-secret-key-32-chars-long!!"
+            )
             import base64
+
             key = base64.urlsafe_b64encode(base.encode()[:32].ljust(32, b"0"))
         return Fernet(key)
 
-    def _encrypt(self, value: Optional[str]) -> Optional[str]:
+    def _encrypt(self, value: str | None) -> str | None:
         if not value:
             return None
         return self._fernet.encrypt(value.encode()).decode()
 
-    def _decrypt(self, value: Optional[str]) -> Optional[str]:
+    def _decrypt(self, value: str | None) -> str | None:
         if not value:
             return None
         try:
             return self._fernet.decrypt(value.encode()).decode()
         except Exception:
+            logger.exception("_decrypt: error inesperado")
             return None
 
     async def store(
@@ -49,12 +58,12 @@ class CredentialService:
         user_id: uuid.UUID,
         domain: str,
         platform_name: str,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-        api_key: Optional[str] = None,
-        api_secret: Optional[str] = None,
+        username: str | None = None,
+        password: str | None = None,
+        api_key: str | None = None,
+        api_secret: str | None = None,
         auth_type: AuthType = AuthType.PASSWORD,
-        business_id: Optional[uuid.UUID] = None,
+        business_id: uuid.UUID | None = None,
     ) -> SiteCredential:
         result = await self.db.execute(
             select(SiteCredential).where(
@@ -97,7 +106,7 @@ class CredentialService:
         await self.db.refresh(cred)
         return cred
 
-    async def get(self, user_id: uuid.UUID, domain: str) -> Optional[dict]:
+    async def get(self, user_id: uuid.UUID, domain: str) -> dict | None:
         result = await self.db.execute(
             select(SiteCredential).where(
                 SiteCredential.user_id == user_id,
@@ -129,12 +138,14 @@ class CredentialService:
         )
         return result.scalar_one_or_none() is not None
 
-    async def list_for_user(self, user_id: uuid.UUID) -> List[SiteCredential]:
+    async def list_for_user(self, user_id: uuid.UUID) -> list[SiteCredential]:
         result = await self.db.execute(
-            select(SiteCredential).where(
+            select(SiteCredential)
+            .where(
                 SiteCredential.user_id == user_id,
                 SiteCredential.is_active == True,
-            ).order_by(SiteCredential.platform_name)
+            )
+            .order_by(SiteCredential.platform_name)
         )
         return list(result.scalars().all())
 
@@ -159,9 +170,9 @@ class CredentialService:
         cred = result.scalar_one_or_none()
         if not cred:
             return
-        cred.last_used_at = datetime.now(timezone.utc)
+        cred.last_used_at = datetime.now(UTC)
         if success:
-            cred.last_successful_login = datetime.now(timezone.utc)
+            cred.last_successful_login = datetime.now(UTC)
             cred.failed_attempts = 0
         else:
             cred.failed_attempts += 1

@@ -1,57 +1,63 @@
 """Smart Content Generation Router"""
 
-from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
 
 from .base import (
-    BaseProvider, GenerationConfig, GenerationResult,
-    ContentQuality, ContentType,
+    BaseProvider,
+    ContentQuality,
+    ContentType,
+    GenerationConfig,
+    GenerationResult,
 )
-from .cache import ContentCache
 from .budget import BudgetController
+from .cache import ContentCache
 from .plan_tools import (
-    get_tools_for_plan, is_tool_allowed, get_fallback_tool,
-    get_plan_upgrade_message, TOOL_REGISTRY,
+    TOOL_REGISTRY,
+    get_fallback_tool,
+    get_plan_upgrade_message,
+    get_tools_for_plan,
+    is_tool_allowed,
 )
 from .providers import (
+    AdCreativeProvider,
+    BeautifulAIProvider,
+    CanvaProvider,
+    CapCutProvider,
+    CopyAIProvider,
+    ElevenLabsProvider,
+    FalAggregatorProvider,
+    GammaProvider,
+    HeyGenProvider,
+    IdeogramProvider,
+    JasperProvider,
+    KimiProvider,
+    KlingProvider,
+    LeonardoProvider,
+    LumaProvider,
+    MidjourneyProvider,
+    OllamaProvider,
     OpenAIImageProvider,
+    OpusClipProvider,
+    PhotoroomProvider,
+    PikaProvider,
     ReplicateProvider,
     RunwayProvider,
     SeedanceProvider,
-    ElevenLabsProvider,
-    LeonardoProvider,
-    PhotoroomProvider,
-    IdeogramProvider,
-    MidjourneyProvider,
-    HeyGenProvider,
-    PikaProvider,
-    OpusClipProvider,
-    CopyAIProvider,
-    JasperProvider,
-    BeautifulAIProvider,
-    GammaProvider,
-    KlingProvider,
-    LumaProvider,
-    AdCreativeProvider,
-    WritesonicProvider,
-    CanvaProvider,
-    CapCutProvider,
     SoraProvider,
-    FalAggregatorProvider,
-    KimiProvider,
-    OllamaProvider,
+    WritesonicProvider,
 )
 
 
 @dataclass
 class RoutingDecision:
     """Decisión de routing con justificación."""
+
     provider: BaseProvider
     quality: ContentQuality
     estimated_cost: float
     reason: str
     cached: bool = False
-    cached_result: Optional[dict] = None
+    cached_result: dict | None = None
 
 
 class ContentGenerationRouter:
@@ -62,7 +68,7 @@ class ContentGenerationRouter:
         self.budget = BudgetController()
         self.providers = self._init_providers()
 
-    def _init_providers(self) -> Dict[str, BaseProvider]:
+    def _init_providers(self) -> dict[str, BaseProvider]:
         """Inicializa todos los proveedores disponibles."""
         return {
             "openai_image": OpenAIImageProvider(),
@@ -96,7 +102,7 @@ class ContentGenerationRouter:
     def _get_available_providers(
         self,
         content_type: ContentType,
-    ) -> List[BaseProvider]:
+    ) -> list[BaseProvider]:
         """Filtra proveedores disponibles por tipo de contenido."""
         available = []
         for provider in self.providers.values():
@@ -108,8 +114,8 @@ class ContentGenerationRouter:
         self,
         content_type: ContentType,
         quality: ContentQuality,
-        available: List[BaseProvider],
-    ) -> Optional[BaseProvider]:
+        available: list[BaseProvider],
+    ) -> BaseProvider | None:
         """Selecciona proveedor preferido según tipo y calidad."""
 
         # Routing matrix
@@ -117,9 +123,21 @@ class ContentGenerationRouter:
             (ContentType.IMAGE, ContentQuality.DRAFT): ["replicate", "openai_image"],
             (ContentType.IMAGE, ContentQuality.STANDARD): ["openai_image", "replicate"],
             (ContentType.IMAGE, ContentQuality.PREMIUM): ["openai_image", "replicate"],
-            (ContentType.VIDEO, ContentQuality.DRAFT): ["runway", "replicate", "seedance"],
-            (ContentType.VIDEO, ContentQuality.STANDARD): ["runway", "seedance", "replicate"],
-            (ContentType.VIDEO, ContentQuality.PREMIUM): ["seedance", "runway", "replicate"],
+            (ContentType.VIDEO, ContentQuality.DRAFT): [
+                "runway",
+                "replicate",
+                "seedance",
+            ],
+            (ContentType.VIDEO, ContentQuality.STANDARD): [
+                "runway",
+                "seedance",
+                "replicate",
+            ],
+            (ContentType.VIDEO, ContentQuality.PREMIUM): [
+                "seedance",
+                "runway",
+                "replicate",
+            ],
             (ContentType.AUDIO, ContentQuality.DRAFT): ["elevenlabs"],
             (ContentType.AUDIO, ContentQuality.STANDARD): ["elevenlabs"],
             (ContentType.AUDIO, ContentQuality.PREMIUM): ["elevenlabs"],
@@ -199,7 +217,9 @@ class ContentGenerationRouter:
         allowed_providers = []
         for p in available_providers:
             # Mapear provider slug a tool slugs
-            provider_tools = [t for t, info in TOOL_REGISTRY.items() if info.provider_module == p.slug]
+            provider_tools = [
+                t for t, info in TOOL_REGISTRY.items() if info.provider_module == p.slug
+            ]
             if any(t in allowed_tools for t in provider_tools):
                 allowed_providers.append(p)
 
@@ -212,7 +232,9 @@ class ContentGenerationRouter:
             )
 
         # 3. Seleccionar proveedor preferido (de los permitidos)
-        provider = self._select_provider_for_quality(content_type, requested_quality, allowed_providers)
+        provider = self._select_provider_for_quality(
+            content_type, requested_quality, allowed_providers
+        )
         if not provider:
             return RoutingDecision(
                 provider=None,  # type: ignore
@@ -231,11 +253,15 @@ class ContentGenerationRouter:
         if not allowed:
             # Intentar fallback a calidad más barata
             policy = self.budget.get_policy(plan_tier)
-            fallback_quality = self.budget.select_quality_fallback(requested_quality, policy)
+            fallback_quality = self.budget.select_quality_fallback(
+                requested_quality, policy
+            )
 
             if fallback_quality != requested_quality:
                 config.quality = fallback_quality
-                provider = self._select_provider_for_quality(content_type, fallback_quality, allowed_providers)
+                provider = self._select_provider_for_quality(
+                    content_type, fallback_quality, allowed_providers
+                )
                 if provider:
                     estimated_cost = provider.estimate_cost(config)
                     allowed, _ = await self.budget.check_budget(
@@ -311,7 +337,10 @@ class ContentGenerationRouter:
         # Registrar gasto
         if result.success and result.cost_usd > 0:
             await self.budget.record_spend(
-                business_id, config.content_type, result.cost_usd, decision.provider.slug
+                business_id,
+                config.content_type,
+                result.cost_usd,
+                decision.provider.slug,
             )
 
         # Cachear resultado
@@ -338,9 +367,10 @@ class ContentGenerationRouter:
 
         return result
 
-    def get_pricing_summary(self, plan_tier: str = "starter") -> Dict[str, Dict]:
+    def get_pricing_summary(self, plan_tier: str = "starter") -> dict[str, dict]:
         """Retorna resumen de precios de herramientas disponibles para el plan."""
-        from .plan_tools import get_tools_for_plan, TOOL_REGISTRY
+        from .plan_tools import TOOL_REGISTRY, get_tools_for_plan
+
         allowed = set(get_tools_for_plan(plan_tier))
         summary = {}
         for tool_slug in allowed:

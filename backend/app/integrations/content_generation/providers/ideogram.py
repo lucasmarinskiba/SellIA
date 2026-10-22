@@ -4,11 +4,20 @@ Pricing: ~$0.04/image
 Strengths: Typography, text rendering, logos, posters
 """
 
-from typing import Dict, Any
+import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
-from ..utils import download_url, compress_image, smart_quality_for_size, get_image_size_kb
+
+from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
+from ..utils import (
+    compress_image,
+    download_url,
+    get_image_size_kb,
+    smart_quality_for_size,
+)
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -18,7 +27,7 @@ class IdeogramProvider(BaseProvider):
 
     name = "Ideogram 2.0"
     slug = "ideogram"
-    supports = [ContentType.IMAGE]
+    supports: ClassVar[list] = [ContentType.IMAGE]
 
     @property
     def is_available(self) -> bool:
@@ -27,12 +36,14 @@ class IdeogramProvider(BaseProvider):
     def estimate_cost(self, config: GenerationConfig) -> float:
         return 0.04 * config.num_variations
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {"ideogram-v2": 0.04}
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         if not self.is_available:
-            return GenerationResult(success=False, error_message="IDEOGRAM_API_KEY no configurada")
+            return GenerationResult(
+                success=False, error_message="IDEOGRAM_API_KEY no configurada"
+            )
 
         try:
             import aiohttp
@@ -48,23 +59,27 @@ class IdeogramProvider(BaseProvider):
                 "model": "V_2",
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    "https://api.ideogram.ai/generate",
-                    headers=headers,
-                    json=payload,
-                ) as resp:
-                    data = await resp.json()
+            async with aiohttp.ClientSession() as session, session.post(
+                "https://api.ideogram.ai/generate",
+                headers=headers,
+                json=payload,
+            ) as resp:
+                data = await resp.json()
 
             images = data.get("data", [])
             if not images:
-                return GenerationResult(success=False, error_message="Ideogram no devolvió imagen")
+                return GenerationResult(
+                    success=False, error_message="Ideogram no devolvió imagen"
+                )
 
             image_url = images[0].get("url")
             image_bytes = await download_url(image_url)
             compressed = None
             if image_bytes:
-                compressed = compress_image(image_bytes, quality=smart_quality_for_size(get_image_size_kb(image_bytes)))
+                compressed = compress_image(
+                    image_bytes,
+                    quality=smart_quality_for_size(get_image_size_kb(image_bytes)),
+                )
 
             return GenerationResult(
                 success=True,
@@ -77,4 +92,5 @@ class IdeogramProvider(BaseProvider):
             )
 
         except Exception as e:
+            logger.exception("generate: error inesperado")
             return GenerationResult(success=False, error_message=str(e))

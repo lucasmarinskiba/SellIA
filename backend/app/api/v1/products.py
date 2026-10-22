@@ -1,32 +1,44 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, func
-from uuid import UUID, uuid4
-from decimal import Decimal
-from datetime import datetime
+from typing import Annotated
+from uuid import UUID
 
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.clock import utc_now
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.businesses.models import Business
-from app.domains.websites.models import Website
 from app.domains.products.models import (
-    Product, ProductVariant, ProductCategory,
-    ShoppingCart, CartItem, Order, OrderItem
+    CartItem,
+    Order,
+    OrderItem,
+    Product,
+    ShoppingCart,
 )
 from app.domains.products.schemas import (
-    ProductCreateRequest, ProductUpdateRequest, ProductResponse,
-    CartItemRequest, ShoppingCartResponse, CartCheckoutRequest,
-    OrderResponse, OrderListResponse, ProductCategoryCreateRequest,
-    ProductCategoryResponse
+    CartCheckoutRequest,
+    CartItemRequest,
+    OrderListResponse,
+    OrderResponse,
+    ProductCreateRequest,
+    ProductResponse,
+    ProductUpdateRequest,
+    ShoppingCartResponse,
 )
+from app.domains.users.models import User
+from app.domains.websites.models import Website
 
 router = APIRouter()
 
 
-async def _get_website_for_user(business_id: UUID, user: User, db: AsyncSession) -> Website:
+async def _get_website_for_user(
+    business_id: UUID, user: User, db: AsyncSession
+) -> Website:
     result = await db.execute(
-        select(Website).join(Business).where(
+        select(Website)
+        .join(Business)
+        .where(
             Business.id == business_id,
             Business.user_id == user.id,
             Business.is_active == True,
@@ -42,12 +54,13 @@ async def _get_website_for_user(business_id: UUID, user: User, db: AsyncSession)
 # PRODUCTS ENDPOINTS
 # ============================================================
 
+
 @router.post("/businesses/{business_id}/products")
 async def create_product(
     business_id: UUID,
     data: ProductCreateRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Create new product."""
     website = await _get_website_for_user(business_id, current_user, db)
@@ -55,7 +68,7 @@ async def create_product(
     product = Product(
         website_id=website.id,
         name=data.name,
-        slug=data.slug or data.name.lower().replace(' ', '-'),
+        slug=data.slug or data.name.lower().replace(" ", "-"),
         description=data.description,
         short_description=data.short_description,
         price=data.price,
@@ -81,8 +94,8 @@ async def create_product(
 async def get_product(
     business_id: UUID,
     product_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get product details."""
     website = await _get_website_for_user(business_id, current_user, db)
@@ -103,11 +116,11 @@ async def get_product(
 @router.get("/businesses/{business_id}/products")
 async def list_products(
     business_id: UUID,
-    status: str = Query(None),
-    skip: int = Query(0),
-    limit: int = Query(50),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    status: Annotated[str | None, Query()] = None,
+    skip: Annotated[int, Query()] = 0,
+    limit: Annotated[int, Query()] = 50,
 ):
     """List products."""
     website = await _get_website_for_user(business_id, current_user, db)
@@ -137,8 +150,8 @@ async def update_product(
     business_id: UUID,
     product_id: UUID,
     data: ProductUpdateRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Update product."""
     website = await _get_website_for_user(business_id, current_user, db)
@@ -172,9 +185,11 @@ async def update_product(
     if data.status:
         product.status = data.status
     if data.metadata is not None:
-        product.extra_data = data.metadata  # ORM attribute renamed; see Product.extra_data
+        product.extra_data = (
+            data.metadata
+        )  # ORM attribute renamed; see Product.extra_data
 
-    product.updated_at = datetime.utcnow()
+    product.updated_at = utc_now()
     await db.commit()
     await db.refresh(product)
 
@@ -185,8 +200,8 @@ async def update_product(
 async def delete_product(
     business_id: UUID,
     product_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Delete product."""
     website = await _get_website_for_user(business_id, current_user, db)
@@ -211,12 +226,13 @@ async def delete_product(
 # CART ENDPOINTS
 # ============================================================
 
+
 @router.post("/websites/{website_id}/cart/add")
 async def add_to_cart(
     website_id: UUID,
     data: CartItemRequest,
-    session_id: str = Query(...),
-    db: AsyncSession = Depends(get_db),
+    session_id: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Add product to cart (public endpoint)."""
     # Get or create cart
@@ -224,7 +240,7 @@ async def add_to_cart(
         select(ShoppingCart).where(
             ShoppingCart.website_id == website_id,
             ShoppingCart.session_id == session_id,
-            ShoppingCart.status == 'ACTIVE',
+            ShoppingCart.status == "ACTIVE",
         )
     )
     cart = cart_result.scalar_one_or_none()
@@ -233,7 +249,7 @@ async def add_to_cart(
         cart = ShoppingCart(
             website_id=website_id,
             session_id=session_id,
-            status='ACTIVE',
+            status="ACTIVE",
         )
         db.add(cart)
         await db.flush()
@@ -274,14 +290,12 @@ async def add_to_cart(
         db.add(item)
 
     # Recalculate cart totals
-    items_result = await db.execute(
-        select(CartItem).where(CartItem.cart_id == cart.id)
-    )
+    items_result = await db.execute(select(CartItem).where(CartItem.cart_id == cart.id))
     items = items_result.scalars().all()
 
     cart.subtotal = sum(item.line_total for item in items)
     cart.total = cart.subtotal + cart.tax + cart.shipping - cart.discount
-    cart.updated_at = datetime.utcnow()
+    cart.updated_at = utc_now()
 
     await db.commit()
     await db.refresh(cart)
@@ -292,15 +306,15 @@ async def add_to_cart(
 @router.get("/websites/{website_id}/cart")
 async def get_cart(
     website_id: UUID,
-    session_id: str = Query(...),
-    db: AsyncSession = Depends(get_db),
+    session_id: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Get cart (public endpoint)."""
     result = await db.execute(
         select(ShoppingCart).where(
             ShoppingCart.website_id == website_id,
             ShoppingCart.session_id == session_id,
-            ShoppingCart.status == 'ACTIVE',
+            ShoppingCart.status == "ACTIVE",
         )
     )
     cart = result.scalar_one_or_none()
@@ -315,12 +329,14 @@ async def get_cart(
 async def remove_from_cart(
     website_id: UUID,
     item_id: UUID,
-    session_id: str = Query(...),
-    db: AsyncSession = Depends(get_db),
+    session_id: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Remove item from cart."""
     result = await db.execute(
-        select(CartItem).join(ShoppingCart).where(
+        select(CartItem)
+        .join(ShoppingCart)
+        .where(
             CartItem.id == item_id,
             ShoppingCart.website_id == website_id,
             ShoppingCart.session_id == session_id,
@@ -334,7 +350,9 @@ async def remove_from_cart(
     await db.delete(item)
 
     # Recalculate totals
-    cart_result = await db.execute(select(ShoppingCart).where(ShoppingCart.id == cart_id))
+    cart_result = await db.execute(
+        select(ShoppingCart).where(ShoppingCart.id == cart_id)
+    )
     cart = cart_result.scalar_one_or_none()
 
     items_result = await db.execute(select(CartItem).where(CartItem.cart_id == cart.id))
@@ -342,7 +360,7 @@ async def remove_from_cart(
 
     cart.subtotal = sum(item.line_total for item in items)
     cart.total = cart.subtotal + cart.tax + cart.shipping - cart.discount
-    cart.updated_at = datetime.utcnow()
+    cart.updated_at = utc_now()
 
     await db.commit()
     await db.refresh(cart)
@@ -354,12 +372,13 @@ async def remove_from_cart(
 # ORDER ENDPOINTS
 # ============================================================
 
+
 @router.post("/websites/{website_id}/checkout")
 async def checkout(
     website_id: UUID,
     data: CartCheckoutRequest,
-    session_id: str = Query(...),
-    db: AsyncSession = Depends(get_db),
+    session_id: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Create order from cart."""
     # Get cart
@@ -367,7 +386,7 @@ async def checkout(
         select(ShoppingCart).where(
             ShoppingCart.website_id == website_id,
             ShoppingCart.session_id == session_id,
-            ShoppingCart.status == 'ACTIVE',
+            ShoppingCart.status == "ACTIVE",
         )
     )
     cart = cart_result.scalar_one_or_none()
@@ -379,15 +398,15 @@ async def checkout(
         select(func.count(Order.id)).where(Order.website_id == website_id)
     )
     order_count = order_count_result.scalar() or 0
-    order_number = f"ORD-{datetime.utcnow().year}-{order_count + 1:06d}"
+    order_number = f"ORD-{utc_now().year}-{order_count + 1:06d}"
 
     # Create order
     order = Order(
         website_id=website_id,
         order_number=order_number,
         session_id=session_id,
-        status='PENDING',
-        payment_status='UNPAID',
+        status="PENDING",
+        payment_status="UNPAID",
         subtotal=cart.subtotal,
         tax=cart.tax,
         shipping_cost=cart.shipping,
@@ -421,8 +440,8 @@ async def checkout(
         db.add(order_item)
 
     # Mark cart as converted
-    cart.status = 'CONVERTED'
-    cart.updated_at = datetime.utcnow()
+    cart.status = "CONVERTED"
+    cart.updated_at = utc_now()
 
     await db.commit()
     await db.refresh(order)
@@ -433,12 +452,12 @@ async def checkout(
 @router.get("/businesses/{business_id}/orders")
 async def list_orders(
     business_id: UUID,
-    status: str = Query(None),
-    payment_status: str = Query(None),
-    skip: int = Query(0),
-    limit: int = Query(50),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    status: Annotated[str | None, Query()] = None,
+    payment_status: Annotated[str | None, Query()] = None,
+    skip: Annotated[int, Query()] = 0,
+    limit: Annotated[int, Query()] = 50,
 ):
     """List orders for business."""
     website = await _get_website_for_user(business_id, current_user, db)
@@ -449,7 +468,9 @@ async def list_orders(
     if payment_status:
         query = query.where(Order.payment_status == payment_status)
 
-    result = await db.execute(query.order_by(Order.created_at.desc()).offset(skip).limit(limit))
+    result = await db.execute(
+        query.order_by(Order.created_at.desc()).offset(skip).limit(limit)
+    )
     orders = result.scalars().all()
 
     total_result = await db.execute(
@@ -469,8 +490,8 @@ async def list_orders(
 async def get_order(
     business_id: UUID,
     order_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get order details."""
     website = await _get_website_for_user(business_id, current_user, db)
@@ -493,8 +514,8 @@ async def update_order(
     business_id: UUID,
     order_id: UUID,
     data: dict,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Update order status or payment status."""
     website = await _get_website_for_user(business_id, current_user, db)
@@ -509,14 +530,14 @@ async def update_order(
     if not order:
         raise HTTPException(status_code=404, detail="Orden no encontrada")
 
-    if 'status' in data:
-        order.status = data['status']
-    if 'payment_status' in data:
-        order.payment_status = data['payment_status']
-        if data['payment_status'] == 'PAID':
-            order.paid_at = datetime.utcnow()
+    if "status" in data:
+        order.status = data["status"]
+    if "payment_status" in data:
+        order.payment_status = data["payment_status"]
+        if data["payment_status"] == "PAID":
+            order.paid_at = utc_now()
 
-    order.updated_at = datetime.utcnow()
+    order.updated_at = utc_now()
     await db.commit()
     await db.refresh(order)
 

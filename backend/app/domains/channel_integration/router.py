@@ -1,14 +1,15 @@
 """Phase 5C: Channel Integration Endpoints."""
-from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import UUID
-from typing import List, Optional
-from pydantic import BaseModel
+
 from datetime import datetime
+from typing import Annotated
+from uuid import UUID
+
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import get_db
 from app.domains.channel_integration.service import ChannelIntegrationService
-from app.domains.channel_integration.models import LocationReview
-
 
 router = APIRouter(prefix="/api/v1/channel-integration", tags=["channel-integration"])
 
@@ -21,20 +22,20 @@ class LocationMessageCreateRequest(BaseModel):
 
 class LocationMessageExecuteRequest(BaseModel):
     message_id: UUID
-    user_id: Optional[UUID] = None
-    phone: Optional[str] = None
-    email: Optional[str] = None
-    content: Optional[str] = None
+    user_id: UUID | None = None
+    phone: str | None = None
+    email: str | None = None
+    content: str | None = None
 
 
 class LocationReviewResponse(BaseModel):
     id: UUID
     reviewer_name: str
     rating: float
-    review_text: Optional[str]
+    review_text: str | None
     platform: str
-    review_date: Optional[datetime]
-    response_text: Optional[str]
+    review_date: datetime | None
+    response_text: str | None
 
     class Config:
         from_attributes = True
@@ -47,7 +48,7 @@ async def connect_google_business(
     google_business_id: str,
     account_name: str,
     access_token: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Connect Google Business Profile to location."""
     conn = ChannelIntegrationService.connect_google_business_profile(
@@ -71,7 +72,7 @@ async def create_location_message(
     business_id: UUID,
     location_id: UUID,
     req: LocationMessageCreateRequest,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Create location-triggered message template."""
     msg = ChannelIntegrationService.create_location_message(
@@ -95,7 +96,7 @@ async def send_location_message(
     business_id: UUID,
     location_id: UUID,
     req: LocationMessageExecuteRequest,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Execute location message send."""
     execution = ChannelIntegrationService.send_location_message(
@@ -123,10 +124,12 @@ async def send_location_message(
 async def get_location_reviews(
     business_id: UUID,
     location_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Get all reviews for location."""
-    reviews = ChannelIntegrationService.get_location_reviews(db, business_id, location_id)
+    reviews = ChannelIntegrationService.get_location_reviews(
+        db, business_id, location_id
+    )
     avg_rating = sum(r.rating for r in reviews) / len(reviews) if reviews else 0
     return {
         "location_id": location_id,
@@ -141,11 +144,11 @@ async def sync_google_maps(
     business_id: UUID,
     location_id: UUID,
     place_id: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
     rating: float = 0,
     review_count: int = 0,
-    phone: Optional[str] = None,
-    website: Optional[str] = None,
-    db: AsyncSession = Depends(get_db),
+    phone: str | None = None,
+    website: str | None = None,
 ) -> dict:
     """Sync Google Maps location data."""
     maps_loc = ChannelIntegrationService.sync_google_maps_location(
@@ -173,9 +176,9 @@ async def add_review(
     location_id: UUID,
     reviewer_name: str,
     rating: float,
-    review_text: Optional[str] = None,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    review_text: str | None = None,
     platform: str = "google",
-    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Add location review."""
     review = ChannelIntegrationService.add_location_review(

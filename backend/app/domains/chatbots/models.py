@@ -19,9 +19,18 @@ from __future__ import annotations
 
 import enum
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import Boolean, Column, DateTime, Enum, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
@@ -36,16 +45,18 @@ class BotFocus(str, enum.Enum):
     """
 
     AUTO = "auto"
-    ATTRACT = "acquisition"    # atraer clientes / generar interés
-    CLOSE = "conversion"       # cerrar la venta
-    RETAIN = "retention"       # fidelizar / posventa
-    GROW = "expansion"         # upsell, cross-sell, referidos
+    ATTRACT = "acquisition"  # atraer clientes / generar interés
+    CLOSE = "conversion"  # cerrar la venta
+    RETAIN = "retention"  # fidelizar / posventa
+    GROW = "expansion"  # upsell, cross-sell, referidos
 
 
 class PlatformBot(Base):
     __tablename__ = "platform_bots"
     __table_args__ = (
-        UniqueConstraint("business_id", "platform", name="uq_platform_bots_business_platform"),
+        UniqueConstraint(
+            "business_id", "platform", name="uq_platform_bots_business_platform"
+        ),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -83,11 +94,11 @@ class PlatformBot(Base):
     #: marketplace that sanctions it). See playbooks.py.
     hold_on_policy_violation = Column(Boolean, nullable=False, default=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     updated_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
 

@@ -1,15 +1,16 @@
-import os
-from typing import Optional
+import logging
 from dataclasses import dataclass
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
 class IntegrationConfig:
     provider: str
     api_key: str
-    api_secret: Optional[str] = None
-    subdomain: Optional[str] = None
-    webhook_url: Optional[str] = None
+    api_secret: str | None = None
+    subdomain: str | None = None
+    webhook_url: str | None = None
 
 
 class IntegrationsManager:
@@ -24,16 +25,17 @@ class IntegrationsManager:
     def register_integration(self, provider: str, config: IntegrationConfig) -> bool:
         """Register integration provider."""
         try:
-            if provider == 'salesforce':
+            if provider == "salesforce":
                 return self._init_salesforce(config)
-            elif provider == 'hubspot':
+            elif provider == "hubspot":
                 return self._init_hubspot(config)
-            elif provider == 'stripe':
+            elif provider == "stripe":
                 return self._init_stripe(config)
-            elif provider == 'zapier':
+            elif provider == "zapier":
                 return self._init_zapier(config)
             return False
         except Exception as e:
+            logger.exception("register_integration: error inesperado")
             print(f"Integration registration error: {e}")
             return False
 
@@ -41,118 +43,126 @@ class IntegrationsManager:
         """Initialize Salesforce integration."""
         try:
             # Placeholder for Salesforce SDK
-            self.integrations['salesforce'] = {
-                'client_id': config.api_key,
-                'client_secret': config.api_secret,
-                'subdomain': config.subdomain or 'login.salesforce.com',
-                'status': 'connected',
+            self.integrations["salesforce"] = {
+                "client_id": config.api_key,
+                "client_secret": config.api_secret,
+                "subdomain": config.subdomain or "login.salesforce.com",
+                "status": "connected",
             }
             return True
         except Exception as e:
+            logger.exception("_init_salesforce: error inesperado")
             print(f"Salesforce init error: {e}")
             return False
 
     def _init_hubspot(self, config: IntegrationConfig) -> bool:
         """Initialize HubSpot integration."""
         try:
-            self.integrations['hubspot'] = {
-                'api_key': config.api_key,
-                'status': 'connected',
+            self.integrations["hubspot"] = {
+                "api_key": config.api_key,
+                "status": "connected",
             }
             return True
         except Exception as e:
+            logger.exception("_init_hubspot: error inesperado")
             print(f"HubSpot init error: {e}")
             return False
 
     def _init_stripe(self, config: IntegrationConfig) -> bool:
         """Initialize Stripe integration."""
         try:
-            self.integrations['stripe'] = {
-                'api_key': config.api_key,
-                'status': 'connected',
+            self.integrations["stripe"] = {
+                "api_key": config.api_key,
+                "status": "connected",
             }
             return True
         except Exception as e:
+            logger.exception("_init_stripe: error inesperado")
             print(f"Stripe init error: {e}")
             return False
 
     def _init_zapier(self, config: IntegrationConfig) -> bool:
         """Initialize Zapier integration."""
         try:
-            self.integrations['zapier'] = {
-                'webhook_url': config.webhook_url,
-                'status': 'connected',
+            self.integrations["zapier"] = {
+                "webhook_url": config.webhook_url,
+                "status": "connected",
             }
             return True
         except Exception as e:
+            logger.exception("_init_zapier: error inesperado")
             print(f"Zapier init error: {e}")
             return False
 
-    def sync_contacts_from_salesforce(self, sobject: str = 'Account') -> dict:
+    def sync_contacts_from_salesforce(self, sobject: str = "Account") -> dict:
         """Sync contacts from Salesforce."""
-        if 'salesforce' not in self.integrations:
-            return {'success': False, 'error': 'Salesforce not configured'}
+        if "salesforce" not in self.integrations:
+            return {"success": False, "error": "Salesforce not configured"}
 
         try:
             # Placeholder: actual Salesforce sync
             return {
-                'success': True,
-                'synced_count': 0,
-                'sobject': sobject,
+                "success": True,
+                "synced_count": 0,
+                "sobject": sobject,
             }
         except Exception as e:
-            return {'success': False, 'error': str(e)}
+            logger.exception("sync_contacts_from_salesforce: error inesperado")
+            return {"success": False, "error": str(e)}
 
     def sync_contacts_from_hubspot(self) -> dict:
         """Sync contacts from HubSpot."""
-        if 'hubspot' not in self.integrations:
-            return {'success': False, 'error': 'HubSpot not configured'}
+        if "hubspot" not in self.integrations:
+            return {"success": False, "error": "HubSpot not configured"}
 
         try:
             # Placeholder: actual HubSpot sync
             return {
-                'success': True,
-                'synced_count': 0,
+                "success": True,
+                "synced_count": 0,
             }
         except Exception as e:
-            return {'success': False, 'error': str(e)}
+            logger.exception("sync_contacts_from_hubspot: error inesperado")
+            return {"success": False, "error": str(e)}
 
-    def create_payment_intent(self, amount: float, currency: str = 'usd') -> dict:
+    def create_payment_intent(self, amount: float, currency: str = "usd") -> dict:
         """Create Stripe payment intent."""
-        if 'stripe' not in self.integrations:
-            return {'success': False, 'error': 'Stripe not configured'}
+        if "stripe" not in self.integrations:
+            return {"success": False, "error": "Stripe not configured"}
 
         try:
             # Placeholder: actual Stripe intent creation
             return {
-                'success': True,
-                'client_secret': 'pi_test_secret',
-                'amount': amount,
-                'currency': currency,
+                "success": True,
+                "client_secret": "pi_test_secret",
+                "amount": amount,
+                "currency": currency,
             }
         except Exception as e:
-            return {'success': False, 'error': str(e)}
+            logger.exception("create_payment_intent: error inesperado")
+            return {"success": False, "error": str(e)}
 
     def send_to_zapier(self, event_type: str, data: dict) -> dict:
         """Send event to Zapier webhook."""
-        if 'zapier' not in self.integrations:
-            return {'success': False, 'error': 'Zapier not configured'}
+        if "zapier" not in self.integrations:
+            return {"success": False, "error": "Zapier not configured"}
 
         try:
-            webhook_url = self.integrations['zapier']['webhook_url']
+            self.integrations["zapier"]["webhook_url"]
             # Placeholder: actual webhook call
             return {
-                'success': True,
-                'event': event_type,
+                "success": True,
+                "event": event_type,
             }
         except Exception as e:
-            return {'success': False, 'error': str(e)}
+            logger.exception("send_to_zapier: error inesperado")
+            return {"success": False, "error": str(e)}
 
     def get_integration_status(self) -> dict:
         """Get status of all integrations."""
         return {
-            'integrations': self.integrations,
-            'total_connected': len(self.integrations),
+            "integrations": self.integrations,
+            "total_connected": len(self.integrations),
         }
 
     def disconnect_integration(self, provider: str) -> bool:

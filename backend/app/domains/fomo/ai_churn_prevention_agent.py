@@ -15,12 +15,12 @@ historical value:
   low-value customer, don't under-invest losing a high-value one
 """
 
-from datetime import datetime, timezone
-from typing import Dict, List, Any, Optional
+from datetime import UTC, datetime
 from statistics import mean, median
+from typing import Any, ClassVar
 
 from app.core.logger import get_logger
-from app.domains.fomo.ai_segmentation_agent import RFMCalculator, FOMOFatigueDetector
+from app.domains.fomo.ai_segmentation_agent import FOMOFatigueDetector, RFMCalculator
 
 logger = get_logger(__name__)
 
@@ -38,7 +38,9 @@ class ChurnRiskScorer:
     MIN_LABELED_SAMPLES_FOR_ML = 20
 
     @staticmethod
-    def compute_purchase_interval_stats(purchases: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def compute_purchase_interval_stats(
+        purchases: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """Average days between consecutive purchases — the customer's own
         'normal' buying rhythm, used to judge whether their current silence
         is actually unusual for THEM specifically."""
@@ -60,14 +62,14 @@ class ChurnRiskScorer:
 
     @staticmethod
     def heuristic_risk_score(
-        purchases: List[Dict[str, Any]],
-        send_history: Optional[List[Dict[str, Any]]] = None,
-        reference_date: Optional[datetime] = None,
+        purchases: list[dict[str, Any]],
+        send_history: list[dict[str, Any]] | None = None,
+        reference_date: datetime | None = None,
         population_avg_interval_days: float = 30.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Blend recency-vs-own-rhythm deviation with engagement decline into
         a single risk score. No labeled churn outcomes required."""
-        reference_date = reference_date or datetime.now(timezone.utc)
+        reference_date = reference_date or datetime.now(UTC)
         rfm = RFMCalculator.compute_raw_rfm(purchases, reference_date)
         interval_stats = ChurnRiskScorer.compute_purchase_interval_stats(purchases)
 
@@ -80,8 +82,12 @@ class ChurnRiskScorer:
                 "recency_days": rfm["recency_days"],
             }
 
-        expected_interval = interval_stats["avg_interval_days"] or population_avg_interval_days
-        recency_ratio = rfm["recency_days"] / expected_interval if expected_interval > 0 else 1.0
+        expected_interval = (
+            interval_stats["avg_interval_days"] or population_avg_interval_days
+        )
+        recency_ratio = (
+            rfm["recency_days"] / expected_interval if expected_interval > 0 else 1.0
+        )
 
         # Sigmoid-shaped mapping: ratio of 1.0 (right on schedule) -> low risk,
         # ratio of 3.0+ (3x their normal gap) -> high risk
@@ -121,7 +127,7 @@ class ChurnRiskScorer:
         return ChurnRiskTier.LOW
 
     @staticmethod
-    def fit_ml_model(labeled_customers: List[Dict[str, Any]]):
+    def fit_ml_model(labeled_customers: list[dict[str, Any]]):
         """labeled_customers: [{"features": {...}, "churned": bool}, ...]
         Returns a fitted sklearn LogisticRegression + feature order, or None
         if sklearn is unavailable or there isn't enough labeled data."""
@@ -129,33 +135,46 @@ class ChurnRiskScorer:
             return None
 
         try:
-            from sklearn.linear_model import LogisticRegression
             import numpy as np
+            from sklearn.linear_model import LogisticRegression
         except ImportError:
-            logger.warning("sklearn/numpy unavailable — churn scoring stays heuristic-only")
+            logger.warning(
+                "sklearn/numpy unavailable — churn scoring stays heuristic-only"
+            )
             return None
 
         feature_keys = ["recency_days", "frequency", "monetary", "recency_ratio"]
 
         try:
-            X = np.array([[c["features"].get(k, 0.0) for k in feature_keys] for c in labeled_customers])
+            X = np.array(
+                [
+                    [c["features"].get(k, 0.0) for k in feature_keys]
+                    for c in labeled_customers
+                ]
+            )
             y = np.array([1 if c["churned"] else 0 for c in labeled_customers])
 
             if len(set(y.tolist())) < 2:
-                logger.warning("Labeled churn data has only one class — can't fit logistic regression")
+                logger.warning(
+                    "Labeled churn data has only one class — can't fit logistic regression"
+                )
                 return None
 
             model = LogisticRegression(max_iter=1000)
             model.fit(X, y)
             return {"model": model, "feature_keys": feature_keys}
         except Exception as e:
-            logger.warning(f"Churn model fit failed ({e}), falling back to heuristic")
+            logger.warning(
+                f"Churn model fit failed ({e}), falling back to heuristic",
+                exc_info=True,
+            )
             return None
 
     @staticmethod
-    def ml_risk_score(fitted: Dict[str, Any], features: Dict[str, float]) -> float:
+    def ml_risk_score(fitted: dict[str, Any], features: dict[str, float]) -> float:
         try:
             import numpy as np
+
             X = np.array([[features.get(k, 0.0) for k in fitted["feature_keys"]]])
             proba = fitted["model"].predict_proba(X)[0]
             # predict_proba columns follow model.classes_ order (sklearn sorts
@@ -163,7 +182,9 @@ class ChurnRiskScorer:
             churn_class_index = list(fitted["model"].classes_).index(1)
             return float(proba[churn_class_index])
         except Exception as e:
-            logger.warning(f"ML risk scoring failed ({e}), returning neutral score")
+            logger.warning(
+                f"ML risk scoring failed ({e}), returning neutral score", exc_info=True
+            )
             return 0.5
 
 
@@ -171,7 +192,7 @@ class PersonalizedOfferCalibrator:
     """Size the win-back offer to the customer's value relative to the batch —
     retention spend should scale with what's actually at stake."""
 
-    OFFER_TIERS = [
+    OFFER_TIERS: ClassVar[list] = [
         {"min_percentile": 0.8, "discount_percent": 30, "label": "high_value"},
         {"min_percentile": 0.5, "discount_percent": 20, "label": "mid_value"},
         {"min_percentile": 0.2, "discount_percent": 15, "label": "standard_value"},
@@ -179,7 +200,9 @@ class PersonalizedOfferCalibrator:
     ]
 
     @staticmethod
-    def calibrate_offer(monetary_value: float, batch_monetary_values: List[float]) -> Dict[str, Any]:
+    def calibrate_offer(
+        monetary_value: float, batch_monetary_values: list[float]
+    ) -> dict[str, Any]:
         if not batch_monetary_values or len(batch_monetary_values) < 2:
             # Not enough of a batch to rank against — use the standard tier
             tier = PersonalizedOfferCalibrator.OFFER_TIERS[2]
@@ -205,7 +228,11 @@ class PersonalizedOfferCalibrator:
 
         # unreachable given OFFER_TIERS' last entry has min_percentile 0.0,
         # kept only as a defensive fallback
-        return {"discount_percent": 10, "tier": "low_value", "percentile": round(percentile, 3)}
+        return {
+            "discount_percent": 10,
+            "tier": "low_value",
+            "percentile": round(percentile, 3),
+        }
 
 
 class WinBackTriggerEngine:
@@ -214,23 +241,52 @@ class WinBackTriggerEngine:
     DEFAULT_THRESHOLD = 0.5
 
     @staticmethod
-    def should_trigger(risk_result: Dict[str, Any], threshold: float = DEFAULT_THRESHOLD) -> bool:
+    def should_trigger(
+        risk_result: dict[str, Any], threshold: float = DEFAULT_THRESHOLD
+    ) -> bool:
         return risk_result["risk_score"] >= threshold
 
     @staticmethod
-    def build_win_back_sequence(offer: Dict[str, Any], risk_tier: str) -> Dict[str, Any]:
+    def build_win_back_sequence(
+        offer: dict[str, Any], risk_tier: str
+    ) -> dict[str, Any]:
         """Sequence intensity scales with risk tier — critical risk gets a
         faster, more direct sequence than medium risk."""
         if risk_tier == ChurnRiskTier.CRITICAL:
             steps = [
-                {"step": 1, "delay_minutes": 0, "channel": "email", "template": "win_back_urgent"},
-                {"step": 2, "delay_minutes": 1440, "channel": "sms", "template": "win_back_offer_reminder"},
-                {"step": 3, "delay_minutes": 4320, "channel": "email", "template": "win_back_final"},
+                {
+                    "step": 1,
+                    "delay_minutes": 0,
+                    "channel": "email",
+                    "template": "win_back_urgent",
+                },
+                {
+                    "step": 2,
+                    "delay_minutes": 1440,
+                    "channel": "sms",
+                    "template": "win_back_offer_reminder",
+                },
+                {
+                    "step": 3,
+                    "delay_minutes": 4320,
+                    "channel": "email",
+                    "template": "win_back_final",
+                },
             ]
         else:
             steps = [
-                {"step": 1, "delay_minutes": 0, "channel": "email", "template": "win_back_offer"},
-                {"step": 2, "delay_minutes": 4320, "channel": "email", "template": "win_back_reminder"},
+                {
+                    "step": 1,
+                    "delay_minutes": 0,
+                    "channel": "email",
+                    "template": "win_back_offer",
+                },
+                {
+                    "step": 2,
+                    "delay_minutes": 4320,
+                    "channel": "email",
+                    "template": "win_back_reminder",
+                },
             ]
 
         return {
@@ -246,17 +302,21 @@ class AIChurnPreventionAgent:
 
     @staticmethod
     def score_customer(
-        purchases: List[Dict[str, Any]],
-        send_history: Optional[List[Dict[str, Any]]] = None,
-        reference_date: Optional[datetime] = None,
-        fitted_model: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        purchases: list[dict[str, Any]],
+        send_history: list[dict[str, Any]] | None = None,
+        reference_date: datetime | None = None,
+        fitted_model: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Score one customer's churn risk — ML if a fitted model is supplied
         and heuristic features can be computed, heuristic-only otherwise."""
-        heuristic = ChurnRiskScorer.heuristic_risk_score(purchases, send_history, reference_date)
+        heuristic = ChurnRiskScorer.heuristic_risk_score(
+            purchases, send_history, reference_date
+        )
 
         if fitted_model is not None and heuristic.get("recency_ratio") is not None:
-            rfm = RFMCalculator.compute_raw_rfm(purchases, reference_date or datetime.now(timezone.utc))
+            rfm = RFMCalculator.compute_raw_rfm(
+                purchases, reference_date or datetime.now(UTC)
+            )
             features = {
                 "recency_days": rfm["recency_days"],
                 "frequency": rfm["frequency"],
@@ -277,16 +337,18 @@ class AIChurnPreventionAgent:
     @staticmethod
     def evaluate_and_trigger(
         customer_id: str,
-        purchases: List[Dict[str, Any]],
-        batch_monetary_values: List[float],
-        send_history: Optional[List[Dict[str, Any]]] = None,
+        purchases: list[dict[str, Any]],
+        batch_monetary_values: list[float],
+        send_history: list[dict[str, Any]] | None = None,
         threshold: float = WinBackTriggerEngine.DEFAULT_THRESHOLD,
-        reference_date: Optional[datetime] = None,
-        fitted_model: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        reference_date: datetime | None = None,
+        fitted_model: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Full pipeline for one customer: score -> trigger decision ->
         personalized win-back sequence if triggered"""
-        risk = AIChurnPreventionAgent.score_customer(purchases, send_history, reference_date, fitted_model)
+        risk = AIChurnPreventionAgent.score_customer(
+            purchases, send_history, reference_date, fitted_model
+        )
         triggered = WinBackTriggerEngine.should_trigger(risk, threshold)
 
         result = {
@@ -299,20 +361,24 @@ class AIChurnPreventionAgent:
 
         if triggered:
             monetary_value = sum(float(p.get("amount", 0)) for p in purchases)
-            offer = PersonalizedOfferCalibrator.calibrate_offer(monetary_value, batch_monetary_values)
-            result["win_back_sequence"] = WinBackTriggerEngine.build_win_back_sequence(offer, risk["tier"])
+            offer = PersonalizedOfferCalibrator.calibrate_offer(
+                monetary_value, batch_monetary_values
+            )
+            result["win_back_sequence"] = WinBackTriggerEngine.build_win_back_sequence(
+                offer, risk["tier"]
+            )
             result["customer_monetary_value"] = round(monetary_value, 2)
 
         return result
 
     @staticmethod
     def batch_evaluate(
-        customers: List[Dict[str, Any]],
+        customers: list[dict[str, Any]],
         threshold: float = WinBackTriggerEngine.DEFAULT_THRESHOLD,
-        fatigue_data: Optional[Dict[str, List[Dict[str, Any]]]] = None,
-        reference_date: Optional[datetime] = None,
-        labeled_training_data: Optional[List[Dict[str, Any]]] = None,
-    ) -> Dict[str, Any]:
+        fatigue_data: dict[str, list[dict[str, Any]]] | None = None,
+        reference_date: datetime | None = None,
+        labeled_training_data: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
         """customers: [{"customer_id": str, "purchases": [...]}]
         Runs the full pipeline across a batch, sharing the batch's monetary
         distribution for offer calibration and an optional fitted ML model."""

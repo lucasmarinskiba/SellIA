@@ -5,17 +5,23 @@ Reuses content in social posts and sales messages.
 """
 
 import uuid
-from datetime import datetime, timezone
-from typing import Optional, Any, List
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.growth.models import UgcRequest, UgcRequestStatus, SocialProofItem, SocialProofType, SocialProofStatus
-from app.domains.outreach.service import FatigueScoringService
-from app.domains.agents.ai_reply import generate_raw_ai_response
-from app.core.logger import get_logger
 from app.core.events import event_bus
+from app.core.logger import get_logger
+from app.domains.agents.ai_reply import generate_raw_ai_response
+from app.domains.growth.models import (
+    SocialProofItem,
+    SocialProofStatus,
+    SocialProofType,
+    UgcRequest,
+    UgcRequestStatus,
+)
+from app.domains.outreach.service import FatigueScoringService
 
 logger = get_logger(__name__)
 
@@ -36,7 +42,7 @@ class UGCCollector:
         conversation_id: uuid.UUID,
         content_type: str = "lifestyle_photo",  # unboxing, before_after, testimonial_video, lifestyle_photo, story
         incentive: str = "",
-        campaign_id: uuid.UUID = None,
+        campaign_id: uuid.UUID | None = None,
     ) -> UgcRequest:
         """Send a UGC request to a customer."""
         # Check if already requested for this order
@@ -50,9 +56,7 @@ class UGCCollector:
             return existing.scalar_one_or_none()
 
         # Generate personalized request
-        message = await self._generate_ugc_request(
-            business_id, content_type, incentive
-        )
+        message = await self._generate_ugc_request(business_id, content_type, incentive)
 
         ugc_request = UgcRequest(
             business_id=business_id,
@@ -88,6 +92,7 @@ class UGCCollector:
 
         # Send message
         from app.domains.channels.services import send_outbound_message
+
         try:
             await send_outbound_message(
                 self.db,
@@ -96,14 +101,16 @@ class UGCCollector:
                 content_type="text",
             )
         except Exception as e:
-            logger.error(f"Failed to send UGC request: {e}")
+            logger.exception("Failed to send UGC request")
             return {"status": "error", "reason": str(e)}
 
         ugc_request.status = UgcRequestStatus.SENT
-        ugc_request.sent_at = datetime.now(timezone.utc)
+        ugc_request.sent_at = datetime.now(UTC)
         await self.db.commit()
 
-        logger.info(f"Sent UGC request {request_id} to conversation {ugc_request.conversation_id}")
+        logger.info(
+            f"Sent UGC request {request_id} to conversation {ugc_request.conversation_id}"
+        )
         return {"status": "sent"}
 
     async def _generate_ugc_request(
@@ -145,24 +152,27 @@ Ejemplo para lifestyle photo:
 "¡Ey! Me alegra un montón que estés disfrutando [producto]. ¿Te animás a sacar una foto usándolo en tu día a día? Me encantaría compartirla. Simplemente respondé con la foto y te muestro el agradecimiento especial que tengo para vos. ¡Gracias! 📸"""
 
         try:
-            return await generate_raw_ai_response(
-                db=self.db,
-                business_id=business_id,
-                system_prompt=system_prompt,
-                user_prompt=user_prompt,
-                max_tokens=500,
-                temperature=0.75,
-            ) or f"¡Hola! Me encantaría ver tu experiencia con nuestro producto. ¿Podrías compartir una foto? Te lo agradezco mucho."
-        except Exception as e:
-            logger.error(f"Failed to generate UGC request: {e}")
-            return f"¡Hola! Me encantaría ver tu experiencia con nuestro producto. ¿Podrías compartir una foto? Te lo agradezco mucho."
+            return (
+                await generate_raw_ai_response(
+                    db=self.db,
+                    business_id=business_id,
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    max_tokens=500,
+                    temperature=0.75,
+                )
+                or "¡Hola! Me encantaría ver tu experiencia con nuestro producto. ¿Podrías compartir una foto? Te lo agradezco mucho."
+            )
+        except Exception:
+            logger.exception("Failed to generate UGC request")
+            return "¡Hola! Me encantaría ver tu experiencia con nuestro producto. ¿Podrías compartir una foto? Te lo agradezco mucho."
 
     # ========== Collection ==========
 
     async def collect_submission(
         self,
         request_id: uuid.UUID,
-        media_urls: List[str],
+        media_urls: list[str],
         response_text: str = "",
     ) -> UgcRequest:
         """Record a UGC submission from a customer."""
@@ -173,13 +183,17 @@ Ejemplo para lifestyle photo:
         ugc_request.status = UgcRequestStatus.RECEIVED
         ugc_request.response_media_urls = media_urls
         ugc_request.response_text = response_text
-        ugc_request.responded_at = datetime.now(timezone.utc)
+        ugc_request.responded_at = datetime.now(UTC)
         await self.db.commit()
         await self.db.refresh(ugc_request)
 
         # Create social proof item from UGC
         if media_urls:
-            proof_type = SocialProofType.UGC_VIDEO if any(url.endswith(('.mp4', '.mov')) for url in media_urls) else SocialProofType.UGC_PHOTO
+            proof_type = (
+                SocialProofType.UGC_VIDEO
+                if any(url.endswith((".mp4", ".mov")) for url in media_urls)
+                else SocialProofType.UGC_PHOTO
+            )
             social_proof = SocialProofItem(
                 business_id=ugc_request.business_id,
                 conversation_id=ugc_request.conversation_id,
@@ -196,11 +210,14 @@ Ejemplo para lifestyle photo:
             await self.db.commit()
 
         # Emit event
-        await event_bus.emit("ugc.submitted", {
-            "business_id": str(ugc_request.business_id),
-            "request_id": str(request_id),
-            "media_count": len(media_urls),
-        })
+        await event_bus.emit(
+            "ugc.submitted",
+            {
+                "business_id": str(ugc_request.business_id),
+                "request_id": str(request_id),
+                "media_count": len(media_urls),
+            },
+        )
 
         logger.info(f"Collected UGC submission for request {request_id}")
         return ugc_request
@@ -213,7 +230,7 @@ Ejemplo para lifestyle photo:
         theme: str,
         content_type: str = "lifestyle_photo",
         incentive: str = "",
-        campaign_id: uuid.UUID = None,
+        campaign_id: uuid.UUID | None = None,
     ) -> dict[str, Any]:
         """Create a themed UGC challenge/campaign."""
         # Generate campaign message
@@ -242,9 +259,10 @@ Responde en JSON:
                 temperature=0.8,
             )
             import json
+
             campaign_data = json.loads(response or "{}")
-        except Exception as e:
-            logger.error(f"Failed to generate UGC campaign: {e}")
+        except Exception:
+            logger.exception("Failed to generate UGC campaign")
             campaign_data = {
                 "campaign_name": f"Desafío {theme}",
                 "hashtag": f"#{theme.replace(' ', '')}",
@@ -264,14 +282,21 @@ Responde en JSON:
     async def get_ugc_gallery(
         self,
         business_id: uuid.UUID,
-        content_type: str = None,
+        content_type: str | None = None,
         limit: int = 50,
-    ) -> List[dict]:
+    ) -> list[dict]:
         """Get approved UGC items for gallery display."""
-        query = select(UgcRequest).where(
-            UgcRequest.business_id == business_id,
-            UgcRequest.status.in_([UgcRequestStatus.RECEIVED, UgcRequestStatus.APPROVED]),
-        ).order_by(desc(UgcRequest.responded_at)).limit(limit)
+        query = (
+            select(UgcRequest)
+            .where(
+                UgcRequest.business_id == business_id,
+                UgcRequest.status.in_(
+                    [UgcRequestStatus.RECEIVED, UgcRequestStatus.APPROVED]
+                ),
+            )
+            .order_by(desc(UgcRequest.responded_at))
+            .limit(limit)
+        )
 
         if content_type:
             query = query.where(UgcRequest.content_type == content_type)
@@ -281,14 +306,18 @@ Responde en JSON:
 
         gallery = []
         for req in requests:
-            gallery.append({
-                "id": str(req.id),
-                "content_type": req.content_type,
-                "media_urls": req.response_media_urls,
-                "response_text": req.response_text,
-                "status": req.status.value,
-                "responded_at": req.responded_at.isoformat() if req.responded_at else None,
-            })
+            gallery.append(
+                {
+                    "id": str(req.id),
+                    "content_type": req.content_type,
+                    "media_urls": req.response_media_urls,
+                    "response_text": req.response_text,
+                    "status": req.status.value,
+                    "responded_at": (
+                        req.responded_at.isoformat() if req.responded_at else None
+                    ),
+                }
+            )
         return gallery
 
     async def approve_ugc(self, request_id: uuid.UUID) -> UgcRequest:
@@ -302,6 +331,7 @@ Responde en JSON:
         # Also approve linked social proof
         if ugc_request.social_proof_id:
             from app.domains.growth.social_proof import SocialProofEngine
+
             engine = SocialProofEngine(self.db)
             await engine.approve_item(ugc_request.social_proof_id)
 
@@ -309,12 +339,14 @@ Responde en JSON:
         await self.db.refresh(ugc_request)
         return ugc_request
 
-    async def get_pending_requests(self, business_id: uuid.UUID) -> List[UgcRequest]:
+    async def get_pending_requests(self, business_id: uuid.UUID) -> list[UgcRequest]:
         """Get pending UGC requests that need to be sent."""
         result = await self.db.execute(
-            select(UgcRequest).where(
+            select(UgcRequest)
+            .where(
                 UgcRequest.business_id == business_id,
                 UgcRequest.status == UgcRequestStatus.PENDING,
-            ).order_by(UgcRequest.created_at)
+            )
+            .order_by(UgcRequest.created_at)
         )
         return list(result.scalars().all())

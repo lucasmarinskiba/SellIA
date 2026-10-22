@@ -6,15 +6,16 @@ Requiere: auth + producto + buyer
 Retorna: cycle_id + status
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Header
-from pydantic import BaseModel
-from typing import Optional
 import logging
 import uuid
+from typing import Annotated
 
-from app.core.orchestration.loop_engineering import LoopEngineering
-from app.core.orchestration.brain_computer_use import BrainComputerUseCoordinator
+from fastapi import APIRouter, Depends, Header, HTTPException
+from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import get_db
+from app.core.orchestration.loop_engineering import LoopEngineering
 
 router = APIRouter(prefix="/api/v1/sales-cycle", tags=["sales"])
 logger = logging.getLogger(__name__)
@@ -32,8 +33,8 @@ class ProductInput(BaseModel):
 class BuyerInput(BaseModel):
     email: str
     name: str
-    phone: Optional[str] = None
-    company: Optional[str] = None
+    phone: str | None = None
+    company: str | None = None
 
 
 class StartSalesCycleRequest(BaseModel):
@@ -42,7 +43,9 @@ class StartSalesCycleRequest(BaseModel):
 
 
 # Mock auth (reemplazar con JWT real)
-def verify_auth(authorization: str = Header(None)) -> dict:
+def verify_auth(
+    authorization: Annotated[str | None, Header()] = None,
+) -> dict:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Unauthorized")
     token = authorization.split(" ")[1]
@@ -53,8 +56,8 @@ def verify_auth(authorization: str = Header(None)) -> dict:
 @router.post("/start")
 async def start_sales_cycle(
     request: StartSalesCycleRequest,
-    auth: dict = Depends(verify_auth),
-    db = Depends(get_db),
+    auth: Annotated[dict, Depends(verify_auth)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """
     Inicia ciclo venta completo.
@@ -85,7 +88,9 @@ async def start_sales_cycle(
         # Por ahora: simular
         cycle_result = await loop_engine.run_sales_cycle_with_loops(product, buyer)
 
-        logger.info(f"Sales cycle {cycle_id} initialized: {cycle_result['overall_status']}")
+        logger.info(
+            f"Sales cycle {cycle_id} initialized: {cycle_result['overall_status']}"
+        )
 
         return {
             "status": "initiated",
@@ -97,14 +102,14 @@ async def start_sales_cycle(
         }
 
     except Exception as e:
-        logger.error(f"Error starting sales cycle {cycle_id}: {str(e)}")
+        logger.exception(f"Error starting sales cycle {cycle_id}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/{cycle_id}/status")
 async def get_cycle_status(
     cycle_id: str,
-    auth: dict = Depends(verify_auth),
+    auth: Annotated[dict, Depends(verify_auth)],
 ):
     """Obtiene status actual del ciclo."""
 
@@ -120,7 +125,7 @@ async def get_cycle_status(
 @router.get("/{cycle_id}/results")
 async def get_cycle_results(
     cycle_id: str,
-    auth: dict = Depends(verify_auth),
+    auth: Annotated[dict, Depends(verify_auth)],
 ):
     """Obtiene resultados finales del ciclo."""
 

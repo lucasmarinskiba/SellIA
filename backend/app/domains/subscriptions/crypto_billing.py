@@ -7,7 +7,7 @@ USDT transactions on Tron (TRC-20) and Binance Smart Chain (BEP-20).
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import httpx
@@ -60,7 +60,7 @@ def generate_crypto_payment(
     normalized = _normalize_network(network)
     wallet_address = _get_creator_address(normalized)
     payment_id = str(uuid.uuid4())
-    expires_at = datetime.now(timezone.utc) + timedelta(minutes=PAYMENT_EXPIRATION_MINUTES)
+    expires_at = datetime.now(UTC) + timedelta(minutes=PAYMENT_EXPIRATION_MINUTES)
 
     return {
         "transaction_id": payment_id,
@@ -146,7 +146,9 @@ async def verify_crypto_payment(
         "to_address": to_address,
         "confirmations": confirmations,
         "status": status,
-        "error": None if verified else _build_error_message(recipient_ok, amount_ok, status),
+        "error": (
+            None if verified else _build_error_message(recipient_ok, amount_ok, status)
+        ),
     }
 
 
@@ -250,7 +252,10 @@ async def _check_trc20_status(tx_hash: str) -> dict[str, Any]:
     trc20_transfers = data.get("trc20TransferInfo", [])
     usdt_transfer = None
     for t in trc20_transfers:
-        if t.get("symbol", "").upper() == "USDT" or t.get("name", "").upper() == "TETHER USD":
+        if (
+            t.get("symbol", "").upper() == "USDT"
+            or t.get("name", "").upper() == "TETHER USD"
+        ):
             usdt_transfer = t
             break
 
@@ -277,13 +282,19 @@ async def _check_trc20_status(tx_hash: str) -> dict[str, Any]:
         except (ValueError, TypeError):
             amount = 0.0
 
-        result.update({
-            "amount": amount,
-            "from_address": usdt_transfer.get("from_address") or usdt_transfer.get("fromAddr"),
-            "to_address": usdt_transfer.get("to_address") or usdt_transfer.get("toAddr"),
-            "token_name": usdt_transfer.get("name") or usdt_transfer.get("tokenName"),
-            "token_symbol": usdt_transfer.get("symbol") or usdt_transfer.get("tokenSymbol"),
-        })
+        result.update(
+            {
+                "amount": amount,
+                "from_address": usdt_transfer.get("from_address")
+                or usdt_transfer.get("fromAddr"),
+                "to_address": usdt_transfer.get("to_address")
+                or usdt_transfer.get("toAddr"),
+                "token_name": usdt_transfer.get("name")
+                or usdt_transfer.get("tokenName"),
+                "token_symbol": usdt_transfer.get("symbol")
+                or usdt_transfer.get("tokenSymbol"),
+            }
+        )
 
     return result
 
@@ -350,7 +361,11 @@ async def _check_bep20_status(tx_hash: str) -> dict[str, Any]:
             }
 
     receipt_status = tx_data.get("result", {}).get("status", "")
-    tx_status = "success" if receipt_status == "1" else "pending" if receipt_status == "" else "failed"
+    tx_status = (
+        "success"
+        if receipt_status == "1"
+        else "pending" if receipt_status == "" else "failed"
+    )
 
     return {
         "tx_hash": tx_hash,
@@ -411,7 +426,7 @@ async def _fetch_bep20_tx(tx_hash: str, wallet_address: str) -> dict[str, Any]:
             value_str = tx.get("value", "0")
             decimals = int(tx.get("tokenDecimal", "6"))
             try:
-                amount = float(value_str) / (10 ** decimals)
+                amount = float(value_str) / (10**decimals)
             except (ValueError, TypeError):
                 amount = 0.0
 

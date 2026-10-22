@@ -1,9 +1,9 @@
 """Affiliate Platform Analyzer — Hotmart, Mercado Libre, Amazon, Beacons ecosystem analysis."""
 
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass
-from datetime import datetime
 import logging
+from dataclasses import dataclass
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class AffiliateProduct:
     """Affiliate product metadata."""
+
     product_id: str
     name: str
     platform: str  # hotmart|meli|amazon|beacons|tiendanube
@@ -19,7 +20,7 @@ class AffiliateProduct:
     commission_percentage: float
     demand_score: float  # 1-10
     conversion_difficulty: float  # 1-10 (higher = harder)
-    target_audience: List[str]
+    target_audience: list[str]
     last_updated: str
 
 
@@ -49,7 +50,7 @@ class HotmartAnalyzer:
             "programming": 0.25,
         }
 
-    def analyze_product(self, product_id: str, product_data: Dict) -> AffiliateProduct:
+    def analyze_product(self, product_id: str, product_data: dict) -> AffiliateProduct:
         """Analyze single Hotmart product."""
         category = product_data.get("category", "uncategorized")
         price = float(product_data.get("price", 0))
@@ -67,10 +68,10 @@ class HotmartAnalyzer:
             demand_score=demand,
             conversion_difficulty=conversion_difficulty,
             target_audience=product_data.get("target_audience", []),
-            last_updated=datetime.utcnow().isoformat(),
+            last_updated=utc_now().isoformat(),
         )
 
-    def _calculate_demand_score(self, product_data: Dict) -> float:
+    def _calculate_demand_score(self, product_data: dict) -> float:
         """Score product demand 1-10."""
         score = 5.0
         if product_data.get("reviews_count", 0) > 1000:
@@ -81,7 +82,7 @@ class HotmartAnalyzer:
             score += 1.5
         return min(score, 10.0)
 
-    def _calculate_conversion_difficulty(self, product_data: Dict) -> float:
+    def _calculate_conversion_difficulty(self, product_data: dict) -> float:
         """Score conversion difficulty 1-10 (higher = harder)."""
         price = float(product_data.get("price", 0))
         difficulty = 5.0
@@ -93,7 +94,9 @@ class HotmartAnalyzer:
             difficulty += 2
         return min(difficulty, 10.0)
 
-    def find_trending_products(self, category: Optional[str] = None) -> List[AffiliateProduct]:
+    def find_trending_products(
+        self, category: str | None = None
+    ) -> list[AffiliateProduct]:
         """Find trending Hotmart products."""
         # Placeholder: in real impl, fetch from Hotmart API
         products = [
@@ -107,7 +110,7 @@ class HotmartAnalyzer:
                 demand_score=7.5 + (i * 0.1),
                 conversion_difficulty=5.0,
                 target_audience=["entrepreneurs", "marketers"],
-                last_updated=datetime.utcnow().isoformat(),
+                last_updated=utc_now().isoformat(),
             )
             for i in range(1, 6)
         ]
@@ -128,17 +131,17 @@ class MercadoLibreAnalyzer:
             "beauty": 0.12,
         }
 
-    def analyze_seller_products(self, seller_id: str) -> List[AffiliateProduct]:
+    def analyze_seller_products(self, seller_id: str) -> list[AffiliateProduct]:
         """Analyze seller's products for affiliate potential."""
         # Placeholder implementation
         products = []
         return products
 
-    def find_high_commission_categories(self) -> Dict[str, float]:
+    def find_high_commission_categories(self) -> dict[str, float]:
         """Find categories with high commission rates."""
         return sorted(self.commission_rates.items(), key=lambda x: x[1], reverse=True)
 
-    def estimate_conversion_potential(self, product: Dict) -> float:
+    def estimate_conversion_potential(self, product: dict) -> float:
         """Estimate conversion potential 0-1."""
         potential = 0.5
         if product.get("sold_quantity", 0) > 100:
@@ -162,16 +165,16 @@ class AmazonAnalyzer:
             "beauty": 0.08,
         }
 
-    def analyze_asin(self, asin: str) -> Optional[AffiliateProduct]:
+    def analyze_asin(self, asin: str) -> AffiliateProduct | None:
         """Analyze Amazon product (ASIN)."""
         # Placeholder
         return None
 
-    def find_best_performing_niches(self) -> List[str]:
+    def find_best_performing_niches(self) -> list[str]:
         """Find highest-performing niches on Amazon."""
-        return sorted(
-            self.commission_rates.items(), key=lambda x: x[1], reverse=True
-        )[:5]
+        return sorted(self.commission_rates.items(), key=lambda x: x[1], reverse=True)[
+            :5
+        ]
 
     def estimate_monthly_earnings(
         self, daily_clicks: int, conversion_rate: float, aov: float
@@ -189,7 +192,7 @@ class BeaconsAnalyzer:
     def __init__(self):
         self.platform = "beacons"
 
-    def optimize_links(self, current_links: List[Dict]) -> List[Dict]:
+    def optimize_links(self, current_links: list[dict]) -> list[dict]:
         """Suggest optimizations for Beacons link organization."""
         optimized = []
         for link in current_links:
@@ -199,14 +202,14 @@ class BeaconsAnalyzer:
             optimized.append(opt)
         return optimized
 
-    def _calculate_ideal_position(self, link: Dict) -> int:
+    def _calculate_ideal_position(self, link: dict) -> int:
         """Calculate ideal link position (1-10)."""
         revenue_potential = link.get("revenue_potential", 0.5)
         ctr = link.get("estimated_ctr", 0.05)
         score = revenue_potential * ctr * 100
         return max(1, min(10, int(score)))
 
-    def _estimate_ctr(self, link: Dict) -> float:
+    def _estimate_ctr(self, link: dict) -> float:
         """Estimate click-through rate."""
         position = link.get("current_position", 5)
         base_ctr = 0.08 / position
@@ -235,8 +238,8 @@ class AffiliateProductScore:
 
     @staticmethod
     def recommend_products(
-        products: List[AffiliateProduct], top_n: int = 5
-    ) -> List[AffiliateProduct]:
+        products: list[AffiliateProduct], top_n: int = 5
+    ) -> list[AffiliateProduct]:
         """Recommend top products by score."""
         scored = [(p, AffiliateProductScore.score(p)) for p in products]
         sorted_products = sorted(scored, key=lambda x: x[1], reverse=True)
@@ -248,8 +251,8 @@ class PlatformComparator:
 
     @staticmethod
     def compare_roi(
-        products_by_platform: Dict[str, List[AffiliateProduct]], traffic: int
-    ) -> Dict[str, float]:
+        products_by_platform: dict[str, list[AffiliateProduct]], traffic: int
+    ) -> dict[str, float]:
         """Compare ROI by platform for given traffic volume."""
         roi_by_platform = {}
 
@@ -267,7 +270,7 @@ class PlatformComparator:
 
     @staticmethod
     def get_best_platform(
-        products_by_platform: Dict[str, List[AffiliateProduct]],
+        products_by_platform: dict[str, list[AffiliateProduct]],
     ) -> str:
         """Determine best platform for affiliate focus."""
         roi = PlatformComparator.compare_roi(products_by_platform, 1000)

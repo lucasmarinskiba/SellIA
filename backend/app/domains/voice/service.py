@@ -3,10 +3,9 @@
 Handles STT, TTS, and AI-driven voice call processing.
 """
 
-import uuid
 import base64
-from typing import Optional
-from datetime import datetime, timezone
+import uuid
+from datetime import UTC, datetime
 
 import httpx
 from sqlalchemy import select
@@ -29,7 +28,9 @@ class VoiceService:
     # STT / TTS
     # ------------------------------------------------------------------
 
-    async def transcribe_audio(self, audio_bytes: bytes, provider: str = "openai_whisper") -> str:
+    async def transcribe_audio(
+        self, audio_bytes: bytes, provider: str = "openai_whisper"
+    ) -> str:
         """Transcribe audio bytes to text using the configured provider."""
         settings = get_settings()
         api_key = settings.OPENAI_API_KEY
@@ -47,7 +48,7 @@ class VoiceService:
                     data = response.json()
                     return data.get("text", "")
             except Exception as e:
-                logger.warning(f"Whisper transcription failed: {e}")
+                logger.warning(f"Whisper transcription failed: {e}", exc_info=True)
 
         # Fallback: return mock transcript for development
         logger.info("STT fallback: returning mock transcript")
@@ -59,7 +60,12 @@ class VoiceService:
 
         if voice_config.tts_provider == "openai" and settings.OPENAI_API_KEY:
             try:
-                voice_id = voice_config.voice_id if voice_config.voice_id in ("alloy", "echo", "fable", "onyx", "nova", "shimmer") else "alloy"
+                voice_id = (
+                    voice_config.voice_id
+                    if voice_config.voice_id
+                    in ("alloy", "echo", "fable", "onyx", "nova", "shimmer")
+                    else "alloy"
+                )
                 async with httpx.AsyncClient(timeout=httpx.Timeout(60.0)) as client:
                     response = await client.post(
                         "https://api.openai.com/v1/audio/speech",
@@ -76,7 +82,7 @@ class VoiceService:
                     response.raise_for_status()
                     return response.content
             except Exception as e:
-                logger.warning(f"OpenAI TTS failed: {e}")
+                logger.warning(f"OpenAI TTS failed: {e}", exc_info=True)
 
         elif voice_config.tts_provider == "elevenlabs" and settings.ELEVENLABS_API_KEY:
             try:
@@ -91,13 +97,16 @@ class VoiceService:
                         json={
                             "text": text,
                             "model_id": "eleven_multilingual_v2",
-                            "voice_settings": {"stability": 0.5, "similarity_boost": 0.75},
+                            "voice_settings": {
+                                "stability": 0.5,
+                                "similarity_boost": 0.75,
+                            },
                         },
                     )
                     response.raise_for_status()
                     return response.content
             except Exception as e:
-                logger.warning(f"ElevenLabs TTS failed: {e}")
+                logger.warning(f"ElevenLabs TTS failed: {e}", exc_info=True)
 
         # Fallback: return empty bytes (frontend should handle gracefully)
         logger.info("TTS fallback: returning empty audio")
@@ -119,17 +128,23 @@ class VoiceService:
             raise ValueError("Call not found")
 
         # 1. Transcribe
-        transcript = await self.transcribe_audio(audio_chunk, provider=call.extra_data.get("stt_provider", "openai_whisper"))
+        transcript = await self.transcribe_audio(
+            audio_chunk, provider=call.extra_data.get("stt_provider", "openai_whisper")
+        )
 
         # 2. Get or create conversation
         conversation = None
         if call.conversation_id:
             from app.domains.channels.models import Conversation
-            conv_result = await self.db.execute(select(Conversation).where(Conversation.id == call.conversation_id))
+
+            conv_result = await self.db.execute(
+                select(Conversation).where(Conversation.id == call.conversation_id)
+            )
             conversation = conv_result.scalar_one_or_none()
 
         if not conversation:
             from app.domains.channels.models import Conversation, ConversationStatus
+
             conversation = Conversation(
                 business_id=call.business_id,
                 lead_phone=call.phone_number,
@@ -143,6 +158,7 @@ class VoiceService:
 
         # 3. Store transcript as inbound message
         from app.domains.channels.models import Message, MessageDirection, MessageStatus
+
         inbound_msg = Message(
             conversation_id=conversation.id,
             direction=MessageDirection.INBOUND,
@@ -155,6 +171,7 @@ class VoiceService:
 
         # 4. Generate AI response
         from app.domains.agents.ai_reply import generate_ai_response
+
         ai_text = await generate_ai_response(
             db=self.db,
             conversation=conversation,
@@ -190,7 +207,9 @@ class VoiceService:
         return {
             "transcript": transcript,
             "ai_response_text": ai_text,
-            "audio_b64": base64.b64encode(audio_bytes).decode("utf-8") if audio_bytes else None,
+            "audio_b64": (
+                base64.b64encode(audio_bytes).decode("utf-8") if audio_bytes else None
+            ),
         }
 
     # ------------------------------------------------------------------
@@ -211,7 +230,7 @@ class VoiceService:
             phone_number=phone_number,
             direction=direction,
             status="ringing",
-            started_at=datetime.now(timezone.utc),
+            started_at=datetime.now(UTC),
         )
         self.db.add(call)
         await self.db.commit()
@@ -221,7 +240,7 @@ class VoiceService:
     async def end_call(
         self,
         call_id: uuid.UUID,
-        outcome: Optional[str] = None,
+        outcome: str | None = None,
     ) -> VoiceCall:
         """End a voice call and set outcome."""
         result = await self.db.execute(select(VoiceCall).where(VoiceCall.id == call_id))
@@ -230,14 +249,14 @@ class VoiceService:
             raise ValueError("Call not found")
 
         call.status = "completed"
-        call.ended_at = datetime.now(timezone.utc)
+        call.ended_at = datetime.now(UTC)
         if outcome:
             call.outcome = outcome
         await self.db.commit()
         await self.db.refresh(call)
         return call
 
-    async def get_call_transcript(self, call_id: uuid.UUID) -> Optional[str]:
+    async def get_call_transcript(self, call_id: uuid.UUID) -> str | None:
         """Retrieve the transcript for a call."""
         result = await self.db.execute(select(VoiceCall).where(VoiceCall.id == call_id))
         call = result.scalar_one_or_none()
@@ -249,7 +268,9 @@ class VoiceService:
 
     async def _get_voice_config(self, business_id: uuid.UUID) -> VoiceConfig:
         """Get or create default voice config for a business."""
-        result = await self.db.execute(select(VoiceConfig).where(VoiceConfig.business_id == business_id))
+        result = await self.db.execute(
+            select(VoiceConfig).where(VoiceConfig.business_id == business_id)
+        )
         config = result.scalar_one_or_none()
         if not config:
             config = VoiceConfig(
@@ -264,20 +285,24 @@ class VoiceService:
             await self.db.refresh(config)
         return config
 
-    async def get_config(self, business_id: uuid.UUID) -> Optional[VoiceConfig]:
-        result = await self.db.execute(select(VoiceConfig).where(VoiceConfig.business_id == business_id))
+    async def get_config(self, business_id: uuid.UUID) -> VoiceConfig | None:
+        result = await self.db.execute(
+            select(VoiceConfig).where(VoiceConfig.business_id == business_id)
+        )
         return result.scalar_one_or_none()
 
     async def upsert_config(self, data: dict) -> VoiceConfig:
         business_id = data["business_id"]
-        result = await self.db.execute(select(VoiceConfig).where(VoiceConfig.business_id == business_id))
+        result = await self.db.execute(
+            select(VoiceConfig).where(VoiceConfig.business_id == business_id)
+        )
         config = result.scalar_one_or_none()
 
         if config:
             for field, value in data.items():
                 if value is not None and hasattr(config, field):
                     setattr(config, field, value)
-            config.updated_at = datetime.now(timezone.utc)
+            config.updated_at = datetime.now(UTC)
         else:
             config = VoiceConfig(**data)
             self.db.add(config)

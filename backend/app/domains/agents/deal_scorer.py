@@ -5,16 +5,15 @@ using conversation data, memory, and emotions.
 """
 
 import uuid
-from typing import Dict, Any, Optional
-from datetime import datetime, timezone, timedelta
+from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc
 
 from app.core.logger import get_logger
 from app.domains.channels.models import Conversation, Message
-from app.domains.memory.models import ConversationMemoryChunk, CustomerMemory
 from app.domains.crm.models import Deal, LeadStage
+from app.domains.memory.models import ConversationMemoryChunk, CustomerMemory
 
 try:
     from app.domains.emotion.models import EmotionDetection
@@ -152,19 +151,63 @@ _LEAD_STAGE_SCORES = {
 
 # ── Price-related keywords for sensitivity detection ─────────────────
 _PRICE_KEYWORDS = {
-    "precio", "price", "costo", "cost", "descuento", "discount",
-    "barato", "cheap", "caro", "expensive", "oferta", "offer",
-    "promoción", "promotion", "cuánto cuesta", "how much",
-    "presupuesto", "budget", "pago", "payment", "pagos", "payments",
-    "cuota", "installment", "financiación", "financing",
-    "negociar", "negotiate", "rebaja", "rebate",
+    "precio",
+    "price",
+    "costo",
+    "cost",
+    "descuento",
+    "discount",
+    "barato",
+    "cheap",
+    "caro",
+    "expensive",
+    "oferta",
+    "offer",
+    "promoción",
+    "promotion",
+    "cuánto cuesta",
+    "how much",
+    "presupuesto",
+    "budget",
+    "pago",
+    "payment",
+    "pagos",
+    "payments",
+    "cuota",
+    "installment",
+    "financiación",
+    "financing",
+    "negociar",
+    "negotiate",
+    "rebaja",
+    "rebate",
 }
 
 # ── Question markers ─────────────────────────────────────────────────
-_QUESTION_MARKERS = {"?", "¿", "cuál", "cual", "cuáles", "cuales",
-                     "qué", "que", "cómo", "como", "por qué", "porque",
-                     "quién", "quien", "cuándo", "cuando", "dónde", "donde",
-                     "cuánto", "cuanto", "cuántos", "cuantos"}
+_QUESTION_MARKERS = {
+    "?",
+    "¿",
+    "cuál",
+    "cual",
+    "cuáles",
+    "cuales",
+    "qué",
+    "que",
+    "cómo",
+    "como",
+    "por qué",
+    "porque",
+    "quién",
+    "quien",
+    "cuándo",
+    "cuando",
+    "dónde",
+    "donde",
+    "cuánto",
+    "cuanto",
+    "cuántos",
+    "cuantos",
+}
 
 
 class DealScoreResult:
@@ -174,10 +217,10 @@ class DealScoreResult:
         self,
         score: int,
         category: str,
-        factors: Dict[str, Any],
+        factors: dict[str, Any],
         recommendation: str,
-        previous_score: Optional[int] = None,
-        score_change: Optional[int] = None,
+        previous_score: int | None = None,
+        score_change: int | None = None,
     ):
         self.score = score
         self.category = category
@@ -193,13 +236,15 @@ class DealScorer:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def _get_business_type(self, business_id: Optional[uuid.UUID]) -> Optional[str]:
+    async def _get_business_type(self, business_id: uuid.UUID | None) -> str | None:
         """Load specific business type from BusinessContext."""
         if not business_id:
             return None
         try:
             from sqlalchemy import select
+
             from app.domains.business_context.models import BusinessContext
+
             result = await self.db.execute(
                 select(BusinessContext.business_type).where(
                     BusinessContext.business_id == business_id,
@@ -209,7 +254,9 @@ class DealScorer:
             btype = result.scalar_one_or_none()
             return btype.value if btype else None
         except Exception as exc:
-            logger.debug(f"Could not load business_type for deal scoring: {exc}")
+            logger.debug(
+                f"Could not load business_type for deal scoring: {exc}", exc_info=True
+            )
             return None
 
     # ═══════════════════════════════════════════════════════════════════
@@ -268,7 +315,7 @@ class DealScorer:
         deal = deal_result.scalar_one_or_none()
 
         # ── Compute factors ────────────────────────────────────────────
-        factors: Dict[str, Any] = {}
+        factors: dict[str, Any] = {}
 
         factors["engagement_rate"] = self._compute_engagement(messages)
         factors["objection_handling"] = self._compute_objection_handling(
@@ -287,10 +334,8 @@ class DealScorer:
         business_type = await self._get_business_type(conversation.business_id)
         weights = BUSINESS_TYPE_WEIGHTS.get(business_type, DEFAULT_WEIGHTS)
 
-        raw_score = sum(
-            factors.get(key, 0) * weight for key, weight in weights.items()
-        )
-        score = max(0, min(100, int(round(raw_score))))
+        raw_score = sum(factors.get(key, 0) * weight for key, weight in weights.items())
+        score = max(0, min(100, round(raw_score)))
 
         category = self._score_to_category(score)
         recommendation = self.generate_recommendation(score, factors)
@@ -302,7 +347,7 @@ class DealScorer:
             recommendation=recommendation,
         )
 
-    def generate_recommendation(self, score: int, factors: Dict[str, Any]) -> str:
+    def generate_recommendation(self, score: int, factors: dict[str, Any]) -> str:
         """Generate a recommendation based on score and factors."""
         if score <= 25:
             return "Enviar contenido de valor, no presionar"
@@ -329,7 +374,7 @@ class DealScorer:
             return 0
 
         inbound = [m for m in messages if getattr(m, "direction", None) == "inbound"]
-        outbound = [m for m in messages if getattr(m, "direction", None) == "outbound"]
+        [m for m in messages if getattr(m, "direction", None) == "outbound"]
 
         # Questions asked by customer
         question_count = 0
@@ -341,9 +386,7 @@ class DealScorer:
         # Messages per hour
         times = [m.created_at for m in messages if m.created_at]
         if len(times) >= 2:
-            duration_hours = max(
-                (max(times) - min(times)).total_seconds() / 3600, 0.5
-            )
+            duration_hours = max((max(times) - min(times)).total_seconds() / 3600, 0.5)
             mph = len(messages) / duration_hours
         else:
             mph = len(messages)
@@ -353,15 +396,25 @@ class DealScorer:
         for i, m in enumerate(messages):
             if getattr(m, "direction", None) == "inbound" and i + 1 < len(messages):
                 nxt = messages[i + 1]
-                if getattr(nxt, "direction", None) == "outbound" and m.created_at and nxt.created_at:
-                    response_times.append((nxt.created_at - m.created_at).total_seconds())
+                if (
+                    getattr(nxt, "direction", None) == "outbound"
+                    and m.created_at
+                    and nxt.created_at
+                ):
+                    response_times.append(
+                        (nxt.created_at - m.created_at).total_seconds()
+                    )
 
-        avg_response_sec = sum(response_times) / len(response_times) if response_times else 3600
+        avg_response_sec = (
+            sum(response_times) / len(response_times) if response_times else 3600
+        )
 
         # Score components
         msg_score = min(mph * 10, 40)  # up to 40 pts
         question_score = min(question_count * 5, 30)  # up to 30 pts
-        response_score = 30 if avg_response_sec < 300 else (20 if avg_response_sec < 900 else 10)
+        response_score = (
+            30 if avg_response_sec < 300 else (20 if avg_response_sec < 900 else 10)
+        )
 
         return min(100, msg_score + question_score + response_score)
 
@@ -375,16 +428,38 @@ class DealScorer:
             if getattr(mem, "memory_type", None) == "objection":
                 objections_raised += 1
                 content = (mem.content or "").lower()
-                if any(w in content for w in {"superado", "overcome", "resuelto", "resolved", "aceptado", "accepted"}):
+                if any(
+                    w in content
+                    for w in (
+                        "superado",
+                        "overcome",
+                        "resuelto",
+                        "resolved",
+                        "aceptado",
+                        "accepted",
+                    )
+                ):
                     objections_overcome += 1
 
         # Fallback: scan messages for objection keywords
         if objections_raised == 0:
             objection_keywords = {
-                "no tengo dinero", "no puedo pagar", "es caro", "too expensive",
-                "no me interesa", "not interested", "lo pensaré", "i'll think about it",
-                "no es momento", "not the right time", "necesito consultar", "need to ask",
-                "ya tengo", "already have", "no confío", "don't trust",
+                "no tengo dinero",
+                "no puedo pagar",
+                "es caro",
+                "too expensive",
+                "no me interesa",
+                "not interested",
+                "lo pensaré",
+                "i'll think about it",
+                "no es momento",
+                "not the right time",
+                "necesito consultar",
+                "need to ask",
+                "ya tengo",
+                "already have",
+                "no confío",
+                "don't trust",
             }
             for m in messages:
                 content = (m.content or "").lower()
@@ -419,25 +494,75 @@ class DealScorer:
             return self._heuristic_emotional_positivity(messages)
 
         positive = sum(
-            1 for e in emotions
-            if getattr(e, "sentiment", "").lower() in ("positive", "positivo", "happy", "excited")
+            1
+            for e in emotions
+            if getattr(e, "sentiment", "").lower()
+            in ("positive", "positivo", "happy", "excited")
         )
         return int((positive / len(emotions)) * 100)
 
     def _heuristic_emotional_positivity(self, messages) -> int:
         """Simple keyword-based emotional positivity."""
         positive_words = {
-            "genial", "great", "excelente", "excellent", "me encanta", "love it",
-            "perfecto", "perfect", "gracias", "thanks", "fantástico", "fantastic",
-            "increíble", "incredible", "feliz", "happy", "emocionado", "excited",
-            "interesado", "interested", "sí", "yes", "claro", "sure", "ok",
-            "bueno", "good", "me gusta", "like", "amazing", "asombroso",
+            "genial",
+            "great",
+            "excelente",
+            "excellent",
+            "me encanta",
+            "love it",
+            "perfecto",
+            "perfect",
+            "gracias",
+            "thanks",
+            "fantástico",
+            "fantastic",
+            "increíble",
+            "incredible",
+            "feliz",
+            "happy",
+            "emocionado",
+            "excited",
+            "interesado",
+            "interested",
+            "sí",
+            "yes",
+            "claro",
+            "sure",
+            "ok",
+            "bueno",
+            "good",
+            "me gusta",
+            "like",
+            "amazing",
+            "asombroso",
         }
         negative_words = {
-            "malo", "bad", "terrible", "horrible", "odio", "hate", "no", "never",
-            "nunca", "jamás", "jamás", "peor", "worst", "molesto", "annoyed",
-            "enojado", "angry", "frustrado", "frustrated", "decepcionado", "disappointed",
-            "caro", "expensive", "estafa", "scam", "basura", "trash",
+            "malo",
+            "bad",
+            "terrible",
+            "horrible",
+            "odio",
+            "hate",
+            "no",
+            "never",
+            "nunca",
+            "jamás",
+            "peor",
+            "worst",
+            "molesto",
+            "annoyed",
+            "enojado",
+            "angry",
+            "frustrado",
+            "frustrated",
+            "decepcionado",
+            "disappointed",
+            "caro",
+            "expensive",
+            "estafa",
+            "scam",
+            "basura",
+            "trash",
         }
 
         pos_count = 0
@@ -465,8 +590,16 @@ class DealScorer:
         for m in messages:
             extra = getattr(m, "extra_data", {}) or {}
             if isinstance(extra, dict):
-                if extra.get("tool_calls") or extra.get("tools") or extra.get("actions"):
-                    tool_count += len(extra.get("tool_calls", [])) or len(extra.get("tools", [])) or 1
+                if (
+                    extra.get("tool_calls")
+                    or extra.get("tools")
+                    or extra.get("actions")
+                ):
+                    tool_count += (
+                        len(extra.get("tool_calls", []))
+                        or len(extra.get("tools", []))
+                        or 1
+                    )
                 # Also check for function_call legacy format
                 if extra.get("function_call"):
                     tool_count += 1
@@ -494,11 +627,13 @@ class DealScorer:
             total_confidence += getattr(mem, "confidence", 0.0)
 
         type_score = min(len(memory_types) * 15, 60)  # up to 60 pts for diversity
-        conf_score = min((total_confidence / max(len(memories), 1)) * 40, 40)  # up to 40 pts
+        conf_score = min(
+            (total_confidence / max(len(memories), 1)) * 40, 40
+        )  # up to 40 pts
 
         return min(100, type_score + conf_score)
 
-    def _compute_conversation_stage(self, deal: Optional[Deal]) -> int:
+    def _compute_conversation_stage(self, deal: Deal | None) -> int:
         """More advanced pipeline stage = better → 0-100."""
         if deal and deal.stage:
             return _LEAD_STAGE_SCORES.get(deal.stage, 25)
@@ -551,11 +686,24 @@ class DealScorer:
             content = (m.content or "").lower()
             if any(kw in content for kw in _PRICE_KEYWORDS):
                 price_mentions += 1
-            if any(kw in content for kw in {
-                "más barato", "cheaper", "descuento", "discount",
-                "mejor precio", "better price", "competencia", "competitor",
-                "otro lugar", "somewhere else", "oferta", "ofertas", "offers",
-            }):
+            if any(
+                kw in content
+                for kw in (
+                    "más barato",
+                    "cheaper",
+                    "descuento",
+                    "discount",
+                    "mejor precio",
+                    "better price",
+                    "competencia",
+                    "competitor",
+                    "otro lugar",
+                    "somewhere else",
+                    "oferta",
+                    "ofertas",
+                    "offers",
+                )
+            ):
                 negotiation_signals += 1
 
         # More price talk = lower score (but some is normal)

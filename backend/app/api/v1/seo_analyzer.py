@@ -1,7 +1,8 @@
 """SEO Analysis endpoints - Core Web Vitals, structured data, keyword research."""
 
 from fastapi import APIRouter, Query
-from datetime import datetime
+
+from app.core.clock import utc_now
 
 router = APIRouter(prefix="/seo", tags=["seo"])
 
@@ -26,7 +27,7 @@ async def analyze_seo(url: str = Query(None)):
             "pueden medir Core Web Vitals reales para esta URL."
         ),
         "real_alternative": "/api/v1/seo/businesses/{business_id}/seo/audit",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     }
 
 
@@ -93,7 +94,7 @@ async def validate_schema_markup(schema_type: str, markup: dict):
         "valid": True,
         "errors": [],
         "warnings": [],
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     }
 
 

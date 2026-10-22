@@ -1,19 +1,24 @@
 """OAuth endpoints for platform integrations."""
 
-from fastapi import APIRouter, HTTPException, Query, Depends
+import logging
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.core.database import get_db
+from app.core.deps import get_current_user
 from app.core.oauth_connectors import (
-    MercadoLibreOAuth,
     AmazonSPAPI,
     HotmartOAuth,
-    store_platform_credential,
+    MercadoLibreOAuth,
     get_platform_credential,
+    store_platform_credential,
 )
-from app.core.config import get_settings
-from app.core.deps import get_current_user
 from app.domains.users.models import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/oauth", tags=["oauth"])
 settings = get_settings()
@@ -27,14 +32,16 @@ async def mercado_libre_auth_url():
 
 @router.get("/mercado-libre/callback")
 async def mercado_libre_callback(
-    code: str = Query(...),
-    seller_id: str = Query(...),
-    db: AsyncSession = Depends(get_db),
+    code: Annotated[str, Query()],
+    seller_id: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Handle Mercado Libre OAuth callback."""
     try:
         token_data = await MercadoLibreOAuth.exchange_code(code)
-        seller_info = await MercadoLibreOAuth.get_seller_info(token_data["access_token"])
+        seller_info = await MercadoLibreOAuth.get_seller_info(
+            token_data["access_token"]
+        )
 
         cred = await store_platform_credential(
             db=db,
@@ -51,7 +58,8 @@ async def mercado_libre_callback(
             "seller_username": cred.seller_username,
         }
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"OAuth failed: {str(e)}")
+        logger.exception("mercado_libre_callback: error inesperado")
+        raise HTTPException(status_code=400, detail=f"OAuth failed: {e!s}")
 
 
 @router.get("/amazon/auth-url")
@@ -66,14 +74,14 @@ async def amazon_auth_url():
 
 @router.get("/amazon/callback")
 async def amazon_callback(
-    code: str = Query(...),
-    seller_id: str = Query(...),
-    db: AsyncSession = Depends(get_db),
+    code: Annotated[str, Query()],
+    seller_id: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Handle Amazon SP-API callback."""
     try:
         token_data = await AmazonSPAPI.exchange_code(code)
-        cred = await store_platform_credential(
+        await store_platform_credential(
             db=db,
             seller_id=seller_id,
             platform="amazon",
@@ -83,7 +91,8 @@ async def amazon_callback(
         )
         return {"status": "connected", "platform": "amazon"}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"OAuth failed: {str(e)}")
+        logger.exception("amazon_callback: error inesperado")
+        raise HTTPException(status_code=400, detail=f"OAuth failed: {e!s}")
 
 
 @router.get("/hotmart/auth-url")
@@ -94,9 +103,9 @@ async def hotmart_auth_url():
 
 @router.get("/hotmart/callback")
 async def hotmart_callback(
-    code: str = Query(...),
-    seller_id: str = Query(...),
-    db: AsyncSession = Depends(get_db),
+    code: Annotated[str, Query()],
+    seller_id: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Handle Hotmart OAuth callback."""
     try:
@@ -118,14 +127,15 @@ async def hotmart_callback(
             "seller_username": cred.seller_username,
         }
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"OAuth failed: {str(e)}")
+        logger.exception("hotmart_callback: error inesperado")
+        raise HTTPException(status_code=400, detail=f"OAuth failed: {e!s}")
 
 
 @router.get("/platforms/status/{seller_id}")
 async def get_platform_status(
     seller_id: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get connection status for all platforms.
 
@@ -145,7 +155,9 @@ async def get_platform_status(
         status[platform] = {
             "connected": cred is not None,
             "seller_username": cred.seller_username if cred else None,
-            "last_sync": cred.last_sync_at.isoformat() if cred and cred.last_sync_at else None,
+            "last_sync": (
+                cred.last_sync_at.isoformat() if cred and cred.last_sync_at else None
+            ),
         }
 
     return status
@@ -155,8 +167,8 @@ async def get_platform_status(
 async def disconnect_platform(
     seller_id: str,
     platform: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Disconnect platform. Same missing-auth issue as get_platform_status above -- anyone could disconnect any seller's live marketplace integration with zero authentication."""
     cred = await get_platform_credential(db, seller_id, platform)

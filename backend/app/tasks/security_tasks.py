@@ -6,23 +6,24 @@ Data retention, secret rotation, and cleanup.
 import hashlib
 import re
 import secrets
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
+
 from celery import shared_task
 from sqlalchemy import String, cast, func, select, text
 
-from app.core.database import AsyncSessionLocal
 from app.core.async_bridge import run_async
+from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
 from app.domains.channels.models import ChannelConnection
 from app.domains.security.models import (
-    UserLoginLog,
-    DataAccessLog,
-    DataRetentionPolicy,
-    DataRetentionLog,
-    SecretRotationLog,
-    UserSession,
-    SecurityWebhook,
     BlockedIP,
+    DataAccessLog,
+    DataRetentionLog,
+    DataRetentionPolicy,
+    SecretRotationLog,
+    SecurityWebhook,
+    UserLoginLog,
+    UserSession,
 )
 
 logger = get_logger(__name__)
@@ -61,7 +62,7 @@ def data_retention_cleanup():
 
     async def _run():
         async with AsyncSessionLocal() as db:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             total_deleted = {}
 
             # 1. Load active retention policies
@@ -74,7 +75,11 @@ def data_retention_cleanup():
             # Policies without business_id are global; per-business policies override
             effective = dict(DEFAULT_HARD_RETENTION)
             for policy in policies:
-                key = f"{policy.table_name}:{policy.business_id}" if policy.business_id else policy.table_name
+                key = (
+                    f"{policy.table_name}:{policy.business_id}"
+                    if policy.business_id
+                    else policy.table_name
+                )
                 effective[key] = policy.retention_days
 
             # 2. Execute deletions per default table
@@ -98,7 +103,12 @@ def data_retention_cleanup():
                 # deletions, the log entries and the rest of the run.
                 savepoint = await db.begin_nested()
                 try:
-                    retention_days = effective.get(tbl, effective.get(f"{tbl}:None", DEFAULT_HARD_RETENTION.get(tbl, 365)))
+                    retention_days = effective.get(
+                        tbl,
+                        effective.get(
+                            f"{tbl}:None", DEFAULT_HARD_RETENTION.get(tbl, 365)
+                        ),
+                    )
                     cutoff = now - timedelta(days=retention_days)
 
                     if tbl == "user_login_logs":
@@ -128,13 +138,22 @@ def data_retention_cleanup():
                                     text(
                                         "DELETE FROM conversations WHERE business_id = :bid AND created_at < :cutoff AND status = 'archived'"
                                     ),
-                                    {"bid": str(policy.business_id), "cutoff": p_cutoff},
+                                    {
+                                        "bid": str(policy.business_id),
+                                        "cutoff": p_cutoff,
+                                    },
                                 )
-                                total_deleted[tbl] = total_deleted.get(tbl, 0) + res.rowcount
+                                total_deleted[tbl] = (
+                                    total_deleted.get(tbl, 0) + res.rowcount
+                                )
                                 log_entry.records_deleted += res.rowcount
                                 log_entry.policy_id = policy.id
                         # Fallback global cleanup
-                        global_cutoff = now - timedelta(days=effective.get(tbl, DEFAULT_HARD_RETENTION.get(tbl, 730)))
+                        global_cutoff = now - timedelta(
+                            days=effective.get(
+                                tbl, DEFAULT_HARD_RETENTION.get(tbl, 730)
+                            )
+                        )
                         res = await db.execute(
                             text(
                                 "DELETE FROM conversations WHERE created_at < :cutoff AND status = 'archived'"
@@ -196,7 +215,9 @@ def data_retention_cleanup():
 
                     elif tbl == "email_otps":
                         res = await db.execute(
-                            text("DELETE FROM email_otps WHERE created_at < :cutoff AND is_used = TRUE"),
+                            text(
+                                "DELETE FROM email_otps WHERE created_at < :cutoff AND is_used = TRUE"
+                            ),
                             {"cutoff": cutoff},
                         )
                         total_deleted[tbl] = total_deleted.get(tbl, 0) + res.rowcount
@@ -204,7 +225,9 @@ def data_retention_cleanup():
 
                     elif tbl == "breach_check_logs":
                         res = await db.execute(
-                            text("DELETE FROM breach_check_logs WHERE checked_at < :cutoff"),
+                            text(
+                                "DELETE FROM breach_check_logs WHERE checked_at < :cutoff"
+                            ),
                             {"cutoff": cutoff},
                         )
                         total_deleted[tbl] = total_deleted.get(tbl, 0) + res.rowcount
@@ -219,7 +242,9 @@ def data_retention_cleanup():
                         # from existing later, so validate the identifier
                         # shape before it ever reaches a DELETE statement.
                         if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]{0,62}$", tbl):
-                            logger.warning(f"Skipping retention cleanup for unsafe table identifier: {tbl!r}")
+                            logger.warning(
+                                f"Skipping retention cleanup for unsafe table identifier: {tbl!r}"
+                            )
                             await savepoint.commit()
                             continue
                         res = await db.execute(
@@ -232,11 +257,11 @@ def data_retention_cleanup():
                     await savepoint.commit()
                 except Exception as e:
                     await savepoint.rollback()
-                    logger.error(f"Data retention cleanup error for {tbl}: {e}")
+                    logger.exception(f"Data retention cleanup error for {tbl}")
                     log_entry.status = "error"
                     log_entry.error_message = str(e)[:500]
 
-                log_entry.completed_at = datetime.now(timezone.utc)
+                log_entry.completed_at = datetime.now(UTC)
 
             await db.commit()
             logger.info(f"Data retention cleanup completed: {total_deleted}")
@@ -265,15 +290,26 @@ async def _channels_due_for_rotation(db, now: datetime) -> list[ChannelConnectio
             SecretRotationLog.target_id.label("target_id"),
             func.max(SecretRotationLog.created_at).label("last_rotated_at"),
         )
-        .where(SecretRotationLog.secret_type == "webhook_token", SecretRotationLog.status == "success")
+        .where(
+            SecretRotationLog.secret_type == "webhook_token",
+            SecretRotationLog.status == "success",
+        )
         .group_by(SecretRotationLog.target_id)
         .subquery()
     )
-    token_set_at = func.coalesce(last_rotation.c.last_rotated_at, ChannelConnection.created_at)
+    token_set_at = func.coalesce(
+        last_rotation.c.last_rotated_at, ChannelConnection.created_at
+    )
     result = await db.execute(
         select(ChannelConnection)
-        .outerjoin(last_rotation, last_rotation.c.target_id == cast(ChannelConnection.id, String))
-        .where(ChannelConnection.is_active.is_(True), token_set_at < now - WEBHOOK_TOKEN_MAX_AGE)
+        .outerjoin(
+            last_rotation,
+            last_rotation.c.target_id == cast(ChannelConnection.id, String),
+        )
+        .where(
+            ChannelConnection.is_active.is_(True),
+            token_set_at < now - WEBHOOK_TOKEN_MAX_AGE,
+        )
     )
     return list(result.scalars().all())
 
@@ -291,14 +327,16 @@ def rotate_webhook_tokens():
         from app.domains.channels.token_rotation import propose_rotation
 
         async with AsyncSessionLocal() as db:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             channels = await _channels_due_for_rotation(db, now)
             proposed = 0
             for ch in channels:
                 if await propose_rotation(db, ch, now):
                     proposed += 1
             await db.commit()
-            logger.info(f"Webhook token rotation: {proposed} proposal(s) for {len(channels)} due channel(s)")
+            logger.info(
+                f"Webhook token rotation: {proposed} proposal(s) for {len(channels)} due channel(s)"
+            )
             return {"due": len(channels), "proposed": proposed}
 
     return run_async(_run())
@@ -308,13 +346,14 @@ def rotate_webhook_tokens():
 # Expired Secrets Rotation / Cleanup
 # ---------------------------------------------------------------------------
 
+
 @shared_task(name="app.tasks.security_tasks.rotate_expired_secrets")
 def rotate_expired_secrets():
     """Rotate expired secrets: security webhook secrets, and clean up stale sessions."""
 
     async def _run():
         async with AsyncSessionLocal() as db:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             total = {"webhook_secrets": 0, "sessions_cleaned": 0, "errors": 0}
 
             # 1. Rotate SecurityWebhook secrets older than 180 days
@@ -329,7 +368,11 @@ def rotate_expired_secrets():
             webhooks = result.scalars().all()
             for wh in webhooks:
                 old_secret = wh.secret or ""
-                old_hash = hashlib.sha256(old_secret.encode()).hexdigest()[:16] if old_secret else None
+                old_hash = (
+                    hashlib.sha256(old_secret.encode()).hexdigest()[:16]
+                    if old_secret
+                    else None
+                )
                 new_secret = secrets.token_urlsafe(32)
                 new_hash = hashlib.sha256(new_secret.encode()).hexdigest()[:16]
 
@@ -345,7 +388,9 @@ def rotate_expired_secrets():
                     wh.secret = new_secret
                     total["webhook_secrets"] += 1
                 except Exception as e:
-                    logger.error(f"Failed to rotate security webhook secret {wh.id}: {e}")
+                    logger.exception(
+                        f"Failed to rotate security webhook secret {wh.id}"
+                    )
                     log.status = "error"
                     log.error_message = str(e)[:500]
                     total["errors"] += 1
@@ -359,8 +404,8 @@ def rotate_expired_secrets():
                     )
                 )
                 total["sessions_cleaned"] = res.rowcount
-            except Exception as e:
-                logger.error(f"Failed to clean expired sessions: {e}")
+            except Exception:
+                logger.exception("Failed to clean expired sessions")
                 total["errors"] += 1
 
             await db.commit()
@@ -374,13 +419,14 @@ def rotate_expired_secrets():
 # Weekly Security Audit Report
 # ---------------------------------------------------------------------------
 
+
 @shared_task(name="app.tasks.security_tasks.security_audit_report")
 def security_audit_report():
     """Generate and dispatch a weekly security audit summary."""
 
     async def _run():
         async with AsyncSessionLocal() as db:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             week_ago = now - timedelta(days=7)
 
             # Login stats
@@ -417,9 +463,9 @@ def security_audit_report():
                 )
             )
             records_deleted = await db.scalar(
-                select(func.coalesce(func.sum(DataRetentionLog.records_deleted), 0)).where(
-                    DataRetentionLog.started_at >= week_ago
-                )
+                select(
+                    func.coalesce(func.sum(DataRetentionLog.records_deleted), 0)
+                ).where(DataRetentionLog.started_at >= week_ago)
             )
 
             # Active sessions
@@ -434,7 +480,11 @@ def security_audit_report():
                 "period": f"{week_ago.isoformat()} to {now.isoformat()}",
                 "total_logins_7d": total_logins or 0,
                 "failed_logins_7d": failed_logins or 0,
-                "failed_rate_pct": round((failed_logins / total_logins * 100), 2) if total_logins else 0.0,
+                "failed_rate_pct": (
+                    round((failed_logins / total_logins * 100), 2)
+                    if total_logins
+                    else 0.0
+                ),
                 "data_access_logs_7d": data_access_count or 0,
                 "secret_rotations_7d": rotations or 0,
                 "data_retention_cleanups_7d": cleanups or 0,
@@ -451,6 +501,7 @@ def security_audit_report():
             for wh in webhooks.scalars().all():
                 try:
                     import aiohttp
+
                     payload = {
                         "text": (
                             f"🔐 *SellIA Security Report* ({report['period']})\n"
@@ -461,12 +512,16 @@ def security_audit_report():
                             f"• Active sessions: {report['active_sessions_now']}"
                         )
                     }
-                    async with aiohttp.ClientSession() as session:
-                        async with session.post(wh.url, json=payload) as resp:
-                            if resp.status >= 400:
-                                logger.warning(f"Webhook {wh.id} returned {resp.status}")
+                    async with aiohttp.ClientSession() as session, session.post(
+                        wh.url, json=payload
+                    ) as resp:
+                        if resp.status >= 400:
+                            logger.warning(f"Webhook {wh.id} returned {resp.status}")
                 except Exception as e:
-                    logger.warning(f"Failed to send audit report to webhook {wh.id}: {e}")
+                    logger.warning(
+                        f"Failed to send audit report to webhook {wh.id}: {e}",
+                        exc_info=True,
+                    )
 
             return report
 
@@ -477,13 +532,14 @@ def security_audit_report():
 # Auto IP Blocklist Cleanup
 # ---------------------------------------------------------------------------
 
+
 @shared_task(name="app.tasks.security_tasks.cleanup_expired_ip_blocks")
 def cleanup_expired_ip_blocks():
     """Elimina bloqueos de IP que ya expiraron."""
 
     async def _run():
         async with AsyncSessionLocal() as db:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             result = await db.execute(
                 BlockedIP.__table__.delete().where(
                     BlockedIP.blocked_until.isnot(None),
@@ -501,13 +557,14 @@ def cleanup_expired_ip_blocks():
 # Auto Block High-Risk IPs (audacia)
 # ---------------------------------------------------------------------------
 
+
 @shared_task(name="app.tasks.security_tasks.auto_block_high_risk_ips")
 def auto_block_high_risk_ips():
     """Bloquea automáticamente IPs con múltiples logins fallidos recientes."""
 
     async def _run():
         async with AsyncSessionLocal() as db:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             hour_ago = now - timedelta(hours=1)
 
             # IPs con 5+ logins fallidos en la última hora
@@ -541,7 +598,9 @@ def auto_block_high_risk_ips():
                 )
                 db.add(block)
                 blocked += 1
-                logger.warning(f"Auto-blocked IP {ip_address} after {fail_count} failed logins")
+                logger.warning(
+                    f"Auto-blocked IP {ip_address} after {fail_count} failed logins"
+                )
 
             await db.commit()
             return {"blocked": blocked}
@@ -553,6 +612,7 @@ def auto_block_high_risk_ips():
 # DB Integrity Check
 # ---------------------------------------------------------------------------
 
+
 @shared_task(name="app.tasks.security_tasks.db_integrity_check")
 def db_integrity_check():
     """Run database integrity checks weekly."""
@@ -563,7 +623,11 @@ def db_integrity_check():
             report = await run_all_integrity_checks(db)
             # Log summary
             if report["failed"] > 0:
-                logger.error("DB integrity check: %d/%d failed", report["failed"], report["total"])
+                logger.error(
+                    "DB integrity check: %d/%d failed",
+                    report["failed"],
+                    report["total"],
+                )
             else:
                 logger.info("DB integrity check: all %d checks passed", report["total"])
             return report

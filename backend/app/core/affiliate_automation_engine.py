@@ -18,16 +18,19 @@ Status: 600L comprehensive automation
 """
 
 import logging
-from typing import Dict, List, Any, Optional, Tuple
-from datetime import datetime, timedelta
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
+from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
 
 class AutomationTask(Enum):
     """Automation task types."""
+
     HOTMART_SIGNUP = "hotmart_signup"
     PRODUCT_DISCOVERY = "product_discovery"
     LINK_GENERATION = "link_generation"
@@ -41,6 +44,7 @@ class AutomationTask(Enum):
 
 class TaskStatus(Enum):
     """Task execution status."""
+
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -51,25 +55,26 @@ class TaskStatus(Enum):
 @dataclass
 class AutomationWorkflow:
     """Automation workflow configuration."""
+
     workflow_id: str
     name: str
-    tasks: List[Dict[str, Any]]
+    tasks: list[dict[str, Any]]
     schedule: str  # "immediate", "daily", "weekly", "monthly"
     status: TaskStatus = TaskStatus.PENDING
     created_at: datetime = None
-    last_run: Optional[datetime] = None
-    next_run: Optional[datetime] = None
+    last_run: datetime | None = None
+    next_run: datetime | None = None
 
     def __post_init__(self):
         if self.created_at is None:
-            self.created_at = datetime.utcnow()
+            self.created_at = utc_now()
 
 
 class HotmartAutomation:
     """Automate Hotmart affiliate setup."""
 
     @staticmethod
-    def create_signup_workflow() -> Dict[str, Any]:
+    def create_signup_workflow() -> dict[str, Any]:
         """Workflow to create Hotmart affiliate account."""
         return {
             "workflow_id": "hotmart_signup_v1",
@@ -80,14 +85,14 @@ class HotmartAutomation:
                     "name": "Navigate to Hotmart.com",
                     "action": "navigate",
                     "url": "https://www.hotmart.com",
-                    "type": "browser"
+                    "type": "browser",
                 },
                 {
                     "task_id": 2,
                     "name": "Click Affiliate signup button",
                     "action": "click",
                     "selector": "a[href*='affiliate']",
-                    "type": "browser"
+                    "type": "browser",
                 },
                 {
                     "task_id": 3,
@@ -95,7 +100,7 @@ class HotmartAutomation:
                     "action": "fill",
                     "selector": "input[type='email']",
                     "value": "${email}",
-                    "type": "browser"
+                    "type": "browser",
                 },
                 {
                     "task_id": 4,
@@ -103,27 +108,27 @@ class HotmartAutomation:
                     "action": "fill",
                     "selector": "input[type='password']",
                     "value": "${password}",
-                    "type": "browser"
+                    "type": "browser",
                 },
                 {
                     "task_id": 5,
                     "name": "Submit signup",
                     "action": "click",
                     "selector": "button[type='submit']",
-                    "type": "browser"
+                    "type": "browser",
                 },
                 {
                     "task_id": 6,
                     "name": "Wait for confirmation",
                     "action": "wait",
                     "timeout": 10,
-                    "type": "browser"
+                    "type": "browser",
                 },
                 {
                     "task_id": 7,
                     "name": "Verify email (manual or auto)",
                     "action": "verify_email",
-                    "type": "integration"
+                    "type": "integration",
                 },
             ],
             "variables": {
@@ -137,7 +142,7 @@ class HotmartAutomation:
         }
 
     @staticmethod
-    def create_product_discovery_workflow(category: str = "courses") -> Dict[str, Any]:
+    def create_product_discovery_workflow(category: str = "courses") -> dict[str, Any]:
         """Workflow to discover high-commission Hotmart products."""
         return {
             "workflow_id": f"hotmart_products_{category}",
@@ -148,28 +153,28 @@ class HotmartAutomation:
                     "name": "Login to Hotmart affiliate",
                     "action": "navigate",
                     "url": "https://www.hotmart.com/login",
-                    "type": "browser"
+                    "type": "browser",
                 },
                 {
                     "task_id": 2,
                     "name": "Navigate to product search",
                     "action": "navigate",
                     "url": "https://www.hotmart.com/products",
-                    "type": "browser"
+                    "type": "browser",
                 },
                 {
                     "task_id": 3,
                     "name": "Filter by category",
                     "action": "click",
                     "selector": f"a[data-category='{category}']",
-                    "type": "browser"
+                    "type": "browser",
                 },
                 {
                     "task_id": 4,
                     "name": "Sort by commission (high to low)",
                     "action": "click",
                     "selector": "button[data-sort='commission-desc']",
-                    "type": "browser"
+                    "type": "browser",
                 },
                 {
                     "task_id": 5,
@@ -177,7 +182,7 @@ class HotmartAutomation:
                     "action": "scrape",
                     "selector": "div.product-card",
                     "extract": ["title", "commission", "price", "link"],
-                    "type": "scraper"
+                    "type": "scraper",
                 },
                 {
                     "task_id": 6,
@@ -189,21 +194,21 @@ rank_products(
     metric='commission * demand / competition'
 )
                     """,
-                    "type": "processor"
+                    "type": "processor",
                 },
                 {
                     "task_id": 7,
                     "name": "Save top 10 to database",
                     "action": "save",
                     "destination": "affiliate_products",
-                    "type": "database"
+                    "type": "database",
                 },
             ],
             "expected_outcome": "Top 10 products saved for promotion",
         }
 
     @staticmethod
-    def create_affiliate_link_workflow() -> Dict[str, Any]:
+    def create_affiliate_link_workflow() -> dict[str, Any]:
         """Workflow to generate and track affiliate links."""
         return {
             "workflow_id": "generate_affiliate_links",
@@ -214,14 +219,14 @@ rank_products(
                     "name": "For each selected product",
                     "action": "loop",
                     "iterate_over": "${selected_products}",
-                    "type": "control"
+                    "type": "control",
                 },
                 {
                     "task_id": 2,
                     "name": "Get affiliate link from Hotmart",
                     "action": "get_link",
                     "product_id": "${product.id}",
-                    "type": "api"
+                    "type": "api",
                 },
                 {
                     "task_id": 3,
@@ -233,14 +238,14 @@ rank_products(
                         "channel": "${channel}",
                         "product": "${product.id}",
                     },
-                    "type": "processor"
+                    "type": "processor",
                 },
                 {
                     "task_id": 4,
                     "name": "Generate QR code",
                     "action": "generate_qr",
                     "url": "${tracking_url}",
-                    "type": "processor"
+                    "type": "processor",
                 },
                 {
                     "task_id": 5,
@@ -248,7 +253,7 @@ rank_products(
                     "action": "shorten_url",
                     "url": "${tracking_url}",
                     "service": "bitly",
-                    "type": "api"
+                    "type": "api",
                 },
                 {
                     "task_id": 6,
@@ -261,7 +266,7 @@ rank_products(
                         "qr_code": "${qr_code}",
                         "campaign": "${campaign_name}",
                     },
-                    "type": "database"
+                    "type": "database",
                 },
             ],
             "expected_outcome": "Tracking URLs ready for promotion",
@@ -272,7 +277,7 @@ class EmailAutomation:
     """Automate email campaign creation and scheduling."""
 
     @staticmethod
-    def create_email_sequence_workflow() -> Dict[str, Any]:
+    def create_email_sequence_workflow() -> dict[str, Any]:
         """Workflow to create and schedule email sequences."""
         return {
             "workflow_id": "email_sequence_drip",
@@ -283,14 +288,14 @@ class EmailAutomation:
                     "name": "Login to email platform",
                     "action": "navigate",
                     "url": "${email_platform_url}",
-                    "type": "browser"
+                    "type": "browser",
                 },
                 {
                     "task_id": 2,
                     "name": "Create new sequence",
                     "action": "click",
                     "selector": "button[data-action='create-sequence']",
-                    "type": "browser"
+                    "type": "browser",
                 },
                 {
                     "task_id": 3,
@@ -299,7 +304,7 @@ class EmailAutomation:
                     "subject": "${product_name}: The #1 Problem Most People Have",
                     "body": "${email_template_problem}",
                     "send_time": "${send_time_day_0}",
-                    "type": "email"
+                    "type": "email",
                 },
                 {
                     "task_id": 4,
@@ -309,7 +314,7 @@ class EmailAutomation:
                     "body": "${email_template_solution}",
                     "send_time": "${send_time_day_2}",
                     "affiliate_link": "${product_link}",
-                    "type": "email"
+                    "type": "email",
                 },
                 {
                     "task_id": 5,
@@ -319,7 +324,7 @@ class EmailAutomation:
                     "body": "${email_template_social_proof}",
                     "send_time": "${send_time_day_4}",
                     "affiliate_link": "${product_link}",
-                    "type": "email"
+                    "type": "email",
                 },
                 {
                     "task_id": 6,
@@ -329,7 +334,7 @@ class EmailAutomation:
                     "body": "${email_template_urgency}",
                     "send_time": "${send_time_day_6}",
                     "affiliate_link": "${product_link}",
-                    "type": "email"
+                    "type": "email",
                 },
                 {
                     "task_id": 7,
@@ -339,7 +344,7 @@ class EmailAutomation:
                     "body": "${email_template_final}",
                     "send_time": "${send_time_day_8}",
                     "affiliate_link": "${product_link}",
-                    "type": "email"
+                    "type": "email",
                 },
                 {
                     "task_id": 8,
@@ -347,21 +352,21 @@ class EmailAutomation:
                     "action": "create_automation",
                     "trigger": "subscriber_added_to_tag",
                     "actions": ["send_sequence"],
-                    "type": "automation"
+                    "type": "automation",
                 },
                 {
                     "task_id": 9,
                     "name": "Launch sequence",
                     "action": "click",
                     "selector": "button[data-action='publish']",
-                    "type": "browser"
+                    "type": "browser",
                 },
                 {
                     "task_id": 10,
                     "name": "Set up tracking",
                     "action": "enable_tracking",
                     "events": ["open", "click", "conversion"],
-                    "type": "tracking"
+                    "type": "tracking",
                 },
             ],
             "expected_outcome": "Email sequence live and tracking conversions",
@@ -372,7 +377,7 @@ class SocialMediaAutomation:
     """Automate social media posting."""
 
     @staticmethod
-    def create_social_scheduling_workflow() -> Dict[str, Any]:
+    def create_social_scheduling_workflow() -> dict[str, Any]:
         """Workflow to schedule social media posts."""
         return {
             "workflow_id": "social_media_scheduler",
@@ -383,14 +388,14 @@ class SocialMediaAutomation:
                     "name": "Connect to content calendar",
                     "action": "connect_api",
                     "service": "buffer_or_later",
-                    "type": "integration"
+                    "type": "integration",
                 },
                 {
                     "task_id": 2,
                     "name": "For each day in schedule",
                     "action": "loop",
                     "iterate_over": "${promotion_calendar}",
-                    "type": "control"
+                    "type": "control",
                 },
                 {
                     "task_id": 3,
@@ -398,7 +403,7 @@ class SocialMediaAutomation:
                     "action": "generate_content",
                     "prompt": "Write compelling TikTok caption about ${product}",
                     "style": "${brand_voice}",
-                    "type": "ai"
+                    "type": "ai",
                 },
                 {
                     "task_id": 4,
@@ -406,7 +411,7 @@ class SocialMediaAutomation:
                     "action": "select_media",
                     "source": "template_library",
                     "product": "${product}",
-                    "type": "media"
+                    "type": "media",
                 },
                 {
                     "task_id": 5,
@@ -417,7 +422,7 @@ class SocialMediaAutomation:
                         "utm_source": "tiktok",
                         "utm_campaign": "${campaign}",
                     },
-                    "type": "processor"
+                    "type": "processor",
                 },
                 {
                     "task_id": 6,
@@ -427,7 +432,7 @@ class SocialMediaAutomation:
                     "text": "${post_copy}",
                     "media": "${media}",
                     "scheduled_time": "${post_time}",
-                    "type": "social"
+                    "type": "social",
                 },
                 {
                     "task_id": 7,
@@ -437,7 +442,7 @@ class SocialMediaAutomation:
                     "caption": "${post_copy}",
                     "media": "${media}",
                     "scheduled_time": "${post_time}",
-                    "type": "social"
+                    "type": "social",
                 },
                 {
                     "task_id": 8,
@@ -447,14 +452,14 @@ class SocialMediaAutomation:
                     "text": "${post_copy_short}",
                     "link": "${tracking_link}",
                     "scheduled_time": "${post_time}",
-                    "type": "social"
+                    "type": "social",
                 },
                 {
                     "task_id": 9,
                     "name": "Set up monitoring",
                     "action": "monitor_engagement",
                     "metrics": ["likes", "comments", "shares", "clicks"],
-                    "type": "tracking"
+                    "type": "tracking",
                 },
             ],
             "schedule": "daily",
@@ -466,7 +471,7 @@ class GoogleAdsAutomation:
     """Automate Google Ads setup and optimization."""
 
     @staticmethod
-    def create_google_ads_workflow() -> Dict[str, Any]:
+    def create_google_ads_workflow() -> dict[str, Any]:
         """Workflow to create and optimize Google Ads."""
         return {
             "workflow_id": "google_ads_setup",
@@ -477,14 +482,14 @@ class GoogleAdsAutomation:
                     "name": "Login to Google Ads",
                     "action": "navigate",
                     "url": "https://ads.google.com",
-                    "type": "browser"
+                    "type": "browser",
                 },
                 {
                     "task_id": 2,
                     "name": "Create new Search campaign",
                     "action": "click",
                     "selector": "button[data-action='create-campaign']",
-                    "type": "browser"
+                    "type": "browser",
                 },
                 {
                     "task_id": 3,
@@ -492,7 +497,7 @@ class GoogleAdsAutomation:
                     "action": "fill",
                     "selector": "input[name='campaign_name']",
                     "value": "${product_name} - Affiliate Promo",
-                    "type": "browser"
+                    "type": "browser",
                 },
                 {
                     "task_id": 4,
@@ -500,15 +505,19 @@ class GoogleAdsAutomation:
                     "action": "fill",
                     "selector": "input[name='daily_budget']",
                     "value": "${daily_budget}",
-                    "type": "browser"
+                    "type": "browser",
                 },
                 {
                     "task_id": 5,
                     "name": "Add keywords",
                     "action": "add_keywords",
-                    "keywords": ["${product_name}", "best ${product_type}", "${product_name} review"],
+                    "keywords": [
+                        "${product_name}",
+                        "best ${product_type}",
+                        "${product_name} review",
+                    ],
                     "match_type": "broad",
-                    "type": "api"
+                    "type": "api",
                 },
                 {
                     "task_id": 6,
@@ -524,7 +533,7 @@ class GoogleAdsAutomation:
                         "Money-back guarantee. Risk-free.",
                     ],
                     "landing_page": "${affiliate_link}",
-                    "type": "api"
+                    "type": "api",
                 },
                 {
                     "task_id": 7,
@@ -532,14 +541,14 @@ class GoogleAdsAutomation:
                     "action": "add_conversion_tracking",
                     "event": "purchase",
                     "tracking_id": "${conversion_id}",
-                    "type": "tracking"
+                    "type": "tracking",
                 },
                 {
                     "task_id": 8,
                     "name": "Launch campaign",
                     "action": "click",
                     "selector": "button[data-action='publish']",
-                    "type": "browser"
+                    "type": "browser",
                 },
                 {
                     "task_id": 9,
@@ -548,7 +557,7 @@ class GoogleAdsAutomation:
                     "frequency": "daily",
                     "metrics": ["cpc", "ctr", "conversion_rate", "roi"],
                     "alert_threshold": {"roi": 0, "cpc": "${max_cpc}"},
-                    "type": "monitoring"
+                    "type": "monitoring",
                 },
                 {
                     "task_id": 10,
@@ -559,7 +568,7 @@ class GoogleAdsAutomation:
                         "Increase bids on high-converting keywords",
                         "Pause underperforming ads",
                     ],
-                    "type": "optimization"
+                    "type": "optimization",
                 },
             ],
             "expected_outcome": "Google Ads running and optimizing automatically",
@@ -570,7 +579,7 @@ class ReportingAutomation:
     """Automate reporting and performance tracking."""
 
     @staticmethod
-    def create_daily_report_workflow() -> Dict[str, Any]:
+    def create_daily_report_workflow() -> dict[str, Any]:
         """Workflow to generate daily performance reports."""
         return {
             "workflow_id": "daily_report",
@@ -583,7 +592,7 @@ class ReportingAutomation:
                     "action": "query_database",
                     "table": "affiliate_sales",
                     "filter": "sale_date >= yesterday",
-                    "type": "database"
+                    "type": "database",
                 },
                 {
                     "task_id": 2,
@@ -595,7 +604,7 @@ calculate_metrics(
     metrics=['total_sales', 'total_commission', 'roi', 'conversion_rate']
 )
                     """,
-                    "type": "processor"
+                    "type": "processor",
                 },
                 {
                     "task_id": 3,
@@ -603,7 +612,7 @@ calculate_metrics(
                     "action": "compare",
                     "actual": "${calculated_metrics}",
                     "target": "${daily_targets}",
-                    "type": "processor"
+                    "type": "processor",
                 },
                 {
                     "task_id": 4,
@@ -618,7 +627,7 @@ calculate_metrics(
                         "Performance vs targets",
                         "Alerts",
                     ],
-                    "type": "reporting"
+                    "type": "reporting",
                 },
                 {
                     "task_id": 5,
@@ -627,14 +636,14 @@ calculate_metrics(
                     "to": "${email}",
                     "subject": "Affiliate Daily Report - ${date}",
                     "body": "${report}",
-                    "type": "email"
+                    "type": "email",
                 },
                 {
                     "task_id": 6,
                     "name": "Post to dashboard",
                     "action": "update_dashboard",
                     "metrics": "${calculated_metrics}",
-                    "type": "api"
+                    "type": "api",
                 },
             ],
             "expected_outcome": "Daily performance report generated and sent",
@@ -645,14 +654,14 @@ class AffiliateAutomationEngine:
     """Main automation engine orchestrator."""
 
     def __init__(self):
-        self.workflows: Dict[str, AutomationWorkflow] = {}
+        self.workflows: dict[str, AutomationWorkflow] = {}
         self.hotmart = HotmartAutomation()
         self.email = EmailAutomation()
         self.social = SocialMediaAutomation()
         self.google_ads = GoogleAdsAutomation()
         self.reporting = ReportingAutomation()
 
-    def create_affiliate_setup_workflow(self) -> Dict[str, Any]:
+    def create_affiliate_setup_workflow(self) -> dict[str, Any]:
         """Create complete affiliate setup workflow."""
         return {
             "workflow_name": "Complete Affiliate Setup",
@@ -671,7 +680,7 @@ class AffiliateAutomationEngine:
             "expected_outcome": "Complete affiliate system running on auto",
         }
 
-    def get_workflow(self, workflow_id: str) -> Optional[Dict[str, Any]]:
+    def get_workflow(self, workflow_id: str) -> dict[str, Any] | None:
         """Get workflow configuration."""
         # This would fetch from the workflows defined above
         all_workflows = {
@@ -683,7 +692,7 @@ class AffiliateAutomationEngine:
         }
         return all_workflows.get(workflow_id)
 
-    def list_workflows(self) -> List[str]:
+    def list_workflows(self) -> list[str]:
         """List all available workflows."""
         return [
             "hotmart_signup",
@@ -700,13 +709,13 @@ class AffiliateAutomationEngine:
 # FACTORY FUNCTIONS
 # ============================================================================
 
+
 def create_automation_engine() -> AffiliateAutomationEngine:
     """Factory to create automation engine."""
     return AffiliateAutomationEngine()
 
 
 if __name__ == "__main__":
-    import json
 
     engine = create_automation_engine()
 

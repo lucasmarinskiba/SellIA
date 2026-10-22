@@ -1,13 +1,14 @@
 """Brain Orchestrator V3 — Market-Adaptive Orchestration."""
 
-from typing import Dict, Any, Optional
 import logging
+from typing import Any
+
 from app.core.market import (
-    MarketDetector,
     AgentLoader,
-    MarketRulesEngine,
     ContinuousLearner,
     MarketContextInjector,
+    MarketDetector,
+    MarketRulesEngine,
 )
 
 logger = logging.getLogger(__name__)
@@ -19,14 +20,21 @@ class BrainOrchestratorV3:
     def __init__(self):
         self.detector = MarketDetector()
         self.learner = ContinuousLearner()
-        self.context_map: Dict[str, Dict[str, Any]] = {}
+        self.context_map: dict[str, dict[str, Any]] = {}
 
-    def initialize_for_seller(self, seller_id: str, user_input: str, company_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def initialize_for_seller(
+        self,
+        seller_id: str,
+        user_input: str,
+        company_data: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Initialize market detection & agent loading for seller."""
 
         # Detect market
         market_profile = MarketDetector.detect_market(user_input, company_data)
-        logger.info(f"Market detected for {seller_id}: {market_profile.industry.value} ({market_profile.confidence_score:.2%})")
+        logger.info(
+            f"Market detected for {seller_id}: {market_profile.industry.value} ({market_profile.confidence_score:.2%})"
+        )
 
         # Load agents
         agents = AgentLoader.load_agents_for_market(market_profile)
@@ -43,7 +51,7 @@ class BrainOrchestratorV3:
             "market_profile": market_profile,
             "agents": agents,
             "rules": rules,
-            "initialized_at": str(__import__("datetime").datetime.utcnow()),
+            "initialized_at": str(__import__("datetime").utc_now()),
         }
 
         return {
@@ -54,11 +62,13 @@ class BrainOrchestratorV3:
             "expected_cycle": MarketRulesEngine.get_sales_cycle_timeline(rules),
         }
 
-    def get_market_context(self, seller_id: str) -> Optional[Dict[str, Any]]:
+    def get_market_context(self, seller_id: str) -> dict[str, Any] | None:
         """Get market context for seller."""
         return self.context_map.get(seller_id)
 
-    def customize_prompt(self, seller_id: str, prompt: str, agent_id: str = "sellIA_base") -> str:
+    def customize_prompt(
+        self, seller_id: str, prompt: str, agent_id: str = "sellIA_base"
+    ) -> str:
         """Customize prompt with market context."""
         context = self.get_market_context(seller_id)
         if not context:
@@ -68,14 +78,16 @@ class BrainOrchestratorV3:
         rules = context["rules"]
 
         # Inject market context
-        prompt = MarketContextInjector.inject_market_context(prompt, market_profile, rules)
+        prompt = MarketContextInjector.inject_market_context(
+            prompt, market_profile, rules
+        )
 
         # Inject guardrails
         prompt = MarketContextInjector.inject_guardrails(prompt, market_profile, rules)
 
         return prompt
 
-    def sync_external_systems(self) -> Dict[str, Any]:
+    def sync_external_systems(self) -> dict[str, Any]:
         """Sync agents from external Real Estate & Commercial systems."""
         sync_result = self.learner.sync_from_external_systems()
         if sync_result["new_agents"]:
@@ -84,7 +96,7 @@ class BrainOrchestratorV3:
             logger.info(f"Synced {len(sync_result['new_agents'])} new agents")
         return sync_result
 
-    def get_orchestrator_status(self) -> Dict[str, Any]:
+    def get_orchestrator_status(self) -> dict[str, Any]:
         """Get orchestrator status."""
         return {
             "active_sellers": len(self.context_map),

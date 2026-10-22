@@ -5,7 +5,7 @@ Cada estrategia sabe CÓMO actuar automáticamente en su dominio (inventory, pri
 """
 
 import logging
-from typing import Dict, List, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -17,33 +17,45 @@ class InventoryAutomationStrategy:
         self.agent = intelligent_agent
         self.brain = brain_layer
 
-    async def auto_manage_inventory(self, inventory_state: Dict[str, Any]) -> Dict[str, Any]:
+    async def auto_manage_inventory(
+        self, inventory_state: dict[str, Any]
+    ) -> dict[str, Any]:
         """Maneja inventory automáticamente según knowledge."""
         recommendations = []
 
         # Overstock → discount
-        if inventory_state.get("stock_level", 0) > inventory_state.get("safe_stock", 100):
-            recommendations.append({
-                "action": "Apply discount (psychological: -15%)",
-                "reason": "Overstock increases holding cost",
-                "expected_impact": "Sell 50% more units, reduce inventory risk",
-            })
+        if inventory_state.get("stock_level", 0) > inventory_state.get(
+            "safe_stock", 100
+        ):
+            recommendations.append(
+                {
+                    "action": "Apply discount (psychological: -15%)",
+                    "reason": "Overstock increases holding cost",
+                    "expected_impact": "Sell 50% more units, reduce inventory risk",
+                }
+            )
 
         # Understock → reorder or pause ads
-        if inventory_state.get("stock_level", 0) < inventory_state.get("reorder_point", 20):
-            recommendations.append({
-                "action": "Pause ads, set backorder, send reorder to supplier",
-                "reason": "Running out of stock = lost sales",
-                "expected_impact": "Avoid stockout, maintain cash flow",
-            })
+        if inventory_state.get("stock_level", 0) < inventory_state.get(
+            "reorder_point", 20
+        ):
+            recommendations.append(
+                {
+                    "action": "Pause ads, set backorder, send reorder to supplier",
+                    "reason": "Running out of stock = lost sales",
+                    "expected_impact": "Avoid stockout, maintain cash flow",
+                }
+            )
 
         # Slow movers → markdown or bundling
         if inventory_state.get("velocity", 0) < 0.5:  # Sells <0.5 units/day
-            recommendations.append({
-                "action": "Bundle with fast-moving product OR deep discount",
-                "reason": "Low velocity ties up cash",
-                "expected_impact": "Increase sales velocity, free up capital",
-            })
+            recommendations.append(
+                {
+                    "action": "Bundle with fast-moving product OR deep discount",
+                    "reason": "Low velocity ties up cash",
+                    "expected_impact": "Increase sales velocity, free up capital",
+                }
+            )
 
         return {"current_state": inventory_state, "recommendations": recommendations}
 
@@ -55,7 +67,9 @@ class PricingAutomationStrategy:
         self.agent = intelligent_agent
         self.brain = brain_layer
 
-    async def auto_optimize_pricing(self, market_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def auto_optimize_pricing(
+        self, market_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Optimiza precio automáticamente según mercado."""
 
         current_price = market_data.get("current_price", 100)
@@ -94,7 +108,9 @@ class ContentAutomationStrategy:
         self.agent = intelligent_agent
         self.brain = brain_layer
 
-    async def auto_optimize_content(self, content_performance: Dict[str, Any]) -> Dict[str, Any]:
+    async def auto_optimize_content(
+        self, content_performance: dict[str, Any]
+    ) -> dict[str, Any]:
         """Optimiza contenido automáticamente según performance."""
 
         ctr = content_performance.get("ctr", 0)
@@ -105,22 +121,26 @@ class ContentAutomationStrategy:
 
         # Low CTR → rewrite title with more emotional benefit
         if ctr < 0.02:
-            recommendations.append({
-                "element": "title",
-                "issue": "Low CTR (people not clicking)",
-                "suggestion": "Add emotional trigger (New, Exclusive, Limited, Rare, etc)",
-                "example": f"❌ {current_title} → ✅ [EXCLUSIVE] {current_title} - Limited Stock",
-                "expected_impact": "+50% CTR",
-            })
+            recommendations.append(
+                {
+                    "element": "title",
+                    "issue": "Low CTR (people not clicking)",
+                    "suggestion": "Add emotional trigger (New, Exclusive, Limited, Rare, etc)",
+                    "example": f"❌ {current_title} → ✅ [EXCLUSIVE] {current_title} - Limited Stock",
+                    "expected_impact": "+50% CTR",
+                }
+            )
 
         # Low conversion → adjust value prop or add guarantee
         if conversion < 0.05:
-            recommendations.append({
-                "element": "description",
-                "issue": "Low conversion (people not buying)",
-                "suggestion": "Add risk reversal (money-back guarantee, free trial, etc)",
-                "expected_impact": "+30% conversion",
-            })
+            recommendations.append(
+                {
+                    "element": "description",
+                    "issue": "Low conversion (people not buying)",
+                    "suggestion": "Add risk reversal (money-back guarantee, free trial, etc)",
+                    "expected_impact": "+30% conversion",
+                }
+            )
 
         return {
             "current_performance": content_performance,
@@ -135,11 +155,13 @@ class NegotiationAutomationStrategy:
         self.agent = intelligent_agent
         self.brain = brain_layer
 
-    async def auto_negotiate(self, buyer: Dict[str, Any], product: Dict[str, Any]) -> Dict[str, Any]:
+    async def auto_negotiate(
+        self, buyer: dict[str, Any], product: dict[str, Any]
+    ) -> dict[str, Any]:
         """Automáticamente negocia usando tácticas Trump + Belfort."""
 
         buyer_type = buyer.get("type", "default")
-        budget = buyer.get("budget", 0)
+        buyer.get("budget", 0)
         objections = buyer.get("objections", [])
 
         strategy = {}
@@ -147,7 +169,11 @@ class NegotiationAutomationStrategy:
         # Price-sensitive buyers → lead with value, offer bundling
         if buyer_type == "price_sensitive":
             strategy["anchor"] = "Full price (sets negotiation window)"
-            strategy["concessions"] = ["Bundle discount", "Payment plan (3 months)", "Bulk discount"]
+            strategy["concessions"] = [
+                "Bundle discount",
+                "Payment plan (3 months)",
+                "Bulk discount",
+            ]
             strategy["final_price"] = int(product.get("price", 100) * 0.85)
 
         # Risk-averse buyers → lead with guarantee
@@ -170,7 +196,12 @@ class NegotiationAutomationStrategy:
             "already have": "This is 3x faster. Let's do a 7-day trial, zero commitment.",
         }
 
-        responses = [objection_responses.get(obj, "I understand. What would make this work for you?") for obj in objections]
+        responses = [
+            objection_responses.get(
+                obj, "I understand. What would make this work for you?"
+            )
+            for obj in objections
+        ]
 
         return {
             "buyer_type": buyer_type,
@@ -187,7 +218,7 @@ class LeadQualificationAutomationStrategy:
         self.agent = intelligent_agent
         self.brain = brain_layer
 
-    async def auto_qualify_lead(self, lead: Dict[str, Any]) -> Dict[str, Any]:
+    async def auto_qualify_lead(self, lead: dict[str, Any]) -> dict[str, Any]:
         """Automáticamente califica lead (hot/warm/cold)."""
 
         score = 0
@@ -201,7 +232,10 @@ class LeadQualificationAutomationStrategy:
             score += 20
 
         # Title
-        if any(keyword in lead.get("title", "").lower() for keyword in ["ceo", "cto", "vp", "director"]):
+        if any(
+            keyword in lead.get("title", "").lower()
+            for keyword in ["ceo", "cto", "vp", "director"]
+        ):
             score += 10
 
         # Budget signal
@@ -222,6 +256,12 @@ class LeadQualificationAutomationStrategy:
             "lead_id": lead.get("id"),
             "score": min(score, 100),
             "segment": segment,
-            "next_action": "Call immediately" if segment == "HOT" else ("Email + follow up" if segment == "WARM" else "Nurture sequence"),
-            "expected_conversion": 0.4 if segment == "HOT" else (0.15 if segment == "WARM" else 0.05),
+            "next_action": (
+                "Call immediately"
+                if segment == "HOT"
+                else ("Email + follow up" if segment == "WARM" else "Nurture sequence")
+            ),
+            "expected_conversion": (
+                0.4 if segment == "HOT" else (0.15 if segment == "WARM" else 0.05)
+            ),
         }

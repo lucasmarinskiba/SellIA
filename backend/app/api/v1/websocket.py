@@ -1,13 +1,16 @@
 """WebSocket Endpoint - Real-time updates for Brain Controller."""
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-import logging
 import json
-from datetime import datetime
+import logging
+
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
 
 # Active connections
 class ConnectionManager:
@@ -28,15 +31,15 @@ class ConnectionManager:
         for connection in self.active_connections:
             try:
                 await connection.send_json(message)
-            except Exception as e:
-                logger.error(f"Error broadcasting: {e}")
+            except Exception:
+                logger.exception("Error broadcasting")
 
     async def send_personal(self, websocket: WebSocket, message: dict):
         """Send to specific client."""
         try:
             await websocket.send_json(message)
-        except Exception as e:
-            logger.error(f"Error sending personal: {e}")
+        except Exception:
+            logger.exception("Error sending personal")
 
 
 manager = ConnectionManager()
@@ -54,75 +57,95 @@ async def websocket_brain(websocket: WebSocket):
             try:
                 message = json.loads(data)
                 msg_type = message.get("type")
-                payload = message.get("payload", {})
+                message.get("payload", {})
 
                 # Handle different message types
                 if msg_type == "ping":
-                    await manager.send_personal(websocket, {
-                        "type": "pong",
-                        "timestamp": datetime.utcnow().isoformat(),
-                    })
+                    await manager.send_personal(
+                        websocket,
+                        {
+                            "type": "pong",
+                            "timestamp": utc_now().isoformat(),
+                        },
+                    )
 
                 elif msg_type == "subscribe_metrics":
                     # Client wants metrics updates
-                    await manager.send_personal(websocket, {
-                        "type": "subscribed",
-                        "channel": "metrics",
-                        "timestamp": datetime.utcnow().isoformat(),
-                    })
+                    await manager.send_personal(
+                        websocket,
+                        {
+                            "type": "subscribed",
+                            "channel": "metrics",
+                            "timestamp": utc_now().isoformat(),
+                        },
+                    )
 
                 elif msg_type == "subscribe_phases":
                     # Client wants phase updates
-                    await manager.send_personal(websocket, {
-                        "type": "subscribed",
-                        "channel": "phases",
-                        "timestamp": datetime.utcnow().isoformat(),
-                    })
+                    await manager.send_personal(
+                        websocket,
+                        {
+                            "type": "subscribed",
+                            "channel": "phases",
+                            "timestamp": utc_now().isoformat(),
+                        },
+                    )
 
                 else:
                     logger.warning(f"Unknown message type: {msg_type}")
 
             except json.JSONDecodeError:
-                await manager.send_personal(websocket, {
-                    "type": "error",
-                    "message": "Invalid JSON",
-                })
+                await manager.send_personal(
+                    websocket,
+                    {
+                        "type": "error",
+                        "message": "Invalid JSON",
+                    },
+                )
 
     except WebSocketDisconnect:
         manager.disconnect(websocket)
         logger.info("Client disconnected")
 
-    except Exception as e:
-        logger.error(f"WebSocket error: {e}")
+    except Exception:
+        logger.exception("WebSocket error")
         manager.disconnect(websocket)
 
 
-async def broadcast_phase_update(phase: str, status: str, data: dict = None):
+async def broadcast_phase_update(phase: str, status: str, data: dict | None = None):
     """Broadcast phase update to all clients."""
-    await manager.broadcast({
-        "type": "phase_update",
-        "phase": phase,
-        "status": status,
-        "data": data or {},
-        "timestamp": datetime.utcnow().isoformat(),
-    })
+    await manager.broadcast(
+        {
+            "type": "phase_update",
+            "phase": phase,
+            "status": status,
+            "data": data or {},
+            "timestamp": utc_now().isoformat(),
+        }
+    )
 
 
 async def broadcast_metrics_update(metrics: dict):
     """Broadcast metrics update to all clients."""
-    await manager.broadcast({
-        "type": "metrics_update",
-        "metrics": metrics,
-        "timestamp": datetime.utcnow().isoformat(),
-    })
+    await manager.broadcast(
+        {
+            "type": "metrics_update",
+            "metrics": metrics,
+            "timestamp": utc_now().isoformat(),
+        }
+    )
 
 
-async def broadcast_system_event(event_type: str, message: str, data: dict = None):
+async def broadcast_system_event(
+    event_type: str, message: str, data: dict | None = None
+):
     """Broadcast system event to all clients."""
-    await manager.broadcast({
-        "type": "system_event",
-        "event_type": event_type,
-        "message": message,
-        "data": data or {},
-        "timestamp": datetime.utcnow().isoformat(),
-    })
+    await manager.broadcast(
+        {
+            "type": "system_event",
+            "event_type": event_type,
+            "message": message,
+            "data": data or {},
+            "timestamp": utc_now().isoformat(),
+        }
+    )

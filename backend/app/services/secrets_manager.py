@@ -1,12 +1,12 @@
 """Secrets management via HashiCorp Vault (or AWS Secrets Manager)."""
 
-import os
-import logging
-from typing import Optional, Dict, Any
-import hvac  # HashiCorp Vault client
 import json
+import logging
+import os
 from functools import lru_cache
+from typing import Any
 
+import hvac  # HashiCorp Vault client
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +31,8 @@ class SecretsManager:
     def __init__(
         self,
         backend: str = "vault",  # vault, aws, env
-        vault_addr: str = None,
-        vault_token: str = None,
+        vault_addr: str | None = None,
+        vault_token: str | None = None,
         vault_path: str = "secret",
     ):
         self.backend = backend
@@ -46,8 +46,9 @@ class SecretsManager:
                 token=self.vault_token,
             )
 
-    @lru_cache(maxsize=256)
-    def get_secret(self, path: str, key: str = None) -> str:
+    # Gestor de instancia única: el cache vive con el proceso.
+    @lru_cache(maxsize=256)  # noqa: B019
+    def get_secret(self, path: str, key: str | None = None) -> str:
         """
         Get secret by path.
 
@@ -66,7 +67,7 @@ class SecretsManager:
         else:  # env
             return self._get_from_env(path, key)
 
-    def _get_from_vault(self, path: str, key: str = None) -> str:
+    def _get_from_vault(self, path: str, key: str | None = None) -> str:
         """Get secret from Vault."""
         try:
             full_path = f"{self.vault_path}/data/{path}"
@@ -84,7 +85,7 @@ class SecretsManager:
             logger.error(f"Failed to get secret from Vault: {e}")
             raise
 
-    def _get_from_aws(self, path: str, key: str = None) -> str:
+    def _get_from_aws(self, path: str, key: str | None = None) -> str:
         """Get secret from AWS Secrets Manager."""
         import boto3
 
@@ -102,7 +103,7 @@ class SecretsManager:
             logger.error(f"Failed to get secret from AWS: {e}")
             raise
 
-    def _get_from_env(self, path: str, key: str = None) -> str:
+    def _get_from_env(self, path: str, key: str | None = None) -> str:
         """Get secret from environment (dev only)."""
         env_key = f"{path.upper()}_{key.upper()}" if key else path.upper()
         value = os.getenv(env_key)
@@ -112,7 +113,7 @@ class SecretsManager:
 
         return value
 
-    def set_secret(self, path: str, data: Dict[str, Any]) -> None:
+    def set_secret(self, path: str, data: dict[str, Any]) -> None:
         """
         Store secret.
 
@@ -155,13 +156,14 @@ class SecretsManager:
 
             # Generate new secret (implementation depends on type)
             import secrets
+
             new_secret = secrets.token_urlsafe(32)
 
             # Mark old secret for deprecation (custom metadata)
             new_data = {
                 **old_data,
                 "value": new_secret,
-                "rotated_at": __import__("datetime").datetime.utcnow().isoformat(),
+                "rotated_at": __import__("datetime").utc_now().isoformat(),
                 "old_value_deprecated": True,
             }
 
@@ -217,19 +219,22 @@ def example_usage():
     secrets = get_secrets_manager()
 
     # Get database credentials
-    db_password = secrets.get_secret("database", "password")
-    db_host = secrets.get_secret("database", "host")
+    secrets.get_secret("database", "password")
+    secrets.get_secret("database", "host")
 
     # Get API keys
-    salesforce_api_key = secrets.get_secret("integrations/salesforce", "api_key")
-    stripe_secret_key = secrets.get_secret("integrations/stripe", "secret_key")
-    twilio_auth_token = secrets.get_secret("integrations/twilio", "auth_token")
+    secrets.get_secret("integrations/salesforce", "api_key")
+    secrets.get_secret("integrations/stripe", "secret_key")
+    secrets.get_secret("integrations/twilio", "auth_token")
 
     # Store new secret
-    secrets.set_secret("integrations/slack", {
-        "webhook_url": "https://hooks.slack.com/...",
-        "signing_secret": "xoxb-...",
-    })
+    secrets.set_secret(
+        "integrations/slack",
+        {
+            "webhook_url": "https://hooks.slack.com/...",
+            "signing_secret": "xoxb-...",
+        },
+    )
 
     # Rotate API key
     new_key = secrets.rotate_secret("integrations/github")

@@ -16,7 +16,7 @@ This module makes them agree:
 """
 
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import select
@@ -51,7 +51,9 @@ def platform_brain_id(platform_name: str | None) -> str | None:
     return f"platform.{slug}" if slug else None
 
 
-async def is_brain_capability_enabled(db: AsyncSession, business_id: UUID, brain_id: str) -> bool:
+async def is_brain_capability_enabled(
+    db: AsyncSession, business_id: UUID, brain_id: str
+) -> bool:
     """False only when the business has explicitly turned this Map node OFF."""
     from app.domains.automations.models import AutomationToggle
 
@@ -90,12 +92,15 @@ async def set_brain_capability(
     if toggle is not None and toggle.is_enabled == enabled:
         return  # already in sync: no row churn, no noise in the audit log
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if toggle is None:
         toggle = AutomationToggle(
-            business_id=business_id, toggle_key=toggle_key,
+            business_id=business_id,
+            toggle_key=toggle_key,
             category=brain_id_category(brain_id),
-            is_enabled=enabled, display_name=brain_id, changed_by=user_id,
+            is_enabled=enabled,
+            display_name=brain_id,
+            changed_by=user_id,
         )
         db.add(toggle)
     else:
@@ -107,10 +112,15 @@ async def set_brain_capability(
     toggle.disabled_at = now if not enabled else toggle.disabled_at
 
     await db.flush()
-    db.add(ToggleAuditLog(
-        business_id=business_id, toggle_id=toggle.id,
-        action="enabled" if enabled else "disabled",
-        old_value={"is_enabled": old_enabled}, new_value={"is_enabled": enabled},
-        changed_by_user_id=user_id, changed_by_email=user_email,
-        reason="Sincronizado desde la configuración SEO",
-    ))
+    db.add(
+        ToggleAuditLog(
+            business_id=business_id,
+            toggle_id=toggle.id,
+            action="enabled" if enabled else "disabled",
+            old_value={"is_enabled": old_enabled},
+            new_value={"is_enabled": enabled},
+            changed_by_user_id=user_id,
+            changed_by_email=user_email,
+            reason="Sincronizado desde la configuración SEO",
+        )
+    )

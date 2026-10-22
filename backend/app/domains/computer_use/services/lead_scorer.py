@@ -10,15 +10,18 @@ Scoring factors:
 """
 
 import logging
-from typing import Dict, List, Any, Optional, Tuple
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
+from typing import Any, ClassVar
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
 
 class LeadTemperature(str, Enum):
     """Temperatura del lead."""
+
     HOT = "hot"  # 70-100: ready to close
     WARM = "warm"  # 40-69: interested, nurturing
     COLD = "cold"  # 0-39: early stage
@@ -35,7 +38,7 @@ class LeadScoreBreakdown:
         self.recency_score = 0.0  # 0-10 pts
         self.total_score = 0.0  # 0-100 pts
 
-    def to_dict(self) -> Dict[str, float]:
+    def to_dict(self) -> dict[str, float]:
         return {
             "engagement": self.engagement_score,
             "intent": self.intent_score,
@@ -62,7 +65,7 @@ class LeadScore:
         self.score = score  # 0-100
         self.temperature = temperature
         self.breakdown = breakdown
-        self.scored_at = datetime.utcnow()
+        self.scored_at = utc_now()
         self.next_action = self._recommend_action()
 
     def _recommend_action(self) -> str:
@@ -74,7 +77,7 @@ class LeadScore:
         else:
             return "re_engage_gently"  # Retarget
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "lead_id": self.lead_id,
             "lead_name": self.lead_name,
@@ -95,17 +98,24 @@ class LeadScoringService:
     LOW_ENGAGEMENT = 0  # 0-1 messages
 
     # Intent keywords by strength
-    STRONG_INTENT_KEYWORDS = {
-        "es": ["compramos", "cuando entran", "confirmen", "facturación", "contrato", "cierre"],
+    STRONG_INTENT_KEYWORDS: ClassVar[dict] = {
+        "es": [
+            "compramos",
+            "cuando entran",
+            "confirmen",
+            "facturación",
+            "contrato",
+            "cierre",
+        ],
         "en": ["when do we", "confirm the order", "invoice", "contract", "close"],
     }
 
-    MEDIUM_INTENT_KEYWORDS = {
+    MEDIUM_INTENT_KEYWORDS: ClassVar[dict] = {
         "es": ["interesa", "podríamos", "cuándo", "precio", "detalles"],
         "en": ["interested", "how much", "when", "details", "next steps"],
     }
 
-    WEAK_INTENT_KEYWORDS = {
+    WEAK_INTENT_KEYWORDS: ClassVar[dict] = {
         "es": ["qué es", "cómo funciona", "información"],
         "en": ["what is", "how does", "more info", "tell me about"],
     }
@@ -117,9 +127,9 @@ class LeadScoringService:
         self,
         lead_id: str,
         lead_name: str,
-        conversation_history: List[Dict[str, str]],
-        customer_profile: Dict[str, Any],
-        product_info: Optional[Dict[str, Any]] = None,
+        conversation_history: list[dict[str, str]],
+        customer_profile: dict[str, Any],
+        product_info: dict[str, Any] | None = None,
     ) -> LeadScore:
         """
         Calcula score completo del lead.
@@ -129,13 +139,17 @@ class LeadScoringService:
         breakdown = LeadScoreBreakdown()
 
         # 1. Engagement score (0-25)
-        breakdown.engagement_score = self._calculate_engagement_score(conversation_history)
+        breakdown.engagement_score = self._calculate_engagement_score(
+            conversation_history
+        )
 
         # 2. Intent score (0-30)
         breakdown.intent_score = self._calculate_intent_score(conversation_history)
 
         # 3. Personality score (0-15)
-        breakdown.personality_score = self._calculate_personality_score(conversation_history)
+        breakdown.personality_score = self._calculate_personality_score(
+            conversation_history
+        )
 
         # 4. Stage score (0-20)
         breakdown.stage_score = self._calculate_stage_score(conversation_history)
@@ -177,7 +191,9 @@ class LeadScoringService:
 
         return score
 
-    def _calculate_engagement_score(self, conversation_history: List[Dict[str, str]]) -> float:
+    def _calculate_engagement_score(
+        self, conversation_history: list[dict[str, str]]
+    ) -> float:
         """Calcula engagement basado en frecuencia + velocidad."""
         if not conversation_history:
             return 0.0
@@ -193,7 +209,9 @@ class LeadScoringService:
             engagement = 5.0
 
         # Penalty si hay gaps largos (mensajes esporádicos)
-        timestamps = [msg.get("timestamp") for msg in conversation_history if msg.get("timestamp")]
+        timestamps = [
+            msg.get("timestamp") for msg in conversation_history if msg.get("timestamp")
+        ]
         if len(timestamps) >= 2:
             # Si todos los msgs están en mismo día = high engagement
             # Si dispersos en varios días = lower
@@ -205,87 +223,115 @@ class LeadScoringService:
 
         return min(25.0, engagement)
 
-    def _calculate_intent_score(self, conversation_history: List[Dict[str, str]]) -> float:
+    def _calculate_intent_score(
+        self, conversation_history: list[dict[str, str]]
+    ) -> float:
         """Calcula intent basado en keywords."""
         if not conversation_history:
             return 0.0
 
-        combined_text = " ".join([msg.get("content", "").lower() for msg in conversation_history])
+        combined_text = " ".join(
+            [msg.get("content", "").lower() for msg in conversation_history]
+        )
 
         score = 0.0
 
         # Strong intent
-        strong_keywords = (
-            self.STRONG_INTENT_KEYWORDS.get("es", [])
-            + self.STRONG_INTENT_KEYWORDS.get("en", [])
-        )
+        strong_keywords = self.STRONG_INTENT_KEYWORDS.get(
+            "es", []
+        ) + self.STRONG_INTENT_KEYWORDS.get("en", [])
         strong_count = sum(1 for kw in strong_keywords if kw in combined_text)
         score += strong_count * 10  # 10 pts per strong keyword
 
         # Medium intent
-        medium_keywords = (
-            self.MEDIUM_INTENT_KEYWORDS.get("es", [])
-            + self.MEDIUM_INTENT_KEYWORDS.get("en", [])
-        )
+        medium_keywords = self.MEDIUM_INTENT_KEYWORDS.get(
+            "es", []
+        ) + self.MEDIUM_INTENT_KEYWORDS.get("en", [])
         medium_count = sum(1 for kw in medium_keywords if kw in combined_text)
         score += medium_count * 5  # 5 pts per medium keyword
 
         # Weak intent (negative signal if ONLY weak)
-        weak_keywords = (
-            self.WEAK_INTENT_KEYWORDS.get("es", [])
-            + self.WEAK_INTENT_KEYWORDS.get("en", [])
-        )
+        weak_keywords = self.WEAK_INTENT_KEYWORDS.get(
+            "es", []
+        ) + self.WEAK_INTENT_KEYWORDS.get("en", [])
         weak_count = sum(1 for kw in weak_keywords if kw in combined_text)
         if weak_count > 0 and strong_count == 0 and medium_count == 0:
             score += weak_count * 1  # Only 1 pt if no stronger signals
 
         return min(30.0, score)
 
-    def _calculate_personality_score(self, conversation_history: List[Dict[str, str]]) -> float:
+    def _calculate_personality_score(
+        self, conversation_history: list[dict[str, str]]
+    ) -> float:
         """Calcula personality score (drivers = mejor compradores)."""
         if not conversation_history:
             return 7.5  # Neutral
 
-        combined_text = " ".join([msg.get("content", "").lower() for msg in conversation_history])
+        combined_text = " ".join(
+            [msg.get("content", "").lower() for msg in conversation_history]
+        )
 
         # Driver personality (high buying intent, results-focused)
-        if any(word in combined_text for word in ["rápido", "ahora", "inmediato", "hoy", "asap", "urgent"]):
+        if any(
+            word in combined_text
+            for word in ["rápido", "ahora", "inmediato", "hoy", "asap", "urgent"]
+        ):
             return 15.0  # Max
 
         # Analytical (needs more info, slower)
-        if any(word in combined_text for word in ["detalles", "cómo funciona", "specifics", "details"]):
+        if any(
+            word in combined_text
+            for word in ["detalles", "cómo funciona", "specifics", "details"]
+        ):
             return 10.0
 
         # Expressive (emotional, relationship-driven)
-        if any(word in combined_text for word in ["siento", "creo", "feel", "think", "love"]):
+        if any(
+            word in combined_text
+            for word in ["siento", "creo", "feel", "think", "love"]
+        ):
             return 12.0
 
         # Default neutral
         return 7.5
 
-    def _calculate_stage_score(self, conversation_history: List[Dict[str, str]]) -> float:
+    def _calculate_stage_score(
+        self, conversation_history: list[dict[str, str]]
+    ) -> float:
         """Calcula stage score (closure > negotiation > consideration > awareness)."""
         if not conversation_history:
             return 0.0
 
-        combined_text = " ".join([msg.get("content", "").lower() for msg in conversation_history])
+        combined_text = " ".join(
+            [msg.get("content", "").lower() for msg in conversation_history]
+        )
 
         # Closure signals
-        if any(word in combined_text for word in ["confirmo", "adelante", "let's do", "confirmamos"]):
+        if any(
+            word in combined_text
+            for word in ["confirmo", "adelante", "let's do", "confirmamos"]
+        ):
             return 20.0  # Max
 
         # Negotiation signals
-        if any(word in combined_text for word in ["precio", "términos", "payment", "terms"]):
+        if any(
+            word in combined_text for word in ["precio", "términos", "payment", "terms"]
+        ):
             return 15.0
 
         # Consideration signals
-        if any(word in combined_text for word in ["interesa", "podría", "might", "interested"]):
+        if any(
+            word in combined_text
+            for word in ["interesa", "podría", "might", "interested"]
+        ):
             return 10.0
 
         # Awareness only
         return 5.0
 
-    def _calculate_recency_score(self, conversation_history: List[Dict[str, str]]) -> float:
+    def _calculate_recency_score(
+        self, conversation_history: list[dict[str, str]]
+    ) -> float:
         """Calcula recency score (leads recientes = más hot)."""
         if not conversation_history:
             return 0.0
@@ -300,7 +346,7 @@ class LeadScoringService:
         # Parse timestamp (asumiendo ISO format)
         try:
             last_date = datetime.fromisoformat(last_timestamp)
-            days_ago = (datetime.utcnow() - last_date).days
+            days_ago = (utc_now() - last_date).days
 
             if days_ago == 0:  # Today
                 return 10.0  # Max
@@ -314,9 +360,10 @@ class LeadScoringService:
                 return 0.0
 
         except Exception:
+            logger.exception("_calculate_recency_score: error inesperado")
             return 5.0
 
-    def _estimate_days_span(self, timestamps: List[str]) -> int:
+    def _estimate_days_span(self, timestamps: list[str]) -> int:
         """Estima días entre primer y último mensaje."""
         if len(timestamps) < 2:
             return 0
@@ -326,19 +373,24 @@ class LeadScoringService:
             last_date = datetime.fromisoformat(timestamps[-1])
             return (last_date - first_date).days
         except Exception:
+            logger.exception("_estimate_days_span: error inesperado")
             return 0
 
     async def get_leads_by_temperature(
         self,
-        leads: List[LeadScore],
+        leads: list[LeadScore],
         temperature: LeadTemperature,
-    ) -> List[LeadScore]:
+    ) -> list[LeadScore]:
         """Filtra leads por temperatura."""
         return [lead for lead in leads if lead.temperature == temperature]
 
-    async def prioritize_leads(self, leads: List[LeadScore]) -> List[LeadScore]:
+    async def prioritize_leads(self, leads: list[LeadScore]) -> list[LeadScore]:
         """Ordena leads por priority (hot → warm → cold, y dentro de cada grupo por score)."""
-        temp_order = {LeadTemperature.HOT: 0, LeadTemperature.WARM: 1, LeadTemperature.COLD: 2}
+        temp_order = {
+            LeadTemperature.HOT: 0,
+            LeadTemperature.WARM: 1,
+            LeadTemperature.COLD: 2,
+        }
 
         return sorted(
             leads,

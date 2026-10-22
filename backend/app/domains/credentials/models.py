@@ -1,10 +1,20 @@
 """Credential Models — Encrypted storage for platform credentials."""
 
-import uuid
 import enum
-from datetime import datetime, timezone
+import uuid
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Enum, Boolean, Index, Integer
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.core.database import Base
@@ -21,8 +31,18 @@ class SiteCredential(Base):
     __tablename__ = "site_credentials"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=True, index=True)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
 
     domain = Column(String(200), nullable=False, index=True)
     platform_name = Column(String(100), nullable=False)
@@ -40,9 +60,13 @@ class SiteCredential(Base):
     last_successful_login = Column(DateTime(timezone=True), nullable=True)
     failed_attempts = Column(Integer, default=0)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
     __table_args__ = (
-        Index('ix_site_credentials_user_domain', 'user_id', 'domain', unique=True),
+        Index("ix_site_credentials_user_domain", "user_id", "domain", unique=True),
     )

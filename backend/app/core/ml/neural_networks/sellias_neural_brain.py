@@ -2,61 +2,61 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime
+from typing import Any
 
 import numpy as np
-from sklearn.preprocessing import StandardScaler
 
-from .base_networks import NetworkConfig, TrainingConfig
-from .prediction_networks import (
-    SalesPredictionNetwork,
-    ChurnPredictionNetwork,
-    DemandForecastingNetwork,
-    LeadQualityNetwork,
-    ContactTimingNetwork,
-    PriceElasticityNetwork,
-)
-from .optimization_networks import (
-    PricingOptimizationNetwork,
-    ChannelOptimizationNetwork,
-    MessageTimingNetwork,
-    BudgetAllocationNetwork,
-    FeatureImportanceNetwork,
-)
-from .pattern_recognition import (
-    MarketPatternRecognizer,
-    CustomerBehaviorRecognizer,
-    CompetitorPatternRecognizer,
-    CommunicationPatternRecognizer,
-    AnomalyDetector,
-)
-from .recommendation_networks import (
-    StrategyRecommender,
-    SalesMethodRecommender,
-    PricingRecommender,
-    ChannelRecommender,
-    MessageToneRecommender,
-)
-from .learning_networks import (
-    OnlineLearningEngine,
-    TransferLearningEngine,
-    MetaLearningEngine,
-    FewShotLearner,
-    ActiveLearner,
-)
+from app.core.clock import utc_now
+
 from .attention_mechanisms import (
-    FeatureAttention,
-    TemporalAttention,
-    SpatialAttention,
     CrossModalAttention,
+    FeatureAttention,
+    SpatialAttention,
+    TemporalAttention,
 )
 from .ensemble_networks import (
-    EnsemblePredictor,
-    UncertaintyEstimator,
-    ModelSelector,
-    BoostingEngine,
     BaggingEngine,
+    BoostingEngine,
+    EnsemblePredictor,
+    ModelSelector,
+    UncertaintyEstimator,
+)
+from .learning_networks import (
+    ActiveLearner,
+    FewShotLearner,
+    MetaLearningEngine,
+    OnlineLearningEngine,
+    TransferLearningEngine,
+)
+from .optimization_networks import (
+    BudgetAllocationNetwork,
+    ChannelOptimizationNetwork,
+    FeatureImportanceNetwork,
+    MessageTimingNetwork,
+    PricingOptimizationNetwork,
+)
+from .pattern_recognition import (
+    AnomalyDetector,
+    CommunicationPatternRecognizer,
+    CompetitorPatternRecognizer,
+    CustomerBehaviorRecognizer,
+    MarketPatternRecognizer,
+)
+from .prediction_networks import (
+    ChurnPredictionNetwork,
+    ContactTimingNetwork,
+    DemandForecastingNetwork,
+    LeadQualityNetwork,
+    PriceElasticityNetwork,
+    SalesPredictionNetwork,
+)
+from .recommendation_networks import (
+    ChannelRecommender,
+    MessageToneRecommender,
+    PricingRecommender,
+    SalesMethodRecommender,
+    StrategyRecommender,
 )
 
 logger = logging.getLogger(__name__)
@@ -71,12 +71,12 @@ class BrainState:
     optimization_models_trained: bool = False
     pattern_recognizers_trained: bool = False
     learning_models_initialized: bool = False
-    last_update: datetime = field(default_factory=datetime.utcnow)
+    last_update: datetime = field(default_factory=utc_now)
     total_predictions_made: int = 0
     model_accuracy: float = 0.0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "version": self.version,
             "prediction_models_trained": self.prediction_models_trained,
@@ -97,15 +97,15 @@ class ComprehensiveInsight:
     insight_type: str  # "sales", "churn", "market", "customer", "strategy"
     headline: str
     confidence: float
-    predictions: Dict[str, Any]
-    recommendations: List[str]
-    risks: List[str]
-    opportunities: List[str]
-    patterns_detected: List[str]
-    next_actions: List[str]
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    predictions: dict[str, Any]
+    recommendations: list[str]
+    risks: list[str]
+    opportunities: list[str]
+    patterns_detected: list[str]
+    next_actions: list[str]
+    timestamp: datetime = field(default_factory=utc_now)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "insight_type": self.insight_type,
             "headline": self.headline,
@@ -175,9 +175,15 @@ class SelliasNeuralBrain:
         self.boosting_engine = BoostingEngine()
         self.bagging_engine = BaggingEngine()
 
-        logger.info("SellIA's Neural Brain initialized - All 47 neural network modules ready")
+        logger.info(
+            "SellIA's Neural Brain initialized - All 47 neural network modules ready"
+        )
 
-    def train_all_networks(self, training_data: Dict[str, np.ndarray], validation_data: Optional[Dict[str, np.ndarray]] = None) -> BrainState:
+    def train_all_networks(
+        self,
+        training_data: dict[str, np.ndarray],
+        validation_data: dict[str, np.ndarray] | None = None,
+    ) -> BrainState:
         """Train all neural networks."""
         try:
             logger.info("Starting comprehensive neural network training...")
@@ -195,7 +201,11 @@ class SelliasNeuralBrain:
                 self.churn_predictor.fit(X_train, y_churn > 0, y_churn)
                 self.demand_forecaster.fit(X_train, y_demand)
                 self.lead_quality_scorer.fit(X_train, y_quality, y_sales > 0)
-                self.contact_timer.fit(X_train, np.random.randint(0, 24, len(X_train)), np.random.randint(0, 7, len(X_train)))
+                self.contact_timer.fit(
+                    X_train,
+                    np.random.randint(0, 24, len(X_train)),
+                    np.random.randint(0, 7, len(X_train)),
+                )
                 self.price_elasticity_analyzer.fit(X_train, y_demand)
 
                 self.state.prediction_models_trained = True
@@ -203,7 +213,9 @@ class SelliasNeuralBrain:
 
                 # Train optimization networks
                 self.pricing_optimizer.fit(X_train, y_demand)
-                self.channel_optimizer.fit(X_train, np.random.randint(0, 5, len(X_train)))
+                self.channel_optimizer.fit(
+                    X_train, np.random.randint(0, 5, len(X_train))
+                )
                 self.message_timer.fit(X_train, np.random.uniform(0, 1, len(X_train)))
                 self.budget_allocator.fit(X_train, y_demand)
                 feature_names = [f"feature_{i}" for i in range(X_train.shape[1])]
@@ -222,23 +234,31 @@ class SelliasNeuralBrain:
 
                 # Initialize learning engines
                 self.online_learner.initialize(X_train, y_sales)
-                self.few_shot_learner.learn_from_few_examples("sales", X_train[:10], y_sales[:10])
+                self.few_shot_learner.learn_from_few_examples(
+                    "sales", X_train[:10], y_sales[:10]
+                )
 
                 self.state.learning_models_initialized = True
                 logger.info("Learning engines initialized")
 
                 # Train recommendations
                 self.strategy_recommender.fit(X_train, y_sales)
-                self.sales_method_recommender.fit(X_train, np.random.randint(0, 5, len(X_train)))
+                self.sales_method_recommender.fit(
+                    X_train, np.random.randint(0, 5, len(X_train))
+                )
                 self.pricing_recommender.fit(X_train, y_demand)
-                self.channel_recommender.fit(X_train, np.random.randint(0, 5, len(X_train)))
-                self.tone_recommender.fit(X_train, np.random.randint(0, 5, len(X_train)))
+                self.channel_recommender.fit(
+                    X_train, np.random.randint(0, 5, len(X_train))
+                )
+                self.tone_recommender.fit(
+                    X_train, np.random.randint(0, 5, len(X_train))
+                )
 
                 logger.info("Recommendation networks trained")
 
                 # Aggregate model accuracy
                 self.state.model_accuracy = 0.85
-                self.state.last_update = datetime.utcnow()
+                self.state.last_update = utc_now()
 
                 logger.info("All neural networks trained successfully")
 
@@ -248,7 +268,9 @@ class SelliasNeuralBrain:
             logger.error(f"Error during brain training: {e}")
             raise
 
-    def predict_sales_outcome(self, customer_data: np.ndarray, customer_profile: Dict[str, Any]) -> ComprehensiveInsight:
+    def predict_sales_outcome(
+        self, customer_data: np.ndarray, customer_profile: dict[str, Any]
+    ) -> ComprehensiveInsight:
         """Comprehensive sales prediction and recommendations."""
         try:
             # Get predictions
@@ -263,7 +285,9 @@ class SelliasNeuralBrain:
 
             # Get pattern analysis
             patterns = self.market_patterns.detect_patterns(customer_data[0])
-            behavior = self.customer_behavior.recognize_behavior(customer_data, customer_profile)
+            behavior = self.customer_behavior.recognize_behavior(
+                customer_data, customer_profile
+            )
 
             # Get recommendations
             strategy_recs = self.strategy_recommender.recommend(customer_data)
@@ -276,7 +300,9 @@ class SelliasNeuralBrain:
 
             # Compile insight
             confidence = (
-                sales_pred.confidence + quality_pred.confidence_score / 100 + behavior.pattern_reliability
+                sales_pred.confidence
+                + quality_pred.confidence_score / 100
+                + behavior.pattern_reliability
             ) / 3
 
             patterns_detected = [p.description for p in patterns.patterns]
@@ -290,7 +316,9 @@ class SelliasNeuralBrain:
                 recommendations.append(channel_rec.recommendation)
 
             risks = sales_pred.risk_factors + ["Monitor competitor activity"]
-            opportunities = sales_pred.opportunity_factors + [f"Upsell potential: {behavior.upsell_opportunity:.0%}"]
+            opportunities = sales_pred.opportunity_factors + [
+                f"Upsell potential: {behavior.upsell_opportunity:.0%}"
+            ]
 
             next_actions = sales_pred.recommended_actions + [
                 f"Contact on {quality_pred.next_best_action}",
@@ -323,7 +351,9 @@ class SelliasNeuralBrain:
             logger.error(f"Error in sales prediction: {e}")
             raise
 
-    def predict_customer_churn(self, customer_data: np.ndarray, customer_profile: Dict[str, Any]) -> ComprehensiveInsight:
+    def predict_customer_churn(
+        self, customer_data: np.ndarray, customer_profile: dict[str, Any]
+    ) -> ComprehensiveInsight:
         """Comprehensive churn analysis."""
         try:
             churn_preds = self.churn_predictor.predict(customer_data)
@@ -335,18 +365,23 @@ class SelliasNeuralBrain:
 
             # Get retention recommendations
             tone_recs = self.tone_recommender.recommend(customer_data)
-            channel_recs = self.channel_recommender.recommend(customer_data)
+            self.channel_recommender.recommend(customer_data)
 
             insight = ComprehensiveInsight(
                 insight_type="churn",
-                headline=f"Churn risk: {churn_pred.churn_probability:.0%}" if churn_pred.will_churn else "Low churn risk detected",
+                headline=(
+                    f"Churn risk: {churn_pred.churn_probability:.0%}"
+                    if churn_pred.will_churn
+                    else "Low churn risk detected"
+                ),
                 confidence=float(churn_pred.confidence),
                 predictions={
                     "will_churn": churn_pred.will_churn,
                     "churn_probability": float(churn_pred.churn_probability),
                     "estimated_churn_days": churn_pred.estimated_churn_days,
                 },
-                recommendations=churn_pred.retention_actions + [tone_recs[0].recommendation if tone_recs else ""],
+                recommendations=churn_pred.retention_actions
+                + [tone_recs[0].recommendation if tone_recs else ""],
                 risks=churn_pred.churn_reasons + ["Potential revenue loss"],
                 opportunities=[f"Retention offer: {churn_pred.retention_offer}"],
                 patterns_detected=[],
@@ -360,7 +395,9 @@ class SelliasNeuralBrain:
             logger.error(f"Error in churn prediction: {e}")
             raise
 
-    def optimize_marketing_strategy(self, market_data: np.ndarray, budget: float) -> ComprehensiveInsight:
+    def optimize_marketing_strategy(
+        self, market_data: np.ndarray, budget: float
+    ) -> ComprehensiveInsight:
         """Comprehensive marketing optimization."""
         try:
             # Get optimizations
@@ -376,12 +413,15 @@ class SelliasNeuralBrain:
             budget_alloc = budget_opts[0]
 
             # Get pricing recommendation
-            pricing_recs = self.pricing_recommender.recommend(market_data)
+            self.pricing_recommender.recommend(market_data)
 
             insight = ComprehensiveInsight(
                 insight_type="strategy",
                 headline=f"Optimized strategy: {channel.best_channel} at ${pricing.recommended_price:.2f} with ${budget} budget",
-                confidence=float((pricing.confidence + channel.confidence + budget_alloc.confidence) / 3),
+                confidence=float(
+                    (pricing.confidence + channel.confidence + budget_alloc.confidence)
+                    / 3
+                ),
                 predictions={
                     "recommended_price": float(pricing.recommended_price),
                     "best_channel": channel.best_channel,
@@ -394,7 +434,11 @@ class SelliasNeuralBrain:
                     f"Allocate 40% budget to {channel.best_channel}",
                     f"Expected revenue: ${budget_alloc.expected_revenue:.2f}",
                 ],
-                risks=pricing.risk_level.upper() + " pricing risk" if pricing.risk_level != "low" else [],
+                risks=(
+                    pricing.risk_level.upper() + " pricing risk"
+                    if pricing.risk_level != "low"
+                    else []
+                ),
                 opportunities=[
                     f"Volume increase: {pricing.expected_volume_change:+.1f}%",
                     f"Revenue change: {pricing.expected_revenue_change:+.1f}%",
@@ -414,7 +458,9 @@ class SelliasNeuralBrain:
             logger.error(f"Error in strategy optimization: {e}")
             raise
 
-    def detect_market_anomalies(self, market_data: np.ndarray) -> List[ComprehensiveInsight]:
+    def detect_market_anomalies(
+        self, market_data: np.ndarray
+    ) -> list[ComprehensiveInsight]:
         """Detect and analyze market anomalies."""
         try:
             anomalies = self.anomaly_detector.detect_anomalies(market_data)
@@ -425,7 +471,10 @@ class SelliasNeuralBrain:
                     insight_type="market",
                     headline=f"Market anomaly detected: {anomaly.description}",
                     confidence=float(anomaly.anomaly_score),
-                    predictions={"anomaly_score": float(anomaly.anomaly_score), "severity": anomaly.severity},
+                    predictions={
+                        "anomaly_score": float(anomaly.anomaly_score),
+                        "severity": anomaly.severity,
+                    },
                     recommendations=[anomaly.recommended_action],
                     risks=[anomaly.potential_cause],
                     opportunities=["Investigate for hidden opportunities"],
@@ -440,13 +489,15 @@ class SelliasNeuralBrain:
             logger.error(f"Error detecting anomalies: {e}")
             raise
 
-    def continuous_learning_update(self, new_data: np.ndarray, labels: np.ndarray) -> Dict[str, Any]:
+    def continuous_learning_update(
+        self, new_data: np.ndarray, labels: np.ndarray
+    ) -> dict[str, Any]:
         """Update models with new data using online learning."""
         try:
             update_result = self.online_learner.update(new_data, labels)
 
             self.state.total_predictions_made += len(new_data)
-            self.state.last_update = datetime.utcnow()
+            self.state.last_update = utc_now()
 
             return {
                 "update_success": True,
@@ -456,14 +507,14 @@ class SelliasNeuralBrain:
             }
 
         except Exception as e:
-            logger.error(f"Error in continuous learning: {e}")
+            logger.exception("Error in continuous learning")
             return {"update_success": False, "error": str(e)}
 
-    def get_brain_status(self) -> Dict[str, Any]:
+    def get_brain_status(self) -> dict[str, Any]:
         """Get current status of neural brain."""
         return self.state.to_dict()
 
-    def get_system_metrics(self) -> Dict[str, Any]:
+    def get_system_metrics(self) -> dict[str, Any]:
         """Get system-wide metrics."""
         return {
             "total_predictions": self.state.total_predictions_made,
@@ -473,13 +524,15 @@ class SelliasNeuralBrain:
             "pattern_recognizers_ready": self.state.pattern_recognizers_trained,
             "learning_systems_ready": self.state.learning_models_initialized,
             "total_networks": 47,
-            "networks_active": sum([
-                int(self.state.prediction_models_trained) * 6,
-                int(self.state.optimization_models_trained) * 5,
-                int(self.state.pattern_recognizers_trained) * 5,
-                8,  # Recommendation networks
-                5,  # Learning networks
-                4,  # Attention mechanisms
-                5,  # Ensemble methods
-            ]),
+            "networks_active": sum(
+                [
+                    int(self.state.prediction_models_trained) * 6,
+                    int(self.state.optimization_models_trained) * 5,
+                    int(self.state.pattern_recognizers_trained) * 5,
+                    8,  # Recommendation networks
+                    5,  # Learning networks
+                    4,  # Attention mechanisms
+                    5,  # Ensemble methods
+                ]
+            ),
         }

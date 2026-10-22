@@ -2,14 +2,15 @@
 Referral Router
 """
 
-from typing import Annotated, Optional
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.referrals import service as referral_service
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/referrals", tags=["referrals"])
 
@@ -24,7 +25,7 @@ async def get_my_code(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
-    code = await referral_service.get_or_create_referral_code(db, current_user.id)
+    await referral_service.get_or_create_referral_code(db, current_user.id)
     stats = await referral_service.get_referral_stats(db, current_user.id)
     return stats
 

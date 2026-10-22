@@ -1,9 +1,12 @@
 from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.integrations.integration_models import IntegrationApp, IntegrationConnection, IntegrationEvent
+from app.domains.integrations.integration_models import (
+    IntegrationConnection,
+)
 from app.domains.seo_config.smart_defaults import SmartDefaultsService
 
 logger = get_logger(__name__)
@@ -48,8 +51,8 @@ class IntegrationService:
                     platform_name=platform_name,
                 )
                 logger.info(f"Auto-created SEO config for {platform_name}")
-            except Exception as e:
-                logger.error(f"Failed to auto-create SEO config: {str(e)[:100]}")
+            except Exception:
+                logger.exception("Failed to auto-create SEO config")
                 # Don't fail the connection creation if SEO config fails
 
         await self.db.commit()
@@ -66,7 +69,9 @@ class IntegrationService:
         )
         return result.scalar_one_or_none()
 
-    async def list_business_connections(self, business_id: UUID) -> list[IntegrationConnection]:
+    async def list_business_connections(
+        self, business_id: UUID
+    ) -> list[IntegrationConnection]:
         """List all connections for a business."""
         result = await self.db.execute(
             select(IntegrationConnection).where(

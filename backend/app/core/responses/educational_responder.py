@@ -3,14 +3,15 @@ Educational Responder — Micro-teaching, resources, FAQ integration.
 """
 
 import logging
-from typing import Dict, List, Any, Tuple
 from enum import Enum
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
 
 class ContentType(str, Enum):
     """Educational content types."""
+
     TUTORIAL = "tutorial"
     DOCUMENTATION = "documentation"
     BLOG_ARTICLE = "blog_article"
@@ -23,7 +24,7 @@ class EducationalResponder:
     """Provides educational responses with resources."""
 
     # FAQ Database (topic -> [questions] -> [answers])
-    FAQ_DATABASE = {
+    FAQ_DATABASE: ClassVar[dict] = {
         "pricing": {
             "How much does it cost?": "Pricing starts at $29/month. See full breakdown.",
             "Do you offer discounts?": "Yes, annual billing saves 20%. Non-profits get 50% off.",
@@ -42,7 +43,7 @@ class EducationalResponder:
     }
 
     # Learning paths
-    LEARNING_PATHS = {
+    LEARNING_PATHS: ClassVar[dict] = {
         "beginner": [
             "Getting Started (10 min video)",
             "Feature Overview (blog post)",
@@ -64,7 +65,7 @@ class EducationalResponder:
     }
 
     @staticmethod
-    def analyze_question(question_text: str) -> Dict[str, Any]:
+    def analyze_question(question_text: str) -> dict[str, Any]:
         """
         Analyze question to identify learning need.
 
@@ -82,7 +83,14 @@ class EducationalResponder:
         # Topic detection
         topics = {
             "pricing": ["cost", "price", "fee", "expensive", "discount", "refund"],
-            "integration": ["integrate", "connect", "api", "zapier", "plugin", "webhook"],
+            "integration": [
+                "integrate",
+                "connect",
+                "api",
+                "zapier",
+                "plugin",
+                "webhook",
+            ],
             "features": ["feature", "does it", "can i", "how to", "work with"],
             "setup": ["setup", "install", "configure", "start", "begin"],
         }
@@ -124,7 +132,7 @@ class EducationalResponder:
         }
 
     @staticmethod
-    def extract_learning_goals(question_text: str) -> List[str]:
+    def extract_learning_goals(question_text: str) -> list[str]:
         """Extract what user wants to learn."""
 
         goals = []
@@ -143,7 +151,7 @@ class EducationalResponder:
         return goals
 
     @staticmethod
-    def find_relevant_faq(question_text: str) -> Dict[str, Any]:
+    def find_relevant_faq(question_text: str) -> dict[str, Any]:
         """
         Find relevant FAQ entries for question.
 
@@ -166,15 +174,19 @@ class EducationalResponder:
                 words_in_question = set(question_lower.split())
                 words_in_faq = set(faq_q.lower().split())
                 overlap = len(words_in_question & words_in_faq)
-                score = (overlap / len(words_in_question)) * 100 if words_in_question else 0
+                score = (
+                    (overlap / len(words_in_question)) * 100 if words_in_question else 0
+                )
 
                 if score > 40:
-                    faq_matches.append({
-                        "category": category,
-                        "question": faq_q,
-                        "answer": faq_a,
-                        "relevance_score": int(score),
-                    })
+                    faq_matches.append(
+                        {
+                            "category": category,
+                            "question": faq_q,
+                            "answer": faq_a,
+                            "relevance_score": int(score),
+                        }
+                    )
                     best_score = max(best_score, score)
 
         faq_matches.sort(key=lambda x: x["relevance_score"], reverse=True)
@@ -187,7 +199,7 @@ class EducationalResponder:
         }
 
     @staticmethod
-    def generate_learning_path(skill_level: str, topic: str) -> Dict[str, Any]:
+    def generate_learning_path(skill_level: str, topic: str) -> dict[str, Any]:
         """
         Generate personalized learning path.
 
@@ -226,7 +238,7 @@ class EducationalResponder:
     def create_educational_response(
         question_text: str,
         skill_level: str = "intermediate",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create complete educational response.
 
@@ -270,13 +282,15 @@ class EducationalResponder:
                 }
                 for item in learning_path["path"]
             ],
-            "faq_reference": faq_result["faq_matches"][0] if faq_result["found"] else None,
+            "faq_reference": (
+                faq_result["faq_matches"][0] if faq_result["found"] else None
+            ),
             "learning_path": learning_path,
             "confidence": min(100, faq_result.get("relevance_score", 50) + 25),
         }
 
     @staticmethod
-    def suggest_resources(topic: str, skill_level: str) -> List[Dict[str, Any]]:
+    def suggest_resources(topic: str, skill_level: str) -> list[dict[str, Any]]:
         """Suggest best resources for topic."""
 
         resources = {
@@ -287,7 +301,11 @@ class EducationalResponder:
             ],
             "integration": [
                 {"type": "docs", "title": "API Docs", "url": "/docs/api"},
-                {"type": "tutorial", "title": "Integration Guide", "url": "/guides/integration"},
+                {
+                    "type": "tutorial",
+                    "title": "Integration Guide",
+                    "url": "/guides/integration",
+                },
                 {"type": "video", "title": "Zapier Setup", "url": "/videos/zapier"},
             ],
             "features": [

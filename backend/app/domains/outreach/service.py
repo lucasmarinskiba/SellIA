@@ -5,22 +5,21 @@ CadenceEngine — orchestrates smart follow-up sequences.
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Any
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logger import get_logger
+from app.domains.crm.models import LeadScore
 from app.domains.outreach.models import (
     ContactFatigueScore,
+    FatigueLevel,
     OutreachCadenceRule,
     OutreachLog,
     OutreachLogStatus,
-    FatigueLevel,
 )
-from app.domains.channels.models import Conversation, Message
-from app.domains.crm.models import LeadScore
-from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -34,7 +33,9 @@ class FatigueScoringService:
     async def get_or_create_rule(self, business_id: uuid.UUID) -> OutreachCadenceRule:
         """Get or create default cadence rules for a business."""
         result = await self.db.execute(
-            select(OutreachCadenceRule).where(OutreachCadenceRule.business_id == business_id)
+            select(OutreachCadenceRule).where(
+                OutreachCadenceRule.business_id == business_id
+            )
         )
         rule = result.scalar_one_or_none()
         if not rule:
@@ -42,10 +43,14 @@ class FatigueScoringService:
             self.db.add(rule)
             await self.db.commit()
             await self.db.refresh(rule)
-            logger.info(f"Created default OutreachCadenceRule for business {business_id}")
+            logger.info(
+                f"Created default OutreachCadenceRule for business {business_id}"
+            )
         return rule
 
-    async def get_or_create_score(self, business_id: uuid.UUID, conversation_id: uuid.UUID) -> ContactFatigueScore:
+    async def get_or_create_score(
+        self, business_id: uuid.UUID, conversation_id: uuid.UUID
+    ) -> ContactFatigueScore:
         """Get or create fatigue score for a conversation."""
         result = await self.db.execute(
             select(ContactFatigueScore).where(
@@ -55,7 +60,9 @@ class FatigueScoringService:
         )
         score = result.scalar_one_or_none()
         if not score:
-            score = ContactFatigueScore(business_id=business_id, conversation_id=conversation_id)
+            score = ContactFatigueScore(
+                business_id=business_id, conversation_id=conversation_id
+            )
             self.db.add(score)
             await self.db.commit()
             await self.db.refresh(score)
@@ -74,6 +81,7 @@ class FatigueScoringService:
 
         # Check if autopilot is active
         from app.domains.autopilot.service import AutopilotEngine
+
         autopilot = AutopilotEngine(self.db)
         config = await autopilot.get_or_create_config(business_id)
 
@@ -89,8 +97,14 @@ class FatigueScoringService:
             }
 
         # Check cooldown
-        if score.recommended_cooldown_until and datetime.now(timezone.utc) < score.recommended_cooldown_until:
-            hours_left = int((score.recommended_cooldown_until - datetime.now(timezone.utc)).total_seconds() / 3600)
+        if (
+            score.recommended_cooldown_until
+            and datetime.now(UTC) < score.recommended_cooldown_until
+        ):
+            hours_left = int(
+                (score.recommended_cooldown_until - datetime.now(UTC)).total_seconds()
+                / 3600
+            )
             return {
                 "can_contact": False,
                 "reason": f"Lead is in cooldown. Wait {hours_left} more hours.",
@@ -98,12 +112,17 @@ class FatigueScoringService:
                 "recommended_wait_hours": hours_left,
                 "fatigue_level": score.fatigue_level,
                 "contacts_this_week": score.total_contacts_last_7d,
-                "ai_recommendation": score.ai_recommendation or f"Esperar {hours_left}h antes de contactar de nuevo.",
+                "ai_recommendation": score.ai_recommendation
+                or f"Esperar {hours_left}h antes de contactar de nuevo.",
             }
 
         # Check weekly limit
         is_hot = await self._is_hot_lead(conversation_id)
-        max_weekly = rule.hot_lead_max_per_week if (is_hot and rule.hot_lead_override) else rule.max_messages_per_week
+        max_weekly = (
+            rule.hot_lead_max_per_week
+            if (is_hot and rule.hot_lead_override)
+            else rule.max_messages_per_week
+        )
 
         if score.total_contacts_last_7d >= max_weekly:
             return {
@@ -113,7 +132,7 @@ class FatigueScoringService:
                 "recommended_wait_hours": 48,
                 "fatigue_level": FatigueLevel.EXHAUSTED,
                 "contacts_this_week": score.total_contacts_last_7d,
-                "ai_recommendation": f"Límite semanal alcanzado. Esperar hasta la próxima semana.",
+                "ai_recommendation": "Límite semanal alcanzado. Esperar hasta la próxima semana.",
             }
 
         # Check channel-specific limit
@@ -135,7 +154,9 @@ class FatigueScoringService:
 
         # Check minimum hours between contacts
         if score.last_contact_at:
-            hours_since = (datetime.now(timezone.utc) - score.last_contact_at).total_seconds() / 3600
+            hours_since = (
+                datetime.now(UTC) - score.last_contact_at
+            ).total_seconds() / 3600
             if hours_since < rule.min_hours_between_contacts:
                 wait_hours = int(rule.min_hours_between_contacts - hours_since)
                 return {
@@ -150,7 +171,7 @@ class FatigueScoringService:
 
         # Check business hours
         if rule.respect_local_hours:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             # Simplified: use UTC for now, in production would use lead's timezone
             current_hour = now.hour
             if not (rule.allowed_hours_start <= current_hour < rule.allowed_hours_end):
@@ -158,7 +179,11 @@ class FatigueScoringService:
                     "can_contact": False,
                     "reason": f"Outside allowed hours ({rule.allowed_hours_start}:00 - {rule.allowed_hours_end}:00).",
                     "recommended_channel": None,
-                    "recommended_wait_hours": rule.allowed_hours_start - current_hour if current_hour < rule.allowed_hours_start else (24 - current_hour + rule.allowed_hours_start),
+                    "recommended_wait_hours": (
+                        rule.allowed_hours_start - current_hour
+                        if current_hour < rule.allowed_hours_start
+                        else (24 - current_hour + rule.allowed_hours_start)
+                    ),
                     "fatigue_level": score.fatigue_level,
                     "contacts_this_week": score.total_contacts_last_7d,
                     "ai_recommendation": f"Fuera de horario permitido. Contactar entre {rule.allowed_hours_start}:00 y {rule.allowed_hours_end}:00.",
@@ -166,7 +191,7 @@ class FatigueScoringService:
 
         # Check weekend avoidance
         if rule.avoid_weekends:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             if now.weekday() >= 5:  # Saturday=5, Sunday=6
                 return {
                     "can_contact": False,
@@ -214,7 +239,7 @@ class FatigueScoringService:
 
         # Update fatigue score
         score = await self.get_or_create_score(business_id, conversation_id)
-        score.last_contact_at = datetime.now(timezone.utc)
+        score.last_contact_at = datetime.now(UTC)
 
         # Recalculate weekly counts
         await self._recalculate_counts(score)
@@ -230,7 +255,9 @@ class FatigueScoringService:
         # Set cooldown if needed
         rule = await self.get_or_create_rule(business_id)
         if score.consecutive_no_replies >= rule.cooldown_after_no_reply_count:
-            score.recommended_cooldown_until = datetime.now(timezone.utc) + timedelta(days=rule.long_cooldown_days)
+            score.recommended_cooldown_until = datetime.now(UTC) + timedelta(
+                days=rule.long_cooldown_days
+            )
             score.ai_recommendation = f"Lead no responde tras {score.consecutive_no_replies} intentos. Pausar {rule.long_cooldown_days} días."
         else:
             score.recommended_cooldown_until = None
@@ -248,27 +275,32 @@ class FatigueScoringService:
     ) -> None:
         """Record that a lead responded — resets consecutive no-replies."""
         result = await self.db.execute(
-            select(ContactFatigueScore).where(ContactFatigueScore.conversation_id == conversation_id)
+            select(ContactFatigueScore).where(
+                ContactFatigueScore.conversation_id == conversation_id
+            )
         )
         score = result.scalar_one_or_none()
         if not score:
             return
 
-        score.last_response_at = datetime.now(timezone.utc)
+        score.last_response_at = datetime.now(UTC)
         score.consecutive_no_replies = 0
         score.recommended_cooldown_until = None
         score.ai_recommendation = None
 
         # Update the latest outreach log
         log_result = await self.db.execute(
-            select(OutreachLog).where(
+            select(OutreachLog)
+            .where(
                 OutreachLog.conversation_id == conversation_id,
-            ).order_by(desc(OutreachLog.sent_at)).limit(1)
+            )
+            .order_by(desc(OutreachLog.sent_at))
+            .limit(1)
         )
         log = log_result.scalar_one_or_none()
         if log:
             log.status = OutreachLogStatus.RESPONDED
-            log.responded_at = datetime.now(timezone.utc)
+            log.responded_at = datetime.now(UTC)
             log.response_type = response_type
             log.response_content = response_content[:500] if response_content else None
 
@@ -276,7 +308,7 @@ class FatigueScoringService:
 
     async def _recalculate_counts(self, score: ContactFatigueScore) -> None:
         """Recalculate 7d and 30d contact counts from logs."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         week_ago = now - timedelta(days=7)
         month_ago = now - timedelta(days=30)
 
@@ -300,9 +332,11 @@ class FatigueScoringService:
 
         # Count consecutive no-replies
         logs_result = await self.db.execute(
-            select(OutreachLog).where(
+            select(OutreachLog)
+            .where(
                 OutreachLog.conversation_id == score.conversation_id,
-            ).order_by(desc(OutreachLog.sent_at))
+            )
+            .order_by(desc(OutreachLog.sent_at))
         )
         logs = logs_result.scalars().all()
         consecutive = 0
@@ -330,7 +364,9 @@ class FatigueScoringService:
         ls = result.scalar_one_or_none()
         return ls is not None and ls.classification == "hot"
 
-    async def _get_best_channel(self, score: ContactFatigueScore, rule: OutreachCadenceRule) -> str | None:
+    async def _get_best_channel(
+        self, score: ContactFatigueScore, rule: OutreachCadenceRule
+    ) -> str | None:
         """Recommend the best channel based on fatigue and priority."""
         for channel in rule.channel_priority:
             channel_count = score.contacts_by_channel.get(channel, 0)
@@ -338,7 +374,9 @@ class FatigueScoringService:
                 return channel
         return rule.channel_priority[0] if rule.channel_priority else None
 
-    async def _get_alternative_channel(self, score: ContactFatigueScore, rule: OutreachCadenceRule, exclude: str) -> str | None:
+    async def _get_alternative_channel(
+        self, score: ContactFatigueScore, rule: OutreachCadenceRule, exclude: str
+    ) -> str | None:
         """Suggest an alternative channel."""
         for channel in rule.channel_priority:
             if channel == exclude:
@@ -351,7 +389,9 @@ class FatigueScoringService:
     async def recalculate_all_scores(self, business_id: uuid.UUID) -> int:
         """Recalculate fatigue scores for all conversations of a business."""
         result = await self.db.execute(
-            select(ContactFatigueScore).where(ContactFatigueScore.business_id == business_id)
+            select(ContactFatigueScore).where(
+                ContactFatigueScore.business_id == business_id
+            )
         )
         scores = result.scalars().all()
         for score in scores:
@@ -383,7 +423,9 @@ class CadenceEngine:
                 "recommended_action": "wait",
                 "recommended_channel": contact_check.get("recommended_channel"),
                 "recommended_message_type": None,
-                "recommended_delay_hours": contact_check.get("recommended_wait_hours", 24),
+                "recommended_delay_hours": contact_check.get(
+                    "recommended_wait_hours", 24
+                ),
                 "reason": contact_check["reason"],
                 "fatigue_level": contact_check["fatigue_level"],
             }
@@ -402,13 +444,18 @@ class CadenceEngine:
             "fatigue_level": contact_check["fatigue_level"],
         }
 
-    async def _determine_message_type(self, business_id: uuid.UUID, conversation_id: uuid.UUID) -> str:
+    async def _determine_message_type(
+        self, business_id: uuid.UUID, conversation_id: uuid.UUID
+    ) -> str:
         """Determine what kind of message to send based on conversation state."""
         # Get last outreach
         result = await self.db.execute(
-            select(OutreachLog).where(
+            select(OutreachLog)
+            .where(
                 OutreachLog.conversation_id == conversation_id,
-            ).order_by(desc(OutreachLog.sent_at)).limit(1)
+            )
+            .order_by(desc(OutreachLog.sent_at))
+            .limit(1)
         )
         last_log = result.scalar_one_or_none()
 
@@ -417,6 +464,7 @@ class CadenceEngine:
 
         # Get conversation and deal state
         from app.domains.crm.models import Deal
+
         deal_result = await self.db.execute(
             select(Deal).where(
                 Deal.conversation_id == conversation_id,
@@ -454,7 +502,9 @@ class CadenceEngine:
         workflow_execution_id: uuid.UUID | None = None,
     ) -> dict[str, Any]:
         """Hook for WorkflowEngine: checks fatigue before sending any message."""
-        contact_check = await self.fatigue.can_contact_now(business_id, conversation_id, channel)
+        contact_check = await self.fatigue.can_contact_now(
+            business_id, conversation_id, channel
+        )
 
         if not contact_check["can_contact"]:
             logger.info(

@@ -1,9 +1,9 @@
 """Phase 10: Business model detection and adaptation."""
 
-from enum import Enum
-from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional
 import logging
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -43,23 +43,23 @@ class BusinessProfile:
     name: str
     description: str
     model: BusinessModel
-    primary_location: Optional[str] = None
-    service_radius_km: Optional[int] = None
+    primary_location: str | None = None
+    service_radius_km: int | None = None
     is_b2b: bool = False
     is_b2c: bool = True
     target_audience: str = ""
-    channels: List[Channel] = field(default_factory=list)
-    primary_channel: Optional[Channel] = None
+    channels: list[Channel] = field(default_factory=list)
+    primary_channel: Channel | None = None
     revenue_model: str = "one_time"  # one_time, subscription, hybrid
-    average_ticket_size: Optional[float] = None
-    avg_sales_cycle_days: Optional[int] = None
+    average_ticket_size: float | None = None
+    avg_sales_cycle_days: int | None = None
     has_physical_location: bool = False
     has_online_presence: bool = False
-    languages: List[str] = field(default_factory=lambda: ["es"])
+    languages: list[str] = field(default_factory=lambda: ["es"])
     competitor_count: int = 0
     market_size_estimate: str = "unknown"
     growth_potential: str = "medium"  # low, medium, high
-    custom_attributes: Dict[str, Any] = field(default_factory=dict)
+    custom_attributes: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -77,35 +77,67 @@ class BusinessModelDetector:
     def __init__(self):
         self.model_keywords = {
             BusinessModel.PHYSICAL_STORE: [
-                "tienda", "store", "local", "retail", "boutique", "shop", "comercio"
+                "tienda",
+                "store",
+                "local",
+                "retail",
+                "boutique",
+                "shop",
+                "comercio",
             ],
             BusinessModel.ONLINE_ONLY: [
-                "ecommerce", "online store", "digital", "web shop", "tienda online"
+                "ecommerce",
+                "online store",
+                "digital",
+                "web shop",
+                "tienda online",
             ],
             BusinessModel.SERVICE_AT_HOME: [
-                "plomero", "pintor", "electricista", "servicios hogar", "fontanería",
-                "limpieza", "reparación", "instalación", "mantenimiento"
+                "plomero",
+                "pintor",
+                "electricista",
+                "servicios hogar",
+                "fontanería",
+                "limpieza",
+                "reparación",
+                "instalación",
+                "mantenimiento",
             ],
             BusinessModel.B2B_CONSULTING: [
-                "consultoría", "asesoramiento", "consultor", "coaching", "training",
-                "agencia", "software development", "business consultant"
+                "consultoría",
+                "asesoramiento",
+                "consultor",
+                "coaching",
+                "training",
+                "agencia",
+                "software development",
+                "business consultant",
             ],
             BusinessModel.PROFESSIONAL_SERVICES: [
-                "abogado", "contador", "psicólogo", "médico", "dentista", "consultor"
+                "abogado",
+                "contador",
+                "psicólogo",
+                "médico",
+                "dentista",
+                "consultor",
             ],
             BusinessModel.SUBSCRIPTION: [
-                "suscripción", "subscription", "membresía", "SaaS", "software as service"
-            ]
+                "suscripción",
+                "subscription",
+                "membresía",
+                "SaaS",
+                "software as service",
+            ],
         }
 
     def detect_model(
-        self, business_description: str, website: str = "", socials: Dict = None
+        self, business_description: str, website: str = "", socials: dict | None = None
     ) -> BusinessProfile:
         """Detecta modelo de negocio"""
 
         combined_text = f"{business_description} {website}".lower()
         if socials:
-            combined_text += f" {str(socials)}".lower()
+            combined_text += f" {socials!s}".lower()
 
         model = self._match_model(combined_text)
 
@@ -126,15 +158,14 @@ class BusinessModelDetector:
             is_b2c=not is_b2b,
             channels=channels,
             primary_channel=primary_channel,
-            has_physical_location=model in [
-                BusinessModel.PHYSICAL_STORE,
-                BusinessModel.HYBRID
-            ],
-            has_online_presence=model in [
+            has_physical_location=model
+            in [BusinessModel.PHYSICAL_STORE, BusinessModel.HYBRID],
+            has_online_presence=model
+            in [
                 BusinessModel.ONLINE_ONLY,
                 BusinessModel.HYBRID,
-                BusinessModel.SUBSCRIPTION
-            ]
+                BusinessModel.SUBSCRIPTION,
+            ],
         )
 
         logger.info(f"Business model detected: {model.value}")
@@ -154,7 +185,7 @@ class BusinessModelDetector:
 
     def _determine_channels(
         self, model: BusinessModel, description: str
-    ) -> List[Channel]:
+    ) -> list[Channel]:
         """Determina canales de venta por modelo"""
 
         channels_by_model = {
@@ -163,79 +194,85 @@ class BusinessModelDetector:
                 Channel.INSTAGRAM,
                 Channel.WHATSAPP,
                 Channel.FACEBOOK_ADS,
-                Channel.REFERRALS
+                Channel.REFERRALS,
             ],
             BusinessModel.ONLINE_ONLY: [
                 Channel.GOOGLE_SEARCH,
                 Channel.GOOGLE_ADS,
                 Channel.CONTENT_MARKETING,
                 Channel.INSTAGRAM,
-                Channel.EMAIL
+                Channel.EMAIL,
             ],
             BusinessModel.SERVICE_AT_HOME: [
                 Channel.GOOGLE_MAPS,
                 Channel.GOOGLE_SEARCH,
                 Channel.WHATSAPP,
                 Channel.REFERRALS,
-                Channel.FACEBOOK_ADS
+                Channel.FACEBOOK_ADS,
             ],
             BusinessModel.B2B_CONSULTING: [
                 Channel.LINKEDIN,
                 Channel.EMAIL,
                 Channel.CONTENT_MARKETING,
                 Channel.OFFLINE_NETWORKING,
-                Channel.GOOGLE_ADS
+                Channel.GOOGLE_ADS,
             ],
             BusinessModel.PROFESSIONAL_SERVICES: [
                 Channel.LINKEDIN,
                 Channel.GOOGLE_MAPS,
                 Channel.REFERRALS,
                 Channel.EMAIL,
-                Channel.CONTENT_MARKETING
+                Channel.CONTENT_MARKETING,
             ],
             BusinessModel.SUBSCRIPTION: [
                 Channel.CONTENT_MARKETING,
                 Channel.EMAIL,
                 Channel.GOOGLE_ADS,
                 Channel.COMMUNITY,
-                Channel.REFERRALS
+                Channel.REFERRALS,
             ],
             BusinessModel.MARKETPLACE: [
                 Channel.MARKETPLACE,
                 Channel.INSTAGRAM,
                 Channel.GOOGLE_ADS,
-                Channel.EMAIL
+                Channel.EMAIL,
             ],
             BusinessModel.GLOBAL_ECOMMERCE: [
                 Channel.MARKETPLACE,
                 Channel.GOOGLE_SEARCH,
                 Channel.CONTENT_MARKETING,
                 Channel.EMAIL,
-                Channel.INSTAGRAM
+                Channel.INSTAGRAM,
             ],
             BusinessModel.MARKETPLACE_SELLER: [
                 Channel.MARKETPLACE,
                 Channel.EMAIL,
                 Channel.INSTAGRAM,
-                Channel.FACEBOOK_ADS
-            ]
+                Channel.FACEBOOK_ADS,
+            ],
         }
 
         return channels_by_model.get(model, [Channel.GOOGLE_SEARCH, Channel.INSTAGRAM])
 
-    def _extract_location(self, description: str) -> Optional[str]:
+    def _extract_location(self, description: str) -> str | None:
         """Extrae ubicación de descripción"""
         # Simple extraction - en producción usar geocoding
         keywords = ["en ", "de ", "en la ciudad de ", "ubicado en"]
         for kw in keywords:
             if kw in description.lower():
                 idx = description.lower().find(kw)
-                location = description[idx + len(kw):idx + len(kw) + 50].split(",")[0].strip()
+                location = (
+                    description[idx + len(kw) : idx + len(kw) + 50]
+                    .split(",")[0]
+                    .strip()
+                )
                 if location and len(location) < 50:
                     return location
         return None
 
-    def _estimate_service_radius(self, model: BusinessModel, location: str) -> Optional[int]:
+    def _estimate_service_radius(
+        self, model: BusinessModel, location: str
+    ) -> int | None:
         """Estima radio de servicio por modelo"""
         if model == BusinessModel.SERVICE_AT_HOME:
             return 10  # km
@@ -247,89 +284,111 @@ class BusinessModelDetector:
 
     def _detect_b2b(self, text: str) -> bool:
         """Detecta si es B2B"""
-        b2b_keywords = ["b2b", "empresa", "empresa a empresa", "empresas", "b2c a b2b",
-                        "soluciones empresariales", "corporativo", "business"]
+        b2b_keywords = [
+            "b2b",
+            "empresa",
+            "empresa a empresa",
+            "empresas",
+            "b2c a b2b",
+            "soluciones empresariales",
+            "corporativo",
+            "business",
+        ]
         return any(kw in text for kw in b2b_keywords)
 
-    def get_relevant_channels(self, profile: BusinessProfile) -> List[LeadSource]:
+    def get_relevant_channels(self, profile: BusinessProfile) -> list[LeadSource]:
         """Retorna lead sources relevantes"""
         sources = []
 
         if Channel.GOOGLE_MAPS in profile.channels:
-            sources.append(LeadSource(
-                name="Google Maps Optimization",
-                channel=Channel.GOOGLE_MAPS,
-                description="Local search + reviews + direct contact",
-                estimated_leads_per_month=20,
-                effort_level="medium",
-                cost_estimate="free",
-                setup_time_days=3
-            ))
+            sources.append(
+                LeadSource(
+                    name="Google Maps Optimization",
+                    channel=Channel.GOOGLE_MAPS,
+                    description="Local search + reviews + direct contact",
+                    estimated_leads_per_month=20,
+                    effort_level="medium",
+                    cost_estimate="free",
+                    setup_time_days=3,
+                )
+            )
 
         if Channel.GOOGLE_SEARCH in profile.channels:
-            sources.append(LeadSource(
-                name="SEO + Organic Search",
-                channel=Channel.GOOGLE_SEARCH,
-                description="Rank for relevant keywords",
-                estimated_leads_per_month=15,
-                effort_level="high",
-                cost_estimate="free",
-                setup_time_days=30
-            ))
+            sources.append(
+                LeadSource(
+                    name="SEO + Organic Search",
+                    channel=Channel.GOOGLE_SEARCH,
+                    description="Rank for relevant keywords",
+                    estimated_leads_per_month=15,
+                    effort_level="high",
+                    cost_estimate="free",
+                    setup_time_days=30,
+                )
+            )
 
         if Channel.LINKEDIN in profile.channels:
-            sources.append(LeadSource(
-                name="LinkedIn Outreach",
-                channel=Channel.LINKEDIN,
-                description="Direct messaging + connection building",
-                estimated_leads_per_month=10,
-                effort_level="medium",
-                cost_estimate="low",
-                setup_time_days=2
-            ))
+            sources.append(
+                LeadSource(
+                    name="LinkedIn Outreach",
+                    channel=Channel.LINKEDIN,
+                    description="Direct messaging + connection building",
+                    estimated_leads_per_month=10,
+                    effort_level="medium",
+                    cost_estimate="low",
+                    setup_time_days=2,
+                )
+            )
 
         if Channel.INSTAGRAM in profile.channels:
-            sources.append(LeadSource(
-                name="Instagram + Reels",
-                channel=Channel.INSTAGRAM,
-                description="Visual content + engagement",
-                estimated_leads_per_month=8,
-                effort_level="medium",
-                cost_estimate="free",
-                setup_time_days=1
-            ))
+            sources.append(
+                LeadSource(
+                    name="Instagram + Reels",
+                    channel=Channel.INSTAGRAM,
+                    description="Visual content + engagement",
+                    estimated_leads_per_month=8,
+                    effort_level="medium",
+                    cost_estimate="free",
+                    setup_time_days=1,
+                )
+            )
 
         if Channel.WHATSAPP in profile.channels:
-            sources.append(LeadSource(
-                name="WhatsApp Business",
-                channel=Channel.WHATSAPP,
-                description="Direct messaging + automation",
-                estimated_leads_per_month=5,
-                effort_level="low",
-                cost_estimate="free",
-                setup_time_days=1
-            ))
+            sources.append(
+                LeadSource(
+                    name="WhatsApp Business",
+                    channel=Channel.WHATSAPP,
+                    description="Direct messaging + automation",
+                    estimated_leads_per_month=5,
+                    effort_level="low",
+                    cost_estimate="free",
+                    setup_time_days=1,
+                )
+            )
 
         if Channel.MARKETPLACE in profile.channels:
-            sources.append(LeadSource(
-                name="Marketplace Listings",
-                channel=Channel.MARKETPLACE,
-                description="Amazon, eBay, Shopify, Mercado Libre, etc",
-                estimated_leads_per_month=30,
-                effort_level="medium",
-                cost_estimate="medium",
-                setup_time_days=5
-            ))
+            sources.append(
+                LeadSource(
+                    name="Marketplace Listings",
+                    channel=Channel.MARKETPLACE,
+                    description="Amazon, eBay, Shopify, Mercado Libre, etc",
+                    estimated_leads_per_month=30,
+                    effort_level="medium",
+                    cost_estimate="medium",
+                    setup_time_days=5,
+                )
+            )
 
         if Channel.EMAIL in profile.channels:
-            sources.append(LeadSource(
-                name="Email Outreach",
-                channel=Channel.EMAIL,
-                description="Personalized cold email + nurture",
-                estimated_leads_per_month=12,
-                effort_level="medium",
-                cost_estimate="low",
-                setup_time_days=3
-            ))
+            sources.append(
+                LeadSource(
+                    name="Email Outreach",
+                    channel=Channel.EMAIL,
+                    description="Personalized cold email + nurture",
+                    estimated_leads_per_month=12,
+                    effort_level="medium",
+                    cost_estimate="low",
+                    setup_time_days=3,
+                )
+            )
 
         return sources

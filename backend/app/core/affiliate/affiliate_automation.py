@@ -1,8 +1,8 @@
 """Affiliate Automation — Computer Use integration for platform automation."""
 
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass
 import logging
+from dataclasses import dataclass
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class AutomationTask:
     """Single automation task for Computer Use."""
+
     task_id: str
     platform: str  # hotmart|meli|amazon|beacons|instagram|tiktok
     action: str  # create_campaign|upload_post|schedule_email|add_links
@@ -22,8 +23,8 @@ class AffiliateAutomationOrchestrator:
     """Orchestrate Computer Use for affiliate marketing automation."""
 
     def __init__(self):
-        self.tasks: List[AutomationTask] = []
-        self.completed_tasks: List[str] = []
+        self.tasks: list[AutomationTask] = []
+        self.completed_tasks: list[str] = []
 
     def create_hotmart_promotion_campaign(
         self, product_id: str, campaign_name: str, promotion_text: str
@@ -50,7 +51,7 @@ class AffiliateAutomationOrchestrator:
         return task
 
     def upload_social_media_post(
-        self, platform: str, content: str, image_url: Optional[str] = None
+        self, platform: str, content: str, image_url: str | None = None
     ) -> AutomationTask:
         """Upload post to social media platform."""
         task = AutomationTask(
@@ -73,7 +74,7 @@ class AffiliateAutomationOrchestrator:
         return task
 
     def add_affiliate_links_to_bio(
-        self, platform: str, links: List[Dict[str, str]]
+        self, platform: str, links: list[dict[str, str]]
     ) -> AutomationTask:
         """Add affiliate links to profile bio/link aggregator."""
         task = AutomationTask(
@@ -100,7 +101,7 @@ class AffiliateAutomationOrchestrator:
         email_list: str,
         subject: str,
         body: str,
-        affiliate_links: List[str],
+        affiliate_links: list[str],
         send_time: str,
     ) -> AutomationTask:
         """Schedule email campaign via email platform."""
@@ -151,7 +152,7 @@ class AffiliateAutomationOrchestrator:
         self.tasks.append(task)
         return task
 
-    def execute_task(self, task: AutomationTask) -> Dict[str, Any]:
+    def execute_task(self, task: AutomationTask) -> dict[str, Any]:
         """Execute automation task via Computer Use."""
         result = {
             "task_id": task.task_id,
@@ -166,7 +167,7 @@ class AffiliateAutomationOrchestrator:
         logger.info(f"Queued automation task: {task.task_id}")
         return result
 
-    def get_pending_tasks(self) -> List[AutomationTask]:
+    def get_pending_tasks(self) -> list[AutomationTask]:
         """Get tasks not yet executed."""
         return [t for t in self.tasks if t.task_id not in self.completed_tasks]
 
@@ -183,7 +184,7 @@ class PlatformAutomationAdapter:
     """Adapt automation tasks to specific platforms."""
 
     @staticmethod
-    def get_platform_commands(platform: str) -> Dict[str, str]:
+    def get_platform_commands(platform: str) -> dict[str, str]:
         """Get platform-specific command templates."""
         commands = {
             "hotmart": {
@@ -216,7 +217,7 @@ class PlatformAutomationAdapter:
 
     @staticmethod
     def generate_cu_instruction(
-        platform: str, action: str, params: Dict[str, str]
+        platform: str, action: str, params: dict[str, str]
     ) -> str:
         """Generate Computer Use instruction for platform action."""
         if platform == "hotmart" and action == "create_campaign":

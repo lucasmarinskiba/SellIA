@@ -1,11 +1,11 @@
 """Predictive analytics API — demand + churn + revenue forecasting."""
 
-from uuid import UUID
-from typing import Optional, List
-from decimal import Decimal
 from datetime import datetime
+from decimal import Decimal
+from typing import Annotated
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -19,7 +19,7 @@ class PredictChurnRequest(BaseModel):
     customer_id: UUID
     days_since_purchase: int
     purchase_frequency: Decimal
-    engagement_score: Optional[Decimal] = None
+    engagement_score: Decimal | None = None
 
 
 class PredictPurchaseTimingRequest(BaseModel):
@@ -30,27 +30,27 @@ class PredictPurchaseTimingRequest(BaseModel):
 
 class ForecastDemandRequest(BaseModel):
     product_category: str
-    historical_units: List[int]
+    historical_units: list[int]
     forecast_days: int = 30
 
 
 class ForecastRevenueRequest(BaseModel):
-    historical_revenue: List[float]
-    new_customer_ratio: Optional[Decimal] = Decimal("0.3")
+    historical_revenue: list[float]
+    new_customer_ratio: Decimal | None = Decimal("0.3")
     forecast_horizon: str = "next_30_days"
 
 
 class EvaluateAccuracyRequest(BaseModel):
     prediction_type: str
-    predictions: List[float]
-    actuals: List[float]
+    predictions: list[float]
+    actuals: list[float]
 
 
 @router.post("/businesses/{business_id}/predict-churn")
 def predict_churn(
     business_id: UUID,
     request: PredictChurnRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Predict customer churn probability."""
     return PredictiveAnalyticsService.predict_churn(
@@ -58,8 +58,8 @@ def predict_churn(
         customer_id=request.customer_id,
         days_since_purchase=request.days_since_purchase,
         purchase_frequency=request.purchase_frequency,
-        engagement_score=request.engagement_score or Decimal("5"),
-        db=db
+        engagement_score=request.engagement_score or Decimal(5),
+        db=db,
     )
 
 
@@ -67,16 +67,18 @@ def predict_churn(
 def predict_purchase_timing(
     business_id: UUID,
     request: PredictPurchaseTimingRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Predict next purchase timing."""
-    last_purchase = datetime.fromisoformat(f"{request.last_purchase_date}T00:00:00+00:00")
+    last_purchase = datetime.fromisoformat(
+        f"{request.last_purchase_date}T00:00:00+00:00"
+    )
     return PredictiveAnalyticsService.predict_purchase_timing(
         business_id=business_id,
         customer_id=request.customer_id,
         avg_purchase_interval=request.avg_purchase_interval,
         last_purchase_date=last_purchase,
-        db=db
+        db=db,
     )
 
 
@@ -84,7 +86,7 @@ def predict_purchase_timing(
 def forecast_demand(
     business_id: UUID,
     request: ForecastDemandRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Forecast product demand."""
     return PredictiveAnalyticsService.forecast_demand(
@@ -92,7 +94,7 @@ def forecast_demand(
         product_category=request.product_category,
         historical_units=request.historical_units,
         forecast_days=request.forecast_days,
-        db=db
+        db=db,
     )
 
 
@@ -100,7 +102,7 @@ def forecast_demand(
 def forecast_revenue(
     business_id: UUID,
     request: ForecastRevenueRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Forecast business revenue."""
     return PredictiveAnalyticsService.forecast_revenue(
@@ -108,7 +110,7 @@ def forecast_revenue(
         historical_revenue=request.historical_revenue,
         new_customer_ratio=request.new_customer_ratio,
         forecast_horizon=request.forecast_horizon,
-        db=db
+        db=db,
     )
 
 
@@ -116,7 +118,7 @@ def forecast_revenue(
 def evaluate_accuracy(
     business_id: UUID,
     request: EvaluateAccuracyRequest,
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Evaluate prediction model accuracy."""
     return PredictiveAnalyticsService.evaluate_prediction_accuracy(
@@ -124,5 +126,5 @@ def evaluate_accuracy(
         prediction_type=request.prediction_type,
         predictions=request.predictions,
         actuals=request.actuals,
-        db=db
+        db=db,
     )

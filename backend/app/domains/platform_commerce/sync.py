@@ -13,9 +13,9 @@ updates rather than duplicates.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal, InvalidOperation
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,7 +29,7 @@ logger = get_logger(__name__)
 DEFAULT_LOOKBACK_DAYS = 60
 
 
-def _decimal(value: Any) -> Optional[Decimal]:
+def _decimal(value: Any) -> Decimal | None:
     if value is None or value == "":
         return None
     try:
@@ -53,26 +53,32 @@ def normalize_order(platform: str, raw: dict[str, Any]) -> dict[str, Any]:
     the P&L then reports as unknown. Guessing a total from a partial payload
     would put a wrong number in a revenue figure.
     """
-    total = _decimal(_first(raw, "total_amount", "OrderTotal", "total", "payment_total", "price"))
-    if isinstance(total, Decimal) is False and isinstance(_first(raw, "OrderTotal"), dict):
+    total = _decimal(
+        _first(raw, "total_amount", "OrderTotal", "total", "payment_total", "price")
+    )
+    if isinstance(total, Decimal) is False and isinstance(
+        _first(raw, "OrderTotal"), dict
+    ):
         total = _decimal((_first(raw, "OrderTotal") or {}).get("Amount"))
 
     currency = _first(raw, "currency", "CurrencyCode", "currency_code")
     if currency is None and isinstance(_first(raw, "OrderTotal"), dict):
         currency = (_first(raw, "OrderTotal") or {}).get("CurrencyCode")
 
-    external_id = _first(raw, "id", "order_id", "AmazonOrderId", "transaction", "order_sn")
+    external_id = _first(
+        raw, "id", "order_id", "AmazonOrderId", "transaction", "order_sn"
+    )
     created_raw = _first(raw, "created_at", "PurchaseDate", "create_time", "order_date")
 
-    created_at: Optional[datetime] = None
+    created_at: datetime | None = None
     if isinstance(created_raw, (int, float)):
         try:
-            created_at = datetime.fromtimestamp(float(created_raw), tz=timezone.utc)
+            created_at = datetime.fromtimestamp(float(created_raw), tz=UTC)
         except (OverflowError, OSError, ValueError):
             created_at = None
     elif isinstance(created_raw, str):
         try:
-            created_at = datetime.fromisoformat(created_raw.replace("Z", "+00:00"))
+            created_at = datetime.fromisoformat(created_raw)
         except ValueError:
             created_at = None
 
@@ -115,7 +121,7 @@ async def sync_platform_orders(
 
     connector = get_connector(ChannelPlatform(platform), credentials, settings)
     method = getattr(connector, method_name)
-    since = datetime.now(timezone.utc) - timedelta(days=lookback_days)
+    since = datetime.now(UTC) - timedelta(days=lookback_days)
 
     try:
         # Each connector names its window parameter differently; try the ones
@@ -124,7 +130,8 @@ async def sync_platform_orders(
             raw_orders = await method(since.strftime("%Y-%m-%dT%H:%M:%SZ"))
         except TypeError:
             raw_orders = await method()
-    except Exception as e:  # noqa: BLE001 -- a platform error is a real result
+    # a platform error is a real result
+    except Exception as e:  # noqa: BLE001
         logger.warning("order sync failed for %s: %s", platform, str(e)[:200])
         return {
             "platform": platform,
@@ -188,10 +195,13 @@ async def sync_platform_orders(
         # Paid/settled states differ per platform; only mark paid on words the
         # platforms really use, never by assumption.
         status_raw = str(norm["status_raw"] or "").lower()
-        if any(word in status_raw for word in ("paid", "approved", "complete", "shipped", "delivered")):
+        if any(
+            word in status_raw
+            for word in ("paid", "approved", "complete", "shipped", "delivered")
+        ):
             order.payment_status = PaymentStatus.COMPLETED
             if order.paid_at is None:
-                order.paid_at = norm["created_at"] or datetime.now(timezone.utc)
+                order.paid_at = norm["created_at"] or datetime.now(UTC)
 
     await db.commit()
     return {
@@ -205,7 +215,9 @@ async def sync_platform_orders(
     }
 
 
-async def sync_all(db: AsyncSession, business_ids: list[uuid.UUID]) -> list[dict[str, Any]]:
+async def sync_all(
+    db: AsyncSession, business_ids: list[uuid.UUID]
+) -> list[dict[str, Any]]:
     """Sync every connected platform that can report orders."""
     from app.domains.channels.models import ChannelConnection
 
@@ -220,17 +232,34 @@ async def sync_all(db: AsyncSession, business_ids: list[uuid.UUID]) -> list[dict
     )
     results: list[dict[str, Any]] = []
     for channel in result.scalars().all():
-        platform = channel.platform.value if hasattr(channel.platform, "value") else str(channel.platform)
+        platform = (
+            channel.platform.value
+            if hasattr(channel.platform, "value")
+            else str(channel.platform)
+        )
         if not capabilities.can(platform, "orders"):
             continue
         try:
-            results.append(await sync_platform_orders(
-                db, channel.business_id, platform, channel.credentials or {}, channel.settings or {},
-            ))
-        except Exception as e:  # noqa: BLE001 -- one platform must not sink the sweep
+            results.append(
+                await sync_platform_orders(
+                    db,
+                    channel.business_id,
+                    platform,
+                    channel.credentials or {},
+                    channel.settings or {},
+                )
+            )
+        # one platform must not sink the sweep
+        except Exception as e:  # noqa: BLE001
             logger.warning("sync_all failed for %s: %s", platform, str(e)[:200])
-            results.append({
-                "platform": platform, "supported": True, "ok": False,
-                "reason": str(e)[:160], "imported": 0, "updated": 0,
-            })
+            results.append(
+                {
+                    "platform": platform,
+                    "supported": True,
+                    "ok": False,
+                    "reason": str(e)[:160],
+                    "imported": 0,
+                    "updated": 0,
+                }
+            )
     return results

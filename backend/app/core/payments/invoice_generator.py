@@ -13,21 +13,30 @@ Database model: Invoice (from payment_models.py)
 """
 
 import logging
-import os
-from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
-from io import BytesIO
-import json
 from enum import Enum
+from io import BytesIO
+from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
 try:
-    from reportlab.lib.pagesizes import letter, A4
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.units import inch
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
     from reportlab.lib import colors
+
+    # sonda de disponibilidad
+    from reportlab.lib.pagesizes import A4, letter  # noqa: F401
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+    from reportlab.lib.units import inch
+    from reportlab.platypus import (
+        Paragraph,
+        SimpleDocTemplate,
+        Spacer,
+        Table,
+        TableStyle,
+    )
+
     HAS_REPORTLAB = True
 except ImportError:
     HAS_REPORTLAB = False
@@ -36,6 +45,7 @@ except ImportError:
 
 class InvoiceStatus(str, Enum):
     """Invoice statuses."""
+
     DRAFT = "draft"
     SENT = "sent"
     VIEWED = "viewed"
@@ -53,14 +63,14 @@ class InvoiceGenerator:
         order_id: str,
         customer_name: str,
         customer_email: str,
-        items: List[Dict[str, Any]],
+        items: list[dict[str, Any]],
         amount_total: float,
         currency: str = "USD",
         tax_rate: float = 0.0,
         notes: str = "",
         due_days: int = 7,
-        seller_info: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+        seller_info: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         """
         Generate an invoice.
 
@@ -97,7 +107,7 @@ class InvoiceGenerator:
             amount_due = amount_subtotal + amount_tax
 
             # Generate invoice ID and number
-            timestamp = datetime.utcnow()
+            timestamp = utc_now()
             invoice_id = f"inv_{order_id}_{int(timestamp.timestamp())}"
             invoice_number = f"INV-{timestamp.strftime('%Y%m%d')}-{order_id[-6:]}"
 
@@ -159,7 +169,7 @@ class InvoiceGenerator:
             return result
 
         except Exception as e:
-            logger.error(f"Invoice generation error: {str(e)}")
+            logger.exception("Invoice generation error")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -169,14 +179,14 @@ class InvoiceGenerator:
         due_date: datetime,
         customer_name: str,
         customer_email: str,
-        items: List[Dict[str, Any]],
+        items: list[dict[str, Any]],
         amount_subtotal: float,
         tax_rate: float,
         amount_tax: float,
         amount_due: float,
         currency: str = "USD",
         notes: str = "",
-        seller_info: Optional[Dict[str, str]] = None,
+        seller_info: dict[str, str] | None = None,
     ) -> str:
         """Build HTML invoice template."""
 
@@ -312,12 +322,12 @@ class InvoiceGenerator:
         invoice_date: datetime,
         due_date: datetime,
         customer_name: str,
-        items: List[Dict[str, Any]],
+        items: list[dict[str, Any]],
         amount_subtotal: float,
         amount_tax: float,
         amount_due: float,
         currency: str = "USD",
-        seller_info: Optional[Dict[str, str]] = None,
+        seller_info: dict[str, str] | None = None,
     ) -> bytes:
         """Generate PDF invoice using reportlab."""
 
@@ -353,11 +363,13 @@ class InvoiceGenerator:
 
         details_table = Table(details_data)
         details_table.setStyle(
-            TableStyle([
-                ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
-                ("FONTSIZE", (0, 0), (-1, -1), 10),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ])
+            TableStyle(
+                [
+                    ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+                    ("FONTSIZE", (0, 0), (-1, -1), 10),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ]
+            )
         )
         elements.append(details_table)
         elements.append(Spacer(1, 0.3 * inch))
@@ -368,31 +380,37 @@ class InvoiceGenerator:
             qty = item.get("qty", 1)
             unit_price = item.get("unit_price", 0)
             line_total = qty * unit_price
-            table_data.append([
-                item.get("name", "Item"),
-                str(qty),
-                f"${unit_price:.2f}",
-                f"${line_total:.2f}",
-            ])
+            table_data.append(
+                [
+                    item.get("name", "Item"),
+                    str(qty),
+                    f"${unit_price:.2f}",
+                    f"${line_total:.2f}",
+                ]
+            )
 
         # Add totals
         table_data.append(["", "", "Subtotal:", f"${amount_subtotal:.2f}"])
         table_data.append(["", "", "Tax:", f"${amount_tax:.2f}"])
         table_data.append(["", "", "TOTAL:", f"${amount_due:.2f}"])
 
-        items_table = Table(table_data, colWidths=[3 * inch, 0.75 * inch, 1 * inch, 1 * inch])
+        items_table = Table(
+            table_data, colWidths=[3 * inch, 0.75 * inch, 1 * inch, 1 * inch]
+        )
         items_table.setStyle(
-            TableStyle([
-                ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, 0), 10),
-                ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
-                ("BACKGROUND", (0, -1), (-1, -1), colors.beige),
-                ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
-                ("GRID", (0, 0), (-1, -1), 1, colors.black),
-            ])
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 0), (-1, 0), 10),
+                    ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+                    ("BACKGROUND", (0, -1), (-1, -1), colors.beige),
+                    ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+                    ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                ]
+            )
         )
         elements.append(items_table)
 
@@ -409,8 +427,8 @@ class InvoiceGenerator:
         customer_name: str,
         invoice_number: str,
         html_content: str,
-        pdf_bytes: Optional[bytes] = None,
-    ) -> Dict[str, Any]:
+        pdf_bytes: bytes | None = None,
+    ) -> dict[str, Any]:
         """
         Send invoice via email.
 
@@ -429,12 +447,14 @@ class InvoiceGenerator:
             }
         """
         try:
-            from app.core.integrations.sendgrid_email import EmailService  # NOTE: sendgrid pip package not installed + no SENDGRID_API_KEY configured -- this call path will still ImportError until that gap is addressed
+            from app.core.integrations.sendgrid_email import (
+                EmailService,  # NOTE: sendgrid pip package not installed + no SENDGRID_API_KEY configured -- this call path will still ImportError until that gap is addressed
+            )
 
             # Send via SendGrid
             subject = f"Invoice {invoice_number}"
 
-            result = EmailService.send_transactional(
+            EmailService.send_transactional(
                 to_email=customer_email,
                 subject=subject,
                 html_content=html_content,
@@ -449,5 +469,5 @@ class InvoiceGenerator:
             }
 
         except Exception as e:
-            logger.error(f"Error sending invoice email: {str(e)}")
+            logger.exception("Error sending invoice email")
             return {"status": "error", "error": str(e)}

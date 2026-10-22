@@ -1,8 +1,10 @@
 """HubSpot CRM adapter - Production integration."""
 
-from typing import Optional, Dict, Any, List
 import logging
+from typing import Any
+
 import httpx
+
 from app.domains.crm.crm_adapter import CRMAdapter, CRMLead, CRMType
 
 logger = logging.getLogger(__name__)
@@ -27,8 +29,8 @@ class HubSpotAdapter(CRMAdapter):
         self,
         method: str,
         endpoint: str,
-        data: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        data: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Make authenticated API call to HubSpot."""
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -50,7 +52,7 @@ class HubSpotAdapter(CRMAdapter):
             response.raise_for_status()
             return response.json()
 
-    def _extract_lead_from_hubspot(self, record: Dict[str, Any]) -> CRMLead:
+    def _extract_lead_from_hubspot(self, record: dict[str, Any]) -> CRMLead:
         """Extract CRMLead from HubSpot contact/company record."""
         props = record.get("properties", {})
 
@@ -66,12 +68,26 @@ class HubSpotAdapter(CRMAdapter):
             email=props.get("email", ""),
             phone=props.get("phone"),
             industry=props.get("industry"),
-            company_size=int(props.get("numberofemployees", 0)) if props.get("numberofemployees") else None,
-            annual_revenue=float(props.get("annualrevenue", 0)) if props.get("annualrevenue") else None,
-            lead_score=int(props.get("hs_lead_status", 0)) if props.get("hs_lead_status") else None,
+            company_size=(
+                int(props.get("numberofemployees", 0))
+                if props.get("numberofemployees")
+                else None
+            ),
+            annual_revenue=(
+                float(props.get("annualrevenue", 0))
+                if props.get("annualrevenue")
+                else None
+            ),
+            lead_score=(
+                int(props.get("hs_lead_status", 0))
+                if props.get("hs_lead_status")
+                else None
+            ),
             source=props.get("source"),
             stage=props.get("lifecyclestage"),
-            estimated_value=float(props.get("deal_amount", 0)) if props.get("deal_amount") else None,
+            estimated_value=(
+                float(props.get("deal_amount", 0)) if props.get("deal_amount") else None
+            ),
             budget=props.get("budget"),
             email_opens=emails_opened,
             demo_attended=demo_attended,
@@ -79,20 +95,18 @@ class HubSpotAdapter(CRMAdapter):
             custom_fields={k: v for k, v in props.items() if k.startswith("custom_")},
         )
 
-    async def fetch_lead(self, lead_id: str) -> Optional[CRMLead]:
+    async def fetch_lead(self, lead_id: str) -> CRMLead | None:
         """Fetch single contact from HubSpot."""
         try:
             endpoint = f"/crm/v3/objects/contacts/{lead_id}"
             result = await self._api_call("GET", endpoint)
             return self._extract_lead_from_hubspot(result)
 
-        except Exception as e:
-            logger.error(f"HubSpot fetch_lead failed: {lead_id} - {e}")
+        except Exception:
+            logger.exception(f"HubSpot fetch_lead failed: {lead_id}")
             return None
 
-    async def fetch_leads(
-        self, filters: Optional[Dict[str, Any]] = None
-    ) -> List[CRMLead]:
+    async def fetch_leads(self, filters: dict[str, Any] | None = None) -> list[CRMLead]:
         """Fetch multiple contacts from HubSpot with optional filtering."""
         try:
             # Build filter query
@@ -156,11 +170,11 @@ class HubSpotAdapter(CRMAdapter):
             logger.info(f"Fetched {len(leads)} leads from HubSpot")
             return leads
 
-        except Exception as e:
-            logger.error(f"HubSpot fetch_leads failed: {e}")
+        except Exception:
+            logger.exception("HubSpot fetch_leads failed")
             return []
 
-    async def update_lead(self, lead_id: str, data: Dict[str, Any]) -> bool:
+    async def update_lead(self, lead_id: str, data: dict[str, Any]) -> bool:
         """Update contact in HubSpot."""
         try:
             # Map field names to HubSpot properties
@@ -181,8 +195,8 @@ class HubSpotAdapter(CRMAdapter):
             logger.info(f"Updated contact {lead_id} in HubSpot")
             return True
 
-        except Exception as e:
-            logger.error(f"HubSpot update_lead failed: {lead_id} - {e}")
+        except Exception:
+            logger.exception(f"HubSpot update_lead failed: {lead_id}")
             return False
 
     async def create_activity(
@@ -203,6 +217,6 @@ class HubSpotAdapter(CRMAdapter):
             logger.info(f"Logged activity for contact {lead_id}: {activity_type}")
             return True
 
-        except Exception as e:
-            logger.error(f"HubSpot create_activity failed: {lead_id} - {e}")
+        except Exception:
+            logger.exception(f"HubSpot create_activity failed: {lead_id}")
             return False

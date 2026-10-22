@@ -35,7 +35,7 @@ async def get_platforms_status(user_id: str = Query(...)):
                 "listings_count": 0,
                 "orders_count": 0,
             },
-        ]
+        ],
     }
 
 
@@ -50,7 +50,7 @@ async def get_auth_url(platform: str = Query(...), user_id: str = Query(...)):
     return {
         "platform": platform,
         "auth_url": auth_urls.get(platform, ""),
-        "message": f"Redirect to {platform} OAuth provider"
+        "message": f"Redirect to {platform} OAuth provider",
     }
 
 
@@ -60,7 +60,7 @@ async def disconnect_platform(platform: str = Query(...), user_id: str = Query(.
     return {
         "platform": platform,
         "message": f"Disconnected from {platform}",
-        "connected": False
+        "connected": False,
     }
 
 
@@ -72,5 +72,5 @@ async def sync_platform(platform: str = Query(...), user_id: str = Query(...)):
         "status": "syncing",
         "message": "Platform sync initiated",
         "last_sync": "2025-01-15T10:30:00Z",
-        "next_sync": "2025-01-15T10:35:00Z"
+        "next_sync": "2025-01-15T10:35:00Z",
     }

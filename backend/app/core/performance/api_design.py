@@ -1,7 +1,7 @@
 """API Design — Optimization, pagination, rate limiting."""
 
 import logging
-from typing import Dict, List, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ class APIDesign:
     def cursor_based_pagination(
         total_items: int,
         page_size: int = 20,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Cursor-based pagination (more efficient than offset)."""
 
         return {
@@ -21,11 +21,15 @@ class APIDesign:
             "page_size": page_size,
             "cursor_field": "id",
             "total_pages": (total_items + page_size - 1) // page_size,
-            "advantages": ["Fast", "Handles concurrent changes", "No offset computation"],
+            "advantages": [
+                "Fast",
+                "Handles concurrent changes",
+                "No offset computation",
+            ],
         }
 
     @staticmethod
-    def rate_limiting_strategy() -> Dict[str, Any]:
+    def rate_limiting_strategy() -> dict[str, Any]:
         """Rate limiting configuration."""
 
         return {
@@ -38,7 +42,7 @@ class APIDesign:
         }
 
     @staticmethod
-    def response_compression() -> Dict[str, Any]:
+    def response_compression() -> dict[str, Any]:
         """Response compression settings."""
 
         return {
@@ -49,7 +53,7 @@ class APIDesign:
         }
 
     @staticmethod
-    def cache_headers_strategy() -> Dict[str, Any]:
+    def cache_headers_strategy() -> dict[str, Any]:
         """HTTP caching headers."""
 
         return {
@@ -61,7 +65,7 @@ class APIDesign:
         }
 
     @staticmethod
-    def rest_vs_graphql() -> Dict[str, Any]:
+    def rest_vs_graphql() -> dict[str, Any]:
         """Comparison and hybrid approach."""
 
         return {

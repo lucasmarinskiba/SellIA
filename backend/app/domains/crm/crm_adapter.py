@@ -1,16 +1,17 @@
 """CRM Adapter - Unified interface for Salesforce, HubSpot, Pipedrive, custom data."""
 
-from typing import List, Dict, Any, Optional
+import logging
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from abc import ABC, abstractmethod
-import logging
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
 
 class CRMType(str, Enum):
     """Supported CRM platforms."""
+
     SALESFORCE = "salesforce"
     HUBSPOT = "hubspot"
     PIPEDRIVE = "pipedrive"
@@ -20,38 +21,39 @@ class CRMType(str, Enum):
 @dataclass
 class CRMLead:
     """Unified lead structure from any CRM."""
+
     id: str
     company_name: str
     contact_name: str
     email: str
-    phone: Optional[str] = None
-    industry: Optional[str] = None
-    company_size: Optional[int] = None  # employees
-    annual_revenue: Optional[float] = None
-    website: Optional[str] = None
+    phone: str | None = None
+    industry: str | None = None
+    company_size: int | None = None  # employees
+    annual_revenue: float | None = None
+    website: str | None = None
 
     # Sales signals
-    lead_score: Optional[float] = None  # 0-100
-    source: Optional[str] = None  # "LinkedIn", "Inbound", "Referral"
-    stage: Optional[str] = None  # "new", "qualified", "proposal", "negotiation"
-    owner: Optional[str] = None
+    lead_score: float | None = None  # 0-100
+    source: str | None = None  # "LinkedIn", "Inbound", "Referral"
+    stage: str | None = None  # "new", "qualified", "proposal", "negotiation"
+    owner: str | None = None
 
     # Engagement signals
-    email_opens: Optional[int] = None
-    email_clicks: Optional[int] = None
-    page_views: Optional[int] = None
-    demo_attended: Optional[bool] = False
-    call_scheduled: Optional[bool] = False
+    email_opens: int | None = None
+    email_clicks: int | None = None
+    page_views: int | None = None
+    demo_attended: bool | None = False
+    call_scheduled: bool | None = False
 
     # Deal info
-    estimated_value: Optional[float] = None  # $ amount
-    close_date: Optional[str] = None  # ISO date
-    budget: Optional[str] = None  # "50k-100k"
+    estimated_value: float | None = None  # $ amount
+    close_date: str | None = None  # ISO date
+    budget: str | None = None  # "50k-100k"
 
     # Custom fields
-    custom_fields: Dict[str, Any] = None
+    custom_fields: dict[str, Any] = None
 
-    def dict(self) -> Dict[str, Any]:
+    def dict(self) -> dict[str, Any]:
         """Convert to dict."""
         return {
             "id": self.id,
@@ -85,26 +87,22 @@ class CRMAdapter(ABC):
     crm_type: CRMType
 
     @abstractmethod
-    async def fetch_lead(self, lead_id: str) -> Optional[CRMLead]:
+    async def fetch_lead(self, lead_id: str) -> CRMLead | None:
         """Fetch single lead from CRM."""
-        pass
 
     @abstractmethod
-    async def fetch_leads(self, filters: Optional[Dict[str, Any]] = None) -> List[CRMLead]:
+    async def fetch_leads(self, filters: dict[str, Any] | None = None) -> list[CRMLead]:
         """Fetch multiple leads from CRM."""
-        pass
 
     @abstractmethod
-    async def update_lead(self, lead_id: str, data: Dict[str, Any]) -> bool:
+    async def update_lead(self, lead_id: str, data: dict[str, Any]) -> bool:
         """Update lead in CRM."""
-        pass
 
     @abstractmethod
     async def create_activity(
         self, lead_id: str, activity_type: str, description: str
     ) -> bool:
         """Log activity (email, call, note) in CRM."""
-        pass
 
 
 class MockCRMAdapter(CRMAdapter):
@@ -115,7 +113,7 @@ class MockCRMAdapter(CRMAdapter):
     def __init__(self):
         self.leads_db = self._init_sample_data()
 
-    def _init_sample_data(self) -> Dict[str, CRMLead]:
+    def _init_sample_data(self) -> dict[str, CRMLead]:
         """Initialize sample CRM data for testing."""
         return {
             "lead_001": CRMLead(
@@ -230,14 +228,12 @@ class MockCRMAdapter(CRMAdapter):
             ),
         }
 
-    async def fetch_lead(self, lead_id: str) -> Optional[CRMLead]:
+    async def fetch_lead(self, lead_id: str) -> CRMLead | None:
         """Fetch single lead."""
         logger.info(f"Fetching lead {lead_id} from mock CRM")
         return self.leads_db.get(lead_id)
 
-    async def fetch_leads(
-        self, filters: Optional[Dict[str, Any]] = None
-    ) -> List[CRMLead]:
+    async def fetch_leads(self, filters: dict[str, Any] | None = None) -> list[CRMLead]:
         """Fetch multiple leads with optional filtering."""
         leads = list(self.leads_db.values())
 
@@ -249,16 +245,16 @@ class MockCRMAdapter(CRMAdapter):
         for lead in leads:
             match = True
             for key, value in filters.items():
-                if key == "min_lead_score" and (lead.lead_score or 0) < value:
-                    match = False
-                    break
-                elif key == "stage" and lead.stage != value:
-                    match = False
-                    break
-                elif key == "industry" and lead.industry != value:
-                    match = False
-                    break
-                elif key == "min_company_size" and (lead.company_size or 0) < value:
+                if (
+                    key == "min_lead_score"
+                    and (lead.lead_score or 0) < value
+                    or key == "stage"
+                    and lead.stage != value
+                    or key == "industry"
+                    and lead.industry != value
+                    or key == "min_company_size"
+                    and (lead.company_size or 0) < value
+                ):
                     match = False
                     break
 
@@ -268,7 +264,7 @@ class MockCRMAdapter(CRMAdapter):
         logger.info(f"Fetched {len(filtered)} leads matching filters {filters}")
         return filtered
 
-    async def update_lead(self, lead_id: str, data: Dict[str, Any]) -> bool:
+    async def update_lead(self, lead_id: str, data: dict[str, Any]) -> bool:
         """Update lead in mock CRM."""
         if lead_id not in self.leads_db:
             logger.warning(f"Lead {lead_id} not found")
@@ -289,20 +285,18 @@ class MockCRMAdapter(CRMAdapter):
         if lead_id not in self.leads_db:
             return False
 
-        logger.info(
-            f"Activity logged for {lead_id}: {activity_type} - {description}"
-        )
+        logger.info(f"Activity logged for {lead_id}: {activity_type} - {description}")
         return True
 
 
 class CRMAdapterFactory:
     """Factory for creating CRM adapters."""
 
-    _adapters: Dict[CRMType, CRMAdapter] = {}
+    _adapters: ClassVar[dict[CRMType, CRMAdapter]] = {}
 
     @classmethod
     async def create_adapter(
-        cls, crm_type: CRMType, config: Optional[Dict[str, Any]] = None
+        cls, crm_type: CRMType, config: dict[str, Any] | None = None
     ) -> CRMAdapter:
         """Create CRM adapter based on type."""
         if crm_type == CRMType.CUSTOM:
@@ -313,8 +307,11 @@ class CRMAdapterFactory:
         elif crm_type == CRMType.SALESFORCE:
             if CRMType.SALESFORCE not in cls._adapters:
                 if not config:
-                    raise ValueError("Salesforce config required: instance_url, client_id, client_secret, username, password")
+                    raise ValueError(
+                        "Salesforce config required: instance_url, client_id, client_secret, username, password"
+                    )
                 from app.domains.crm.salesforce_adapter import SalesforceAdapter
+
                 cls._adapters[CRMType.SALESFORCE] = SalesforceAdapter(
                     instance_url=config["instance_url"],
                     client_id=config["client_id"],
@@ -329,6 +326,7 @@ class CRMAdapterFactory:
                 if not config or "api_key" not in config:
                     raise ValueError("HubSpot config required: api_key")
                 from app.domains.crm.hubspot_adapter import HubSpotAdapter
+
                 cls._adapters[CRMType.HUBSPOT] = HubSpotAdapter(
                     api_key=config["api_key"]
                 )

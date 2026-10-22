@@ -1,13 +1,15 @@
 """Cache Layer — Redis caching for KPIs, market data, agent status."""
 
+import hashlib
 import json
 import logging
-import time
-from typing import Any, Dict, List, Optional, TypeVar, Generic, Callable
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from functools import wraps
-from dataclasses import dataclass
-import hashlib
+from typing import Any, TypeVar
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +34,7 @@ class CacheKeyBuilder:
 @dataclass
 class CacheEntry:
     """Cache entry metadata."""
+
     key: str
     value: Any
     ttl_seconds: int
@@ -41,13 +44,13 @@ class CacheEntry:
 
     def is_expired(self) -> bool:
         """Check if entry has expired."""
-        return datetime.utcnow() > self.created_at + timedelta(seconds=self.ttl_seconds)
+        return utc_now() > self.created_at + timedelta(seconds=self.ttl_seconds)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "key": self.key,
             "ttl_seconds": self.ttl_seconds,
-            "age_seconds": int((datetime.utcnow() - self.created_at).total_seconds()),
+            "age_seconds": int((utc_now() - self.created_at).total_seconds()),
             "hit_count": self.hit_count,
             "created_at": self.created_at.isoformat(),
             "accessed_at": self.accessed_at.isoformat(),
@@ -59,12 +62,12 @@ class LocalCache:
 
     def __init__(self, max_size: int = 10000):
         """Initialize local cache."""
-        self.cache: Dict[str, CacheEntry] = {}
+        self.cache: dict[str, CacheEntry] = {}
         self.max_size = max_size
         self.hits = 0
         self.misses = 0
 
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         """Get value from cache."""
         entry = self.cache.get(key)
 
@@ -78,7 +81,7 @@ class LocalCache:
             return None
 
         entry.hit_count += 1
-        entry.accessed_at = datetime.utcnow()
+        entry.accessed_at = utc_now()
         self.hits += 1
         return entry.value
 
@@ -86,18 +89,15 @@ class LocalCache:
         """Set value in cache."""
         # Evict oldest entry if at max size
         if len(self.cache) >= self.max_size:
-            oldest_key = min(
-                self.cache.keys(),
-                key=lambda k: self.cache[k].accessed_at
-            )
+            oldest_key = min(self.cache.keys(), key=lambda k: self.cache[k].accessed_at)
             del self.cache[oldest_key]
 
         self.cache[key] = CacheEntry(
             key=key,
             value=value,
             ttl_seconds=ttl_seconds,
-            created_at=datetime.utcnow(),
-            accessed_at=datetime.utcnow(),
+            created_at=utc_now(),
+            accessed_at=utc_now(),
         )
 
     async def delete(self, key: str) -> None:
@@ -110,7 +110,7 @@ class LocalCache:
         self.cache.clear()
         return count
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         total_requests = self.hits + self.misses
         hit_rate = self.hits / total_requests if total_requests > 0 else 0
@@ -132,7 +132,7 @@ class RedisCache:
         self.redis = redis_client
         self.local_stats = {"hits": 0, "misses": 0}
 
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         """Get value from Redis cache."""
         try:
             value = await self.redis.get(key)
@@ -149,8 +149,8 @@ class RedisCache:
             except (json.JSONDecodeError, TypeError):
                 return value
 
-        except Exception as e:
-            logger.error(f"Redis get error for key {key}: {e}")
+        except Exception:
+            logger.exception(f"Redis get error for key {key}")
             return None
 
     async def set(self, key: str, value: Any, ttl_seconds: int = 3600) -> None:
@@ -164,15 +164,15 @@ class RedisCache:
 
             await self.redis.setex(key, ttl_seconds, serialized)
 
-        except Exception as e:
-            logger.error(f"Redis set error for key {key}: {e}")
+        except Exception:
+            logger.exception(f"Redis set error for key {key}")
 
     async def delete(self, key: str) -> None:
         """Delete entry from Redis cache."""
         try:
             await self.redis.delete(key)
-        except Exception as e:
-            logger.error(f"Redis delete error for key {key}: {e}")
+        except Exception:
+            logger.exception(f"Redis delete error for key {key}")
 
     async def clear(self) -> int:
         """Clear Redis cache (all keys with app prefix)."""
@@ -182,16 +182,14 @@ class RedisCache:
             if keys:
                 await self.redis.delete(*keys)
             return len(keys)
-        except Exception as e:
-            logger.error(f"Redis clear error: {e}")
+        except Exception:
+            logger.exception("Redis clear error")
             return 0
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         total = self.local_stats["hits"] + self.local_stats["misses"]
-        hit_rate = (
-            self.local_stats["hits"] / total if total > 0 else 0
-        )
+        hit_rate = self.local_stats["hits"] / total if total > 0 else 0
 
         return {
             "hits": self.local_stats["hits"],
@@ -217,13 +215,13 @@ class CacheLayer:
     NAMESPACE_USER = "user"
     NAMESPACE_QUERY = "query"
 
-    def __init__(self, redis_client: Optional[Any] = None):
+    def __init__(self, redis_client: Any | None = None):
         """Initialize cache layer."""
         self.redis = RedisCache(redis_client) if redis_client else None
         self.local = LocalCache(max_size=10000)
         self.stats = {"redis_available": redis_client is not None}
 
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         """Get value from cache."""
         # Try Redis first if available
         if self.redis:
@@ -255,7 +253,7 @@ class CacheLayer:
         if self.redis:
             await self.redis.delete(key)
 
-    async def clear(self) -> Dict[str, int]:
+    async def clear(self) -> dict[str, int]:
         """Clear all caches."""
         local_count = await self.local.clear()
         redis_count = 0
@@ -314,7 +312,7 @@ class CacheLayer:
         key = CacheKeyBuilder.build(self.NAMESPACE_KPI, agent_id, metric_name)
         await self.set(key, value, ttl_seconds)
 
-    async def get_kpi(self, agent_id: str, metric_name: str) -> Optional[Any]:
+    async def get_kpi(self, agent_id: str, metric_name: str) -> Any | None:
         """Get cached KPI metric."""
         key = CacheKeyBuilder.build(self.NAMESPACE_KPI, agent_id, metric_name)
         return await self.get(key)
@@ -322,14 +320,14 @@ class CacheLayer:
     async def cache_market_data(
         self,
         market_id: str,
-        data: Dict[str, Any],
+        data: dict[str, Any],
         ttl_seconds: int = TTL_LONG,
     ) -> None:
         """Cache market data."""
         key = CacheKeyBuilder.build(self.NAMESPACE_MARKET, market_id)
         await self.set(key, data, ttl_seconds)
 
-    async def get_market_data(self, market_id: str) -> Optional[Dict[str, Any]]:
+    async def get_market_data(self, market_id: str) -> dict[str, Any] | None:
         """Get cached market data."""
         key = CacheKeyBuilder.build(self.NAMESPACE_MARKET, market_id)
         value = await self.get(key)
@@ -338,14 +336,14 @@ class CacheLayer:
     async def cache_agent_status(
         self,
         agent_id: str,
-        status: Dict[str, Any],
+        status: dict[str, Any],
         ttl_seconds: int = TTL_SHORT,
     ) -> None:
         """Cache agent status."""
         key = CacheKeyBuilder.build(self.NAMESPACE_AGENT, agent_id, "status")
         await self.set(key, status, ttl_seconds)
 
-    async def get_agent_status(self, agent_id: str) -> Optional[Dict[str, Any]]:
+    async def get_agent_status(self, agent_id: str) -> dict[str, Any] | None:
         """Get cached agent status."""
         key = CacheKeyBuilder.build(self.NAMESPACE_AGENT, agent_id, "status")
         value = await self.get(key)
@@ -361,12 +359,12 @@ class CacheLayer:
         key = CacheKeyBuilder.build(self.NAMESPACE_QUERY, query_hash)
         await self.set(key, result, ttl_seconds)
 
-    async def get_query_result(self, query_hash: str) -> Optional[Any]:
+    async def get_query_result(self, query_hash: str) -> Any | None:
         """Get cached query result."""
         key = CacheKeyBuilder.build(self.NAMESPACE_QUERY, query_hash)
         return await self.get(key)
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         return {
             "local_cache": self.local.get_stats(),

@@ -5,7 +5,6 @@ Mejora la velocidad y robustez de las sesiones.
 """
 
 import asyncio
-from typing import Optional, Callable
 
 from app.core.logger import get_logger
 
@@ -32,18 +31,24 @@ class SmartWait:
             elif state == "hidden":
                 await page.wait_for_selector(selector, state="hidden", timeout=timeout)
             elif state == "attached":
-                await page.wait_for_selector(selector, state="attached", timeout=timeout)
+                await page.wait_for_selector(
+                    selector, state="attached", timeout=timeout
+                )
             elif state == "detached":
-                await page.wait_for_selector(selector, state="detached", timeout=timeout)
+                await page.wait_for_selector(
+                    selector, state="detached", timeout=timeout
+                )
             return True
         except Exception as e:
-            logger.warning(f"SmartWait: element {selector} not {state}: {e}")
+            logger.warning(
+                f"SmartWait: element {selector} not {state}: {e}", exc_info=True
+            )
             return False
 
     async def wait_for_navigation(
         self,
         page,
-        url_pattern: Optional[str] = None,
+        url_pattern: str | None = None,
         timeout: int = DEFAULT_TIMEOUT,
     ) -> bool:
         """Espera a que ocurra una navegación."""
@@ -54,18 +59,19 @@ class SmartWait:
                 await page.wait_for_load_state("networkidle", timeout=timeout)
             return True
         except Exception as e:
-            logger.warning(f"SmartWait: navigation timeout: {e}")
+            logger.warning(f"SmartWait: navigation timeout: {e}", exc_info=True)
             return False
 
     async def wait_for_text(
         self,
         page,
         text: str,
-        selector: Optional[str] = None,
+        selector: str | None = None,
         timeout: int = DEFAULT_TIMEOUT,
     ) -> bool:
         """Espera a que aparezca un texto en la página."""
         import time
+
         start = time.time() * 1000
         while (time.time() * 1000 - start) < timeout:
             try:
@@ -80,7 +86,7 @@ class SmartWait:
                     if text in content:
                         return True
             except Exception:
-                pass
+                logger.exception("wait_for_text: error inesperado")
             await asyncio.sleep(self.POLL_INTERVAL / 1000)
         logger.warning(f"SmartWait: text '{text}' not found")
         return False
@@ -93,6 +99,7 @@ class SmartWait:
     ) -> bool:
         """Espera a que el DOM esté estable (sin cambios por N ms)."""
         import time
+
         start = time.time() * 1000
         last_html = ""
         stable_since = None
@@ -109,7 +116,7 @@ class SmartWait:
                     stable_since = None
                     last_html = current_html
             except Exception:
-                pass
+                logger.exception("wait_for_stable: error inesperado")
             await asyncio.sleep(self.POLL_INTERVAL / 1000)
 
         logger.warning("SmartWait: DOM never stabilized")
@@ -127,7 +134,9 @@ class SmartWait:
                 pass
             return True
         except Exception as e:
-            logger.warning(f"SmartWait: request {url_pattern} not seen: {e}")
+            logger.warning(
+                f"SmartWait: request {url_pattern} not seen: {e}", exc_info=True
+            )
             return False
 
     async def wait_for_console_message(
@@ -144,5 +153,5 @@ class SmartWait:
                 pass
             return True
         except Exception as e:
-            logger.warning(f"SmartWait: console message not seen: {e}")
+            logger.warning(f"SmartWait: console message not seen: {e}", exc_info=True)
             return False

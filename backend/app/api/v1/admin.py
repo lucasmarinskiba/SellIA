@@ -7,16 +7,16 @@ Cross-domain admin endpoints for platform management.
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.domains.consumo.models import ChurnRiskSignal
 from app.domains.consumo import service as consumo_service
+from app.domains.consumo.models import ChurnRiskSignal
 from app.domains.nps.models import FeedbackNPSResponse
 from app.domains.referrals.models import ReferralCode
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -26,20 +26,25 @@ async def get_db():
         yield session
 
 
-async def require_admin(current_user: User = Depends(get_current_user)) -> User:
+async def require_admin(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> User:
     if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
+        raise HTTPException(
+            status_code=403, detail="Requiere permisos de administrador"
+        )
     return current_user
 
 
 # ===== CHURN SIGNALS =====
 
+
 @router.get("/churn-signals")
 async def get_admin_churn_signals(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(require_admin)],
-    page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=200),
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=200)] = 50,
 ):
     """Admin-only: list ALL ChurnRiskSignal records with pagination."""
     offset = (page - 1) * page_size
@@ -81,17 +86,19 @@ async def get_admin_churn_signals(
 
 # ===== MARGINS =====
 
+
 @router.get("/margins")
 async def get_admin_margins(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(require_admin)],
-    days: int = Query(30, ge=1, le=90),
+    days: Annotated[int, Query(ge=1, le=90)] = 30,
 ):
     """Admin-only: margin analysis per user (plan price vs AI cost)."""
     return await consumo_service.get_user_margins(db, days=days)
 
 
 # ===== NPS STATS =====
+
 
 @router.get("/nps-stats")
 async def get_admin_nps_stats(
@@ -108,7 +115,9 @@ async def get_admin_nps_stats(
     promoters = promoters_result.scalar() or 0
 
     passives_result = await db.execute(
-        select(func.count(FeedbackNPSResponse.id)).where(FeedbackNPSResponse.score.between(7, 8))
+        select(func.count(FeedbackNPSResponse.id)).where(
+            FeedbackNPSResponse.score.between(7, 8)
+        )
     )
     passives = passives_result.scalar() or 0
 
@@ -133,23 +142,30 @@ async def get_admin_nps_stats(
 
 # ===== REFERRAL STATS =====
 
+
 @router.get("/referral-stats")
 async def get_admin_referral_stats(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(require_admin)],
-    top_n: int = Query(10, ge=1, le=100),
+    top_n: Annotated[int, Query(ge=1, le=100)] = 10,
 ):
     """Admin-only: global referral statistics."""
     total_codes_result = await db.execute(select(func.count(ReferralCode.id)))
     total_codes = total_codes_result.scalar() or 0
 
-    total_clicks_result = await db.execute(select(func.coalesce(func.sum(ReferralCode.total_clicks), 0)))
+    total_clicks_result = await db.execute(
+        select(func.coalesce(func.sum(ReferralCode.total_clicks), 0))
+    )
     total_clicks = total_clicks_result.scalar() or 0
 
-    total_signups_result = await db.execute(select(func.coalesce(func.sum(ReferralCode.total_signups), 0)))
+    total_signups_result = await db.execute(
+        select(func.coalesce(func.sum(ReferralCode.total_signups), 0))
+    )
     total_signups = total_signups_result.scalar() or 0
 
-    total_conversions_result = await db.execute(select(func.coalesce(func.sum(ReferralCode.total_conversions), 0)))
+    total_conversions_result = await db.execute(
+        select(func.coalesce(func.sum(ReferralCode.total_conversions), 0))
+    )
     total_conversions = total_conversions_result.scalar() or 0
 
     top_referrers_result = await db.execute(

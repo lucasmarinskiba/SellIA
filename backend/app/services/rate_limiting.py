@@ -1,12 +1,13 @@
 """Rate limiting + request deduplication for API resilience."""
 
-from dataclasses import dataclass
-from typing import Optional
-from datetime import datetime, timedelta
-from enum import Enum
 import hashlib
 import logging
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from enum import Enum
+from typing import ClassVar
 
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +32,9 @@ class RateLimit:
 
     def __post_init__(self):
         if self.minute_reset_at is None:
-            self.minute_reset_at = datetime.utcnow() + timedelta(minutes=1)
+            self.minute_reset_at = utc_now() + timedelta(minutes=1)
         if self.day_reset_at is None:
-            self.day_reset_at = datetime.utcnow() + timedelta(days=1)
+            self.day_reset_at = utc_now() + timedelta(days=1)
 
 
 @dataclass
@@ -46,7 +47,7 @@ class RequestSignature:
     method: str
     payload_hash: str
     created_at: datetime
-    response: Optional[dict] = None
+    response: dict | None = None
     response_time_ms: int = 0
 
 
@@ -60,7 +61,7 @@ class RateLimiter:
     - Resource exhaustion
     """
 
-    TIER_LIMITS = {
+    TIER_LIMITS: ClassVar[dict] = {
         RateLimitTier.FREE: {"per_minute": 100, "per_day": 10_000},
         RateLimitTier.PRO: {"per_minute": 1000, "per_day": 100_000},
         RateLimitTier.ENTERPRISE: {"per_minute": 10_000, "per_day": 1_000_000},
@@ -83,7 +84,7 @@ class RateLimiter:
             self.limits[user_id] = limit
 
         # Reset counters if windows expired
-        now = datetime.utcnow()
+        now = utc_now()
         if now > limit.minute_reset_at:
             limit.requests_this_minute = 0
             limit.minute_reset_at = now + timedelta(minutes=1)
@@ -112,7 +113,9 @@ class RateLimiter:
             "requests_limit_day": tier_limit["per_day"],
             "minute_reset_at": limit.minute_reset_at.isoformat(),
             "day_reset_at": limit.day_reset_at.isoformat(),
-            "retry_after_seconds": (limit.minute_reset_at - now).total_seconds() if not minute_ok else 0,
+            "retry_after_seconds": (
+                (limit.minute_reset_at - now).total_seconds() if not minute_ok else 0
+            ),
         }
 
         return allowed, info
@@ -174,7 +177,7 @@ class RequestDeduplicator:
         endpoint: str,
         method: str,
         payload: dict,
-    ) -> tuple[bool, Optional[RequestSignature]]:
+    ) -> tuple[bool, RequestSignature | None]:
         """
         Check if request is duplicate.
 
@@ -182,7 +185,7 @@ class RequestDeduplicator:
         """
 
         signature = self.get_signature(request_id, user_id, endpoint, method, payload)
-        now = datetime.utcnow()
+        now = utc_now()
 
         # Clean up expired signatures
         self._cleanup_expired()
@@ -191,7 +194,9 @@ class RequestDeduplicator:
         if signature in self.signatures:
             cached = self.signatures[signature]
             if now - cached.created_at < self.cache_ttl:
-                logger.info(f"Duplicate request detected: {signature}, returning cached response")
+                logger.info(
+                    f"Duplicate request detected: {signature}, returning cached response"
+                )
                 return True, cached
             else:
                 # Expired, remove it
@@ -221,7 +226,7 @@ class RequestDeduplicator:
             payload_hash=hashlib.sha256(
                 __import__("json").dumps(payload, sort_keys=True).encode()
             ).hexdigest(),
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
             response=response,
             response_time_ms=response_time_ms,
         )
@@ -231,7 +236,7 @@ class RequestDeduplicator:
     def _cleanup_expired(self) -> None:
         """Remove expired signatures."""
 
-        now = datetime.utcnow()
+        now = utc_now()
         expired = [
             sig
             for sig, sig_obj in self.signatures.items()
@@ -276,8 +281,8 @@ class CircuitBreaker:
         self.failure_count = 0
         self.failure_threshold = failure_threshold
         self.timeout_seconds = timeout_seconds
-        self.last_failure_at: Optional[datetime] = None
-        self.last_success_at: Optional[datetime] = None
+        self.last_failure_at: datetime | None = None
+        self.last_success_at: datetime | None = None
 
     def call(self, func, *args, **kwargs):
         """
@@ -288,7 +293,9 @@ class CircuitBreaker:
 
         if self.state == self.State.OPEN:
             # Check if timeout expired
-            if datetime.utcnow() - self.last_failure_at > timedelta(seconds=self.timeout_seconds):
+            if utc_now() - self.last_failure_at > timedelta(
+                seconds=self.timeout_seconds
+            ):
                 self.state = self.State.HALF_OPEN
                 logger.info(f"CircuitBreaker {self.name}: OPEN → HALF_OPEN")
             else:
@@ -298,7 +305,7 @@ class CircuitBreaker:
             result = func(*args, **kwargs)
             self._on_success()
             return result
-        except Exception as e:
+        except Exception:
             self._on_failure()
             raise
 
@@ -306,7 +313,7 @@ class CircuitBreaker:
         """Handle successful call."""
 
         self.failure_count = 0
-        self.last_success_at = datetime.utcnow()
+        self.last_success_at = utc_now()
 
         if self.state == self.State.HALF_OPEN:
             self.state = self.State.CLOSED
@@ -316,11 +323,16 @@ class CircuitBreaker:
         """Handle failed call."""
 
         self.failure_count += 1
-        self.last_failure_at = datetime.utcnow()
+        self.last_failure_at = utc_now()
 
-        if self.failure_count >= self.failure_threshold and self.state != self.State.OPEN:
+        if (
+            self.failure_count >= self.failure_threshold
+            and self.state != self.State.OPEN
+        ):
             self.state = self.State.OPEN
-            logger.error(f"CircuitBreaker {self.name}: CLOSED → OPEN (failures: {self.failure_count})")
+            logger.error(
+                f"CircuitBreaker {self.name}: CLOSED → OPEN (failures: {self.failure_count})"
+            )
 
     def get_status(self) -> dict:
         """Get circuit breaker status."""
@@ -329,15 +341,17 @@ class CircuitBreaker:
             "name": self.name,
             "state": self.state.value,
             "failure_count": self.failure_count,
-            "last_failure_at": self.last_failure_at.isoformat() if self.last_failure_at else None,
-            "last_success_at": self.last_success_at.isoformat() if self.last_success_at else None,
+            "last_failure_at": (
+                self.last_failure_at.isoformat() if self.last_failure_at else None
+            ),
+            "last_success_at": (
+                self.last_success_at.isoformat() if self.last_success_at else None
+            ),
         }
 
 
 class CircuitBreakerOpen(Exception):
     """Circuit breaker is open."""
-
-    pass
 
 
 # Singleton instances

@@ -2,8 +2,8 @@
 
 from app.domains.growth.models import (
     GrowthCampaign,
-    LeadMagnet,
     InboundLead,
+    LeadMagnet,
     SocialProofItem,
     UgcRequest,
     ValueSequence,
@@ -12,8 +12,8 @@ from app.domains.growth.models import (
 
 __all__ = [
     "GrowthCampaign",
-    "LeadMagnet",
     "InboundLead",
+    "LeadMagnet",
     "SocialProofItem",
     "UgcRequest",
     "ValueSequence",

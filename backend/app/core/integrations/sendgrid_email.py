@@ -6,12 +6,13 @@ Env vars required:
 - SENDGRID_FROM_EMAIL
 """
 
-import os
-import logging
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, Email, To, Content, Attachment
 import base64
-from typing import Dict, List, Any, Optional
+import logging
+import os
+from typing import Any
+
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Attachment, Email, Mail
 
 logger = logging.getLogger(__name__)
 
@@ -32,9 +33,9 @@ class EmailService:
         to_email: str,
         subject: str,
         html_content: str,
-        from_email: Optional[str] = None,
-        reply_to: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        from_email: str | None = None,
+        reply_to: str | None = None,
+    ) -> dict[str, Any]:
         """
         Envía email transaccional (orden, factura, etc).
 
@@ -67,7 +68,7 @@ class EmailService:
             }
 
         except Exception as e:
-            logger.error(f"Error sending email: {str(e)}")
+            logger.exception("Error sending email")
             return {"status": "error", "message": str(e)}
 
     @staticmethod
@@ -78,7 +79,7 @@ class EmailService:
         attachment_name: str,
         attachment_content: bytes,
         attachment_type: str = "application/pdf",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Envía email con adjunto (ej: PDF factura).
         """
@@ -104,7 +105,7 @@ class EmailService:
             )
             message.attachment = attachment
 
-            response = sg.send(message)
+            sg.send(message)
 
             logger.info(f"Email with attachment sent to {to_email}")
 
@@ -115,15 +116,15 @@ class EmailService:
             }
 
         except Exception as e:
-            logger.error(f"Error sending email with attachment: {str(e)}")
+            logger.exception("Error sending email with attachment")
             return {"status": "error", "message": str(e)}
 
     @staticmethod
     def send_email_sequence(
         to_email: str,
         sequence_type: str,
-        context: Dict[str, Any],
-    ) -> List[Dict[str, Any]]:
+        context: dict[str, Any],
+    ) -> list[dict[str, Any]]:
         """
         Envía secuencia de emails (welcome, nurture, etc).
 
@@ -142,7 +143,9 @@ class EmailService:
         return results
 
     @staticmethod
-    def _welcome_sequence(to_email: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _welcome_sequence(
+        to_email: str, context: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Welcome sequence: 3 emails en 5 días."""
 
         results = []
@@ -173,7 +176,9 @@ class EmailService:
         return results
 
     @staticmethod
-    def _cart_abandonment_sequence(to_email: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _cart_abandonment_sequence(
+        to_email: str, context: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Cart abandonment: 3 emails."""
 
         results = []
@@ -193,7 +198,9 @@ class EmailService:
         return results
 
     @staticmethod
-    def _nurture_sequence(to_email: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _nurture_sequence(
+        to_email: str, context: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Nurture sequence: educación + valor."""
 
         results = []

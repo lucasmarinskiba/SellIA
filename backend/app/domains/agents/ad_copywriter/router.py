@@ -1,14 +1,14 @@
+from typing import Annotated
 from uuid import UUID
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.agents.ad_copywriter.service import AdCopywriterService
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/ad-copywriter", tags=["ad-copywriter"])
 
@@ -17,14 +17,14 @@ class AdCampaignCreate(BaseModel):
     product_id: UUID
     platform: str = Field(..., description="meta, google o tiktok")
     budget: float = Field(..., gt=0)
-    campaign_name: Optional[str] = None
+    campaign_name: str | None = None
 
 
 @router.post("/campaigns", status_code=status.HTTP_201_CREATED)
 async def create_campaign(
     payload: AdCampaignCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = AdCopywriterService(db)
     try:
@@ -52,10 +52,10 @@ async def create_campaign(
 
 @router.get("/campaigns")
 async def list_campaigns(
-    limit: int = Query(50, ge=1, le=200),
-    offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ):
     service = AdCopywriterService(db)
     result = await service.list_campaigns(
@@ -82,11 +82,13 @@ async def list_campaigns(
 @router.get("/campaigns/{campaign_id}")
 async def get_campaign(
     campaign_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = AdCopywriterService(db)
-    data = await service.get_campaign_with_variants(campaign_id, current_user.business_id)
+    data = await service.get_campaign_with_variants(
+        campaign_id, current_user.business_id
+    )
     if not data:
         raise HTTPException(status_code=404, detail="Campaign not found")
 
@@ -122,12 +124,14 @@ async def get_campaign(
 async def export_campaign(
     campaign_id: UUID,
     platform: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = AdCopywriterService(db)
     try:
-        export = await service.export_campaign(campaign_id, platform, current_user.business_id)
+        export = await service.export_campaign(
+            campaign_id, platform, current_user.business_id
+        )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     return export

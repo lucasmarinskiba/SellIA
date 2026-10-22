@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import warnings
 
 import numpy as np
@@ -10,9 +11,12 @@ import pandas as pd
 from app.domains.forecasting.models.base import DEFAULT_QUANTILES, Forecaster
 from app.domains.forecasting.types import ForecastResult, TimeSeries
 
+logger = logging.getLogger(__name__)
+
 try:
     from statsmodels.tsa.exponential_smoothing.ets import ETSModel
     from statsmodels.tsa.statespace.sarimax import SARIMAX
+
     _HAS_STATSMODELS = True
 except Exception:  # noqa: BLE001
     ETSModel = None
@@ -23,7 +27,7 @@ except Exception:  # noqa: BLE001
 class ETSStatsmodelsForecaster(Forecaster):
     name = "ets_sm"
 
-    def fit(self, ts: TimeSeries) -> "ETSStatsmodelsForecaster":
+    def fit(self, ts: TimeSeries) -> ETSStatsmodelsForecaster:
         y = pd.Series(ts.values.astype(float))
         m = ts.seasonal_period if ts.n >= 2 * ts.seasonal_period + 4 else None
         pos = bool((y > 0).all())
@@ -41,7 +45,9 @@ class ETSStatsmodelsForecaster(Forecaster):
         self.sigma = self._residual_sigma(np.asarray(self.res.resid))
         return self
 
-    def predict(self, horizon, future_index, future_exog=None, quantiles=DEFAULT_QUANTILES):
+    def predict(
+        self, horizon, future_index, future_exog=None, quantiles=DEFAULT_QUANTILES
+    ):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             fc = self.res.get_forecast(horizon)
@@ -53,6 +59,7 @@ class ETSStatsmodelsForecaster(Forecaster):
         q_out = {}
         for q in quantiles:
             from app.domains.forecasting.models.base import _ppf_approx
+
             q_out[q] = np.clip(mean + _ppf_approx(q) * se, 0.0, None)
         return ForecastResult(self.name, horizon, future_index, mean, q_out)
 
@@ -60,7 +67,7 @@ class ETSStatsmodelsForecaster(Forecaster):
 class SarimaForecaster(Forecaster):
     name = "sarima"
 
-    def fit(self, ts: TimeSeries) -> "SarimaForecaster":
+    def fit(self, ts: TimeSeries) -> SarimaForecaster:
         y = pd.Series(ts.values.astype(float))
         m = ts.seasonal_period if ts.n >= 2 * ts.seasonal_period + 8 else 0
         candidates = [
@@ -75,12 +82,16 @@ class SarimaForecaster(Forecaster):
             for order, sorder in candidates:
                 try:
                     res = SARIMAX(
-                        y, order=order, seasonal_order=sorder,
-                        enforce_stationarity=False, enforce_invertibility=False,
+                        y,
+                        order=order,
+                        seasonal_order=sorder,
+                        enforce_stationarity=False,
+                        enforce_invertibility=False,
                     ).fit(disp=False)
                     if best is None or res.aic < best.aic:
                         best = res
-                except Exception:  # noqa: BLE001
+                except Exception:
+                    logger.exception("fit: error ignorado")
                     continue
         if best is None:
             raise RuntimeError("SARIMA failed to fit any candidate")
@@ -88,7 +99,9 @@ class SarimaForecaster(Forecaster):
         self.sigma = self._residual_sigma(np.asarray(self.res.resid))
         return self
 
-    def predict(self, horizon, future_index, future_exog=None, quantiles=DEFAULT_QUANTILES):
+    def predict(
+        self, horizon, future_index, future_exog=None, quantiles=DEFAULT_QUANTILES
+    ):
         from app.domains.forecasting.models.base import _ppf_approx
 
         with warnings.catch_warnings():

@@ -2,14 +2,15 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime
 from enum import Enum
+from typing import Any
 
 import numpy as np
-from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import IsolationForest, LocalOutlierFactor
-from sklearn.cluster import DBSCAN
+from sklearn.preprocessing import StandardScaler
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -30,14 +31,14 @@ class Pattern:
     pattern_type: PatternType
     confidence: float
     description: str
-    data_points: List[float]
-    period: Optional[int] = None  # For cyclical patterns
-    trend_direction: Optional[str] = None  # "up", "down", "stable"
+    data_points: list[float]
+    period: int | None = None  # For cyclical patterns
+    trend_direction: str | None = None  # "up", "down", "stable"
     impact: str = "medium"  # low, medium, high
-    recommendations: List[str] = field(default_factory=list)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    recommendations: list[str] = field(default_factory=list)
+    timestamp: datetime = field(default_factory=utc_now)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "pattern_type": self.pattern_type.value,
             "confidence": float(self.confidence),
@@ -55,14 +56,14 @@ class Pattern:
 class MarketPattern:
     """Market pattern detected."""
 
-    patterns: List[Pattern]
+    patterns: list[Pattern]
     market_sentiment: str  # "bullish", "neutral", "bearish"
     volatility: float  # 0-1
     trend_strength: float  # 0-1
-    key_insights: List[str] = field(default_factory=list)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    key_insights: list[str] = field(default_factory=list)
+    timestamp: datetime = field(default_factory=utc_now)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "patterns": [p.to_dict() for p in self.patterns],
             "market_sentiment": self.market_sentiment,
@@ -85,9 +86,9 @@ class BehaviorPattern:
     upsell_opportunity: float  # 0-1
     pattern_reliability: float  # 0-1
     similar_customer_count: int
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "behavior_type": self.behavior_type,
             "frequency": self.frequency,
@@ -108,12 +109,12 @@ class Anomaly:
     anomaly_score: float  # 0-1, higher = more anomalous
     severity: str  # "low", "medium", "high", "critical"
     description: str
-    affected_features: List[str]
+    affected_features: list[str]
     potential_cause: str
     recommended_action: str
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "anomaly_score": float(self.anomaly_score),
             "severity": self.severity,
@@ -168,7 +169,9 @@ class MarketPatternRecognizer:
                     data_points=time_series.tolist(),
                     trend_direction=trend_direction,
                     impact="high" if trend_strength > 0.5 else "medium",
-                    recommendations=[f"Align strategy with {trend_direction} market trend"],
+                    recommendations=[
+                        f"Align strategy with {trend_direction} market trend"
+                    ],
                 )
             )
 
@@ -238,13 +241,15 @@ class CustomerBehaviorRecognizer:
         logger.info("Customer behavior recognizer trained")
         return self
 
-    def recognize_behavior(self, X: np.ndarray, customer_data: Dict[str, Any]) -> BehaviorPattern:
+    def recognize_behavior(
+        self, X: np.ndarray, customer_data: dict[str, Any]
+    ) -> BehaviorPattern:
         """Recognize customer behavior pattern."""
         if not self.is_trained:
             raise ValueError("Recognizer must be trained first")
 
         X_scaled = self.scaler.transform(X)
-        avg_value = float(np.mean(X_scaled[:, 0])) if X_scaled.shape[1] > 0 else 0
+        float(np.mean(X_scaled[:, 0])) if X_scaled.shape[1] > 0 else 0
 
         # Determine behavior type
         frequency_score = customer_data.get("transaction_frequency", 0)
@@ -259,7 +264,11 @@ class CustomerBehaviorRecognizer:
         else:
             behavior_type = "standard"
 
-        frequency = "daily" if frequency_score > 5 else ("weekly" if frequency_score > 2 else "monthly")
+        frequency = (
+            "daily"
+            if frequency_score > 5
+            else ("weekly" if frequency_score > 2 else "monthly")
+        )
 
         churn_risk = float(np.clip(1 - (frequency_score / 10), 0, 1))
         upsell_opp = float(np.clip((value_score / 10000), 0, 1))
@@ -293,7 +302,9 @@ class CompetitorPatternRecognizer:
         logger.info("Competitor pattern recognizer trained")
         return self
 
-    def recognize_patterns(self, competitor_data: List[Dict[str, Any]]) -> List[Pattern]:
+    def recognize_patterns(
+        self, competitor_data: list[dict[str, Any]]
+    ) -> list[Pattern]:
         """Recognize competitor patterns."""
         patterns = []
 
@@ -311,7 +322,10 @@ class CompetitorPatternRecognizer:
                         data_points=prices,
                         trend_direction="up",
                         impact="high",
-                        recommendations=["Monitor for market share loss", "Evaluate price competitiveness"],
+                        recommendations=[
+                            "Monitor for market share loss",
+                            "Evaluate price competitiveness",
+                        ],
                     )
                 )
 
@@ -325,7 +339,10 @@ class CompetitorPatternRecognizer:
                         description="Competitor ramping up product launches",
                         data_points=[competitor.get("new_products", 0)],
                         impact="high",
-                        recommendations=["Accelerate innovation", "Monitor competitive threats"],
+                        recommendations=[
+                            "Accelerate innovation",
+                            "Monitor competitive threats",
+                        ],
                     )
                 )
 
@@ -346,7 +363,7 @@ class CommunicationPatternRecognizer:
         logger.info("Communication pattern recognizer trained")
         return self
 
-    def recognize_patterns(self, messages: List[Dict[str, Any]]) -> List[Pattern]:
+    def recognize_patterns(self, messages: list[dict[str, Any]]) -> list[Pattern]:
         """Recognize communication patterns."""
         patterns = []
 
@@ -356,19 +373,21 @@ class CommunicationPatternRecognizer:
         # Response rate patterns
         response_rates = [m.get("response_rate", 0) for m in messages]
 
-        if len(response_rates) > 1:
-            if all(r > 0.5 for r in response_rates[-3:]):
-                patterns.append(
-                    Pattern(
-                        pattern_type=PatternType.TREND,
-                        confidence=0.85,
-                        description="High response rate trend in recent messages",
-                        data_points=response_rates,
-                        trend_direction="up",
-                        impact="high",
-                        recommendations=["Continue current messaging strategy", "Increase send frequency"],
-                    )
+        if len(response_rates) > 1 and all(r > 0.5 for r in response_rates[-3:]):
+            patterns.append(
+                Pattern(
+                    pattern_type=PatternType.TREND,
+                    confidence=0.85,
+                    description="High response rate trend in recent messages",
+                    data_points=response_rates,
+                    trend_direction="up",
+                    impact="high",
+                    recommendations=[
+                        "Continue current messaging strategy",
+                        "Increase send frequency",
+                    ],
                 )
+            )
 
         # Message type effectiveness
         by_type = {}
@@ -414,7 +433,7 @@ class AnomalyDetector:
         logger.info("Anomaly detector trained")
         return self
 
-    def detect_anomalies(self, X: np.ndarray) -> List[Anomaly]:
+    def detect_anomalies(self, X: np.ndarray) -> list[Anomaly]:
         """Detect anomalies."""
         if not self.is_trained:
             raise ValueError("Detector must be trained first")
@@ -426,8 +445,12 @@ class AnomalyDetector:
         lof_scores = -self.lof._predict(X_scaled)
 
         # Normalize scores to 0-1
-        iso_scores = (iso_scores - iso_scores.min()) / (iso_scores.max() - iso_scores.min() + 1e-5)
-        lof_scores = (lof_scores - lof_scores.min()) / (lof_scores.max() - lof_scores.min() + 1e-5)
+        iso_scores = (iso_scores - iso_scores.min()) / (
+            iso_scores.max() - iso_scores.min() + 1e-5
+        )
+        lof_scores = (lof_scores - lof_scores.min()) / (
+            lof_scores.max() - lof_scores.min() + 1e-5
+        )
 
         # Combine scores
         combined_scores = (iso_scores + lof_scores) / 2
@@ -438,7 +461,11 @@ class AnomalyDetector:
                 severity = (
                     "critical"
                     if combined_scores[i] > 0.85
-                    else ("high" if combined_scores[i] > 0.75 else ("medium" if combined_scores[i] > 0.6 else "low"))
+                    else (
+                        "high"
+                        if combined_scores[i] > 0.75
+                        else ("medium" if combined_scores[i] > 0.6 else "low")
+                    )
                 )
 
                 # Identify affected features

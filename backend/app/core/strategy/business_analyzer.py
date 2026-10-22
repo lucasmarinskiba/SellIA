@@ -1,15 +1,16 @@
 """Business Analyzer — Parse business profile → structured data for strategy selection."""
 
+import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, Dict, Any, List
-import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 class BusinessStage(str, Enum):
     """Business maturity stages."""
+
     STARTUP = "startup"  # Pre-revenue or <$100k ARR
     GROWTH = "growth"  # $100k-$1M ARR, 30%+ MoM growth
     SCALE = "scale"  # $1M-$10M ARR, 15-30% MoM growth
@@ -18,6 +19,7 @@ class BusinessStage(str, Enum):
 
 class BusinessModel(str, Enum):
     """Business model types."""
+
     B2B = "B2B"  # Business to Business
     B2C = "B2C"  # Business to Consumer
     D2C = "D2C"  # Direct to Consumer
@@ -31,6 +33,7 @@ class BusinessModel(str, Enum):
 @dataclass
 class FinancialProfile:
     """Financial metrics and structure."""
+
     annual_revenue: float = 0.0
     monthly_recurring_revenue: float = 0.0
     customer_count: int = 0
@@ -57,6 +60,7 @@ class FinancialProfile:
 @dataclass
 class BusinessProfile:
     """Complete business profile for strategy selection."""
+
     business_name: str
     industry: str  # real_estate, commerce, services, finance, etc.
     business_model: BusinessModel
@@ -73,30 +77,30 @@ class BusinessProfile:
 
     # Market Position
     market_position: str = "unknown"  # niche, competitive, market_leader
-    competitive_advantages: List[str] = field(default_factory=list)
-    competitive_disadvantages: List[str] = field(default_factory=list)
-    differentiation_strategy: Optional[str] = None
-    target_customer_segment: Optional[str] = None
-    customer_pain_points: List[str] = field(default_factory=list)
+    competitive_advantages: list[str] = field(default_factory=list)
+    competitive_disadvantages: list[str] = field(default_factory=list)
+    differentiation_strategy: str | None = None
+    target_customer_segment: str | None = None
+    customer_pain_points: list[str] = field(default_factory=list)
 
     # Financial Info
     financials: FinancialProfile = field(default_factory=FinancialProfile)
 
     # Inventory/Assets
-    assets: List[str] = field(default_factory=list)  # What they own
-    liabilities: List[str] = field(default_factory=list)  # What they owe
+    assets: list[str] = field(default_factory=list)  # What they own
+    liabilities: list[str] = field(default_factory=list)  # What they owe
 
     # Constraints
     budget_available: float = 0.0
     talent_availability: str = "limited"  # limited, moderate, strong
     technology_maturity: str = "low"  # low, medium, high
-    regulatory_constraints: List[str] = field(default_factory=list)
+    regulatory_constraints: list[str] = field(default_factory=list)
 
     # Historical Performance
-    success_factors: List[str] = field(default_factory=list)
-    failure_factors: List[str] = field(default_factory=list)
-    recent_wins: List[str] = field(default_factory=list)
-    challenges: List[str] = field(default_factory=list)
+    success_factors: list[str] = field(default_factory=list)
+    failure_factors: list[str] = field(default_factory=list)
+    recent_wins: list[str] = field(default_factory=list)
+    challenges: list[str] = field(default_factory=list)
 
 
 class BusinessAnalyzer:
@@ -104,9 +108,8 @@ class BusinessAnalyzer:
 
     def __init__(self):
         """Initialize business analyzer."""
-        pass
 
-    def analyze_business(self, company_data: Dict[str, Any]) -> BusinessProfile:
+    def analyze_business(self, company_data: dict[str, Any]) -> BusinessProfile:
         """
         Extract and structure business profile data.
 
@@ -116,7 +119,9 @@ class BusinessAnalyzer:
         Returns:
             Structured BusinessProfile for strategy selection
         """
-        logger.info(f"Analyzing business: {company_data.get('business_name', 'Unknown')}")
+        logger.info(
+            f"Analyzing business: {company_data.get('business_name', 'Unknown')}"
+        )
 
         profile = BusinessProfile(
             business_name=company_data.get("business_name", "Unknown"),
@@ -149,14 +154,18 @@ class BusinessAnalyzer:
             challenges=company_data.get("challenges", []),
         )
 
-        logger.info(f"Analyzed business: stage={profile.stage}, model={profile.business_model}")
+        logger.info(
+            f"Analyzed business: stage={profile.stage}, model={profile.business_model}"
+        )
         return profile
 
-    def identify_business_model(self, company_data: Dict[str, Any]) -> BusinessModel:
+    def identify_business_model(self, company_data: dict[str, Any]) -> BusinessModel:
         """Identify business model type (B2B, SaaS, etc.)."""
         return self._identify_business_model(company_data)
 
-    def calculate_unit_economics(self, business_profile: BusinessProfile) -> Dict[str, float]:
+    def calculate_unit_economics(
+        self, business_profile: BusinessProfile
+    ) -> dict[str, float]:
         """
         Calculate key unit economics:
         - CAC (Customer Acquisition Cost)
@@ -172,7 +181,9 @@ class BusinessAnalyzer:
         # LTV: ARPU * Gross Margin * (1 / Monthly Churn Rate)
         # Or: Average revenue per customer * customer lifespan
         arpu = financials.annual_revenue / max(financials.customer_count, 1)
-        customer_lifespan_months = 12 / max(financials.churn_rate, 0.01) if financials.churn_rate > 0 else 60
+        customer_lifespan_months = (
+            12 / max(financials.churn_rate, 0.01) if financials.churn_rate > 0 else 60
+        )
         ltv = arpu * (financials.gross_margin_percent / 100) * customer_lifespan_months
 
         # Payback period: CAC / (ARPU * Gross Margin %)
@@ -195,7 +206,9 @@ class BusinessAnalyzer:
             "churn_rate": financials.churn_rate,
         }
 
-    def assess_competitive_advantage(self, business_profile: BusinessProfile) -> Dict[str, Any]:
+    def assess_competitive_advantage(
+        self, business_profile: BusinessProfile
+    ) -> dict[str, Any]:
         """
         Assess competitive advantages:
         - Unique vs commodity
@@ -210,7 +223,7 @@ class BusinessAnalyzer:
             "defensibility": self._assess_defensibility(business_profile),
         }
 
-    def evaluate_market_size(self, company_data: Dict[str, Any]) -> Dict[str, float]:
+    def evaluate_market_size(self, company_data: dict[str, Any]) -> dict[str, float]:
         """
         Estimate market size:
         - TAM (Total Addressable Market)
@@ -226,7 +239,9 @@ class BusinessAnalyzer:
             "tam_reachable": company_data.get("tam_reachable", False),
         }
 
-    def identify_constraints(self, business_profile: BusinessProfile) -> Dict[str, List[str]]:
+    def identify_constraints(
+        self, business_profile: BusinessProfile
+    ) -> dict[str, list[str]]:
         """Identify constraints on growth."""
         constraints = {
             "capital": [],
@@ -263,21 +278,32 @@ class BusinessAnalyzer:
 
     # Private helper methods
 
-    def _identify_business_model(self, company_data: Dict[str, Any]) -> BusinessModel:
+    def _identify_business_model(self, company_data: dict[str, Any]) -> BusinessModel:
         """Identify business model from company data."""
-        description = (company_data.get("description", "") + " " + company_data.get("business_name", "")).lower()
+        description = (
+            company_data.get("description", "")
+            + " "
+            + company_data.get("business_name", "")
+        ).lower()
 
         # Simple keyword matching
-        if any(word in description for word in ["b2b", "business", "enterprise", "corporate", "b2c"]):
+        if any(
+            word in description
+            for word in ["b2b", "business", "enterprise", "corporate", "b2c"]
+        ):
             if "b2b" in description or "enterprise" in description:
                 return BusinessModel.B2B
             elif "b2c" in description:
                 return BusinessModel.B2C
         elif any(word in description for word in ["direct", "consumer", "retail"]):
             return BusinessModel.D2C
-        elif any(word in description for word in ["saas", "software", "subscription", "app"]):
+        elif any(
+            word in description for word in ["saas", "software", "subscription", "app"]
+        ):
             return BusinessModel.SAAS
-        elif any(word in description for word in ["marketplace", "platform", "network"]):
+        elif any(
+            word in description for word in ["marketplace", "platform", "network"]
+        ):
             return BusinessModel.MARKETPLACE
         elif any(word in description for word in ["service", "consulting", "agency"]):
             return BusinessModel.SERVICES
@@ -286,7 +312,7 @@ class BusinessAnalyzer:
 
         return BusinessModel.HYBRID
 
-    def _classify_stage(self, company_data: Dict[str, Any]) -> BusinessStage:
+    def _classify_stage(self, company_data: dict[str, Any]) -> BusinessStage:
         """Classify business stage based on revenue and growth."""
         financials = company_data.get("financials", {})
         annual_revenue = financials.get("annual_revenue", 0.0)
@@ -306,13 +332,17 @@ class BusinessAnalyzer:
 
         return BusinessStage.MATURE
 
-    def _analyze_financials(self, financials_data: Dict[str, Any]) -> FinancialProfile:
+    def _analyze_financials(self, financials_data: dict[str, Any]) -> FinancialProfile:
         """Parse financial data."""
         return FinancialProfile(
             annual_revenue=financials_data.get("annual_revenue", 0.0),
-            monthly_recurring_revenue=financials_data.get("monthly_recurring_revenue", 0.0),
+            monthly_recurring_revenue=financials_data.get(
+                "monthly_recurring_revenue", 0.0
+            ),
             customer_count=financials_data.get("customer_count", 0),
-            customer_acquisition_cost=financials_data.get("customer_acquisition_cost", 0.0),
+            customer_acquisition_cost=financials_data.get(
+                "customer_acquisition_cost", 0.0
+            ),
             customer_lifetime_value=financials_data.get("customer_lifetime_value", 0.0),
             gross_margin_percent=financials_data.get("gross_margin_percent", 50.0),
             net_margin_percent=financials_data.get("net_margin_percent", 10.0),

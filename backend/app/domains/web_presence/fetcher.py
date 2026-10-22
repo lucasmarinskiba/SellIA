@@ -16,7 +16,6 @@ import ipaddress
 import socket
 import time
 from dataclasses import dataclass
-from typing import Optional
 from urllib.parse import urlparse, urlunparse
 
 import httpx
@@ -26,7 +25,7 @@ from app.core.logger import get_logger
 logger = get_logger(__name__)
 
 MAX_REDIRECTS = 5
-MAX_BYTES = 2_000_000          # 2 MB of HTML is already far past any real page
+MAX_BYTES = 2_000_000  # 2 MB of HTML is already far past any real page
 TIMEOUT_SECONDS = 10.0
 USER_AGENT = (
     "Mozilla/5.0 (compatible; SellIABot/1.0; +https://sellia-brain.vercel.app) "
@@ -52,7 +51,9 @@ def normalize_url(raw: str) -> str:
         raise UnsafeUrlError("La URL no tiene dominio")
     # Strip user:pass@ — credentials in a URL we fetch server-side are never wanted.
     netloc = parts.hostname if parts.port is None else f"{parts.hostname}:{parts.port}"
-    return urlunparse((parts.scheme, netloc, parts.path or "/", parts.params, parts.query, ""))
+    return urlunparse(
+        (parts.scheme, netloc, parts.path or "/", parts.params, parts.query, "")
+    )
 
 
 def assert_public_host(url: str) -> None:
@@ -88,18 +89,20 @@ def assert_public_host(url: str) -> None:
 
 @dataclass
 class FetchResult:
-    url: str                      # what we were asked for (normalized)
-    final_url: str                # after redirects
-    status: Optional[int]
+    url: str  # what we were asked for (normalized)
+    final_url: str  # after redirects
+    status: int | None
     elapsed_ms: int
-    content: str                  # decoded body ('' on failure)
+    content: str  # decoded body ('' on failure)
     content_bytes: int
     content_type: str
-    error: Optional[str] = None
+    error: str | None = None
 
     @property
     def ok(self) -> bool:
-        return self.error is None and self.status is not None and 200 <= self.status < 300
+        return (
+            self.error is None and self.status is not None and 200 <= self.status < 300
+        )
 
 
 async def fetch(raw_url: str) -> FetchResult:
@@ -148,7 +151,9 @@ async def fetch(raw_url: str) -> FetchResult:
     except httpx.HTTPError as e:
         error = f"No se pudo conectar: {type(e).__name__}"
     except Exception as e:  # noqa: BLE001
-        logger.warning("web_presence.fetch failed for %s: %s", raw_url[:120], str(e)[:200])
+        logger.warning(
+            "web_presence.fetch failed for %s: %s", raw_url[:120], str(e)[:200]
+        )
         error = "No se pudo analizar la URL"
 
     return FetchResult(

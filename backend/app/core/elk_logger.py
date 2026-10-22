@@ -15,15 +15,17 @@ Configuration via environment variables:
     ELK_LOG_PATH=/var/log/sellia/security.json
 """
 
-import os
 import json
-import asyncio
-from datetime import datetime, timezone
-from typing import Optional, Any
+import logging
+import os
+from datetime import UTC, datetime
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 try:
     import aiohttp
+
     AIOHTTP_AVAILABLE = True
 except ImportError:
     aiohttp = None
@@ -45,24 +47,28 @@ def format_elk_document(
     event_type: str,
     message: str,
     level: str = "info",
-    user_id: Optional[str] = None,
-    email: Optional[str] = None,
-    ip_address: Optional[str] = None,
-    country: Optional[str] = None,
-    extra: Optional[dict] = None,
+    user_id: str | None = None,
+    email: str | None = None,
+    ip_address: str | None = None,
+    country: str | None = None,
+    extra: dict | None = None,
 ) -> dict:
     """
     Format a security event as an Elasticsearch-compatible JSON document.
-    
+
     Uses ECS (Elastic Common Schema) fields where applicable.
     """
     doc = {
-        "@timestamp": datetime.now(timezone.utc).isoformat(),
+        "@timestamp": datetime.now(UTC).isoformat(),
         "event": {
             "kind": "event",
             "category": ["authentication" if "login" in event_type else "security"],
             "type": [event_type],
-            "outcome": "success" if level == "info" else "failure" if level == "error" else "unknown",
+            "outcome": (
+                "success"
+                if level == "info"
+                else "failure" if level == "error" else "unknown"
+            ),
         },
         "message": message,
         "log": {
@@ -70,14 +76,22 @@ def format_elk_document(
         },
         "source": {
             "ip": ip_address,
-            "geo": {
-                "country_iso_code": country,
-            } if country else {},
+            "geo": (
+                {
+                    "country_iso_code": country,
+                }
+                if country
+                else {}
+            ),
         },
-        "user": {
-            "id": user_id,
-            "email": email,
-        } if user_id or email else {},
+        "user": (
+            {
+                "id": user_id,
+                "email": email,
+            }
+            if user_id or email
+            else {}
+        ),
         "service": {
             "name": "sellia",
             "environment": os.getenv("ENVIRONMENT", "development"),
@@ -86,14 +100,14 @@ def format_elk_document(
             "app": "sellia-security",
         },
     }
-    
+
     # Clean empty fields
     doc["source"] = {k: v for k, v in doc["source"].items() if v}
     doc["user"] = {k: v for k, v in doc["user"].items() if v}
-    
+
     if extra:
         doc["sellia"] = extra
-    
+
     return doc
 
 
@@ -104,7 +118,9 @@ def write_to_file(document: dict) -> bool:
             f.write(json.dumps(document, ensure_ascii=False) + "\n")
         return True
     except Exception as e:
+        logger.exception("write_to_file: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).error(f"Failed to write log file: {e}")
         return False
 
@@ -113,30 +129,37 @@ async def push_to_elasticsearch(document: dict) -> bool:
     """Push a document directly to Elasticsearch."""
     if not AIOHTTP_AVAILABLE or not ELK_HOST or not ELK_API_KEY:
         return False
-    
+
     url = f"{ELK_HOST}/{ELK_INDEX}/_doc"
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"ApiKey {ELK_API_KEY}",
     }
-    
+
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
+        async with (
+            aiohttp.ClientSession() as session,
+            session.post(
                 url,
                 headers=headers,
                 json=document,
                 timeout=aiohttp.ClientTimeout(total=5),
-            ) as resp:
-                if resp.status in (200, 201):
-                    return True
-                else:
-                    body = await resp.text()
-                    from app.core.logger import get_logger
-                    get_logger(__name__).error(f"Elasticsearch error {resp.status}: {body[:200]}")
-                    return False
+            ) as resp,
+        ):
+            if resp.status in (200, 201):
+                return True
+            else:
+                body = await resp.text()
+                from app.core.logger import get_logger
+
+                get_logger(__name__).error(
+                    f"Elasticsearch error {resp.status}: {body[:200]}"
+                )
+                return False
     except Exception as e:
+        logger.exception("push_to_elasticsearch: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).error(f"Failed to push to Elasticsearch: {e}")
         return False
 
@@ -145,21 +168,21 @@ async def log_security_event(
     event_type: str,
     message: str,
     level: str = "info",
-    user_id: Optional[str] = None,
-    email: Optional[str] = None,
-    ip_address: Optional[str] = None,
-    country: Optional[str] = None,
-    extra: Optional[dict] = None,
+    user_id: str | None = None,
+    email: str | None = None,
+    ip_address: str | None = None,
+    country: str | None = None,
+    extra: dict | None = None,
 ) -> bool:
     """
     Log a security event to ELK.
-    
+
     If ELK_USE_FILEBEAT is true, writes to a JSON line file.
     Otherwise, pushes directly to Elasticsearch.
     """
     if not ELK_ENABLED:
         return False
-    
+
     document = format_elk_document(
         event_type=event_type,
         message=message,
@@ -170,7 +193,7 @@ async def log_security_event(
         country=country,
         extra=extra,
     )
-    
+
     if ELK_USE_FILEBEAT:
         return write_to_file(document)
     else:
@@ -179,13 +202,14 @@ async def log_security_event(
 
 # Convenience methods for common event types
 
+
 async def log_login(
     email: str,
     ip: str,
-    country: Optional[str] = None,
+    country: str | None = None,
     success: bool = True,
-    user_id: Optional[str] = None,
-    extra: Optional[dict] = None,
+    user_id: str | None = None,
+    extra: dict | None = None,
 ):
     """Log a login event."""
     await log_security_event(
@@ -203,9 +227,9 @@ async def log_login(
 async def log_new_device(
     email: str,
     ip: str,
-    country: Optional[str] = None,
-    user_id: Optional[str] = None,
-    device_info: Optional[str] = None,
+    country: str | None = None,
+    user_id: str | None = None,
+    device_info: str | None = None,
 ):
     """Log a new device detection."""
     await log_security_event(
@@ -224,8 +248,8 @@ async def log_geofence_violation(
     email: str,
     ip: str,
     distance_km: float,
-    country: Optional[str] = None,
-    user_id: Optional[str] = None,
+    country: str | None = None,
+    user_id: str | None = None,
 ):
     """Log a geofencing violation."""
     await log_security_event(
@@ -244,7 +268,7 @@ async def log_breach_detected(
     email: str,
     breach_count: int,
     breach_names: list[str],
-    user_id: Optional[str] = None,
+    user_id: str | None = None,
 ):
     """Log a HIBP breach detection."""
     await log_security_event(

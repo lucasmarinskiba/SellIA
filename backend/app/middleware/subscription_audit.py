@@ -5,11 +5,12 @@ Loguea cada request a features protegidas para evidencia de entrega de servicio.
 """
 
 import time
+
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.domains.subscriptions.integrity import log_feature_access
 from app.core.logger import get_logger
+from app.domains.subscriptions.integrity import log_feature_access
 
 logger = get_logger(__name__)
 
@@ -47,6 +48,7 @@ class SubscriptionAuditMiddleware(BaseHTTPMiddleware):
 
                     # Log async (fire and forget)
                     from app.core.database import AsyncSessionLocal
+
                     async with AsyncSessionLocal() as db:
                         await log_feature_access(
                             db=db,
@@ -54,12 +56,14 @@ class SubscriptionAuditMiddleware(BaseHTTPMiddleware):
                             feature_name=feature_name,
                             endpoint=path,
                             response_status=response.status_code,
-                            response_size=int(response.headers.get("content-length", 0)),
+                            response_size=int(
+                                response.headers.get("content-length", 0)
+                            ),
                             duration_ms=duration_ms,
                             success=response.status_code < 400,
                         )
             except Exception as e:
-                logger.warning(f"Subscription audit log failed: {e}")
+                logger.warning(f"Subscription audit log failed: {e}", exc_info=True)
 
         return response
 

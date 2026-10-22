@@ -1,10 +1,12 @@
 """Predictive modeling API."""
 
+from typing import Annotated
 from uuid import UUID
-from typing import Optional
-from fastapi import APIRouter, Depends, Query
+
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+
 from app.core.database import get_db
 from app.domains.predictive.predictive_service import PredictiveService
 
@@ -30,20 +32,53 @@ class CreateSegmentRequest(BaseModel):
 
 
 @router.post("/customers/{customer_id}/lead-score")
-def calculate_lead_score(customer_id: UUID, business_id: UUID, request: LeadScoreRequest, db: Session = Depends(get_db)):
-    return PredictiveService.calculate_lead_score(customer_id, business_id, request.rfm_score, request.engagement, request.frequency, db)
+def calculate_lead_score(
+    customer_id: UUID,
+    business_id: UUID,
+    request: LeadScoreRequest,
+    db: Annotated[Session, Depends(get_db)],
+):
+    return PredictiveService.calculate_lead_score(
+        customer_id,
+        business_id,
+        request.rfm_score,
+        request.engagement,
+        request.frequency,
+        db,
+    )
 
 
 @router.post("/customers/{customer_id}/churn-risk")
-def calculate_churn_risk(customer_id: UUID, business_id: UUID, request: ChurnRiskRequest, db: Session = Depends(get_db)):
-    return PredictiveService.calculate_churn_risk(customer_id, business_id, request.days_since_purchase, request.engagement, request.frequency, db)
+def calculate_churn_risk(
+    customer_id: UUID,
+    business_id: UUID,
+    request: ChurnRiskRequest,
+    db: Annotated[Session, Depends(get_db)],
+):
+    return PredictiveService.calculate_churn_risk(
+        customer_id,
+        business_id,
+        request.days_since_purchase,
+        request.engagement,
+        request.frequency,
+        db,
+    )
 
 
 @router.post("/businesses/{business_id}/segments")
-def create_segment(business_id: UUID, request: CreateSegmentRequest, db: Session = Depends(get_db)):
-    return PredictiveService.create_segment(business_id, request.name, request.rules, request.segmentation_type, db)
+def create_segment(
+    business_id: UUID,
+    request: CreateSegmentRequest,
+    db: Annotated[Session, Depends(get_db)],
+):
+    return PredictiveService.create_segment(
+        business_id, request.name, request.rules, request.segmentation_type, db
+    )
 
 
 @router.get("/businesses/{business_id}/predictive/metrics")
-def get_metrics(business_id: UUID, db: Session = Depends(get_db)):
+def get_metrics(
+    business_id: UUID,
+    db: Annotated[Session, Depends(get_db)],
+):
     return PredictiveService.get_metrics(business_id, db)

@@ -16,9 +16,9 @@ business selling in ARS and USD has two totals, not one meaningless number.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import Select, and_, case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -68,24 +68,24 @@ SEARCH_SCAN_CAP = 4000
 class TableQuery:
     """Everything the spreadsheet can be narrowed by."""
 
-    search: Optional[str] = None
+    search: str | None = None
     status: list[str] = field(default_factory=list)
     payment_status: list[str] = field(default_factory=list)
     platform: list[str] = field(default_factory=list)
     channel: list[str] = field(default_factory=list)
     currency: list[str] = field(default_factory=list)
-    date_from: Optional[datetime] = None
-    date_to: Optional[datetime] = None
-    amount_min: Optional[float] = None
-    amount_max: Optional[float] = None
-    has_tracking: Optional[bool] = None
+    date_from: datetime | None = None
+    date_to: datetime | None = None
+    amount_min: float | None = None
+    amount_max: float | None = None
+    has_tracking: bool | None = None
     sort_by: str = "created_at"
     sort_dir: str = "desc"
     page: int = 1
     page_size: int = 50
 
 
-def _coerce_enum(raw: str, enum_cls: Any) -> Optional[Any]:
+def _coerce_enum(raw: str, enum_cls: Any) -> Any | None:
     """Accept 'paid', 'PAID' or 'OrderStatus.PAID'; drop anything else.
 
     A typo used to reach Postgres and come back as a raw 500. Silently dropping
@@ -103,7 +103,10 @@ def _coerce_enum(raw: str, enum_cls: Any) -> Optional[Any]:
 
 def _sql_conditions(business_id: Any, q: TableQuery) -> tuple[list[Any], list[str]]:
     """Build the predicates Postgres can evaluate. Returns (conditions, ignored)."""
-    conditions: list[Any] = [Order.business_id == business_id, Order.is_active.is_(True)]
+    conditions: list[Any] = [
+        Order.business_id == business_id,
+        Order.is_active.is_(True),
+    ]
     ignored: list[str] = []
 
     statuses = [s for s in (_coerce_enum(v, OrderStatus) for v in q.status) if s]
@@ -176,31 +179,35 @@ def _items_summary(items: Any) -> tuple[int, int, str]:
         name = raw.get("name") or raw.get("title")
         if name:
             names.append(str(name))
-    label = names[0] if len(names) == 1 else (f"{names[0]} +{len(names) - 1}" if names else "")
+    label = (
+        names[0]
+        if len(names) == 1
+        else (f"{names[0]} +{len(names) - 1}" if names else "")
+    )
     return len(items), units, label
 
 
-def _hours_between(start: Optional[datetime], end: Optional[datetime]) -> Optional[float]:
+def _hours_between(start: datetime | None, end: datetime | None) -> float | None:
     if not start or not end:
         return None
     if start.tzinfo is None:
-        start = start.replace(tzinfo=timezone.utc)
+        start = start.replace(tzinfo=UTC)
     if end.tzinfo is None:
-        end = end.replace(tzinfo=timezone.utc)
+        end = end.replace(tzinfo=UTC)
     return round((end - start).total_seconds() / 3600, 1)
 
 
-def serialize_row(order: Order, *, now: Optional[datetime] = None) -> dict[str, Any]:
+def serialize_row(order: Order, *, now: datetime | None = None) -> dict[str, Any]:
     """One spreadsheet row.
 
     Customer fields stay masked, the same as every other orders read in this
     API — the spreadsheet is not a side door around that policy.
     """
-    now = now or datetime.now(timezone.utc)
+    now = now or datetime.now(UTC)
     items_count, units, items_label = _items_summary(order.items)
     created = order.created_at
     if created and created.tzinfo is None:
-        created = created.replace(tzinfo=timezone.utc)
+        created = created.replace(tzinfo=UTC)
 
     return {
         "id": str(order.id),
@@ -225,7 +232,9 @@ def serialize_row(order: Order, *, now: Optional[datetime] = None) -> dict[str, 
         "paid_at": order.paid_at.isoformat() if order.paid_at else None,
         "shipped_at": order.shipped_at.isoformat() if order.shipped_at else None,
         "delivered_at": order.delivered_at.isoformat() if order.delivered_at else None,
-        "age_days": round((now - created).total_seconds() / 86400, 1) if created else None,
+        "age_days": (
+            round((now - created).total_seconds() / 86400, 1) if created else None
+        ),
         "hours_to_payment": _hours_between(order.created_at, order.paid_at),
         "notes": order.notes,
     }
@@ -279,16 +288,20 @@ async def fetch_table(
     needle = (q.search or "").strip().lower()
     notes: list[str] = []
     if ignored:
-        notes.append("Se ignoraron filtros desconocidos: " + ", ".join(sorted(set(ignored))))
+        notes.append(
+            "Se ignoraron filtros desconocidos: " + ", ".join(sorted(set(ignored)))
+        )
 
     base: Select = select(Order).where(and_(*conditions))
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     if needle or q.sort_by in SORTABLE_PYTHON:
         # Either the filter or the ordering depends on a decrypted or derived
         # value, so the filtered set has to be materialised. Cap the scan and
         # say so rather than quietly truncating.
-        scan = await db.execute(base.order_by(Order.created_at.desc()).limit(SEARCH_SCAN_CAP + 1))
+        scan = await db.execute(
+            base.order_by(Order.created_at.desc()).limit(SEARCH_SCAN_CAP + 1)
+        )
         orders = list(scan.scalars().all())
         truncated = len(orders) > SEARCH_SCAN_CAP
         if truncated:
@@ -299,7 +312,9 @@ async def fetch_table(
             )
         rows = [serialize_row(o, now=now) for o in orders]
         if needle:
-            pairs = [(r, o) for r, o in zip(rows, orders) if _matches_search(r, o, needle)]
+            pairs = [
+                (r, o) for r, o in zip(rows, orders) if _matches_search(r, o, needle)
+            ]
             rows = [r for r, _ in pairs]
         rows.sort(key=lambda r: _python_sort_key(r, q.sort_by), reverse=descending)
         total = len(rows)
@@ -307,14 +322,18 @@ async def fetch_table(
         totals = _totals_from_rows(rows)
         facets = _facets_from_rows(rows)
     else:
-        count_result = await db.execute(select(func.count()).select_from(Order).where(and_(*conditions)))
+        count_result = await db.execute(
+            select(func.count()).select_from(Order).where(and_(*conditions))
+        )
         total = count_result.scalar() or 0
         column = SORTABLE_SQL[q.sort_by]
         ordered = base.order_by(column.desc() if descending else column.asc())
         # A stable tiebreaker: two orders created in the same second must not
         # swap places between pages and duplicate or hide a row.
         ordered = ordered.order_by(Order.id)
-        result = await db.execute(ordered.offset((page - 1) * page_size).limit(page_size))
+        result = await db.execute(
+            ordered.offset((page - 1) * page_size).limit(page_size)
+        )
         page_rows = [serialize_row(o, now=now) for o in result.scalars().all()]
         totals = await _totals_from_sql(db, conditions)
         facets = await _facets_from_sql(db, conditions)
@@ -338,7 +357,9 @@ def _totals_from_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     buckets: dict[str, dict[str, Any]] = {}
     for row in rows:
         cur = row["currency"] or "?"
-        bucket = buckets.setdefault(cur, {"currency": cur, "orders": 0, "revenue": 0.0, "paid_revenue": 0.0})
+        bucket = buckets.setdefault(
+            cur, {"currency": cur, "orders": 0, "revenue": 0.0, "paid_revenue": 0.0}
+        )
         bucket["orders"] += 1
         bucket["revenue"] += row["total_amount"]
         if row["payment_status"] == PaymentStatus.COMPLETED.value:
@@ -346,7 +367,9 @@ def _totals_from_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return _finish_totals(buckets)
 
 
-async def _totals_from_sql(db: AsyncSession, conditions: list[Any]) -> list[dict[str, Any]]:
+async def _totals_from_sql(
+    db: AsyncSession, conditions: list[Any]
+) -> list[dict[str, Any]]:
     result = await db.execute(
         select(
             Order.currency,
@@ -355,7 +378,10 @@ async def _totals_from_sql(db: AsyncSession, conditions: list[Any]) -> list[dict
             func.coalesce(
                 func.sum(
                     case(
-                        (Order.payment_status == PaymentStatus.COMPLETED, Order.total_amount),
+                        (
+                            Order.payment_status == PaymentStatus.COMPLETED,
+                            Order.total_amount,
+                        ),
                         else_=0,
                     )
                 ),
@@ -366,7 +392,8 @@ async def _totals_from_sql(db: AsyncSession, conditions: list[Any]) -> list[dict
         .group_by(Order.currency)
     )
     buckets = {
-        row[0] or "?": {
+        row[0]
+        or "?": {
             "currency": row[0] or "?",
             "orders": row[1],
             "revenue": float(row[2]),
@@ -382,7 +409,9 @@ def _finish_totals(buckets: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
     for bucket in buckets.values():
         bucket["revenue"] = round(bucket["revenue"], 2)
         bucket["paid_revenue"] = round(bucket["paid_revenue"], 2)
-        bucket["avg_order"] = round(bucket["revenue"] / bucket["orders"], 2) if bucket["orders"] else 0.0
+        bucket["avg_order"] = (
+            round(bucket["revenue"] / bucket["orders"], 2) if bucket["orders"] else 0.0
+        )
         out.append(bucket)
     # Biggest currency first; the seller's main market should lead.
     return sorted(out, key=lambda b: b["revenue"], reverse=True)
@@ -399,15 +428,20 @@ FACET_COLUMNS = {
 FACET_FALLBACK = {"external_platform": "manual", "source_channel": "unknown"}
 
 
-async def _facets_from_sql(db: AsyncSession, conditions: list[Any]) -> dict[str, list[dict[str, Any]]]:
+async def _facets_from_sql(
+    db: AsyncSession, conditions: list[Any]
+) -> dict[str, list[dict[str, Any]]]:
     facets: dict[str, list[dict[str, Any]]] = {}
     for name, column in FACET_COLUMNS.items():
         result = await db.execute(
-            select(column, func.count(Order.id)).where(and_(*conditions)).group_by(column)
+            select(column, func.count(Order.id))
+            .where(and_(*conditions))
+            .group_by(column)
         )
         facets[name] = _sorted_facet(
             {
-                (row[0].value if hasattr(row[0], "value") else row[0]) or FACET_FALLBACK.get(name, "—"): row[1]
+                (row[0].value if hasattr(row[0], "value") else row[0])
+                or FACET_FALLBACK.get(name, "—"): row[1]
                 for row in result.all()
             }
         )

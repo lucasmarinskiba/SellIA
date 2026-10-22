@@ -1,9 +1,9 @@
 """Customer timeline API endpoints."""
 
+from typing import Annotated
 from uuid import UUID
-from typing import Optional, List, Dict
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -17,27 +17,27 @@ class LogEventRequest(BaseModel):
     event_type: str
     channel: str
     title: str
-    event_data: Dict
-    description: Optional[str] = None
-    outcome: Optional[str] = "success"
-    revenue_impact: Optional[str] = None
-    estimated_value: Optional[int] = None
+    event_data: dict
+    description: str | None = None
+    outcome: str | None = "success"
+    revenue_impact: str | None = None
+    estimated_value: int | None = None
 
 
 class SaveFilterRequest(BaseModel):
     name: str
-    event_types: Optional[List[str]] = None
-    channels: Optional[List[str]] = None
-    outcomes: Optional[List[str]] = None
+    event_types: list[str] | None = None
+    channels: list[str] | None = None
+    outcomes: list[str] | None = None
 
 
 @router.post("/customers/{customer_id}/events")
 def log_event(
     customer_id: UUID,
-    business_id: UUID = Query(...),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[Session, Depends(get_db)],
     request: LogEventRequest = None,
-    created_by: Optional[UUID] = None,
-    db: Session = Depends(get_db)
+    created_by: UUID | None = None,
 ):
     """Log customer event."""
     return TimelineService.log_event(
@@ -52,19 +52,19 @@ def log_event(
         revenue_impact=request.revenue_impact,
         estimated_value=request.estimated_value,
         created_by=created_by,
-        db=db
+        db=db,
     )
 
 
 @router.get("/customers/{customer_id}/timeline")
 def get_customer_timeline(
     customer_id: UUID,
-    business_id: UUID = Query(...),
-    limit: int = Query(50, ge=1, le=100),
-    offset: int = Query(0, ge=0),
-    event_types: Optional[str] = Query(None),
-    channels: Optional[str] = Query(None),
-    db: Session = Depends(get_db)
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[Session, Depends(get_db)],
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    event_types: Annotated[str | None, Query()] = None,
+    channels: Annotated[str | None, Query()] = None,
 ):
     """Get customer timeline."""
     event_types_list = event_types.split(",") if event_types else None
@@ -77,74 +77,63 @@ def get_customer_timeline(
         offset=offset,
         event_types=event_types_list,
         channels=channels_list,
-        db=db
+        db=db,
     )
 
 
 @router.get("/customers/{customer_id}/timeline/summary")
 def get_timeline_summary(
     customer_id: UUID,
-    business_id: UUID = Query(...),
-    db: Session = Depends(get_db)
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Get timeline summary."""
     return TimelineService.get_timeline_summary(
-        customer_id=customer_id,
-        business_id=business_id,
-        db=db
+        customer_id=customer_id, business_id=business_id, db=db
     )
 
 
 @router.get("/businesses/{business_id}/timeline/stream")
 def get_event_stream(
     business_id: UUID,
-    limit: int = Query(50, ge=1, le=100),
-    db: Session = Depends(get_db)
+    db: Annotated[Session, Depends(get_db)],
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
 ):
     """Get live event stream."""
-    return TimelineService.get_event_stream(
-        business_id=business_id,
-        limit=limit,
-        db=db
-    )
+    return TimelineService.get_event_stream(business_id=business_id, limit=limit, db=db)
 
 
 @router.get("/timeline/search")
 def search_events(
-    business_id: UUID = Query(...),
-    query: str = Query(...),
-    limit: int = Query(50, ge=1, le=100),
-    db: Session = Depends(get_db)
+    business_id: Annotated[UUID, Query()],
+    query: Annotated[str, Query()],
+    db: Annotated[Session, Depends(get_db)],
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
 ):
     """Search events."""
     return TimelineService.search_events(
-        business_id=business_id,
-        query_text=query,
-        limit=limit,
-        db=db
+        business_id=business_id, query_text=query, limit=limit, db=db
     )
 
 
 @router.post("/events/{event_id}/important")
 def mark_event_important(
     event_id: UUID,
-    is_important: bool = Query(...),
-    db: Session = Depends(get_db)
+    is_important: Annotated[bool, Query()],
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Mark event as important."""
     return TimelineService.mark_event_important(
-        event_id=event_id,
-        is_important=is_important,
-        db=db
+        event_id=event_id, is_important=is_important, db=db
     )
 
 
 @router.post("/timeline/filters")
 def save_event_filter(
-    business_id: UUID = Query(...),
-    user_id: UUID = Query(...),
+    business_id: Annotated[UUID, Query()],
+    user_id: Annotated[UUID, Query()],
+    db: Annotated[Session, Depends(get_db)],
     request: SaveFilterRequest = None,
-    db: Session = Depends(get_db)
 ):
     """Save timeline filter."""
     return TimelineService.save_event_filter(
@@ -154,33 +143,29 @@ def save_event_filter(
         event_types=request.event_types,
         channels=request.channels,
         outcomes=request.outcomes,
-        db=db
+        db=db,
     )
 
 
 @router.get("/timeline/filters")
 def get_event_filters(
-    business_id: UUID = Query(...),
-    user_id: UUID = Query(...),
-    db: Session = Depends(get_db)
+    business_id: Annotated[UUID, Query()],
+    user_id: Annotated[UUID, Query()],
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Get saved filters."""
     return TimelineService.get_event_filters(
-        business_id=business_id,
-        user_id=user_id,
-        db=db
+        business_id=business_id, user_id=user_id, db=db
     )
 
 
 @router.get("/timeline/metrics")
 def get_timeline_metrics(
-    business_id: UUID = Query(...),
-    days: int = Query(30, ge=1, le=365),
-    db: Session = Depends(get_db)
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[Session, Depends(get_db)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ):
     """Get timeline metrics."""
     return TimelineService.get_timeline_metrics(
-        business_id=business_id,
-        days=days,
-        db=db
+        business_id=business_id, days=days, db=db
     )

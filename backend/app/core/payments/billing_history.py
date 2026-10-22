@@ -13,17 +13,20 @@ Database model: BillingRecord
 """
 
 import logging
-from typing import Dict, Any, List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
+from typing import Any
+
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
 
 class TransactionType(str, Enum):
     """Transaction types."""
+
     PAYMENT = "payment"
     REFUND = "refund"
     CHARGEBACK = "chargeback"
@@ -44,8 +47,8 @@ class BillingHistoryManager:
         currency: str = "USD",
         provider: str = "stripe",
         description: str = "",
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Record a financial transaction.
 
@@ -70,7 +73,9 @@ class BillingHistoryManager:
             }
         """
         try:
-            from app.core.database.models import Account  # NOTE: unreachable -- app.core.database resolves to the flat module, not this package (no __init__.py). Isolated Base, never bootstrapped in prod either way.
+            from app.core.database.models import (
+                Account,  # NOTE: unreachable -- app.core.database resolves to the flat module, not this package (no __init__.py). Isolated Base, never bootstrapped in prod either way.
+            )
 
             # Verify account exists
             account = db.query(Account).filter(Account.id == account_id).first()
@@ -80,7 +85,7 @@ class BillingHistoryManager:
             # Create billing record
             # Note: Using JSON column to store flexible metadata
             record_data = {
-                "id": f"billing_{order_id}_{datetime.utcnow().timestamp()}",
+                "id": f"billing_{order_id}_{utc_now().timestamp()}",
                 "account_id": account_id,
                 "order_id": order_id,
                 "transaction_type": transaction_type,
@@ -89,7 +94,7 @@ class BillingHistoryManager:
                 "provider": provider,
                 "description": description,
                 "metadata": metadata or {},
-                "created_at": datetime.utcnow().isoformat(),
+                "created_at": utc_now().isoformat(),
             }
 
             logger.info(
@@ -104,19 +109,19 @@ class BillingHistoryManager:
                 "order_id": order_id,
                 "transaction_type": transaction_type,
                 "amount": amount_usd,
-                "timestamp": datetime.utcnow(),
+                "timestamp": utc_now(),
             }
 
         except Exception as e:
-            logger.error(f"Error recording transaction: {str(e)}")
+            logger.exception("Error recording transaction")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
     def get_account_balance(
         db: Session,
         account_id: str,
-        as_of_date: Optional[datetime] = None,
-    ) -> Dict[str, Any]:
+        as_of_date: datetime | None = None,
+    ) -> dict[str, Any]:
         """
         Calculate account balance.
 
@@ -137,21 +142,23 @@ class BillingHistoryManager:
             }
         """
         try:
-            from app.core.database.payment_models import Payment  # NOTE: same unreachable-package issue as Account above
+            from app.core.database.payment_models import (
+                Payment,  # NOTE: same unreachable-package issue as Account above
+            )
 
-            as_of = as_of_date or datetime.utcnow()
+            as_of = as_of_date or utc_now()
 
             # Query payments for account
-            payments = db.query(Payment).filter(
-                Payment.created_at <= as_of,
-            ).all()
+            payments = (
+                db.query(Payment)
+                .filter(
+                    Payment.created_at <= as_of,
+                )
+                .all()
+            )
 
-            total_revenue = sum(
-                p.amount for p in payments if p.status == "succeeded"
-            )
-            total_refunds = sum(
-                p.amount for p in payments if p.status == "refunded"
-            )
+            total_revenue = sum(p.amount for p in payments if p.status == "succeeded")
+            total_refunds = sum(p.amount for p in payments if p.status == "refunded")
 
             net_balance = total_revenue - total_refunds
 
@@ -172,7 +179,7 @@ class BillingHistoryManager:
             }
 
         except Exception as e:
-            logger.error(f"Error calculating balance: {str(e)}")
+            logger.exception("Error calculating balance")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -181,7 +188,7 @@ class BillingHistoryManager:
         account_id: str,
         start_date: datetime,
         end_date: datetime,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get billing summary for period (e.g., monthly).
 
@@ -214,7 +221,9 @@ class BillingHistoryManager:
             }
         """
         try:
-            from app.core.database.payment_models import Payment, Order  # NOTE: same unreachable-package issue as Account above
+            from app.core.database.payment_models import (  # NOTE: same unreachable-package issue as Account above
+                Payment,
+            )
 
             # Get payments in period
             payments = (
@@ -239,14 +248,16 @@ class BillingHistoryManager:
                 elif payment.status == "refunded":
                     total_refunds += amount
 
-                transactions.append({
-                    "date": payment.created_at,
-                    "type": tx_type,
-                    "amount": amount,
-                    "description": f"Order {payment.order_id}",
-                    "order_id": payment.order_id,
-                    "status": payment.status,
-                })
+                transactions.append(
+                    {
+                        "date": payment.created_at,
+                        "type": tx_type,
+                        "amount": amount,
+                        "description": f"Order {payment.order_id}",
+                        "order_id": payment.order_id,
+                        "status": payment.status,
+                    }
+                )
 
             net_revenue = total_revenue - total_refunds
 
@@ -263,19 +274,23 @@ class BillingHistoryManager:
                     "start": start_date,
                     "end": end_date,
                 },
-                "transactions": sorted(transactions, key=lambda x: x["date"], reverse=True),
+                "transactions": sorted(
+                    transactions, key=lambda x: x["date"], reverse=True
+                ),
                 "summary": {
                     "total_transactions": len(transactions),
                     "total_revenue": total_revenue,
                     "total_refunds": total_refunds,
                     "net_revenue": net_revenue,
-                    "num_succeeded": len([p for p in payments if p.status == "succeeded"]),
+                    "num_succeeded": len(
+                        [p for p in payments if p.status == "succeeded"]
+                    ),
                     "num_failed": len([p for p in payments if p.status == "failed"]),
                 },
             }
 
         except Exception as e:
-            logger.error(f"Error getting billing summary: {str(e)}")
+            logger.exception("Error getting billing summary")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -283,7 +298,7 @@ class BillingHistoryManager:
         db: Session,
         account_id: str,
         months: int = 12,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get last N months of billing summaries.
 
@@ -310,7 +325,7 @@ class BillingHistoryManager:
         """
         try:
             summaries = []
-            end_date = datetime.utcnow().replace(day=1)
+            end_date = utc_now().replace(day=1)
 
             for i in range(months):
                 # Move back one month
@@ -325,15 +340,19 @@ class BillingHistoryManager:
                 )
 
                 if month_summary["status"] == "retrieved":
-                    summaries.append({
-                        "month": start_date.strftime("%Y-%m"),
-                        "year": start_date.year,
-                        "month_num": start_date.month,
-                        "transactions": month_summary["summary"]["total_transactions"],
-                        "revenue": month_summary["summary"]["total_revenue"],
-                        "refunds": month_summary["summary"]["total_refunds"],
-                        "net": month_summary["summary"]["net_revenue"],
-                    })
+                    summaries.append(
+                        {
+                            "month": start_date.strftime("%Y-%m"),
+                            "year": start_date.year,
+                            "month_num": start_date.month,
+                            "transactions": month_summary["summary"][
+                                "total_transactions"
+                            ],
+                            "revenue": month_summary["summary"]["total_revenue"],
+                            "refunds": month_summary["summary"]["total_refunds"],
+                            "net": month_summary["summary"]["net_revenue"],
+                        }
+                    )
 
                 end_date = start_date
 
@@ -344,7 +363,7 @@ class BillingHistoryManager:
             }
 
         except Exception as e:
-            logger.error(f"Error getting monthly summaries: {str(e)}")
+            logger.exception("Error getting monthly summaries")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -396,5 +415,5 @@ class BillingHistoryManager:
             return csv_content
 
         except Exception as e:
-            logger.error(f"Error exporting CSV: {str(e)}")
+            logger.error(f"Error exporting CSV: {e!s}")
             raise

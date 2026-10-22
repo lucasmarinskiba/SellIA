@@ -1,18 +1,22 @@
 """Phase 30 Churn Prevention API endpoints."""
 
-from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Depends
+import logging
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.domains.enterprise.churn_retention import (
-    ChurnPredictionModel,
-    ExpansionOpportunityDetector,
     ABMIntentScorer,
-    RetentionPlaybookGenerator,
+    ChurnPredictionModel,
     CustomerHealthScore,
+    ExpansionOpportunityDetector,
+    RetentionPlaybookGenerator,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/churn", tags=["churn-retention"])
 
@@ -30,7 +34,7 @@ class ChurnPredictionResponse(BaseModel):
     customer_id: str
     churn_probability: float
     risk_level: str
-    churn_reasons: List[dict]
+    churn_reasons: list[dict]
     predicted_churn_date: str
     retention_offer: str
 
@@ -41,7 +45,7 @@ class ExpansionOpportunitiesRequest(BaseModel):
 
 class ExpansionOpportunitiesResponse(BaseModel):
     customer_id: str
-    opportunities: List[dict]
+    opportunities: list[dict]
 
 
 class ABMIntentRequest(BaseModel):
@@ -52,7 +56,7 @@ class ABMIntentResponse(BaseModel):
     account_id: str
     intent_score: int
     intent_level: str
-    top_signals: List[dict]
+    top_signals: list[dict]
     trending: str
 
 
@@ -65,7 +69,7 @@ class RetentionCampaignResponse(BaseModel):
     campaign_id: str
     message: str
     offer: str
-    executive_message: Optional[str]
+    executive_message: str | None
 
 
 class HealthScoreRequest(BaseModel):
@@ -92,10 +96,15 @@ class HealthScoreResponse(BaseModel):
 
 
 @router.post("/predictions/{customer_id}", response_model=ChurnPredictionResponse)
-def predict_churn(customer_id: str, db: Session = Depends(get_db)):
+def predict_churn(
+    customer_id: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Get churn prediction for customer."""
     try:
-        from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+        from app.domains.crm.models import (
+            Deal,  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+        )
 
         deal = db.query(Deal).filter(Deal.id == customer_id).first()
         if not deal:
@@ -122,14 +131,23 @@ def predict_churn(customer_id: str, db: Session = Depends(get_db)):
             retention_offer=prediction.retention_offer,
         )
     except Exception as e:
+        logger.exception("predict_churn: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/expansion-opportunities/{customer_id}", response_model=ExpansionOpportunitiesResponse)
-def get_expansion_opportunities(customer_id: str, db: Session = Depends(get_db)):
+@router.post(
+    "/expansion-opportunities/{customer_id}",
+    response_model=ExpansionOpportunitiesResponse,
+)
+def get_expansion_opportunities(
+    customer_id: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Get expansion opportunities for customer."""
     try:
-        from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+        from app.domains.crm.models import (
+            Deal,  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+        )
 
         deal = db.query(Deal).filter(Deal.id == customer_id).first()
         if not deal:
@@ -139,7 +157,12 @@ def get_expansion_opportunities(customer_id: str, db: Session = Depends(get_db))
         usage_data = {
             "customer_id": customer_id,
             "features_using": ["reporting", "analytics"],
-            "features_available": ["reporting", "analytics", "automation", "custom_dashboards"],
+            "features_available": [
+                "reporting",
+                "analytics",
+                "automation",
+                "custom_dashboards",
+            ],
             "team_size_current": 12,
             "team_size_historical": 10,
             "seats_purchased": 10,
@@ -163,14 +186,20 @@ def get_expansion_opportunities(customer_id: str, db: Session = Depends(get_db))
             ],
         )
     except Exception as e:
+        logger.exception("get_expansion_opportunities: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/abm-intent/{account_id}", response_model=ABMIntentResponse)
-def get_abm_intent(account_id: str, db: Session = Depends(get_db)):
+def get_abm_intent(
+    account_id: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Get ABM intent score for account."""
     try:
-        from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+        from app.domains.crm.models import (
+            Deal,  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+        )
 
         deal = db.query(Deal).filter(Deal.id == account_id).first()
         if not deal:
@@ -198,19 +227,25 @@ def get_abm_intent(account_id: str, db: Session = Depends(get_db)):
             trending=intent["trending"],
         )
     except Exception as e:
+        logger.exception("get_abm_intent: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/retention-campaign/{customer_id}", response_model=RetentionCampaignResponse)
+@router.post(
+    "/retention-campaign/{customer_id}", response_model=RetentionCampaignResponse
+)
 def launch_retention_campaign(
     customer_id: str,
     request: RetentionCampaignRequest,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
     """Launch retention campaign for at-risk customer."""
     try:
-        from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
         import uuid
+
+        from app.domains.crm.models import (
+            Deal,  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+        )
 
         deal = db.query(Deal).filter(Deal.id == customer_id).first()
         if not deal:
@@ -235,14 +270,20 @@ def launch_retention_campaign(
             executive_message=playbook.get("executive", None),
         )
     except Exception as e:
+        logger.exception("launch_retention_campaign: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/healthcheck/{customer_id}", response_model=HealthScoreResponse)
-def get_customer_health(customer_id: str, db: Session = Depends(get_db)):
+def get_customer_health(
+    customer_id: str,
+    db: Annotated[Session, Depends(get_db)],
+):
     """Get comprehensive customer health scorecard."""
     try:
-        from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+        from app.domains.crm.models import (
+            Deal,  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+        )
 
         deal = db.query(Deal).filter(Deal.id == customer_id).first()
         if not deal:
@@ -275,7 +316,9 @@ def get_customer_health(customer_id: str, db: Session = Depends(get_db)):
         expansion_detector = ExpansionOpportunityDetector(db)
         abm_scorer = ABMIntentScorer(db)
 
-        health_calculator = CustomerHealthScore(db, churn_model, expansion_detector, abm_scorer)
+        health_calculator = CustomerHealthScore(
+            db, churn_model, expansion_detector, abm_scorer
+        )
         health = health_calculator.calculate_health(customer_id, features)
 
         return HealthScoreResponse(
@@ -292,4 +335,5 @@ def get_customer_health(customer_id: str, db: Session = Depends(get_db)):
             recommended_action=health["recommended_action"],
         )
     except Exception as e:
+        logger.exception("get_customer_health: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))

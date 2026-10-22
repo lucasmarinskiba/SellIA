@@ -1,6 +1,9 @@
 """Phase X11: Loyalty & Retention Agent - Personalized Retention Sequences."""
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, JSON, Text
+
+from datetime import UTC, datetime
+
+from sqlalchemy import JSON, Boolean, Column, DateTime, Float, Integer, String, Text
+
 from app.db.models import Base
 
 
@@ -15,7 +18,9 @@ class LoyaltyProgram(Base):
     # sin "user_id" - toda query de este modelo fallaba con
     # UndefinedColumnError contra el schema equivocado.
     __tablename__ = "x11_loyalty_status"
-    id = Column(String(36), primary_key=True, default=lambda: str(__import__('uuid').uuid4()))
+    id = Column(
+        String(36), primary_key=True, default=lambda: str(__import__("uuid").uuid4())
+    )
 
     user_id = Column(String(36), nullable=False, index=True)
     email = Column(String(255), nullable=False)
@@ -40,23 +45,29 @@ class LoyaltyProgram(Base):
     # Rewards & incentives
     next_reward_milestone = Column(String(255))  # "Unlock Gold: 5 more team members"
     reward_unlock_progress = Column(Float, default=0)  # 0-1.0
-    exclusive_perks = Column(JSON, default=list)  # ["priority_support", "custom_training"]
+    exclusive_perks = Column(
+        JSON, default=list
+    )  # ["priority_support", "custom_training"]
 
     # VIP treatment
     dedicated_account_manager = Column(String(255), nullable=True)
     vip_access_features = Column(JSON, default=list)
     personal_success_plan = Column(Text, nullable=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class RetentionSequence(Base):
     __tablename__ = "retention_sequences"
-    id = Column(String(36), primary_key=True, default=lambda: str(__import__('uuid').uuid4()))
+    id = Column(
+        String(36), primary_key=True, default=lambda: str(__import__("uuid").uuid4())
+    )
 
     user_id = Column(String(36), nullable=False, index=True)
-    sequence_type = Column(String(50), nullable=False)  # win_back, expansion, vip_nurture, churn_prevention
+    sequence_type = Column(
+        String(50), nullable=False
+    )  # win_back, expansion, vip_nurture, churn_prevention
     current_step = Column(Integer, default=0)
     total_steps = Column(Integer, default=5)
 
@@ -74,8 +85,8 @@ class RetentionSequence(Base):
     conversions = Column(Integer, default=0)
 
     # Status
-    started_at = Column(DateTime(timezone.utc), nullable=False)
-    completed_at = Column(DateTime(timezone.utc), nullable=True)
+    started_at = Column(DateTime(UTC), nullable=False)
+    completed_at = Column(DateTime(UTC), nullable=True)
     outcome = Column(String(50))  # success, paused, churned
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))

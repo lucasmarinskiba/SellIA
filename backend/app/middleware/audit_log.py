@@ -4,7 +4,7 @@ Logs access to sensitive data endpoints for compliance and forensics.
 """
 
 import uuid
-from datetime import datetime, timezone
+
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -47,7 +47,7 @@ class DataAccessAuditMiddleware(BaseHTTPMiddleware):
                     except ValueError:
                         pass
         except Exception:
-            pass
+            logger.exception("dispatch: error inesperado")
 
         # Async fire-and-forget to DB (non-blocking)
         try:
@@ -69,8 +69,9 @@ class DataAccessAuditMiddleware(BaseHTTPMiddleware):
                     await db.commit()
 
             import asyncio
+
             asyncio.create_task(_log())
         except Exception:
-            pass
+            logger.exception("dispatch: error inesperado")
 
         return response

@@ -2,8 +2,7 @@
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
-import json
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +24,7 @@ class LeadScoreBreakdown:
 class LeadScorerAgent:
     """Score buyer profiles on 6 critical factors."""
 
-    SCORE_WEIGHTS = {
+    SCORE_WEIGHTS: ClassVar[dict] = {
         "budget": 0.25,
         "motivation": 0.20,
         "timeline": 0.20,
@@ -35,9 +34,9 @@ class LeadScorerAgent:
     }
 
     def __init__(self):
-        self.scores_history: Dict[str, Any] = {}
+        self.scores_history: dict[str, Any] = {}
 
-    def score_lead(self, lead_data: Dict[str, Any]) -> LeadScoreBreakdown:
+    def score_lead(self, lead_data: dict[str, Any]) -> LeadScoreBreakdown:
         """Evaluate buyer profile on 6 factors."""
 
         budget_score = self._evaluate_budget(lead_data)
@@ -73,10 +72,12 @@ class LeadScorerAgent:
         lead_id = lead_data.get("lead_id", "unknown")
         self.scores_history[lead_id] = breakdown
 
-        logger.info(f"Lead {lead_id} scored: {overall_score:.1f}/100 - {recommendation}")
+        logger.info(
+            f"Lead {lead_id} scored: {overall_score:.1f}/100 - {recommendation}"
+        )
         return breakdown
 
-    def _evaluate_budget(self, lead_data: Dict[str, Any]) -> float:
+    def _evaluate_budget(self, lead_data: dict[str, Any]) -> float:
         """Factor 1: Budget capacity & qualification."""
         budget_min = lead_data.get("budget_min", 0)
         budget_max = lead_data.get("budget_max", 0)
@@ -112,7 +113,7 @@ class LeadScorerAgent:
 
         return min(score, 100.0)
 
-    def _evaluate_motivation(self, lead_data: Dict[str, Any]) -> float:
+    def _evaluate_motivation(self, lead_data: dict[str, Any]) -> float:
         """Factor 2: Buyer motivation & intent."""
         motivation = lead_data.get("motivation", "").lower()
         intent_signals = lead_data.get("intent_signals", [])
@@ -144,7 +145,7 @@ class LeadScorerAgent:
 
         return min(score, 100.0)
 
-    def _evaluate_timeline(self, lead_data: Dict[str, Any]) -> float:
+    def _evaluate_timeline(self, lead_data: dict[str, Any]) -> float:
         """Factor 3: Purchase timeline & urgency."""
         timeline = lead_data.get("timeline", "").lower()
 
@@ -165,7 +166,7 @@ class LeadScorerAgent:
 
         return 30.0  # Default for unclear timelines
 
-    def _evaluate_credit(self, lead_data: Dict[str, Any]) -> float:
+    def _evaluate_credit(self, lead_data: dict[str, Any]) -> float:
         """Factor 4: Credit worthiness."""
         credit_score = lead_data.get("credit_score")
         bankruptcy_history = lead_data.get("bankruptcy_history", False)
@@ -205,7 +206,7 @@ class LeadScorerAgent:
 
         return max(0.0, min(score, 100.0))
 
-    def _evaluate_location_preference(self, lead_data: Dict[str, Any]) -> float:
+    def _evaluate_location_preference(self, lead_data: dict[str, Any]) -> float:
         """Factor 5: Location preference clarity."""
         preferred_locations = lead_data.get("preferred_locations", [])
         school_district_important = lead_data.get("school_district_important", False)
@@ -242,7 +243,7 @@ class LeadScorerAgent:
 
         return min(score, 100.0)
 
-    def _evaluate_property_type_alignment(self, lead_data: Dict[str, Any]) -> float:
+    def _evaluate_property_type_alignment(self, lead_data: dict[str, Any]) -> float:
         """Factor 6: Property type preferences."""
         preferred_types = lead_data.get("preferred_property_types", [])
         min_bedrooms = lead_data.get("min_bedrooms")
@@ -275,7 +276,9 @@ class LeadScorerAgent:
 
         return min(score, 100.0)
 
-    def _generate_recommendation(self, overall_score: float, lead_data: Dict[str, Any]) -> str:
+    def _generate_recommendation(
+        self, overall_score: float, lead_data: dict[str, Any]
+    ) -> str:
         """Generate recommendation based on score."""
         if overall_score >= 80:
             return "HIGHLY QUALIFIED - Priority lead, ready to show properties"
@@ -288,7 +291,7 @@ class LeadScorerAgent:
         else:
             return "NOT QUALIFIED - Requires significant improvement or circumstances change"
 
-    def get_lead_quality_report(self, lead_id: str) -> Optional[Dict[str, Any]]:
+    def get_lead_quality_report(self, lead_id: str) -> dict[str, Any] | None:
         """Get detailed scoring report for lead."""
         if lead_id not in self.scores_history:
             return None
@@ -309,7 +312,7 @@ class LeadScorerAgent:
             "recommendation": breakdown.recommendation,
         }
 
-    def batch_score_leads(self, leads: list) -> Dict[str, LeadScoreBreakdown]:
+    def batch_score_leads(self, leads: list) -> dict[str, LeadScoreBreakdown]:
         """Score multiple leads."""
         results = {}
         for lead in leads:

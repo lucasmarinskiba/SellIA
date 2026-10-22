@@ -1,12 +1,21 @@
 """Customer segmentation models — RFM + behavioral segmentation."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from decimal import Decimal
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Decimal, Enum as SQLEnum, Index, Boolean, Float
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Decimal,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+)
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -14,6 +23,7 @@ from app.core.database import Base
 
 class RFMSegment(str, Enum):
     """RFM-based customer segment."""
+
     CHAMPIONS = "champions"  # High R, F, M
     LOYAL_CUSTOMERS = "loyal_customers"  # Medium-High R, F, M
     POTENTIAL_LOYALISTS = "potential_loyalists"  # Recent, Medium F
@@ -24,6 +34,7 @@ class RFMSegment(str, Enum):
 
 class BehavioralSegment(str, Enum):
     """Behavioral customer segment."""
+
     HIGH_VALUE_BUYER = "high_value_buyer"  # High LTV, frequent purchases
     BARGAIN_HUNTER = "bargain_hunter"  # High discount usage, lower AOV
     BROWSER = "browser"  # High engagement, low conversion
@@ -35,6 +46,7 @@ class BehavioralSegment(str, Enum):
 
 class ChurnRiskLevel(str, Enum):
     """Churn prediction risk level."""
+
     LOW = "low"  # 0-10% risk
     MEDIUM = "medium"  # 11-50% risk
     HIGH = "high"  # 51-80% risk
@@ -43,10 +55,16 @@ class ChurnRiskLevel(str, Enum):
 
 class CustomerSegment(Base):
     """Individual customer segment assignment."""
+
     __tablename__ = "customer_segments"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     # No ForeignKey: there is no `customers` table. The id is supplied by the caller (a user, lead or
     # contact), so it stays a plain indexed UUID instead of a constraint that can never be created.
     customer_id = Column(UUID(as_uuid=True), nullable=False, index=True)
@@ -65,7 +83,9 @@ class CustomerSegment(Base):
     # Churn prediction
     churn_probability = Column(Decimal(5, 2), default=0)  # 0-100 %
     days_since_purchase = Column(Integer, nullable=True)
-    purchase_consistency_score = Column(Decimal(3, 1), default=0)  # 0-10 (std dev of days between purchases)
+    purchase_consistency_score = Column(
+        Decimal(3, 1), default=0
+    )  # 0-10 (std dev of days between purchases)
     engagement_decay = Column(Decimal(3, 1), default=0)  # 0-10 (trend in activity)
 
     # CLV (Customer Lifetime Value)
@@ -82,8 +102,10 @@ class CustomerSegment(Base):
     tags = Column(JSONB, default=list)  # ["vip", "seasonal", "price_sensitive"]
 
     # Metadata
-    segment_created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    segment_updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), index=True)
+    segment_created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    segment_updated_at = Column(
+        DateTime(UTC), onupdate=lambda: datetime.now(UTC), index=True
+    )
 
     customer = relationship("Customer", foreign_keys=[customer_id])
 
@@ -97,10 +119,16 @@ class CustomerSegment(Base):
 
 class SegmentationMetrics(Base):
     """Aggregate segmentation metrics."""
+
     __tablename__ = "segmentation_metrics"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, unique=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
 
     # Date
     date = Column(String(10), nullable=False)  # YYYY-MM-DD
@@ -134,21 +162,25 @@ class SegmentationMetrics(Base):
     at_risk_revenue = Column(Decimal(12, 2), default=0)  # CLV of at-risk customers
     churn_risk_count = Column(Integer, default=0)  # High + critical
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     business = relationship("Business", foreign_keys=[business_id])
 
-    __table_args__ = (
-        Index("idx_business_date", "business_id", "date"),
-    )
+    __table_args__ = (Index("idx_business_date", "business_id", "date"),)
 
 
 class SegmentationStrategy(Base):
     """Retention/engagement strategy per segment."""
+
     __tablename__ = "segmentation_strategies"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Segment target
     rfm_segment = Column(SQLEnum(RFMSegment), nullable=True)
@@ -160,18 +192,20 @@ class SegmentationStrategy(Base):
     strategy_description = Column(String(500), nullable=True)
 
     # Tactics
-    automation_trigger = Column(String(255), nullable=True)  # e.g., "email_sequence_champions"
+    automation_trigger = Column(
+        String(255), nullable=True
+    )  # e.g., "email_sequence_champions"
     discount_offer = Column(Decimal(5, 2), nullable=True)  # % discount to offer
     frequency_per_month = Column(Integer, default=1)  # Contact frequency
     preferred_channel = Column(String(50), nullable=True)  # email, sms, push, in_app
 
     # Performance tracking
     is_active = Column(Boolean, default=True)
-    target_outcome = Column(String(100), nullable=True)  # "increase_repeat_purchase", "reduce_churn"
+    target_outcome = Column(
+        String(100), nullable=True
+    )  # "increase_repeat_purchase", "reduce_churn"
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
-    __table_args__ = (
-        Index("idx_business_rfm_strategy", "business_id", "rfm_segment"),
-    )
+    __table_args__ = (Index("idx_business_rfm_strategy", "business_id", "rfm_segment"),)

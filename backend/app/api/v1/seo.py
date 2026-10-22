@@ -1,16 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import PlainTextResponse
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from typing import Annotated
 from uuid import UUID
-import json
-from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import PlainTextResponse
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.businesses.models import Business
-from app.domains.websites.models import Website, Domain
+from app.domains.users.models import User
+from app.domains.websites.models import Domain, Website
 
 router = APIRouter()
 
@@ -42,8 +42,8 @@ async def _get_website_for_user(
 @router.get("/businesses/{business_id}/seo/meta")
 async def get_seo_metadata(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get SEO metadata (meta tags) for website."""
     business, website = await _get_website_for_user(business_id, current_user, db)
@@ -60,11 +60,11 @@ async def get_seo_metadata(
 async def update_seo_metadata(
     business_id: UUID,
     data: dict,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Update SEO metadata."""
-    business, website = await _get_website_for_user(business_id, current_user, db)
+    _business, website = await _get_website_for_user(business_id, current_user, db)
 
     website.meta_title = data.get("meta_title", website.meta_title)
     website.meta_description = data.get("meta_description", website.meta_description)
@@ -84,8 +84,8 @@ async def update_seo_metadata(
 @router.get("/businesses/{business_id}/seo/schema")
 async def get_schema_markup(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get Schema.org markup for website."""
     business, website = await _get_website_for_user(business_id, current_user, db)
@@ -95,7 +95,9 @@ async def get_schema_markup(
         select(Domain).where(Domain.website_id == website.id)
     )
     domain = domain_result.scalar_one_or_none()
-    domain_url = f"https://{domain.subdomain}.sellia.app" if domain else "https://example.com"
+    domain_url = (
+        f"https://{domain.subdomain}.sellia.app" if domain else "https://example.com"
+    )
 
     # LocalBusiness schema
     local_business = {
@@ -147,21 +149,25 @@ async def get_schema_markup(
     }
 
 
-@router.get("/businesses/{business_id}/seo/sitemap.xml", response_class=PlainTextResponse)
+@router.get(
+    "/businesses/{business_id}/seo/sitemap.xml", response_class=PlainTextResponse
+)
 async def get_sitemap(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Generate dynamic XML sitemap."""
-    business, website = await _get_website_for_user(business_id, current_user, db)
+    _business, website = await _get_website_for_user(business_id, current_user, db)
 
     # Fetch domain
     domain_result = await db.execute(
         select(Domain).where(Domain.website_id == website.id)
     )
     domain = domain_result.scalar_one_or_none()
-    domain_url = f"https://{domain.subdomain}.sellia.app" if domain else "https://example.com"
+    domain_url = (
+        f"https://{domain.subdomain}.sellia.app" if domain else "https://example.com"
+    )
 
     # Get pages from website config
     pages = website.pages or {}
@@ -190,21 +196,25 @@ async def get_sitemap(
     return "\n".join(sitemap_entries)
 
 
-@router.get("/businesses/{business_id}/seo/robots.txt", response_class=PlainTextResponse)
+@router.get(
+    "/businesses/{business_id}/seo/robots.txt", response_class=PlainTextResponse
+)
 async def get_robots_txt(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Generate dynamic robots.txt."""
-    business, website = await _get_website_for_user(business_id, current_user, db)
+    _business, website = await _get_website_for_user(business_id, current_user, db)
 
     # Fetch domain for sitemap URL
     domain_result = await db.execute(
         select(Domain).where(Domain.website_id == website.id)
     )
     domain = domain_result.scalar_one_or_none()
-    domain_url = f"https://{domain.subdomain}.sellia.app" if domain else "https://example.com"
+    domain_url = (
+        f"https://{domain.subdomain}.sellia.app" if domain else "https://example.com"
+    )
 
     robots_content = f"""# SellIA robots.txt
 User-agent: *
@@ -224,11 +234,11 @@ Disallow: /api/
 @router.get("/businesses/{business_id}/seo/audit")
 async def get_seo_audit(
     business_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get SEO audit checklist."""
-    business, website = await _get_website_for_user(business_id, current_user, db)
+    _business, website = await _get_website_for_user(business_id, current_user, db)
 
     domain_result = await db.execute(
         select(Domain).where(Domain.website_id == website.id)
@@ -243,7 +253,8 @@ async def get_seo_audit(
         },
         "meta_description": {
             "label": "Meta Description",
-            "passed": bool(website.meta_description) and len(website.meta_description) >= 120,
+            "passed": bool(website.meta_description)
+            and len(website.meta_description) >= 120,
             "recommendation": "Add a description (120-160 chars) that summarizes your page",
         },
         "og_image": {
@@ -273,7 +284,9 @@ async def get_seo_audit(
         },
         "has_content": {
             "label": "Content Available",
-            "passed": bool(website.description or (website.pages and len(website.pages) > 0)),
+            "passed": bool(
+                website.description or (website.pages and len(website.pages) > 0)
+            ),
             "recommendation": "Add quality content describing your business and offerings",
         },
     }

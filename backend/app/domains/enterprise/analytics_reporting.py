@@ -1,9 +1,13 @@
+import logging
+import uuid
 from dataclasses import dataclass
-from typing import Optional, Any
 from datetime import datetime, timedelta
 from enum import Enum
-import uuid
-import json
+from typing import Any
+
+from app.core.clock import utc_now
+
+logger = logging.getLogger(__name__)
 
 
 class ReportFormat(str, Enum):
@@ -66,7 +70,7 @@ class AnalyticsReportingManager:
         name: str,
         widgets: list[dict],
         is_default: bool = False,
-        description: Optional[str] = None,
+        description: str | None = None,
     ) -> Dashboard:
         """Create custom dashboard."""
         dashboard_id = str(uuid.uuid4())
@@ -76,12 +80,12 @@ class AnalyticsReportingManager:
             name=name,
             widgets=[DashboardWidget(**w) for w in widgets],
             is_default=is_default,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
         self.dashboards[dashboard_id] = dashboard
         return dashboard
 
-    def get_dashboard(self, dashboard_id: str) -> Optional[Dashboard]:
+    def get_dashboard(self, dashboard_id: str) -> Dashboard | None:
         """Get dashboard by ID."""
         return self.dashboards.get(dashboard_id)
 
@@ -116,7 +120,7 @@ class AnalyticsReportingManager:
     def execute_report(self, report_id: str) -> dict:
         """Execute scheduled report."""
         if report_id not in self.reports:
-            return {'success': False, 'error': 'Report not found'}
+            return {"success": False, "error": "Report not found"}
 
         report = self.reports[report_id]
 
@@ -124,24 +128,27 @@ class AnalyticsReportingManager:
             # Placeholder: actual query execution
             rows = self._execute_query(report.query)
 
-            file_url = f"https://storage.example.com/reports/{report_id}.{report.format}"
+            file_url = (
+                f"https://storage.example.com/reports/{report_id}.{report.format}"
+            )
 
             return {
-                'success': True,
-                'file_url': file_url,
-                'row_count': len(rows),
-                'format': report.format,
-                'recipients': report.recipients,
+                "success": True,
+                "file_url": file_url,
+                "row_count": len(rows),
+                "format": report.format,
+                "recipients": report.recipients,
             }
         except Exception as e:
-            return {'success': False, 'error': str(e)}
+            logger.exception("execute_report: error inesperado")
+            return {"success": False, "error": str(e)}
 
     def export_data(
         self,
         user_id: str,
         entity_type: str,
         format: ReportFormat = ReportFormat.CSV,
-        filters: Optional[dict] = None,
+        filters: dict | None = None,
     ) -> dict:
         """Export data as CSV/Excel/JSON."""
         export_id = str(uuid.uuid4())
@@ -153,34 +160,35 @@ class AnalyticsReportingManager:
             file_url = f"https://storage.example.com/exports/{export_id}.{format}"
 
             self.exports[export_id] = {
-                'user_id': user_id,
-                'entity_type': entity_type,
-                'format': format,
-                'file_url': file_url,
-                'row_count': len(rows),
-                'created_at': datetime.utcnow().isoformat(),
+                "user_id": user_id,
+                "entity_type": entity_type,
+                "format": format,
+                "file_url": file_url,
+                "row_count": len(rows),
+                "created_at": utc_now().isoformat(),
             }
 
             return {
-                'success': True,
-                'export_id': export_id,
-                'file_url': file_url,
-                'row_count': len(rows),
+                "success": True,
+                "export_id": export_id,
+                "file_url": file_url,
+                "row_count": len(rows),
             }
         except Exception as e:
-            return {'success': False, 'error': str(e)}
+            logger.exception("export_data: error inesperado")
+            return {"success": False, "error": str(e)}
 
     def get_realtime_metrics(self, user_id: str) -> dict:
         """Get real-time metrics dashboard."""
         return {
-            'timestamp': datetime.utcnow().isoformat(),
-            'metrics': {
-                'total_calls_today': 42,
-                'avg_call_duration': 145,
-                'deals_closed_today': 3,
-                'revenue_today': 45000,
-                'active_calls': 2,
-                'sentiment_avg': 0.82,
+            "timestamp": utc_now().isoformat(),
+            "metrics": {
+                "total_calls_today": 42,
+                "avg_call_duration": 145,
+                "deals_closed_today": 3,
+                "revenue_today": 45000,
+                "active_calls": 2,
+                "sentiment_avg": 0.82,
             },
         }
 
@@ -189,11 +197,12 @@ class AnalyticsReportingManager:
         try:
             key = f"{user_id}:{metric_name}"
             self.metrics[key] = {
-                'value': value,
-                'timestamp': datetime.utcnow().isoformat(),
+                "value": value,
+                "timestamp": utc_now().isoformat(),
             }
             return True
         except Exception:
+            logger.exception("track_metric: error inesperado")
             return False
 
     def get_metric_history(
@@ -206,8 +215,8 @@ class AnalyticsReportingManager:
         # Placeholder: actual history retrieval
         return [
             {
-                'timestamp': (datetime.utcnow() - timedelta(days=i)).isoformat(),
-                'value': 100 + (i * 5),
+                "timestamp": (utc_now() - timedelta(days=i)).isoformat(),
+                "value": 100 + (i * 5),
             }
             for i in range(days)
         ]
@@ -216,7 +225,7 @@ class AnalyticsReportingManager:
         """Execute report query (placeholder)."""
         return []
 
-    def _get_entity_data(self, entity_type: str, filters: Optional[dict]) -> list[dict]:
+    def _get_entity_data(self, entity_type: str, filters: dict | None) -> list[dict]:
         """Get entity data for export (placeholder)."""
         return []
 

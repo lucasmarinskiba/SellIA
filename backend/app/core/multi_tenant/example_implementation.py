@@ -3,24 +3,29 @@ Real-world implementation example: Complete tenant endpoints.
 Shows how to integrate multi-tenant into your FastAPI app.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+import logging
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.domains.users.models import User
-from .tenant_manager import TenantService, TenantTier
-from .tenant_isolation import TenantIsolation
+
+from .api_key_management import APIKeyService
+from .audit_logging import AuditAction, AuditService, AuditStatus
+from .billing_integration import BillingService
+from .models import TenantMember
 from .tenant_context import (
-    require_tenant_context,
+    TenantContext,
     require_admin_access,
     require_owner_access,
-    TenantContext,
+    require_tenant_context,
 )
-from .api_key_management import APIKeyService
-from .billing_integration import BillingService
-from .audit_logging import AuditService, AuditAction, AuditStatus
-from .models import Tenant, TenantMember, TenantAPIKey
+from .tenant_manager import TenantService, TenantTier
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/tenants", tags=["multi-tenant"])
 
@@ -29,13 +34,14 @@ router = APIRouter(prefix="/api/v1/tenants", tags=["multi-tenant"])
 # Tenant Management
 # ============================================================================
 
+
 @router.post("")
 async def create_tenant(
     name: str,
-    description: str = None,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    description: str | None = None,
     tier: str = TenantTier.STARTER,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
 ):
     """
     Create new tenant (organization).
@@ -78,6 +84,7 @@ async def create_tenant(
         }
 
     except Exception as e:
+        logger.exception("create_tenant: error inesperado")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
@@ -86,8 +93,8 @@ async def create_tenant(
 
 @router.get("/my-tenants")
 async def list_my_tenants(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """List all tenants user belongs to."""
     service = TenantService(db)
@@ -108,8 +115,8 @@ async def list_my_tenants(
 @router.get("/{tenant_id}")
 async def get_tenant(
     tenant_id: str,
-    tenant_context: TenantContext = Depends(require_tenant_context),
-    db: AsyncSession = Depends(get_db),
+    tenant_context: Annotated[TenantContext, Depends(require_tenant_context)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Get tenant details (members only)."""
     if tenant_context.tenant_id != tenant_id:
@@ -138,10 +145,10 @@ async def get_tenant(
 @router.put("/{tenant_id}")
 async def update_tenant(
     tenant_id: str,
-    name: str = None,
-    description: str = None,
-    tenant_context: TenantContext = Depends(require_admin_access),
-    db: AsyncSession = Depends(get_db),
+    tenant_context: Annotated[TenantContext, Depends(require_admin_access)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    name: str | None = None,
+    description: str | None = None,
 ):
     """Update tenant settings (admin only)."""
     if tenant_context.tenant_id != tenant_id:
@@ -168,8 +175,8 @@ async def update_tenant(
 async def upgrade_tier(
     tenant_id: str,
     new_tier: str,
-    tenant_context: TenantContext = Depends(require_owner_access),
-    db: AsyncSession = Depends(get_db),
+    tenant_context: Annotated[TenantContext, Depends(require_owner_access)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Upgrade tenant tier (owner only)."""
     if tenant_context.tenant_id != tenant_id:
@@ -188,6 +195,7 @@ async def upgrade_tier(
         }
 
     except Exception as e:
+        logger.exception("upgrade_tier: error inesperado")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
@@ -198,11 +206,12 @@ async def upgrade_tier(
 # Tenant Members (RBAC)
 # ============================================================================
 
+
 @router.get("/{tenant_id}/members")
 async def list_members(
     tenant_id: str,
-    tenant_context: TenantContext = Depends(require_tenant_context),
-    db: AsyncSession = Depends(get_db),
+    tenant_context: Annotated[TenantContext, Depends(require_tenant_context)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """List tenant members."""
     if tenant_context.tenant_id != tenant_id:
@@ -210,6 +219,7 @@ async def list_members(
 
     # Query members
     from sqlalchemy import select
+
     result = await db.execute(
         select(TenantMember)
         .where(TenantMember.tenant_id == tenant_id)
@@ -233,9 +243,9 @@ async def list_members(
 async def invite_member(
     tenant_id: str,
     email: str,
+    tenant_context: Annotated[TenantContext, Depends(require_admin_access)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     role: str = "member",
-    tenant_context: TenantContext = Depends(require_admin_access),
-    db: AsyncSession = Depends(get_db),
 ):
     """Invite user to tenant (admin only)."""
     if tenant_context.tenant_id != tenant_id:
@@ -244,9 +254,7 @@ async def invite_member(
     from sqlalchemy import select
 
     # Find user by email
-    user_result = await db.execute(
-        select(User).where(User.email == email)
-    )
+    user_result = await db.execute(select(User).where(User.email == email))
     user = user_result.scalar_one_or_none()
 
     if not user:
@@ -291,14 +299,15 @@ async def invite_member(
 # API Keys
 # ============================================================================
 
+
 @router.post("/{tenant_id}/api-keys")
 async def create_api_key(
     tenant_id: str,
     name: str,
-    scopes: list = None,
+    tenant_context: Annotated[TenantContext, Depends(require_admin_access)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    scopes: list | None = None,
     rate_limit_per_minute: int = 100,
-    tenant_context: TenantContext = Depends(require_admin_access),
-    db: AsyncSession = Depends(get_db),
 ):
     """Create API key (admin only)."""
     if tenant_context.tenant_id != tenant_id:
@@ -338,6 +347,7 @@ async def create_api_key(
         }
 
     except Exception as e:
+        logger.exception("create_api_key: error inesperado")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
@@ -347,8 +357,8 @@ async def create_api_key(
 @router.get("/{tenant_id}/api-keys")
 async def list_api_keys(
     tenant_id: str,
-    tenant_context: TenantContext = Depends(require_admin_access),
-    db: AsyncSession = Depends(get_db),
+    tenant_context: Annotated[TenantContext, Depends(require_admin_access)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """List API keys (admin only)."""
     if tenant_context.tenant_id != tenant_id:
@@ -376,8 +386,8 @@ async def list_api_keys(
 async def rotate_api_key(
     tenant_id: str,
     key_id: str,
-    tenant_context: TenantContext = Depends(require_admin_access),
-    db: AsyncSession = Depends(get_db),
+    tenant_context: Annotated[TenantContext, Depends(require_admin_access)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Rotate API key (revoke old, create new)."""
     if tenant_context.tenant_id != tenant_id:
@@ -407,6 +417,7 @@ async def rotate_api_key(
         }
 
     except Exception as e:
+        logger.exception("rotate_api_key: error inesperado")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
@@ -417,11 +428,12 @@ async def rotate_api_key(
 # Billing
 # ============================================================================
 
+
 @router.get("/{tenant_id}/billing/usage")
 async def get_billing_usage(
     tenant_id: str,
-    tenant_context: TenantContext = Depends(require_tenant_context),
-    db: AsyncSession = Depends(get_db),
+    tenant_context: Annotated[TenantContext, Depends(require_tenant_context)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Get current billing period usage."""
     if tenant_context.tenant_id != tenant_id:
@@ -437,14 +449,15 @@ async def get_billing_usage(
 # Audit Logs
 # ============================================================================
 
+
 @router.get("/{tenant_id}/audit-logs")
 async def get_audit_logs(
     tenant_id: str,
-    action: str = None,
+    tenant_context: Annotated[TenantContext, Depends(require_admin_access)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    action: str | None = None,
     days_back: int = 30,
     limit: int = 100,
-    tenant_context: TenantContext = Depends(require_admin_access),
-    db: AsyncSession = Depends(get_db),
 ):
     """Get audit logs (admin only)."""
     if tenant_context.tenant_id != tenant_id:
@@ -477,7 +490,7 @@ async def get_audit_logs(
 
 # Dependency for use in other routers
 def inject_tenant_id_from_context(
-    tenant_context: TenantContext = Depends(require_tenant_context),
+    tenant_context: Annotated[TenantContext, Depends(require_tenant_context)],
 ) -> str:
     """Extract tenant_id from context for use in other endpoints."""
     return tenant_context.tenant_id

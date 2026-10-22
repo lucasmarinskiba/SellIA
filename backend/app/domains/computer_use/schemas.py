@@ -1,51 +1,56 @@
 """Computer Use Agents — Pydantic Schemas"""
 
 from datetime import datetime
-from typing import Optional, Any
+from typing import Any
 from uuid import UUID
-from pydantic import BaseModel, Field, ConfigDict
 
+from pydantic import BaseModel, ConfigDict, Field
 
 # ========== Acciones ==========
 
+
 class ComputerUseAction(BaseModel):
-    action_type: str = Field(..., description="Tipo de acción: click, type, scroll, navigate, wait, done, error")
+    action_type: str = Field(
+        ...,
+        description="Tipo de acción: click, type, scroll, navigate, wait, done, error",
+    )
     params: dict[str, Any] = Field(default_factory=dict)
     reason: str = Field(default="", description="Razón por la que se tomó esta acción")
 
 
 # ========== Sesiones ==========
 
+
 class ComputerUseSessionCreate(BaseModel):
     task_description: str = Field(..., min_length=1, max_length=2000)
-    start_url: Optional[str] = Field(None, max_length=2048)
-    business_id: Optional[UUID] = None
+    start_url: str | None = Field(None, max_length=2048)
+    business_id: UUID | None = None
     browser_type: str = Field("chromium", pattern="^(chromium|firefox|webkit)$")
-    profile_id: Optional[UUID] = None
-    proxy_config_id: Optional[UUID] = None
+    profile_id: UUID | None = None
+    proxy_config_id: UUID | None = None
     mode: str = Field("supervised", pattern="^(supervised|autopilot)$")
 
 
 class ComputerUseSessionUpdate(BaseModel):
-    status: Optional[str] = None
-    error_message: Optional[str] = None
-    result_data: Optional[dict] = None
+    status: str | None = None
+    error_message: str | None = None
+    result_data: dict | None = None
 
 
 class ComputerUseSessionResponse(BaseModel):
     id: UUID
     user_id: UUID
-    business_id: Optional[UUID]
+    business_id: UUID | None
     task_description: str
     status: str
-    current_url: Optional[str]
-    result_data: Optional[dict]
-    error_message: Optional[str]
+    current_url: str | None
+    result_data: dict | None
+    error_message: str | None
     total_steps: int
     browser_type: str
-    provider_used: Optional[str]
-    started_at: Optional[datetime]
-    completed_at: Optional[datetime]
+    provider_used: str | None
+    started_at: datetime | None
+    completed_at: datetime | None
     created_at: datetime
     updated_at: datetime
 
@@ -59,23 +64,25 @@ class ComputerUseSessionListResponse(BaseModel):
 
 # ========== Steps ==========
 
+
 class ComputerUseStepResponse(BaseModel):
     id: UUID
     session_id: UUID
     step_number: int
-    screenshot_path: Optional[str]
+    screenshot_path: str | None
     action_type: str
     action_params: dict[str, Any]
-    reason: Optional[str] = None
-    execution_result: Optional[str]
-    execution_ms: Optional[int]
-    executed_at: Optional[datetime]
+    reason: str | None = None
+    execution_result: str | None
+    execution_ms: int | None
+    executed_at: datetime | None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
 
 # ========== Mensajes de supervisión ==========
+
 
 class ComputerUseMessageCreate(BaseModel):
     role: str = Field(..., pattern="^(user|agent|system)$")
@@ -93,6 +100,7 @@ class ComputerUseMessageResponse(BaseModel):
 
 
 # ========== WebSocket Protocol ==========
+
 
 class WSMessageScreenshot(BaseModel):
     type: str = "screenshot"
@@ -135,6 +143,7 @@ class WSClientChat(BaseModel):
 
 
 # ========== Orchestrator Integration ==========
+
 
 class ComputerUseOrchestratorResult(BaseModel):
     action: str = "COMPUTER_USE"

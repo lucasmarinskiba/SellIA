@@ -1,10 +1,10 @@
 """Resilience module — Retry engines, circuit breakers, failover logic."""
-import logging
+
 import asyncio
-from datetime import datetime, timedelta
-from typing import Callable, Any, Optional, Dict
+import logging
+from collections.abc import Callable
 from enum import Enum
-import re as _re
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ class CircuitState(str, Enum):
 
 class ServiceHealthTracker:
     def __init__(self):
-        self.services: Dict[str, Any] = {}
+        self.services: dict[str, Any] = {}
 
     def get_breaker(self, service_name: str):
         if service_name not in self.services:
@@ -33,14 +33,21 @@ class ServiceHealthTracker:
     def record_failure(self, service_name: str):
         pass
 
-    def status(self) -> Dict[str, str]:
+    def status(self) -> dict[str, str]:
         return {}
 
 
 health_tracker = ServiceHealthTracker()
 
 
-async def retry_with_exponential_backoff(func: Callable, args: tuple = (), kwargs: dict = None, max_retries: int = 3, initial_delay: float = 1.0, is_idempotent: bool = True) -> Any:
+async def retry_with_exponential_backoff(
+    func: Callable,
+    args: tuple = (),
+    kwargs: dict | None = None,
+    max_retries: int = 3,
+    initial_delay: float = 1.0,
+    is_idempotent: bool = True,
+) -> Any:
     if kwargs is None:
         kwargs = {}
     if not is_idempotent:
@@ -51,23 +58,13 @@ async def retry_with_exponential_backoff(func: Callable, args: tuple = (), kwarg
         try:
             return await func(*args, **kwargs)
         except Exception as e:
+            logger.exception("retry_with_exponential_backoff: error inesperado")
             last_exception = e
             if attempt < max_retries - 1:
                 await asyncio.sleep(delay)
                 delay *= 2
     raise last_exception
 
-from .retry_engine import (
-    RetryEngine,
-    RetryPolicy,
-    RetryConfig,
-    CircuitBreaker,
-    CircuitBreakerState,
-    RetryHistory,
-    RetryAttempt,
-    retry,
-    retry_engine,
-)
 
 # InputValidator lives in app/core/input_validation.py (moved out of the old
 # app/core/resilience.py file, which collided with this package's name and
@@ -75,19 +72,31 @@ from .retry_engine import (
 # `from app.core.resilience import InputValidator` keep working.
 from app.core.input_validation import InputValidator
 
+from .retry_engine import (
+    CircuitBreaker,
+    CircuitBreakerState,
+    RetryAttempt,
+    RetryConfig,
+    RetryEngine,
+    RetryHistory,
+    RetryPolicy,
+    retry,
+    retry_engine,
+)
+
 __all__ = [
-    "RetryEngine",
-    "RetryPolicy",
-    "RetryConfig",
     "CircuitBreaker",
     "CircuitBreakerState",
-    "RetryHistory",
-    "RetryAttempt",
-    "retry",
-    "retry_engine",
     "CircuitState",
+    "InputValidator",
+    "RetryAttempt",
+    "RetryConfig",
+    "RetryEngine",
+    "RetryHistory",
+    "RetryPolicy",
     "ServiceHealthTracker",
     "health_tracker",
+    "retry",
+    "retry_engine",
     "retry_with_exponential_backoff",
-    "InputValidator",
 ]

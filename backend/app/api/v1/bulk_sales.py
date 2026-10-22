@@ -7,11 +7,12 @@ Endpoints:
 - GET /analytics/dashboard (KPIs en tiempo real)
 """
 
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
-from typing import List, Dict, Any, Optional
 import logging
 import uuid
+from typing import Any
+
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 from app.core.tasks.sales_tasks import batch_process_sales_cycles
 
@@ -20,13 +21,13 @@ logger = logging.getLogger(__name__)
 
 
 class SalesCycleInput(BaseModel):
-    product: Dict[str, Any]
-    buyer: Dict[str, Any]
+    product: dict[str, Any]
+    buyer: dict[str, Any]
 
 
 class BulkCampaignRequest(BaseModel):
     name: str
-    cycles: List[SalesCycleInput]
+    cycles: list[SalesCycleInput]
     parallel_workers: int = 10  # Cuántos workers en paralelo
 
 
@@ -66,7 +67,7 @@ async def start_bulk_campaigns(request: BulkCampaignRequest):
         }
 
     except Exception as e:
-        logger.error(f"Error starting bulk campaign {batch_id}: {str(e)}")
+        logger.exception(f"Error starting bulk campaign {batch_id}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -174,7 +175,7 @@ async def get_ab_tests():
 
 
 @router.post("/analytics/track-event")
-async def track_event(event: Dict[str, Any]):
+async def track_event(event: dict[str, Any]):
     """Track custom eventos (para learning loops)."""
 
     # Log event para análisis

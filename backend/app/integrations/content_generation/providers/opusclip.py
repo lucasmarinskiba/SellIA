@@ -4,10 +4,14 @@ Pricing: ~$0.05/minute
 Strengths: Converts long videos into viral shorts, auto-captions, AI hooks
 """
 
-from typing import Dict, Any
+import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
+
+from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -17,7 +21,7 @@ class OpusClipProvider(BaseProvider):
 
     name = "Opus Clip"
     slug = "opusclip"
-    supports = [ContentType.VIDEO]
+    supports: ClassVar[list] = [ContentType.VIDEO]
 
     @property
     def is_available(self) -> bool:
@@ -27,12 +31,14 @@ class OpusClipProvider(BaseProvider):
         duration = config.duration_seconds or 60
         return 0.05 * (duration / 60)
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {"opusclip-repurpose": 0.05}
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         if not self.is_available:
-            return GenerationResult(success=False, error_message="OPUSCLIP_API_KEY no configurada")
+            return GenerationResult(
+                success=False, error_message="OPUSCLIP_API_KEY no configurada"
+            )
 
         try:
             import aiohttp
@@ -43,21 +49,23 @@ class OpusClipProvider(BaseProvider):
             }
 
             payload = {
-                "video_url": config.reference_image_url or config.extra_params.get("video_url", ""),
+                "video_url": config.reference_image_url
+                or config.extra_params.get("video_url", ""),
                 "prompt": config.prompt,
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    "https://api.opus.pro/v1/clip",
-                    headers=headers,
-                    json=payload,
-                ) as resp:
-                    data = await resp.json()
+            async with aiohttp.ClientSession() as session, session.post(
+                "https://api.opus.pro/v1/clip",
+                headers=headers,
+                json=payload,
+            ) as resp:
+                data = await resp.json()
 
             clips = data.get("clips", [])
             if not clips:
-                return GenerationResult(success=False, error_message="Opus Clip no devolvió clips")
+                return GenerationResult(
+                    success=False, error_message="Opus Clip no devolvió clips"
+                )
 
             video_url = clips[0].get("url")
             return GenerationResult(
@@ -71,4 +79,5 @@ class OpusClipProvider(BaseProvider):
             )
 
         except Exception as e:
+            logger.exception("generate: error inesperado")
             return GenerationResult(success=False, error_message=str(e))

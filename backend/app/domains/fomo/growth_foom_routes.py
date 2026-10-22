@@ -4,20 +4,18 @@ Growth FOOM Routes: Acquisition channels endpoint
 
 import re
 
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Query
 
 from app.core.database import AsyncSessionLocal
-from app.core.deps import get_current_user
 from app.domains.fomo.growth_foom import (
-    SeoFOOMService,
-    ViralLoopsService,
+    BrandBuildingService,
     CaseStudyFOOMService,
+    PartnershipFOOMService,
     PressAndPRService,
     ProductLedGrowthService,
-    PartnershipFOOMService,
+    SeoFOOMService,
+    ViralLoopsService,
     ViralMechanicsService,
-    BrandBuildingService,
 )
 
 router = APIRouter(prefix="/fomo/growth", tags=["growth-foom"])
@@ -50,7 +48,7 @@ async def get_seo_content_calendar(
     return {
         "plan": plan,
         "total_pieces": len(plan),
-        "estimated_traffic": f"+30-50% organic traffic",
+        "estimated_traffic": "+30-50% organic traffic",
         "timeline": f"{days} days",
     }
 
@@ -186,8 +184,8 @@ async def get_growth_summary():
 
     seo_plan = await SeoFOOMService.generate_seo_content_calendar()
     referral = await ViralLoopsService.create_referral_program()
-    community = await ViralLoopsService.create_community_program()
-    trial = await ProductLedGrowthService.optimize_free_trial_foom()
+    await ViralLoopsService.create_community_program()
+    await ProductLedGrowthService.optimize_free_trial_foom()
     partnerships = await PartnershipFOOMService.create_partnerships()
     viral = await ViralMechanicsService.create_viral_mechanics()
     brand = await BrandBuildingService.create_thought_leadership()
@@ -216,7 +214,9 @@ async def get_growth_summary():
             },
             "partnerships": {
                 "total_channels": len(partnerships),
-                "estimated_mau": sum(_parse_mau(p.get("expected_mau", 0)) for p in partnerships),
+                "estimated_mau": sum(
+                    _parse_mau(p.get("expected_mau", 0)) for p in partnerships
+                ),
             },
             "influencer_seeding": {
                 "estimated_mau": "2000-3000",

@@ -8,15 +8,11 @@ configuraciones de navegador.
 import asyncio
 import json
 import os
-from typing import Optional, Dict, List, Any
 from dataclasses import dataclass
-from uuid import UUID
+from typing import Any
 
-from PIL import Image
-import io
-
-from app.core.logger import get_logger
 from app.core.config import get_settings
+from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -25,6 +21,7 @@ settings = get_settings()
 @dataclass
 class BrowserInstance:
     """Una instancia de navegador del pool."""
+
     instance_id: str
     browser_type: str  # chromium, firefox, webkit
     browser: Any
@@ -32,8 +29,8 @@ class BrowserInstance:
     page: Any
     playwright: Any
     in_use: bool = False
-    session_id: Optional[str] = None
-    profile: Optional[dict] = None
+    session_id: str | None = None
+    profile: dict | None = None
 
 
 class BrowserPoolManager:
@@ -41,13 +38,15 @@ class BrowserPoolManager:
 
     def __init__(self, max_instances: int = 6):
         self.max_instances = max_instances
-        self._instances: Dict[str, BrowserInstance] = {}
+        self._instances: dict[str, BrowserInstance] = {}
         self._playwright = None
         self._lock = asyncio.Lock()
         self._semaphore = asyncio.Semaphore(max_instances)
 
     async def _get_playwright(self):
         if self._playwright is None:
+            from playwright.async_api import async_playwright
+
             self._playwright = await async_playwright().start()
         return self._playwright
 
@@ -55,15 +54,17 @@ class BrowserPoolManager:
         self,
         browser_type: str = "chromium",
         headless: bool = True,
-        profile: Optional[dict] = None,
-        proxy: Optional[dict] = None,
+        profile: dict | None = None,
+        proxy: dict | None = None,
     ) -> BrowserInstance:
         """Crea una nueva instancia de navegador."""
         async with self._lock:
             # Check pool capacity
             available = sum(1 for i in self._instances.values() if not i.in_use)
             if available == 0 and len(self._instances) >= self.max_instances:
-                raise RuntimeError(f"Pool lleno: {self.max_instances} instancias máximas")
+                raise RuntimeError(
+                    f"Pool lleno: {self.max_instances} instancias máximas"
+                )
 
             playwright = await self._get_playwright()
 
@@ -95,7 +96,11 @@ class BrowserPoolManager:
                     "height": profile.get("viewport_height", 720) if profile else 720,
                 },
                 "locale": profile.get("locale", "es-ES") if profile else "es-ES",
-                "timezone_id": profile.get("timezone_id", "America/Argentina/Buenos_Aires") if profile else "America/Argentina/Buenos_Aires",
+                "timezone_id": (
+                    profile.get("timezone_id", "America/Argentina/Buenos_Aires")
+                    if profile
+                    else "America/Argentina/Buenos_Aires"
+                ),
             }
             if profile and profile.get("user_agent"):
                 context_args["user_agent"] = profile["user_agent"]
@@ -106,16 +111,17 @@ class BrowserPoolManager:
             context = await browser.new_context(**context_args)
 
             # Set cookies and localStorage if profile provided
-            if profile:
-                if profile.get("cookies"):
-                    await context.add_cookies(profile["cookies"])
+            if profile and profile.get("cookies"):
+                await context.add_cookies(profile["cookies"])
 
             page = await context.new_page()
 
             # Inject localStorage
             if profile and profile.get("local_storage"):
                 for key, value in profile["local_storage"].items():
-                    await page.evaluate(f"""localStorage.setItem({json.dumps(key)}, {json.dumps(value)});""")
+                    await page.evaluate(
+                        f"""localStorage.setItem({json.dumps(key)}, {json.dumps(value)});"""
+                    )
 
             instance_id = f"{browser_type}_{os.urandom(4).hex()}"
             instance = BrowserInstance(
@@ -136,8 +142,8 @@ class BrowserPoolManager:
         self,
         browser_type: str = "chromium",
         headless: bool = True,
-        profile: Optional[dict] = None,
-        proxy: Optional[dict] = None,
+        profile: dict | None = None,
+        proxy: dict | None = None,
     ) -> BrowserInstance:
         """Adquiere una instancia del pool (reutiliza si hay disponibles)."""
         async with self._semaphore:
@@ -168,7 +174,10 @@ class BrowserPoolManager:
                     instance.session_id = None
                     logger.info(f"BrowserPool: recycled instance {instance_id}")
                 except Exception as e:
-                    logger.warning(f"BrowserPool: failed to recycle {instance_id}: {e}")
+                    logger.warning(
+                        f"BrowserPool: failed to recycle {instance_id}: {e}",
+                        exc_info=True,
+                    )
                     await self._destroy_instance(instance_id)
             else:
                 await self._destroy_instance(instance_id)
@@ -183,9 +192,11 @@ class BrowserPoolManager:
             await instance.browser.close()
             logger.info(f"BrowserPool: destroyed instance {instance_id}")
         except Exception as e:
-            logger.warning(f"BrowserPool: error destroying {instance_id}: {e}")
+            logger.warning(
+                f"BrowserPool: error destroying {instance_id}: {e}", exc_info=True
+            )
 
-    async def get_instance_for_session(self, session_id: str) -> Optional[BrowserInstance]:
+    async def get_instance_for_session(self, session_id: str) -> BrowserInstance | None:
         """Obtiene la instancia asociada a una sesión."""
         for inst in self._instances.values():
             if inst.session_id == session_id:
@@ -227,7 +238,7 @@ class BrowserPoolManager:
 
 
 # Global pool instance
-_pool_manager: Optional[BrowserPoolManager] = None
+_pool_manager: BrowserPoolManager | None = None
 
 
 def get_browser_pool() -> BrowserPoolManager:

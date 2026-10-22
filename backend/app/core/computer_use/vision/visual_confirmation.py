@@ -10,19 +10,20 @@ Responsibilities:
 No selectors needed. Pure visual verification.
 """
 
-import logging
+import asyncio
 import base64
 import json
-import asyncio
-from typing import Dict, List, Any, Optional
+import logging
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 class ActionResult(Enum):
     """Resultado de una acción."""
+
     SUCCESS = "success"
     ERROR = "error"
     LOADING = "loading"
@@ -34,12 +35,13 @@ class ActionResult(Enum):
 @dataclass
 class Confirmation:
     """Confirmación de resultado de acción."""
+
     result: ActionResult
     confidence: float
     message: str
-    details: Optional[Dict[str, Any]] = None
-    error_messages: Optional[List[str]] = None
-    loading_indicators: Optional[List[str]] = None
+    details: dict[str, Any] | None = None
+    error_messages: list[str] | None = None
+    loading_indicators: list[str] | None = None
     modal_present: bool = False
 
 
@@ -55,7 +57,7 @@ class VisualConfirmation:
         before_screenshot: bytes,
         after_screenshot: bytes,
         action_description: str,
-        expected_indicators: Optional[List[str]] = None
+        expected_indicators: list[str] | None = None,
     ) -> Confirmation:
         """Verifica si una acción tuvo éxito comparando screenshots.
 
@@ -73,7 +75,7 @@ class VisualConfirmation:
                 before_screenshot,
                 after_screenshot,
                 action_description,
-                expected_indicators
+                expected_indicators,
             )
         else:
             raise ValueError("Anthropic client required for verification")
@@ -83,7 +85,7 @@ class VisualConfirmation:
         before_screenshot: bytes,
         after_screenshot: bytes,
         action_description: str,
-        expected_indicators: Optional[List[str]] = None
+        expected_indicators: list[str] | None = None,
     ) -> Confirmation:
         """Usa Claude Vision para comparar y verificar."""
         logger.info(f"Verifying action: {action_description}")
@@ -127,10 +129,7 @@ Responde SOLO en JSON:
                     {
                         "role": "user",
                         "content": [
-                            {
-                                "type": "text",
-                                "text": "ANTES (antes de la acción):"
-                            },
+                            {"type": "text", "text": "ANTES (antes de la acción):"},
                             {
                                 "type": "image",
                                 "source": {
@@ -139,10 +138,7 @@ Responde SOLO en JSON:
                                     "data": before_b64,
                                 },
                             },
-                            {
-                                "type": "text",
-                                "text": "DESPUÉS (después de la acción):"
-                            },
+                            {"type": "text", "text": "DESPUÉS (después de la acción):"},
                             {
                                 "type": "image",
                                 "source": {
@@ -169,10 +165,7 @@ Responde SOLO en JSON:
             logger.error(f"Verification failed: {e}")
             raise
 
-    async def detect_errors(
-        self,
-        screenshot_bytes: bytes
-    ) -> List[str]:
+    async def detect_errors(self, screenshot_bytes: bytes) -> list[str]:
         """Detecta mensajes de error en pantalla."""
         logger.info("Detecting error messages")
 
@@ -225,14 +218,11 @@ Responde SOLO con JSON:
 
             return data.get("errors", [])
 
-        except Exception as e:
-            logger.error(f"Error detection failed: {e}")
+        except Exception:
+            logger.exception("Error detection failed")
             return []
 
-    async def detect_success_state(
-        self,
-        screenshot_bytes: bytes
-    ) -> bool:
+    async def detect_success_state(self, screenshot_bytes: bytes) -> bool:
         """Detecta si hay un estado de éxito visible."""
         logger.info("Detecting success state")
 
@@ -281,14 +271,11 @@ Responde SOLO: {"has_success": true|false, "message": "...", "confidence": 0.95}
 
             return data.get("has_success", False)
 
-        except Exception as e:
-            logger.error(f"Success detection failed: {e}")
+        except Exception:
+            logger.exception("Success detection failed")
             return False
 
-    async def detect_loading_state(
-        self,
-        screenshot_bytes: bytes
-    ) -> bool:
+    async def detect_loading_state(self, screenshot_bytes: bytes) -> bool:
         """Detecta si hay un loading spinner/progress bar."""
         logger.info("Detecting loading state")
 
@@ -336,14 +323,11 @@ Responde SOLO: {"is_loading": true|false, "type": "spinner|progress|text|overlay
 
             return data.get("is_loading", False)
 
-        except Exception as e:
-            logger.error(f"Loading state detection failed: {e}")
+        except Exception:
+            logger.exception("Loading state detection failed")
             return False
 
-    async def detect_modal_popup(
-        self,
-        screenshot_bytes: bytes
-    ) -> Dict[str, Any]:
+    async def detect_modal_popup(self, screenshot_bytes: bytes) -> dict[str, Any]:
         """Detecta si hay un modal/popup abierto."""
         logger.info("Detecting modal/popup")
 
@@ -396,14 +380,13 @@ Responde SOLO: {
             response_text = response.content[0].text
             return json.loads(response_text)
 
-        except Exception as e:
-            logger.error(f"Modal detection failed: {e}")
+        except Exception:
+            logger.exception("Modal detection failed")
             return {"has_modal": False}
 
     async def detect_form_validation_errors(
-        self,
-        screenshot_bytes: bytes
-    ) -> Dict[str, Any]:
+        self, screenshot_bytes: bytes
+    ) -> dict[str, Any]:
         """Detecta errores de validación en campos de formulario."""
         logger.info("Detecting form validation errors")
 
@@ -457,11 +440,11 @@ Responde SOLO: {
             response_text = response.content[0].text
             return json.loads(response_text)
 
-        except Exception as e:
-            logger.error(f"Form validation detection failed: {e}")
+        except Exception:
+            logger.exception("Form validation detection failed")
             return {"has_validation_errors": False}
 
-    def _parse_confirmation_response(self, data: Dict[str, Any]) -> Confirmation:
+    def _parse_confirmation_response(self, data: dict[str, Any]) -> Confirmation:
         """Parsea respuesta de verificación."""
         result_str = data.get("result", "unknown").lower()
         result_map = {
@@ -480,7 +463,7 @@ Responde SOLO: {
             details=data.get("details"),
             error_messages=data.get("error_messages", []),
             loading_indicators=data.get("loading_indicators", []),
-            modal_present=data.get("modal_present", False)
+            modal_present=data.get("modal_present", False),
         )
 
     async def wait_for_condition(
@@ -488,7 +471,7 @@ Responde SOLO: {
         screenshot_getter,
         condition_checker,
         timeout_seconds: float = 30,
-        poll_interval: float = 0.5
+        poll_interval: float = 0.5,
     ) -> bool:
         """Espera hasta que se cumpla una condición visual.
 
@@ -502,6 +485,7 @@ Responde SOLO: {
             True si se cumplió, False si timeout
         """
         import time
+
         start = time.time()
 
         while time.time() - start < timeout_seconds:

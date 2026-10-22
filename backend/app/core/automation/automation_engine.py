@@ -14,19 +14,23 @@ Central orchestrator:
 Ejecuta 24/7 con ZERO intervención humana.
 """
 
-import logging
 import asyncio
-from typing import Dict, List, Any, Optional, Callable
-from datetime import datetime, timedelta
-from dataclasses import dataclass
-from enum import Enum
+import logging
 import uuid
+from collections.abc import Callable
+from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
+from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
 
 class JobType(Enum):
     """Tipos de jobs."""
+
     POST_PRODUCT = "post_product"
     RESPOND_INQUIRY = "respond_inquiry"
     SEND_EMAIL = "send_email"
@@ -41,6 +45,7 @@ class JobType(Enum):
 
 class JobStatus(Enum):
     """Estados de un job."""
+
     PENDING = "pending"
     RUNNING = "running"
     SUCCESS = "success"
@@ -52,6 +57,7 @@ class JobStatus(Enum):
 
 class Priority(Enum):
     """Niveles de prioridad."""
+
     CRITICAL = 100  # Immediate
     HIGH = 75  # Within minutes
     NORMAL = 50  # Within hours
@@ -62,23 +68,24 @@ class Priority(Enum):
 @dataclass
 class Job:
     """Representa un job a ejecutar."""
+
     id: str
     job_type: JobType
     priority: Priority
-    payload: Dict[str, Any]
+    payload: dict[str, Any]
     status: JobStatus = JobStatus.PENDING
     created_at: datetime = None
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
     attempts: int = 0
     max_retries: int = 3
-    error: Optional[str] = None
-    result: Optional[Dict[str, Any]] = None
-    escalation_reason: Optional[str] = None
+    error: str | None = None
+    result: dict[str, Any] | None = None
+    escalation_reason: str | None = None
 
     def __post_init__(self):
         if self.created_at is None:
-            self.created_at = datetime.utcnow()
+            self.created_at = utc_now()
 
     @property
     def duration_seconds(self) -> float:
@@ -96,20 +103,21 @@ class Job:
 @dataclass
 class Task:
     """Representa una tarea a agendar."""
+
     id: str
     name: str
     job_type: JobType
     priority: Priority
     schedule: str  # Cron expression o descripción
-    payload: Dict[str, Any]
+    payload: dict[str, Any]
     enabled: bool = True
-    last_run: Optional[datetime] = None
-    next_run: Optional[datetime] = None
+    last_run: datetime | None = None
+    next_run: datetime | None = None
     created_at: datetime = None
 
     def __post_init__(self):
         if self.created_at is None:
-            self.created_at = datetime.utcnow()
+            self.created_at = utc_now()
 
 
 class AutomationEngine:
@@ -142,14 +150,14 @@ class AutomationEngine:
 
         self.is_running = False
         self.cycle_count = 0
-        self.registered_handlers: Dict[JobType, Callable] = {}
+        self.registered_handlers: dict[JobType, Callable] = {}
 
     def register_handler(self, job_type: JobType, handler: Callable) -> None:
         """Registra handler para tipo de job."""
         self.registered_handlers[job_type] = handler
         logger.info(f"Handler registered for {job_type.value}")
 
-    async def run(self, cycle_limit: Optional[int] = None) -> None:
+    async def run(self, cycle_limit: int | None = None) -> None:
         """
         Main loop. Ejecuta 24/7.
 
@@ -160,14 +168,18 @@ class AutomationEngine:
         logger.info("🚀 Automation Engine started")
 
         try:
-            while self.is_running and (cycle_limit is None or self.cycle_count < cycle_limit):
+            while self.is_running and (
+                cycle_limit is None or self.cycle_count < cycle_limit
+            ):
                 self.cycle_count += 1
-                cycle_start = datetime.utcnow()
+                cycle_start = utc_now()
 
                 try:
                     # 1. Obtener tasks del scheduler
                     tasks_to_run = await self.scheduler.get_tasks_for_now()
-                    logger.debug(f"Cycle {self.cycle_count}: {len(tasks_to_run)} tasks ready")
+                    logger.debug(
+                        f"Cycle {self.cycle_count}: {len(tasks_to_run)} tasks ready"
+                    )
 
                     # 2. Enqueue jobs
                     for task in tasks_to_run:
@@ -177,7 +189,7 @@ class AutomationEngine:
                     await self._process_jobs()
 
                     # 4. Monitor health
-                    cycle_duration = (datetime.utcnow() - cycle_start).total_seconds()
+                    cycle_duration = (utc_now() - cycle_start).total_seconds()
                     await self.monitoring.record_cycle(
                         self.cycle_count,
                         cycle_duration,
@@ -188,7 +200,7 @@ class AutomationEngine:
                     await asyncio.sleep(1)
 
                 except Exception as e:
-                    logger.error(f"Cycle {self.cycle_count} error: {str(e)}", exc_info=True)
+                    logger.exception(f"Cycle {self.cycle_count} error")
                     await self.monitoring.record_error("automation_cycle_error", str(e))
 
         except KeyboardInterrupt:
@@ -211,8 +223,8 @@ class AutomationEngine:
             await self.state_manager.create(job)
             logger.debug(f"Job enqueued: {job.id} ({task.job_type.value})")
 
-        except Exception as e:
-            logger.error(f"Failed to enqueue task {task.id}: {str(e)}")
+        except Exception:
+            logger.exception(f"Failed to enqueue task {task.id}")
 
     async def _process_jobs(self) -> None:
         """Procesa jobs de la queue."""
@@ -224,12 +236,12 @@ class AutomationEngine:
 
                 await self._execute_job(job)
 
-            except Exception as e:
-                logger.error(f"Job processing error: {str(e)}", exc_info=True)
+            except Exception:
+                logger.exception("Job processing error")
 
     async def _execute_job(self, job: Job) -> None:
         """Ejecuta un job."""
-        job.started_at = datetime.utcnow()
+        job.started_at = utc_now()
         job.status = JobStatus.RUNNING
 
         try:
@@ -249,7 +261,7 @@ class AutomationEngine:
             await self.monitoring.record_success(job)
 
         except Exception as e:
-            logger.error(f"Job failed: {job.id}: {str(e)}", exc_info=True)
+            logger.exception(f"Job failed: {job.id}")
             job.error = str(e)
             job.attempts += 1
 
@@ -261,14 +273,14 @@ class AutomationEngine:
             else:
                 # Escalate
                 job.status = JobStatus.ESCALATED
-                job.escalation_reason = f"Max retries exceeded: {str(e)}"
+                job.escalation_reason = f"Max retries exceeded: {e!s}"
                 await self.escalation_handler.escalate(job)
                 logger.warning(f"Job escalated: {job.id}")
 
             await self.monitoring.record_failure(job)
 
         finally:
-            job.completed_at = datetime.utcnow()
+            job.completed_at = utc_now()
             await self.state_manager.update(job.id, job)
 
     async def add_recurring_task(
@@ -277,7 +289,7 @@ class AutomationEngine:
         job_type: JobType,
         priority: Priority,
         schedule: str,
-        payload: Dict[str, Any],
+        payload: dict[str, Any],
     ) -> str:
         """
         Agrega tarea recurrente.
@@ -310,7 +322,7 @@ class AutomationEngine:
         name: str,
         job_type: JobType,
         priority: Priority,
-        payload: Dict[str, Any],
+        payload: dict[str, Any],
         run_at: datetime,
     ) -> str:
         """Agrega tarea de una sola ejecución."""
@@ -338,7 +350,7 @@ class AutomationEngine:
         await self.scheduler.enable_task(task_id)
         logger.info(f"Task enabled: {task_id}")
 
-    async def get_system_status(self) -> Dict[str, Any]:
+    async def get_system_status(self) -> dict[str, Any]:
         """Estado completo del sistema."""
         queued_jobs = self.job_queue.size()
         pending_jobs = await self.state_manager.count_by_status(JobStatus.PENDING)
@@ -359,7 +371,7 @@ class AutomationEngine:
                 "escalated": escalated_jobs,
             },
             "metrics": await self.monitoring.get_metrics(),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
     async def graceful_shutdown(self) -> None:
@@ -375,6 +387,8 @@ class AutomationEngine:
             waited += 0.5
 
         if self.job_queue.size() > 0:
-            logger.warning(f"Shutdown timeout: {self.job_queue.size()} jobs still queued")
+            logger.warning(
+                f"Shutdown timeout: {self.job_queue.size()} jobs still queued"
+            )
 
         logger.info("Automation Engine shutdown complete")

@@ -3,19 +3,20 @@
 Prevents cascading failures when external services are down.
 """
 
-import time
 import asyncio
+import time
+from collections.abc import Callable
 from enum import Enum
-from typing import Callable, Optional
 from functools import wraps
+
 from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 class CircuitState(Enum):
-    CLOSED = "closed"      # Normal operation
-    OPEN = "open"          # Failing fast
+    CLOSED = "closed"  # Normal operation
+    OPEN = "open"  # Failing fast
     HALF_OPEN = "half_open"  # Testing if service recovered
 
 
@@ -44,7 +45,7 @@ class CircuitBreaker:
         self.state = CircuitState.CLOSED
         self.failure_count = 0
         self.success_count = 0
-        self.last_failure_time: Optional[float] = None
+        self.last_failure_time: float | None = None
         self._lock = asyncio.Lock()
 
     async def call(self, func: Callable, *args, **kwargs):
@@ -53,13 +54,15 @@ class CircuitBreaker:
                 if time.time() - self.last_failure_time >= self.recovery_timeout:
                     self.state = CircuitState.HALF_OPEN
                     self.success_count = 0
-                    logger.info(f"Circuit breaker entering HALF_OPEN for {func.__qualname__}")
+                    logger.info(
+                        f"Circuit breaker entering HALF_OPEN for {func.__qualname__}"
+                    )
                 else:
                     raise CircuitBreakerOpen(f"Circuit is OPEN for {func.__qualname__}")
 
         try:
             result = await func(*args, **kwargs)
-        except self.expected_exception as e:
+        except self.expected_exception:
             await self._on_failure()
             raise
 
@@ -86,18 +89,20 @@ class CircuitBreaker:
                 logger.warning("Circuit breaker OPEN (half-open test failed)")
             elif self.failure_count >= self.failure_threshold:
                 self.state = CircuitState.OPEN
-                logger.warning(f"Circuit breaker OPEN after {self.failure_count} failures")
+                logger.warning(
+                    f"Circuit breaker OPEN after {self.failure_count} failures"
+                )
 
     def __call__(self, func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(*args, **kwargs):
             return await self.call(func, *args, **kwargs)
+
         return wrapper
 
 
 class CircuitBreakerOpen(Exception):
     """Raised when the circuit breaker is open."""
-    pass
 
 
 # Pre-configured breakers for common external services

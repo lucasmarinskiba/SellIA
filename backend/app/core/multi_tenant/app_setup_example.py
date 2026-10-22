@@ -3,7 +3,9 @@ Example: How to integrate multi-tenant system into FastAPI app.
 Copy these patterns into your app/main.py
 """
 
-from fastapi import FastAPI
+from typing import Annotated
+
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,11 +16,12 @@ from app.core.multi_tenant import (
     get_tenant_context,
 )
 from app.core.multi_tenant.example_implementation import router as tenant_router
-
+from app.core.multi_tenant.tenant_context import TenantContext
 
 # ============================================================================
 # Application Setup
 # ============================================================================
+
 
 def create_app() -> FastAPI:
     """Create and configure FastAPI application with multi-tenant support."""
@@ -123,6 +126,7 @@ def create_app() -> FastAPI:
     # ========================================================================
 
     from fastapi.responses import JSONResponse
+
     from app.core.exceptions import AppException
 
     @app.exception_handler(AppException)
@@ -150,8 +154,9 @@ def create_app() -> FastAPI:
 # Dependency Injection Patterns
 # ============================================================================
 
+
 async def get_current_tenant_id(
-    tenant_context: "TenantContext" = Depends(get_tenant_context),
+    tenant_context: Annotated["TenantContext", Depends(get_tenant_context)],
 ) -> str:
     """
     Dependency: Get current tenant_id from context.
@@ -169,7 +174,7 @@ async def get_current_tenant_id(
 
 
 async def get_current_tenant_isolation(
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> TenantIsolation:
     """
     Dependency: Get tenant isolation service.
@@ -182,6 +187,7 @@ async def get_current_tenant_isolation(
 # Example Endpoint Integration
 # ============================================================================
 
+
 def add_multi_tenant_endpoints(app: FastAPI):
     """
     Example: Add multi-tenant-aware endpoints to existing routers.
@@ -189,8 +195,9 @@ def add_multi_tenant_endpoints(app: FastAPI):
     """
 
     from fastapi import APIRouter, Depends, HTTPException
-    from app.core.multi_tenant import require_tenant_context, TenantContext
+
     from app.core.database import get_db
+    from app.core.multi_tenant import TenantContext, require_tenant_context
 
     router = APIRouter(prefix="/api/v1", tags=["example"])
 
@@ -201,8 +208,8 @@ def add_multi_tenant_endpoints(app: FastAPI):
     @router.get("/tenants/{tenant_id}/data")
     async def get_tenant_data(
         tenant_id: str,
-        tenant_context: TenantContext = Depends(require_tenant_context),
-        db: AsyncSession = Depends(get_db),
+        tenant_context: Annotated[TenantContext, Depends(require_tenant_context)],
+        db: Annotated[AsyncSession, Depends(get_db)],
     ):
         """
         Get data for current tenant.
@@ -229,7 +236,7 @@ def add_multi_tenant_endpoints(app: FastAPI):
     async def update_tenant_settings(
         tenant_id: str,
         settings: dict,
-        tenant_context: TenantContext = Depends(require_admin_access),
+        tenant_context: Annotated[TenantContext, Depends(require_admin_access)],
     ):
         """
         Update tenant settings (admin only).
@@ -249,7 +256,7 @@ def add_multi_tenant_endpoints(app: FastAPI):
     async def query_endpoint(
         query: dict,
         request: "Request",
-        db: AsyncSession = Depends(get_db),
+        db: Annotated[AsyncSession, Depends(get_db)],
     ):
         """
         API endpoint: Accept either Bearer token or API key.
@@ -292,6 +299,7 @@ def add_multi_tenant_endpoints(app: FastAPI):
 # Scheduled Tasks Setup (Celery)
 # ============================================================================
 
+
 def setup_celery_tasks():
     """
     Configure Celery beat tasks for multi-tenant maintenance.
@@ -308,21 +316,18 @@ def setup_celery_tasks():
             "schedule": crontab(hour=0, minute=0),  # Daily at midnight
             "options": {"expires": 3600},  # 1 hour timeout
         },
-
         # Billing: finalize monthly billing cycle
         "finalize-billing-cycles": {
             "task": "app.core.multi_tenant.tasks.finalize_billing_cycles",
             "schedule": crontab(day_of_month=1, hour=0, minute=0),  # 1st of month
             "options": {"expires": 86400},  # 24 hour timeout
         },
-
         # Audit cleanup: delete logs older than 365 days
         "cleanup-old-audit-logs": {
             "task": "app.core.multi_tenant.tasks.cleanup_audit_logs",
             "schedule": crontab(day_of_week=0, hour=2, minute=0),  # Weekly, Sunday 2 AM
             "options": {"expires": 86400},
         },
-
         # Usage sync: sync usage from cache to DB hourly
         "sync-usage-metrics": {
             "task": "app.core.multi_tenant.tasks.sync_usage_metrics",
@@ -338,13 +343,13 @@ def setup_celery_tasks():
 # Testing Setup
 # ============================================================================
 
+
 async def get_test_app() -> FastAPI:
     """
     Get test FastAPI instance with multi-tenant support.
     Use in pytest fixtures.
     """
-    from fastapi.testclient import TestClient
-    from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
     # In-memory SQLite for testing
     engine = create_async_engine(
@@ -354,9 +359,6 @@ async def get_test_app() -> FastAPI:
 
     # Import all models to ensure they're registered
     from app.core.database import Base
-    from app.core.multi_tenant.models import (
-        Tenant, TenantMember, TenantAPIKey, TenantBilling, AuditLog
-    )
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

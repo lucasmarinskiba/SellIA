@@ -5,23 +5,25 @@ Handles schema creation, member management, tier upgrades.
 """
 
 import uuid
-from datetime import datetime, timezone
-from typing import Optional, List, Dict, Any
+from datetime import UTC, datetime
 from enum import Enum
+from typing import Any
 
-from sqlalchemy import select, and_, or_
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import and_, select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.logger import get_logger
 from app.core.exceptions import AppException
-from .models import Tenant, TenantMember, TenantBilling, AuditLog
+from app.core.logger import get_logger
+
+from .models import AuditLog, Tenant, TenantBilling, TenantMember
 
 logger = get_logger(__name__)
 
 
 class TenantTier(str, Enum):
     """Supported tenant tiers with limits."""
+
     STARTER = "starter"  # 5 users, 10k API calls/month
     PRO = "pro"  # 25 users, 100k API calls/month
     ENTERPRISE = "enterprise"  # Unlimited
@@ -59,10 +61,10 @@ class TenantService:
         self,
         name: str,
         owner_id: str,
-        slug: Optional[str] = None,
+        slug: str | None = None,
         tier: str = TenantTier.STARTER,
-        description: Optional[str] = None,
-        settings: Optional[Dict[str, Any]] = None,
+        description: str | None = None,
+        settings: dict[str, Any] | None = None,
     ) -> Tenant:
         """
         Create new tenant with isolated schema.
@@ -90,9 +92,7 @@ class TenantService:
             slug = f"{name.lower().replace(' ', '-')}-{str(uuid.uuid4())[:8]}"
         else:
             # Validate slug is unique
-            existing = await self.db.execute(
-                select(Tenant).where(Tenant.slug == slug)
-            )
+            existing = await self.db.execute(select(Tenant).where(Tenant.slug == slug))
             if existing.scalar_one_or_none():
                 raise AppException(f"Slug '{slug}' already exists", status_code=409)
 
@@ -135,7 +135,7 @@ class TenantService:
                 user_id=owner_id,
                 role="owner",
                 invited_by=owner_id,
-                accepted_at=datetime.now(timezone.utc),
+                accepted_at=datetime.now(UTC),
                 is_active=True,
             )
             self.db.add(owner_member)
@@ -143,7 +143,7 @@ class TenantService:
             await self.db.commit()
 
             logger.info(
-                f"Tenant created",
+                "Tenant created",
                 extra={
                     "tenant_id": str(tenant.id),
                     "slug": slug,
@@ -159,27 +159,23 @@ class TenantService:
             logger.error(f"Tenant creation failed: {e}")
             raise AppException("Tenant creation failed", status_code=409)
 
-    async def get_tenant(self, tenant_id: str) -> Optional[Tenant]:
+    async def get_tenant(self, tenant_id: str) -> Tenant | None:
         """Get tenant by ID."""
-        result = await self.db.execute(
-            select(Tenant).where(Tenant.id == tenant_id)
-        )
+        result = await self.db.execute(select(Tenant).where(Tenant.id == tenant_id))
         return result.scalar_one_or_none()
 
-    async def get_tenant_by_slug(self, slug: str) -> Optional[Tenant]:
+    async def get_tenant_by_slug(self, slug: str) -> Tenant | None:
         """Get tenant by slug."""
-        result = await self.db.execute(
-            select(Tenant).where(Tenant.slug == slug)
-        )
+        result = await self.db.execute(select(Tenant).where(Tenant.slug == slug))
         return result.scalar_one_or_none()
 
     async def list_tenants(
         self,
-        owner_id: Optional[str] = None,
-        is_active: Optional[bool] = True,
+        owner_id: str | None = None,
+        is_active: bool | None = True,
         limit: int = 100,
         offset: int = 0,
-    ) -> tuple[List[Tenant], int]:
+    ) -> tuple[list[Tenant], int]:
         """
         List tenants with filtering.
 
@@ -208,7 +204,7 @@ class TenantService:
 
         return tenants, total_count
 
-    async def list_user_tenants(self, user_id: str) -> List[Tenant]:
+    async def list_user_tenants(self, user_id: str) -> list[Tenant]:
         """List all tenants a user belongs to."""
         result = await self.db.execute(
             select(Tenant)
@@ -239,16 +235,18 @@ class TenantService:
 
         # Restricted fields
         restricted = {"id", "slug", "schema_name", "owner_id"}
-        for key in kwargs:
+        for key, value in kwargs.items():
             if key in restricted:
                 raise AppException(f"Cannot update field: {key}", status_code=400)
             if hasattr(tenant, key):
-                setattr(tenant, key, kwargs[key])
+                setattr(tenant, key, value)
 
-        tenant.updated_at = datetime.now(timezone.utc)
+        tenant.updated_at = datetime.now(UTC)
         await self.db.commit()
 
-        logger.info(f"Tenant updated: {tenant_id}", extra={"fields": list(kwargs.keys())})
+        logger.info(
+            f"Tenant updated: {tenant_id}", extra={"fields": list(kwargs.keys())}
+        )
 
         return tenant
 
@@ -283,13 +281,13 @@ class TenantService:
         await self.db.commit()
 
         logger.info(
-            f"Tenant tier upgraded",
+            "Tenant tier upgraded",
             extra={"tenant_id": str(tenant_id), "new_tier": new_tier},
         )
 
         return tenant
 
-    async def delete_tenant(self, tenant_id: str, reason: Optional[str] = None) -> None:
+    async def delete_tenant(self, tenant_id: str, reason: str | None = None) -> None:
         """
         Hard delete tenant: cascade deletes all members, API keys, audit logs.
         Cannot be undone. Log reason for compliance.
@@ -324,7 +322,7 @@ class TenantService:
 
         tenant.is_paused = True
         tenant.suspended_reason = reason
-        tenant.suspended_at = datetime.now(timezone.utc)
+        tenant.suspended_at = datetime.now(UTC)
 
         await self.db.commit()
 
@@ -356,7 +354,7 @@ class TenantManager:
     """Singleton manager for tenant operations."""
 
     def __init__(self):
-        self._service_cache: Dict[str, TenantService] = {}
+        self._service_cache: dict[str, TenantService] = {}
 
     def get_service(self, db: AsyncSession) -> TenantService:
         """Get or create TenantService for DB session."""
@@ -372,13 +370,13 @@ class TenantManager:
         service = self.get_service(db)
         return await service.create_tenant(name, owner_id, **kwargs)
 
-    async def get_tenant(self, db: AsyncSession, tenant_id: str) -> Optional[Tenant]:
+    async def get_tenant(self, db: AsyncSession, tenant_id: str) -> Tenant | None:
         service = self.get_service(db)
         return await service.get_tenant(tenant_id)
 
 
 # Global singleton
-_tenant_manager: Optional[TenantManager] = None
+_tenant_manager: TenantManager | None = None
 
 
 def get_tenant_manager() -> TenantManager:

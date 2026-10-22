@@ -1,13 +1,14 @@
 """Background job queue system (Celery + Redis)."""
 
+import logging
+import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Optional, Any, Callable
 from datetime import datetime, timedelta
 from enum import Enum
-import json
-import uuid
-import logging
+from typing import Any
 
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -34,18 +35,18 @@ class BackgroundJob:
     status: JobStatus
     priority: JobPriority
     payload: dict
-    result: Optional[Any] = None
-    error: Optional[str] = None
+    result: Any | None = None
+    error: str | None = None
     retry_count: int = 0
     max_retries: int = 3
     created_at: datetime = None
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    next_retry_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    next_retry_at: datetime | None = None
 
     def __post_init__(self):
         if self.created_at is None:
-            self.created_at = datetime.utcnow()
+            self.created_at = utc_now()
 
 
 class BackgroundJobQueue:
@@ -101,30 +102,32 @@ class BackgroundJobQueue:
             status=JobStatus.PENDING,
             priority=priority,
             payload=payload,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
 
         if delay_seconds > 0:
-            job.next_retry_at = datetime.utcnow() + timedelta(seconds=delay_seconds)
+            job.next_retry_at = utc_now() + timedelta(seconds=delay_seconds)
 
         self.jobs[job_id] = job
         logger.info(f"Enqueued job {job_id} ({job_type}, priority={priority})")
         return job_id
 
-    def dequeue(self, priority: JobPriority = JobPriority.HIGH) -> Optional[BackgroundJob]:
+    def dequeue(self, priority: JobPriority = JobPriority.HIGH) -> BackgroundJob | None:
         """
         Dequeue next pending job (highest priority first).
         """
 
         # Find pending jobs with matching priority
         pending = [
-            j for j in self.jobs.values() if j.status == JobStatus.PENDING and j.priority == priority
+            j
+            for j in self.jobs.values()
+            if j.status == JobStatus.PENDING and j.priority == priority
         ]
 
         if pending:
             job = min(pending, key=lambda j: j.created_at)
             job.status = JobStatus.RUNNING
-            job.started_at = datetime.utcnow()
+            job.started_at = utc_now()
             return job
 
         return None
@@ -151,7 +154,7 @@ class BackgroundJobQueue:
             return True
 
         except Exception as e:
-            logger.error(f"Job {job.id} failed: {str(e)}")
+            logger.exception(f"Job {job.id} failed")
             self._handle_retry(job, str(e))
             return False
 
@@ -170,14 +173,14 @@ class BackgroundJobQueue:
 
         job.status = JobStatus.COMPLETED
         job.result = result
-        job.completed_at = datetime.utcnow()
+        job.completed_at = utc_now()
 
     def _mark_failed(self, job: BackgroundJob, error: str) -> None:
         """Mark job as permanently failed."""
 
         job.status = JobStatus.FAILED
         job.error = error
-        job.completed_at = datetime.utcnow()
+        job.completed_at = utc_now()
 
     def _handle_retry(self, job: BackgroundJob, error: str) -> None:
         """
@@ -198,7 +201,7 @@ class BackgroundJobQueue:
             job.retry_count += 1
             # Exponential backoff: base_backoff * (2 ^ retry_count)
             backoff_seconds = base_backoff * (2 ** (job.retry_count - 1))
-            job.next_retry_at = datetime.utcnow() + timedelta(seconds=backoff_seconds)
+            job.next_retry_at = utc_now() + timedelta(seconds=backoff_seconds)
             job.status = JobStatus.RETRYING
             logger.warning(
                 f"Job {job.id} will retry ({job.retry_count}/{max_retries}) in {backoff_seconds}s"
@@ -207,12 +210,14 @@ class BackgroundJobQueue:
             self._mark_failed(job, f"Max retries exceeded: {error}")
             logger.error(f"Job {job.id} permanently failed after {max_retries} retries")
 
-    def get_job_status(self, job_id: str) -> Optional[BackgroundJob]:
+    def get_job_status(self, job_id: str) -> BackgroundJob | None:
         """Get job status by ID."""
 
         return self.jobs.get(job_id)
 
-    def list_jobs(self, status: Optional[JobStatus] = None, limit: int = 100) -> list[BackgroundJob]:
+    def list_jobs(
+        self, status: JobStatus | None = None, limit: int = 100
+    ) -> list[BackgroundJob]:
         """List jobs (optionally filtered by status)."""
 
         jobs = list(self.jobs.values())
@@ -237,10 +242,16 @@ class BackgroundJobQueue:
     def _get_avg_execution_time(self, jobs: list[BackgroundJob]) -> float:
         """Calculate average execution time for completed jobs."""
 
-        completed = [j for j in jobs if j.status == JobStatus.COMPLETED and j.started_at and j.completed_at]
+        completed = [
+            j
+            for j in jobs
+            if j.status == JobStatus.COMPLETED and j.started_at and j.completed_at
+        ]
         if not completed:
             return 0.0
-        total_time = sum((j.completed_at - j.started_at).total_seconds() for j in completed)
+        total_time = sum(
+            (j.completed_at - j.started_at).total_seconds() for j in completed
+        )
         return total_time / len(completed)
 
 
@@ -258,8 +269,8 @@ def handle_send_email(payload: dict) -> dict:
 
     to_email = payload.get("to_email")
     subject = payload.get("subject")
-    body = payload.get("body")
-    template = payload.get("template", "default")
+    payload.get("body")
+    payload.get("template", "default")
 
     # TODO: Implement SES send
     logger.info(f"Sending email to {to_email}: {subject}")
@@ -298,7 +309,7 @@ def handle_process_recording(payload: dict) -> dict:
     """Process voice recording (transcription + sentiment)."""
 
     call_id = payload.get("call_id")
-    recording_url = payload.get("recording_url")
+    payload.get("recording_url")
 
     # TODO: Implement transcription (Twilio, AWS Transcribe, etc.)
     logger.info(f"Processing recording for call {call_id}")
@@ -316,8 +327,8 @@ def handle_webhook_retry(payload: dict) -> dict:
 
     webhook_id = payload.get("webhook_id")
     url = payload.get("url")
-    event = payload.get("event")
-    data = payload.get("data")
+    payload.get("event")
+    payload.get("data")
 
     # TODO: Implement webhook retry with validation
     logger.info(f"Retrying webhook {webhook_id} to {url}")
@@ -332,7 +343,9 @@ def register_job_handlers():
     job_queue.register_handler("send_email", handle_send_email)
     job_queue.register_handler("export_data", handle_export_data)
     job_queue.register_handler("sync_salesforce", handle_sync_salesforce)
-    job_queue.register_handler("sync_hubspot", handle_sync_salesforce)  # Similar handler
+    job_queue.register_handler(
+        "sync_hubspot", handle_sync_salesforce
+    )  # Similar handler
     job_queue.register_handler("process_recording", handle_process_recording)
     job_queue.register_handler("webhook_retry", handle_webhook_retry)
 

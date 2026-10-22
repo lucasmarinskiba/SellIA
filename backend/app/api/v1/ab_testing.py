@@ -1,11 +1,12 @@
 """A/B Testing framework for comparing agent strategies."""
 
-from fastapi import APIRouter, HTTPException, Query
-from typing import Dict, Any, List, Optional
-from datetime import datetime
 import logging
-from enum import Enum
 import random
+from datetime import datetime
+from enum import Enum
+from typing import Any
+
+from fastapi import APIRouter, Query
 
 router = APIRouter(tags=["ab-testing"])
 logger = logging.getLogger(__name__)
@@ -13,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 class TestMetric(str, Enum):
     """Key metrics to track in A/B tests."""
+
     CLOSE_RATE = "close_rate"
     AVG_DEAL_SIZE = "avg_deal_size"
     SALES_CYCLE_DAYS = "sales_cycle_days"
@@ -28,7 +30,7 @@ async def create_ab_test(
     metric: str = Query("close_rate", description="Metric to optimize"),
     sample_size: int = Query(100, ge=10, le=10000),
     duration_days: int = Query(14, ge=1, le=90),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Create A/B test to compare two strategies."""
     test_id = f"test_{datetime.now().timestamp()}"
 
@@ -42,7 +44,7 @@ async def create_ab_test(
             "metric": metric,
             "sample_size": sample_size,
             "duration_days": duration_days,
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": utc_now().isoformat(),
             "status": "running",
             "hypothesis": f"{treatment_strategy} outperforms {control_strategy} on {metric}",
         },
@@ -51,20 +53,22 @@ async def create_ab_test(
             "treatment": f"50% of {sample_size} = {sample_size // 2} leads",
         },
         "expected_results_date": (
-            datetime.utcnow() + timedelta(days=duration_days)
+            utc_now() + timedelta(days=duration_days)
         ).isoformat(),
     }
 
 
 @router.get("/ab-testing/test/{test_id}")
-async def get_test_results(test_id: str) -> Dict[str, Any]:
+async def get_test_results(test_id: str) -> dict[str, Any]:
     """Get current results for an A/B test."""
     # Mock results (in production, query from database)
     control_performance = random.uniform(0.35, 0.65)
     treatment_performance = random.uniform(0.35, 0.75)
 
     # Statistical significance
-    improvement = (treatment_performance - control_performance) / control_performance * 100
+    improvement = (
+        (treatment_performance - control_performance) / control_performance * 100
+    )
     is_significant = abs(improvement) > 15  # 15% threshold
 
     return {
@@ -99,7 +103,7 @@ async def get_test_results(test_id: str) -> Dict[str, Any]:
                 else "CONTINUE TEST - need more data for significance"
             ),
         },
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     }
 
 
@@ -107,7 +111,7 @@ async def get_test_results(test_id: str) -> Dict[str, Any]:
 async def allocate_lead_to_test(
     lead_id: str = Query(...),
     test_id: str = Query(...),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Randomly allocate a lead to control or treatment group."""
     # 50/50 split
     group = "control" if random.random() < 0.5 else "treatment"
@@ -121,12 +125,12 @@ async def allocate_lead_to_test(
             "strategy": "Balanced" if group == "control" else "Aggressive",
             "message": f"Lead {lead_id} assigned to {group} group ({group.title()} Strategy)",
         },
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     }
 
 
 @router.get("/ab-testing/strategy-comparison")
-async def compare_strategies() -> Dict[str, Any]:
+async def compare_strategies() -> dict[str, Any]:
     """Compare all negotiation strategies on key metrics."""
     return {
         "status": "success",
@@ -176,8 +180,10 @@ async def compare_strategies() -> Dict[str, Any]:
             "reason": "Best combination of close rate, deal size, and customer satisfaction",
             "secondary": "Strategic for enterprise deals targeting high expansion",
         },
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     }
 
 
 from datetime import timedelta
+
+from app.core.clock import utc_now

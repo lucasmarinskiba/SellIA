@@ -4,10 +4,14 @@ Pricing: ~$0.08/second
 Strengths: Anime, effects, style transfer, creative video
 """
 
-from typing import Dict, Any
+import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
+
+from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -17,7 +21,7 @@ class PikaProvider(BaseProvider):
 
     name = "Pika Labs"
     slug = "pika"
-    supports = [ContentType.VIDEO]
+    supports: ClassVar[list] = [ContentType.VIDEO]
 
     @property
     def is_available(self) -> bool:
@@ -27,12 +31,14 @@ class PikaProvider(BaseProvider):
         duration = config.duration_seconds or 5
         return 0.08 * duration
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {"pika-video": 0.08}
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         if not self.is_available:
-            return GenerationResult(success=False, error_message="PIKA_API_KEY no configurada")
+            return GenerationResult(
+                success=False, error_message="PIKA_API_KEY no configurada"
+            )
 
         try:
             import aiohttp
@@ -47,17 +53,22 @@ class PikaProvider(BaseProvider):
             if config.reference_image_url:
                 payload["image"] = config.reference_image_url
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    "https://api.pika.art/generate",
-                    headers=headers,
-                    json=payload,
-                ) as resp:
-                    data = await resp.json()
+            async with aiohttp.ClientSession() as session, session.post(
+                "https://api.pika.art/generate",
+                headers=headers,
+                json=payload,
+            ) as resp:
+                data = await resp.json()
 
-            video_url = data.get("video", {}).get("url") if isinstance(data.get("video"), dict) else data.get("url")
+            video_url = (
+                data.get("video", {}).get("url")
+                if isinstance(data.get("video"), dict)
+                else data.get("url")
+            )
             if not video_url:
-                return GenerationResult(success=False, error_message="Pika no devolvió video")
+                return GenerationResult(
+                    success=False, error_message="Pika no devolvió video"
+                )
 
             duration = config.duration_seconds or 5
             return GenerationResult(
@@ -71,4 +82,5 @@ class PikaProvider(BaseProvider):
             )
 
         except Exception as e:
+            logger.exception("generate: error inesperado")
             return GenerationResult(success=False, error_message=str(e))

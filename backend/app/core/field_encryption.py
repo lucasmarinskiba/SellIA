@@ -4,14 +4,16 @@ Field Encryption Service
 Cifra datos sensibles en la base de datos usando Fernet (AES-128-CBC).
 """
 
-from cryptography.fernet import Fernet
-import hashlib
 import base64
-from typing import Optional
-
+import hashlib
+import logging
 import os
 
+from cryptography.fernet import Fernet
+
 from app.core.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -21,7 +23,7 @@ _fernet_secret = os.environ.get("FERNET_SECRET", settings.SECRET_KEY)
 
 # Derivar clave Fernet (debe ser de 32 bytes)
 _fernet_key = base64.urlsafe_b64encode(
-    hashlib.sha256(_fernet_secret.encode()).digest()[:32].ljust(32, b'0')
+    hashlib.sha256(_fernet_secret.encode()).digest()[:32].ljust(32, b"0")
 )
 _fernet = Fernet(_fernet_key)
 
@@ -41,6 +43,7 @@ def decrypt_field(encrypted: str) -> str:
         return _fernet.decrypt(encrypted.encode()).decode()
     except Exception:
         # Si falla, puede ser que ya estaba en texto plano (backward compat)
+        logger.exception("decrypt_field: error inesperado")
         return encrypted
 
 

@@ -1,8 +1,7 @@
 """Neural scoring engine — ML-based lead scoring, pricing, recommendation."""
 
 import logging
-from typing import Dict, List, Any
-import math
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +10,7 @@ class NeuralScorer:
     """Neural net (heuristics-based) scoring."""
 
     @staticmethod
-    def score_lead(lead: Dict[str, Any]) -> float:
+    def score_lead(lead: dict[str, Any]) -> float:
         """
         Score lead 0-100 based on signals.
 
@@ -41,7 +40,7 @@ class NeuralScorer:
         # Engagement signals (0-30 points)
         page_views = lead.get("page_views", 0)
         time_on_site = lead.get("time_on_site_seconds", 0)
-        
+
         score += min(page_views * 2, 15)  # Max 15 points
         score += min(time_on_site / 60, 15)  # Max 15 points (15 min+ = 15 points)
 
@@ -63,13 +62,12 @@ class NeuralScorer:
         return min(score, 100)
 
     @staticmethod
-    def calculate_dynamic_price(base_price: float, factors: Dict[str, Any]) -> float:
+    def calculate_dynamic_price(base_price: float, factors: dict[str, Any]) -> float:
         """
         Calcula precio dinámico basado en múltiples factores.
 
         Factors: demand, competition, inventory, urgency.
         """
-        price = base_price
         multiplier = 1.0
 
         # Demand factor (0.8x - 1.3x)
@@ -81,12 +79,14 @@ class NeuralScorer:
         multiplier *= demand_multiplier
 
         # Competitor factor (0.95x - 1.05x)
-        comp_price = factors.get("competitor_price", base_price)
+        factors.get("competitor_price", base_price)
         our_quality = factors.get("our_quality_score", 5)  # 1-10
         comp_quality = factors.get("competitor_quality", 5)
         if comp_quality > 0:
             quality_ratio = our_quality / comp_quality
-            comp_multiplier = 1.0 + ((quality_ratio - 1) * 0.05)  # ±5% based on quality gap
+            comp_multiplier = 1.0 + (
+                (quality_ratio - 1) * 0.05
+            )  # ±5% based on quality gap
             multiplier *= comp_multiplier
 
         # Inventory depletion (0.9x - 1.3x)
@@ -112,7 +112,7 @@ class NeuralScorer:
         return round(final_price, 2)
 
     @staticmethod
-    def score_content_viral_potential(content: Dict[str, Any]) -> float:
+    def score_content_viral_potential(content: dict[str, Any]) -> float:
         """Score contenido por viral potential 0-100."""
         score = 0.0
 
@@ -147,7 +147,7 @@ class NeuralScorer:
         return min(score, 100)
 
     @staticmethod
-    def rank_actions(actions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def rank_actions(actions: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Rank actions by expected ROI."""
         for action in actions:
             roi_score = 0.0

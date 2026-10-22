@@ -4,9 +4,11 @@ Monitora crecimiento + propone optimizaciones.
 """
 
 import logging
-from typing import Dict, Any, Optional, List
-from datetime import datetime, timedelta
 from dataclasses import dataclass
+from datetime import timedelta
+from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +16,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class EngagementMetrics:
     """Métricas de engagement."""
+
     likes: int
     comments: int
     shares: int
@@ -27,6 +30,7 @@ class EngagementMetrics:
 @dataclass
 class GrowthMetrics:
     """Métricas de crecimiento."""
+
     followers_today: int
     followers_yesterday: int
     followers_7d_ago: int
@@ -61,9 +65,13 @@ class GrowthAnalytics:
         followers_7d_ago = 5100
         followers_30d_ago = 4200
 
-        daily_growth = ((followers_today - followers_yesterday) / followers_yesterday) * 100
+        daily_growth = (
+            (followers_today - followers_yesterday) / followers_yesterday
+        ) * 100
         weekly_growth = ((followers_today - followers_7d_ago) / followers_7d_ago) * 100
-        monthly_growth = ((followers_today - followers_30d_ago) / followers_30d_ago) * 100
+        monthly_growth = (
+            (followers_today - followers_30d_ago) / followers_30d_ago
+        ) * 100
 
         metrics = GrowthMetrics(
             followers_today=followers_today,
@@ -79,7 +87,9 @@ class GrowthAnalytics:
             churn_rate=0.8,
         )
 
-        self.logger.info(f"Account metrics: {followers_today} followers | daily growth: {daily_growth:.2f}%")
+        self.logger.info(
+            f"Account metrics: {followers_today} followers | daily growth: {daily_growth:.2f}%"
+        )
 
         return metrics
 
@@ -88,7 +98,7 @@ class GrowthAnalytics:
         platform: str,
         account_id: str,
         limit: int = 5,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Obtiene posts con mejor engagement."""
         return [
             {
@@ -99,7 +109,7 @@ class GrowthAnalytics:
                 "shares": 34,
                 "engagement_rate": 8.5,
                 "reach": 15000,
-                "published_at": (datetime.utcnow() - timedelta(days=2)).isoformat(),
+                "published_at": (utc_now() - timedelta(days=2)).isoformat(),
             },
             {
                 "post_id": "post_002",
@@ -109,7 +119,7 @@ class GrowthAnalytics:
                 "shares": 28,
                 "engagement_rate": 7.2,
                 "reach": 13500,
-                "published_at": (datetime.utcnow() - timedelta(days=4)).isoformat(),
+                "published_at": (utc_now() - timedelta(days=4)).isoformat(),
             },
         ]
 
@@ -118,16 +128,28 @@ class GrowthAnalytics:
         platform: str,
         account_id: str,
         days: int = 7,
-    ) -> Dict[str, EngagementMetrics]:
+    ) -> dict[str, EngagementMetrics]:
         """Obtiene engagement por día."""
         return {
             "2026-07-04": EngagementMetrics(
-                likes=520, comments=45, shares=12, saves=18, reach=8500, impressions=12000,
-                engagement_rate=5.8, sentiment="positive",
+                likes=520,
+                comments=45,
+                shares=12,
+                saves=18,
+                reach=8500,
+                impressions=12000,
+                engagement_rate=5.8,
+                sentiment="positive",
             ),
             "2026-07-03": EngagementMetrics(
-                likes=480, comments=42, shares=10, saves=15, reach=8000, impressions=11500,
-                engagement_rate=5.5, sentiment="positive",
+                likes=480,
+                comments=42,
+                shares=10,
+                saves=15,
+                reach=8000,
+                impressions=11500,
+                engagement_rate=5.5,
+                sentiment="positive",
             ),
         }
 
@@ -135,7 +157,7 @@ class GrowthAnalytics:
         self,
         platform: str,
         account_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Analiza qué tipo de contenido funciona mejor."""
         return {
             "top_content_type": "educational_tips",
@@ -161,14 +183,14 @@ class GrowthAnalytics:
         historical_growth_rate: float,
         posting_frequency: int,  # posts per week
         days_forward: int = 30,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Predice crecimiento futuro."""
         # Simple linear prediction
         daily_rate = (historical_growth_rate / 100.0) * (posting_frequency / 7.0)
 
         projected_followers = current_followers
         for _ in range(days_forward):
-            projected_followers += (current_followers * daily_rate)
+            projected_followers += current_followers * daily_rate
             current_followers = projected_followers
 
         total_growth = projected_followers - current_followers
@@ -193,17 +215,23 @@ class GrowthAnalytics:
         conversions: int,
         revenue: float,
         marketing_spend: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calcula ROI de campaña."""
         conversion_rate = (conversions / followers) * 100 if followers > 0 else 0
-        roi = ((revenue - marketing_spend) / marketing_spend) * 100 if marketing_spend > 0 else 0
+        roi = (
+            ((revenue - marketing_spend) / marketing_spend) * 100
+            if marketing_spend > 0
+            else 0
+        )
         cost_per_conversion = marketing_spend / conversions if conversions > 0 else 0
 
         return {
             "revenue": revenue,
             "spend": marketing_spend,
             "roi_percentage": roi,
-            "roi_ratio": f"1:{revenue / marketing_spend:.2f}" if marketing_spend > 0 else "N/A",
+            "roi_ratio": (
+                f"1:{revenue / marketing_spend:.2f}" if marketing_spend > 0 else "N/A"
+            ),
             "conversions": conversions,
             "conversion_rate": conversion_rate,
             "cost_per_conversion": cost_per_conversion,
@@ -215,7 +243,7 @@ class GrowthAnalytics:
         self,
         platform: str,
         account_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Genera reporte completo de crecimiento."""
         metrics = await self.get_account_metrics(platform, account_id)
         performance = await self.analyze_content_performance(platform, account_id)
@@ -224,7 +252,7 @@ class GrowthAnalytics:
         return {
             "platform": platform,
             "account_id": account_id,
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
             "summary": {
                 "followers": metrics.followers_today,
                 "daily_growth": f"+{metrics.daily_growth_rate:.1f}%",

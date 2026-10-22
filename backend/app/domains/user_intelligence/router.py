@@ -1,22 +1,24 @@
 """Phase X9: AI User Intelligence Agent API."""
-from fastapi import APIRouter, Depends, Body
+
+from typing import Annotated
+
+from fastapi import APIRouter, Body, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import get_db
 from app.domains.user_intelligence.service import UserIntelligenceAgent
-from app.domains.user_intelligence.models import UserRiskProfile
-
 
 router = APIRouter(prefix="/api/v1/user-intelligence", tags=["user-intelligence"])
 
 
 @router.post("/profile-user")
 async def profile_user(
-    user_id: str = Body(...),
-    email: str = Body(...),
-    company_name: str = Body(...),
-    engagement_data: dict = Body(...),
-    company_data: dict = Body(...),
-    db: AsyncSession = Depends(get_db),
+    user_id: Annotated[str, Body()],
+    email: Annotated[str, Body()],
+    company_name: Annotated[str, Body()],
+    engagement_data: Annotated[dict, Body()],
+    company_data: Annotated[dict, Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Create comprehensive AI user profile."""
     profile = await UserIntelligenceAgent.profile_user(
@@ -37,7 +39,7 @@ async def profile_user(
 @router.get("/get-personalized-messaging/{user_id}")
 async def get_personalized_messaging(
     user_id: str,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Get personalized messaging strategy for user."""
     # In real implementation: fetch profile from DB, generate messaging
@@ -53,7 +55,7 @@ async def get_personalized_messaging(
 async def update_journey_stage(
     user_id: str,
     stage: str,  # awareness, consideration, decision, onboarding, retention
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Move user through journey stages."""
     journey = await UserIntelligenceAgent.update_journey_stage(db, user_id, stage)
@@ -79,6 +81,6 @@ async def get_churn_risk(
         "suggested_actions": [
             "Schedule QBR with account manager",
             "Send success metrics report",
-            "Invite to VIP training webinar"
+            "Invite to VIP training webinar",
         ],
     }

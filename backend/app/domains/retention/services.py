@@ -3,23 +3,27 @@
 Handles referrals, RFM segmentation, NPS campaigns, and loyalty programs.
 """
 
-import uuid
 import secrets
-from typing import Any, Optional
-from datetime import datetime, timezone, timedelta
+import uuid
+from datetime import UTC, datetime
 from decimal import Decimal
+from typing import Any
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.retention.models import (
-    LoyaltyProgram, ReferralProgram, ReferralCode, ReferralUse,
-    NpsCampaign, NpsResponse, CustomerSegment, CustomerSegmentType,
-    ReferralStatus, NpsCampaignStatus,
-)
+from app.core.logger import get_logger
 from app.domains.channels.models import Conversation
 from app.domains.orders.models import Order
-from app.core.logger import get_logger
+from app.domains.retention.models import (
+    CustomerSegment,
+    CustomerSegmentType,
+    NpsCampaign,
+    NpsResponse,
+    ReferralCode,
+    ReferralStatus,
+    ReferralUse,
+)
 
 logger = get_logger(__name__)
 
@@ -30,7 +34,14 @@ class RetentionService:
 
     # ========== Referrals ==========
 
-    async def create_referral_code(self, business_id: uuid.UUID, program_id: uuid.UUID, conversation_id: uuid.UUID, name: str, email: str) -> ReferralCode:
+    async def create_referral_code(
+        self,
+        business_id: uuid.UUID,
+        program_id: uuid.UUID,
+        conversation_id: uuid.UUID,
+        name: str,
+        email: str,
+    ) -> ReferralCode:
         code = f"REF-{secrets.token_hex(4).upper()}"
         ref = ReferralCode(
             business_id=business_id,
@@ -45,8 +56,18 @@ class RetentionService:
         await self.db.refresh(ref)
         return ref
 
-    async def track_referral_use(self, business_id: uuid.UUID, code: str, referred_conversation_id: Optional[uuid.UUID] = None, referred_email: Optional[str] = None) -> Optional[ReferralUse]:
-        result = await self.db.execute(select(ReferralCode).where(ReferralCode.code == code, ReferralCode.business_id == business_id))
+    async def track_referral_use(
+        self,
+        business_id: uuid.UUID,
+        code: str,
+        referred_conversation_id: uuid.UUID | None = None,
+        referred_email: str | None = None,
+    ) -> ReferralUse | None:
+        result = await self.db.execute(
+            select(ReferralCode).where(
+                ReferralCode.code == code, ReferralCode.business_id == business_id
+            )
+        )
         code_obj = result.scalar_one_or_none()
         if not code_obj or not code_obj.is_active:
             return None
@@ -63,15 +84,19 @@ class RetentionService:
         return use
 
     async def convert_referral(self, use_id: uuid.UUID, order_id: uuid.UUID):
-        result = await self.db.execute(select(ReferralUse).where(ReferralUse.id == use_id))
+        result = await self.db.execute(
+            select(ReferralUse).where(ReferralUse.id == use_id)
+        )
         use = result.scalar_one_or_none()
         if not use:
             return
         use.status = ReferralStatus.CONVERTED
         use.converted_order_id = order_id
-        use.converted_at = datetime.now(timezone.utc)
+        use.converted_at = datetime.now(UTC)
 
-        result = await self.db.execute(select(ReferralCode).where(ReferralCode.id == use.code_id))
+        result = await self.db.execute(
+            select(ReferralCode).where(ReferralCode.id == use.code_id)
+        )
         code = result.scalar_one_or_none()
         if code:
             code.total_conversions += 1
@@ -79,7 +104,14 @@ class RetentionService:
 
     # ========== NPS ==========
 
-    async def create_nps_campaign(self, business_id: uuid.UUID, name: str, trigger_type: str = "post_purchase", trigger_days: int = 14, **kwargs) -> NpsCampaign:
+    async def create_nps_campaign(
+        self,
+        business_id: uuid.UUID,
+        name: str,
+        trigger_type: str = "post_purchase",
+        trigger_days: int = 14,
+        **kwargs,
+    ) -> NpsCampaign:
         camp = NpsCampaign(
             business_id=business_id,
             name=name,
@@ -92,8 +124,17 @@ class RetentionService:
         await self.db.refresh(camp)
         return camp
 
-    async def record_nps_response(self, campaign_id: uuid.UUID, business_id: uuid.UUID, conversation_id: uuid.UUID, score: int, feedback_text: Optional[str] = None) -> NpsResponse:
-        category = "detractor" if score <= 6 else ("passive" if score <= 8 else "promoter")
+    async def record_nps_response(
+        self,
+        campaign_id: uuid.UUID,
+        business_id: uuid.UUID,
+        conversation_id: uuid.UUID,
+        score: int,
+        feedback_text: str | None = None,
+    ) -> NpsResponse:
+        category = (
+            "detractor" if score <= 6 else ("passive" if score <= 8 else "promoter")
+        )
         resp = NpsResponse(
             campaign_id=campaign_id,
             business_id=business_id,
@@ -107,7 +148,9 @@ class RetentionService:
         await self.db.refresh(resp)
         return resp
 
-    async def get_nps_score(self, business_id: uuid.UUID, campaign_id: Optional[uuid.UUID] = None) -> dict[str, Any]:
+    async def get_nps_score(
+        self, business_id: uuid.UUID, campaign_id: uuid.UUID | None = None
+    ) -> dict[str, Any]:
         query = select(NpsResponse).where(NpsResponse.business_id == business_id)
         if campaign_id:
             query = query.where(NpsResponse.campaign_id == campaign_id)
@@ -115,7 +158,13 @@ class RetentionService:
         responses = result.scalars().all()
 
         if not responses:
-            return {"nps": 0, "promoters": 0, "passives": 0, "detractors": 0, "total": 0}
+            return {
+                "nps": 0,
+                "promoters": 0,
+                "passives": 0,
+                "detractors": 0,
+                "total": 0,
+            }
 
         promoters = sum(1 for r in responses if r.category == "promoter")
         passives = sum(1 for r in responses if r.category == "passive")
@@ -123,7 +172,13 @@ class RetentionService:
         total = len(responses)
         nps = round(((promoters - detractors) / total) * 100) if total else 0
 
-        return {"nps": nps, "promoters": promoters, "passives": passives, "detractors": detractors, "total": total}
+        return {
+            "nps": nps,
+            "promoters": promoters,
+            "passives": passives,
+            "detractors": detractors,
+            "total": total,
+        }
 
     # ========== RFM Segmentation ==========
 
@@ -137,15 +192,17 @@ class RetentionService:
         )
         conversations = result.scalars().all()
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         for conv in conversations:
             orders_result = await self.db.execute(
-                select(Order).where(
+                select(Order)
+                .where(
                     Order.business_id == business_id,
                     Order.conversation_id == conv.id,
                     Order.is_active == True,
-                ).order_by(desc(Order.created_at))
+                )
+                .order_by(desc(Order.created_at))
             )
             orders = orders_result.scalars().all()
 
@@ -161,7 +218,9 @@ class RetentionService:
             # Score calculation (quintiles simplified)
             r_score = max(1, min(5, 5 - (days_since_last // 20)))  # Recent = high
             f_score = max(1, min(5, total_orders))  # Frequent = high
-            m_score = max(1, min(5, int(total_revenue / Decimal("10000")) + 1))  # High spend = high
+            m_score = max(
+                1, min(5, int(total_revenue / Decimal(10000)) + 1)
+            )  # High spend = high
             rfm = r_score * 100 + f_score * 10 + m_score
 
             # Segment assignment
@@ -202,13 +261,17 @@ class RetentionService:
             seg.calculated_at = now
 
         await self.db.commit()
-        logger.info(f"RFM calculated for {len(conversations)} customers in business {business_id}")
+        logger.info(
+            f"RFM calculated for {len(conversations)} customers in business {business_id}"
+        )
 
     async def get_segment_counts(self, business_id: uuid.UUID) -> dict[str, int]:
         result = await self.db.execute(
-            select(CustomerSegment.segment, func.count(CustomerSegment.id)).where(
+            select(CustomerSegment.segment, func.count(CustomerSegment.id))
+            .where(
                 CustomerSegment.business_id == business_id,
                 CustomerSegment.is_active == True,
-            ).group_by(CustomerSegment.segment)
+            )
+            .group_by(CustomerSegment.segment)
         )
         return {row[0].value: row[1] for row in result.all()}

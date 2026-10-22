@@ -1,20 +1,27 @@
 #!/usr/bin/env python3
 """Seed Phase 2-5 test data."""
+
 import asyncio
 import uuid
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import declarative_base
-from app.core.database import AsyncSessionLocal, engine, Base
+
+from app.core.database import AsyncSessionLocal, Base, engine
 from app.domains.businesses.models import Business, BusinessType, LocalizationModel
-from app.domains.ml_pipelines.models import LeadScoringModel, ChurnPredictionModel, CLVModel
-from app.domains.channel_routing.models import ChannelAffinityModel, MessageRouting, ChannelPerformanceMetrics
-from app.domains.competitive_intelligence.models import CompetitorProfile, PriceOptimization, MarketAnalysis
+from app.domains.channel_routing.models import (
+    ChannelAffinityModel,
+    ChannelPerformanceMetrics,
+)
+from app.domains.ml_pipelines.models import (
+    ChurnPredictionModel,
+    CLVModel,
+    LeadScoringModel,
+)
 from app.domains.performance_optimization.models import PerformanceMetrics
 
 TEST_BUSINESS_ID = uuid.UUID("123e4567-e89b-12d3-a456-426614174000")
 TEST_USER_ID = uuid.UUID("a23e4567-e89b-12d3-a456-426614174000")
 TEST_CUSTOMER_ID = uuid.UUID("223e4567-e89b-12d3-a456-426614174000")
 TEST_PRODUCT_ID = uuid.UUID("323e4567-e89b-12d3-a456-426614174000")
+
 
 async def seed():
     # Create tables first
@@ -30,7 +37,7 @@ async def seed():
             type=BusinessType.SERVICES,
             description="Test business for Phase 2-5 endpoints",
             localization_model=LocalizationModel.ONLINE_ONLY,
-            is_active=True
+            is_active=True,
         )
         db.add(business)
         await db.commit()
@@ -41,7 +48,7 @@ async def seed():
             lead_score=85.5,
             confidence=0.92,
             tier="hot",
-            top_factors=["demo_attended", "email_engagement", "website_visits"]
+            top_factors=["demo_attended", "email_engagement", "website_visits"],
         )
         db.add(lead)
 
@@ -51,7 +58,7 @@ async def seed():
             churn_probability=0.15,
             churn_risk="low",
             days_until_churn=180,
-            recommended_action="maintain_engagement"
+            recommended_action="maintain_engagement",
         )
         db.add(churn)
 
@@ -62,7 +69,7 @@ async def seed():
             predicted_clv_36m=15000.0,
             clv_segment="vip",
             upsell_propensity=0.75,
-            crosssell_propensity=0.60
+            crosssell_propensity=0.60,
         )
         db.add(clv)
 
@@ -77,7 +84,7 @@ async def seed():
             push_score=0.55,
             in_app_score=0.70,
             recommended_primary="email",
-            recommended_secondary="whatsapp"
+            recommended_secondary="whatsapp",
         )
         db.add(affinity)
 
@@ -90,7 +97,7 @@ async def seed():
             total_clicked=800,
             total_responses=500,
             delivery_rate=0.98,
-            open_rate=0.32
+            open_rate=0.32,
         )
         db.add(perf)
 
@@ -110,12 +117,13 @@ async def seed():
             cache_hit_rate=0.75,
             memory_usage_mb=512.0,
             cpu_usage_percent=45.0,
-            performance_score=85
+            performance_score=85,
         )
         db.add(perf_metrics)
 
         await db.commit()
         print("✅ Test data seeded successfully!")
+
 
 if __name__ == "__main__":
     asyncio.run(seed())

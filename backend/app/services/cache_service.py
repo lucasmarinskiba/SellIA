@@ -1,16 +1,20 @@
-import redis
 import json
+import logging
 import os
-from typing import Any, Optional
+from typing import Any
+
+import redis
+
+logger = logging.getLogger(__name__)
 
 
 class CacheService:
     def __init__(self):
-        self.redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
+        self.redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
         self.redis = redis.from_url(self.redis_url, decode_responses=True)
         self.default_ttl = 3600  # 1 hour
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """Get value from cache."""
         try:
             value = self.redis.get(key)
@@ -18,16 +22,18 @@ class CacheService:
                 return json.loads(value)
             return None
         except Exception as e:
+            logger.exception("get: error inesperado")
             print(f"Cache get error: {e}")
             return None
 
-    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
+    def set(self, key: str, value: Any, ttl: int | None = None) -> bool:
         """Set value in cache."""
         try:
             ttl = ttl or self.default_ttl
             self.redis.setex(key, ttl, json.dumps(value))
             return True
         except Exception as e:
+            logger.exception("set: error inesperado")
             print(f"Cache set error: {e}")
             return False
 
@@ -37,6 +43,7 @@ class CacheService:
             self.redis.delete(key)
             return True
         except Exception as e:
+            logger.exception("delete: error inesperado")
             print(f"Cache delete error: {e}")
             return False
 
@@ -48,10 +55,11 @@ class CacheService:
                 return self.redis.delete(*keys)
             return 0
         except Exception as e:
+            logger.exception("clear_pattern: error inesperado")
             print(f"Cache clear pattern error: {e}")
             return 0
 
-    def get_or_set(self, key: str, fetch_fn, ttl: Optional[int] = None) -> Any:
+    def get_or_set(self, key: str, fetch_fn, ttl: int | None = None) -> Any:
         """Get from cache or fetch and cache."""
         cached = self.get(key)
         if cached is not None:
@@ -71,10 +79,11 @@ class CacheService:
                     result[key] = json.loads(value)
             return result
         except Exception as e:
+            logger.exception("mget: error inesperado")
             print(f"Cache mget error: {e}")
             return {}
 
-    def mset(self, data: dict[str, Any], ttl: Optional[int] = None) -> bool:
+    def mset(self, data: dict[str, Any], ttl: int | None = None) -> bool:
         """Set multiple keys."""
         try:
             pipe = self.redis.pipeline()
@@ -86,6 +95,7 @@ class CacheService:
             pipe.execute()
             return True
         except Exception as e:
+            logger.exception("mset: error inesperado")
             print(f"Cache mset error: {e}")
             return False
 
@@ -94,6 +104,7 @@ class CacheService:
         try:
             return self.redis.incr(key)
         except Exception as e:
+            logger.exception("incr: error inesperado")
             print(f"Cache incr error: {e}")
             return 0
 
@@ -102,6 +113,7 @@ class CacheService:
         try:
             return self.redis.decr(key)
         except Exception as e:
+            logger.exception("decr: error inesperado")
             print(f"Cache decr error: {e}")
             return 0
 
@@ -110,6 +122,7 @@ class CacheService:
         try:
             return bool(self.redis.expire(key, ttl))
         except Exception as e:
+            logger.exception("expire: error inesperado")
             print(f"Cache expire error: {e}")
             return False
 
@@ -118,6 +131,7 @@ class CacheService:
         try:
             return self.redis.ttl(key)
         except Exception as e:
+            logger.exception("ttl: error inesperado")
             print(f"Cache ttl error: {e}")
             return -1
 
@@ -126,6 +140,7 @@ class CacheService:
         try:
             return bool(self.redis.exists(key))
         except Exception as e:
+            logger.exception("exists: error inesperado")
             print(f"Cache exists error: {e}")
             return False
 
@@ -135,6 +150,7 @@ class CacheService:
             self.redis.flushdb()
             return True
         except Exception as e:
+            logger.exception("flush_all: error inesperado")
             print(f"Cache flush error: {e}")
             return False
 
