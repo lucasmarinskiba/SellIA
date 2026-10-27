@@ -61,13 +61,31 @@ export const STATUS_STYLE: Record<ChannelStatus, { label: string; pill: string; 
   disabled: { label: 'Deshabilitado', pill: 'bg-slate-100 text-slate-700 ring-slate-200', dot: 'bg-slate-400' },
 }
 
+type Conn = { platform: string; status: string; credentials?: Record<string, unknown> | null }
+
+/** Keys that mean "an authorization actually finished" (the API returns key names, never values). */
+const AUTH_KEYS = ['access_token', 'api_token', 'page_access_token', 'refresh_token']
+
+const hasAuthorization = (c: Conn): boolean => AUTH_KEYS.some((k) => k in (c.credentials ?? {}))
+
 /**
- * A row exists as soon as someone STARTS an authorization (the backend creates it with empty credentials
- * and status "pending"). If they close the Meta/Mercado Libre window, that row stays behind: it is not a
+ * A row exists as soon as someone STARTS an authorization (the backend creates it with no token and
+ * status "pending"). If they close the Meta/Mercado Libre window, that row stays behind: it is not a
  * connection, so it must not be counted or shown as one.
  */
-export const isIncomplete = (c: { status: string; credentials?: Record<string, unknown> | null }): boolean =>
-  c.status === 'pending' && Object.keys(c.credentials ?? {}).length === 0
+export const isIncomplete = (c: Conn): boolean => {
+  if (c.status !== 'pending') return false
+  return ONE_CLICK_PLATFORMS.includes(c.platform)
+    ? !hasAuthorization(c)
+    : Object.keys(c.credentials ?? {}).length === 0
+}
+
+/** Marked connected but nothing was stored, so it cannot send or receive: it has to be authorized again. */
+export const needsReconnect = (c: Conn): boolean =>
+  c.status === 'connected' && ONE_CLICK_PLATFORMS.includes(c.platform) && !hasAuthorization(c)
+
+/** One-click platforms use the account that is logged in at the provider, so switching means authorizing again. */
+export const canSwitchAccount = (platform: string): boolean => ONE_CLICK_PLATFORMS.includes(platform)
 
 /** Stored name that is just the platform slug (rows created by the authorization flow). */
 export const displayName = (c: { name: string; platform: string }): string =>

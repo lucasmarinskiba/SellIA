@@ -2,7 +2,7 @@
 
 import { Check, Clock, Copy, Loader2, Trash2, Zap, AlertCircle, CheckCircle2, PauseCircle } from 'lucide-react'
 import type { ChannelConnection } from '@/lib/channels'
-import { displayName, isIncomplete, platformMeta, STATUS_STYLE } from './catalog'
+import { canSwitchAccount, displayName, isIncomplete, needsReconnect, platformMeta, STATUS_STYLE } from './catalog'
 
 const STATUS_ICON = {
   connected: CheckCircle2,
@@ -19,17 +19,22 @@ interface Props {
   copied: boolean
   onTest: () => void
   onComplete: () => void
+  onSwitchAccount: () => void
   onDelete: () => void
   onCopyWebhook: (url: string) => void
 }
 
-export function ChannelCard({ channel, testing, copied, onTest, onComplete, onDelete, onCopyWebhook }: Props) {
+export function ChannelCard({ channel, testing, copied, onTest, onComplete, onSwitchAccount, onDelete, onCopyWebhook }: Props) {
   const meta = platformMeta(channel.platform)
   const incomplete = isIncomplete(channel)
+  const reconnect = needsReconnect(channel)
   const style = incomplete
     ? { label: 'Sin completar', pill: 'bg-slate-100 text-slate-700 ring-slate-300', dot: 'bg-slate-400' }
-    : (STATUS_STYLE[channel.status] ?? STATUS_STYLE.pending)
-  const StatusIcon = incomplete ? PauseCircle : (STATUS_ICON[channel.status] ?? Clock)
+    : reconnect
+      ? { label: 'Hay que reconectar', pill: 'bg-red-50 text-red-800 ring-red-200', dot: 'bg-red-500' }
+      : (STATUS_STYLE[channel.status] ?? STATUS_STYLE.pending)
+  const StatusIcon = incomplete ? PauseCircle : reconnect ? AlertCircle : (STATUS_ICON[channel.status] ?? Clock)
+  const switchable = canSwitchAccount(channel.platform) && !incomplete && !reconnect
   const name = displayName(channel)
   const Icon = meta.icon
 
@@ -61,6 +66,25 @@ export function ChannelCard({ channel, testing, copied, onTest, onComplete, onDe
         </span>
       </div>
 
+      {!incomplete && (
+        <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+          {channel.account?.name ? (
+            <>
+              <span className="text-slate-500">Cuenta: </span>
+              <strong className="font-semibold text-slate-900">{channel.account.name}</strong>
+              {channel.account.id && channel.account.id !== channel.account.name && (
+                <span className="text-slate-500"> · ID {channel.account.id}</span>
+              )}
+              {channel.account.detail && <span className="block text-slate-500">{channel.account.detail}</span>}
+            </>
+          ) : reconnect ? (
+            <>Figura conectado pero no hay credenciales guardadas. Autorizá de nuevo para que funcione.</>
+          ) : (
+            <>Cuenta no identificada. {canSwitchAccount(channel.platform) ? 'Volvé a autorizar para ver cuál es.' : ''}</>
+          )}
+        </div>
+      )}
+
       {incomplete && (
         <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
           Empezaste a conectar esta cuenta pero no terminaste la autorización. Todavía no recibe ni envía nada.
@@ -87,8 +111,8 @@ export function ChannelCard({ channel, testing, copied, onTest, onComplete, onDe
         </div>
       )}
 
-      <div className="mt-auto flex items-center justify-between gap-3 pt-4">
-        <p className="text-xs text-slate-400">
+      <div className="mt-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-2 pt-4">
+        <p className="w-full text-xs text-slate-400">
           {incomplete
             ? ''
             : channel.last_sync_at
@@ -97,13 +121,13 @@ export function ChannelCard({ channel, testing, copied, onTest, onComplete, onDe
                 ? 'Autorizado · todavía sin actividad'
                 : 'Todavía no probaste la conexión'}
         </p>
-        {incomplete ? (
+        {incomplete || reconnect ? (
           <button
             type="button"
             onClick={onComplete}
             className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-brand-orange px-3 text-sm font-semibold text-white transition-colors hover:bg-brand-orange-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-2"
           >
-            Completar conexión
+            {reconnect ? 'Reconectar' : 'Completar conexión'}
           </button>
         ) : (
           <button
@@ -114,6 +138,15 @@ export function ChannelCard({ channel, testing, copied, onTest, onComplete, onDe
           >
             {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
             Probar
+          </button>
+        )}
+        {switchable && (
+          <button
+            type="button"
+            onClick={onSwitchAccount}
+            className="inline-flex h-10 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange"
+          >
+            Cambiar de cuenta
           </button>
         )}
       </div>

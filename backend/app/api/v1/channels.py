@@ -12,7 +12,9 @@ from app.core.deps import get_current_user
 from app.core.config import get_settings
 from app.domains.users.models import User
 from app.domains.businesses.models import Business
+from app.domains.channels import account as channel_account
 from app.domains.channels.models import ChannelConnection, ChannelPlatform, ChannelStatus
+from app.domains.channels.oauth_state import sign_state, verify_state
 from app.domains.channels.schemas import (
     ChannelConnectionCreate,
     ChannelConnectionUpdate,
@@ -41,6 +43,15 @@ async def _get_business_for_user(
     return business
 
 
+def _settings_with_account(channel_in: ChannelConnectionCreate) -> dict[str, Any]:
+    """The submitted settings plus, for manually configured channels, which account they point at."""
+    values = dict(channel_in.settings or {})
+    found = channel_account.account_from_credentials(channel_in.platform.value, channel_in.credentials)
+    if found and "account" not in values:
+        values["account"] = found
+    return values
+
+
 @router.post("/{business_id}/channels", response_model=ChannelConnectionResponse, status_code=status.HTTP_201_CREATED)
 async def create_channel(
     business_id: UUID,
@@ -64,7 +75,7 @@ async def create_channel(
             platform=channel_in.platform,
             name=channel_in.name,
             credentials=channel_in.credentials or {},
-            settings=channel_in.settings or {},
+            settings=_settings_with_account(channel_in),
         )
         db.add(channel)
         await db.commit()
@@ -144,6 +155,8 @@ async def update_channel(
         raise HTTPException(status_code=404, detail="Canal no encontrado")
 
     update_data = channel_in.model_dump(exclude_unset=True)
+    if update_data.get("credentials") is not None:
+        update_data["credentials"] = channel_account.restore_masked(update_data["credentials"], channel.credentials)
     for field, value in update_data.items():
         setattr(channel, field, value)
 
@@ -261,7 +274,7 @@ async def get_oauth_url(
             "response_type": "code",
             "client_id": settings.MERCADO_LIBRE_CLIENT_ID,
             "redirect_uri": settings.MERCADO_LIBRE_REDIRECT_URI or redirect_uri,
-            "state": str(channel.id),
+            "state": sign_state(settings.SECRET_KEY, channel.id, current_user.id),
         }
         await db.commit()
         return {"auth_url": f"{auth_url}?{urlencode(params)}"}
@@ -312,7 +325,7 @@ async def get_oauth_url(
             "client_id": settings.META_APP_ID,
             "redirect_uri": meta_redirect_uri,
             "scope": scopes,
-            "state": str(channel.id),
+            "state": sign_state(settings.SECRET_KEY, channel.id, current_user.id),
             # Without this, Meta silently re-grants a code with no visible
             # dialog once the user already authorized this app for an
             # overlapping scope (e.g. connecting Instagram, then Messenger,
@@ -349,20 +362,24 @@ async def oauth_callback(
     if error or not code or not state:
         return RedirectResponse(url=f"{base_callback}/dashboard/canales?connect_error=cancelled")
 
+    invalid_state = RedirectResponse(url=f"{base_callback}/dashboard/canales?connect_error=state")
     try:
-        channel_id = UUID(state)
+        channel_id, user_id = verify_state(settings.SECRET_KEY, state)
     except ValueError:
-        raise HTTPException(status_code=400, detail="State inválido")
+        return invalid_state
 
     result = await db.execute(
-        select(ChannelConnection).where(
+        select(ChannelConnection)
+        .join(Business, Business.id == ChannelConnection.business_id)
+        .where(
             ChannelConnection.id == channel_id,
             ChannelConnection.platform == platform,
+            Business.user_id == user_id,
         )
     )
     channel = result.scalar_one_or_none()
     if not channel:
-        raise HTTPException(status_code=404, detail="Canal no encontrado")
+        return invalid_state
 
     redirect_uri = f"{base_callback}/api/v1/businesses/oauth/callback/{platform.value}"
     
@@ -388,6 +405,14 @@ async def oauth_callback(
             channel.credentials["access_token"] = data.get("access_token")
             channel.credentials["refresh_token"] = data.get("refresh_token")
             channel.credentials["seller_id"] = str(data.get("user_id", ""))
+            me_resp = await client.get(
+                "https://api.mercadolibre.com/users/me",
+                headers={"Authorization": f"Bearer {data.get('access_token')}"},
+            )
+            me = me_resp.json() if me_resp.status_code == 200 else {}
+            channel.settings["account"] = channel_account.account(
+                me.get("id") or data.get("user_id"), me.get("nickname"), None
+            )
             channel.status = ChannelStatus.CONNECTED
             await db.commit()
             return RedirectResponse(url=f"{base_callback}/dashboard/canales?connected=mercadolibre")
@@ -443,10 +468,15 @@ async def oauth_callback(
                     detail="Tu cuenta de Facebook no administra ninguna Página. Creá una Página de Facebook primero e intentá de nuevo.",
                 )
 
+            connected_account: dict[str, str] | None = None
+            # Only the first Page is used; say so when the user manages several.
+            pages_note = f"Se usó la primera de {len(pages)} Páginas que administrás" if len(pages) > 1 else None
+
             if platform == ChannelPlatform.MESSENGER:
                 page = pages[0]
                 channel.credentials["api_token"] = page.get("access_token")
                 channel.credentials["page_id"] = page.get("id")
+                connected_account = channel_account.account(page.get("id"), page.get("name"), pages_note)
 
             elif platform == ChannelPlatform.INSTAGRAM:
                 page = pages[0]
@@ -463,16 +493,28 @@ async def oauth_callback(
                 channel.credentials["api_token"] = page.get("access_token")
                 channel.credentials["instagram_account_id"] = ig_account.get("id")
                 channel.credentials["page_id"] = page.get("id")
+                ig_user = await client.get(
+                    f"https://graph.facebook.com/v18.0/{ig_account.get('id')}",
+                    params={"fields": "username", "access_token": page.get("access_token")},
+                )
+                username = (ig_user.json() if ig_user.status_code == 200 else {}).get("username")
+                connected_account = channel_account.account(
+                    ig_account.get("id"),
+                    f"@{username}" if username else page.get("name"),
+                    pages_note or (f"Página: {page.get('name')}" if username and page.get("name") else None),
+                )
 
             elif platform == ChannelPlatform.FACEBOOK_ADS:
                 page = pages[0]
                 channel.credentials["access_token"] = page.get("access_token")
                 channel.credentials["page_id"] = page.get("id")
+                connected_account = channel_account.account(page.get("id"), page.get("name"), pages_note)
 
             elif platform == ChannelPlatform.FACEBOOK_MARKETPLACE:
                 page = pages[0]
                 channel.credentials["page_access_token"] = page.get("access_token")
                 channel.credentials["page_id"] = page.get("id")
+                connected_account = channel_account.account(page.get("id"), page.get("name"), pages_note)
                 # catalog_id (for real order sync) still needs Meta Commerce
                 # Platform approval + manual setup -- not obtainable from this
                 # OAuth grant alone.
@@ -480,6 +522,8 @@ async def oauth_callback(
             else:  # WHATSAPP
                 channel.credentials["access_token"] = long_lived_token
 
+            if connected_account:
+                channel.settings["account"] = connected_account
             channel.status = ChannelStatus.CONNECTED
             await db.commit()
             return RedirectResponse(url=f"{base_callback}/dashboard/canales?connected={platform.value}")
@@ -583,6 +627,7 @@ async def whatsapp_embedded_signup(
     channel.credentials["api_token"] = long_lived_token
     channel.credentials["phone_number_id"] = phone_number_id
     channel.credentials["business_account_id"] = waba_id
+    channel.settings["account"] = channel_account.account(phone_number_id, "WhatsApp Business", f"WABA {waba_id}")
     channel.status = ChannelStatus.CONNECTED
     await db.commit()
     return {"status": "connected", "platform": "whatsapp"}

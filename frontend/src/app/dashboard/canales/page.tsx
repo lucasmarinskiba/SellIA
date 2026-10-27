@@ -8,7 +8,7 @@ import type { ChannelPlatform } from '@/types/channels'
 import { ChannelCard } from './ChannelCard'
 import { ConnectModal, type ConnectDraft } from './ConnectModal'
 import {
-  CATEGORIES, displayName, isIncomplete, ONE_CLICK_PLATFORMS, PLATFORMS, platformMeta, type CategoryKey,
+  CATEGORIES, displayName, isIncomplete, needsReconnect, ONE_CLICK_PLATFORMS, PLATFORMS, platformMeta, type CategoryKey,
 } from './catalog'
 
 type Notice = { kind: 'ok' | 'error' | 'warn'; text: string } | null
@@ -109,6 +109,10 @@ export default function CanalesPage() {
       window.history.replaceState({}, '', window.location.pathname)
       setNotice({ kind: 'warn', text: 'No se conectó nada: cancelaste (o no completaste) la autorización.' })
     }
+    if (params.get('connect_error') === 'state') {
+      window.history.replaceState({}, '', window.location.pathname)
+      setNotice({ kind: 'error', text: 'El enlace de autorización venció o no es válido. Empezá la conexión de nuevo desde acá.' })
+    }
     const connect = params.get('connect')
     if (connect) {
       window.history.replaceState({}, '', window.location.pathname)
@@ -174,6 +178,17 @@ export default function CanalesPage() {
   const completeConnection = (channel: ChannelConnection) => {
     if (ONE_CLICK_PLATFORMS.includes(channel.platform)) void handleOAuth(channel.platform as ChannelPlatform)
     else openModal(channel.platform as ChannelPlatform)
+  }
+
+  const switchAccount = (channel: ChannelConnection) => {
+    const meta = platformMeta(channel.platform)
+    const current = channel.account?.name ? ` (hoy: ${channel.account.name})` : ''
+    const ok = confirm(
+      `Vas a conectar otra cuenta de ${meta.label}${current}.\n\n` +
+        `${meta.label} usa la cuenta que tengas abierta en este navegador. Si querés usar otra, antes cerrá sesión en ` +
+        `${meta.label} o abrí esta página en una ventana privada. La conexión actual se reemplaza cuando termines.`,
+    )
+    if (ok) void handleOAuth(channel.platform as ChannelPlatform)
   }
 
   const handleOAuth = async (platform: ChannelPlatform) => {
@@ -266,10 +281,10 @@ export default function CanalesPage() {
 
   const counts = useMemo(
     () => ({
-      connected: channels.filter((c) => c.status === 'connected').length,
+      connected: channels.filter((c) => c.status === 'connected' && !needsReconnect(c)).length,
       toVerify: channels.filter((c) => c.status === 'pending' && !isIncomplete(c)).length,
       incomplete: channels.filter(isIncomplete).length,
-      error: channels.filter((c) => c.status === 'error').length,
+      error: channels.filter((c) => c.status === 'error' || needsReconnect(c)).length,
     }),
     [channels],
   )
@@ -414,6 +429,7 @@ export default function CanalesPage() {
                 copied={copiedId === channel.id}
                 onTest={() => void handleTest(channel)}
                 onComplete={() => completeConnection(channel)}
+                onSwitchAccount={() => switchAccount(channel)}
                 onDelete={() => void handleDelete(channel)}
                 onCopyWebhook={(url) => copyWebhook(url, channel.id)}
               />
