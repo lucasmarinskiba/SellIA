@@ -88,6 +88,15 @@ export interface CommerceOverview {
   generated_at: string
 }
 
+/**
+ * True only for a complete overview. A 200 with an empty or partial body (a proxy, an older backend, an error
+ * payload) was stored as the overview and crashed the whole screen on `consolidated.revenue`.
+ */
+export const isCommerceOverview = (value: unknown): value is CommerceOverview => {
+  const o = value as Partial<CommerceOverview> | null
+  return !!o && typeof o === 'object' && !!o.consolidated && Array.isArray(o.platforms) && typeof o.period_days === 'number'
+}
+
 export interface SyncResult {
   platform: string
   supported: boolean
@@ -101,7 +110,10 @@ export interface SyncResult {
 
 export const commerceApi = {
   overview: (days = 30): Promise<CommerceOverview> =>
-    api.get<CommerceOverview>(`/platform-commerce/overview?days=${days}`).then(r => r.data),
+    api.get<unknown>(`/platform-commerce/overview?days=${days}`).then(r => {
+      if (!isCommerceOverview(r.data)) throw new Error('Respuesta de platform-commerce/overview incompleta')
+      return r.data
+    }),
 
   saveSettings: (platform: string, body: Partial<PlatformSettings>): Promise<{ saved: boolean }> =>
     api.put(`/platform-commerce/settings/${platform}`, body).then(r => r.data),
