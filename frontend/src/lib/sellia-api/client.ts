@@ -1,6 +1,7 @@
 /**
  * SellIA API client · axios + interceptors + token mgmt.
  */
+import { isCredentialRequest, redirectToLogin } from '../authRedirect'
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios'
 import type { TwoFASetupResponse, TwoFAVerifyResponse } from '../auth'
 
@@ -77,12 +78,11 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
-    if (error.response?.status === 401 && typeof window !== 'undefined') {
-      // Token expired/invalid · clear + redirect to login
+    if (error.response?.status === 401 && typeof window !== 'undefined' && !isCredentialRequest(error.config?.url)) {
+      // Token expired/invalid · clear + redirect to login. A 401 on the login request itself is wrong
+      // credentials: it stays on the form so the message can be shown.
       setToken(null)
-      if (!window.location.pathname.startsWith('/sellia-login')) {
-        window.location.href = '/sellia-login'
-      }
+      redirectToLogin()
     }
     return Promise.reject(error)
   }
