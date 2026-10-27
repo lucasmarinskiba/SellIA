@@ -1,8 +1,9 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
 from uuid import UUID
 from datetime import datetime
 from typing import Any
 
+from app.domains.channels.account import mask_credentials, public_account
 from app.domains.channels.models import ChannelPlatform, ChannelStatus, ConversationStatus, MessageDirection, MessageStatus
 
 
@@ -40,6 +41,18 @@ class ChannelConnectionResponse(ChannelConnectionBase):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+
+    @field_validator("credentials", mode="after")
+    @classmethod
+    def _hide_secret_values(cls, value: dict[str, Any]) -> dict[str, Any]:
+        """The API says which credentials are stored, never what they are."""
+        return mask_credentials(value)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def account(self) -> dict[str, str] | None:
+        """Which account (Mercado Libre user, Facebook Page, mailbox...) this connection belongs to."""
+        return public_account(self.settings)
 
 
 # Conversation schemas
