@@ -126,6 +126,7 @@ _modules = [
     "app.tasks.sales_funnel_tasks",
     "app.tasks.finance_tasks",
     "app.tasks.ad_budget_tasks",
+    "app.tasks.harvey_tasks",
     "app.tasks.forecasting_tasks",
     "app.tasks.brand_transformation_tasks",
     "app.domains.memory.tasks",
@@ -423,6 +424,10 @@ celery_app.conf.beat_schedule = {
     "ad-budget-cycles": {
         "task": "app.tasks.ad_budget_tasks.run_budget_cycles",
         "schedule": crontab(minute=0, hour=4),  # todos los días 04:00
+    },
+    "harvey-cycles": {
+        "task": "app.tasks.harvey_tasks.run_harvey_cycles",
+        "schedule": crontab(minute="*/15"),  # cada 15 minutos
     },
     "forecasting-nightly": {
         "task": "app.tasks.forecasting_tasks.nightly_forecasts",
