@@ -14,8 +14,8 @@ import { card } from './ui'
 type TabKey = 'prospects' | 'approval' | 'replies' | 'settings'
 
 const Check = ({ ok, children }: { ok: boolean; children: React.ReactNode }) => (
-  <span className="inline-flex items-center gap-1.5 text-sm text-white/80">
-    {ok ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : <XCircle className="h-4 w-4 text-red-400" />}
+  <span className="inline-flex items-center gap-1.5 text-sm text-slate-700">
+    {ok ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <XCircle className="h-4 w-4 text-red-600" />}
     {children}
   </span>
 )
@@ -72,7 +72,7 @@ export function ProspeccionContent() {
     )
   }
   if (!bid || !status || !profile) {
-    return <p className="p-6 text-sm text-red-300">{error ?? 'No se pudo cargar Prospección.'}</p>
+    return <p className="p-6 text-sm text-red-700">{error ?? 'No se pudo cargar Prospección.'}</p>
   }
 
   const toggleEnabled = async () => {
@@ -100,15 +100,15 @@ export function ProspeccionContent() {
     <div className="mx-auto max-w-5xl space-y-5 p-4 sm:p-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-white">Prospección</h1>
-          <p className="text-sm text-white/50">
+          <h1 className="text-2xl font-bold text-slate-900">Prospección</h1>
+          <p className="text-sm text-slate-500">
             Encuentra clientes, redacta los emails y los envía desde tu casilla. Vos aprobás cada uno.
           </p>
         </div>
         <button
           onClick={toggleEnabled}
           className={`rounded-xl px-4 py-2 text-sm font-semibold ${
-            profile.is_enabled ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/10 text-white/70'
+            profile.is_enabled ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
           }`}
           aria-pressed={profile.is_enabled}
         >
@@ -116,7 +116,7 @@ export function ProspeccionContent() {
         </button>
       </header>
 
-      {error && <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">{error}</p>}
+      {error && <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">{error}</p>}
 
       <section className={`${card} space-y-3`}>
         <div className="flex flex-wrap gap-x-6 gap-y-2">
@@ -125,12 +125,12 @@ export function ProspeccionContent() {
           </Check>
           <Check ok={status.model_available}>Redactor IA</Check>
           <Check ok={status.in_send_window}>{status.in_send_window ? 'En horario de envío' : 'Fuera del horario de envío'}</Check>
-          <span className="text-sm text-white/60">
+          <span className="text-sm text-slate-600">
             Enviados hoy: {status.sent_today}/{status.send_cap_today} · Borradores: {status.drafts_today}/{profile.max_daily_drafts}
           </span>
         </div>
         {missing.length > 0 && (
-          <p className="flex items-start gap-2 text-sm text-amber-300">
+          <p className="flex items-start gap-2 text-sm text-amber-700">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             Falta: {missing.join('; ')}.
           </p>
@@ -145,11 +145,15 @@ export function ProspeccionContent() {
             aria-selected={tab === t.key}
             onClick={() => setTab(t.key)}
             className={`rounded-lg px-4 py-2 text-sm font-medium ${
-              tab === t.key ? 'bg-primary text-primary-foreground' : 'bg-white/[0.06] text-white/70 hover:bg-white/10'
+              tab === t.key ? 'bg-primary text-primary-foreground' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
             {t.label}
-            {t.badge ? <span className="ml-2 rounded-full bg-white/20 px-1.5 text-xs">{t.badge}</span> : null}
+            {t.badge ? (
+              <span className={`ml-2 rounded-full px-1.5 text-xs ${tab === t.key ? 'bg-white/30 text-white' : 'bg-slate-300 text-slate-800'}`}>
+                {t.badge}
+              </span>
+            ) : null}
           </button>
         ))}
       </nav>

@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from 'react'
 import {
   Menu, X, Settings, Home, ShoppingCart, Package, BarChart3, LogOut, Plug,
   TrendingUp, Award, Store, MessageSquare, Brain, ChevronDown, UserPlus,
-  MapPin, CreditCard, Briefcase, Check, Loader2, LogIn, Eye, EyeOff,
+  MapPin, CreditCard, Briefcase, Check, Loader2, LogIn, Eye, EyeOff, Link2, Send,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { businessApi, type Business } from '@/lib/business'
@@ -213,6 +213,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { href: '/dashboard/orders', label: 'Órdenes', icon: ShoppingCart },
     { href: '/dashboard/listings', label: 'Listings', icon: Package },
     { href: '/dashboard/platforms', label: 'Plataformas', icon: Plug },
+    { href: '/dashboard/canales', label: 'Canales', icon: Link2 },
+    { href: '/dashboard/prospeccion', label: 'Prospección', icon: Send },
     { href: '/dashboard/phase12', label: 'SEO', icon: TrendingUp },
     { href: '/dashboard/phase3', label: 'Construya Autoridad', icon: Award },
     { href: '/dashboard/phase33', label: 'Vendedor Multiplataforma', icon: Store },

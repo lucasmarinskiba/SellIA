@@ -3,17 +3,17 @@
 import { useCallback, useState } from 'react'
 import { errMsg } from '@/lib/api/harvey'
 
-export const card = 'rounded-xl border border-white/10 bg-white/[0.04] p-5'
+export const card = 'rounded-xl border border-slate-200 bg-white p-5'
 export const input =
-  'w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-primary focus:outline-none'
-export const label = 'mb-1 block text-xs font-semibold uppercase tracking-wide text-white/40'
+  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-none'
+export const label = 'mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500'
 
 const TONES: Record<string, string> = {
-  good: 'bg-emerald-500/15 text-emerald-300',
-  warn: 'bg-amber-500/15 text-amber-300',
-  bad: 'bg-red-500/15 text-red-300',
-  info: 'bg-sky-500/15 text-sky-300',
-  muted: 'bg-white/10 text-white/50',
+  good: 'bg-emerald-50 text-emerald-800',
+  warn: 'bg-amber-50 text-amber-800',
+  bad: 'bg-red-50 text-red-800',
+  info: 'bg-sky-50 text-sky-800',
+  muted: 'bg-slate-100 text-slate-500',
 }
 
 const STATUS_TONE: Record<string, string> = {
@@ -100,8 +100,8 @@ export function Notice({ notice }: { notice: { kind: 'ok' | 'error'; text: strin
   if (!notice) return null
   const cls =
     notice.kind === 'ok'
-      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200'
-      : 'border-red-500/30 bg-red-500/10 text-red-200'
+      ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+      : 'border-red-200 bg-red-50 text-red-900'
   return (
     <p role="status" className={`rounded-lg border px-3 py-2 text-sm ${cls}`}>
       {notice.text}
