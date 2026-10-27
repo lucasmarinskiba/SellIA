@@ -5,7 +5,6 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 from enum import Enum
 import logging
-import random
 
 logger = logging.getLogger(__name__)
 
@@ -173,81 +172,17 @@ class LeadGenerationAgent:
         source: LeadSourceType,
         limit: int
     ) -> List[GeneratedLead]:
-        """Generate leads from specific source"""
+        """Fuente sin conector real: no inventa prospectos ni emails.
 
-        leads = []
-        keywords = product.target_audience.split(",")[:3]
-
-        for i in range(min(limit, 20)):
-            fit_score = random.uniform(0.5, 1.0)
-            lead_id = f"lead_{campaign_id}_{source.value}_{i}"
-
-            if source == LeadSourceType.GOOGLE_MAPS:
-                lead = GeneratedLead(
-                    lead_id=lead_id,
-                    source=source,
-                    prospect_name=f"Business_{i}",
-                    prospect_email=f"contact_{i}@localbusiness.com",
-                    prospect_phone=f"+34 9{random.randint(10000000, 99999999)}",
-                    prospect_location=product.geographic_scope,
-                    fit_score=fit_score,
-                    reason_fit=f"Local business matching {product.category}",
-                    keywords_matched=keywords,
-                    contact_method="whatsapp"
-                )
-            elif source == LeadSourceType.LINKEDIN:
-                lead = GeneratedLead(
-                    lead_id=lead_id,
-                    source=source,
-                    prospect_name=f"Professional_{i}",
-                    prospect_email=f"prof_{i}@enterprise.com",
-                    prospect_company=f"Company_{i} Inc",
-                    prospect_location=product.geographic_scope,
-                    fit_score=fit_score,
-                    reason_fit=f"Professional buyer of {product.name}",
-                    keywords_matched=keywords,
-                    contact_method="email"
-                )
-            elif source == LeadSourceType.MARKETPLACE:
-                lead = GeneratedLead(
-                    lead_id=lead_id,
-                    source=source,
-                    prospect_name=f"Buyer_{i}",
-                    prospect_email=f"marketplace_{i}@email.com",
-                    prospect_location="online",
-                    fit_score=fit_score,
-                    reason_fit=f"Active marketplace buyer of {product.category}",
-                    keywords_matched=keywords,
-                    contact_method="email"
-                )
-            elif source == LeadSourceType.SOCIAL_MEDIA:
-                lead = GeneratedLead(
-                    lead_id=lead_id,
-                    source=source,
-                    prospect_name=f"Social_{i}",
-                    prospect_email=f"social_{i}@email.com",
-                    prospect_location=product.geographic_scope,
-                    fit_score=fit_score,
-                    reason_fit=f"Social media user interested in {product.category}",
-                    keywords_matched=keywords,
-                    contact_method="social"
-                )
-            else:
-                lead = GeneratedLead(
-                    lead_id=lead_id,
-                    source=source,
-                    prospect_name=f"Lead_{i}",
-                    prospect_email=f"lead_{i}@email.com",
-                    prospect_location=product.geographic_scope,
-                    fit_score=fit_score,
-                    reason_fit=f"Qualified lead for {product.name}",
-                    keywords_matched=keywords,
-                    contact_method="email"
-                )
-
-            leads.append(lead)
-
-        return leads
+        Google Maps se busca con domains/lead_generation/places_source.py (async, vía
+        /growth/prospects/search). LinkedIn, marketplace y redes sociales no tienen
+        conector todavía.
+        """
+        logger.warning(
+            "Lead source %s sin integración real; campaña %s no genera prospectos (limit=%d)",
+            source.value, campaign_id, limit,
+        )
+        return []
 
     def get_campaign_leads(self, campaign_id: str, min_fit_score: float = 0.7) -> List[GeneratedLead]:
         """Get qualified leads from campaign"""
