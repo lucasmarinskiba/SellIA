@@ -1,20 +1,29 @@
-"""Phase 31 - Psychology Sales System (Jordan Belfort Method)."""
+"""Phase 31 - Psychology Sales System (Jordan Belfort Method), in Spanish.
 
-from dataclasses import dataclass
-from datetime import datetime, timedelta
-from typing import List, Optional, Dict, Any
+The engines here store what the prospect said and build the scripts. The moves that depend on a
+business fact (scarcity, deadlines, customer proof, guarantees) are gated in psychology_intelligence:
+without the fact they are not produced.
+"""
+
 import json
-from sqlalchemy import select
+import logging
+from dataclasses import dataclass
+from typing import Any, Dict, List, Mapping, Optional
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domains.enterprise.psychology_intelligence import (
+    PAIN_RX,
+    TIMELINE_RX,
+    annual_amounts,
+    classify_objection,
+    is_positive_reply,
+    urgency_triggers,
+)
 from app.models.psychology_sales import (
     DiscoveryResponse,
     NeedNarrative,
-    ObjectionHandling,
-    CloseAttempt,
-    SalesConversation,
 )
-import logging
 
 try:
     from anthropic import Anthropic
@@ -22,6 +31,9 @@ except ImportError:
     Anthropic = None
 
 logger = logging.getLogger(__name__)
+
+# The Claude path is only taken when a key is passed in; the routes do not pass one.
+CLAUDE_MODEL = "claude-opus-5"
 
 
 @dataclass
@@ -49,34 +61,34 @@ class DiscoveryQuestionsEngine:
 
     QUESTION_HIERARCHY = {
         "rapport": [
-            "Tell me about {company_name} and what you folks focus on.",
-            "How long have you been in your current role?",
-            "What's the size of your team?",
+            "Cuéntame sobre {company_name} y a qué se dedican.",
+            "¿Cuánto tiempo llevas en tu puesto actual?",
+            "¿Cuántas personas hay en tu equipo?",
         ],
         "problem": [
-            "What's your biggest challenge right now?",
-            "Where are you losing time or money?",
-            "What keeps you up at night about your business?",
+            "¿Cuál es tu mayor desafío en este momento?",
+            "¿Dónde sientes que se pierde más tiempo o dinero?",
+            "¿Qué es lo que más te preocupa de tu negocio?",
         ],
         "impact": [
-            "How much is that costing you annually?",
-            "What's the impact on your team when this happens?",
-            "If this continued for 12 months, what happens to your business?",
+            "¿Cuánto les cuesta eso al año, más o menos?",
+            "¿Qué pasa con tu equipo cuando eso ocurre?",
+            "Si esto sigue 12 meses igual, ¿qué pasa con el negocio?",
         ],
         "status_quo": [
-            "How are you handling it now?",
-            "What solutions have you already tried?",
-            "Why hasn't that worked out?",
+            "¿Cómo lo resuelven hoy?",
+            "¿Qué soluciones ya probaron?",
+            "¿Por qué no terminaron de funcionar?",
         ],
         "desired": [
-            "What would ideal look like for you?",
-            "If you could wave a magic wand, what changes?",
-            "What would you do with the time/money you'd save?",
+            "¿Cómo se vería la situación ideal para ti?",
+            "Si pudieras cambiar una sola cosa, ¿cuál sería?",
+            "¿Qué harías con el tiempo o el dinero que se ahorre?",
         ],
         "authority": [
-            "Who else needs to sign off on this decision?",
-            "What's your decision process?",
-            "When could we get them involved in a conversation?",
+            "¿Quién más tiene que dar el visto bueno para esta decisión?",
+            "¿Cómo es el proceso para decidir algo así?",
+            "¿Cuándo podríamos sumar a esa persona a una conversación?",
         ],
     }
 
@@ -97,7 +109,8 @@ class DiscoveryQuestionsEngine:
         }
 
         hierarchy_type = stage_to_hierarchy.get(deal_stage, "problem")
-        base_questions = self.QUESTION_HIERARCHY.get(hierarchy_type, [])
+        company = prospect.get("company_name") or "tu empresa"
+        base_questions = [q.format(company_name=company) for q in self.QUESTION_HIERARCHY.get(hierarchy_type, [])]
 
         if not self.claude:
             return [
@@ -112,24 +125,24 @@ class DiscoveryQuestionsEngine:
 
         # Personalize with Claude
         prompt = f"""
-        Generate 3 discovery questions for:
-        Company: {prospect.get('company_name')}
-        Industry: {prospect.get('industry')}
-        Role: {prospect.get('role')}
-        Stage: {deal_stage}
+        Genera 3 preguntas de descubrimiento en español para:
+        Empresa: {prospect.get('company_name')}
+        Industria: {prospect.get('industry')}
+        Rol: {prospect.get('role')}
+        Etapa: {deal_stage}
 
-        Category: {hierarchy_type}
+        Categoría: {hierarchy_type}
 
-        Base questions:
-        {json.dumps(base_questions)}
+        Preguntas base:
+        {json.dumps(base_questions, ensure_ascii=False)}
 
-        Personalize for this prospect. Focus on making THEM talk, not you selling.
-        Format as JSON array with fields: question, psychology, expected_response_type
+        Personaliza para este prospecto. Que hable ÉL, no que vendas tú.
+        Responde solo un array JSON con los campos: question, psychology, expected_response_type
         """
 
         try:
             message = self.claude.messages.create(
-                model="claude-opus",
+                model=CLAUDE_MODEL,
                 max_tokens=800,
                 messages=[{"role": "user", "content": prompt}]
             )
@@ -181,22 +194,8 @@ class DiscoveryQuestionsEngine:
     def _analyze_response(self, response: str) -> Dict[str, Any]:
         """Analyze response for pain points, needs, urgency."""
 
-        # English and Spanish: the product sells in Spanish, and the English-only list missed
-        # almost every real Spanish answer ("Pierde 20 horas por semana, está frustrado" had no pain point).
-        pain_keywords = [
-            "losing", "wasting", "frustrated", "struggling", "broken", "pain", "problem",
-            "pierd", "perd", "frustr", "problema", "dolor", "complica", "tiempo", "no funciona", "se rompe", "caro",
-        ]
-        pain_points = []
-        for keyword in pain_keywords:
-            if keyword in response.lower():
-                pain_points.append(response)
-
-        # Simple urgency calc (1-10)
-        urgency_keywords = ["asap", "urgent", "immediately", "now", "critical", "urgente", "ya", "inmediat", "cuanto antes", "esta semana"]
-        urgency = 5
-        if any(kw in response.lower() for kw in urgency_keywords):
-            urgency = 8
+        pain_points = [response] if PAIN_RX.search(response) else []
+        urgency = 8 if TIMELINE_RX.search(response) else 5
 
         return {
             "pain_points": pain_points,
@@ -209,14 +208,14 @@ class DiscoveryQuestionsEngine:
         """Get psychology principle for question type."""
 
         psychology_map = {
-            "rapport": "Build trust, get them comfortable talking",
-            "problem": "Let them identify their own problem",
-            "impact": "Make THEM quantify the cost",
-            "status_quo": "Help them see current solution failing",
-            "desired": "Make THEM describe the need they're creating",
-            "authority": "Remove decision objections before proposal",
+            "rapport": "Generar confianza y que se sienta cómodo hablando",
+            "problem": "Que identifique él mismo el problema",
+            "impact": "Que él mismo cuantifique el costo",
+            "status_quo": "Ayudarlo a ver que la solución actual falla",
+            "desired": "Que describa la necesidad que se está creando",
+            "authority": "Quitar objeciones de decisión antes de la propuesta",
         }
-        return psychology_map.get(hierarchy_type, "Build conversation")
+        return psychology_map.get(hierarchy_type, "Construir la conversación")
 
     def _get_response_type(self, hierarchy_type: str) -> str:
         """Get expected response type."""
@@ -265,57 +264,36 @@ class NeedCreationEngine:
     def _extract_pain_points(self, responses: List[str]) -> List[str]:
         """Extract pain points from discovery responses."""
 
-        pain_keywords = ["losing", "wasting", "frustrated", "struggling", "broken", "pain"]
-        pain_points = []
-
-        for response in responses:
-            if any(keyword in response.lower() for keyword in pain_keywords):
-                pain_points.append(response)
+        pain_points = [response for response in responses if PAIN_RX.search(response)]
 
         return pain_points[:3]  # Top 3
 
     def _calculate_financial_impact(self, pain_points: List[str]) -> float:
-        """Calculate annual financial impact."""
+        """Yearly cost the prospect named in their own words. 0.0 when they named none."""
 
-        # Simplified: extract numbers from pain points
-        import re
-
-        total_impact = 0
-        for pain in pain_points:
-            matches = re.findall(r'\$?([\d,]+)', pain)
-            for match in matches:
-                try:
-                    amount = float(match.replace(",", ""))
-                    if amount < 10000:  # Per unit cost
-                        amount *= 52  # Annualize
-                    total_impact += amount
-                except:
-                    pass
-
-        return max(total_impact, 50000)  # Conservative minimum
+        return max((sum(annual_amounts(pain)) for pain in pain_points), default=0.0)
 
     def _generate_claude_narrative(self, pain_points: List[str], impact: float) -> str:
         """Generate need narrative using Claude."""
 
         prompt = f"""
-        Create a wake-up-call narrative that makes buyer see they NEED to act:
+        Escribe en español una narrativa que haga ver al comprador que NECESITA actuar:
 
-        Pain Points: {json.dumps(pain_points)}
-        Annual Impact: ${impact:,.0f}
+        Dolores (en sus palabras): {json.dumps(pain_points, ensure_ascii=False)}
+        Costo anual que él mencionó: {f"${impact:,.0f}" if impact > 0 else "no lo mencionó"}
 
-        Structure:
-        1. Validate problem (not alone)
-        2. Quantify cost ("costing you...")
-        3. Show trend ("if unchanged...")
-        4. Create urgency ("competitors are...")
-        5. Position hope ("there IS a way...")
+        Estructura:
+        1. Validar el problema (no está solo)
+        2. Cuantificar el costo, solo con sus números
+        3. Mostrar la tendencia ("si sigue igual...")
+        4. Positionar la esperanza ("sí hay una forma de resolverlo...")
 
-        Tone: Conversational, empathetic, real. NOT salesy.
+        Tono: conversacional, empático, real. NADA de frases de venta. No inventes cifras ni clientes.
         """
 
         try:
             message = self.claude.messages.create(
-                model="claude-opus",
+                model=CLAUDE_MODEL,
                 max_tokens=800,
                 messages=[{"role": "user", "content": prompt}]
             )
@@ -325,71 +303,29 @@ class NeedCreationEngine:
             return self._get_template_narrative(pain_points, impact)
 
     def _get_template_narrative(self, pain_points: List[str], impact: float) -> str:
-        """Template narrative."""
+        """Template narrative. It states a cost only when the prospect named one."""
 
-        return f"""
-        You're facing a real challenge that most companies in your space are dealing with right now.
-
-        Here's what's happening: {pain_points[0] if pain_points else "Your current solution isn't scaled"}
-
-        What does that cost you? About ${impact:,.0f} per year in lost productivity, missed opportunities, and team burnout.
-
-        The problem is, if you keep going status quo, that number only grows. Your competitors? They're already fixing this.
-
-        But here's the good news: There IS a proven way to solve this. And we've built it.
-        """
+        parts = []
+        if pain_points:
+            parts.append(f'Lo que describiste: "{pain_points[0]}".')
+        else:
+            parts.append("Hoy hay un problema que vale la pena resolver.")
+        if impact > 0:
+            parts.append(f"Según tus propios números, eso equivale a unos ${impact:,.0f} al año.")
+        parts.append("Si sigue igual, ese costo no baja solo.")
+        return " ".join(parts)
 
 
 class UrgencyTriggerEngine:
-    """Generate legitimate FOMO/urgency triggers."""
+    """Urgency lines backed by facts the business supplies. No facts, no urgency."""
 
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    def generate_urgency_triggers(self, deal: Dict) -> List[Dict[str, Any]]:
-        """Create FOMO triggers (legitimate, not manipulative)."""
+    def generate_urgency_triggers(self, evidence: Optional[Mapping[str, Any]] = None) -> List[Dict[str, Any]]:
+        """Urgency lines the business can back. Nothing is invented: a missing fact drops the line."""
 
-        triggers = []
-
-        # 1. Supply scarcity (real capacity limits)
-        if deal.get("stage") in ["proposal", "negotiation"]:
-            triggers.append({
-                "type": "supply_scarcity",
-                "trigger": "We're at capacity. Next cohort is April.",
-                "why_true": "Limited onboarding team",
-                "deadline": "End of quarter",
-                "messaging": "Our onboarding team can only take 3 new clients this quarter. After that, we're full until April.",
-            })
-
-        # 2. Price increase (scheduled & real)
-        triggers.append({
-            "type": "price_increase",
-            "trigger": "Pricing increases March 1st",
-            "why_true": "We're raising prices on new customers",
-            "deadline": "Feb 28",
-            "messaging": "We just increased pricing. Current pricing locks in until Feb 28.",
-        })
-
-        # 3. Social proof (actual wins in their space)
-        if deal.get("industry"):
-            triggers.append({
-                "type": "social_proof",
-                "trigger": f"We just signed 2 other {deal['industry']} companies",
-                "why_true": "Recent wins in their category",
-                "deadline": "Now",
-                "messaging": "Your competitors are already using this. You'd be the first to [specific advantage].",
-            })
-
-        # 4. Competitive threat (intelligence-based)
-        triggers.append({
-            "type": "competitive",
-            "trigger": "Your competitors are 6 months ahead",
-            "why_true": "Market intel",
-            "deadline": "Before gap widens",
-            "messaging": "The way sales works is changing. If your team doesn't adapt now, they'll be at a disadvantage.",
-        })
-
-        return triggers
+        return urgency_triggers(evidence or {})
 
     def weave_into_narrative(self, triggers: List[Dict], conversation: str) -> str:
         """Weave urgency into conversation naturally."""
@@ -399,7 +335,7 @@ class UrgencyTriggerEngine:
 
         result = conversation
         for trigger in triggers[:2]:  # Use top 2 triggers
-            result += f"\n\n[Natural insertion point: {trigger['messaging']}]"
+            result += f"\n\n[Punto natural para decirlo: {trigger['messaging']}]"
 
         return result
 
@@ -413,24 +349,24 @@ class PsychologyObjectionHandler:
 
     OBJECTION_FRAMEWORKS = {
         "price": {
-            "validate": "I get it, budget's tight.",
-            "reframe": "Price of regret vs price of solution",
-            "question": "What would it cost NOT to fix this?",
+            "validate": "Entiendo que el presupuesto importa.",
+            "reframe": "Comparar el costo de resolverlo con el costo de seguir igual.",
+            "question": "¿Cuánto les cuesta hoy no resolverlo?",
         },
         "time": {
-            "validate": "You're busy, I know.",
-            "reframe": "5 hours now saves 10/week for months",
-            "question": "What's your time worth?",
+            "validate": "Tiene sentido, el tiempo es escaso.",
+            "reframe": "Pensar cuánto tiempo devuelve, no solo cuánto pide.",
+            "question": "¿Cuánto vale una hora de tu tiempo hoy?",
         },
         "need": {
-            "validate": "I totally hear that.",
-            "reframe": "Future state: will this get better or worse?",
-            "question": "What happens in 12 months if nothing changes?",
+            "validate": "Está bien no estar convencido todavía.",
+            "reframe": "Lo importante es si el problema va a mejorar o a empeorar.",
+            "question": "¿Qué pasa en 12 meses si nada cambia?",
         },
         "authority": {
-            "validate": "Smart to check with them.",
-            "reframe": "Get them excited FIRST, then sell internally",
-            "question": "Who would benefit most if we fixed this?",
+            "validate": "Es buena idea consultarlo con quien decide.",
+            "reframe": "Conviene que esa persona vea el problema con tus números.",
+            "question": "¿Quién se beneficiaría más si esto se resuelve?",
         },
     }
 
@@ -444,23 +380,23 @@ class PsychologyObjectionHandler:
             return f"{framework['validate']} {framework['question']}"
 
         prompt = f"""
-        Create psychology-based response to objection:
+        Escribe en español una respuesta con psicología a esta objeción:
 
-        Objection: "{objection}"
-        Type: {objection_type}
-        Framework: {json.dumps(framework)}
+        Objeción: "{objection}"
+        Tipo: {objection_type}
+        Marco: {json.dumps(framework, ensure_ascii=False)}
 
-        Response should:
-        1. Validate (never dismiss): "{framework['validate']}"
-        2. Reframe perspective: "{framework['reframe']}"
-        3. Ask question: "{framework['question']}"
+        La respuesta debe:
+        1. Validar (nunca descartar): "{framework['validate']}"
+        2. Reencuadrar la perspectiva: "{framework['reframe']}"
+        3. Hacer una pregunta: "{framework['question']}"
 
-        Make it conversational, not salesy. 2-3 sentences max.
+        Conversacional, no de vendedor. 2-3 frases como máximo. No inventes cifras ni clientes.
         """
 
         try:
             message = self.claude.messages.create(
-                model="claude-opus",
+                model=CLAUDE_MODEL,
                 max_tokens=300,
                 messages=[{"role": "user", "content": prompt}]
             )
@@ -472,18 +408,7 @@ class PsychologyObjectionHandler:
     def _classify_objection(self, objection: str) -> str:
         """Classify objection type."""
 
-        objection_lower = objection.lower()
-
-        if "price" in objection_lower or "cost" in objection_lower or "expensive" in objection_lower:
-            return "price"
-        elif "time" in objection_lower or "busy" in objection_lower or "implement" in objection_lower:
-            return "time"
-        elif "need" in objection_lower or "don't" in objection_lower or "not sure" in objection_lower:
-            return "need"
-        elif "boss" in objection_lower or "team" in objection_lower or "approval" in objection_lower:
-            return "authority"
-
-        return "need"
+        return classify_objection(objection)
 
 
 class AssumptiveCloseEngine:
@@ -495,33 +420,33 @@ class AssumptiveCloseEngine:
     CLOSE_SEQUENCE = [
         {
             "step": 1,
-            "commitment": "Should we get your team involved in a 30-min call?",
-            "psychology": "Low-barrier small YES",
-            "expected": "Sure, when?",
+            "commitment": "¿Agendamos una llamada de 30 minutos con tu equipo?",
+            "psychology": "Un sí pequeño, con poco compromiso",
+            "expected": "Sí, ¿cuándo?",
         },
         {
             "step": 2,
-            "commitment": "Which works better: annual or monthly pricing?",
-            "psychology": "Choice assumes they're buying",
-            "expected": "Probably annual",
+            "commitment": "¿Te conviene más el plan anual o el mensual?",
+            "psychology": "Elegir asume que va a comprar",
+            "expected": "Probablemente anual",
         },
         {
             "step": 3,
-            "commitment": "Let's do a 30-day pilot first to prove ROI",
-            "psychology": "Removes risk, enables commitment",
-            "expected": "Okay, let's try it",
+            "commitment": "¿Probamos un piloto de 30 días para medir el resultado?",
+            "psychology": "Quita riesgo y facilita el compromiso",
+            "expected": "Dale, probemos",
         },
         {
             "step": 4,
-            "commitment": "Should we add advanced features?",
-            "psychology": "Small upsell after main commitment",
-            "expected": "Maybe later",
+            "commitment": "¿Te interesa sumar alguna función avanzada desde el inicio?",
+            "psychology": "Un upsell pequeño después del compromiso principal",
+            "expected": "Quizás más adelante",
         },
         {
             "step": 5,
-            "commitment": "Perfect. I'll send the contract today. You good?",
-            "psychology": "Momentum + assumption = automatic yes",
-            "expected": "Yep, send it",
+            "commitment": "Perfecto. Te envío el contrato hoy. ¿Lo revisamos juntos?",
+            "psychology": "Impulso + suposición = un sí casi automático",
+            "expected": "Sí, mándalo",
         },
     ]
 
@@ -531,7 +456,7 @@ class AssumptiveCloseEngine:
         if step < len(self.CLOSE_SEQUENCE):
             return self.CLOSE_SEQUENCE[step]["commitment"]
 
-        return "So you're ready to move forward?"
+        return "¿Entonces estás listo para avanzar?"
 
     def get_next_close(self, current_response: str) -> tuple:
         """Get next close based on their response."""
@@ -548,5 +473,4 @@ class AssumptiveCloseEngine:
     def _is_positive_response(self, response: str) -> bool:
         """Determine if response is positive."""
 
-        positive_words = ["yes", "sure", "ok", "good", "let's", "when", "how", "sounds"]
-        return any(word in response.lower() for word in positive_words)
+        return is_positive_reply(response)
