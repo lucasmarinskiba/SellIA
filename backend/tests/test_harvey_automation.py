@@ -180,14 +180,11 @@ async def test_social_networks_are_not_prospects(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_search_needs_a_key_and_drops_platform_results(monkeypatch):
-    monkeypatch.delenv("BRAVE_SEARCH_API_KEY", raising=False)
-    assert not discovery.search_available()
+async def test_search_needs_the_businesss_own_key_and_drops_platform_results():
     async with discovery.make_client(httpx.MockTransport(lambda r: httpx.Response(500))) as client:
-        with pytest.raises(discovery.DiscoveryError, match="BRAVE_SEARCH_API_KEY"):
-            await discovery.search_sites(client, "panaderías córdoba")
+        with pytest.raises(discovery.DiscoveryError, match="clave"):
+            await discovery.search_sites(client, "panaderías córdoba", provider="brave", api_key="")
 
-    monkeypatch.setenv("BRAVE_SEARCH_API_KEY", "k")
     payload = {"web": {"results": [
         {"url": "https://panaderiasol.com/menu"}, {"url": "https://www.facebook.com/x"},
         {"url": "https://panaderiasol.com/otra"}, {"url": "https://otra.com.ar/"},
@@ -199,8 +196,30 @@ async def test_search_needs_a_key_and_drops_platform_results(monkeypatch):
         return httpx.Response(200, json=payload)
 
     async with discovery.make_client(httpx.MockTransport(handler)) as client:
-        urls = await discovery.search_sites(client, "panaderías córdoba")
+        urls = await discovery.search_sites(client, "panaderías córdoba", provider="brave", api_key="k")
     assert urls == ["https://panaderiasol.com", "https://otra.com.ar"] and seen["token"] == "k"
+
+
+@pytest.mark.asyncio
+async def test_google_places_search_returns_the_sites_with_the_businesss_key():
+    seen = {}
+
+    def handler(request):
+        seen["key"] = request.headers["x-goog-api-key"]
+        seen["mask"] = request.headers["x-goog-fieldmask"]
+        return httpx.Response(200, json={"places": [{"websiteUri": "https://lodemarta.com/menu"}, {}, {"websiteUri": "https://www.instagram.com/x"}]})
+
+    async with discovery.make_client(httpx.MockTransport(handler)) as client:
+        urls = await discovery.search_sites(client, "viandas rosario", provider="google", api_key="gk")
+    assert urls == ["https://lodemarta.com"] and seen == {"key": "gk", "mask": "places.websiteUri"}
+
+
+@pytest.mark.asyncio
+async def test_a_failing_search_never_leaks_the_key(caplog):
+    async with discovery.make_client(httpx.MockTransport(lambda r: httpx.Response(403))) as client:
+        with pytest.raises(discovery.DiscoveryError) as e:
+            await discovery.search_sites(client, "x", provider="google", api_key="super-secret-key")
+    assert "super-secret-key" not in str(e.value) and "super-secret-key" not in caplog.text
 
 
 # ── discovery through the service ─────────────────────────────────────────
@@ -430,9 +449,8 @@ async def test_cycle_stages_the_answer_to_a_reply_when_drafting_is_on(db, monkey
 @pytest.mark.asyncio
 async def test_status_reports_readiness_and_queues(db, monkeypatch, smtp):
     svc, biz, profile, prospect = await _setup(db)
-    monkeypatch.delenv("BRAVE_SEARCH_API_KEY", raising=False)
     st = await svc.status(biz, profile)
-    assert st["email_connected"] is False and st["search_available"] is False
+    assert st["email_connected"] is False and st["search_available"] is False and st["search_provider"] is None
     assert st["prospects"] == {"new": 1} and st["send_cap_today"] == 5  # warming up
     await _connect_mailbox(db, biz)
     assert (await svc.status(biz, profile))["email_connected"] is True
@@ -489,3 +507,80 @@ async def test_http_endpoints_serialize_and_enforce_the_flow(db, monkeypatch, sm
         assert nothing.status_code == 422  # no urls and no keywords in the ideal customer
         listed = (await c.get(f"{base}/prospects")).json()
         assert listed[0]["source"] == "manual" and listed[0]["source_url"] == ""
+
+
+# ── each business brings its own search key ───────────────────────────────
+@pytest.mark.asyncio
+async def test_search_keys_are_per_business_encrypted_write_only_and_removable(db):
+    svc, biz, profile, _ = await _setup(db)
+    other_svc, other_biz, other_profile, _ = await _setup(db, biz=type(biz)())
+
+    assert await svc._search_config(biz.id, profile) is None  # no key, no search: the platform pays for nothing
+    await svc.set_search_keys(biz.id, profile, brave="brave-key", google="google-key", provider="google")
+    assert await svc._search_config(biz.id, profile) == ("google", "google-key")
+    st = await svc.status(biz, profile)
+    assert st["has_brave_key"] and st["has_google_key"] and st["search_provider"] == "google"
+    assert "key" not in str({k: v for k, v in st.items() if k.startswith("has_") is False and k != "search_provider"})
+    assert await other_svc._search_config(other_biz.id, other_profile) is None  # another business sees nothing
+
+    await svc.set_search_keys(biz.id, profile, google="")  # removing one falls back to the other
+    assert await svc._search_config(biz.id, profile) == ("brave", "brave-key")
+    await svc.set_search_keys(biz.id, profile)  # None leaves everything as it is
+    assert await svc._search_config(biz.id, profile) == ("brave", "brave-key")
+
+
+@pytest.mark.asyncio
+async def test_discovery_by_query_without_a_key_explains_how_to_add_one(db):
+    svc, biz, profile, _ = await _setup(db)
+    with pytest.raises(HarveyError) as e:
+        await svc.discover(biz, profile, queries=["panaderías córdoba"])
+    assert e.value.status_code == 503 and "tu propia clave" in str(e.value)
+
+
+@pytest.mark.asyncio
+async def test_discovery_by_query_uses_the_businesss_key(db, monkeypatch):
+    _public_dns(monkeypatch)
+    svc, biz, profile, _ = await _setup(db)
+    await svc.set_search_keys(biz.id, profile, brave="k")
+    pages = {"/robots.txt": (404, ""), "/": (200, '<title>Lo de Marta</title><a href="mailto:hola@lodemarta.com">m</a>')}
+
+    def handler(request):
+        if request.url.host == "api.search.brave.com":
+            assert request.headers["x-subscription-token"] == "k"
+            return httpx.Response(200, json={"web": {"results": [{"url": "https://lodemarta.com/x"}]}})
+        status, text = pages.get(request.url.path, (404, ""))
+        return httpx.Response(status, text=text, headers={"content-type": "text/html"})
+
+    out = await svc.discover(biz, profile, queries=["viandas"], transport=httpx.MockTransport(handler))
+    assert out["counts"]["created"] == 1
+
+
+# ── CSV import: the business's own list ───────────────────────────────────
+@pytest.mark.asyncio
+async def test_csv_import_reads_the_businesss_own_list_and_reports_what_it_skips(db):
+    svc, biz, profile, _ = await _setup(db, do_not_contact=["bloqueado.com"])
+    raw = (
+        "Nombre,Correo,Empresa,Sitio,Cargo\n"
+        "Luis Gómez,luis@empresa.com,Empresa SA,https://empresa.com,Dueño\n"
+        "Sin Mail,no-es-un-mail,X,,\n"
+        "Otro,ana@cliente.com,Cliente SA,,\n"      # already loaded by _setup
+        "Bloq,x@bloqueado.com,B,,\n"
+        "Marta,MARTA@empresa.com,,,\n"
+    ).encode("utf-8-sig")
+    out = await svc.import_csv(biz, profile, raw)
+    assert out["created"] == 2 and out["rows"] == 5
+    assert [r["row"] for r in out["rejected"]] == ["3"]
+    assert {s["email"] for s in out["skipped"]} == {"ana@cliente.com", "x@bloqueado.com"}
+    luis = next(p for p in await svc.list_prospects(biz.id) if p.email == "luis@empresa.com")
+    assert (luis.first_name, luis.last_name, luis.company, luis.email_status) == ("Luis", "Gómez", "Empresa SA", "provided")
+
+
+@pytest.mark.asyncio
+async def test_csv_import_needs_an_email_column_and_a_sane_size(db):
+    svc, biz, profile, _ = await _setup(db)
+    with pytest.raises(HarveyError) as e:
+        await svc.import_csv(biz, profile, b"name,company\nLuis,X\n")
+    assert e.value.status_code == 422 and "email" in str(e.value)
+    with pytest.raises(HarveyError) as e:
+        await svc.import_csv(biz, profile, b"email\n" + b"a@b.com\n" * 200_000)
+    assert e.value.status_code == 413

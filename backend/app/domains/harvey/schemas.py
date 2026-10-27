@@ -185,6 +185,9 @@ class StatusResponse(BaseModel):
     email_connected: bool
     model_available: bool
     search_available: bool
+    search_provider: str | None
+    has_brave_key: bool
+    has_google_key: bool
     in_send_window: bool
     sent_today: int
     send_cap_today: int
@@ -193,3 +196,18 @@ class StatusResponse(BaseModel):
     prospects: dict[str, int]
     outbox: dict[str, int]
     replies: int
+
+
+class DiscoveryKeysIn(BaseModel):
+    """Keys are write-only: ``None`` leaves one as it is, an empty string removes it."""
+
+    brave_api_key: str | None = Field(None, max_length=300)
+    google_places_api_key: str | None = Field(None, max_length=300)
+    search_provider: str | None = Field(None, pattern="^(brave|google)$")
+
+
+class ImportCsvResponse(BaseModel):
+    rows: int
+    created: int
+    skipped: list[dict[str, str]]
+    rejected: list[dict[str, str]]
