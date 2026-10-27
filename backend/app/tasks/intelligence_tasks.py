@@ -4,6 +4,7 @@ Celery tasks for System Intelligence Engine.
 Automated analysis, improvement generation, and rollout.
 """
 
+import uuid
 from datetime import datetime, timezone, timedelta
 
 from celery import shared_task

@@ -215,6 +215,7 @@ class RetryEngine:
             f"Starting retry execution: {operation_name} (id: {operation_id}, policy: {policy.value})"
         )
 
+        last_exc: Exception | None = None
         for attempt in range(config.max_retries + 1):
             # Circuit breaker check
             if circuit_breaker and not circuit_breaker.can_attempt():
@@ -254,11 +255,13 @@ class RetryEngine:
             except asyncio.TimeoutError as e:
                 error_msg = f"Timeout after {config.timeout}s"
                 self._record_attempt(history, attempt, config, error_msg, timeout=True)
+                last_exc = e
 
             except Exception as e:
                 error_msg = str(e)
                 status_code = getattr(e, "status_code", None)
                 self._record_attempt(history, attempt, config, error_msg, status_code)
+                last_exc = e
 
             # Determinar si reintentar
             if attempt < config.max_retries:
@@ -284,7 +287,7 @@ class RetryEngine:
                     f"(attempts: {config.max_retries + 1}, duration: {elapsed:.2f}s, "
                     f"error: {error_msg})"
                 )
-                raise
+                raise last_exc
 
     def _calculate_delay(self, attempt: int, config: RetryConfig) -> float:
         """Calcula delay con exponential backoff + jitter."""

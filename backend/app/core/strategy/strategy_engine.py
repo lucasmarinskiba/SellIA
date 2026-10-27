@@ -6,6 +6,11 @@ from typing import Optional, Dict, Any, List, Tuple
 from datetime import datetime, timedelta
 import logging
 import json
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.core.strategy.business_analyzer import BusinessProfile
+
 
 logger = logging.getLogger(__name__)
 

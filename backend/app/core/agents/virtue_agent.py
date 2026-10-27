@@ -41,8 +41,8 @@ class VirtueAgent:
         "guaranteed results",
         "100% success",
         "risk-free",
-        "money-back guaranteed" if not verified else "",
-        "fastest in market" if not verified else "",
+        "money-back guaranteed",
+        "fastest in market",
         "only solution",
         "works for everyone",
     ]

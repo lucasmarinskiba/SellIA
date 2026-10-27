@@ -6,6 +6,7 @@ Listens to events from the event bus and routes them to appropriate autopilot ac
 import uuid
 from typing import Optional, Any
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.autopilot.service import AutopilotEngine, AutopilotExecutor, AutopilotActionType, AutopilotActionStatus

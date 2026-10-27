@@ -5,13 +5,14 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
 from app.domains.users.models import User
 from app.domains.services import services as service_services
-from app.domains.services.models import ServiceDelivery, Appointment
+from app.domains.services.models import ServiceDelivery, ServiceDeliveryStatus, Appointment
 from app.domains.services.schemas import (
     ServiceDeliveryCreate, ServiceDeliveryUpdate, ServiceDeliveryResponse,
     AppointmentCreate, AppointmentUpdate, AppointmentResponse, AppointmentListResponse,

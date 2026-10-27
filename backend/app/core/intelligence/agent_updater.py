@@ -5,6 +5,7 @@ Actualiza automáticamente los agentes IA cuando los modelos ML mejoran.
 Guarda versiones anteriores para rollback.
 """
 
+import os
 import uuid
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any

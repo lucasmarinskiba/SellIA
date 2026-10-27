@@ -3,14 +3,15 @@ Example: How to integrate multi-tenant system into FastAPI app.
 Copy these patterns into your app/main.py
 """
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.multi_tenant import (
+from app.core.multi_tenant import TenantIsolation
+from app.core.multi_tenant.tenant_context import (
+    TenantContext,
     TenantContextMiddleware,
-    TenantIsolation,
     get_tenant_context,
 )
 from app.core.multi_tenant.example_implementation import router as tenant_router

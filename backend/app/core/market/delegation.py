@@ -3,6 +3,11 @@
 import logging
 from typing import Any, Dict, Optional, List
 from enum import Enum
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.core.market.market_detector import MarketProfile
+
 
 logger = logging.getLogger(__name__)
 

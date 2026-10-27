@@ -5,6 +5,11 @@ import sys
 from typing import Any, Dict, List
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.core.market.market_detector import MarketProfile
+
 
 logger = logging.getLogger(__name__)
 
