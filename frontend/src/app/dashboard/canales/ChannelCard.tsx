@@ -2,13 +2,14 @@
 
 import { Check, Clock, Copy, Loader2, Trash2, Zap, AlertCircle, CheckCircle2, PauseCircle } from 'lucide-react'
 import type { ChannelConnection } from '@/lib/channels'
-import { canSwitchAccount, channelTitle, isIncomplete, needsReconnect, platformMeta, STATUS_STYLE } from './catalog'
+import { canSwitchAccount, channelTitle, isIncomplete, needsReconnect, platformMeta, stateBadge } from '@/lib/channelCatalog'
 
-const STATUS_ICON = {
+const STATE_ICON = {
   connected: CheckCircle2,
-  pending: Clock,
+  toVerify: Clock,
+  incomplete: PauseCircle,
   error: AlertCircle,
-  disabled: PauseCircle,
+  other: PauseCircle,
 } as const
 
 const fmtDate = (iso: string | null): string => (iso ? new Date(iso).toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short' }) : null) ?? ''
@@ -28,12 +29,8 @@ export function ChannelCard({ channel, testing, copied, onTest, onComplete, onSw
   const meta = platformMeta(channel.platform)
   const incomplete = isIncomplete(channel)
   const reconnect = needsReconnect(channel)
-  const style = incomplete
-    ? { label: 'Sin completar', pill: 'bg-slate-100 text-slate-700 ring-slate-300', dot: 'bg-slate-400' }
-    : reconnect
-      ? { label: 'Hay que reconectar', pill: 'bg-red-50 text-red-800 ring-red-200', dot: 'bg-red-500' }
-      : (STATUS_STYLE[channel.status] ?? STATUS_STYLE.pending)
-  const StatusIcon = incomplete ? PauseCircle : reconnect ? AlertCircle : (STATUS_ICON[channel.status] ?? Clock)
+  const style = stateBadge(channel)
+  const StatusIcon = STATE_ICON[style.state]
   const switchable = canSwitchAccount(channel.platform) && !incomplete && !reconnect
   const title = channelTitle(channel)
   const Icon = meta.icon

@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AlertCircle, CheckCircle2, Clock, Plug, Plus, Search, X } from 'lucide-react'
 import { businessApi, type Business } from '@/lib/business'
@@ -10,7 +11,7 @@ import { ConnectModal, type ConnectDraft } from './ConnectModal'
 import {
   CATEGORIES, channelState, channelTitle, isIncomplete, ONE_CLICK_PLATFORMS, PLATFORMS, platformMeta, STATE_LABEL,
   type CategoryKey, type ChannelState,
-} from './catalog'
+} from '@/lib/channelCatalog'
 
 type Notice = { kind: 'ok' | 'error' | 'warn'; text: string } | null
 
@@ -326,7 +327,12 @@ export default function CanalesPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Canales</h1>
-            <p className="text-sm text-slate-500">Conectá tus plataformas de venta y comunicación en un solo lugar.</p>
+            <p className="text-sm text-slate-500">
+              Conectá tus plataformas de venta y comunicación en un solo lugar.{' '}
+              <Link href="/dashboard/platforms" className="font-medium text-slate-700 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange">
+                Ver actividad por plataforma
+              </Link>
+            </p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
