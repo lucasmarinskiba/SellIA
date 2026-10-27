@@ -1,7 +1,6 @@
 """
 SellIA Sellbot - Email Delivery + PostgreSQL Persistence
 Endpoints:
-- POST /api/v1/webhooks/whatsapp (Meta webhook)
 - POST /api/v1/webhooks/sendgrid (Email tracking)
 - POST /api/v1/sequences/cold-email (Email generation)
 - POST /api/v1/knowledge/ingest (PDF knowledge)
@@ -15,11 +14,10 @@ import logging
 import json
 import asyncio
 from contextlib import asynccontextmanager
-from fastapi import BackgroundTasks, FastAPI, Request, HTTPException, Depends
+from fastapi import FastAPI, Request, HTTPException, Depends
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
-from app.api.v1.whatsapp_webhook import whatsapp_receive
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -1747,31 +1745,6 @@ async def call_anthropic_api(system_prompt: str, user_message: str, retries: int
 
     raise HTTPException(status_code=503, detail=f"Anthropic API unavailable after {retries} attempts: {last_error}")
 
-async def send_whatsapp_message(to: str, text: str, phone_number_id: str, token: str) -> dict:
-    """Envía mensaje vía WhatsApp Graph API."""
-    url = f"https://graph.instagram.com/v18.0/{phone_number_id}/messages"
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                url,
-                params={"access_token": token},
-                json={
-                    "messaging_product": "whatsapp",
-                    "recipient_type": "individual",
-                    "to": to,
-                    "type": "text",
-                    "text": {"body": text},
-                },
-            )
-            response.raise_for_status()
-            return response.json()
-    except httpx.TimeoutException:
-        logger.error(f"WhatsApp API timeout for {to}")
-        raise
-    except httpx.HTTPError as e:
-        logger.error(f"WhatsApp API error for {to}: {e}")
-        raise
-
 # ============================================================
 # ENDPOINTS
 # ============================================================
@@ -1890,17 +1863,6 @@ async def queue_peek(count: int = 5):
     except Exception as e:
         logger.error(f"Queue peek error: {e}")
         return {"status": "error", "detail": str(e)}
-
-@app.post("/api/v1/webhooks/whatsapp")
-async def whatsapp_webhook(request: Request, background: BackgroundTasks):
-    """Meta WhatsApp webhook: delegado a app.api.v1.whatsapp_webhook.
-
-    Firma HMAC obligatoria, respuesta 200 inmediata, dedupe, memoria, opt-out y
-    límites viven allá. Este handler no tiene lógica propia para que no haya
-    dos caminos de respuesta distintos (antes esta copia no validaba firma).
-    """
-    return await whatsapp_receive(request, background)
-
 
 @app.post("/api/v1/sequences/cold-email")
 async def generate_cold_email_sequence(req: EmailSequenceRequest):
