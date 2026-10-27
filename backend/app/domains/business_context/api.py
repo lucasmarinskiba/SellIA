@@ -6,10 +6,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.business_access import require_business_access
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.domains.users.models import User
-from .service import BusinessContextService
+from .service import AmbiguousBusinessContext, BusinessContextService
 from .schemas import BusinessContextCreate, BusinessContextUpdate, BusinessContextRead
 from .models import BusinessContext
 from .angles_service import generate_communication_angles
@@ -21,13 +22,27 @@ def get_service(db: AsyncSession = Depends(get_db)) -> BusinessContextService:
     return BusinessContextService(db)
 
 
+async def _check_scope(db: AsyncSession, business_id: Optional[uuid.UUID], user: User, *, manage: bool) -> None:
+    """A named business must be one the caller may read (or manage). Without one, nothing is checked here."""
+    if business_id is not None:
+        await require_business_access(db, business_id, user, manage=manage)
+
+
+async def _resolve(service: BusinessContextService, user: User, business_id: Optional[uuid.UUID]):
+    try:
+        return await service.get_or_create_context(user.id, business_id)
+    except AmbiguousBusinessContext as e:
+        raise HTTPException(status_code=409, detail=str(e)) from None
+
+
 @router.get("", response_model=BusinessContextRead)
 async def get_context(
     business_id: Optional[uuid.UUID] = Query(None),
     user: User = Depends(get_current_user),
     service: BusinessContextService = Depends(get_service),
 ):
-    ctx = await service.get_or_create_context(user.id, business_id)
+    await _check_scope(service.db, business_id, user, manage=False)
+    ctx = await _resolve(service, user, business_id)
     return BusinessContextRead.model_validate(ctx)
 
 
@@ -38,7 +53,8 @@ async def create_or_update_context(
     user: User = Depends(get_current_user),
     service: BusinessContextService = Depends(get_service),
 ):
-    ctx = await service.get_or_create_context(user.id, business_id)
+    await _check_scope(service.db, business_id, user, manage=True)
+    ctx = await _resolve(service, user, business_id)
     updated = await service.update_context(user.id, ctx.id, data)
     if not updated:
         raise HTTPException(status_code=404, detail="Contexto no encontrado")
@@ -51,6 +67,7 @@ async def detect_context(
     user: User = Depends(get_current_user),
     service: BusinessContextService = Depends(get_service),
 ):
+    await _check_scope(service.db, business_id, user, manage=False)
     ctx = await service.detect_context_from_business_data(user.id, business_id)
     return BusinessContextRead.model_validate(ctx)
 
