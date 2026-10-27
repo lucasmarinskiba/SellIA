@@ -23,6 +23,7 @@ from app.domains.harvey.schemas import (
     ProspectsCreateResponse,
     ReplyIn,
     ReplyResponse,
+    SummaryResponse,
 )
 from app.domains.harvey.service import HarveyError, HarveyService
 from app.domains.users.models import User
@@ -90,9 +91,10 @@ async def add_prospects(
 @router.post(
     "/prospects/{prospect_id}/draft", response_model=OutboxItemResponse, status_code=status.HTTP_201_CREATED
 )
-async def draft_first_email(
+async def draft_email(
     business_id: UUID,
     prospect_id: UUID,
+    step: int = Query(1, ge=1, le=3, description="Paso de la secuencia (1 a 3)"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -103,7 +105,7 @@ async def draft_first_email(
         if not profile.is_enabled:
             raise HarveyError("Harvey está desactivado para este negocio", 409)
         prospect = await service.get_prospect(business_id, prospect_id)
-        return await service.draft_first_email(business, profile, prospect)
+        return await service.draft_step(business, profile, prospect, step)
     except HarveyError as e:
         raise _http(e) from e
 
@@ -181,3 +183,71 @@ async def reject_item(
     current_user: User = Depends(get_current_user),
 ):
     return await _decide(business_id, item_id, False, db, current_user)
+
+
+@router.post("/outbox/send-approved", response_model=SummaryResponse)
+async def send_approved(
+    business_id: UUID,
+    limit: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    business = await require_business_access(db, business_id, current_user, manage=True)
+    service = HarveyService(db)
+    try:
+        profile = await service.get_or_create_profile(business)
+        return {"counts": await service.send_approved(business, profile, limit)}
+    except HarveyError as e:
+        raise _http(e) from e
+
+
+@router.post("/outbox/{item_id}/send", response_model=OutboxItemResponse)
+async def send_item(
+    business_id: UUID,
+    item_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    business = await require_business_access(db, business_id, current_user, manage=True)
+    service = HarveyService(db)
+    try:
+        profile = await service.get_or_create_profile(business)
+        item = await service.get_outbox_item(business_id, item_id)
+        account = await service.require_account(business_id)
+        return await service.send_item(business, profile, item, account)
+    except HarveyError as e:
+        raise _http(e) from e
+
+
+@router.post("/sequences/run", response_model=SummaryResponse)
+async def run_sequences(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Draft the next email (step 2 or 3) for prospects whose previous one is due and unanswered."""
+    business = await require_business_access(db, business_id, current_user, manage=True)
+    service = HarveyService(db)
+    try:
+        profile = await service.get_or_create_profile(business)
+        if not profile.is_enabled:
+            raise HarveyError("Harvey está desactivado para este negocio", 409)
+        return {"counts": await service.plan_followups(business, profile)}
+    except HarveyError as e:
+        raise _http(e) from e
+
+
+@router.post("/inbox/sync", response_model=SummaryResponse)
+async def sync_inbox(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Read the business's inbox and record replies to Harvey's emails."""
+    business = await require_business_access(db, business_id, current_user, manage=True)
+    service = HarveyService(db)
+    try:
+        profile = await service.get_or_create_profile(business)
+        return {"counts": await service.sync_inbox(business, profile)}
+    except HarveyError as e:
+        raise _http(e) from e

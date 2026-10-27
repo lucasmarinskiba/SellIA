@@ -20,6 +20,7 @@ class ProfileUpdate(BaseModel):
     opt_out_line: str | None = Field(None, min_length=5, max_length=300)
     do_not_contact: list[str] | None = Field(None, max_length=1000)
     max_daily_drafts: int | None = Field(None, ge=1, le=200)
+    max_daily_sends: int | None = Field(None, ge=1, le=500)
 
 
 class ProfileResponse(BaseModel):
@@ -39,6 +40,8 @@ class ProfileResponse(BaseModel):
     opt_out_line: str
     do_not_contact: list[str]
     max_daily_drafts: int
+    max_daily_sends: int
+    inbox_synced_at: datetime | None
 
 
 class ProspectIn(BaseModel):
@@ -97,6 +100,10 @@ class OutboxItemResponse(BaseModel):
     gate_reasons: list[str]
     decided_by: UUID | None
     decided_at: datetime | None
+    sent_at: datetime | None
+    message_id: str | None
+    send_attempts: int
+    send_error: str
     created_at: datetime
 
 
@@ -115,3 +122,9 @@ class ReplyResponse(BaseModel):
     needs_human: bool
     draft_answer: str
     created_at: datetime
+
+
+class SummaryResponse(BaseModel):
+    """Counters returned by batch operations (send, follow-ups, inbox sync)."""
+
+    counts: dict[str, int]

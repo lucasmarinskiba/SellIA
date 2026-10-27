@@ -38,6 +38,9 @@ class ProspectStatus(str, enum.Enum):
     REPLIED = "replied"
     OPTED_OUT = "opted_out"
     WRITE_FAILED = "write_failed"
+    CONTACTED = "contacted"  # at least one email of the sequence went out
+    COMPLETED = "completed"  # whole sequence sent, no reply
+    BOUNCED = "bounced"
 
 
 class OutboxStatus(str, enum.Enum):
@@ -45,6 +48,9 @@ class OutboxStatus(str, enum.Enum):
     APPROVED = "approved"
     REJECTED = "rejected"
     BLOCKED = "blocked"  # failed the deterministic gate
+    SENDING = "sending"  # claimed by a send in progress; stops double-sends
+    SENT = "sent"
+    FAILED = "failed"  # SMTP kept failing; needs a person
 
 
 class ReplyClass(str, enum.Enum):
@@ -83,6 +89,10 @@ class HarveyProfile(Base):
     )
     do_not_contact = Column(JSONB, nullable=False, default=list)
     max_daily_drafts = Column(Integer, nullable=False, default=20)
+    max_daily_sends = Column(Integer, nullable=False, default=30)
+    # IMAP cursor: highest UID already looked at (0 = never synced).
+    imap_last_uid = Column(Integer, nullable=False, default=0)
+    inbox_synced_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow, nullable=False)
 
@@ -135,6 +145,13 @@ class HarveyOutboxItem(Base):
     gate_reasons = Column(JSONB, nullable=False, default=list)
     decided_by = Column(UUID(as_uuid=True), nullable=True)
     decided_at = Column(DateTime(timezone=True), nullable=True)
+    sent_at = Column(DateTime(timezone=True), nullable=True)
+    # RFC 5322 Message-ID of what we sent, and of the email it follows up on:
+    # replies are matched to a prospect through these, and follow-ups thread.
+    message_id = Column(String(255), nullable=True, index=True)
+    in_reply_to = Column(String(255), nullable=True)
+    send_attempts = Column(Integer, nullable=False, default=0)
+    send_error = Column(Text, nullable=False, default="")
     created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
     __table_args__ = (
@@ -154,7 +171,11 @@ class HarveyReply(Base):
         UUID(as_uuid=True), ForeignKey("harvey_prospects.id", ondelete="CASCADE"), nullable=False, index=True
     )
     body = Column(Text, nullable=False)
+    # Message-ID of an email read from the inbox; makes syncing idempotent.
+    message_id = Column(String(255), nullable=True)
     classification = Column(String(20), nullable=False)
     needs_human = Column(Boolean, nullable=False, default=False)
     draft_answer = Column(Text, nullable=False, default="")
     created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+    __table_args__ = (UniqueConstraint("business_id", "message_id", name="uq_harvey_reply_message"),)
