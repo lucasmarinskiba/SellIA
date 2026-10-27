@@ -59,10 +59,11 @@ from app.domains.harvey.models import (
     HarveyProfile,
     HarveyProspect,
     HarveyReply,
+    HarveySecrets,
 )
 from app.domains.harvey.service import HarveyError, HarveyService
 
-HARVEY_TABLES = [HarveyProfile, HarveyProspect, HarveyOutboxItem, HarveyReply]
+HARVEY_TABLES = [HarveyProfile, HarveyProspect, HarveyOutboxItem, HarveyReply, HarveySecrets]
 OPT_OUT = 'Respondé "no gracias" y no te escribo más.'
 
 

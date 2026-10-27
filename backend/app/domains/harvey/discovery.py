@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import asyncio
 import ipaddress
-import os
 import re
 import socket
 from dataclasses import dataclass, field
@@ -332,36 +331,45 @@ def make_client(transport: httpx.AsyncBaseTransport | None = None) -> httpx.Asyn
 
 
 # ── search ────────────────────────────────────────────────────────────────
-def _search_key() -> str:
-    return os.environ.get("BRAVE_SEARCH_API_KEY", "").strip()
+SEARCH_PROVIDERS = ("brave", "google")
 
 
-def search_available() -> bool:
-    return bool(_search_key())
-
-
-async def search_sites(client: httpx.AsyncClient, query: str, count: int = 10) -> list[str]:
-    """Home URLs of the sites a web search returns for ``query`` (Brave Search API)."""
-    key = _search_key()
-    if not key:
-        raise DiscoveryError("falta BRAVE_SEARCH_API_KEY: sin buscador solo se pueden cargar sitios a mano")
-    try:
-        resp = await client.get(
-            "https://api.search.brave.com/res/v1/web/search",
-            params={"q": query, "count": min(max(count, 1), 20)},
-            headers={"X-Subscription-Token": key, "Accept": "application/json"},
-        )
-        resp.raise_for_status()
-        results = resp.json().get("web", {}).get("results", [])
-    except (httpx.HTTPError, ValueError) as e:
-        logger.warning("harvey: search failed: %s", type(e).__name__)  # never log the key or full error
-        raise DiscoveryError(f"el buscador falló ({type(e).__name__})") from e
+def _home_urls(raw_urls: list[str]) -> list[str]:
     urls: list[str] = []
-    for item in results:
-        parts = urlparse(str(item.get("url") or ""))
+    for raw in raw_urls:
+        parts = urlparse(str(raw or ""))
         if parts.scheme not in ("http", "https") or not parts.hostname or is_skippable_domain(parts.hostname):
             continue
         home = f"{parts.scheme}://{parts.netloc}"
         if home not in urls:
             urls.append(home)
     return urls
+
+
+async def search_sites(
+    client: httpx.AsyncClient, query: str, *, provider: str, api_key: str, count: int = 10
+) -> list[str]:
+    """Home URLs of the sites ``provider`` returns for ``query``, with the business's own key."""
+    if provider not in SEARCH_PROVIDERS or not api_key:
+        raise DiscoveryError("no hay una clave de búsqueda cargada: cargá la tuya en Configuración")
+    try:
+        if provider == "brave":
+            resp = await client.get(
+                "https://api.search.brave.com/res/v1/web/search",
+                params={"q": query, "count": min(max(count, 1), 20)},
+                headers={"X-Subscription-Token": api_key, "Accept": "application/json"},
+            )
+            resp.raise_for_status()
+            found = [r.get("url") for r in resp.json().get("web", {}).get("results", [])]
+        else:
+            resp = await client.post(
+                "https://places.googleapis.com/v1/places:searchText",
+                json={"textQuery": query, "pageSize": min(max(count, 1), 20)},
+                headers={"X-Goog-Api-Key": api_key, "X-Goog-FieldMask": "places.websiteUri"},
+            )
+            resp.raise_for_status()
+            found = [p.get("websiteUri") for p in resp.json().get("places", [])]
+    except (httpx.HTTPError, ValueError) as e:
+        logger.warning("harvey: %s search failed: %s", provider, type(e).__name__)  # never log the key
+        raise DiscoveryError(f"el buscador ({provider}) falló: {type(e).__name__}. Revisá tu clave.") from e
+    return _home_urls([u for u in found if u])
