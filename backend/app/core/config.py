@@ -1,7 +1,7 @@
 import os
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import model_validator
+from pydantic import field_validator, model_validator
 from functools import lru_cache
 
 
@@ -377,6 +377,21 @@ class Settings(BaseSettings):
     ]
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    @field_validator("*", mode="before")
+    @classmethod
+    def strip_url_whitespace(cls, value, info):
+        """Quita espacios y saltos de línea de los valores *_URL / *_URI.
+
+        Un `` pegado al final de FRONTEND_URL (típico al cargar variables desde un archivo con CRLF)
+        terminaba en las redirecciones del OAuth como `https://host%0D/dashboard/...`, que el navegador
+        no puede abrir. Solo se limpian las URLs: las claves y secretos no se tocan, porque cambiarlos
+        invalidaría firmas y sesiones ya emitidas.
+        """
+        name = info.field_name or ""
+        if isinstance(value, str) and (name.endswith("_URL") or name.endswith("_URI")):
+            return value.strip()
+        return value
 
     @model_validator(mode="after")
     def normalize_database_url(self):
