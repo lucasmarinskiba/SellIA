@@ -22,38 +22,15 @@ class PredictiveService:
 
     @staticmethod
     def calculate_lead_score(customer_id: UUID, business_id: UUID, rfm: float, engagement: float, frequency: float, db: Session = None) -> dict:
-        if not db:
-            raise ValueError("Database session required")
-        
-        lead_score = (rfm * 0.3 + engagement * 0.3 + min(frequency * 10, 100) * 0.4)
-        lead_score = min(max(lead_score, 0), 100)
-        
-        score = db.query(CustomerScore).filter(CustomerScore.customer_id == customer_id).first()
-        if not score:
-            score = CustomerScore(customer_id=customer_id, business_id=business_id)
-            db.add(score)
-        
-        score.lead_score = lead_score
-        db.commit()
-        return {"customer_id": str(customer_id), "lead_score": lead_score}
+        raise NotImplementedError(
+            "Persistencia de scores pendiente: el modelo CustomerScore no existe en el codigo."
+        )
 
     @staticmethod
     def calculate_churn_risk(customer_id: UUID, business_id: UUID, days_since_purchase: int, engagement: float, frequency: float, db: Session = None) -> dict:
-        if not db:
-            raise ValueError("Database session required")
-        
-        decay = 100 * (1 - math.exp(-days_since_purchase * 0.03))
-        churn_risk = decay * (1 - engagement / 100 * 0.3) * (1 - min(frequency / 10, 1) * 0.2)
-        churn_risk = min(max(churn_risk, 0), 100)
-        
-        score = db.query(CustomerScore).filter(CustomerScore.customer_id == customer_id).first()
-        if not score:
-            score = CustomerScore(customer_id=customer_id, business_id=business_id)
-            db.add(score)
-        
-        score.churn_risk = churn_risk
-        db.commit()
-        return {"customer_id": str(customer_id), "churn_risk": churn_risk}
+        raise NotImplementedError(
+            "Persistencia de scores pendiente: el modelo CustomerScore no existe en el codigo."
+        )
 
     @staticmethod
     def create_segment(business_id: UUID, name: str, rules: Dict, seg_type: str, db: Session = None) -> dict:

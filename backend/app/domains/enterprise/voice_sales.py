@@ -1,10 +1,11 @@
 """Voice Sales + Playbook Management (Phase 29)."""
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Dict, Any
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+import uuid
+from sqlalchemy import or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.voice_sales import (
     VoiceCall,
@@ -16,7 +17,6 @@ from app.models.voice_sales import (
     AICallScript,
     MeetingBooking,
 )
-from celery_app import celery_app
 import logging
 import json
 
@@ -26,6 +26,14 @@ except ImportError:
     Anthropic = None
 
 logger = logging.getLogger(__name__)
+
+
+def _as_uuid(value: str) -> Optional[uuid.UUID]:
+    """A UUID from an id that came in as text, or None when it is not one (treated as not found)."""
+    try:
+        return uuid.UUID(str(value))
+    except (ValueError, TypeError, AttributeError):
+        return None
 
 
 @dataclass
@@ -55,19 +63,20 @@ class PlaybookRecommendation:
 class VoiceCallManager:
     """Manage AI voice calls via Twilio + Claude."""
 
-    def __init__(self, db: Session, twilio_client=None, claude_api_key: Optional[str] = None):
+    def __init__(self, db: AsyncSession, twilio_client=None, claude_api_key: Optional[str] = None):
         self.db = db
         self.twilio = twilio_client
         self.claude = Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
 
-    def initiate_call(self, prospect_id: str, deal_id: str) -> VoiceCallResult:
+    async def initiate_call(self, prospect_id: str, deal_id: str) -> VoiceCallResult:
         """Initiate AI voice call with prospect."""
 
         try:
             from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
 
             # 1. Get prospect + deal context
-            deal = self.db.query(Deal).filter(Deal.id == deal_id).first()
+            deal_uuid = _as_uuid(deal_id)
+            deal = (await self.db.execute(select(Deal).where(Deal.id == deal_uuid))).scalar_one_or_none() if deal_uuid else None
             if not deal:
                 raise ValueError(f"Deal {deal_id} not found")
 
@@ -98,7 +107,7 @@ class VoiceCallManager:
                 status="initiated",
             )
             self.db.add(voice_call)
-            self.db.commit()
+            await self.db.commit()
 
             logger.info(f"Voice call initiated for prospect {prospect_id}, deal {deal_id}")
 
@@ -114,17 +123,17 @@ class VoiceCallManager:
             logger.error(f"Error initiating voice call: {e}")
             raise
 
-    def handle_call_input(self, call_id: str, input_text: str) -> str:
+    async def handle_call_input(self, call_id: str, input_text: str) -> str:
         """Handle incoming voice input from prospect."""
 
         try:
             # 1. Get call context
-            call = self.db.query(VoiceCall).filter(VoiceCall.id == call_id).first()
+            call = await self._call(call_id)
             if not call:
                 return "Call not found"
 
             # 2. Get conversation history
-            history = self._get_conversation_history(call_id)
+            history = await self._get_conversation_history(call_id)
 
             # 3. Build Claude prompt
             prompt = f"""
@@ -173,7 +182,7 @@ class VoiceCallManager:
                 timestamp=datetime.utcnow(),
             )
             self.db.add(ai_turn)
-            self.db.commit()
+            await self.db.commit()
 
             return response_text
 
@@ -181,18 +190,20 @@ class VoiceCallManager:
             logger.error(f"Error handling call input: {e}")
             return "I didn't catch that. Could you repeat?"
 
-    def end_call(self, call_id: str, outcome: str = "unqualified") -> Dict[str, Any]:
+    async def end_call(self, call_id: str, outcome: str = "unqualified") -> Dict[str, Any]:
         """End call, analyze, and update metrics."""
 
         try:
-            call = self.db.query(VoiceCall).filter(VoiceCall.id == call_id).first()
+            call = await self._call(call_id)
             if not call:
                 return {"error": "Call not found"}
 
             # 1. Get full transcript
-            transcript_turns = self.db.query(CallTranscript).filter(
-                CallTranscript.call_id == call_id
-            ).all()
+            transcript_turns = (
+                await self.db.execute(
+                    select(CallTranscript).where(CallTranscript.call_id == _as_uuid(call_id)).order_by(CallTranscript.timestamp)
+                )
+            ).scalars().all()
 
             full_transcript = "\n".join([f"{t.speaker}: {t.text}" for t in transcript_turns])
 
@@ -200,11 +211,18 @@ class VoiceCallManager:
             analysis = self._analyze_call(full_transcript)
 
             # 3. Update call record
-            call.ended_at = datetime.utcnow()
+            # The module stores naive UTC everywhere (datetime.utcnow). Read started_at back as naive UTC
+            # too: the table's timestamp columns are not all the same kind, so mixing aware and naive values
+            # in one UPDATE or one subtraction fails.
+            ended_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+            started = call.started_at
+            if started.tzinfo is not None:
+                started = started.astimezone(timezone.utc).replace(tzinfo=None)
+            call.ended_at = ended_utc
             call.transcript = full_transcript
             call.outcome = outcome  # or analysis["decision"]
             call.status = "completed"
-            call.duration_seconds = int((call.ended_at - call.started_at).total_seconds())
+            call.duration_seconds = int((ended_utc - started).total_seconds())
 
             # 4. Store metrics
             metrics = VoiceCallMetrics(
@@ -227,7 +245,7 @@ class VoiceCallManager:
                 self.db.add(meeting)
 
             self.db.add(call)
-            self.db.commit()
+            await self.db.commit()
 
             logger.info(f"Call {call_id} ended with outcome: {outcome}")
 
@@ -256,12 +274,20 @@ class VoiceCallManager:
 
         return script
 
-    def _get_conversation_history(self, call_id: str) -> List[Dict[str, str]]:
+    async def _call(self, call_id: str) -> Optional[VoiceCall]:
+        call_uuid = _as_uuid(call_id)
+        if call_uuid is None:
+            return None
+        return (await self.db.execute(select(VoiceCall).where(VoiceCall.id == call_uuid))).scalar_one_or_none()
+
+    async def _get_conversation_history(self, call_id: str) -> List[Dict[str, str]]:
         """Get conversation turn history."""
 
-        turns = self.db.query(CallTranscript).filter(
-            CallTranscript.call_id == call_id
-        ).order_by(CallTranscript.timestamp).all()
+        turns = (
+            await self.db.execute(
+                select(CallTranscript).where(CallTranscript.call_id == _as_uuid(call_id)).order_by(CallTranscript.timestamp)
+            )
+        ).scalars().all()
 
         return [{"speaker": t.speaker, "text": t.text} for t in turns]
 
@@ -306,19 +332,20 @@ class VoiceCallManager:
 class PlaybookExtractor:
     """Extract sales playbooks from top performer patterns."""
 
-    def __init__(self, db: Session, claude_api_key: Optional[str] = None):
+    def __init__(self, db: AsyncSession, claude_api_key: Optional[str] = None):
         self.db = db
         self.claude = Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
 
-    def extract_playbooks(self, top_performer_ids: List[str]) -> List[Dict[str, Any]]:
+    async def extract_playbooks(self, top_performer_ids: List[str]) -> List[Dict[str, Any]]:
         """Extract playbooks from top 20% performers."""
 
         try:
             # 1. Get successful calls from top performers
-            successful_calls = self.db.query(VoiceCall).filter(
-                (VoiceCall.outcome == "meeting_booked") |
-                (VoiceCall.outcome == "qualified")
-            ).limit(100).all()
+            successful_calls = (
+                await self.db.execute(
+                    select(VoiceCall).where(VoiceCall.outcome.in_(["meeting_booked", "qualified"])).limit(100)
+                )
+            ).scalars().all()
 
             if not successful_calls:
                 logger.warning("No successful calls to extract from")
@@ -418,24 +445,51 @@ class PlaybookExtractor:
 class PlaybookRecommender:
     """Recommend playbooks in real-time."""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def recommend_playbook(self, deal_id: str) -> Optional[PlaybookRecommendation]:
+    @staticmethod
+    def _first_step_name(steps) -> str:
+        """Playbook steps are objects ({"step": 1, "name": "Opening", ...}); the answer needs their name."""
+        first = steps[0] if steps else None
+        if isinstance(first, dict):
+            return str(first.get("name") or "Opening")
+        return str(first) if first else "Opening"
+
+    async def recommend_playbook(self, deal_id: str) -> Optional[PlaybookRecommendation]:
         """Get recommended playbook for deal."""
 
         try:
             from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
 
-            deal = self.db.query(Deal).filter(Deal.id == deal_id).first()
+            from app.domains.businesses.models import Business
+
+            deal_uuid = _as_uuid(deal_id)
+            deal = (await self.db.execute(select(Deal).where(Deal.id == deal_uuid))).scalar_one_or_none() if deal_uuid else None
             if not deal:
                 return None
 
+            # Deal has no industry: the business type plays that role. The stage is a LeadStage enum
+            # while playbooks store its value as text (the old code compared the enum object, and read
+            # deal.industry, which does not exist, so this method always returned None).
+            business = (await self.db.execute(select(Business).where(Business.id == deal.business_id))).scalar_one_or_none()
+            industry = business.type.value if business is not None and business.type is not None else None
+            stage = deal.stage.value if deal.stage is not None else None
+
+            conditions = []
+            if industry:
+                conditions.append(SalesPlaybook.industry.ilike(f"%{industry}%"))
+            if stage:
+                conditions.append(SalesPlaybook.deal_stage == stage)
+            if not conditions:
+                return None
+
             # 1. Find matching playbooks (by industry/stage)
-            candidates = self.db.query(SalesPlaybook).filter(
-                (SalesPlaybook.industry.ilike(f"%{deal.industry}%")) |
-                (SalesPlaybook.deal_stage == deal.stage)
-            ).order_by(SalesPlaybook.win_rate.desc()).first()
+            candidates = (
+                await self.db.execute(
+                    select(SalesPlaybook).where(or_(*conditions)).order_by(SalesPlaybook.win_rate.desc()).limit(1)
+                )
+            ).scalars().first()
 
             if not candidates:
                 return None
@@ -447,36 +501,10 @@ class PlaybookRecommender:
                 industry=candidates.industry or "general",
                 deal_stage=candidates.deal_stage or "unknown",
                 win_rate=candidates.win_rate or 0.5,
-                next_step=candidates.steps[0] if candidates.steps else "Opening",
+                next_step=self._first_step_name(candidates.steps),
                 confidence=0.85,
             )
 
         except Exception as e:
             logger.error(f"Error recommending playbook: {e}")
             return None
-
-
-# ============================================================
-# CELERY BACKGROUND TASKS
-# ============================================================
-
-
-@celery_app.task(bind=True, max_retries=3)
-def extract_playbooks_async(self, top_performer_ids: List[str]):
-    """Extract playbooks in background."""
-    try:
-        from app.core.database import SessionLocal
-
-        db = SessionLocal()
-        extractor = PlaybookExtractor(db)
-
-        playbooks = extractor.extract_playbooks(top_performer_ids)
-
-        logger.info(f"Extracted {len(playbooks)} playbooks")
-        db.close()
-
-        return {"status": "complete", "playbooks_extracted": len(playbooks)}
-
-    except Exception as exc:
-        logger.error(f"Error extracting playbooks: {exc}")
-        raise self.retry(exc=exc, countdown=300)

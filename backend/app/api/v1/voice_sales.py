@@ -3,7 +3,8 @@
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.domains.enterprise.voice_sales import (
@@ -78,15 +79,15 @@ class CallMetricsResponse(BaseModel):
 
 
 @router.post("/initiate-call", response_model=InitiateCallResponse)
-def initiate_call(
+async def initiate_call(
     request: InitiateCallRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """Initiate AI voice call with prospect."""
 
     try:
         manager = VoiceCallManager(db)
-        result = manager.initiate_call(request.prospect_id, request.deal_id)
+        result = await manager.initiate_call(request.prospect_id, request.deal_id)
 
         return InitiateCallResponse(
             call_id=result.call_id,
@@ -95,39 +96,43 @@ def initiate_call(
             status=result.status,
             script=result.script,
         )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/call/input", response_model=CallInputResponse)
-def handle_call_input(
+async def handle_call_input(
     request: CallInputRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """Send voice input to AI call handler."""
 
     try:
         manager = VoiceCallManager(db)
-        response = manager.handle_call_input(request.call_id, request.input_text)
+        response = await manager.handle_call_input(request.call_id, request.input_text)
 
         return CallInputResponse(
             response=response,
             call_id=request.call_id,
         )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/call/end", response_model=EndCallResponse)
-def end_call(
+async def end_call(
     request: EndCallRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """End voice call, analyze outcome."""
 
     try:
         manager = VoiceCallManager(db)
-        result = manager.end_call(request.call_id, request.outcome)
+        result = await manager.end_call(request.call_id, request.outcome)
 
         if "error" in result:
             raise HTTPException(status_code=400, detail=result["error"])
@@ -138,20 +143,22 @@ def end_call(
             duration=result.get("duration", 0),
             meeting_booked=result.get("meeting_booked", False),
         )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/playbooks/recommend/{deal_id}", response_model=Optional[PlaybookResponse])
-def recommend_playbook(
+async def recommend_playbook(
     deal_id: str,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """Get recommended playbook for deal."""
 
     try:
         recommender = PlaybookRecommender(db)
-        recommendation = recommender.recommend_playbook(deal_id)
+        recommendation = await recommender.recommend_playbook(deal_id)
 
         if not recommendation:
             return None
@@ -165,13 +172,15 @@ def recommend_playbook(
             next_step=recommendation.next_step,
             confidence=recommendation.confidence,
         )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/metrics", response_model=CallMetricsResponse)
-def get_voice_metrics(
-    db: Session = Depends(get_db),
+async def get_voice_metrics(
+    db: AsyncSession = Depends(get_db),
 ):
     """Get voice call metrics."""
 
@@ -180,16 +189,16 @@ def get_voice_metrics(
         from app.models.voice_sales import VoiceCall, VoiceCallMetrics
 
         # Get metrics
-        total_calls = db.query(VoiceCall).count()
+        total_calls = (await db.execute(select(func.count()).select_from(VoiceCall))).scalar_one()
 
-        booked_calls = db.query(VoiceCall).filter(
-            VoiceCall.outcome == "meeting_booked"
-        ).count()
+        booked_calls = (
+            await db.execute(select(func.count()).select_from(VoiceCall).where(VoiceCall.outcome == "meeting_booked"))
+        ).scalar_one()
         booking_rate = booked_calls / total_calls if total_calls > 0 else 0
 
-        avg_duration = db.query(func.avg(VoiceCall.duration_seconds)).scalar() or 0
+        avg_duration = (await db.execute(select(func.avg(VoiceCall.duration_seconds)))).scalar() or 0
 
-        avg_objections = db.query(func.avg(VoiceCallMetrics.objections_handled)).scalar() or 0
+        avg_objections = (await db.execute(select(func.avg(VoiceCallMetrics.objections_handled)))).scalar() or 0
 
         return CallMetricsResponse(
             total_calls=total_calls,
@@ -197,5 +206,7 @@ def get_voice_metrics(
             average_call_duration=int(avg_duration),
             average_objections_handled=avg_objections,
         )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
