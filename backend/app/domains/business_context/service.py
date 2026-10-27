@@ -12,6 +12,10 @@ from .schemas import (
 )
 
 
+class AmbiguousBusinessContext(Exception):
+    """The user has several business contexts and none was named: the caller must say which business."""
+
+
 class BusinessContextService:
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -20,8 +24,12 @@ class BusinessContextService:
         query = select(BusinessContext).where(BusinessContext.user_id == user_id)
         if business_id:
             query = query.where(BusinessContext.business_id == business_id)
-        result = await self.db.execute(query)
-        ctx = result.scalar_one_or_none()
+        rows = (await self.db.execute(query)).scalars().all()
+        if not business_id and len(rows) > 1:
+            # Without a business there is no single context. Picking one would put one business's profile
+            # into another business's analysis, so the caller has to name the business.
+            raise AmbiguousBusinessContext(f"Hay {len(rows)} perfiles de negocio: indicá business_id")
+        ctx = rows[0] if rows else None
         if not ctx:
             ctx = BusinessContext(user_id=user_id, business_id=business_id)
             self.db.add(ctx)

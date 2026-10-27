@@ -133,8 +133,8 @@ class OnboardingEngine:
         return {}
 
     def complete_step(
-        self, session: OnboardingSession, step: OnboardingStep, answers: Dict
-    ) -> OnboardingSession:
+        self, session: UserOnboardingSession, step: OnboardingStep, answers: Dict
+    ) -> UserOnboardingSession:
         """Mark step complete"""
 
         if step == OnboardingStep.PROFILE:
@@ -152,7 +152,7 @@ class OnboardingEngine:
         logger.info(f"Onboarding step complete: {step} for {session.user_id}")
         return session
 
-    def finish_onboarding(self, session: OnboardingSession) -> Dict[str, Any]:
+    def finish_onboarding(self, session: UserOnboardingSession) -> Dict[str, Any]:
         """Complete onboarding"""
 
         session.current_step = OnboardingStep.COMPLETE
@@ -170,7 +170,7 @@ class OnboardingEngine:
             "first_leads_in": "1-2 hours"
         }
 
-    def get_onboarding_progress(self, session: OnboardingSession) -> Dict[str, Any]:
+    def get_onboarding_progress(self, session: UserOnboardingSession) -> Dict[str, Any]:
         """Get progress"""
 
         steps = [OnboardingStep.PROFILE, OnboardingStep.PRODUCT, OnboardingStep.TARGET,

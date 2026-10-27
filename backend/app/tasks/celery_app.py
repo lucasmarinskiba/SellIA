@@ -100,6 +100,7 @@ celery_app = Celery(
 
 _modules = [
     "app.tasks.workflow_tasks",
+    "app.tasks.offline_sequence_tasks",
     "app.tasks.authority_tasks",
     "app.tasks.security_tasks",  # referenced by 5 beat_schedule entries below
                                   # (data_retention_cleanup, rotate_webhook_tokens,
@@ -125,6 +126,7 @@ _modules = [
     "app.tasks.sales_funnel_tasks",
     "app.tasks.finance_tasks",
     "app.tasks.ad_budget_tasks",
+    "app.tasks.harvey_tasks",
     "app.tasks.forecasting_tasks",
     "app.tasks.brand_transformation_tasks",
     "app.domains.memory.tasks",
@@ -133,6 +135,7 @@ _modules = [
     "app.domains.agents.auto_responder.tasks",
     "app.domains.training.tasks",
     "app.domains.seo_config.tasks",
+    "app.tasks.mercadolibre_tasks",
 ]
 _includes = []
 for mod in _modules:
@@ -167,6 +170,10 @@ celery_app.conf.update(
 
 # Beat schedule para tareas periódicas
 celery_app.conf.beat_schedule = {
+    "sync-mercadolibre-orders": {
+        "task": "app.tasks.mercadolibre_tasks.sync_mercadolibre_orders_task",
+        "schedule": crontab(minute="*/15"),  # cada 15 minutos
+    },
     # Weekly, so the authority trend is real history rather than a redraw of
     # whatever the score happened to be the last time someone opened the page.
     "weekly-authority-snapshot": {
@@ -176,6 +183,10 @@ celery_app.conf.beat_schedule = {
     "check-pending-workflows": {
         "task": "app.tasks.workflow_tasks.check_pending_workflows",
         "schedule": 30.0,  # cada 30 segundos
+    },
+    "process-offline-sequence-jobs": {
+        "task": "app.tasks.offline_sequence_tasks.process_offline_sequence_jobs",
+        "schedule": 60.0,  # envía los mensajes post-visita vencidos; no envía nada con el flag apagado
     },
     "check-email-sequences": {
         "task": "app.tasks.workflow_tasks.check_email_sequences",
@@ -418,6 +429,10 @@ celery_app.conf.beat_schedule = {
     "ad-budget-cycles": {
         "task": "app.tasks.ad_budget_tasks.run_budget_cycles",
         "schedule": crontab(minute=0, hour=4),  # todos los días 04:00
+    },
+    "harvey-cycles": {
+        "task": "app.tasks.harvey_tasks.run_harvey_cycles",
+        "schedule": crontab(minute="*/15"),  # cada 15 minutos
     },
     "forecasting-nightly": {
         "task": "app.tasks.forecasting_tasks.nightly_forecasts",

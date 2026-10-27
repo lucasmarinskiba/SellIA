@@ -4,12 +4,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from uuid import UUID
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 from app.core.business_access import get_owned_business
 from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.core.mobile_auth import MobileCaller, require_mobile_caller
+from app.domains.businesses.mobile_device_service import visitor_id
 from app.domains.users.models import User
 from app.domains.locations.geofence_service import GeofenceTriggerService
 from app.domains.businesses.location_models import Location
@@ -32,26 +34,38 @@ class GeofenceCheckRequest(BaseModel):
     longitude: float
     business_id: UUID
     accuracy_meters: Optional[float] = None
+    # Device tokens have no account behind them: the app sends a stable id for its install instead.
+    visitor_ref: Optional[str] = Field(default=None, min_length=1, max_length=128)
 
 
 @router.post("/geofence/check")
 async def check_geofence(
     request: GeofenceCheckRequest,
-    current_user: User = Depends(get_current_user),
+    caller: MobileCaller = Depends(require_mobile_caller("geofence")),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Check if user in geofence. Auto check-in if enabled.
 
     Mobile app calls this periodically (every 30-60s when app in foreground).
     """
-    await get_owned_business(db, request.business_id, current_user)
+    if caller.user is not None:
+        await get_owned_business(db, request.business_id, caller.user)
+        visitor = caller.user.id
+    else:
+        if caller.business_id != request.business_id:
+            raise HTTPException(status_code=403, detail="El token no pertenece a este negocio")
+        if request.visitor_ref is None:
+            raise HTTPException(status_code=422, detail="visitor_ref es obligatorio con un token de dispositivo")
+        visitor = visitor_id(caller.device_token_id, request.visitor_ref)
 
     def _check(db: Session) -> dict:
         # Get location records (assuming locations stored in Location table)
         locations = db.query(Location).filter(Location.business_id == request.business_id).all()
+        if caller.location_id is not None:
+            locations = [loc for loc in locations if loc.id == caller.location_id]
 
         return GeofenceTriggerService.check_geofence_triggers(
-            user_id=current_user.id,
+            user_id=visitor,
             user_lat=request.latitude,
             user_lng=request.longitude,
             business_id=request.business_id,

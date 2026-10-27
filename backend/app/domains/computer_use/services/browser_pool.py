@@ -48,6 +48,8 @@ class BrowserPoolManager:
 
     async def _get_playwright(self):
         if self._playwright is None:
+            from playwright.async_api import async_playwright
+
             self._playwright = await async_playwright().start()
         return self._playwright
 

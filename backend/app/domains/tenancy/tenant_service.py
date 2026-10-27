@@ -3,7 +3,7 @@
 import logging
 from datetime import datetime, timezone, timedelta
 from uuid import UUID
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Tuple
 
 from sqlalchemy.orm import Session
 from sqlalchemy import func
