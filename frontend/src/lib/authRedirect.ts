@@ -26,6 +26,23 @@ export const redirectToLogin = (): void => {
   window.location.href = `/login?from=${encodeURIComponent(from)}`
 }
 
+/**
+ * What to tell the person when a login attempt failed, by what actually happened. The backend answers in English
+ * ("Invalid email or password") and a restarting server answers 502 with no body, which used to surface as the same
+ * generic "Error al iniciar sesión" for every cause.
+ */
+export const loginErrorMessage = (err: unknown): string => {
+  const e = err as { response?: { status?: number; data?: { detail?: unknown } } }
+  const status = e?.response?.status
+  if (!e?.response || (status !== undefined && status >= 500)) {
+    return 'No pudimos conectar con el servidor. Puede estar reiniciándose: esperá unos segundos y probá de nuevo.'
+  }
+  if (status === 401) return 'Email o contraseña incorrectos. Revisá que el email esté bien escrito.'
+  if (status === 429) return 'Demasiados intentos. Esperá un momento antes de volver a probar.'
+  const detail = e.response?.data?.detail
+  return typeof detail === 'string' && detail ? detail : 'No se pudo iniciar sesión. Probá de nuevo.'
+}
+
 /** The page to open after logging in: the one that asked for it, only if it is a path on this site. */
 export const safeFrom = (raw: string | null | undefined): string =>
   raw && /^\/(?![/\\])/.test(raw) ? raw : '/dashboard'
