@@ -15,6 +15,7 @@ from sqlalchemy import select
 from app.domains.catalogs.models import CatalogItem
 from app.domains.channels.models import ChannelConnection, ChannelPlatform
 from app.domains.channels.connectors import get_connector
+from app.domains.channels.connectors.mercadolibre import MercadoLibreAuthError, refresh_credentials
 from app.domains.platform_commerce import capabilities as platform_capabilities
 from app.domains.catalogs.classifier import classify_catalog_item
 
@@ -79,7 +80,12 @@ class CatalogSyncService:
         return list(result.scalars().all())
 
     async def push_to_platform(self, business_id: UUID, platform: ChannelPlatform) -> CatalogSyncResult:
-        """Push local catalog items to a specific platform."""
+        """Publica o actualiza el catálogo en una plataforma.
+
+        Éxito solo si todo lo que correspondía se publicó o actualizó. Antes, un
+        item con error se descartaba en silencio y el resultado decía
+        "Sincronización completada".
+        """
         try:
             channels = await self.get_connected_channels(business_id, {platform})
             if not channels:
@@ -91,27 +97,80 @@ class CatalogSyncService:
                 return CatalogSyncResult(platform.value, True, "No hay items en el catálogo para sincronizar", 0)
 
             connector = get_connector(platform, channel.credentials, channel.settings)
-            items_synced = 0
+            if not hasattr(connector, "create_product"):
+                return CatalogSyncResult(
+                    platform.value, False, f"{platform.value} no permite publicar productos desde el catálogo"
+                )
 
+            published = updated = skipped = 0
+            errors: list[str] = []
+            refresh_attempted = False
             for item in items:
+                if not item.is_available:
+                    skipped += 1
+                    continue
                 try:
-                    product_data = self._item_to_platform_format(item, platform)
-                    if hasattr(connector, "create_product"):
-                        await connector.create_product(product_data)
-                        items_synced += 1
+                    try:
+                        outcome = await self._push_item(connector, item, platform)
+                    except MercadoLibreAuthError:
+                        # Un solo intento de renovar el token por corrida: si ML no lo renueva,
+                        # el resto de los items falla con el mismo mensaje sin reintentar.
+                        if platform != ChannelPlatform.MERCADOLIBRE or refresh_attempted:
+                            raise
+                        refresh_attempted = True
+                        new_credentials = await refresh_credentials(channel.credentials)
+                        if new_credentials is None:
+                            raise
+                        channel.credentials = new_credentials
+                        connector = get_connector(platform, new_credentials, channel.settings)
+                        outcome = await self._push_item(connector, item, platform)
+                    if outcome == "published":
+                        published += 1
+                    elif outcome == "updated":
+                        updated += 1
+                    else:
+                        skipped += 1
                 except Exception as e:
                     from app.core.logger import get_logger
                     get_logger(__name__).error(f"Error pushing {item.id} to {platform.value}: {e}")
-                    continue
+                    errors.append(f"{item.name}: {str(e)[:150]}")
 
-            return CatalogSyncResult(
-                platform.value,
-                True,
-                f"Sincronización completada",
-                items_synced,
-            )
+            await self.db.commit()
+
+            summary = f"{published} publicados, {updated} actualizados, {skipped} omitidos, {len(errors)} con error"
+            if errors:
+                summary += f". Primer error: {errors[0]}"
+            return CatalogSyncResult(platform.value, not errors, summary, published + updated)
         except Exception as e:
             return CatalogSyncResult(platform.value, False, f"Error: {str(e)}")
+
+    async def _push_item(self, connector, item: CatalogItem, platform: ChannelPlatform) -> str:
+        """Publica un item o actualiza la publicación que ya existe. Devuelve el resultado."""
+        listing = self._listing_for(item, platform)
+        if listing is not None:
+            if not hasattr(connector, "update_item"):
+                return "skipped"
+            await connector.update_item(
+                listing["id"],
+                price=float(item.price),
+                available_quantity=item.stock,
+            )
+            return "updated"
+
+        created = await connector.create_product(self._item_to_platform_format(item, platform))
+        if platform == ChannelPlatform.MERCADOLIBRE and created.get("id"):
+            # Guardar el id de la publicación: sin esto, cada sincronización la volvería a crear.
+            external = dict((item.extra_data or {}).get("external") or {})
+            external[platform.value] = {"id": created["id"], "permalink": created.get("permalink")}
+            item.extra_data = {**(item.extra_data or {}), "external": external}
+        return "published"
+
+    @staticmethod
+    def _listing_for(item: CatalogItem, platform: ChannelPlatform) -> Optional[dict[str, Any]]:
+        """Publicación ya creada en esta plataforma para este item, si existe."""
+        if platform != ChannelPlatform.MERCADOLIBRE:
+            return None
+        return ((item.extra_data or {}).get("external") or {}).get(platform.value)
 
     async def push_all(self, business_id: UUID) -> list[CatalogSyncResult]:
         """Push local catalog to all supported platforms."""
@@ -253,12 +312,19 @@ class CatalogSyncService:
             }
 
         elif platform == ChannelPlatform.MERCADOLIBRE:
+            # Sin categoría o sin stock no se publica: una categoría inventada o un
+            # stock de 1 harían una publicación falsa en Mercado Libre.
+            category = item.extra_data.get("ml_category_id")
+            if not category:
+                raise ValueError("Falta ml_category_id: cargá la categoría de Mercado Libre del producto")
+            if item.stock is None:
+                raise ValueError("Falta stock: Mercado Libre no publica sin cantidad disponible")
             return {
                 "title": base["title"][:60],
-                "category_id": item.extra_data.get("ml_category_id", "MLA3530"),
+                "category_id": category,
                 "price": float(item.price),
                 "currency_id": item.currency,
-                "available_quantity": item.stock or 1,
+                "available_quantity": item.stock,
                 "buying_mode": "buy_it_now",
                 "condition": "new",
                 "listing_type_id": "gold_special",
