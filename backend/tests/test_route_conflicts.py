@@ -30,8 +30,6 @@ KNOWN_CONFLICTS: dict[tuple[str, str], str] = {
     ("POST", "/api/v1/sequences/cold-email"):
         "sellbot.generate_cold_email_sequence answers; email_sequences."
         "create_cold_email_sequence is shadowed",
-    ("POST", "/api/v1/webhooks/whatsapp"):
-        "sellbot.whatsapp_webhook answers; whatsapp_webhook.whatsapp_receive is shadowed",
 }
 
 
