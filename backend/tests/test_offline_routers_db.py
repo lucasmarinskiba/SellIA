@@ -262,6 +262,19 @@ async def test_no_login_is_rejected(factory, world, name) -> None:
 # ------------------------------------------------------------------ the numbers
 
 
+def _numbers(value: object) -> list[float]:
+    """Every numeric value anywhere in a JSON-like structure."""
+    if isinstance(value, bool):
+        return []
+    if isinstance(value, (int, float)):
+        return [value]
+    if isinstance(value, dict):
+        return [n for v in value.values() for n in _numbers(v)]
+    if isinstance(value, list):
+        return [n for v in value for n in _numbers(v)]
+    return []
+
+
 async def test_foot_traffic_is_computed_from_the_visits(world) -> None:
     world.who["user"] = USERS["OWNER"]
 
@@ -277,7 +290,9 @@ async def test_foot_traffic_is_computed_from_the_visits(world) -> None:
     assert body["avg_dwell_minutes"] == 30  # (20 + 40) / 2; the open visit and the demo have no dwell recorded
     assert len(body["daily_visits_trend"]) == 30
     assert sum(d["visits"] for d in body["daily_visits_trend"]) == 4
-    assert "156" not in r.text  # the old hard-coded figure
+    # The old hard-coded figure must not come back. Compared as a number, not as text: the response carries a
+    # random UUID (the location id), which contains "156" by chance in ~1 of 400 runs.
+    assert 156 not in _numbers(body)
 
 
 async def test_conversions_and_revenue_come_from_the_purchases(world) -> None:
@@ -418,7 +433,7 @@ async def test_a_purchase_amount_cannot_be_negative(world) -> None:
     assert r.status_code == 422, r.text
 
 
-async def test_trigger_picks_the_template_and_says_nothing_was_queued(world) -> None:
+async def test_trigger_picks_the_template_and_queues_nothing_while_sending_is_off(world) -> None:
     world.who["user"] = USERS["OWNER"]
     before = await _snapshot(world.factory, world.open)
 
@@ -428,8 +443,9 @@ async def test_trigger_picks_the_template_and_says_nothing_was_queued(world) -> 
 
     assert r.status_code == 200, r.text
     body = r.json()
-    assert body["success"] is False  # the old code answered success=true here and queued nothing
-    assert "post_visit_thank_you" in body["message"] and "no se encoló nada" in body["message"]
+    # Sending is off by default (OFFLINE_SEQUENCE_SEND_ENABLED): the template is picked, nothing is queued.
+    assert body["success"] is False
+    assert "post_visit_thank_you" in body["message"] and "desactivado" in body["message"]
     assert body["sequence_id"] is None
     assert await _snapshot(world.factory, world.open) == before  # no rows written
 

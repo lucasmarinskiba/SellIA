@@ -1,7 +1,7 @@
 import os
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import model_validator
+from pydantic import field_validator, model_validator
 from functools import lru_cache
 
 
@@ -127,6 +127,12 @@ class Settings(BaseSettings):
 
     # Computer Use Agents
     COMPUTER_USE_ENABLED: bool = True
+    # Send the post-visit messages (app/domains/sequences/offline_sequence_jobs.py). Off by default: the copy
+    # in api/v1/offline_sequences.py is placeholder text that nobody has approved for customers.
+    OFFLINE_SEQUENCE_SEND_ENABLED: bool = False
+    # Accept the signed-in user's JWT on mobile endpoints. Keep on until the SDK apps use device tokens;
+    # then turn off so a leaked account JWT stops working there (app/core/mobile_auth.py).
+    MOBILE_LEGACY_USER_JWT_ENABLED: bool = True
     COMPUTER_USE_MAX_STEPS: int = 30
     COMPUTER_USE_TIMEOUT_SECONDS: int = 300
     COMPUTER_USE_SCREENSHOT_QUALITY: int = 75
@@ -371,6 +377,21 @@ class Settings(BaseSettings):
     ]
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    @field_validator("*", mode="before")
+    @classmethod
+    def strip_url_whitespace(cls, value, info):
+        """Quita espacios y saltos de línea de los valores *_URL / *_URI.
+
+        Un `` pegado al final de FRONTEND_URL (típico al cargar variables desde un archivo con CRLF)
+        terminaba en las redirecciones del OAuth como `https://host%0D/dashboard/...`, que el navegador
+        no puede abrir. Solo se limpian las URLs: las claves y secretos no se tocan, porque cambiarlos
+        invalidaría firmas y sesiones ya emitidas.
+        """
+        name = info.field_name or ""
+        if isinstance(value, str) and (name.endswith("_URL") or name.endswith("_URI")):
+            return value.strip()
+        return value
 
     @model_validator(mode="after")
     def normalize_database_url(self):

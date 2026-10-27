@@ -1,5 +1,7 @@
 import axios from 'axios'
 
+import { isCredentialRequest, redirectToLogin } from './authRedirect'
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
 
 function getCookie(name: string): string | null {
@@ -44,12 +46,9 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      if (typeof window !== 'undefined') {
-        // Send sellia-api users back to their own login, not the legacy one.
-        const hasBearerToken = !!window.localStorage.getItem(SELLIA_API_TOKEN_KEY)
-        window.location.href = hasBearerToken ? '/sellia-login' : '/login'
-      }
+    if (error.response?.status === 401 && !isCredentialRequest(error.config?.url)) {
+      // One login for everybody; a rejected credential check stays on the form (see authRedirect).
+      redirectToLogin()
     }
     if (error.response?.status === 429) {
       const retryAfter = error.response.headers['retry-after']

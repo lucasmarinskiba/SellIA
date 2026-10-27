@@ -1299,6 +1299,8 @@ async def _bootstrap_database() -> None:
         startup_state.mark("ensure_all_tables")
         from app.db.leads_bootstrap import ensure_leads_owner_column
         await ensure_leads_owner_column()
+        from app.db.locations_bootstrap import ensure_location_timezone_column
+        await ensure_location_timezone_column()
         from app.db.catalog_bootstrap import ensure_catalog_item_columns
         await ensure_catalog_item_columns()
         from app.domains.seo_config.positioning_bootstrap import ensure_positioning_recommendation_columns

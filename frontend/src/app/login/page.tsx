@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { authApi, setToken, extractErrorMessage } from '@/lib/sellia-api'
+import { authApi, setToken } from '@/lib/sellia-api'
+import { loginErrorMessage, safeFrom } from '@/lib/authRedirect'
 import { Eye, EyeOff, AlertCircle } from 'lucide-react'
 
 const translations = {
@@ -91,12 +92,12 @@ export default function LoginPage() {
         setStep('totp')
       } else if (data.access_token) {
         setToken(data.access_token)
-        router.push('/dashboard')
+        router.push(safeFrom(new URLSearchParams(window.location.search).get('from')))
       } else {
         setError('Error al iniciar sesión')
       }
     } catch (err: unknown) {
-      setError(extractErrorMessage(err, 'Error al iniciar sesión'))
+      setError(loginErrorMessage(err))
     } finally {
       setLoading(false)
     }
