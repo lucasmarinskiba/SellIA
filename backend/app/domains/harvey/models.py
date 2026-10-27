@@ -26,6 +26,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
+from app.core.encrypted_types import EncryptedString
 
 
 def _utcnow() -> datetime:
@@ -200,3 +201,22 @@ class HarveyReply(Base):
     created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
     __table_args__ = (UniqueConstraint("business_id", "message_id", name="uq_harvey_reply_message"),)
+
+
+class HarveySecrets(Base):
+    """Each business's OWN search-provider keys (Brave, Google Places), encrypted at rest.
+
+    The platform pays for no search: a business that wants automatic site search brings its own key, and
+    without one that source is simply off. Kept apart from harvey_profiles on purpose: the profile is read by
+    the API and the screen, and a new column on an existing table would never be created in production.
+    """
+
+    __tablename__ = "harvey_secrets"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    business_id = Column(
+        UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, unique=True, index=True
+    )
+    brave_api_key = Column(EncryptedString, nullable=True)
+    google_places_api_key = Column(EncryptedString, nullable=True)
+    updated_at = Column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow, nullable=False)

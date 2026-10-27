@@ -165,6 +165,8 @@ export function ProspeccionContent() {
         <SettingsTab
           bid={bid}
           profile={profile}
+          status={status}
+          onChange={reload}
           onSaved={async (p) => {
             setProfile(p)
             await reload()

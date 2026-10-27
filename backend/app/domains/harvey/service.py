@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import csv
+import io
 import re
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -18,6 +20,7 @@ from app.domains.businesses.models import Business
 from app.domains.harvey import discovery, mailer
 from app.domains.harvey.gate import (
     DELIVERABLE_STATUSES,
+    EMAIL_RE,
     UNTRUSTED_RULE,
     GateResult,
     do_not_contact_entry,
@@ -32,6 +35,7 @@ from app.domains.harvey.models import (
     HarveyProfile,
     HarveyProspect,
     HarveyReply,
+    HarveySecrets,
     OutboxStatus,
     ProspectStatus,
     ReplyClass,
@@ -54,6 +58,13 @@ REPLY_STEP_BASE = 100
 AUTO_DRAFTS_PER_RUN = 3
 AUTO_SENDS_PER_RUN = 3
 AUTO_REPLY_DRAFT_DAYS = 7
+MAX_CSV_BYTES = 1_000_000
+MAX_CSV_ROWS = 1000
+_CSV_ALIASES = {
+    "email": "email", "correo": "email", "mail": "email", "name": "name", "nombre": "name",
+    "company": "company", "empresa": "company", "website": "website", "sitio": "website", "web": "website",
+    "title": "title", "cargo": "title",
+}
 ANSWERABLE = (ReplyClass.INTERESTED.value, ReplyClass.QUESTION.value, ReplyClass.OBJECTION.value)
 
 # Sequence: step -> days to wait after the previous step was SENT before drafting it.
@@ -876,6 +887,77 @@ Respondé SOLO con JSON: {{"body": "..."}}"""
         await self.db.refresh(item)
         return item
 
+    # ── discovery: sources and keys belong to each business ───────────────
+    async def _secrets(self, business_id: uuid.UUID) -> HarveySecrets | None:
+        return (
+            await self.db.execute(select(HarveySecrets).where(HarveySecrets.business_id == business_id))
+        ).scalar_one_or_none()
+
+    async def set_search_keys(
+        self,
+        business_id: uuid.UUID,
+        profile: HarveyProfile,
+        *,
+        brave: str | None = None,
+        google: str | None = None,
+        provider: str | None = None,
+    ) -> None:
+        """Store (``None`` = unchanged, ``""`` = remove) the business's own search keys."""
+        row = await self._secrets(business_id)
+        if row is None:
+            row = HarveySecrets(business_id=business_id)
+            self.db.add(row)
+        if brave is not None:
+            row.brave_api_key = brave.strip() or None
+        if google is not None:
+            row.google_places_api_key = google.strip() or None
+        if provider is not None:
+            profile.icp = {**(profile.icp or {}), "search_provider": provider}
+        await self.db.commit()
+
+    async def _search_config(self, business_id: uuid.UUID, profile: HarveyProfile) -> tuple[str, str] | None:
+        """(provider, key) the business searches with, or None when it brought no key."""
+        row = await self._secrets(business_id)
+        if row is None:
+            return None
+        keys = {"brave": row.brave_api_key, "google": row.google_places_api_key}
+        chosen = (profile.icp or {}).get("search_provider")
+        if chosen in keys and keys[chosen]:
+            return chosen, keys[chosen]
+        for name in discovery.SEARCH_PROVIDERS:
+            if keys[name]:
+                return name, keys[name]
+        return None
+
+    async def import_csv(self, business: Business, profile: HarveyProfile, raw: bytes) -> dict[str, Any]:
+        """Add the business's own contact list (CSV with an email column) to the prospects."""
+        if len(raw) > MAX_CSV_BYTES:
+            raise HarveyError("El CSV supera 1 MB", 413)
+        reader = csv.DictReader(io.StringIO(raw.decode("utf-8-sig", errors="replace")))
+        columns = {_CSV_ALIASES.get((c or "").strip().lower()): c for c in (reader.fieldnames or [])}
+        if "email" not in columns:
+            raise HarveyError("El CSV necesita una columna 'email' (también 'name', 'company', 'website', 'title')", 422)
+        items: list[dict[str, Any]] = []
+        rejected: list[dict[str, str]] = []
+        for number, row in enumerate(reader, start=2):
+            if len(items) + len(rejected) >= MAX_CSV_ROWS:
+                rejected.append({"row": str(number), "reason": f"se leen hasta {MAX_CSV_ROWS} filas"})
+                break
+            def get(key: str, row: dict[str, Any] = row) -> str:
+                return str(row.get(columns.get(key) or "") or "").strip()
+
+            email = get("email").lower()
+            if not EMAIL_RE.match(email):
+                rejected.append({"row": str(number), "reason": f"email no válido: {email[:60] or 'vacío'}"})
+                continue
+            first, _, last = get("name").partition(" ")
+            items.append({
+                "email": email, "first_name": first[:120], "last_name": last[:120], "company": get("company")[:255],
+                "website": get("website")[:500], "title": get("title")[:160],
+            })
+        created, skipped = await self.add_prospects(business.id, profile, items)
+        return {"rows": len(items) + len(rejected), "created": len(created), "skipped": skipped, "rejected": rejected}
+
     # ── discovery ─────────────────────────────────────────────────────────
     async def _discovered_today(self, business_id: uuid.UUID) -> int:
         start = _utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -931,9 +1013,16 @@ Respondé SOLO con JSON: {{"body": "..."}}"""
 
         async with discovery.make_client(transport) as client:
             candidates = list(urls or [])
-            for query in queries or []:
+            search = await self._search_config(business.id, profile) if queries else None
+            if queries and search is None and not candidates:
+                raise HarveyError(
+                    "Para buscar sitios automáticamente cargá tu propia clave de Brave o de Google en Configuración. "
+                    "Sin clave podés pegar los sitios a mano.",
+                    503,
+                )
+            for query in (queries or []) if search else []:
                 try:
-                    candidates += await discovery.search_sites(client, query)
+                    candidates += await discovery.search_sites(client, query, provider=search[0], api_key=search[1])
                 except discovery.DiscoveryError as e:
                     if not candidates:
                         raise HarveyError(str(e), 503) from e
@@ -992,6 +1081,8 @@ Respondé SOLO con JSON: {{"body": "..."}}"""
     async def status(self, business: Business, profile: HarveyProfile) -> dict[str, Any]:
         """Readiness and numbers for the Harvey screen."""
         now = _utcnow()
+        secrets = await self._secrets(business.id)
+        search = await self._search_config(business.id, profile)
 
         async def grouped(column: Any, model: Any) -> dict[str, int]:
             rows = await self.db.execute(
@@ -1007,7 +1098,10 @@ Respondé SOLO con JSON: {{"body": "..."}}"""
         return {
             "email_connected": await mailer.get_email_account(self.db, business.id) is not None,
             "model_available": llm_available(),
-            "search_available": discovery.search_available(),
+            "search_available": search is not None,
+            "search_provider": search[0] if search else None,
+            "has_brave_key": bool(secrets and secrets.brave_api_key),
+            "has_google_key": bool(secrets and secrets.google_places_api_key),
             "in_send_window": in_send_window(profile, now),
             "sent_today": await self._sent_today(business.id),
             "send_cap_today": effective_send_cap(profile, now),
@@ -1104,7 +1198,7 @@ Respondé SOLO con JSON: {{"body": "..."}}"""
                 else:
                     result["drafts_error"] = "falta la API key del modelo"
 
-            if profile.auto_discover and discovery.search_available():
+            if profile.auto_discover and await self._search_config(business.id, profile) is not None:
                 due = profile.last_discovery_at is None or profile.last_discovery_at.date() < now.date()
                 queries = self.discovery_queries(profile, now)
                 if due and queries:

@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.business_access import require_business_access
@@ -18,6 +18,8 @@ from app.core.deps import get_current_user
 from app.domains.harvey.schemas import (
     DiscoverIn,
     DiscoverResponse,
+    DiscoveryKeysIn,
+    ImportCsvResponse,
     OutboxEdit,
     OutboxItemResponse,
     ProfileResponse,
@@ -337,5 +339,39 @@ async def answer_reply(
     try:
         profile = await service.get_or_create_profile(business)
         return await service.answer_reply(business, profile, reply_id)
+    except HarveyError as e:
+        raise _http(e) from e
+
+
+@router.put("/discovery-keys", response_model=StatusResponse)
+async def set_discovery_keys(
+    business_id: UUID,
+    body: DiscoveryKeysIn,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """The business's own Brave / Google Places key. Write-only: the response says only whether one is loaded."""
+    business = await require_business_access(db, business_id, current_user, manage=True)
+    service = HarveyService(db)
+    profile = await service.get_or_create_profile(business)
+    await service.set_search_keys(
+        business_id, profile, brave=body.brave_api_key, google=body.google_places_api_key, provider=body.search_provider
+    )
+    return await service.status(business, profile)
+
+
+@router.post("/prospects/import-csv", response_model=ImportCsvResponse, status_code=status.HTTP_201_CREATED)
+async def import_prospects_csv(
+    business_id: UUID,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Import the business's own contact list (CSV with an ``email`` column) as prospects."""
+    business = await require_business_access(db, business_id, current_user, manage=True)
+    service = HarveyService(db)
+    try:
+        profile = await service.get_or_create_profile(business)
+        return await service.import_csv(business, profile, await file.read(1_000_001))
     except HarveyError as e:
         raise _http(e) from e

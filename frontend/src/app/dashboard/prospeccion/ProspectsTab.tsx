@@ -97,7 +97,7 @@ export function ProspectsTab({
             Leer estos sitios
           </Button>
           <Button size="sm" variant="secondary" isLoading={busy === 'search'} disabled={!status.search_available}
-            title={status.search_available ? undefined : 'Falta configurar el buscador (BRAVE_SEARCH_API_KEY)'}
+            title={status.search_available ? undefined : 'Cargá tu propia clave de búsqueda en Configuración → Fuentes de prospectos'}
             onClick={() =>
               run('search', () => harvey.discover(bid, { urls: [], queries: [] }), (r) => `Nuevos: ${r.counts.created ?? 0}`)
                 .then((r) => { if (r) setFound(r) })
@@ -136,6 +136,27 @@ export function ProspectsTab({
           }>
           Agregar
         </Button>
+        <div className="border-t border-slate-200 pt-3">
+          <p className="mb-2 text-sm text-slate-600">
+            ¿La tenés en una planilla? Importá un <strong>CSV</strong> con una columna <code>email</code> (y, si querés,
+            <code> name, company, website, title</code>). Hasta 1000 filas.
+          </p>
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            aria-label="Importar CSV de contactos"
+            disabled={busy === 'csv'}
+            className="block text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              e.target.value = ''
+              if (!file) return
+              void run('csv', () => harvey.importCsv(bid, file), (r) =>
+                `${r.created} importados${r.skipped.length ? `, ${r.skipped.length} omitidos` : ''}${r.rejected.length ? `, ${r.rejected.length} filas con problemas (ej.: fila ${r.rejected[0].row}: ${r.rejected[0].reason})` : ''}`,
+              ).then(refreshAll)
+            }}
+          />
+        </div>
       </section>
 
       <Notice notice={notice} />

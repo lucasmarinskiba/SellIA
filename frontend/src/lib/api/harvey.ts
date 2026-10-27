@@ -47,6 +47,9 @@ export interface HarveyStatus {
   email_connected: boolean
   model_available: boolean
   search_available: boolean
+  search_provider: 'brave' | 'google' | null
+  has_brave_key: boolean
+  has_google_key: boolean
   in_send_window: boolean
   sent_today: number
   send_cap_today: number
@@ -128,7 +131,25 @@ export const errMsg = (e: unknown): string => {
   return e instanceof Error ? e.message : 'Algo salió mal'
 }
 
+export interface ImportCsvResult {
+  rows: number
+  created: number
+  skipped: { email: string; reason: string }[]
+  rejected: { row: string; reason: string }[]
+}
+
 export const harvey = {
+  setDiscoveryKeys: (
+    bid: string,
+    body: { brave_api_key?: string; google_places_api_key?: string; search_provider?: 'brave' | 'google' },
+  ) => api.put<HarveyStatus>(`${base(bid)}/discovery-keys`, body).then((r) => r.data),
+  importCsv: (bid: string, file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api
+      .post<ImportCsvResult>(`${base(bid)}/prospects/import-csv`, form, { headers: { 'Content-Type': 'multipart/form-data' } })
+      .then((r) => r.data)
+  },
   status: (bid: string) => api.get<HarveyStatus>(`${base(bid)}/status`).then((r) => r.data),
   profile: (bid: string) => api.get<HarveyProfile>(`${base(bid)}/profile`).then((r) => r.data),
   updateProfile: (bid: string, body: HarveyProfileUpdate) =>
