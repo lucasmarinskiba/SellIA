@@ -99,6 +99,7 @@ celery_app = Celery(
 )
 
 _modules = [
+    "app.tasks.places_retention_tasks",
     "app.tasks.workflow_tasks",
     "app.tasks.offline_sequence_tasks",
     "app.tasks.authority_tasks",
@@ -242,6 +243,10 @@ celery_app.conf.beat_schedule = {
         "schedule": crontab(minute=15, hour=5),  # todos los días 05:15
     },
     # === Subscription Management Tasks ===
+    "purge-expired-place-contacts": {
+        "task": "app.tasks.places_retention_tasks.purge_expired_place_contacts_task",
+        "schedule": crontab(minute=40, hour=3),  # todos los días 03:40
+    },
     "check-expiring-subscriptions": {
         "task": "app.tasks.subscription_tasks.check_expiring_subscriptions",
         "schedule": crontab(minute=13, hour="*/6"),  # cada 6 horas (00, 06, 12, 18)
