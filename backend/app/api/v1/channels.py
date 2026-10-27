@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from uuid import UUID
+from uuid import UUID, uuid4
 from typing import Any
 import hmac
 from urllib.parse import urlencode
@@ -43,13 +43,23 @@ async def _get_business_for_user(
     return business
 
 
-def _settings_with_account(channel_in: ChannelConnectionCreate) -> dict[str, Any]:
-    """The submitted settings plus, for manually configured channels, which account they point at."""
+def _prepare_channel(channel_in: ChannelConnectionCreate) -> tuple[dict[str, Any], dict[str, Any]]:
+    """The (credentials, settings) to store for a manually configured channel.
+
+    Adds what the connector needs but the user never types: a Webchat widget id (without one the channel can
+    never validate) and its allowed domain, plus which account the channel points at.
+    """
+    credentials = dict(channel_in.credentials or {})
     values = dict(channel_in.settings or {})
-    found = channel_account.account_from_credentials(channel_in.platform.value, channel_in.credentials)
+    if channel_in.platform == ChannelPlatform.WEBCHAT:
+        credentials.setdefault("widget_id", uuid4().hex)
+        domain = str(credentials.get("site_domain") or "").strip()
+        if domain and "allowed_domains" not in values:
+            values["allowed_domains"] = [domain]
+    found = channel_account.account_from_credentials(channel_in.platform.value, credentials)
     if found and "account" not in values:
         values["account"] = found
-    return values
+    return credentials, values
 
 
 @router.post("/{business_id}/channels", response_model=ChannelConnectionResponse, status_code=status.HTTP_201_CREATED)
@@ -70,12 +80,13 @@ async def create_channel(
         )
 
     try:
+        credentials, channel_settings = _prepare_channel(channel_in)
         channel = ChannelConnection(
             business_id=business_id,
             platform=channel_in.platform,
             name=channel_in.name,
-            credentials=channel_in.credentials or {},
-            settings=_settings_with_account(channel_in),
+            credentials=credentials,
+            settings=channel_settings,
         )
         db.add(channel)
         await db.commit()

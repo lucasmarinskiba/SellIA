@@ -1,5 +1,5 @@
 import {
-  Bot, Briefcase, Camera, Gem, GraduationCap, Globe, Link2, Mail, Megaphone, MessageSquare, Music,
+  AtSign, Bot, Briefcase, Camera, Gem, GraduationCap, Globe, Link2, Mail, Megaphone, MessageSquare, Music,
   Phone, Search, ShoppingBag, ShoppingCart, Store,
   type LucideIcon,
 } from 'lucide-react'
@@ -46,6 +46,8 @@ export const PLATFORMS: Record<string, PlatformMeta> = {
   google_ads: { label: 'Google Ads', icon: Search, tile: 'bg-red-50 text-red-700', description: 'Campañas de Google', category: 'ads' },
   tiktok_ads: { label: 'TikTok Ads', icon: Music, tile: 'bg-slate-100 text-slate-800', description: 'Campañas de TikTok', category: 'ads' },
   tiktok: { label: 'TikTok', icon: Music, tile: 'bg-slate-100 text-slate-800', description: 'Tu cuenta de TikTok', category: 'social' },
+  twitter: { label: 'X (Twitter)', icon: MessageSquare, tile: 'bg-slate-100 text-slate-800', description: 'Publicaciones y mensajes en X', category: 'social' },
+  threads: { label: 'Threads', icon: AtSign, tile: 'bg-slate-100 text-slate-800', description: 'Publicaciones en Threads', category: 'social' },
   beacons: { label: 'Beacons', icon: Link2, tile: 'bg-purple-50 text-purple-700', description: 'Beacons / Linktree', category: 'social' },
 }
 
@@ -56,7 +58,7 @@ export const platformMeta = (platform: string): PlatformMeta =>
 
 export const STATUS_STYLE: Record<ChannelStatus, { label: string; pill: string; dot: string }> = {
   connected: { label: 'Conectado', pill: 'bg-emerald-50 text-emerald-800 ring-emerald-200', dot: 'bg-emerald-500' },
-  pending: { label: 'Pendiente de verificar', pill: 'bg-amber-50 text-amber-800 ring-amber-200', dot: 'bg-amber-500' },
+  pending: { label: 'Por verificar', pill: 'bg-amber-50 text-amber-800 ring-amber-200', dot: 'bg-amber-500' },
   error: { label: 'Con error', pill: 'bg-red-50 text-red-800 ring-red-200', dot: 'bg-red-500' },
   disabled: { label: 'Deshabilitado', pill: 'bg-slate-100 text-slate-700 ring-slate-200', dot: 'bg-slate-400' },
 }
@@ -87,9 +89,14 @@ export const needsReconnect = (c: Conn): boolean =>
 /** One-click platforms use the account that is logged in at the provider, so switching means authorizing again. */
 export const canSwitchAccount = (platform: string): boolean => ONE_CLICK_PLATFORMS.includes(platform)
 
-/** Stored name that is just the platform slug (rows created by the authorization flow). */
-export const displayName = (c: { name: string; platform: string }): string =>
-  c.name.trim().toLowerCase() === c.platform.toLowerCase() ? platformMeta(c.platform).label : c.name
+/**
+ * What a connection is called on screen: always the platform. The stored `name` is free text somebody typed
+ * once ("Instagram de FeedIA", "WhatsApp Principal") and is not a reliable label; the account identifies it.
+ */
+export const channelTitle = (c: { platform: string; account?: { name?: string } | null }): string => {
+  const label = platformMeta(c.platform).label
+  return c.account?.name ? `${label} (${c.account.name})` : label
+}
 
 /** Platforms with their own SellIA app: the user only authorizes, never pastes credentials. */
 export const ONE_CLICK_PLATFORMS = ['mercadolibre', 'instagram', 'messenger', 'facebook_ads', 'facebook_marketplace']
@@ -144,6 +151,7 @@ export const CREDENTIAL_FORMS: Record<string, CredentialForm> = {
       secret('hottok', 'Hottok', { placeholder: 'Token de verificación del webhook' }),
       f('client_id', 'Client ID'),
       secret('client_secret', 'Client Secret'),
+      secret('basic_token', 'Basic Token (opcional)', { advanced: true }),
     ],
     note: 'Configurá este mismo Hottok en Hotmart → Herramientas → Webhook.',
   },
@@ -161,6 +169,7 @@ export const CREDENTIAL_FORMS: Record<string, CredentialForm> = {
       f('api_keystring', 'API Keystring'),
       secret('shared_secret', 'Shared Secret'),
       secret('access_token', 'Access Token'),
+      secret('refresh_token', 'Refresh Token (opcional)', { advanced: true }),
     ],
   },
   amazon: {
@@ -170,6 +179,9 @@ export const CREDENTIAL_FORMS: Record<string, CredentialForm> = {
       secret('refresh_token', 'Refresh Token'),
       f('marketplace_id', 'Marketplace ID'),
       f('seller_id', 'Seller ID (opcional)'),
+      f('aws_access_key', 'AWS Access Key (opcional)', { advanced: true }),
+      secret('aws_secret_key', 'AWS Secret Key (opcional)', { advanced: true }),
+      f('role_arn', 'Role ARN (opcional)', { advanced: true }),
     ],
     note: 'Necesitás una app en Amazon Selling Partner API (SP-API) aprobada para tu cuenta de vendedor.',
   },
@@ -189,6 +201,47 @@ export const CREDENTIAL_FORMS: Record<string, CredentialForm> = {
     note: 'Requiere una app aprobada en LinkedIn Developers con permisos de mensajería.',
   },
   manychat: { fields: [secret('api_token', 'API Token')] },
+  google_ads: {
+    fields: [
+      f('customer_id', 'Customer ID', { placeholder: '123-456-7890', required: true }),
+      secret('developer_token', 'Developer Token', { required: true }),
+      f('client_id', 'OAuth Client ID', { required: true }),
+      secret('client_secret', 'OAuth Client Secret', { required: true }),
+      secret('refresh_token', 'Refresh Token', { required: true }),
+      f('login_customer_id', 'Login Customer ID (cuenta administradora, opcional)'),
+    ],
+    note: 'Necesitás un Developer Token aprobado de Google Ads y credenciales OAuth del proyecto de Google Cloud.',
+  },
+  tiktok_ads: {
+    fields: [
+      f('advertiser_id', 'Advertiser ID', { required: true }),
+      secret('access_token', 'Access Token', { required: true }),
+      f('app_id', 'App ID', { required: true }),
+      secret('secret', 'App Secret', { required: true }),
+    ],
+    note: 'Se generan en TikTok for Business → Developers al crear tu app.',
+  },
+  tiktok: {
+    fields: [secret('access_token', 'Access Token', { required: true }), f('open_id', 'Open ID', { required: true })],
+    note: 'Requiere una app aprobada en TikTok for Developers con acceso a tu cuenta.',
+  },
+  beacons: {
+    fields: [secret('api_key', 'API Key', { required: true }), f('creator_id', 'Creator ID'), secret('webhook_secret', 'Webhook Secret (opcional)')],
+  },
+  twitter: {
+    fields: [
+      f('api_key', 'API Key', { required: true }),
+      secret('api_secret', 'API Secret', { required: true }),
+      secret('access_token', 'Access Token', { required: true }),
+      secret('access_secret', 'Access Token Secret', { required: true }),
+      secret('bearer_token', 'Bearer Token (opcional)'),
+    ],
+    note: 'Se generan en el X Developer Portal, en tu proyecto, con permisos de lectura y escritura.',
+  },
+  threads: {
+    fields: [secret('access_token', 'Access Token', { required: true }), f('user_id', 'User ID', { required: true })],
+    note: 'Requiere una app de Meta con el producto Threads habilitado.',
+  },
   tiktok_shop: {
     fields: [
       f('client_id', 'App Key (Client ID)'),
@@ -197,6 +250,7 @@ export const CREDENTIAL_FORMS: Record<string, CredentialForm> = {
       f('shop_id', 'Shop ID'),
       f('shop_cipher', 'Shop Cipher (opcional)'),
       secret('refresh_token', 'Refresh Token (opcional)'),
+      secret('webhook_verify_token', 'Webhook Verify Token (opcional)', { advanced: true }),
     ],
     note: 'Se generan en TikTok Shop Partner Center al crear tu app.',
   },

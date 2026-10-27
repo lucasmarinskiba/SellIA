@@ -2,7 +2,7 @@
 
 import { Check, Clock, Copy, Loader2, Trash2, Zap, AlertCircle, CheckCircle2, PauseCircle } from 'lucide-react'
 import type { ChannelConnection } from '@/lib/channels'
-import { canSwitchAccount, displayName, isIncomplete, needsReconnect, platformMeta, STATUS_STYLE } from './catalog'
+import { canSwitchAccount, channelTitle, isIncomplete, needsReconnect, platformMeta, STATUS_STYLE } from './catalog'
 
 const STATUS_ICON = {
   connected: CheckCircle2,
@@ -35,7 +35,7 @@ export function ChannelCard({ channel, testing, copied, onTest, onComplete, onSw
       : (STATUS_STYLE[channel.status] ?? STATUS_STYLE.pending)
   const StatusIcon = incomplete ? PauseCircle : reconnect ? AlertCircle : (STATUS_ICON[channel.status] ?? Clock)
   const switchable = canSwitchAccount(channel.platform) && !incomplete && !reconnect
-  const name = displayName(channel)
+  const title = channelTitle(channel)
   const Icon = meta.icon
 
   return (
@@ -45,13 +45,19 @@ export function ChannelCard({ channel, testing, copied, onTest, onComplete, onSw
           <Icon className="h-6 w-6" />
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="truncate font-semibold text-slate-900">{name}</h3>
-          <p className="truncate text-sm text-slate-500">{meta.label}</p>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <h3 className="font-semibold text-slate-900">{meta.label}</h3>
+            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${style.pill}`}>
+              <StatusIcon className="h-3.5 w-3.5" aria-hidden="true" />
+              {style.label}
+            </span>
+          </div>
+          <p className="mt-0.5 truncate text-sm text-slate-500">{channel.account?.name ?? meta.description}</p>
         </div>
         <button
           type="button"
           onClick={onDelete}
-          aria-label={`${incomplete ? 'Quitar' : 'Desconectar'} ${name}`}
+          aria-label={`${incomplete ? 'Quitar' : 'Desconectar'} ${title}`}
           title={incomplete ? 'Quitar' : 'Desconectar'}
           className="-mr-1 -mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
         >
@@ -59,21 +65,12 @@ export function ChannelCard({ channel, testing, copied, onTest, onComplete, onSw
         </button>
       </div>
 
-      <div className="mt-4">
-        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${style.pill}`}>
-          <StatusIcon className="h-3.5 w-3.5" aria-hidden="true" />
-          {style.label}
-        </span>
-      </div>
-
-      {!incomplete && (
+      {!incomplete && (channel.account?.name ? (channel.account.id || channel.account.detail) : true) && (
         <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
           {channel.account?.name ? (
             <>
-              <span className="text-slate-500">Cuenta: </span>
-              <strong className="font-semibold text-slate-900">{channel.account.name}</strong>
               {channel.account.id && channel.account.id !== channel.account.name && (
-                <span className="text-slate-500"> · ID {channel.account.id}</span>
+                <span className="block text-slate-500">ID {channel.account.id}</span>
               )}
               {channel.account.detail && <span className="block text-slate-500">{channel.account.detail}</span>}
             </>

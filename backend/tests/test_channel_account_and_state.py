@@ -143,3 +143,36 @@ async def test_oauth_callback_ignores_unsigned_or_forged_state(state):
         for platform in ("mercadolibre", "instagram"):
             resp = await client.get(f"/oauth/callback/{platform}", params={"code": "c", "state": state}, follow_redirects=False)
             assert resp.status_code in (302, 307) and resp.headers["location"].endswith("/dashboard/canales?connect_error=state")
+
+
+# ── channels saved from the manual form must be usable ────────────────────
+def test_webchat_gets_the_widget_id_its_connector_needs_and_the_allowed_domain():
+    from app.api.v1.channels import _prepare_channel
+    from app.domains.channels.connectors import get_connector
+    from app.domains.channels.schemas import ChannelConnectionCreate
+
+    body = ChannelConnectionCreate(platform=ChannelPlatform.WEBCHAT, name="Webchat", credentials={"site_domain": "mitienda.com"})
+    credentials, settings = _prepare_channel(body)
+    assert credentials["widget_id"] and credentials["site_domain"] == "mitienda.com"
+    assert settings["allowed_domains"] == ["mitienda.com"] and settings["account"] == {"name": "mitienda.com"}
+
+    import asyncio
+
+    assert asyncio.run(get_connector(ChannelPlatform.WEBCHAT, credentials, settings).validate_credentials()) is True
+    # The same site saved twice gets different widgets, and an explicit widget id is kept.
+    assert _prepare_channel(body)[0]["widget_id"] != credentials["widget_id"]
+    kept = ChannelConnectionCreate(platform=ChannelPlatform.WEBCHAT, name="W", credentials={"widget_id": "mine"})
+    assert _prepare_channel(kept)[0]["widget_id"] == "mine"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("platform", list(ChannelPlatform))
+async def test_every_registered_connector_refuses_empty_credentials_without_raising(platform):
+    import asyncio
+
+    from app.domains.channels.connectors import CONNECTOR_REGISTRY, get_connector
+
+    if platform not in CONNECTOR_REGISTRY:
+        pytest.skip(f"{platform.value} has no connector")
+    connector = get_connector(platform, {}, {})
+    assert await asyncio.wait_for(connector.validate_credentials(), 10) is False

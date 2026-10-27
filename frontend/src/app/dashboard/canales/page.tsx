@@ -8,7 +8,7 @@ import type { ChannelPlatform } from '@/types/channels'
 import { ChannelCard } from './ChannelCard'
 import { ConnectModal, type ConnectDraft } from './ConnectModal'
 import {
-  CATEGORIES, displayName, isIncomplete, needsReconnect, ONE_CLICK_PLATFORMS, PLATFORMS, platformMeta, type CategoryKey,
+  CATEGORIES, channelTitle, isIncomplete, needsReconnect, ONE_CLICK_PLATFORMS, PLATFORMS, platformMeta, type CategoryKey,
 } from './catalog'
 
 type Notice = { kind: 'ok' | 'error' | 'warn'; text: string } | null
@@ -21,7 +21,7 @@ const NOTICE_STYLE: Record<'ok' | 'error' | 'warn', string> = {
 
 const emptyDraft = (platform: ChannelPlatform = 'email'): ConnectDraft => ({
   platform,
-  name: platform === 'email' ? 'Email principal' : '',
+  name: platformMeta(platform).label,
   credentials: platform === 'email' ? { smtp_host: 'smtp.gmail.com', smtp_port: '587' } : {},
 })
 
@@ -141,7 +141,7 @@ export default function CanalesPage() {
   }
 
   const handleDelete = async (channel: ChannelConnection) => {
-    const name = displayName(channel)
+    const name = channelTitle(channel)
     const prompt = isIncomplete(channel)
       ? `¿Quitar "${name}"? Era una conexión sin terminar; podés iniciarla de nuevo cuando quieras.`
       : `¿Desconectar "${name}"? Vas a tener que volver a conectarlo si lo querés usar de nuevo.`
@@ -164,9 +164,9 @@ export default function CanalesPage() {
       setChannels(fresh)
       const updated = fresh.find((c) => c.id === channel.id)
       if (updated?.status === 'error') {
-        setNotice({ kind: 'error', text: updated.status_message || `La conexión de "${displayName(channel)}" falló.` })
+        setNotice({ kind: 'error', text: updated.status_message || `La conexión de ${channelTitle(channel)} falló.` })
       } else {
-        setNotice({ kind: 'ok', text: `"${displayName(channel)}": conexión verificada.` })
+        setNotice({ kind: 'ok', text: `${channelTitle(channel)}: conexión verificada.` })
       }
     } catch (e) {
       setNotice({ kind: 'error', text: reason(e, 'No se pudo probar la conexión.') })
@@ -295,7 +295,7 @@ export default function CanalesPage() {
     return (category === 'all' || meta.category === category) && (!q || `${text} ${meta.label}`.toLowerCase().includes(q))
   }
 
-  const visibleChannels = channels.filter((c) => matchesFilters(c.platform, displayName(c)))
+  const visibleChannels = channels.filter((c) => matchesFilters(c.platform, c.account?.name ?? ''))
   const connectedPlatforms = new Set(channels.map((c) => c.platform as string))
   const available = Object.keys(PLATFORMS).filter((p) => !connectedPlatforms.has(p) && matchesFilters(p, PLATFORMS[p].description))
 

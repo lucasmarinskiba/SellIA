@@ -74,7 +74,6 @@ function Field({ def, value, onChange }: { def: FieldDef; value: string; onChang
 
 export function ConnectModal({ draft, onChange, onClose, onSubmit, onOAuth, onWhatsApp, saving, connecting, error }: Props) {
   const titleId = useId()
-  const nameId = useId()
   const firstRef = useRef<HTMLSelectElement>(null)
   const meta = platformMeta(draft.platform)
   const form = CREDENTIAL_FORMS[draft.platform]
@@ -99,7 +98,7 @@ export function ConnectModal({ draft, onChange, onClose, onSubmit, onOAuth, onWh
     onChange({
       platform,
       credentials: platform === 'email' ? { smtp_host: 'smtp.gmail.com', smtp_port: '587' } : {},
-      name: platform === 'email' ? 'Email principal' : '',
+      name: platformMeta(platform).label,
     })
 
   const basic = (form?.fields ?? []).filter((f) => !f.advanced)
@@ -174,22 +173,6 @@ export function ConnectModal({ draft, onChange, onClose, onSubmit, onOAuth, onWh
             </p>
           ) : (
             <>
-              <div>
-                <label htmlFor={nameId} className="mb-1 block text-sm font-medium text-slate-700">
-                  Nombre del canal<span className="ml-0.5 text-red-600" aria-hidden="true">*</span>
-                </label>
-                <input
-                  id={nameId}
-                  type="text"
-                  required
-                  value={draft.name}
-                  onChange={(e) => onChange({ ...draft, name: e.target.value })}
-                  placeholder={`Ej: ${meta.label} principal`}
-                  className={inputCls}
-                />
-                <p className="mt-1 text-xs text-slate-500">Solo para que lo reconozcas en tu lista.</p>
-              </div>
-
               {isEmail && (
                 <div className="space-y-3">
                   <div>
