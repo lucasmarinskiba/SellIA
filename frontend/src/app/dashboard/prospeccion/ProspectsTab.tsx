@@ -73,10 +73,10 @@ export function ProspectsTab({
   return (
     <div className="space-y-5">
       <section className={`${card} space-y-3`}>
-        <h2 className="flex items-center gap-2 font-semibold text-white">
+        <h2 className="flex items-center gap-2 font-semibold text-slate-900">
           <Globe className="h-4 w-4" /> Descubrir prospectos
         </h2>
-        <p className="text-sm text-white/50">
+        <p className="text-sm text-slate-500">
           Pegá sitios web de negocios (uno por línea). Leemos solo lo público, respetamos robots.txt y guardamos el email
           de contacto que publican. Antes de escribirles tenés que verificarlo.
         </p>
@@ -105,15 +105,15 @@ export function ProspectsTab({
             }>
             Buscar según mi cliente ideal
           </Button>
-          <span className="text-xs text-white/40">Hoy: {status.discovered_today} descubiertos</span>
+          <span className="text-xs text-slate-500">Hoy: {status.discovered_today} descubiertos</span>
         </div>
         {found && (
           <ul className="space-y-1 text-sm">
             {found.sites.map((s) => (
-              <li key={s.url} className="flex flex-wrap gap-2 text-white/70">
-                <span className="font-medium text-white">{s.url}</span>
-                <span className="text-white/40">{OUTCOME[s.outcome] ?? s.outcome}</span>
-                {s.detail && <span className="text-white/40">{s.detail}</span>}
+              <li key={s.url} className="flex flex-wrap gap-2 text-slate-600">
+                <span className="font-medium text-slate-900">{s.url}</span>
+                <span className="text-slate-500">{OUTCOME[s.outcome] ?? s.outcome}</span>
+                {s.detail && <span className="text-slate-500">{s.detail}</span>}
               </li>
             ))}
           </ul>
@@ -121,7 +121,7 @@ export function ProspectsTab({
       </section>
 
       <section className={`${card} space-y-3`}>
-        <h2 className="flex items-center gap-2 font-semibold text-white">
+        <h2 className="flex items-center gap-2 font-semibold text-slate-900">
           <Plus className="h-4 w-4" /> Cargar mi lista
         </h2>
         <label className={label} htmlFor="manual-list">email, nombre, empresa (uno por línea)</label>
@@ -139,10 +139,10 @@ export function ProspectsTab({
       </section>
 
       <Notice notice={notice} />
-      {loadError && <p className="text-sm text-red-300">{loadError}</p>}
+      {loadError && <p className="text-sm text-red-700">{loadError}</p>}
 
       {unverified.length > 0 && (
-        <p className="text-sm text-amber-300">
+        <p className="text-sm text-amber-700">
           {unverified.length} email(s) encontrados sin verificar: confirmalos antes de redactar.
         </p>
       )}
@@ -156,9 +156,9 @@ export function ProspectsTab({
         </Button>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-white/10">
+      <div className="overflow-x-auto rounded-xl border border-slate-200">
         <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="bg-white/[0.04] text-xs uppercase text-white/40">
+          <thead className="bg-white text-xs uppercase text-slate-500">
             <tr>
               <th className="p-3" />
               <th className="p-3">Email</th>
@@ -170,7 +170,7 @@ export function ProspectsTab({
           </thead>
           <tbody>
             {prospects.map((p) => (
-              <tr key={p.id} className="border-t border-white/10 text-white/80">
+              <tr key={p.id} className="border-t border-slate-200 text-slate-700">
                 <td className="p-3">
                   {(p.email_status === 'scraped' || p.email_status === 'verified') && (
                     <input type="checkbox" checked={selected.has(p.id)} onChange={() => toggle(p.id)} aria-label={`Elegir ${p.email}`} />
@@ -179,7 +179,7 @@ export function ProspectsTab({
                 <td className="p-3">
                   {p.email}
                   {p.source === 'discovery' && p.source_url && (
-                    <a href={p.source_url} target="_blank" rel="noopener noreferrer" className="ml-2 text-xs text-white/40 underline">
+                    <a href={p.source_url} target="_blank" rel="noopener noreferrer" className="ml-2 text-xs text-slate-500 underline">
                       origen
                     </a>
                   )}
@@ -199,7 +199,7 @@ export function ProspectsTab({
             ))}
             {prospects.length === 0 && (
               <tr>
-                <td colSpan={6} className="p-6 text-center text-white/40">Todavía no hay prospectos.</td>
+                <td colSpan={6} className="p-6 text-center text-slate-500">Todavía no hay prospectos.</td>
               </tr>
             )}
           </tbody>

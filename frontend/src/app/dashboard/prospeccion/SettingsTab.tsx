@@ -6,7 +6,7 @@ import { harvey, type HarveyProfile } from '@/lib/api/harvey'
 import { card, fmtDate, input, label, lines, Notice, useAction } from './ui'
 
 const Toggle = ({ checked, onChange, children }: { checked: boolean; onChange: (v: boolean) => void; children: React.ReactNode }) => (
-  <label className="flex items-start gap-2 text-sm text-white/80">
+  <label className="flex items-start gap-2 text-sm text-slate-700">
     <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => onChange(e.target.checked)} />
     <span>{children}</span>
   </label>
@@ -71,7 +71,7 @@ export function SettingsTab({
   return (
     <div className="space-y-5">
       <section className={`${card} space-y-3`}>
-        <h2 className="font-semibold text-white">Quién escribe y qué ofrece</h2>
+        <h2 className="font-semibold text-slate-900">Quién escribe y qué ofrece</h2>
         <div className="grid gap-3 sm:grid-cols-2">
           <div><label className={label} htmlFor="p-name">Nombre de quien firma</label>
             <input id="p-name" className={input} value={f.persona_name} onChange={(e) => set('persona_name', e.target.value)} /></div>
@@ -87,7 +87,7 @@ export function SettingsTab({
       </section>
 
       <section className={`${card} space-y-3`}>
-        <h2 className="font-semibold text-white">Cliente ideal (para buscar prospectos)</h2>
+        <h2 className="font-semibold text-slate-900">Cliente ideal (para buscar prospectos)</h2>
         <div className="grid gap-3 sm:grid-cols-2">
           <div><label className={label} htmlFor="p-kw">Palabras clave (una por línea)</label>
             <textarea id="p-kw" className={`${input} min-h-[80px]`} placeholder="panadería&#10;rotisería" value={f.keywords} onChange={(e) => set('keywords', e.target.value)} /></div>
@@ -97,7 +97,7 @@ export function SettingsTab({
       </section>
 
       <section className={`${card} space-y-3`}>
-        <h2 className="font-semibold text-white">Pie legal de cada email</h2>
+        <h2 className="font-semibold text-slate-900">Pie legal de cada email</h2>
         <div><label className={label} htmlFor="p-addr">Dirección postal del negocio (obligatoria)</label>
           <input id="p-addr" className={input} value={f.postal_address} onChange={(e) => set('postal_address', e.target.value)} /></div>
         <div><label className={label} htmlFor="p-opt">Línea para darse de baja</label>
@@ -107,7 +107,7 @@ export function SettingsTab({
       </section>
 
       <section className={`${card} space-y-3`}>
-        <h2 className="font-semibold text-white">Ritmo y automatización</h2>
+        <h2 className="font-semibold text-slate-900">Ritmo y automatización</h2>
         <div className="grid gap-3 sm:grid-cols-3">
           <div><label className={label} htmlFor="p-sends">Envíos por día</label>
             <input id="p-sends" type="number" min={1} max={500} className={input} value={f.max_daily_sends} onChange={num('max_daily_sends')} /></div>
@@ -129,7 +129,7 @@ export function SettingsTab({
         <Toggle checked={f.auto_discover} onChange={(v) => set('auto_discover', v)}>
           Buscar prospectos nuevos una vez por día según tu cliente ideal (necesita buscador configurado).
         </Toggle>
-        <p className="text-xs text-white/40">
+        <p className="text-xs text-slate-500">
           Una casilla nueva arranca con pocos envíos por día y sube sola. Última pasada automática: {fmtDate(profile.last_cycle_at)}.
         </p>
       </section>
