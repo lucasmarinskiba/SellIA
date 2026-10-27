@@ -2,7 +2,7 @@
 
 import { Check, Clock, Copy, Loader2, Trash2, Zap, AlertCircle, CheckCircle2, PauseCircle } from 'lucide-react'
 import type { ChannelConnection } from '@/lib/channels'
-import { platformMeta, STATUS_STYLE } from './catalog'
+import { displayName, isIncomplete, platformMeta, STATUS_STYLE } from './catalog'
 
 const STATUS_ICON = {
   connected: CheckCircle2,
@@ -18,14 +18,19 @@ interface Props {
   testing: boolean
   copied: boolean
   onTest: () => void
+  onComplete: () => void
   onDelete: () => void
   onCopyWebhook: (url: string) => void
 }
 
-export function ChannelCard({ channel, testing, copied, onTest, onDelete, onCopyWebhook }: Props) {
+export function ChannelCard({ channel, testing, copied, onTest, onComplete, onDelete, onCopyWebhook }: Props) {
   const meta = platformMeta(channel.platform)
-  const style = STATUS_STYLE[channel.status] ?? STATUS_STYLE.pending
-  const StatusIcon = STATUS_ICON[channel.status] ?? Clock
+  const incomplete = isIncomplete(channel)
+  const style = incomplete
+    ? { label: 'Sin completar', pill: 'bg-slate-100 text-slate-700 ring-slate-300', dot: 'bg-slate-400' }
+    : (STATUS_STYLE[channel.status] ?? STATUS_STYLE.pending)
+  const StatusIcon = incomplete ? PauseCircle : (STATUS_ICON[channel.status] ?? Clock)
+  const name = displayName(channel)
   const Icon = meta.icon
 
   return (
@@ -35,14 +40,14 @@ export function ChannelCard({ channel, testing, copied, onTest, onDelete, onCopy
           <Icon className="h-6 w-6" />
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="truncate font-semibold text-slate-900">{channel.name}</h3>
+          <h3 className="truncate font-semibold text-slate-900">{name}</h3>
           <p className="truncate text-sm text-slate-500">{meta.label}</p>
         </div>
         <button
           type="button"
           onClick={onDelete}
-          aria-label={`Desconectar ${channel.name}`}
-          title="Desconectar"
+          aria-label={`${incomplete ? 'Quitar' : 'Desconectar'} ${name}`}
+          title={incomplete ? 'Quitar' : 'Desconectar'}
           className="-mr-1 -mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
         >
           <Trash2 className="h-4 w-4" />
@@ -55,6 +60,12 @@ export function ChannelCard({ channel, testing, copied, onTest, onDelete, onCopy
           {style.label}
         </span>
       </div>
+
+      {incomplete && (
+        <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+          Empezaste a conectar esta cuenta pero no terminaste la autorización. Todavía no recibe ni envía nada.
+        </p>
+      )}
 
       {channel.status === 'error' && channel.status_message && (
         <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-800">{channel.status_message}</p>
@@ -78,17 +89,33 @@ export function ChannelCard({ channel, testing, copied, onTest, onDelete, onCopy
 
       <div className="mt-auto flex items-center justify-between gap-3 pt-4">
         <p className="text-xs text-slate-400">
-          {channel.last_sync_at ? `Última verificación: ${fmtDate(channel.last_sync_at)}` : 'Sin verificar todavía'}
+          {incomplete
+            ? ''
+            : channel.last_sync_at
+              ? `Última verificación: ${fmtDate(channel.last_sync_at)}`
+              : channel.status === 'connected'
+                ? 'Autorizado · todavía sin actividad'
+                : 'Todavía no probaste la conexión'}
         </p>
-        <button
-          type="button"
-          onClick={onTest}
-          disabled={testing}
-          className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange disabled:opacity-50"
-        >
-          {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
-          Probar
-        </button>
+        {incomplete ? (
+          <button
+            type="button"
+            onClick={onComplete}
+            className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-brand-orange px-3 text-sm font-semibold text-white transition-colors hover:bg-brand-orange-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-2"
+          >
+            Completar conexión
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onTest}
+            disabled={testing}
+            className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange disabled:opacity-50"
+          >
+            {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+            Probar
+          </button>
+        )}
       </div>
     </article>
   )
