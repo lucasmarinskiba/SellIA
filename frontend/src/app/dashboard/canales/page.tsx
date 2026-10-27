@@ -7,7 +7,9 @@ import { channelsApi, type ChannelConnection } from '@/lib/channels'
 import type { ChannelPlatform } from '@/types/channels'
 import { ChannelCard } from './ChannelCard'
 import { ConnectModal, type ConnectDraft } from './ConnectModal'
-import { CATEGORIES, PLATFORMS, platformMeta, type CategoryKey } from './catalog'
+import {
+  CATEGORIES, displayName, isIncomplete, ONE_CLICK_PLATFORMS, PLATFORMS, platformMeta, type CategoryKey,
+} from './catalog'
 
 type Notice = { kind: 'ok' | 'error' | 'warn'; text: string } | null
 
@@ -29,7 +31,9 @@ const reason = (e: unknown, fallback: string): string => {
   return typeof detail === 'string' ? detail : fallback
 }
 
-function Stat({ label, value, tone, icon: Icon }: { label: string; value: number; tone: string; icon: typeof Plug }) {
+function Stat({ label, hint, value, tone, icon: Icon }: {
+  label: string; hint: string; value: number; tone: string; icon: typeof Plug
+}) {
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${tone}`} aria-hidden="true">
@@ -37,7 +41,8 @@ function Stat({ label, value, tone, icon: Icon }: { label: string; value: number
       </div>
       <div>
         <p className="text-2xl font-bold tabular-nums leading-none text-slate-900">{value}</p>
-        <p className="mt-1 text-xs font-medium text-slate-500">{label}</p>
+        <p className="mt-1 text-xs font-medium text-slate-700">{label}</p>
+        <p className="text-xs text-slate-500">{hint}</p>
       </div>
     </div>
   )
@@ -132,10 +137,14 @@ export default function CanalesPage() {
   }
 
   const handleDelete = async (channel: ChannelConnection) => {
-    if (!confirm(`¿Desconectar "${channel.name}"? Vas a tener que volver a conectarlo si lo querés usar de nuevo.`)) return
+    const name = displayName(channel)
+    const prompt = isIncomplete(channel)
+      ? `¿Quitar "${name}"? Era una conexión sin terminar; podés iniciarla de nuevo cuando quieras.`
+      : `¿Desconectar "${name}"? Vas a tener que volver a conectarlo si lo querés usar de nuevo.`
+    if (!confirm(prompt)) return
     try {
       await channelsApi.delete(businessId, channel.id)
-      setNotice({ kind: 'ok', text: `"${channel.name}" desconectado.` })
+      setNotice({ kind: 'ok', text: `"${name}" ${isIncomplete(channel) ? 'quitado' : 'desconectado'}.` })
       await loadChannels(businessId)
     } catch (e) {
       setNotice({ kind: 'error', text: reason(e, 'No se pudo desconectar el canal.') })
@@ -151,15 +160,20 @@ export default function CanalesPage() {
       setChannels(fresh)
       const updated = fresh.find((c) => c.id === channel.id)
       if (updated?.status === 'error') {
-        setNotice({ kind: 'error', text: updated.status_message || `La conexión de "${channel.name}" falló.` })
+        setNotice({ kind: 'error', text: updated.status_message || `La conexión de "${displayName(channel)}" falló.` })
       } else {
-        setNotice({ kind: 'ok', text: `"${channel.name}": conexión verificada.` })
+        setNotice({ kind: 'ok', text: `"${displayName(channel)}": conexión verificada.` })
       }
     } catch (e) {
       setNotice({ kind: 'error', text: reason(e, 'No se pudo probar la conexión.') })
     } finally {
       setTestingId(null)
     }
+  }
+
+  const completeConnection = (channel: ChannelConnection) => {
+    if (ONE_CLICK_PLATFORMS.includes(channel.platform)) void handleOAuth(channel.platform as ChannelPlatform)
+    else openModal(channel.platform as ChannelPlatform)
   }
 
   const handleOAuth = async (platform: ChannelPlatform) => {
@@ -252,9 +266,9 @@ export default function CanalesPage() {
 
   const counts = useMemo(
     () => ({
-      total: channels.length,
       connected: channels.filter((c) => c.status === 'connected').length,
-      pending: channels.filter((c) => c.status === 'pending').length,
+      toVerify: channels.filter((c) => c.status === 'pending' && !isIncomplete(c)).length,
+      incomplete: channels.filter(isIncomplete).length,
       error: channels.filter((c) => c.status === 'error').length,
     }),
     [channels],
@@ -266,7 +280,7 @@ export default function CanalesPage() {
     return (category === 'all' || meta.category === category) && (!q || `${text} ${meta.label}`.toLowerCase().includes(q))
   }
 
-  const visibleChannels = channels.filter((c) => matchesFilters(c.platform, c.name))
+  const visibleChannels = channels.filter((c) => matchesFilters(c.platform, displayName(c)))
   const connectedPlatforms = new Set(channels.map((c) => c.platform as string))
   const available = Object.keys(PLATFORMS).filter((p) => !connectedPlatforms.has(p) && matchesFilters(p, PLATFORMS[p].description))
 
@@ -320,10 +334,10 @@ export default function CanalesPage() {
       )}
 
       <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Canales" value={counts.total} icon={Plug} tone="bg-slate-100 text-slate-700" />
-        <Stat label="Conectados" value={counts.connected} icon={CheckCircle2} tone="bg-emerald-50 text-emerald-700" />
-        <Stat label="Por verificar" value={counts.pending} icon={Clock} tone="bg-amber-50 text-amber-700" />
-        <Stat label="Con error" value={counts.error} icon={AlertCircle} tone="bg-red-50 text-red-700" />
+        <Stat label="Conectados" hint="Autorizados y listos" value={counts.connected} icon={CheckCircle2} tone="bg-emerald-50 text-emerald-700" />
+        <Stat label="Por verificar" hint="Guardados: falta probarlos" value={counts.toVerify} icon={Clock} tone="bg-amber-50 text-amber-700" />
+        <Stat label="Sin completar" hint="Autorización sin terminar" value={counts.incomplete} icon={Plug} tone="bg-slate-100 text-slate-700" />
+        <Stat label="Con error" hint="Fallaron al probar" value={counts.error} icon={AlertCircle} tone="bg-red-50 text-red-700" />
       </section>
 
       <section aria-label="Filtros" className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -399,6 +413,7 @@ export default function CanalesPage() {
                 testing={testingId === channel.id}
                 copied={copiedId === channel.id}
                 onTest={() => void handleTest(channel)}
+                onComplete={() => completeConnection(channel)}
                 onDelete={() => void handleDelete(channel)}
                 onCopyWebhook={(url) => copyWebhook(url, channel.id)}
               />

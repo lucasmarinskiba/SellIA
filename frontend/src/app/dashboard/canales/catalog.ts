@@ -61,6 +61,18 @@ export const STATUS_STYLE: Record<ChannelStatus, { label: string; pill: string; 
   disabled: { label: 'Deshabilitado', pill: 'bg-slate-100 text-slate-700 ring-slate-200', dot: 'bg-slate-400' },
 }
 
+/**
+ * A row exists as soon as someone STARTS an authorization (the backend creates it with empty credentials
+ * and status "pending"). If they close the Meta/Mercado Libre window, that row stays behind: it is not a
+ * connection, so it must not be counted or shown as one.
+ */
+export const isIncomplete = (c: { status: string; credentials?: Record<string, unknown> | null }): boolean =>
+  c.status === 'pending' && Object.keys(c.credentials ?? {}).length === 0
+
+/** Stored name that is just the platform slug (rows created by the authorization flow). */
+export const displayName = (c: { name: string; platform: string }): string =>
+  c.name.trim().toLowerCase() === c.platform.toLowerCase() ? platformMeta(c.platform).label : c.name
+
 /** Platforms with their own SellIA app: the user only authorizes, never pastes credentials. */
 export const ONE_CLICK_PLATFORMS = ['mercadolibre', 'instagram', 'messenger', 'facebook_ads', 'facebook_marketplace']
 
