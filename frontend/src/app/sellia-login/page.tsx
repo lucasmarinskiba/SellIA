@@ -1,117 +1,15 @@
-'use client'
+import { redirect } from 'next/navigation'
 
 /**
- * SellIA login · uses new sellia-api auth flow.
- * Standalone from legacy /login. Renders at /sellia-login.
+ * There used to be two login screens (/login and this one) with the same backend call but different looks, and
+ * session expiry bounced people between them. /login is the only one now; old links and bookmarks land there.
  */
-import { useState, type FormEvent } from 'react'
-
-import { useLogin, QueryProvider, extractErrorMessage } from '@/lib/sellia-api'
-
-function LoginInner() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [needs2fa, setNeeds2fa] = useState(false)
-  const [totpCode, setTotpCode] = useState('')
-  const login = useLogin()
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    try {
-      const data = await login.mutateAsync({ email, password, totp_code: needs2fa ? totpCode : undefined })
-      if (data.requires_2fa) {
-        setNeeds2fa(true)
-        setError('Esta cuenta tiene 2FA activado. Ingresá el código de tu app autenticadora.')
-        return
-      }
-      window.location.href = '/dashboard'
-    } catch (err: any) {
-      const hasResponse = !!err?.response
-      setError(!hasResponse && err instanceof Error ? err.message : extractErrorMessage(err, 'Error iniciando sesión'))
-    }
-  }
-
-  return (
-    <div className="min-h-screen bg-[#060812] flex items-center justify-center p-6">
-      <div className="w-full max-w-sm rounded-2xl border border-purple-500/20 bg-gradient-to-br from-[#0c0a1a]/90 to-[#0a0e1a]/95 p-6 backdrop-blur">
-        <h1 className="text-xl font-black mb-1">
-          <span className="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent uppercase tracking-widest">SellIA</span>
-        </h1>
-        <p className="text-[11px] text-white/50 mb-5">Iniciá sesión en tu Brain Hub</p>
-
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div>
-            <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-1 block">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-cyan-400/50"
-            />
-          </div>
-          <div>
-            <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-1 block">Contraseña</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={8}
-              autoComplete="current-password"
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-cyan-400/50"
-            />
-          </div>
-
-          {needs2fa && (
-            <div>
-              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-1 block">Código 2FA</label>
-              <input
-                type="text"
-                value={totpCode}
-                onChange={(e) => setTotpCode(e.target.value)}
-                required
-                autoFocus
-                placeholder="123456"
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-cyan-400/50"
-              />
-            </div>
-          )}
-
-          {error && (
-            <div className="text-[11px] text-red-300 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/25">
-              {error}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={login.isPending}
-            className="w-full py-2.5 rounded-lg bg-gradient-to-r from-cyan-500 to-pink-500 text-white font-bold text-sm disabled:opacity-50"
-          >
-            {login.isPending ? 'Entrando…' : 'Entrar'}
-          </button>
-        </form>
-
-        <p className="text-[11px] text-white/40 text-center mt-4">
-          ¿No tenés cuenta?{' '}
-          <a href="/sellia-signup" className="text-cyan-400 hover:underline">
-            Crear ahora
-          </a>
-        </p>
-      </div>
-    </div>
-  )
+export default async function SelliaLoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string; from?: string }>
+}) {
+  const query = await searchParams
+  const from = query.from ?? query.next
+  redirect(from ? `/login?from=${encodeURIComponent(from)}` : '/login')
 }
-
-export default function SellIALoginPage() {
-  return (
-    <QueryProvider>
-      <LoginInner />
-    </QueryProvider>
-  )
-}
-
