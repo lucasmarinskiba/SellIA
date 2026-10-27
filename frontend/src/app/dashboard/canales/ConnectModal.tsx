@@ -5,7 +5,7 @@ import { ChevronDown, ExternalLink, Eye, EyeOff, Info, Loader2, X } from 'lucide
 import type { ChannelPlatform } from '@/types/channels'
 import {
   CATEGORIES, CREDENTIAL_FORMS, EMAIL_PRESETS, ONE_CLICK_PLATFORMS, PLATFORMS, platformMeta, type FieldDef,
-} from './catalog'
+} from '@/lib/channelCatalog'
 
 export interface ConnectDraft {
   platform: ChannelPlatform

@@ -19,11 +19,13 @@ import Link from 'next/link'
 import { Loader2, Plug, Bot, ShoppingBag, ExternalLink } from 'lucide-react'
 import { useBusinessSnapshot } from '@/lib/businessSnapshot'
 import { platformMeta } from '@/lib/platformMeta'
-import ChannelConnectPanel from '@/components/channels/ChannelConnectPanel'
+import { stateBadge } from '@/lib/channelState'
+import { useChannels } from '@/lib/useChannels'
 import MultiPlatformSeller from '@/components/platform-commerce/MultiPlatformSeller'
 
 export default function VendedorMultiplataformaPage(): React.JSX.Element {
   const { snapshot, loading, unavailable } = useBusinessSnapshot()
+  const { channels: connections } = useChannels()
 
   const channels = snapshot?.channels ?? []
 
@@ -57,9 +59,22 @@ export default function VendedorMultiplataformaPage(): React.JSX.Element {
               una (derivado del conector), qué vendió y cuál es su margen. */}
           <MultiPlatformSeller />
 
-          {/* Conectar de verdad: formulario real por plataforma + prueba real
-              de credenciales contra la propia plataforma. */}
-          <ChannelConnectPanel />
+          {/* Conectar vive en un solo lugar (Canales): un segundo formulario con otros campos
+              obligatorios hacía que una misma conexión figurara completa acá e incompleta allá. */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-5">
+            <div>
+              <h2 className="font-semibold text-slate-900">Conectar y administrar plataformas</h2>
+              <p className="text-sm text-slate-600">
+                Se hace en Canales; lo que conectes ahí aparece acá con su actividad.
+              </p>
+            </div>
+            <Link
+              href="/dashboard/canales"
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+            >
+              Ir a Canales <ExternalLink className="h-4 w-4" />
+            </Link>
+          </div>
 
           {/* Detalle real por canal conectado */}
           <div className="rounded-xl border border-slate-200 bg-white">
@@ -88,6 +103,8 @@ export default function VendedorMultiplataformaPage(): React.JSX.Element {
               <div className="divide-y divide-slate-100">
                 {channels.map(ch => {
                   const meta = platformMeta(ch.platform)
+                  const conn = connections.find(c => c.platform === ch.platform && c.name === ch.name)
+                  const state = conn ? stateBadge(conn).label : ch.status
                   return (
                     <div key={`${ch.platform}-${ch.name}`} className="p-5 flex items-center gap-4 flex-wrap">
                       <span
@@ -99,7 +116,7 @@ export default function VendedorMultiplataformaPage(): React.JSX.Element {
                       <div className="flex-1 min-w-[180px]">
                         <p className="font-medium text-slate-900">{ch.name}</p>
                         <p className="text-xs text-slate-500">
-                          Estado: {ch.status}
+                          Estado: {state}
                           {ch.last_message_at
                             ? ` · último mensaje ${new Date(ch.last_message_at).toLocaleString('es-AR')}`
                             : ' · sin mensajes todavía'}
