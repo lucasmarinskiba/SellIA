@@ -86,6 +86,24 @@ export const isIncomplete = (c: Conn): boolean => {
 export const needsReconnect = (c: Conn): boolean =>
   c.status === 'connected' && ONE_CLICK_PLATFORMS.includes(c.platform) && !hasAuthorization(c)
 
+export type ChannelState = 'connected' | 'toVerify' | 'incomplete' | 'error' | 'other'
+
+/** The single place that decides which summary widget a channel belongs to (counts and filter share it). */
+export const channelState = (c: Conn): ChannelState => {
+  if (isIncomplete(c)) return 'incomplete'
+  if (c.status === 'error' || needsReconnect(c)) return 'error'
+  if (c.status === 'connected') return 'connected'
+  if (c.status === 'pending') return 'toVerify'
+  return 'other'
+}
+
+export const STATE_LABEL: Record<Exclude<ChannelState, 'other'>, string> = {
+  connected: 'Conectados',
+  toVerify: 'Por verificar',
+  incomplete: 'Sin completar',
+  error: 'Con error',
+}
+
 /** One-click platforms use the account that is logged in at the provider, so switching means authorizing again. */
 export const canSwitchAccount = (platform: string): boolean => ONE_CLICK_PLATFORMS.includes(platform)
 

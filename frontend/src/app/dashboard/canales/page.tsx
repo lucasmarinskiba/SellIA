@@ -8,7 +8,8 @@ import type { ChannelPlatform } from '@/types/channels'
 import { ChannelCard } from './ChannelCard'
 import { ConnectModal, type ConnectDraft } from './ConnectModal'
 import {
-  CATEGORIES, channelTitle, isIncomplete, needsReconnect, ONE_CLICK_PLATFORMS, PLATFORMS, platformMeta, type CategoryKey,
+  CATEGORIES, channelState, channelTitle, isIncomplete, ONE_CLICK_PLATFORMS, PLATFORMS, platformMeta, STATE_LABEL,
+  type CategoryKey, type ChannelState,
 } from './catalog'
 
 type Notice = { kind: 'ok' | 'error' | 'warn'; text: string } | null
@@ -31,12 +32,20 @@ const reason = (e: unknown, fallback: string): string => {
   return typeof detail === 'string' ? detail : fallback
 }
 
-function Stat({ label, hint, value, tone, icon: Icon }: {
-  label: string; hint: string; value: number; tone: string; icon: typeof Plug
+function Stat({ label, hint, value, tone, icon: Icon, active, onClick }: {
+  label: string; hint: string; value: number; tone: string; icon: typeof Plug; active: boolean; onClick: () => void
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${tone}`} aria-hidden="true">
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      aria-label={`${label}: ${value}. ${active ? 'Mostrando solo estos; tocá para ver todos' : 'Tocá para ver cuáles son'}`}
+      className={`flex w-full items-center gap-3 rounded-2xl border bg-white p-4 text-left shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange ${
+        active ? 'border-brand-orange ring-2 ring-brand-orange/30' : 'border-slate-200'
+      }`}
+    >
+      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tone}`} aria-hidden="true">
         <Icon className="h-5 w-5" />
       </div>
       <div>
@@ -44,7 +53,7 @@ function Stat({ label, hint, value, tone, icon: Icon }: {
         <p className="mt-1 text-xs font-medium text-slate-700">{label}</p>
         <p className="text-xs text-slate-500">{hint}</p>
       </div>
-    </div>
+    </button>
   )
 }
 
@@ -63,6 +72,7 @@ export default function CanalesPage() {
   const [notice, setNotice] = useState<Notice>(null)
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<CategoryKey | 'all'>('all')
+  const [stateFilter, setStateFilter] = useState<Exclude<ChannelState, 'other'> | null>(null)
 
   const loadChannels = useCallback(async (id: string) => {
     setLoading(true)
@@ -281,10 +291,10 @@ export default function CanalesPage() {
 
   const counts = useMemo(
     () => ({
-      connected: channels.filter((c) => c.status === 'connected' && !needsReconnect(c)).length,
-      toVerify: channels.filter((c) => c.status === 'pending' && !isIncomplete(c)).length,
-      incomplete: channels.filter(isIncomplete).length,
-      error: channels.filter((c) => c.status === 'error' || needsReconnect(c)).length,
+      connected: channels.filter((c) => channelState(c) === 'connected').length,
+      toVerify: channels.filter((c) => channelState(c) === 'toVerify').length,
+      incomplete: channels.filter((c) => channelState(c) === 'incomplete').length,
+      error: channels.filter((c) => channelState(c) === 'error').length,
     }),
     [channels],
   )
@@ -295,7 +305,15 @@ export default function CanalesPage() {
     return (category === 'all' || meta.category === category) && (!q || `${text} ${meta.label}`.toLowerCase().includes(q))
   }
 
-  const visibleChannels = channels.filter((c) => matchesFilters(c.platform, c.account?.name ?? ''))
+  const visibleChannels = channels.filter(
+    (c) => (!stateFilter || channelState(c) === stateFilter) && matchesFilters(c.platform, c.account?.name ?? ''),
+  )
+
+  const toggleState = (state: Exclude<ChannelState, 'other'>) => {
+    const next = stateFilter === state ? null : state
+    setStateFilter(next)
+    if (next) document.getElementById('mis-canales')?.scrollIntoView({ block: 'start' })
+  }
   const connectedPlatforms = new Set(channels.map((c) => c.platform as string))
   const available = Object.keys(PLATFORMS).filter((p) => !connectedPlatforms.has(p) && matchesFilters(p, PLATFORMS[p].description))
 
@@ -349,10 +367,10 @@ export default function CanalesPage() {
       )}
 
       <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Conectados" hint="Autorizados y listos" value={counts.connected} icon={CheckCircle2} tone="bg-emerald-50 text-emerald-700" />
-        <Stat label="Por verificar" hint="Guardados: falta probarlos" value={counts.toVerify} icon={Clock} tone="bg-amber-50 text-amber-700" />
-        <Stat label="Sin completar" hint="Autorización sin terminar" value={counts.incomplete} icon={Plug} tone="bg-slate-100 text-slate-700" />
-        <Stat label="Con error" hint="Fallaron al probar" value={counts.error} icon={AlertCircle} tone="bg-red-50 text-red-700" />
+        <Stat label="Conectados" hint="Autorizados y listos" value={counts.connected} icon={CheckCircle2} tone="bg-emerald-50 text-emerald-700" active={stateFilter === 'connected'} onClick={() => toggleState('connected')} />
+        <Stat label="Por verificar" hint="Guardados: falta probarlos" value={counts.toVerify} icon={Clock} tone="bg-amber-50 text-amber-700" active={stateFilter === 'toVerify'} onClick={() => toggleState('toVerify')} />
+        <Stat label="Sin completar" hint="Autorización sin terminar" value={counts.incomplete} icon={Plug} tone="bg-slate-100 text-slate-700" active={stateFilter === 'incomplete'} onClick={() => toggleState('incomplete')} />
+        <Stat label="Con error" hint="Fallaron al probar" value={counts.error} icon={AlertCircle} tone="bg-red-50 text-red-700" active={stateFilter === 'error'} onClick={() => toggleState('error')} />
       </section>
 
       <section aria-label="Filtros" className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -389,7 +407,20 @@ export default function CanalesPage() {
         <div className="flex items-baseline justify-between">
           <h2 id="mis-canales" className="text-lg font-semibold text-slate-900">Tus canales</h2>
           {!loading && channels.length > 0 && (
-            <span className="text-sm text-slate-500">{visibleChannels.length} de {channels.length}</span>
+            <span className="flex items-center gap-2 text-sm text-slate-500">
+              {stateFilter && (
+                <button
+                  type="button"
+                  onClick={() => setStateFilter(null)}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-full bg-slate-900 px-3 text-xs font-medium text-white hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange"
+                  aria-label={`Quitar el filtro ${STATE_LABEL[stateFilter]}`}
+                >
+                  {STATE_LABEL[stateFilter]}
+                  <X className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+              )}
+              {visibleChannels.length} de {channels.length}
+            </span>
           )}
         </div>
 
@@ -418,7 +449,20 @@ export default function CanalesPage() {
             </button>
           </div>
         ) : visibleChannels.length === 0 ? (
-          <p className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500">Ningún canal conectado coincide con el filtro.</p>
+          <p className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500">
+            {stateFilter
+              ? `No tenés canales en estado "${STATE_LABEL[stateFilter]}".`
+              : 'Ningún canal conectado coincide con el filtro.'}{' '}
+            {(stateFilter || category !== 'all' || q) && (
+              <button
+                type="button"
+                onClick={() => { setStateFilter(null); setCategory('all'); setQuery('') }}
+                className="font-medium text-slate-900 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange"
+              >
+                Ver todos
+              </button>
+            )}
+          </p>
         ) : (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
             {visibleChannels.map((channel) => (
