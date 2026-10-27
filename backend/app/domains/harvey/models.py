@@ -93,6 +93,19 @@ class HarveyProfile(Base):
     # IMAP cursor: highest UID already looked at (0 = never synced).
     imap_last_uid = Column(Integer, nullable=False, default=0)
     inbox_synced_at = Column(DateTime(timezone=True), nullable=True)
+    # Automatic loop (Celery beat). Sending happens only inside the window, and a young
+    # mailbox ramps up from warmup_started_at instead of blasting max_daily_sends on day 1.
+    auto_draft = Column(Boolean, nullable=False, default=False)
+    auto_discover = Column(Boolean, nullable=False, default=False)
+    max_daily_discoveries = Column(Integer, nullable=False, default=10)
+    send_window_start = Column(Integer, nullable=False, default=9)
+    send_window_end = Column(Integer, nullable=False, default=18)
+    send_timezone = Column(String(64), nullable=False, default="America/Argentina/Buenos_Aires")
+    send_weekdays_only = Column(Boolean, nullable=False, default=True)
+    warmup_started_at = Column(DateTime(timezone=True), nullable=True)
+    last_cycle_at = Column(DateTime(timezone=True), nullable=True)
+    last_cycle = Column(JSONB, nullable=False, default=dict)
+    last_discovery_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow, nullable=False)
 
@@ -118,6 +131,10 @@ class HarveyProspect(Base):
     # "provided": supplied by the business (own CRM/list). "invalid"/"guess" never get mail.
     email_status = Column(String(20), nullable=False, default="provided")
     is_company_inbox = Column(Boolean, nullable=False, default=False)
+    # Where the prospect came from: "manual" (the business's own list) or "discovery"
+    # (an address published on the prospect's own site, found by us; needs a human to verify).
+    source = Column(String(20), nullable=False, default="manual")
+    source_url = Column(String(500), nullable=False, default="")
     status = Column(String(20), nullable=False, default=ProspectStatus.NEW.value, index=True)
     created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
@@ -137,7 +154,11 @@ class HarveyOutboxItem(Base):
     prospect_id = Column(
         UUID(as_uuid=True), ForeignKey("harvey_prospects.id", ondelete="CASCADE"), nullable=False, index=True
     )
+    # 1-3 = the cold sequence. Answers to a prospect's reply use REPLY_STEP_BASE + n so the
+    # (business, prospect, step) slot stays unique; they are told apart by kind.
     step = Column(Integer, nullable=False, default=1)
+    kind = Column(String(10), nullable=False, default="sequence")
+    reply_id = Column(UUID(as_uuid=True), nullable=True)
     to_email = Column(String(320), nullable=False)
     subject = Column(String(200), nullable=False)
     body = Column(Text, nullable=False)

@@ -21,6 +21,13 @@ class ProfileUpdate(BaseModel):
     do_not_contact: list[str] | None = Field(None, max_length=1000)
     max_daily_drafts: int | None = Field(None, ge=1, le=200)
     max_daily_sends: int | None = Field(None, ge=1, le=500)
+    auto_draft: bool | None = None
+    auto_discover: bool | None = None
+    max_daily_discoveries: int | None = Field(None, ge=1, le=100)
+    send_window_start: int | None = Field(None, ge=0, le=23)
+    send_window_end: int | None = Field(None, ge=1, le=24)
+    send_timezone: str | None = Field(None, max_length=64)
+    send_weekdays_only: bool | None = None
 
 
 class ProfileResponse(BaseModel):
@@ -41,7 +48,18 @@ class ProfileResponse(BaseModel):
     do_not_contact: list[str]
     max_daily_drafts: int
     max_daily_sends: int
+    auto_draft: bool
+    auto_discover: bool
+    max_daily_discoveries: int
+    send_window_start: int
+    send_window_end: int
+    send_timezone: str
+    send_weekdays_only: bool
+    warmup_started_at: datetime | None
     inbox_synced_at: datetime | None
+    last_cycle_at: datetime | None
+    last_cycle: dict[str, Any]
+    last_discovery_at: datetime | None
 
 
 class ProspectIn(BaseModel):
@@ -77,6 +95,8 @@ class ProspectResponse(BaseModel):
     notes: str
     email_status: str
     is_company_inbox: bool
+    source: str
+    source_url: str
     status: str
     created_at: datetime
 
@@ -93,6 +113,8 @@ class OutboxItemResponse(BaseModel):
     business_id: UUID
     prospect_id: UUID
     step: int
+    kind: str
+    reply_id: UUID | None
     to_email: str
     subject: str
     body: str
@@ -128,3 +150,46 @@ class SummaryResponse(BaseModel):
     """Counters returned by batch operations (send, follow-ups, inbox sync)."""
 
     counts: dict[str, int]
+
+
+class OutboxEdit(BaseModel):
+    subject: str = Field(min_length=1, max_length=200)
+    body: str = Field(min_length=1, max_length=4000)
+
+
+class VerifyIn(BaseModel):
+    prospect_ids: list[UUID] = Field(min_length=1, max_length=200)
+    verified: bool = True
+
+
+class DiscoverIn(BaseModel):
+    urls: list[str] = Field(default_factory=list, max_length=20)
+    queries: list[str] = Field(default_factory=list, max_length=3)
+    limit: int | None = Field(None, ge=1, le=50)
+
+
+class DiscoverSite(BaseModel):
+    url: str
+    outcome: str
+    detail: str
+
+
+class DiscoverResponse(BaseModel):
+    counts: dict[str, int]
+    sites: list[DiscoverSite]
+
+
+class StatusResponse(BaseModel):
+    """What the Harvey screen needs in one call: readiness, today's numbers and queue sizes."""
+
+    email_connected: bool
+    model_available: bool
+    search_available: bool
+    in_send_window: bool
+    sent_today: int
+    send_cap_today: int
+    drafts_today: int
+    discovered_today: int
+    prospects: dict[str, int]
+    outbox: dict[str, int]
+    replies: int

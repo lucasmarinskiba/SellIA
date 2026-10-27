@@ -6,15 +6,18 @@ import re
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+import httpx
 from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
 from app.domains.businesses.models import Business
-from app.domains.harvey import mailer
+from app.domains.harvey import discovery, mailer
 from app.domains.harvey.gate import (
+    DELIVERABLE_STATUSES,
     UNTRUSTED_RULE,
     GateResult,
     do_not_contact_entry,
@@ -33,6 +36,7 @@ from app.domains.harvey.models import (
     ProspectStatus,
     ReplyClass,
 )
+from app.domains.harvey.schedule import effective_send_cap, in_send_window
 
 logger = get_logger(__name__)
 
@@ -40,7 +44,17 @@ logger = get_logger(__name__)
 PROFILE_FIELDS = frozenset({
     "is_enabled", "persona_name", "persona_role", "tone", "language", "offer", "benefits",
     "icp", "postal_address", "opt_out_line", "do_not_contact", "max_daily_drafts", "max_daily_sends",
+    "auto_draft", "auto_discover", "max_daily_discoveries", "send_window_start", "send_window_end",
+    "send_timezone", "send_weekdays_only",
 })
+
+# Answers to a prospect's reply take steps REPLY_STEP_BASE + n (the cold sequence is 1..MAX_STEP).
+REPLY_STEP_BASE = 100
+# One automatic run does a little work, so a day's cap is spread over the sending window.
+AUTO_DRAFTS_PER_RUN = 3
+AUTO_SENDS_PER_RUN = 3
+AUTO_REPLY_DRAFT_DAYS = 7
+ANSWERABLE = (ReplyClass.INTERESTED.value, ReplyClass.QUESTION.value, ReplyClass.OBJECTION.value)
 
 # Sequence: step -> days to wait after the previous step was SENT before drafting it.
 FOLLOWUP_DELAYS_DAYS = {2: 3, 3: 4}
@@ -120,6 +134,7 @@ class HarveyService:
 
     async def update_profile(self, business: Business, changes: dict[str, Any]) -> HarveyProfile:
         profile = await self.get_or_create_profile(business)
+        self._validate_schedule(profile, changes)
         for key, value in changes.items():
             if key not in PROFILE_FIELDS:
                 continue
@@ -129,9 +144,24 @@ class HarveyService:
                 except ValueError as e:
                     raise HarveyError(str(e), 422) from e
             setattr(profile, key, value)
+        if profile.is_enabled and profile.warmup_started_at is None:
+            profile.warmup_started_at = _utcnow()  # a young mailbox ramps up instead of blasting
         await self.db.commit()
         await self.db.refresh(profile)
         return profile
+
+    @staticmethod
+    def _validate_schedule(profile: HarveyProfile, changes: dict[str, Any]) -> None:
+        start = changes.get('send_window_start', profile.send_window_start)
+        end = changes.get('send_window_end', profile.send_window_end)
+        if not (0 <= start < end <= 24):
+            raise HarveyError('La ventana de envío necesita una hora de inicio menor que la de fin (0 a 24)', 422)
+        tz = changes.get('send_timezone')
+        if tz is not None:
+            try:
+                ZoneInfo(tz)
+            except (ZoneInfoNotFoundError, ValueError) as e:
+                raise HarveyError(f'Zona horaria desconocida: {tz}', 422) from e
 
     # ── prospects ─────────────────────────────────────────────────────────
     async def add_prospects(
@@ -306,6 +336,10 @@ Respondé SOLO con JSON: {{"body": "..."}}"""
             return existing
         if prospect.status in STOP_STATUSES:
             raise HarveyError(f"El prospecto está en estado '{prospect.status}'", 409)
+        if (prospect.email_status or "") not in DELIVERABLE_STATUSES:
+            raise HarveyError(
+                f"El email de este prospecto está '{prospect.email_status}': verificalo antes de redactar", 409
+            )
 
         previous: list[HarveyOutboxItem] = []
         for n in range(1, step):
@@ -357,7 +391,9 @@ Respondé SOLO con JSON: {{"body": "..."}}"""
     ) -> HarveyOutboxItem:
         return await self.draft_step(business, profile, prospect, 1)
 
-    async def plan_followups(self, business: Business, profile: HarveyProfile) -> dict[str, int]:
+    async def plan_followups(
+        self, business: Business, profile: HarveyProfile, limit: int | None = None
+    ) -> dict[str, int]:
         """Draft steps 2 and 3 for every prospect whose previous email went out long enough ago
         without an answer. Drafts still wait for human approval like any other."""
         now = _utcnow()
@@ -384,6 +420,8 @@ Respondé SOLO con JSON: {{"body": "..."}}"""
                 try:
                     await self.draft_step(business, profile, prospect, step)
                     drafted += 1
+                    if limit is not None and drafted >= limit:
+                        return {"drafted": drafted, "skipped": skipped, "stopped": 0}
                 except HarveyError as e:
                     if e.status_code in (429, 503):
                         # Cap reached or no model: every remaining prospect would fail the same way.
@@ -439,8 +477,7 @@ Respondé SOLO con JSON: {{"body": "..."}}"""
             # have changed since the draft was written.
             gate = self._gate(profile, prospect, item.subject, item.body)
             reasons = list(gate.reasons)
-            if prospect.status in (ProspectStatus.OPTED_OUT.value, ProspectStatus.REPLIED.value):
-                reasons.append(f"el prospecto está en estado '{prospect.status}'")
+            reasons += self._stop_reasons(prospect, item)
             if reasons:
                 item.status = OutboxStatus.BLOCKED.value
                 item.gate_reasons = reasons
@@ -495,7 +532,26 @@ Respondé SOLO con JSON: {{"body": "..."}}"""
                 .order_by(HarveyOutboxItem.step)
             )
         ).scalars()
-        return list(rows)
+        chain = list(rows)
+        if item.reply_id is not None:  # an answer threads under the message it answers
+            inbound = (
+                await self.db.execute(
+                    select(HarveyReply.message_id).where(
+                        HarveyReply.id == item.reply_id, HarveyReply.business_id == business_id
+                    )
+                )
+            ).scalar_one_or_none()
+            if inbound:
+                chain.append(inbound)
+        return chain
+
+    @staticmethod
+    def _stop_reasons(prospect: HarveyProspect, item: HarveyOutboxItem) -> list[str]:
+        """Why a prospect must get nothing more. A reply draft is exactly for someone who replied."""
+        stops = STOP_STATUSES
+        if item.kind == "reply":
+            stops = tuple(x for x in STOP_STATUSES if x != ProspectStatus.REPLIED.value)
+        return [f"el prospecto está en estado '{prospect.status}'"] if prospect.status in stops else []
 
     async def _block(self, item: HarveyOutboxItem, reasons: list[str]) -> HarveyOutboxItem:
         item.status = OutboxStatus.BLOCKED.value
@@ -518,14 +574,13 @@ Respondé SOLO con JSON: {{"body": "..."}}"""
         """
         if item.status != OutboxStatus.APPROVED.value:
             raise HarveyError(f"El borrador está en estado '{item.status}'; hay que aprobarlo primero", 409)
-        if await self._sent_today(business.id) >= profile.max_daily_sends:
+        if await self._sent_today(business.id) >= effective_send_cap(profile, _utcnow()):
             raise HarveyError("Se alcanzó el máximo de envíos diarios de este negocio", 429)
 
         prospect = await self.get_prospect(business.id, item.prospect_id)
         # Last look before it leaves: the list or the prospect may have changed since approval.
         reasons = list(self._gate(profile, prospect, item.subject, item.body).reasons)
-        if prospect.status in STOP_STATUSES:
-            reasons.append(f"el prospecto está en estado '{prospect.status}'")
+        reasons += self._stop_reasons(prospect, item)
         if reasons:
             return await self._block(item, reasons)
 
@@ -569,9 +624,10 @@ Respondé SOLO con JSON: {{"body": "..."}}"""
         item.sent_at = _utcnow()
         item.message_id = message_id
         item.send_error = ""
-        prospect.status = (
-            ProspectStatus.COMPLETED.value if item.step >= MAX_STEP else ProspectStatus.CONTACTED.value
-        )
+        if item.kind != "reply":  # answering a reply leaves the prospect marked as having replied
+            prospect.status = (
+                ProspectStatus.COMPLETED.value if item.step >= MAX_STEP else ProspectStatus.CONTACTED.value
+            )
         await self.db.commit()
         await self.db.refresh(item)
         return item
@@ -718,6 +774,358 @@ Respondé SOLO con JSON: {{"body": "..."}}"""
                 )
             )
         ).scalar_one_or_none()
+
+    # ── editing, verifying and answering ───────────────────────────────────
+    async def edit_item(
+        self, business_id: uuid.UUID, profile: HarveyProfile, item_id: uuid.UUID, subject: str, body: str
+    ) -> HarveyOutboxItem:
+        """A person rewrites a draft before approving it. The gate runs again on the new text."""
+        item = await self.get_outbox_item(business_id, item_id)
+        if item.status not in (OutboxStatus.PENDING_REVIEW.value, OutboxStatus.BLOCKED.value):
+            raise HarveyError(f"El borrador está en estado '{item.status}' y ya no se puede editar", 409)
+        prospect = await self.get_prospect(business_id, item.prospect_id)
+        item.subject = subject.strip()[:200]
+        item.body = body.strip()[:4000]
+        reasons = list(self._gate(profile, prospect, item.subject, item.body).reasons)
+        reasons += self._stop_reasons(prospect, item)
+        item.gate_reasons = reasons
+        item.status = OutboxStatus.BLOCKED.value if reasons else OutboxStatus.PENDING_REVIEW.value
+        await self.db.commit()
+        await self.db.refresh(item)
+        return item
+
+    async def verify_prospects(self, business_id: uuid.UUID, ids: list[uuid.UUID], verified: bool) -> int:
+        """A person confirms (or rejects) scraped addresses. Only then can mail go to them."""
+        result = await self.db.execute(
+            update(HarveyProspect)
+            .where(
+                HarveyProspect.business_id == business_id,
+                HarveyProspect.id.in_(ids),
+                HarveyProspect.email_status.in_(["scraped", "verified"]),
+            )
+            .values(email_status="verified" if verified else "invalid")
+        )
+        await self.db.commit()
+        return int(result.rowcount or 0)
+
+    async def answer_reply(self, business: Business, profile: HarveyProfile, reply_id: uuid.UUID) -> HarveyOutboxItem:
+        """Stage the drafted answer to a prospect's reply for review. No model call: the answer was
+        written when the reply was classified."""
+        reply = (
+            await self.db.execute(
+                select(HarveyReply).where(HarveyReply.id == reply_id, HarveyReply.business_id == business.id)
+            )
+        ).scalar_one_or_none()
+        if reply is None:
+            raise HarveyError("Respuesta no encontrada", 404)
+        existing = (
+            await self.db.execute(
+                select(HarveyOutboxItem).where(
+                    HarveyOutboxItem.business_id == business.id, HarveyOutboxItem.reply_id == reply.id
+                )
+            )
+        ).scalar_one_or_none()
+        if existing is not None:
+            return existing
+        if reply.classification not in ANSWERABLE or not (reply.draft_answer or "").strip():
+            raise HarveyError("Esta respuesta no tiene un borrador de contestación (la atiende una persona)", 409)
+        prospect = await self.get_prospect(business.id, reply.prospect_id)
+        if prospect.status in (ProspectStatus.OPTED_OUT.value, ProspectStatus.BOUNCED.value):
+            raise HarveyError(f"El prospecto está en estado '{prospect.status}'", 409)
+
+        count = (
+            await self.db.execute(
+                select(func.count())
+                .select_from(HarveyOutboxItem)
+                .where(
+                    HarveyOutboxItem.business_id == business.id,
+                    HarveyOutboxItem.prospect_id == prospect.id,
+                    HarveyOutboxItem.kind == "reply",
+                )
+            )
+        ).scalar_one()
+        first = await self._outbox_item(business.id, prospect.id, 1)
+        base = first.subject if first is not None else "tu consulta"
+        subject = base if base.lower().startswith("re:") else f"Re: {base}"
+        body = reply.draft_answer.strip()[:2000] + self._footer(profile)
+        gate = self._gate(profile, prospect, subject, body)
+        item = HarveyOutboxItem(
+            business_id=business.id,
+            prospect_id=prospect.id,
+            step=REPLY_STEP_BASE + count,
+            kind="reply",
+            reply_id=reply.id,
+            to_email=prospect.email,
+            subject=subject[:200],
+            body=body,
+            status=OutboxStatus.PENDING_REVIEW.value if gate.ok else OutboxStatus.BLOCKED.value,
+            gate_reasons=gate.reasons,
+        )
+        self.db.add(item)
+        try:
+            await self.db.commit()
+        except IntegrityError:
+            await self.db.rollback()  # a concurrent call staged it first
+            return (
+                await self.db.execute(
+                    select(HarveyOutboxItem).where(
+                        HarveyOutboxItem.business_id == business.id, HarveyOutboxItem.reply_id == reply.id
+                    )
+                )
+            ).scalar_one()
+        await self.db.refresh(item)
+        return item
+
+    # ── discovery ─────────────────────────────────────────────────────────
+    async def _discovered_today(self, business_id: uuid.UUID) -> int:
+        start = _utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        return (
+            await self.db.execute(
+                select(func.count())
+                .select_from(HarveyProspect)
+                .where(
+                    HarveyProspect.business_id == business_id,
+                    HarveyProspect.source == "discovery",
+                    HarveyProspect.created_at >= start,
+                )
+            )
+        ).scalar_one()
+
+    @staticmethod
+    def discovery_queries(profile: HarveyProfile, now: datetime) -> list[str]:
+        """Searches built from the business's ideal customer: keywords x locations."""
+        icp = profile.icp or {}
+        keywords = [str(k).strip() for k in (icp.get("keywords") or []) if str(k).strip()]
+        places = [str(p).strip() for p in (icp.get("locations") or []) if str(p).strip()] or [""]
+        return [f"{k} {p}".strip() for k in keywords for p in places]
+
+    async def discover(
+        self,
+        business: Business,
+        profile: HarveyProfile,
+        *,
+        urls: list[str] | None = None,
+        queries: list[str] | None = None,
+        limit: int | None = None,
+        transport: Any = None,
+    ) -> dict[str, Any]:
+        """Read prospect sites and add the contact address each one publishes, as ``scraped``.
+
+        Nothing here can be sent until a person verifies the address.
+        """
+        remaining = profile.max_daily_discoveries - await self._discovered_today(business.id)
+        if remaining <= 0:
+            raise HarveyError("Se alcanzó el máximo de prospectos descubiertos hoy", 429)
+        budget = min(limit or remaining, remaining)
+
+        known = set(
+            (
+                await self.db.execute(
+                    select(HarveyProspect.email).where(HarveyProspect.business_id == business.id)
+                )
+            ).scalars()
+        )
+        known_domains = {e.rpartition("@")[2] for e in known}
+        counts = {"sites": 0, "created": 0, "skipped": 0, "no_email": 0, "errors": 0}
+        sites: list[dict[str, Any]] = []
+
+        async with discovery.make_client(transport) as client:
+            candidates = list(urls or [])
+            for query in queries or []:
+                try:
+                    candidates += await discovery.search_sites(client, query)
+                except discovery.DiscoveryError as e:
+                    if not candidates:
+                        raise HarveyError(str(e), 503) from e
+                    break
+            seen: set[str] = set()
+            for raw in candidates[:20]:
+                if counts["created"] >= budget:
+                    break
+                try:
+                    url = discovery.normalize_url(raw)
+                    domain = discovery.registrable(url.split("//", 1)[1].split("/", 1)[0])
+                    if domain in seen:
+                        continue
+                    seen.add(domain)
+                    if domain in known_domains:
+                        counts["skipped"] += 1
+                        sites.append({"url": url, "outcome": "exists", "detail": "ya está en tu lista"})
+                        continue
+                    counts["sites"] += 1
+                    site = await discovery.scan_site(client, url)
+                except (discovery.DiscoveryError, httpx.HTTPError) as e:
+                    counts["errors"] += 1
+                    sites.append({"url": str(raw)[:200], "outcome": "error", "detail": str(e)[:200]})
+                    continue
+                if not site.emails:
+                    counts["no_email"] += 1
+                    sites.append({"url": site.url, "outcome": "no_email", "detail": "no publica un email de contacto"})
+                    continue
+                items = [
+                    {
+                        "email": found.email,
+                        "company": site.company,
+                        "website": site.url,
+                        "notes": site.description,
+                        "is_company_inbox": found.is_company_inbox,
+                        "email_status": "scraped",
+                        "source": "discovery",
+                        "source_url": found.source_url[:500],
+                    }
+                    for found in site.emails[:2]
+                ][: budget - counts["created"]]
+                created, skipped = await self.add_prospects(business.id, profile, items)
+                counts["created"] += len(created)
+                counts["skipped"] += len(skipped)
+                sites.append(
+                    {
+                        "url": site.url,
+                        "outcome": "added" if created else "skipped",
+                        "detail": ", ".join(p.email for p in created) or "; ".join(s["reason"] for s in skipped),
+                    }
+                )
+        profile.last_discovery_at = _utcnow()
+        await self.db.commit()
+        return {"counts": counts, "sites": sites}
+
+    async def status(self, business: Business, profile: HarveyProfile) -> dict[str, Any]:
+        """Readiness and numbers for the Harvey screen."""
+        now = _utcnow()
+
+        async def grouped(column: Any, model: Any) -> dict[str, int]:
+            rows = await self.db.execute(
+                select(column, func.count()).where(model.business_id == business.id).group_by(column)
+            )
+            return {key: int(n) for key, n in rows.all()}
+
+        replies = (
+            await self.db.execute(
+                select(func.count()).select_from(HarveyReply).where(HarveyReply.business_id == business.id)
+            )
+        ).scalar_one()
+        return {
+            "email_connected": await mailer.get_email_account(self.db, business.id) is not None,
+            "model_available": llm_available(),
+            "search_available": discovery.search_available(),
+            "in_send_window": in_send_window(profile, now),
+            "sent_today": await self._sent_today(business.id),
+            "send_cap_today": effective_send_cap(profile, now),
+            "drafts_today": await self._drafts_today(business.id),
+            "discovered_today": await self._discovered_today(business.id),
+            "prospects": await grouped(HarveyProspect.status, HarveyProspect),
+            "outbox": await grouped(HarveyOutboxItem.status, HarveyOutboxItem),
+            "replies": int(replies),
+        }
+
+    # ── the automatic loop ────────────────────────────────────────────────
+    async def _auto_first_drafts(self, business: Business, profile: HarveyProfile, limit: int) -> dict[str, int]:
+        """Write the first email for new, deliverable prospects: the part of the loop that spends credits."""
+        prospects = list(
+            (
+                await self.db.execute(
+                    select(HarveyProspect)
+                    .where(
+                        HarveyProspect.business_id == business.id,
+                        HarveyProspect.status == ProspectStatus.NEW.value,
+                        HarveyProspect.email_status.in_(sorted(DELIVERABLE_STATUSES)),
+                    )
+                    .order_by(HarveyProspect.created_at)
+                    .limit(limit * 3)
+                )
+            ).scalars()
+        )
+        drafted = skipped = 0
+        for prospect in prospects:
+            if drafted >= limit:
+                break
+            try:
+                await self.draft_step(business, profile, prospect, 1)
+                drafted += 1
+            except HarveyError as e:
+                if e.status_code in (429, 503):
+                    return {"drafted": drafted, "skipped": skipped, "stopped": e.status_code}
+                skipped += 1
+        return {"drafted": drafted, "skipped": skipped, "stopped": 0}
+
+    async def _auto_answer_replies(self, business: Business, profile: HarveyProfile) -> int:
+        since = _utcnow() - timedelta(days=AUTO_REPLY_DRAFT_DAYS)
+        answered = select(HarveyOutboxItem.reply_id).where(
+            HarveyOutboxItem.business_id == business.id, HarveyOutboxItem.reply_id.is_not(None)
+        )
+        replies = list(
+            (
+                await self.db.execute(
+                    select(HarveyReply).where(
+                        HarveyReply.business_id == business.id,
+                        HarveyReply.created_at >= since,
+                        HarveyReply.classification.in_(ANSWERABLE),
+                        HarveyReply.draft_answer != "",
+                        HarveyReply.id.notin_(answered),
+                    )
+                )
+            ).scalars()
+        )
+        staged = 0
+        for reply in replies:
+            try:
+                await self.answer_reply(business, profile, reply.id)
+                staged += 1
+            except HarveyError:
+                continue
+        return staged
+
+    async def run_cycle(
+        self, business: Business, profile: HarveyProfile, now: datetime | None = None
+    ) -> dict[str, Any]:
+        """One pass of the automatic loop for one business.
+
+        Reads the inbox (always: opt-outs must land quickly), optionally drafts (human still approves),
+        optionally discovers prospects, and sends what a person already approved, but only inside the
+        sending window and within the warm-up cap. Every step fails on its own, never the whole pass.
+        """
+        now = now or _utcnow()
+        result: dict[str, Any] = {}
+        if not profile.is_enabled:
+            return {"skipped": "desactivado"}
+        if await mailer.get_email_account(self.db, business.id) is None:
+            result["skipped"] = "sin canal de email conectado"
+        else:
+            try:
+                result["inbox"] = await self.sync_inbox(business, profile)
+            except HarveyError as e:
+                result["inbox_error"] = str(e)
+
+            if profile.auto_draft:
+                if llm_available():
+                    result["replies_staged"] = await self._auto_answer_replies(business, profile)
+                    result["followups"] = await self.plan_followups(business, profile, limit=AUTO_DRAFTS_PER_RUN)
+                    result["first_emails"] = await self._auto_first_drafts(business, profile, AUTO_DRAFTS_PER_RUN)
+                else:
+                    result["drafts_error"] = "falta la API key del modelo"
+
+            if profile.auto_discover and discovery.search_available():
+                due = profile.last_discovery_at is None or profile.last_discovery_at.date() < now.date()
+                queries = self.discovery_queries(profile, now)
+                if due and queries:
+                    try:
+                        found = await self.discover(business, profile, queries=[queries[now.toordinal() % len(queries)]])
+                        result["discovered"] = found["counts"]
+                    except HarveyError as e:
+                        result["discovery_error"] = str(e)
+
+            if in_send_window(profile, now):
+                try:
+                    result["send"] = await self.send_approved(business, profile, limit=AUTO_SENDS_PER_RUN)
+                except HarveyError as e:
+                    result["send_error"] = str(e)
+            else:
+                result["send"] = "fuera de la ventana de envío"
+
+        profile.last_cycle_at = now
+        profile.last_cycle = result
+        await self.db.commit()
+        return result
 
     # ── replies ───────────────────────────────────────────────────────────
     async def record_reply(

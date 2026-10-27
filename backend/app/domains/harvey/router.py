@@ -6,6 +6,7 @@ drafts or approves needs manage access (owner or ADMIN member).
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -15,6 +16,9 @@ from app.core.business_access import require_business_access
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.domains.harvey.schemas import (
+    DiscoverIn,
+    DiscoverResponse,
+    OutboxEdit,
     OutboxItemResponse,
     ProfileResponse,
     ProfileUpdate,
@@ -23,7 +27,9 @@ from app.domains.harvey.schemas import (
     ProspectsCreateResponse,
     ReplyIn,
     ReplyResponse,
+    StatusResponse,
     SummaryResponse,
+    VerifyIn,
 )
 from app.domains.harvey.service import HarveyError, HarveyService
 from app.domains.users.models import User
@@ -249,5 +255,87 @@ async def sync_inbox(
     try:
         profile = await service.get_or_create_profile(business)
         return {"counts": await service.sync_inbox(business, profile)}
+    except HarveyError as e:
+        raise _http(e) from e
+
+
+@router.get("/status", response_model=StatusResponse)
+async def get_status(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    business = await require_business_access(db, business_id, current_user)
+    service = HarveyService(db)
+    profile = await service.get_or_create_profile(business)
+    return await service.status(business, profile)
+
+
+@router.patch("/outbox/{item_id}", response_model=OutboxItemResponse)
+async def edit_item(
+    business_id: UUID,
+    item_id: UUID,
+    body: OutboxEdit,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Rewrite a draft that has not been approved yet. The gate runs again on the new text."""
+    business = await require_business_access(db, business_id, current_user, manage=True)
+    service = HarveyService(db)
+    try:
+        profile = await service.get_or_create_profile(business)
+        return await service.edit_item(business_id, profile, item_id, body.subject, body.body)
+    except HarveyError as e:
+        raise _http(e) from e
+
+
+@router.post("/prospects/verify", response_model=SummaryResponse)
+async def verify_prospects(
+    business_id: UUID,
+    body: VerifyIn,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Confirm (or reject) addresses found by discovery. Mail only goes to verified addresses."""
+    await require_business_access(db, business_id, current_user, manage=True)
+    changed = await HarveyService(db).verify_prospects(business_id, body.prospect_ids, body.verified)
+    return {"counts": {"updated": changed}}
+
+
+@router.post("/prospects/discover", response_model=DiscoverResponse)
+async def discover_prospects(
+    business_id: UUID,
+    body: DiscoverIn,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Read the given sites (and/or sites a web search returns) and add the contact address each publishes."""
+    business = await require_business_access(db, business_id, current_user, manage=True)
+    service = HarveyService(db)
+    try:
+        profile = await service.get_or_create_profile(business)
+        queries = body.queries
+        if not body.urls and not queries:
+            queries = service.discovery_queries(profile, datetime.now(timezone.utc))[:1]
+        if not body.urls and not queries:
+            raise HarveyError("Pasá al menos un sitio, o completá palabras clave en el cliente ideal", 422)
+        return await service.discover(business, profile, urls=body.urls, queries=queries, limit=body.limit)
+    except HarveyError as e:
+        raise _http(e) from e
+
+
+@router.post("/replies/{reply_id}/answer", response_model=OutboxItemResponse, status_code=status.HTTP_201_CREATED)
+async def answer_reply(
+    business_id: UUID,
+    reply_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Stage the drafted answer to a prospect's reply in the outbox, to review and approve."""
+    business = await require_business_access(db, business_id, current_user, manage=True)
+    service = HarveyService(db)
+    try:
+        profile = await service.get_or_create_profile(business)
+        return await service.answer_reply(business, profile, reply_id)
     except HarveyError as e:
         raise _http(e) from e
