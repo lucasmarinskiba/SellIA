@@ -38,9 +38,9 @@ function Draft({ bid, item, onUpdated }: { bid: string; item: OutboxItem; onUpda
     <article className={`${card} space-y-3`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-semibold text-white">{item.to_email}</span>
+          <span className="text-sm font-semibold text-slate-900">{item.to_email}</span>
           <Badge value={item.status} />
-          <span className="text-xs text-white/40">
+          <span className="text-xs text-slate-500">
             {item.kind === 'reply' ? 'Respuesta' : `Email ${item.step} de 3`} · {fmtDate(item.sent_at ?? item.created_at)}
           </span>
         </div>
@@ -58,19 +58,19 @@ function Draft({ bid, item, onUpdated }: { bid: string; item: OutboxItem; onUpda
         </>
       ) : (
         <div className="space-y-1">
-          <p className="text-sm font-medium text-white">{item.subject}</p>
-          <p className="whitespace-pre-wrap text-sm text-white/70">{item.body}</p>
+          <p className="text-sm font-medium text-slate-900">{item.subject}</p>
+          <p className="whitespace-pre-wrap text-sm text-slate-600">{item.body}</p>
         </div>
       )}
 
       {item.gate_reasons.length > 0 && (
-        <ul className="list-disc space-y-0.5 pl-5 text-xs text-red-300">
+        <ul className="list-disc space-y-0.5 pl-5 text-xs text-red-700">
           {item.gate_reasons.map((r) => (
             <li key={r}>{r}</li>
           ))}
         </ul>
       )}
-      {item.send_error && <p className="text-xs text-red-300">Último error de envío: {item.send_error}</p>}
+      {item.send_error && <p className="text-xs text-red-700">Último error de envío: {item.send_error}</p>}
 
       <div className="flex flex-wrap items-center gap-2">
         {editable && dirty && (
@@ -159,10 +159,10 @@ export function ApprovalTab({ bid, onChange }: { bid: string; onChange: () => Pr
         </select>
       </div>
       <Notice notice={notice} />
-      {loadError && <p className="text-sm text-red-300">{loadError}</p>}
+      {loadError && <p className="text-sm text-red-700">{loadError}</p>}
 
       {visible.length === 0 ? (
-        <p className={`${card} text-sm text-white/50`}>
+        <p className={`${card} text-sm text-slate-500`}>
           No hay emails en esta vista. Cargá prospectos y redactá el primer borrador desde la pestaña Prospectos.
         </p>
       ) : (

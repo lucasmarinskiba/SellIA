@@ -1,182 +1,187 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { channelsApi, ChannelConnection } from '@/lib/channels'
-import { ChannelPlatform } from '@/types/channels'
-import { businessApi, Business } from '@/lib/business'
-import {
-  MessageSquare, Mail, Camera as Instagram, ShoppingCart, Briefcase as Linkedin, Link2,
-  Plus, Trash2, CheckCircle2, AlertCircle, Clock, ExternalLink,
-  Phone, Plug, Zap, X, Loader2, Copy, Check,
-  Megaphone, Globe, Search, ShoppingBag, Music, GraduationCap, Store, Gem, Bot
-} from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { AlertCircle, CheckCircle2, Clock, Plug, Plus, Search, X } from 'lucide-react'
+import { businessApi, type Business } from '@/lib/business'
+import { channelsApi, type ChannelConnection } from '@/lib/channels'
+import type { ChannelPlatform } from '@/types/channels'
+import { ChannelCard } from './ChannelCard'
+import { ConnectModal, type ConnectDraft } from './ConnectModal'
+import { CATEGORIES, PLATFORMS, platformMeta, type CategoryKey } from './catalog'
 
-const platformConfig: Record<string, { label: string; icon: typeof MessageSquare; color: string; description: string }> = {
-  whatsapp: { label: 'WhatsApp', icon: Phone, color: 'text-green-400', description: 'WhatsApp Business API' },
-  email: { label: 'Email', icon: Mail, color: 'text-blue-400', description: 'SMTP / Email' },
-  instagram: { label: 'Instagram', icon: Instagram, color: 'text-pink-400', description: 'Instagram DMs' },
-  mercadolibre: { label: 'MercadoLibre', icon: ShoppingCart, color: 'text-yellow-400', description: 'Preguntas y ventas' },
-  amazon: { label: 'Amazon', icon: ShoppingCart, color: 'text-orange-400', description: 'Amazon Seller' },
-  beacons: { label: 'Beacons', icon: Link2, color: 'text-purple-400', description: 'Beacons / Linktree' },
-  linkedin: { label: 'LinkedIn', icon: Linkedin, color: 'text-sky-400', description: 'LinkedIn Messages' },
-  messenger: { label: 'Messenger', icon: MessageSquare, color: 'text-blue-300', description: 'Facebook Messenger' },
-  telegram: { label: 'Telegram', icon: MessageSquare, color: 'text-cyan-400', description: 'Telegram Bot' },
-  webchat: { label: 'WebChat', icon: MessageSquare, color: 'text-white', description: 'Chat en tu sitio web' },
-  facebook_ads: { label: 'Facebook Ads', icon: Megaphone, color: 'text-blue-600', description: 'Facebook Ads' },
-  meta_ads: { label: 'Meta Ads', icon: Globe, color: 'text-indigo-600', description: 'Meta Ads' },
-  google_ads: { label: 'Google Ads', icon: Search, color: 'text-red-500', description: 'Google Ads' },
-  shopify: { label: 'Shopify', icon: ShoppingBag, color: 'text-green-600', description: 'Shopify' },
-  tiktok_ads: { label: 'TikTok Ads', icon: Music, color: 'text-black', description: 'TikTok Ads' },
-  tiktok: { label: 'TikTok', icon: Music, color: 'text-black', description: 'TikTok' },
-  hotmart: { label: 'Hotmart', icon: GraduationCap, color: 'text-red-500', description: 'Cursos y productos digitales' },
-  woocommerce: { label: 'WooCommerce', icon: Store, color: 'text-purple-500', description: 'Tienda WordPress' },
-  etsy: { label: 'Etsy', icon: Gem, color: 'text-orange-500', description: 'Productos artesanales y de diseño' },
-  facebook_marketplace: { label: 'Facebook Marketplace', icon: Store, color: 'text-blue-500', description: 'Ventas en Marketplace' },
-  tiktok_shop: { label: 'TikTok Shop', icon: Music, color: 'text-black', description: 'Catálogo y pedidos de TikTok Shop' },
-  manychat: { label: 'ManyChat', icon: Bot, color: 'text-teal-400', description: 'Automatizaciones de ManyChat' },
+type Notice = { kind: 'ok' | 'error' | 'warn'; text: string } | null
+
+const NOTICE_STYLE: Record<'ok' | 'error' | 'warn', string> = {
+  ok: 'border-emerald-200 bg-emerald-50 text-emerald-900',
+  error: 'border-red-200 bg-red-50 text-red-900',
+  warn: 'border-amber-200 bg-amber-50 text-amber-900',
 }
 
-const statusConfig: Record<string, { icon: typeof CheckCircle2; color: string; label: string }> = {
-  connected: { icon: CheckCircle2, color: 'text-green-400', label: 'Conectado' },
-  pending: { icon: Clock, color: 'text-yellow-400', label: 'Pendiente' },
-  error: { icon: AlertCircle, color: 'text-red-400', label: 'Error' },
-  disabled: { icon: AlertCircle, color: 'text-white/30', label: 'Deshabilitado' },
+const emptyDraft = (platform: ChannelPlatform = 'email'): ConnectDraft => ({
+  platform,
+  name: platform === 'email' ? 'Email principal' : '',
+  credentials: platform === 'email' ? { smtp_host: 'smtp.gmail.com', smtp_port: '587' } : {},
+})
+
+/** The backend's reason when it gave one, so a failed save says why instead of failing silently. */
+const reason = (e: unknown, fallback: string): string => {
+  const detail = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail
+  return typeof detail === 'string' ? detail : fallback
+}
+
+function Stat({ label, value, tone, icon: Icon }: { label: string; value: number; tone: string; icon: typeof Plug }) {
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${tone}`} aria-hidden="true">
+        <Icon className="h-5 w-5" />
+      </div>
+      <div>
+        <p className="text-2xl font-bold tabular-nums leading-none text-slate-900">{value}</p>
+        <p className="mt-1 text-xs font-medium text-slate-500">{label}</p>
+      </div>
+    </div>
+  )
 }
 
 export default function CanalesPage() {
   const [businesses, setBusinesses] = useState<Business[]>([])
-  const [selectedBusiness, setSelectedBusiness] = useState<string>('')
+  const [businessId, setBusinessId] = useState('')
   const [channels, setChannels] = useState<ChannelConnection[]>([])
   const [loading, setLoading] = useState(true)
-  const [showAddModal, setShowAddModal] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [draft, setDraft] = useState<ConnectDraft>(emptyDraft())
+  const [saving, setSaving] = useState(false)
+  const [modalError, setModalError] = useState<string | null>(null)
   const [testingId, setTestingId] = useState<string | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
-  const [connectCancelledNotice, setConnectCancelledNotice] = useState(false)
-  const [newChannel, setNewChannel] = useState({
-    platform: 'whatsapp' as ChannelPlatform,
-    name: '',
-    credentials: {} as Record<string, any>,
-  })
+  const [connecting, setConnecting] = useState(false)
+  const [notice, setNotice] = useState<Notice>(null)
+  const [query, setQuery] = useState('')
+  const [category, setCategory] = useState<CategoryKey | 'all'>('all')
 
-  useEffect(() => {
-    loadBusinesses()
+  const loadChannels = useCallback(async (id: string) => {
+    setLoading(true)
+    try {
+      setChannels(await channelsApi.list(id))
+    } catch {
+      setNotice({ kind: 'error', text: 'No se pudieron cargar tus canales. Probá recargar la página.' })
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => {
-    if (selectedBusiness) {
-      loadChannels()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedBusiness])
+    businessApi
+      .list()
+      .then((data) => {
+        setBusinesses(data)
+        if (data.length) setBusinessId(data[0].id)
+        else setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [])
 
   useEffect(() => {
+    if (businessId) void loadChannels(businessId)
+  }, [businessId, loadChannels])
+
+  const openModal = useCallback((platform: ChannelPlatform = 'email') => {
+    setDraft(emptyDraft(platform))
+    setModalError(null)
+    setModalOpen(true)
+  }, [])
+
+  // Return trip from an OAuth authorization, or a deep link like ?connect=email.
+  useEffect(() => {
+    if (!businessId) return
     const params = new URLSearchParams(window.location.search)
     if (params.get('connected')) {
       window.history.replaceState({}, '', window.location.pathname)
-      if (selectedBusiness) loadChannels()
+      void loadChannels(businessId)
+      setNotice({ kind: 'ok', text: 'Canal conectado.' })
     }
     if (params.get('connect_error') === 'cancelled') {
       window.history.replaceState({}, '', window.location.pathname)
-      setConnectCancelledNotice(true)
+      setNotice({ kind: 'warn', text: 'No se conectó nada: cancelaste (o no completaste) la autorización.' })
     }
     const connect = params.get('connect')
     if (connect) {
       window.history.replaceState({}, '', window.location.pathname)
-      setNewChannel(prev => ({ ...prev, platform: connect as ChannelPlatform, credentials: {} }))
-      setShowAddModal(true)
+      openModal(connect as ChannelPlatform)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedBusiness])
+  }, [businessId, loadChannels, openModal])
 
-  const loadBusinesses = async () => {
-    try {
-      const data = await businessApi.list()
-      setBusinesses(data)
-      if (data.length > 0 && !selectedBusiness) {
-        setSelectedBusiness(data[0].id)
-      }
-    } catch {
-      setLoading(false)
-    }
-  }
+  const closeModal = useCallback(() => setModalOpen(false), [])
 
-  const loadChannels = async () => {
-    setLoading(true)
+  const handleCreate = async () => {
+    setSaving(true)
+    setModalError(null)
     try {
-      const data = await channelsApi.list(selectedBusiness)
-      setChannels(data)
-    } catch {
-      // handled by interceptor
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleCreateChannel = async (e: React.FormEvent) => {
-    e.preventDefault()
-    try {
-      await channelsApi.create(selectedBusiness, {
-        platform: newChannel.platform,
-        name: newChannel.name,
-        credentials: newChannel.credentials,
+      await channelsApi.create(businessId, { platform: draft.platform, name: draft.name, credentials: draft.credentials })
+      setModalOpen(false)
+      setNotice({
+        kind: 'ok',
+        text: `${platformMeta(draft.platform).label} guardado. Usá "Probar" para verificar que la conexión funcione.`,
       })
-      setShowAddModal(false)
-      setNewChannel({ platform: 'whatsapp', name: '', credentials: {} })
-      await loadChannels()
-    } catch {
-      // handled by interceptor
+      await loadChannels(businessId)
+    } catch (e) {
+      setModalError(reason(e, 'No se pudo guardar el canal. Revisá los datos e intentá de nuevo.'))
+    } finally {
+      setSaving(false)
     }
   }
 
-  const handleDelete = async (channelId: string) => {
-    if (!confirm('¿Desconectar esta plataforma? Vas a tener que volver a autorizarla si querés reconectarla más adelante.')) return
+  const handleDelete = async (channel: ChannelConnection) => {
+    if (!confirm(`¿Desconectar "${channel.name}"? Vas a tener que volver a conectarlo si lo querés usar de nuevo.`)) return
     try {
-      await channelsApi.delete(selectedBusiness, channelId)
-      await loadChannels()
-    } catch {
-      // handled by interceptor
+      await channelsApi.delete(businessId, channel.id)
+      setNotice({ kind: 'ok', text: `"${channel.name}" desconectado.` })
+      await loadChannels(businessId)
+    } catch (e) {
+      setNotice({ kind: 'error', text: reason(e, 'No se pudo desconectar el canal.') })
     }
   }
 
-  const handleTest = async (channelId: string) => {
-    setTestingId(channelId)
+  const handleTest = async (channel: ChannelConnection) => {
+    setTestingId(channel.id)
+    setNotice(null)
     try {
-      await channelsApi.test(selectedBusiness, channelId)
-      await loadChannels()
-    } catch {
-      alert('Error al probar conexión')
+      await channelsApi.test(businessId, channel.id)
+      const fresh = await channelsApi.list(businessId)
+      setChannels(fresh)
+      const updated = fresh.find((c) => c.id === channel.id)
+      if (updated?.status === 'error') {
+        setNotice({ kind: 'error', text: updated.status_message || `La conexión de "${channel.name}" falló.` })
+      } else {
+        setNotice({ kind: 'ok', text: `"${channel.name}": conexión verificada.` })
+      }
+    } catch (e) {
+      setNotice({ kind: 'error', text: reason(e, 'No se pudo probar la conexión.') })
     } finally {
       setTestingId(null)
     }
   }
 
-  // Plataformas con app propia de SellIA: el usuario solo autoriza, nunca
-  // pega credenciales. Mercado Libre usa su propia app; Instagram/Messenger/
-  // Facebook Ads comparten una única app Meta (requiere que esa app haya
-  // pasado App Review para funcionar con cualquier usuario, no solo los
-  // admins/testers agregados en Meta Business Settings).
-  const ONE_CLICK_PLATFORMS = ['mercadolibre', 'instagram', 'messenger', 'facebook_ads', 'facebook_marketplace']
-  const [connectingOAuth, setConnectingOAuth] = useState(false)
-  const handleConnectOAuth = async (platform: ChannelPlatform) => {
-    setConnectingOAuth(true)
+  const handleOAuth = async (platform: ChannelPlatform) => {
+    setConnecting(true)
     try {
-      const { auth_url } = await channelsApi.authUrl(selectedBusiness, platform)
+      const { auth_url } = await channelsApi.authUrl(businessId, platform)
       window.location.href = auth_url
     } catch {
-      alert(`No se pudo iniciar la conexión con ${platformConfig[platform]?.label ?? platform}. Probá de nuevo en un momento.`)
-      setConnectingOAuth(false)
+      setModalError(`No se pudo iniciar la conexión con ${platformMeta(platform).label}. Probá de nuevo en un momento.`)
+      setConnecting(false)
     }
   }
 
-  // WhatsApp can't use the plain redirect flow above -- a phone_number_id
-  // only comes back through Meta's own Embedded Signup popup (Facebook JS
-  // SDK), which delivers it via postMessage rather than a query param.
-  const [connectingWhatsApp, setConnectingWhatsApp] = useState(false)
+  // WhatsApp can't use the plain redirect flow: a phone_number_id only comes back through Meta's own
+  // Embedded Signup popup (Facebook JS SDK), which delivers it via postMessage rather than a query param.
   const loadFacebookSdk = (appId: string): Promise<any> =>
-    new Promise(resolve => {
+    new Promise((resolve) => {
       const w = window as any
-      if (w.FB) { resolve(w.FB); return }
+      if (w.FB) {
+        resolve(w.FB)
+        return
+      }
       w.fbAsyncInit = () => {
         w.FB.init({ appId, version: 'v18.0', xfbml: false })
         resolve(w.FB)
@@ -189,12 +194,13 @@ export default function CanalesPage() {
         document.body.appendChild(script)
       }
     })
-  const handleConnectWhatsApp = async () => {
-    setConnectingWhatsApp(true)
-    try {
-      const { app_id } = await channelsApi.whatsappEmbeddedSignupConfig(selectedBusiness)
-      const FB = await loadFacebookSdk(app_id)
 
+  const handleWhatsApp = async () => {
+    setConnecting(true)
+    setModalError(null)
+    try {
+      const { app_id } = await channelsApi.whatsappEmbeddedSignupConfig(businessId)
+      const FB = await loadFacebookSdk(app_id)
       let wabaData: { waba_id?: string; phone_number_id?: string } = {}
       const onMessage = (event: MessageEvent) => {
         if (event.origin !== 'https://www.facebook.com') return
@@ -203,448 +209,262 @@ export default function CanalesPage() {
           if (data.type === 'WA_EMBEDDED_SIGNUP' && data.event === 'FINISH') {
             wabaData = { waba_id: data.data?.waba_id, phone_number_id: data.data?.phone_number_id }
           }
-        } catch { /* not a WA Embedded Signup message */ }
+        } catch {
+          /* not a WA Embedded Signup message */
+        }
       }
       window.addEventListener('message', onMessage)
-
-      FB.login((response: any) => {
-        window.removeEventListener('message', onMessage)
-        const code = response?.authResponse?.code
-        if (!code || !wabaData.waba_id || !wabaData.phone_number_id) {
-          alert('No se completó la conexión con WhatsApp. Probá de nuevo y no cierres el popup hasta el final.')
-          setConnectingWhatsApp(false)
-          return
-        }
-        channelsApi.whatsappEmbeddedSignup(selectedBusiness, {
-          code,
-          waba_id: wabaData.waba_id,
-          phone_number_id: wabaData.phone_number_id,
-        }).then(() => {
-          setShowAddModal(false)
-          loadChannels()
-        }).catch(() => {
-          alert('WhatsApp autorizó pero no se pudo guardar la conexión. Probá de nuevo en un momento.')
-        }).finally(() => setConnectingWhatsApp(false))
-      }, {
-        scope: 'whatsapp_business_management,whatsapp_business_messaging',
-        extras: { feature: 'whatsapp_embedded_signup', sessionInfoVersion: '3' },
-      })
+      FB.login(
+        (response: any) => {
+          window.removeEventListener('message', onMessage)
+          const code = response?.authResponse?.code
+          if (!code || !wabaData.waba_id || !wabaData.phone_number_id) {
+            setModalError('No se completó la conexión con WhatsApp. Probá de nuevo y no cierres el popup hasta el final.')
+            setConnecting(false)
+            return
+          }
+          channelsApi
+            .whatsappEmbeddedSignup(businessId, { code, waba_id: wabaData.waba_id, phone_number_id: wabaData.phone_number_id })
+            .then(() => {
+              setModalOpen(false)
+              setNotice({ kind: 'ok', text: 'WhatsApp conectado.' })
+              void loadChannels(businessId)
+            })
+            .catch(() => setModalError('WhatsApp autorizó pero no se pudo guardar la conexión. Probá de nuevo en un momento.'))
+            .finally(() => setConnecting(false))
+        },
+        {
+          scope: 'whatsapp_business_management,whatsapp_business_messaging',
+          extras: { feature: 'whatsapp_embedded_signup', sessionInfoVersion: '3' },
+        },
+      )
     } catch {
-      alert('No se pudo iniciar la conexión con WhatsApp. Probá de nuevo en un momento.')
-      setConnectingWhatsApp(false)
+      setModalError('No se pudo iniciar la conexión con WhatsApp. Probá de nuevo en un momento.')
+      setConnecting(false)
     }
   }
 
   const copyWebhook = (url: string, id: string) => {
-    navigator.clipboard.writeText(url)
+    void navigator.clipboard.writeText(url)
     setCopiedId(id)
     setTimeout(() => setCopiedId(null), 2000)
   }
 
-  const renderCredentialFields = () => {
-    switch (newChannel.platform) {
-      case 'whatsapp':
-        return (
-          <>
-            <Field label="API Token" type="password" placeholder="EAAB..." value={newChannel.credentials.api_token || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, api_token: v } })} />
-            <Field label="Phone Number ID" value={newChannel.credentials.phone_number_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, phone_number_id: v } })} />
-            <Field label="Business Account ID" value={newChannel.credentials.business_account_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, business_account_id: v } })} />
-          </>
-        )
-      case 'email':
-        return (
-          <>
-            <Field label="SMTP Host" value={newChannel.credentials.smtp_host || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, smtp_host: v } })} placeholder="smtp.gmail.com" />
-            <Field label="SMTP Port" value={newChannel.credentials.smtp_port || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, smtp_port: v } })} placeholder="587" />
-            <Field label="SMTP User" value={newChannel.credentials.smtp_user || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, smtp_user: v } })} />
-            <Field label="SMTP Password" type="password" value={newChannel.credentials.smtp_password || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, smtp_password: v } })} />
-            <Field label="From Address" value={newChannel.credentials.from_address || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, from_address: v } })} />
-          </>
-        )
-      case 'instagram':
-        return (
-          <>
-            <Field label="API Token" type="password" value={newChannel.credentials.api_token || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, api_token: v } })} />
-            <Field label="Instagram Account ID" value={newChannel.credentials.instagram_account_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, instagram_account_id: v } })} />
-            <Field label="Page ID" value={newChannel.credentials.page_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, page_id: v } })} />
-          </>
-        )
-      case 'mercadolibre':
-        return null
-      case 'telegram':
-        return (
-          <>
-            <Field label="Bot Token" type="password" value={newChannel.credentials.bot_token || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, bot_token: v } })} placeholder="123456:ABC-DEF..." />
-          </>
-        )
-      case 'webchat':
-        return (
-          <>
-            <Field label="Site Domain" value={newChannel.credentials.site_domain || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, site_domain: v } })} placeholder="tudominio.com" />
-          </>
-        )
-      case 'hotmart':
-        return (
-          <>
-            <Field label="Hottok" type="password" value={newChannel.credentials.hottok || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, hottok: v } })} placeholder="Token de verificación del webhook" />
-            <Field label="Client ID" value={newChannel.credentials.client_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, client_id: v } })} />
-            <Field label="Client Secret" type="password" value={newChannel.credentials.client_secret || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, client_secret: v } })} />
-            <p className="text-xs text-white/30">Configurá este mismo Hottok en Hotmart → Herramientas → Webhook.</p>
-          </>
-        )
-      case 'woocommerce':
-        return (
-          <>
-            <Field label="URL del sitio" value={newChannel.credentials.site_url || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, site_url: v } })} placeholder="https://tutienda.com" />
-            <Field label="Consumer Key" value={newChannel.credentials.consumer_key || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, consumer_key: v } })} placeholder="ck_..." />
-            <Field label="Consumer Secret" type="password" value={newChannel.credentials.consumer_secret || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, consumer_secret: v } })} placeholder="cs_..." />
-            <Field label="Webhook Secret" type="password" value={newChannel.credentials.webhook_secret || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, webhook_secret: v } })} />
-          </>
-        )
-      case 'etsy':
-        return (
-          <>
-            <Field label="Shop ID" value={newChannel.credentials.shop_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, shop_id: v } })} />
-            <Field label="API Keystring" value={newChannel.credentials.api_keystring || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, api_keystring: v } })} />
-            <Field label="Shared Secret" type="password" value={newChannel.credentials.shared_secret || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, shared_secret: v } })} />
-            <Field label="Access Token" type="password" value={newChannel.credentials.access_token || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, access_token: v } })} />
-          </>
-        )
-      case 'amazon':
-        return (
-          <>
-            <Field label="LWA App ID" value={newChannel.credentials.lwa_app_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, lwa_app_id: v } })} />
-            <Field label="LWA Client Secret" type="password" value={newChannel.credentials.lwa_client_secret || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, lwa_client_secret: v } })} />
-            <Field label="Refresh Token" type="password" value={newChannel.credentials.refresh_token || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, refresh_token: v } })} />
-            <Field label="Marketplace ID" value={newChannel.credentials.marketplace_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, marketplace_id: v } })} />
-            <Field label="Seller ID (opcional)" value={newChannel.credentials.seller_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, seller_id: v } })} />
-            <p className="text-xs text-white/30">Necesitás una app en Amazon Selling Partner API (SP-API) aprobada para tu cuenta de vendedor.</p>
-          </>
-        )
-      case 'shopify':
-        return (
-          <>
-            <Field label="Dominio de la tienda" value={newChannel.credentials.shop_domain || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, shop_domain: v } })} placeholder="mitienda.myshopify.com" />
-            <Field label="Admin API access token" type="password" value={newChannel.credentials.admin_api_token || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, admin_api_token: v } })} />
-            <Field label="API Key (opcional)" value={newChannel.credentials.api_key || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, api_key: v } })} />
-            <Field label="API Secret (opcional)" type="password" value={newChannel.credentials.api_secret || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, api_secret: v } })} />
-            <Field label="Webhook Secret (opcional)" type="password" value={newChannel.credentials.webhook_secret || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, webhook_secret: v } })} />
-            <p className="text-xs text-white/30">Admin de Shopify → Configuración → Apps y canales de venta → Desarrollar apps.</p>
-          </>
-        )
-      case 'messenger':
-        return (
-          <>
-            <Field label="Page Access Token" type="password" value={newChannel.credentials.api_token || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, api_token: v } })} />
-            <Field label="Page ID" value={newChannel.credentials.page_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, page_id: v } })} />
-          </>
-        )
-      case 'linkedin':
-        return (
-          <>
-            <Field label="Access Token" type="password" value={newChannel.credentials.access_token || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, access_token: v } })} />
-            <Field label="URN del remitente" value={newChannel.credentials.sender_urn || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, sender_urn: v } })} />
-            <p className="text-xs text-white/30">Requiere una app aprobada en LinkedIn Developers con permisos de mensajería.</p>
-          </>
-        )
-      case 'manychat':
-        return (
-          <Field label="API Token" type="password" value={newChannel.credentials.api_token || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, api_token: v } })} />
-        )
-      case 'tiktok_shop':
-        return (
-          <>
-            <Field label="App Key (Client ID)" value={newChannel.credentials.client_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, client_id: v } })} />
-            <Field label="App Secret (Client Secret)" type="password" value={newChannel.credentials.client_secret || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, client_secret: v } })} />
-            <Field label="Access Token" type="password" value={newChannel.credentials.access_token || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, access_token: v } })} />
-            <Field label="Shop ID" value={newChannel.credentials.shop_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, shop_id: v } })} />
-            <Field label="Shop Cipher (opcional)" value={newChannel.credentials.shop_cipher || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, shop_cipher: v } })} />
-            <Field label="Refresh Token (opcional)" type="password" value={newChannel.credentials.refresh_token || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, refresh_token: v } })} />
-            <p className="text-xs text-white/30">Se generan en TikTok Shop Partner Center al crear tu app.</p>
-          </>
-        )
-      case 'meta_ads':
-        return (
-          <>
-            <Field label="Access Token" type="password" value={newChannel.credentials.access_token || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, access_token: v } })} placeholder="Token del System User con permiso catalog_management" />
-            <Field label="Catalog ID" value={newChannel.credentials.catalog_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, catalog_id: v } })} />
-            <Field label="App ID" value={newChannel.credentials.app_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, app_id: v } })} />
-            <Field label="App Secret" type="password" value={newChannel.credentials.app_secret || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, app_secret: v } })} />
-            <Field label="Page ID (opcional)" value={newChannel.credentials.page_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, page_id: v } })} />
-            <Field label="Ad Account ID (opcional)" value={newChannel.credentials.ad_account_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, ad_account_id: v } })} />
-            <p className="text-xs text-white/30">Sacá el Access Token y Catalog ID desde Meta Business Settings → Usuarios del sistema → Commerce Manager.</p>
-          </>
-        )
-      case 'facebook_marketplace':
-        return (
-          <>
-            <Field label="Page ID" value={newChannel.credentials.page_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, page_id: v } })} />
-            <Field label="Page Access Token" type="password" value={newChannel.credentials.page_access_token || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, page_access_token: v } })} />
-            <Field label="Catalog ID" value={newChannel.credentials.catalog_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, catalog_id: v } })} />
-          </>
-        )
-      default:
-        return (
-          <div className="p-3 bg-white/5 rounded-lg text-sm text-white/30">
-            Configuración manual disponible próximamente para este canal.
-          </div>
-        )
-    }
+  const counts = useMemo(
+    () => ({
+      total: channels.length,
+      connected: channels.filter((c) => c.status === 'connected').length,
+      pending: channels.filter((c) => c.status === 'pending').length,
+      error: channels.filter((c) => c.status === 'error').length,
+    }),
+    [channels],
+  )
+
+  const q = query.trim().toLowerCase()
+  const matchesFilters = (platform: string, text: string): boolean => {
+    const meta = platformMeta(platform)
+    return (category === 'all' || meta.category === category) && (!q || `${text} ${meta.label}`.toLowerCase().includes(q))
   }
 
+  const visibleChannels = channels.filter((c) => matchesFilters(c.platform, c.name))
+  const connectedPlatforms = new Set(channels.map((c) => c.platform as string))
+  const available = Object.keys(PLATFORMS).filter((p) => !connectedPlatforms.has(p) && matchesFilters(p, PLATFORMS[p].description))
+
   return (
-    <div className="space-y-8 max-w-7xl">
-      {connectCancelledNotice && (
-        <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-sm">
-          <span>No se conectó nada: cancelaste (o no completaste) la autorización.</span>
-          <button onClick={() => setConnectCancelledNotice(false)} className="text-amber-300/60 hover:text-amber-300">
-            <X className="w-4 h-4" />
-          </button>
+    <div className="mx-auto max-w-7xl space-y-8">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-orange/10 text-brand-orange" aria-hidden="true">
+            <Plug className="h-6 w-6" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Canales</h1>
+            <p className="text-sm text-slate-500">Conectá tus plataformas de venta y comunicación en un solo lugar.</p>
+          </div>
         </div>
-      )}
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-white mb-2">🔌 Canales</h1>
-          <p className="text-sm text-white/40">Conecta tus plataformas de venta y comunicación.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <select
-            value={selectedBusiness}
-            onChange={(e) => setSelectedBusiness(e.target.value)}
-            className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-orange/20"
-          >
-            {businesses.map((b) => (
-              <option key={b.id} value={b.id} className="bg-[#0A0E1A]">{b.name}</option>
-            ))}
-          </select>
+        <div className="flex flex-wrap items-center gap-3">
+          {businesses.length > 1 && (
+            <>
+              <label htmlFor="canales-business" className="sr-only">Negocio</label>
+              <select
+                id="canales-business"
+                value={businessId}
+                onChange={(e) => setBusinessId(e.target.value)}
+                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
+              >
+                {businesses.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </>
+          )}
           <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-orange text-white text-sm font-medium hover:bg-brand-orange/90 transition-colors"
+            type="button"
+            onClick={() => openModal()}
+            disabled={!businessId}
+            className="inline-flex h-11 items-center gap-2 rounded-xl bg-brand-orange px-5 text-sm font-semibold text-white shadow-sm hover:bg-brand-orange-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-2 disabled:opacity-50"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="h-4 w-4" aria-hidden="true" />
             Conectar canal
           </button>
         </div>
-      </div>
+      </header>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-brand-orange" />
-        </div>
-      ) : channels.length === 0 ? (
-        <div className="glass-card p-12 text-center">
-          <Plug className="w-12 h-12 text-white/20 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-white/60">No tienes canales conectados</h3>
-          <p className="text-white/30 mt-1 mb-6">Conecta WhatsApp, Email u otras plataformas para recibir leads</p>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-orange text-white text-sm font-medium hover:bg-brand-orange/90 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Conectar primer canal
+      {notice && (
+        <div role="status" className={`flex items-start justify-between gap-3 rounded-xl border px-4 py-3 text-sm ${NOTICE_STYLE[notice.kind]}`}>
+          <span>{notice.text}</span>
+          <button type="button" onClick={() => setNotice(null)} aria-label="Cerrar aviso" className="-mr-1 shrink-0 rounded p-1 opacity-60 hover:opacity-100">
+            <X className="h-4 w-4" />
           </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {channels.map((channel) => {
-            const pConfig = platformConfig[channel.platform] || platformConfig.whatsapp
-            const sConfig = statusConfig[channel.status] || statusConfig.pending
-            const PlatformIcon = pConfig.icon
-            const StatusIcon = sConfig.icon
-            const isTesting = testingId === channel.id
-            return (
-              <motion.div
-                key={channel.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="glass-card p-5"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center ${pConfig.color}`}>
-                    <PlatformIcon className="w-6 h-6" />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`flex items-center gap-1 text-xs font-medium ${sConfig.color}`}>
-                      <StatusIcon className="w-3.5 h-3.5" />
-                      {sConfig.label}
-                    </span>
-                    <button
-                      onClick={() => handleDelete(channel.id)}
-                      title="Desconectar"
-                      aria-label="Desconectar"
-                      className="flex items-center gap-1 p-1.5 rounded-lg hover:bg-red-500/10 text-white/20 hover:text-red-400 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-                <h3 className="font-semibold text-white">{channel.name}</h3>
-                <p className="text-sm text-white/30">{pConfig.description}</p>
-
-                {channel.webhook_url && (
-                  <div className="mt-3 p-2.5 rounded-lg bg-white/5 flex items-center gap-2">
-                    <p className="text-xs text-white/30 truncate flex-1">{channel.webhook_url}</p>
-                    <button
-                      onClick={() => copyWebhook(channel.webhook_url!, channel.id)}
-                      className="shrink-0 p-1 rounded hover:bg-white/10 text-white/30 hover:text-white transition-colors"
-                      title="Copiar webhook URL"
-                    >
-                      {copiedId === channel.id ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
-                    </button>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2 mt-4 pt-3 border-t border-white/5">
-                  <button
-                    onClick={() => handleTest(channel.id)}
-                    disabled={isTesting}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-white/60 hover:text-white transition-colors disabled:opacity-50"
-                  >
-                    {isTesting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
-                    Probar
-                  </button>
-                  {channel.status === 'error' && channel.status_message && (
-                    <span className="text-xs text-red-400 truncate">{channel.status_message}</span>
-                  )}
-                </div>
-              </motion.div>
-            )
-          })}
         </div>
       )}
 
-      {/* Add Modal */}
-      <AnimatePresence>
-        {showAddModal && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-[#0F1629] border border-white/10 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6"
+      <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Stat label="Canales" value={counts.total} icon={Plug} tone="bg-slate-100 text-slate-700" />
+        <Stat label="Conectados" value={counts.connected} icon={CheckCircle2} tone="bg-emerald-50 text-emerald-700" />
+        <Stat label="Por verificar" value={counts.pending} icon={Clock} tone="bg-amber-50 text-amber-700" />
+        <Stat label="Con error" value={counts.error} icon={AlertCircle} tone="bg-red-50 text-red-700" />
+      </section>
+
+      <section aria-label="Filtros" className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="relative w-full lg:max-w-xs">
+          <label htmlFor="canales-search" className="sr-only">Buscar canal</label>
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+          <input
+            id="canales-search"
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar canal…"
+            className="h-11 w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
+          />
+        </div>
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Categoría">
+          {[{ key: 'all' as const, label: 'Todos' }, ...CATEGORIES].map((c) => (
+            <button
+              key={c.key}
+              type="button"
+              aria-pressed={category === c.key}
+              onClick={() => setCategory(c.key)}
+              className={`h-10 rounded-full px-4 text-sm font-medium ring-1 ring-inset focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange ${
+                category === c.key ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white text-slate-700 ring-slate-300 hover:bg-slate-50'
+              }`}
             >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-white">Conectar nuevo canal</h2>
-                <button onClick={() => setShowAddModal(false)} className="p-2 rounded-lg hover:bg-white/5"><X className="w-5 h-5 text-white/40" /></button>
-              </div>
-              <form onSubmit={handleCreateChannel} className="space-y-4">
-                <div>
-                  <label className="text-xs text-white/40 mb-1 block">Plataforma</label>
-                  <select
-                    value={newChannel.platform}
-                    onChange={(e) => setNewChannel({ ...newChannel, platform: e.target.value as ChannelPlatform, credentials: {} })}
-                    className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange/20"
-                  >
-                    {Object.entries(platformConfig).map(([key, config]) => (
-                      <option key={key} value={key} className="bg-[#0A0E1A]">{config.label}</option>
-                    ))}
-                  </select>
-                </div>
-                {newChannel.platform === 'whatsapp' ? (
-                  <div className="space-y-4">
-                    <p className="text-sm text-white/50">
-                      Sin claves ni configuración manual: hacé clic y elegí (o creá) tu WhatsApp Business en el popup de Meta.
-                    </p>
-                    <div className="flex items-center justify-end gap-3 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowAddModal(false)}
-                        className="px-4 py-2 rounded-xl text-sm text-white/60 hover:text-white transition-colors"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleConnectWhatsApp}
-                        disabled={connectingWhatsApp}
-                        className="px-4 py-2 rounded-xl bg-brand-orange text-white text-sm font-medium hover:bg-brand-orange/90 transition-colors disabled:opacity-50"
-                      >
-                        {connectingWhatsApp ? 'Conectando…' : 'Conectar con WhatsApp'}
-                      </button>
-                    </div>
-                  </div>
-                ) : ONE_CLICK_PLATFORMS.includes(newChannel.platform) ? (
-                  <div className="space-y-4">
-                    <p className="text-sm text-white/50">
-                      Sin claves ni configuración manual: hacé clic y autorizá tu cuenta de {platformConfig[newChannel.platform]?.label ?? newChannel.platform}.
-                    </p>
-                    <div className="flex items-center justify-end gap-3 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowAddModal(false)}
-                        className="px-4 py-2 rounded-xl text-sm text-white/60 hover:text-white transition-colors"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleConnectOAuth(newChannel.platform)}
-                        disabled={connectingOAuth}
-                        className="px-4 py-2 rounded-xl bg-brand-orange text-white text-sm font-medium hover:bg-brand-orange/90 transition-colors disabled:opacity-50"
-                      >
-                        {connectingOAuth ? 'Conectando…' : `Conectar con ${platformConfig[newChannel.platform]?.label ?? newChannel.platform}`}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div>
-                      <label className="text-xs text-white/40 mb-1 block">Nombre</label>
-                      <input
-                        type="text"
-                        value={newChannel.name}
-                        onChange={(e) => setNewChannel({ ...newChannel, name: e.target.value })}
-                        required
-                        className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange/20"
-                        placeholder="Ej: WhatsApp Principal"
-                      />
-                    </div>
-                    <div className="space-y-3">
-                      <p className="text-sm font-medium text-white/60">Credenciales</p>
-                      {renderCredentialFields()}
-                    </div>
-                    <div className="flex items-center justify-end gap-3 pt-4">
-                      <button
-                        type="button"
-                        onClick={() => setShowAddModal(false)}
-                        className="px-4 py-2 rounded-xl text-sm text-white/60 hover:text-white transition-colors"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="submit"
-                        className="px-4 py-2 rounded-xl bg-brand-orange text-white text-sm font-medium hover:bg-brand-orange/90 transition-colors"
-                      >
-                        Guardar
-                      </button>
-                    </div>
-                  </>
-                )}
-              </form>
-            </motion.div>
-          </motion.div>
+              {c.label}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section aria-labelledby="mis-canales" className="space-y-4">
+        <div className="flex items-baseline justify-between">
+          <h2 id="mis-canales" className="text-lg font-semibold text-slate-900">Tus canales</h2>
+          {!loading && channels.length > 0 && (
+            <span className="text-sm text-slate-500">{visibleChannels.length} de {channels.length}</span>
+          )}
+        </div>
+
+        {loading ? (
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3" aria-busy="true">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-44 animate-pulse rounded-2xl border border-slate-200 bg-white" />
+            ))}
+          </div>
+        ) : channels.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500" aria-hidden="true">
+              <Plug className="h-7 w-7" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-900">Todavía no conectaste ningún canal</h3>
+            <p className="mx-auto mt-1 max-w-md text-sm text-slate-500">
+              Empezá por tu email para enviar y recibir mensajes con tus clientes, o elegí cualquier plataforma de la lista de abajo.
+            </p>
+            <button
+              type="button"
+              onClick={() => openModal('email')}
+              className="mt-5 inline-flex h-11 items-center gap-2 rounded-xl bg-brand-orange px-5 text-sm font-semibold text-white hover:bg-brand-orange-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-2"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Conectar mi email
+            </button>
+          </div>
+        ) : visibleChannels.length === 0 ? (
+          <p className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500">Ningún canal conectado coincide con el filtro.</p>
+        ) : (
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {visibleChannels.map((channel) => (
+              <ChannelCard
+                key={channel.id}
+                channel={channel}
+                testing={testingId === channel.id}
+                copied={copiedId === channel.id}
+                onTest={() => void handleTest(channel)}
+                onDelete={() => void handleDelete(channel)}
+                onCopyWebhook={(url) => copyWebhook(url, channel.id)}
+              />
+            ))}
+          </div>
         )}
-      </AnimatePresence>
+      </section>
+
+      <section aria-labelledby="disponibles" className="space-y-4">
+        <h2 id="disponibles" className="text-lg font-semibold text-slate-900">Disponibles para conectar</h2>
+        {available.length === 0 ? (
+          <p className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500">No hay más plataformas que coincidan con el filtro.</p>
+        ) : (
+          CATEGORIES.map((cat) => {
+            const items = available.filter((p) => PLATFORMS[p].category === cat.key)
+            if (!items.length) return null
+            return (
+              <div key={cat.key}>
+                <h3 className="mb-2 text-sm font-semibold text-slate-700">
+                  {cat.label} <span className="font-normal text-slate-400">· {cat.hint}</span>
+                </h3>
+                <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {items.map((platform) => {
+                    const meta = PLATFORMS[platform]
+                    const Icon = meta.icon
+                    return (
+                      <li key={platform}>
+                        <button
+                          type="button"
+                          onClick={() => openModal(platform as ChannelPlatform)}
+                          disabled={!businessId}
+                          className="flex min-h-[64px] w-full items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 text-left shadow-sm transition-colors hover:border-brand-orange/50 hover:bg-orange-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange disabled:opacity-50"
+                        >
+                          <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${meta.tile}`} aria-hidden="true">
+                            <Icon className="h-5 w-5" />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-semibold text-slate-900">{meta.label}</span>
+                            <span className="block truncate text-xs text-slate-500">{meta.description}</span>
+                          </span>
+                          <Plus className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            )
+          })
+        )}
+      </section>
+
+      {modalOpen && (
+        <ConnectModal
+          draft={draft}
+          onChange={setDraft}
+          onClose={closeModal}
+          onSubmit={() => void handleCreate()}
+          onOAuth={(p) => void handleOAuth(p)}
+          onWhatsApp={() => void handleWhatsApp()}
+          saving={saving}
+          connecting={connecting}
+          error={modalError}
+        />
+      )}
+
     </div>
   )
 }
-
-function Field({ label, type = 'text', placeholder, value, onChange }: {
-  label: string; type?: string; placeholder?: string; value: string; onChange: (v: string) => void
-}) {
-  return (
-    <div>
-      <label className="text-xs text-white/40 mb-1 block">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange/20"
-      />
-    </div>
-  )
-}
-
