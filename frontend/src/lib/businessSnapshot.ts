@@ -48,8 +48,26 @@ export interface BusinessSnapshot {
   generated_at: string
 }
 
+/**
+ * True only for a complete snapshot. A 200 with an empty or partial body (a proxy, an older backend, an error
+ * payload) used to be stored as the snapshot and crash every page that reads `snapshot.verification.*`.
+ */
+export const isBusinessSnapshot = (value: unknown): value is BusinessSnapshot => {
+  const s = value as Partial<BusinessSnapshot> | null
+  return (
+    !!s &&
+    typeof s === 'object' &&
+    !!s.business &&
+    !!s.verification &&
+    Array.isArray(s.channels) &&
+    !!s.conversations &&
+    !!s.revenue
+  )
+}
+
 export const fetchBusinessSnapshot = async (): Promise<BusinessSnapshot> => {
-  const res = await api.get<BusinessSnapshot>('/ai-activity/business-snapshot')
+  const res = await api.get<unknown>('/ai-activity/business-snapshot')
+  if (!isBusinessSnapshot(res.data)) throw new Error('Respuesta de business-snapshot incompleta')
   return res.data
 }
 
