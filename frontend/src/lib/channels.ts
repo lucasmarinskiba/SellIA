@@ -16,6 +16,8 @@ export interface ChannelConnection {
   is_active: boolean
   created_at: string
   updated_at: string
+  /** Which account this connection belongs to (Mercado Libre user, Facebook Page, mailbox...). */
+  account?: { id?: string; name?: string; detail?: string } | null
 }
 
 export interface CreateChannelData {
