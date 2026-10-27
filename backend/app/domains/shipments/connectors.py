@@ -462,7 +462,7 @@ class LocalConnector(CarrierConnector):
         return {"tracking_number": self._demo_tracking_number("LOC"), "label_url": None, "carrier_response": {"manual": True}, "status": ShipmentStatus.PENDING}
 
     async def get_tracking(self, tracking_number: str) -> Dict[str, Any]:
-        return {"status": ShipmentStatus.IN_TRANSIT, "events": [{"event_description": "Enviado por mensajería interna", "location": to_address.get("city", ""), "event_at": datetime.now(timezone.utc).isoformat()}], "estimated_delivery": (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()}
+        return {"status": ShipmentStatus.IN_TRANSIT, "events": [{"event_description": "Enviado por mensajería interna", "location": "", "event_at": datetime.now(timezone.utc).isoformat()}], "estimated_delivery": (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()}
 
 
 class OtherConnector(CarrierConnector):

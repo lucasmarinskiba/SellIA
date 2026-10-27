@@ -3,6 +3,11 @@
 from dataclasses import dataclass, field
 from typing import Dict, Any, List
 import logging
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.core.strategy.business_analyzer import BusinessProfile
+
 
 logger = logging.getLogger(__name__)
 
