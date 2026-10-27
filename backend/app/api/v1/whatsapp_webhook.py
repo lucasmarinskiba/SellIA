@@ -1,7 +1,11 @@
 """
 WhatsApp webhook endpoint for Railway deployment.
 Receives Meta webhook events → generates AI reply → sends via WhatsApp API.
-Self-contained: no DB, no ORM. Uses httpx + Anthropic directly.
+Sin ORM: httpx + Anthropic + Redis. Redis guarda memoria por remitente, dedupe,
+límites y opt-out; si Redis cae el webhook sigue respondiendo, sin esos extras.
+
+Endurecido (ver PR): firma HMAC obligatoria en POST, respuesta 200 inmediata con
+trabajo en background, nada de respuestas enlatadas, límites de largo y de tasa.
 
 Powered by 34 libros (SISTEMA COMPLETO):
 PSICOLOGÍA: Carnegie, Cialdini (7 principios), Ariely
@@ -20,16 +24,44 @@ PRECIOS: Poundstone
 COMUNIDAD: Spinks
 STARTUP: Ries
 """
-import os
+
+import asyncio
+import hashlib
+import hmac
+import json
 import logging
+import os
+
 import httpx
-from fastapi import APIRouter, Request, Response
+import redis.asyncio as redis
+from fastapi import APIRouter, BackgroundTasks, Request, Response
+from redis.exceptions import RedisError
+
+from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 WHATSAPP_API_VERSION = "v19.0"
 WHATSAPP_API_BASE = f"https://graph.facebook.com/{WHATSAPP_API_VERSION}"
+ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
+ANTHROPIC_ATTEMPTS = 3
+
+HISTORY_ENTRIES = 20  # 10 turnos (usuario + asistente)
+HISTORY_TTL_SECONDS = 7 * 24 * 3600
+DEDUPE_TTL_SECONDS = 24 * 3600
+RATE_WINDOW_SECONDS = 3600
+MAX_MESSAGES_PER_WINDOW = 30
+MAX_INBOUND_CHARS = 1000
+MAX_OUTBOUND_CHARS = 1500
+OPT_OUT_WORDS = frozenset(
+    {"baja", "stop", "no me escriban", "no me escribas", "no quiero mensajes"}
+)
+OPT_OUT_REPLY = "Listo, no te vamos a escribir más. Si cambiás de opinión, escribinos cuando quieras."
+BUSINESS_CONTEXT_RULES = (
+    "Datos reales del negocio. Usá solo esto para precios, horarios y condiciones. "
+    "Si un dato no está acá, decí que lo confirmás con el equipo; no lo inventes.\n\n"
+)
 
 SALES_SYSTEM_PROMPT = """Sos SellIA, agente de ventas con IA. Respondes en nombre del negocio.
 Objetivo: RESULTADOS + CRECIMIENTO (no solo "vender").
@@ -262,10 +294,29 @@ Tone: Profesional, cercano, honesto. Máximo 2 párrafos. Tu idioma del cliente.
 Objetivo final: CRECIMIENTO SOSTENIBLE del negocio, no venta de momento."""
 
 
-async def _call_anthropic(message: str) -> str:
+class AIUnavailableError(RuntimeError):
+    """Sin API key de Anthropic: no se responde nada. Nunca un texto enlatado."""
+
+
+async def _call_anthropic(messages: list[dict[str, str]]) -> str:
     api_key = os.getenv("ANTHROPIC_API_KEY", "")
     if not api_key or api_key.startswith("sk-ant-sellia-placeholder"):
-        return "Hola! Recibí tu mensaje. En breve te contactamos."
+        raise AIUnavailableError("ANTHROPIC_API_KEY no configurada")
+
+    # El prompt fijo va cacheado; el contexto del negocio cambia poco pero no
+    # es parte del cache, así que queda en un bloque aparte.
+    system_blocks: list[dict[str, object]] = [
+        {
+            "type": "text",
+            "text": SALES_SYSTEM_PROMPT,
+            "cache_control": {"type": "ephemeral"},
+        },
+    ]
+    business_context = os.getenv("WHATSAPP_BUSINESS_CONTEXT", "").strip()
+    if business_context:
+        system_blocks.append(
+            {"type": "text", "text": BUSINESS_CONTEXT_RULES + business_context}
+        )
 
     url = "https://api.anthropic.com/v1/messages"
     headers = {
@@ -274,16 +325,30 @@ async def _call_anthropic(message: str) -> str:
         "content-type": "application/json",
     }
     payload = {
-        "model": "claude-haiku-4-5-20251001",
+        "model": ANTHROPIC_MODEL,
         "max_tokens": 512,
-        "system": SALES_SYSTEM_PROMPT,
-        "messages": [{"role": "user", "content": message}],
+        "system": system_blocks,
+        "messages": messages,
     }
-    async with httpx.AsyncClient(timeout=15.0) as client:
-        resp = await client.post(url, headers=headers, json=payload)
-        resp.raise_for_status()
-        data = resp.json()
-        return data["content"][0]["text"]
+    # Reintenta solo fallas transitorias (timeout, conexión, 5xx). El trabajo corre
+    # en background, así que el timeout puede ser más generoso que el de antes.
+    last_error: Exception | None = None
+    for attempt in range(ANTHROPIC_ATTEMPTS):
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                resp = await client.post(url, headers=headers, json=payload)
+                resp.raise_for_status()
+                return resp.json()["content"][0]["text"]
+        except (httpx.TimeoutException, httpx.ConnectError) as exc:
+            last_error = exc
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code < 500:
+                raise
+            last_error = exc
+        if attempt < ANTHROPIC_ATTEMPTS - 1:
+            await asyncio.sleep(2**attempt)
+    assert last_error is not None
+    raise last_error
 
 
 async def _send_whatsapp_message(to: str, text: str, phone_number_id: str, token: str):
@@ -306,69 +371,235 @@ async def _send_whatsapp_message(to: str, text: str, phone_number_id: str, token
         return resp.status_code == 200
 
 
+def _sender_key(sender: str) -> str:
+    """Hash del número: se usa en claves de Redis y en logs, sin el número en claro."""
+    return hashlib.sha256(sender.encode()).hexdigest()[:16]
+
+
+_redis_client: redis.Redis | None = None
+
+
+def _store() -> redis.Redis:
+    """Cliente Redis compartido: un pool por proceso, no una conexión por operación."""
+    global _redis_client
+    if _redis_client is None:
+        _redis_client = redis.from_url(get_settings().REDIS_URL, decode_responses=True)
+    return _redis_client
+
+
+def _clip(text: str, limit: int) -> str:
+    return text if len(text) <= limit else text[: limit - 1].rstrip() + "…"
+
+
+def _signature_valid(raw_body: bytes, header: str) -> bool:
+    """X-Hub-Signature-256 = HMAC-SHA256 del body crudo con META_APP_SECRET.
+
+    Sin secret configurado se rechaza todo: un webhook sin firmar gasta IA y
+    envía mensajes desde nuestro número.
+    """
+    secret = os.getenv("META_APP_SECRET", "")
+    if not secret:
+        logger.error(
+            "META_APP_SECRET no configurado: se rechazan los webhooks de WhatsApp"
+        )
+        return False
+    expected = (
+        "sha256=" + hmac.new(secret.encode(), raw_body, hashlib.sha256).hexdigest()
+    )
+    return hmac.compare_digest(expected.encode(), header.encode())
+
+
+def _text_messages(body: dict) -> list[dict[str, str]]:
+    """Mensajes de texto del evento, con id, remitente y número receptor."""
+    found: list[dict[str, str]] = []
+    for entry in body.get("entry") or []:
+        for change in entry.get("changes") or []:
+            value = change.get("value") or {}
+            phone_number_id = (value.get("metadata") or {}).get("phone_number_id", "")
+            for msg in value.get("messages") or []:
+                if msg.get("type") != "text":
+                    continue
+                message_id = msg.get("id", "")
+                sender = msg.get("from", "")
+                text = ((msg.get("text") or {}).get("body") or "").strip()
+                if message_id and sender and text:
+                    found.append(
+                        {
+                            "id": message_id,
+                            "from": sender,
+                            "text": text,
+                            "phone_number_id": phone_number_id,
+                        }
+                    )
+    return found
+
+
+# Estado en Redis. Cada operación es "fail-open": si Redis falla, el webhook
+# sigue respondiendo sin memoria, sin dedupe ni límites. El opt-out es la
+# excepción operativa: si no se puede guardar, se loguea como error.
+
+
+async def _first_time(message_id: str) -> bool:
+    """False si Meta ya entregó este mensaje (reintentos)."""
+    try:
+        return bool(
+            await _store().set(
+                f"wa:msg:{message_id}", "1", nx=True, ex=DEDUPE_TTL_SECONDS
+            )
+        )
+    except RedisError as exc:
+        logger.warning(
+            "WhatsApp: dedupe omitido, Redis no disponible (%s)", type(exc).__name__
+        )
+        return True
+
+
+async def _over_rate_limit(sender: str) -> bool:
+    key = f"wa:rate:{_sender_key(sender)}"
+    try:
+        client = _store()
+        count = await client.incr(key)
+        if count == 1:
+            await client.expire(key, RATE_WINDOW_SECONDS)
+        return count > MAX_MESSAGES_PER_WINDOW
+    except RedisError:
+        return False
+
+
+async def _opted_out(sender: str) -> bool:
+    try:
+        return bool(await _store().exists(f"wa:optout:{_sender_key(sender)}"))
+    except RedisError:
+        return False
+
+
+async def _set_opted_out(sender: str) -> None:
+    try:
+        await _store().set(f"wa:optout:{_sender_key(sender)}", "1")
+    except RedisError:
+        logger.error(
+            "WhatsApp: opt-out NO guardado, Redis no disponible (%s)",
+            _sender_key(sender)[:8],
+        )
+
+
+async def _load_history(sender: str) -> list[dict[str, str]]:
+    try:
+        raw = await _store().lrange(f"wa:hist:{_sender_key(sender)}", 0, -1)
+    except RedisError:
+        return []
+    history: list[dict[str, str]] = []
+    try:
+        for item in raw:
+            turn = json.loads(item)
+            history.append({"role": turn["role"], "content": turn["content"]})
+    except (ValueError, KeyError, TypeError):
+        return []
+    # La API exige empezar con "user"; si el historial quedó desalineado, se descarta.
+    if history and history[0]["role"] != "user":
+        return []
+    return history
+
+
+async def _append_turn(sender: str, user_text: str, reply: str) -> None:
+    """Guarda el par usuario/asistente juntos, así el historial siempre queda alineado."""
+    key = f"wa:hist:{_sender_key(sender)}"
+    try:
+        client = _store()
+        await client.rpush(
+            key,
+            json.dumps({"role": "user", "content": user_text}),
+            json.dumps({"role": "assistant", "content": reply}),
+        )
+        await client.ltrim(key, -HISTORY_ENTRIES, -1)
+        await client.expire(key, HISTORY_TTL_SECONDS)
+    except RedisError:
+        logger.warning("WhatsApp: turno no guardado, Redis no disponible")
+
+
+async def _handle_message(
+    message: dict[str, str], phone_number_id: str, token: str
+) -> None:
+    """Procesa un mensaje entrante en background. Nunca lanza: errores solo se loguean."""
+    sender = message["from"]
+    tag = _sender_key(sender)[:8]
+    try:
+        if not await _first_time(message["id"]):
+            return
+        if await _opted_out(sender):
+            return
+
+        text = _clip(message["text"], MAX_INBOUND_CHARS)
+        if text.lower().strip(" .!") in OPT_OUT_WORDS:
+            await _set_opted_out(sender)
+            await _send_whatsapp_message(sender, OPT_OUT_REPLY, phone_number_id, token)
+            return
+
+        if await _over_rate_limit(sender):
+            logger.warning(
+                "WhatsApp: límite por remitente alcanzado (%s); no se responde", tag
+            )
+            return
+
+        history = await _load_history(sender)
+        reply = _clip(
+            await _call_anthropic(history + [{"role": "user", "content": text}]),
+            MAX_OUTBOUND_CHARS,
+        )
+        if await _send_whatsapp_message(sender, reply, phone_number_id, token):
+            await _append_turn(sender, text, reply)
+    except AIUnavailableError:
+        logger.error("WhatsApp: sin ANTHROPIC_API_KEY, no se responde (%s)", tag)
+    except Exception:
+        logger.exception("WhatsApp: error procesando mensaje (%s)", tag)
+
+
 @router.get("/webhooks/whatsapp")
 async def whatsapp_verify(request: Request):
-    """Meta webhook verification."""
-    params = dict(request.query_params)
-    mode = params.get("hub.mode")
-    token = params.get("hub.verify_token")
-    challenge = params.get("hub.challenge")
-
+    """Verificación del webhook por Meta. El token se compara en tiempo constante y no se loguea."""
+    params = request.query_params
     verify_token = os.getenv("META_WEBHOOK_VERIFY_TOKEN", "")
-    if mode == "subscribe" and token == verify_token:
-        logger.info("WhatsApp webhook verified")
-        return Response(content=challenge, media_type="text/plain")
-    logger.warning(f"Webhook verification failed: mode={mode}, token={token}")
+    token = params.get("hub.verify_token", "")
+
+    if (
+        params.get("hub.mode") == "subscribe"
+        and verify_token
+        and hmac.compare_digest(token.encode(), verify_token.encode())
+    ):
+        logger.info("WhatsApp webhook verificado")
+        return Response(
+            content=params.get("hub.challenge", ""), media_type="text/plain"
+        )
+    logger.warning("Verificación de webhook WhatsApp rechazada")
     return Response(content="Forbidden", status_code=403)
 
 
 @router.post("/webhooks/whatsapp")
-async def whatsapp_receive(request: Request):
-    """Receive WhatsApp messages from Meta and reply with AI."""
+async def whatsapp_receive(request: Request, background: BackgroundTasks):
+    """Recibe eventos de Meta: valida firma, responde 200 y procesa en background."""
+    raw_body = await request.body()
+    if not _signature_valid(raw_body, request.headers.get("X-Hub-Signature-256", "")):
+        logger.warning("Webhook WhatsApp con firma inválida; descartado")
+        return Response(content="Forbidden", status_code=403)
+
     try:
-        body = await request.json()
-    except Exception:
+        body = json.loads(raw_body)
+        messages = _text_messages(body) if isinstance(body, dict) else []
+    except (ValueError, AttributeError, TypeError):
+        logger.warning("Webhook WhatsApp con payload no válido; descartado")
         return {"status": "ok"}
 
-    try:
-        entry = body.get("entry", [{}])[0]
-        changes = entry.get("changes", [{}])[0]
-        value = changes.get("value", {})
-        messages = value.get("messages", [])
+    phone_number_id = os.getenv("META_PHONE_NUMBER_ID", "")
+    token = os.getenv("META_WHATSAPP_TOKEN", "")
+    if not phone_number_id or not token:
+        logger.error(
+            "Faltan META_PHONE_NUMBER_ID o META_WHATSAPP_TOKEN; evento descartado"
+        )
+        return {"status": "ok"}
 
-        if not messages:
-            return {"status": "ok"}
-
-        msg = messages[0]
-        msg_type = msg.get("type", "")
-
-        # Only handle text messages for now
-        if msg_type != "text":
-            return {"status": "ok"}
-
-        sender = msg.get("from", "")
-        text = msg.get("text", {}).get("body", "").strip()
-
-        if not sender or not text:
-            return {"status": "ok"}
-
-        phone_number_id = os.getenv("META_PHONE_NUMBER_ID", "")
-        token = os.getenv("META_WHATSAPP_TOKEN", "")
-
-        if not phone_number_id or not token:
-            logger.error("Missing META_PHONE_NUMBER_ID or META_WHATSAPP_TOKEN")
-            return {"status": "ok"}
-
-        logger.info(f"Message from {sender}: {text[:80]}")
-
-        # Generate AI reply
-        reply = await _call_anthropic(text)
-
-        # Send reply
-        sent = await _send_whatsapp_message(sender, reply, phone_number_id, token)
-        logger.info(f"Reply sent to {sender}: {sent}")
-
-    except Exception as e:
-        logger.error(f"WhatsApp webhook error: {e}")
-
+    for message in messages:
+        # Meta manda el evento de cada número de la cuenta: solo respondemos por el nuestro.
+        if message["phone_number_id"] not in ("", phone_number_id):
+            continue
+        background.add_task(_handle_message, message, phone_number_id, token)
     return {"status": "ok"}

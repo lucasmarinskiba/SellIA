@@ -15,10 +15,11 @@ import logging
 import json
 import asyncio
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, HTTPException, Depends
+from fastapi import BackgroundTasks, FastAPI, Request, HTTPException, Depends
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
+from app.api.v1.whatsapp_webhook import whatsapp_receive
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -1891,47 +1892,15 @@ async def queue_peek(count: int = 5):
         return {"status": "error", "detail": str(e)}
 
 @app.post("/api/v1/webhooks/whatsapp")
-async def whatsapp_webhook(request: Request):
-    """Meta WhatsApp webhook - recibe y responde mensajes."""
-    try:
-        body = await request.json()
+async def whatsapp_webhook(request: Request, background: BackgroundTasks):
+    """Meta WhatsApp webhook: delegado a app.api.v1.whatsapp_webhook.
 
-        # Meta verifica webhook con GET
-        if request.method == "GET":
-            token = os.getenv("META_WEBHOOK_VERIFY_TOKEN", "")
-            verify_token = request.query_params.get("hub.verify_token", "")
-            if verify_token == token:
-                return int(request.query_params.get("hub.challenge", 0))
-            return JSONResponse({"error": "Invalid token"}, status_code=403)
+    Firma HMAC obligatoria, respuesta 200 inmediata, dedupe, memoria, opt-out y
+    límites viven allá. Este handler no tiene lógica propia para que no haya
+    dos caminos de respuesta distintos (antes esta copia no validaba firma).
+    """
+    return await whatsapp_receive(request, background)
 
-        # Procesa mensaje entrante
-        messages = body.get("entry", [{}])[0].get("changes", [{}])[0].get("value", {}).get("messages", [])
-        if not messages:
-            return JSONResponse({"status": "ok"})
-
-        message = messages[0]
-        from_number = message.get("from")
-        message_text = message.get("text", {}).get("body", "")
-
-        if not message_text:
-            return JSONResponse({"status": "ok"})
-
-        # Genera respuesta con IA
-        response_text = await call_anthropic_api(
-            system_prompt=SALES_SYSTEM_PROMPT,
-            user_message=f"Cliente: {message_text}\n\nResponde como agente de ventas SellIA.",
-        )
-
-        # Envía respuesta
-        phone_number_id = os.getenv("META_PHONE_NUMBER_ID", "")
-        token = os.getenv("META_WHATSAPP_TOKEN", "")
-        if phone_number_id and token:
-            await send_whatsapp_message(from_number, response_text, phone_number_id, token)
-
-        return JSONResponse({"status": "ok", "response_sent": True})
-    except Exception as e:
-        logger.error(f"WhatsApp webhook error: {e}")
-        return JSONResponse({"status": "error", "detail": str(e)}, status_code=500)
 
 @app.post("/api/v1/sequences/cold-email")
 async def generate_cold_email_sequence(req: EmailSequenceRequest):
