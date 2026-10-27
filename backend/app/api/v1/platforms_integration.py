@@ -33,6 +33,11 @@ import json
 from app.core.database import get_db
 from app.domains.channels.models import ChannelConnection, ChannelPlatform, ChannelStatus
 
+_INTEGRATION_NOT_IMPLEMENTED = (
+    "Integración no implementada: este endpoint todavía no procesa nada real."
+)
+
+
 _SHOP_NOT_IMPLEMENTED = (
     "Integración de tienda no implementada: el sync y las métricas todavía no están conectados."
 )
@@ -110,31 +115,7 @@ async def facebook_shop_webhook_orders(
     Returns:
         WebhookResponse
     """
-    correlation_id = str(uuid.uuid4())
-
-    try:
-        logger.info(f"[{correlation_id}] Facebook Shop webhook received")
-
-        # Get raw body for signature verification
-        body = await request.body()
-
-        # TODO: Verify signature
-        # TODO: Parse payload
-        # TODO: Call FacebookShopAutomation.handle_webhook()
-        # TODO: Store in DB
-
-        return WebhookResponse(
-            status="success",
-            message="Webhook processed",
-            correlation_id=correlation_id,
-        )
-
-    except Exception as e:
-        logger.error(f"[{correlation_id}] Error processing webhook: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Webhook processing failed: {str(e)}",
-        )
+    raise HTTPException(status_code=501, detail=_INTEGRATION_NOT_IMPLEMENTED)
 
 
 @router.post("/facebook-shop/config")
@@ -152,26 +133,7 @@ async def facebook_shop_config(
     Returns:
         Configuration confirmation
     """
-    correlation_id = str(uuid.uuid4())
-
-    try:
-        logger.info(f"[{correlation_id}] Configuring Facebook Shop for {account_id}")
-
-        # TODO: Validate credentials
-        # TODO: Store encrypted credentials in DB
-        # TODO: Test API connection
-
-        return {
-            "status": "success",
-            "platform": "facebook_shop",
-            "account_id": account_id,
-            "configured_at": datetime.utcnow().isoformat(),
-            "correlation_id": correlation_id,
-        }
-
-    except Exception as e:
-        logger.error(f"[{correlation_id}] Error configuring: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
+    raise HTTPException(status_code=501, detail=_INTEGRATION_NOT_IMPLEMENTED)
 
 
 @router.post("/facebook-shop/sync/products")
@@ -219,25 +181,7 @@ async def instagram_shop_webhook_orders(
     x_hub_signature: str = Header(...),
 ) -> WebhookResponse:
     """Handle Instagram Shop webhook for orders."""
-    correlation_id = str(uuid.uuid4())
-
-    try:
-        logger.info(f"[{correlation_id}] Instagram Shop webhook received")
-
-        body = await request.body()
-
-        # TODO: Verify signature
-        # TODO: Parse and process webhook
-
-        return WebhookResponse(
-            status="success",
-            message="Webhook processed",
-            correlation_id=correlation_id,
-        )
-
-    except Exception as e:
-        logger.error(f"[{correlation_id}] Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    raise HTTPException(status_code=501, detail=_INTEGRATION_NOT_IMPLEMENTED)
 
 
 @router.post("/instagram-shop/sync/products")
@@ -266,25 +210,7 @@ async def tiktok_shop_webhook_orders(
     account_id: str = Header(...),
 ) -> WebhookResponse:
     """Handle TikTok Shop webhook for orders."""
-    correlation_id = str(uuid.uuid4())
-
-    try:
-        logger.info(f"[{correlation_id}] TikTok Shop webhook received")
-
-        body = await request.body()
-
-        # TODO: Verify TikTok signature
-        # TODO: Parse and process webhook
-
-        return WebhookResponse(
-            status="success",
-            message="Webhook processed",
-            correlation_id=correlation_id,
-        )
-
-    except Exception as e:
-        logger.error(f"[{correlation_id}] Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    raise HTTPException(status_code=501, detail=_INTEGRATION_NOT_IMPLEMENTED)
 
 
 @router.post("/tiktok-shop/config")
@@ -293,21 +219,7 @@ async def tiktok_shop_config(
     account_id: str = Header(...),
 ) -> Dict[str, Any]:
     """Configure TikTok Shop OAuth."""
-    try:
-        logger.info(f"Configuring TikTok Shop for {account_id}")
-
-        # TODO: Exchange OAuth code for tokens
-        # TODO: Store encrypted credentials
-        # TODO: Register webhook
-
-        return {
-            "status": "success",
-            "platform": "tiktok_shop",
-            "account_id": account_id,
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    raise HTTPException(status_code=501, detail=_INTEGRATION_NOT_IMPLEMENTED)
 
 
 async def _get_tiktok_shop_connection(account_id: str, db: AsyncSession) -> ChannelConnection:
@@ -379,24 +291,7 @@ async def calendly_webhook_events(
     account_id: str = Header(...),
 ) -> WebhookResponse:
     """Handle Calendly webhook for scheduled events."""
-    correlation_id = str(uuid.uuid4())
-
-    try:
-        logger.info(f"[{correlation_id}] Calendly webhook received")
-
-        # TODO: Call CalendlyAutomation.handle_webhook()
-        # TODO: Process event creation/cancellation
-        # TODO: Sync to Google Calendar
-
-        return WebhookResponse(
-            status="success",
-            message="Webhook processed",
-            correlation_id=correlation_id,
-        )
-
-    except Exception as e:
-        logger.error(f"[{correlation_id}] Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    raise HTTPException(status_code=501, detail=_INTEGRATION_NOT_IMPLEMENTED)
 
 
 @router.post("/calendly/config")
@@ -405,21 +300,7 @@ async def calendly_config(
     account_id: str = Header(...),
 ) -> Dict[str, Any]:
     """Configure Calendly integration."""
-    try:
-        logger.info(f"Configuring Calendly for {account_id}")
-
-        # TODO: Store access token
-        # TODO: Register webhook with Calendly
-        # TODO: Connect Google Calendar (optional)
-
-        return {
-            "status": "success",
-            "platform": "calendly",
-            "account_id": account_id,
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    raise HTTPException(status_code=501, detail=_INTEGRATION_NOT_IMPLEMENTED)
 
 
 @router.get("/calendly/events")
@@ -428,20 +309,7 @@ async def calendly_list_events(
     days: int = 7,
 ) -> Dict[str, Any]:
     """List upcoming Calendly events."""
-    try:
-        logger.info(f"Fetching Calendly events for {account_id}")
-
-        # TODO: Call CalendlyAutomation.list_events()
-        # TODO: Return event list
-
-        return {
-            "platform": "calendly",
-            "period_days": days,
-            "events": [],
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    raise HTTPException(status_code=501, detail=_INTEGRATION_NOT_IMPLEMENTED)
 
 
 # ========== SLACK ENDPOINTS ==========
@@ -461,27 +329,7 @@ async def slack_command_handler(
     - user_id
     - channel_id
     """
-    correlation_id = str(uuid.uuid4())
-
-    try:
-        logger.info(f"[{correlation_id}] Slack command received")
-
-        # Parse request body
-        body = await request.form()
-
-        # TODO: Verify token
-        # TODO: Parse command and arguments
-        # TODO: Call SlackAutomation.handle_slash_command()
-        # TODO: Return response
-
-        return {
-            "response_type": "in_channel",
-            "text": "Command processed",
-        }
-
-    except Exception as e:
-        logger.error(f"[{correlation_id}] Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    raise HTTPException(status_code=501, detail=_INTEGRATION_NOT_IMPLEMENTED)
 
 
 @router.post("/slack/events")
@@ -490,20 +338,10 @@ async def slack_events_handler(
     account_id: str = Header(...),
 ) -> Dict[str, Any]:
     """Handle Slack Events API."""
-    try:
-        # Handle verification challenges
-        if payload.get("type") == "url_verification":
-            return {"challenge": payload.get("challenge")}
-
-        logger.info("Slack event received")
-
-        # TODO: Process events (app mentions, messages, etc)
-
-        return {"status": "ok"}
-
-    except Exception as e:
-        logger.error(f"Error handling event: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    # Handshake de URL de Slack: el único paso del protocolo que sí se implementa.
+    if payload.get("type") == "url_verification":
+        return {"challenge": payload.get("challenge")}
+    raise HTTPException(status_code=501, detail=_INTEGRATION_NOT_IMPLEMENTED)
 
 
 @router.post("/slack/alerts")
@@ -512,20 +350,7 @@ async def slack_send_alert(
     account_id: str = Header(...),
 ) -> Dict[str, Any]:
     """Send alert via Slack bot."""
-    try:
-        logger.info(f"Sending Slack alert for {account_id}")
-
-        # TODO: Fetch Slack workspace config
-        # TODO: Call SlackAutomation.send_alert()
-        # TODO: Return result
-
-        return {
-            "status": "sent",
-            "platform": "slack",
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    raise HTTPException(status_code=501, detail=_INTEGRATION_NOT_IMPLEMENTED)
 
 
 # ========== TELEGRAM ENDPOINTS ==========
@@ -536,25 +361,7 @@ async def telegram_webhook_updates(
     account_id: str = Header(...),
 ) -> Dict[str, Any]:
     """Handle Telegram bot updates."""
-    correlation_id = str(uuid.uuid4())
-
-    try:
-        logger.info(f"[{correlation_id}] Telegram update received")
-
-        payload = await request.json()
-
-        # TODO: Call TelegramAutomation.handle_update()
-        # TODO: Process message/command/callback
-        # TODO: Send response
-
-        return {
-            "status": "ok",
-            "correlation_id": correlation_id,
-        }
-
-    except Exception as e:
-        logger.error(f"[{correlation_id}] Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    raise HTTPException(status_code=501, detail=_INTEGRATION_NOT_IMPLEMENTED)
 
 
 @router.post("/telegram/config")
@@ -563,21 +370,7 @@ async def telegram_config(
     account_id: str = Header(...),
 ) -> Dict[str, Any]:
     """Configure Telegram bot."""
-    try:
-        logger.info(f"Configuring Telegram for {account_id}")
-
-        # TODO: Validate bot token
-        # TODO: Set webhook URL
-        # TODO: Set commands menu
-
-        return {
-            "status": "success",
-            "platform": "telegram",
-            "account_id": account_id,
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    raise HTTPException(status_code=501, detail=_INTEGRATION_NOT_IMPLEMENTED)
 
 
 @router.post("/telegram/send-notification")
@@ -586,20 +379,7 @@ async def telegram_send_notification(
     account_id: str = Header(...),
 ) -> Dict[str, Any]:
     """Send Telegram notification."""
-    try:
-        logger.info(f"Sending Telegram notification for {account_id}")
-
-        # TODO: Fetch Telegram bot config
-        # TODO: Send notification to user/channel
-        # TODO: Return result
-
-        return {
-            "status": "sent",
-            "platform": "telegram",
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    raise HTTPException(status_code=501, detail=_INTEGRATION_NOT_IMPLEMENTED)
 
 
 # ========== HEALTH & STATUS ==========
@@ -607,22 +387,14 @@ async def telegram_send_notification(
 @router.get("/health")
 async def platforms_health() -> Dict[str, Any]:
     """Check health of all platform integrations."""
-    try:
-        return {
-            "status": "healthy",
-            "platforms": {
-                "facebook_shop": "ok",
-                "instagram_shop": "ok",
-                "tiktok_shop": "ok",
-                "calendly": "ok",
-                "slack": "ok",
-                "telegram": "ok",
-            },
-            "timestamp": datetime.utcnow().isoformat(),
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    """Estado de salud por plataforma: no hay chequeo real todavía."""
+    names = ["facebook_shop", "instagram_shop", "tiktok_shop", "calendly", "slack", "telegram"]
+    return {
+        "status": "unknown",
+        "platforms": {name: "unknown" for name in names},
+        "detail": "Sin chequeo de salud por plataforma; usar /status por cuenta.",
+        "timestamp": datetime.utcnow().isoformat(),
+    }
 
 
 @router.get("/status")
