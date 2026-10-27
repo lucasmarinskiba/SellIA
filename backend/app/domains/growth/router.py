@@ -3,12 +3,18 @@
 import uuid
 from typing import Optional, List
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user, resolve_business_id
 from app.domains.users.models import User
+from app.domains.lead_generation.places_source import (
+    PlacesAPIError, PlacesNotConfiguredError, search_places,
+)
+from app.domains.lead_generation.prospect_capture import (
+    MAX_CSV_BYTES, parse_csv_contacts, save_csv_contacts, save_place_prospects,
+)
 
 from app.domains.growth.models import (
     GrowthCampaign, GrowthCampaignType, GrowthCampaignStatus,
@@ -20,6 +26,7 @@ from app.domains.growth.schemas import (
     GrowthCampaignCreate, GrowthCampaignUpdate, GrowthCampaignResponse,
     LeadMagnetCreate, LeadMagnetResponse, LeadMagnetPerformance,
     InboundLeadCreate, InboundLeadResponse,
+    ProspectSearchRequest, ProspectSearchResponse,
     SocialProofCreate, SocialProofResponse, SocialProofStats,
     UgcRequestCreate, UgcRequestResponse,
     ValueSequenceCreate, ValueSequenceResponse, ValueSequencePerformance,
@@ -223,6 +230,61 @@ async def list_inbound_leads(
         source_type=source_type,
         limit=limit,
     )
+
+
+# ========== Real prospects ==========
+
+@router.post("/prospects/search", response_model=ProspectSearchResponse)
+async def search_prospects(
+    data: ProspectSearchRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Busca negocios reales en Google Places y guarda los que aún no están cargados."""
+    business_id = await resolve_business_id(db, current_user)
+    try:
+        prospects = await search_places(data.query, data.location, data.limit)
+    except PlacesNotConfiguredError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
+    except PlacesAPIError:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Google Places no respondió; probá de nuevo más tarde",
+        )
+
+    outcome = await save_place_prospects(db, business_id, prospects, data.query)
+    return ProspectSearchResponse(
+        found=len(prospects),
+        created=len(outcome.created),
+        skipped_duplicates=outcome.skipped_duplicates,
+        prospects=outcome.created,
+    )
+
+
+@router.post("/leads/import")
+async def import_leads_csv(
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Importa contactos propios desde CSV (columnas: name, email, phone, company, website)."""
+    business_id = await resolve_business_id(db, current_user)
+    raw = await file.read(MAX_CSV_BYTES + 1)
+    if len(raw) > MAX_CSV_BYTES:
+        raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="El CSV supera 1 MB")
+    try:
+        parsed = parse_csv_contacts(raw)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+
+    outcome = await save_csv_contacts(db, business_id, parsed.contacts, file.filename or "csv")
+    return {
+        "rows": len(parsed.contacts) + parsed.rejected_count,
+        "created": len(outcome.created),
+        "skipped_duplicates": outcome.skipped_duplicates,
+        "rejected_count": parsed.rejected_count,
+        "rejected": parsed.rejected,
+    }
 
 
 # ========== SEO Content ==========
