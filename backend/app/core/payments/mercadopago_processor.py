@@ -23,7 +23,7 @@ import json
 import hmac
 import hashlib
 from typing import Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 
 logger = logging.getLogger(__name__)
@@ -198,8 +198,8 @@ class MercadoPagoProcessor:
         Returns:
             {
                 "status": "retrieved" | "error",
+                "provider_status": str,
                 "payment_id": str,
-                "status": str,
                 "amount": float,
                 "currency": str,
                 "external_reference": str,
@@ -227,8 +227,8 @@ class MercadoPagoProcessor:
 
             return {
                 "status": "retrieved",
+                "provider_status": payment["status"],
                 "payment_id": payment["id"],
-                "status": payment["status"],
                 "amount": payment["transaction_amount"],
                 "currency": payment["currency_id"],
                 "external_reference": payment.get("external_reference"),
@@ -256,7 +256,8 @@ class MercadoPagoProcessor:
 
         Returns:
             {
-                "status": "refunded" | "error",
+                "status": "refunded" | "pending" | "error",
+                "provider_status": str,
                 "refund_id": str,
                 "payment_id": str,
                 "amount_refunded": float,
@@ -290,12 +291,20 @@ class MercadoPagoProcessor:
 
             logger.info(f"Refund created: {refund.get('id')} | Payment: {payment_id}")
 
+            provider_status = refund.get("status")
+            # Only an approved refund counts as refunded; in-flight ones stay pending.
+            if provider_status == "approved":
+                status = "refunded"
+            elif provider_status in ("pending", "in_process", "authorized"):
+                status = "pending"
+            else:
+                return {"status": "error", "error": f"Refund {provider_status}"}
             return {
-                "status": "refunded",
+                "status": status,
+                "provider_status": provider_status,
                 "refund_id": refund.get("id"),
                 "payment_id": payment_id,
                 "amount_refunded": refund.get("amount", amount),
-                "status": refund.get("status"),
             }
 
         except Exception as e:

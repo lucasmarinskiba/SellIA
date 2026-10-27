@@ -29,9 +29,9 @@ const PY = [
   'g=r.graph()',
   "out=os.environ['BRAIN_OUT']",
   'os.makedirs(os.path.dirname(out),exist_ok=True)',
-  "json.dump({'nodes':g['nodes'],'edges':g['edges'],'counts':g['counts'],'health':g['health']},open(out,'w',encoding='utf-8'),ensure_ascii=False,indent=0)",
+  "json.dump({'nodes':g['nodes'],'edges':g['edges'],'counts':g['counts'],'health':g['health']},open(out,'w',encoding='utf-8',newline='\n'),ensure_ascii=False,indent=0)",
   "fout=os.path.join(os.path.dirname(out),'brain-flows.json')",
-  "json.dump(r.flows(),open(fout,'w',encoding='utf-8'),ensure_ascii=False,indent=0)",
+  "json.dump(r.flows(),open(fout,'w',encoding='utf-8',newline='\n'),ensure_ascii=False,indent=0)",
   "print('[gen:brain] nodos',len(g['nodes']),'edges',len(g['edges']),'flows',len(r.flows()['flows']))",
 ].join('\n')
 
