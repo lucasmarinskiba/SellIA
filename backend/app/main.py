@@ -106,6 +106,9 @@ _try_include("app.api.v1.bookings.router", "/api/v1", ["bookings"])
 _try_include("app.api.v1.payments.router", "", ["payments"])
 _try_include("app.api.v1.offline_tracking.router", "/api/v1", ["offline-tracking"])
 _try_include("app.api.v1.offline_bi.router", "/api/v1/bi", ["offline-bi"])
+# bi: the funnel and insight alerts the Inteligencia screen calls (/businesses/{id}/bi/*). The router was
+# written and never mounted; it now computes from real records and checks access.
+_try_include("app.domains.bi.router.router", "/api/v1/businesses", ["bi"])
 _try_include("app.api.v1.location_checkin.router", "/api/v1", ["location-checkin"])
 _try_include("app.api.v1.location_qr.router", "/api/v1", ["location-qr"])
 _try_include("app.api.v1.location_inventory.router", "/api/v1", ["inventory"])
@@ -115,6 +118,12 @@ _try_include("app.api.v1.location_inventory.router", "/api/v1", ["inventory"])
 # proves the caller owns the business/location it names (app.core.business_access)
 # before touching data -- mounting them without that would have been an IDOR.
 _try_include("app.api.v1.mobile_geofence.router", "", ["mobile-geofence"])
+# Seasonal campaign drafts (read-only; nothing is sent from here).
+_try_include("app.api.v1.seasonal_suggestions.router", "", ["seasonal-suggestions"])
+# Per-business profile (one BusinessContext row per business; read by members, edited by managers).
+_try_include("app.api.v1.business_profile.router", "", ["business-profile"])
+# Device tokens for the mobile SDKs (issue / list / revoke by owners and ADMIN members).
+_try_include("app.api.v1.mobile_device_tokens.router", "", ["mobile-device-tokens"])
 _try_include("app.api.v1.unified_dashboard.router", "", ["unified-dashboard"])
 # dynamic_pricing, feedback_alerts and staff_tasks: same story (written, never mounted,
 # imported get_current_user from a module that does not define it). Access is owner or
@@ -124,6 +133,9 @@ _try_include("app.api.v1.feedback_alerts.router", "", ["feedback-alerts"])
 _try_include("app.api.v1.staff_tasks.router", "", ["staff-tasks"])
 _try_include("app.domains.channel_integration.router.router", "/api/v1", ["channel-integration"])
 _try_include("app.api.v1.offline_sequences.router", "/api/v1", ["offline-sequences"])
+# customer_journeys: the contact-journey funnel (lead from first contact to repeat purchase). Its service
+# and tables now exist (domains/journeys/contact_journey_*); it was mounted-nowhere before.
+_try_include("app.api.v1.customer_journeys.router", "", ["customer-journeys"])
 _try_include("app.api.v1.websites.router", "/api/v1/websites", ["websites"])
 _try_include("app.api.v1.seo.router", "/api/v1/seo", ["seo"])
 _try_include("app.domains.seo_config.router.router", "/api/v1/businesses", ["seo-config"])
@@ -201,6 +213,7 @@ _try_include("app.api.v1.listings.router", "/api/v1", ["listings"])
 _try_include("app.domains.finance.router.router", "/api/v1/businesses", ["finance"])
 _try_include("app.domains.ledger.router.router", "/api/v1/businesses", ["ledger"])
 _try_include("app.domains.ad_budget.router.router", "/api/v1/businesses", ["ad-budget"])
+_try_include("app.domains.harvey.router.router", "/api/v1/businesses", ["harvey"])
 _try_include("app.domains.forecasting.router.router", "/api/v1/businesses", ["forecasting"])
 _try_include("app.domains.cashflow.router.router", "/api/v1/businesses", ["cashflow"])
 _try_include("app.domains.orchestrator.router.router", "/api/v1/businesses", ["orchestrator"])
