@@ -32,6 +32,11 @@ import json
 
 from app.core.database import get_db
 from app.domains.channels.models import ChannelConnection, ChannelPlatform, ChannelStatus
+
+_SHOP_NOT_IMPLEMENTED = (
+    "Integración de tienda no implementada: el sync y las métricas todavía no están conectados."
+)
+
 # get_connector se importa perezoso dentro de cada handler (no a nivel de
 # módulo): app.domains.channels.connectors.__init__ importa TODOS los
 # conectores al cargarse, incluido email.py -> aiosmtplib. Un import a nivel
@@ -184,29 +189,7 @@ async def facebook_shop_sync_products(
     Returns:
         SyncResponse
     """
-    import time
-    start_time = time.time()
-    correlation_id = str(uuid.uuid4())
-
-    try:
-        logger.info(f"[{correlation_id}] Syncing Facebook products for {account_id}")
-
-        # TODO: Fetch FB Shop credentials from DB
-        # TODO: Initialize FacebookShopAutomation
-        # TODO: Call sync_products_from_facebook()
-        # TODO: Update local DB
-
-        duration = time.time() - start_time
-
-        return SyncResponse(
-            status="success",
-            synced_count=0,  # Placeholder
-            duration_seconds=duration,
-        )
-
-    except Exception as e:
-        logger.error(f"[{correlation_id}] Error syncing products: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
+    raise HTTPException(status_code=501, detail=_SHOP_NOT_IMPLEMENTED)
 
 
 @router.get("/facebook-shop/orders/{order_id}")
@@ -224,22 +207,7 @@ async def facebook_shop_get_order(
     Returns:
         Order details
     """
-    try:
-        logger.info(f"Fetching Facebook order {order_id}")
-
-        # TODO: Fetch from local DB first
-        # TODO: If not found, sync from Facebook API
-        # TODO: Return order details
-
-        return {
-            "order_id": order_id,
-            "status": "pending",
-            "platform": "facebook_shop",
-        }
-
-    except Exception as e:
-        logger.error(f"Error fetching order: {e}")
-        raise HTTPException(status_code=404, detail="Order not found")
+    raise HTTPException(status_code=501, detail=_SHOP_NOT_IMPLEMENTED)
 
 
 # ========== INSTAGRAM SHOP ENDPOINTS ==========
@@ -278,26 +246,7 @@ async def instagram_shop_sync_products(
     account_id: str = Header(...),
 ) -> SyncResponse:
     """Sync products to Instagram Shop."""
-    import time
-    start_time = time.time()
-
-    try:
-        logger.info(f"Syncing Instagram products for {account_id}")
-
-        # TODO: Fetch Instagram credentials
-        # TODO: Call InstagramShopAutomation.sync_products_to_instagram()
-        # TODO: Update DB
-
-        duration = time.time() - start_time
-
-        return SyncResponse(
-            status="success",
-            synced_count=0,
-            duration_seconds=duration,
-        )
-
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    raise HTTPException(status_code=501, detail=_SHOP_NOT_IMPLEMENTED)
 
 
 @router.get("/instagram-shop/analytics")
@@ -306,22 +255,7 @@ async def instagram_shop_analytics(
     days: int = 30,
 ) -> Dict[str, Any]:
     """Fetch Instagram Shop analytics."""
-    try:
-        logger.info(f"Fetching Instagram analytics for {account_id}")
-
-        # TODO: Fetch from InstagramShopAutomation.get_shop_analytics()
-        # TODO: Return metrics
-
-        return {
-            "platform": "instagram_shop",
-            "period_days": days,
-            "profile_views": 0,
-            "website_clicks": 0,
-            "conversion_rate": 0,
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    raise HTTPException(status_code=501, detail=_SHOP_NOT_IMPLEMENTED)
 
 
 # ========== TIKTOK SHOP ENDPOINTS ==========
