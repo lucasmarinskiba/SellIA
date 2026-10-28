@@ -144,6 +144,18 @@ class WorkflowEngine:
 
     def _check_trigger_config(self, config: Dict[str, Any], trigger_data: Dict[str, Any]) -> bool:
         """Check if trigger data matches workflow trigger_config filters."""
+        config = config or {}
+
+        # Source filter. Events from outside the chat flow (Harvey's prospecting) run a workflow only when it asked
+        # for that source; otherwise existing chat automations would fire on events they were never built for.
+        source = trigger_data.get("source")
+        sources = config.get("sources")
+        if sources:
+            if (source or "chat") not in sources:
+                return False
+        elif source:
+            return False
+
         if not config:
             return True
 
