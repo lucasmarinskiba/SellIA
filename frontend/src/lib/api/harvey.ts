@@ -155,7 +155,26 @@ export interface CompetitiveBrief {
   generated_at: string | null
 }
 
+export interface ProfileSuggestion {
+  offer: string
+  benefits: string[]
+  keywords: string[]
+  locations: string[]
+  source: 'model' | 'facts'
+  site: string
+}
+
+export interface DomainCheck {
+  domain: string
+  free_mail: boolean
+  score: number | null
+  items: { key: string; status: 'ok' | 'warn' | 'bad' | 'unknown'; title: string; detail: string; fix: string }[]
+}
+
 export const harvey = {
+  suggestFromWebsite: (bid: string, url: string) =>
+    api.post<ProfileSuggestion>(`${base(bid)}/profile/from-website`, { url }).then((r) => r.data),
+  deliverability: (bid: string) => api.get<DomainCheck>(`${base(bid)}/deliverability`).then((r) => r.data),
   competitors: (bid: string) => api.get<Competitor[]>(`${base(bid)}/competitors`).then((r) => r.data),
   addCompetitor: (bid: string, body: { url: string; kind: CompetitorKind; name?: string }) =>
     api.post<Competitor>(`${base(bid)}/competitors`, body).then((r) => r.data),
