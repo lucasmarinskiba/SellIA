@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
+import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { conversationsApi, ConversationWithPreview, Message, MessageDirection } from '@/lib/conversations'
 import { businessApi, Business } from '@/lib/business'
@@ -23,6 +24,8 @@ export function ConversacionesContent() {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [platformFilter, setPlatformFilter] = useState<string>('')
+  // Only the conversations a person has to take over (flagged by the bot rules or by Harvey).
+  const [attentionOnly, setAttentionOnly] = useState(false)
   // The platform's own rules, checked on what the seller is typing. The rules
   // that sanction a MercadoLibre listing do not care whether the phone number
   // came from the bot or from a person in a hurry.
@@ -31,6 +34,7 @@ export function ConversacionesContent() {
 
   const activeConversation = conversations.find(c => c.id === selectedConversation)
   const activePlatform = activeConversation?.platform ?? ''
+  const visibleConversations = attentionOnly ? conversations.filter((c) => c.awaiting_human) : conversations
 
   useEffect(() => {
     const text = newMessage.trim()
@@ -187,6 +191,15 @@ export function ConversacionesContent() {
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
           <button
+            onClick={() => setAttentionOnly((v) => !v)}
+            aria-pressed={attentionOnly}
+            className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors ${
+              attentionOnly ? 'bg-red-600 text-white border-red-600' : 'bg-white text-red-700 border-red-200 hover:border-red-400'
+            }`}
+          >
+            Necesitan atención ({conversations.filter((c) => c.awaiting_human).length})
+          </button>
+          <button
             onClick={() => setPlatformFilter('')}
             className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
               platformFilter === '' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
@@ -231,18 +244,20 @@ export function ConversacionesContent() {
               <div className="flex items-center justify-center h-32">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
               </div>
-            ) : conversations.length === 0 ? (
+            ) : visibleConversations.length === 0 ? (
               <div className="p-8 text-center">
                 <MessageSquare className="w-10 h-10 text-gray-300 mx-auto mb-3" />
                 <p className="text-sm text-gray-500">
-                  {platformFilter ? `Sin conversaciones en ${platformMeta(platformFilter).label}` : 'No hay conversaciones aún'}
+                  {attentionOnly
+                    ? 'Nada necesita tu atención ahora'
+                    : platformFilter ? `Sin conversaciones en ${platformMeta(platformFilter).label}` : 'No hay conversaciones aún'}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
                   {platformFilter ? 'Probá con otra plataforma o esperá a que lleguen mensajes reales.' : 'Conecta un canal para empezar'}
                 </p>
               </div>
             ) : (
-              conversations.map((conv) => {
+              visibleConversations.map((conv) => {
                 const meta = platformMeta(conv.platform)
                 return (
                 <button
@@ -264,6 +279,16 @@ export function ConversacionesContent() {
                         >
                           {meta.label}
                         </span>
+                        {conv.source === 'harvey' && (
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 bg-violet-100 text-violet-700">
+                            Prospección
+                          </span>
+                        )}
+                        {conv.awaiting_human && (
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 bg-red-100 text-red-700">
+                            Atender
+                          </span>
+                        )}
                         {conv.ai_responded && (
                           <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 bg-emerald-100 text-emerald-700">
                             <Bot className="w-2.5 h-2.5" /> IA
@@ -372,6 +397,20 @@ export function ConversacionesContent() {
                 <div ref={messagesEndRef} />
               </div>
 
+              {activeConversation?.source === 'harvey' ? (
+                <div className="p-4 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3 bg-violet-50">
+                  <p className="text-sm text-violet-900">
+                    Este hilo viene de tu prospección. Se responde desde ahí para que pase por los controles de Harvey
+                    (línea de baja, dirección y tu aprobación).
+                  </p>
+                  <Link
+                    href="/dashboard/prospeccion"
+                    className="shrink-0 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700"
+                  >
+                    Responder en Prospección
+                  </Link>
+                </div>
+              ) : (
               <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-100">
                 {policyCheck && policyCheck.problems.length > 0 && (
                   <div className="mb-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900">
@@ -408,6 +447,7 @@ export function ConversacionesContent() {
                   </button>
                 </div>
               </form>
+              )}
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center">
