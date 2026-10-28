@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.business_access import require_business_access
 from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.domains.harvey import weekly
 from app.domains.harvey.competitors_service import CompetitorError, CompetitorService
 from app.domains.harvey.schemas import (
     BriefResponse,
@@ -463,3 +464,14 @@ async def delete_competitor(
         await CompetitorService(db).remove(business_id, competitor_id)
     except CompetitorError as e:
         raise _comp_http(e) from e
+
+
+@router.get("/weekly-summary")
+async def weekly_summary(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """The last 7 days with Harvey (sent, replies, CRM deals) and what to do next."""
+    await require_business_access(db, business_id, current_user)
+    return await weekly.weekly_summary(db, business_id)

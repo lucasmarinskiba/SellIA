@@ -155,7 +155,21 @@ export interface CompetitiveBrief {
   generated_at: string | null
 }
 
+export interface WeeklySummary {
+  since: string
+  sent: number
+  prospects_added: number
+  prospects_total: number
+  prospects_new: number
+  replies: { total: number; interested: number }
+  pending_review: number
+  needs_you: number
+  deals: { created: number; won: number; won_value: number }
+  next_steps: string[]
+}
+
 export const harvey = {
+  weeklySummary: (bid: string) => api.get<WeeklySummary>(`${base(bid)}/weekly-summary`).then((r) => r.data),
   competitors: (bid: string) => api.get<Competitor[]>(`${base(bid)}/competitors`).then((r) => r.data),
   addCompetitor: (bid: string, body: { url: string; kind: CompetitorKind; name?: string }) =>
     api.post<Competitor>(`${base(bid)}/competitors`, body).then((r) => r.data),

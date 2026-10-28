@@ -439,6 +439,10 @@ celery_app.conf.beat_schedule = {
         "task": "app.tasks.harvey_tasks.run_harvey_cycles",
         "schedule": crontab(minute="*/15"),  # cada 15 minutos
     },
+    "harvey-weekly-summary": {
+        "task": "app.tasks.harvey_tasks.send_weekly_summaries",
+        "schedule": crontab(minute=0, hour=11, day_of_week="mon"),  # semanal: lunes 11:00 UTC (08:00 Argentina)
+    },
     "forecasting-nightly": {
         "task": "app.tasks.forecasting_tasks.nightly_forecasts",
         "schedule": crontab(minute=0, hour=2),  # todos los días 02:00
