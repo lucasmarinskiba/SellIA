@@ -211,3 +211,28 @@ class ImportCsvResponse(BaseModel):
     created: int
     skipped: list[dict[str, str]]
     rejected: list[dict[str, str]]
+
+
+class CompetitorIn(BaseModel):
+    url: str = Field(min_length=3, max_length=500)
+    kind: str = Field("direct", pattern="^(direct|indirect|own)$")
+    name: str = Field("", max_length=160)
+
+
+class CompetitorResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    url: str
+    kind: str
+    snapshot: dict[str, Any]
+    last_scanned_at: datetime | None
+    last_error: str
+
+
+class BriefResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    brief: dict[str, Any]
+    generated_at: datetime | None = None

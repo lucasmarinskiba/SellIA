@@ -220,3 +220,43 @@ class HarveySecrets(Base):
     brave_api_key = Column(EncryptedString, nullable=True)
     google_places_api_key = Column(EncryptedString, nullable=True)
     updated_at = Column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow, nullable=False)
+
+
+class CompetitorKind(str, enum.Enum):
+    DIRECT = "direct"  # sells the same thing to the same people
+    INDIRECT = "indirect"  # solves the same need another way
+    OWN = "own"  # the business's own site, read the same way to compare like with like
+
+
+class HarveyCompetitor(Base):
+    """A site this business studies. ``snapshot`` holds only what the site published on the last read."""
+
+    __tablename__ = "harvey_competitors"
+    __table_args__ = (UniqueConstraint("business_id", "url", name="uq_harvey_competitor_url"),)
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    business_id = Column(
+        UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    name = Column(String(160), nullable=False, default="")
+    url = Column(String(500), nullable=False)
+    kind = Column(String(16), nullable=False, default=CompetitorKind.DIRECT.value)
+    # {"fetched_at", "pages": [...], "title", "description", "headlines": [...], "prices": [...], "offers": [...]}
+    snapshot = Column(JSONB, nullable=False, default=dict)
+    last_scanned_at = Column(DateTime(timezone=True), nullable=True)
+    last_error = Column(String(300), nullable=False, default="")
+    created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+
+class HarveyCompetitiveBrief(Base):
+    """What the studied sites say, next to the business's own offer; feeds Harvey's drafts (one row per business)."""
+
+    __tablename__ = "harvey_competitive_briefs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    business_id = Column(
+        UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, unique=True, index=True
+    )
+    # {"summary", "gaps": [...], "opportunities": [...], "angles": [...], "icp_hints": [...], "source": "model|facts"}
+    brief = Column(JSONB, nullable=False, default=dict)
+    generated_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
