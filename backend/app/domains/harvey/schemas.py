@@ -236,3 +236,16 @@ class BriefResponse(BaseModel):
 
     brief: dict[str, Any]
     generated_at: datetime | None = None
+
+
+class FromWebsiteIn(BaseModel):
+    url: str = Field(min_length=3, max_length=500)
+
+
+class ProfileSuggestion(BaseModel):
+    offer: str
+    benefits: list[str]
+    keywords: list[str]
+    locations: list[str]
+    source: str
+    site: str
