@@ -53,6 +53,9 @@ const triggerTypes = [
   { type: 'appointment_missed', label: 'Cita No-Show', icon: Clock, color: '#F59E0B' },
   { type: 'tag_added', label: 'Tag Agregado', icon: Tag, color: '#8B5CF6' },
   { type: 'time_delay', label: 'Delay Programado', icon: Clock, color: '#64748B' },
+  { type: 'stage_changed', label: 'Etapa Cambiada', icon: GitBranch, color: '#F59E0B' },
+  { type: 'appointment_scheduled', label: 'Cita Agendada', icon: Clock, color: '#0EA5E9' },
+  { type: 'revenue_event', label: 'Venta Registrada', icon: Plus, color: '#22C55E' },
 ]
 
 const actionTypes = [
@@ -219,6 +222,9 @@ function BuilderCanvas() {
   const [showSaveModal, setShowSaveModal] = useState(false)
   const [workflowName, setWorkflowName] = useState('')
   const [workflowDescription, setWorkflowDescription] = useState('')
+  // Existing filters are kept as they were; only the Harvey source is edited from here.
+  const [baseConfig, setBaseConfig] = useState<Record<string, any>>({})
+  const [fromHarvey, setFromHarvey] = useState(false)
   const [selectedBusinessId, setSelectedBusinessId] = useState('')
   const [businesses, setBusinesses] = useState<any[]>([])
   const [saving, setSaving] = useState(false)
@@ -242,6 +248,8 @@ function BuilderCanvas() {
         setEdges(wf.visual_data.edges || [])
         setWorkflowName(wf.name || '')
         setWorkflowDescription(wf.description || '')
+        setBaseConfig(wf.trigger_config || {})
+        setFromHarvey(Array.isArray(wf.trigger_config?.sources) && wf.trigger_config.sources.includes('harvey'))
         setSelectedBusinessId(wf.business_id || '')
       }
     }).catch(() => {})
@@ -351,7 +359,10 @@ function BuilderCanvas() {
         name: workflowName,
         description: workflowDescription || null,
         trigger_type: triggerType,
-        trigger_config: {},
+        trigger_config: (() => {
+          const { sources: _drop, ...rest } = baseConfig
+          return fromHarvey ? { ...rest, sources: ['harvey'] } : rest
+        })(),
         actions,
         visual_data: { nodes, edges },
         status: 'active',
@@ -618,6 +629,20 @@ function BuilderCanvas() {
                     className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-brand-orange/20 resize-none"
                   />
                 </div>
+
+                <label className="flex items-start gap-2 text-xs text-white/60">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={fromHarvey}
+                    onChange={(e) => setFromHarvey(e.target.checked)}
+                  />
+                  <span>
+                    Que reaccione a la <strong className="text-white/80">prospección de Harvey</strong> (respuestas, reuniones y ventas
+                    de prospectos) en lugar de a las conversaciones del chat. Sirve con los disparadores Nuevo Lead, Etapa
+                    Cambiada, Cita Agendada y Venta Registrada.
+                  </span>
+                </label>
 
                 {saveError && (
                   <div className="p-3 rounded-xl bg-red-500/10 text-red-400 text-xs border border-red-500/20">

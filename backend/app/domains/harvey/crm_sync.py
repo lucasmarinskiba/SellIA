@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.logger import get_logger
 from app.domains.alerts.models import Alert, AlertSeverity, AlertStatus
 from app.domains.crm.models import Deal, LeadStage
+from app.domains.harvey import automation_hooks
 from app.domains.harvey.models import HarveyProspect, ReplyClass
 
 logger = get_logger(__name__)
@@ -71,10 +72,12 @@ async def find_deal(db: AsyncSession, business_id: uuid.UUID, email: str) -> Dea
 
 async def _sync(
     db: AsyncSession, business_id: uuid.UUID, prospect: HarveyProspect, classification: str, snippet: str, reply_id: uuid.UUID
-) -> None:
+) -> list[tuple[str, dict[str, Any]]]:
+    """Create or advance the deal. Returns the workflow events to fire once it is saved."""
+    events: list[tuple[str, dict[str, Any]]] = []
     rule = _RULES.get(classification)
     if rule is None:
-        return
+        return events
     stage, probability, priority, severity = rule
     email = (prospect.email or "").strip().lower()
     deal = await find_deal(db, business_id, email)
@@ -83,7 +86,7 @@ async def _sync(
 
     if deal is None:
         if severity is None:  # a rejection with no deal behind it is not worth a CRM row
-            return
+            return events
         deal = Deal(
             business_id=business_id,
             title=f"{company or who} (Harvey)"[:300],
@@ -98,14 +101,29 @@ async def _sync(
         )
         db.add(deal)
         await db.flush()
+        new_deal = True
     elif deal.stage not in (LeadStage.CLOSED_WON,):
+        new_deal = False
+        before = deal.stage
         # A reply may move a deal forward, or close it as lost; it never reopens a won one.
         if stage is LeadStage.CLOSED_LOST:
             deal.stage, deal.probability, deal.actual_close_date = stage, 0, _now()
             deal.close_reason = "Pidió que no lo contacten" if classification == ReplyClass.OPT_OUT.value else "No le interesa"
         elif deal.stage in _OPEN_STAGES and _OPEN_STAGES.index(stage) >= _OPEN_STAGES.index(deal.stage):
             deal.stage, deal.probability, deal.priority = stage, probability, max(priority, deal.priority or 0)
+    else:
+        new_deal = False
+        before = deal.stage
     deal.extra_data = {**(deal.extra_data or {}), "last_reply_class": classification, "last_reply_id": str(reply_id)}
+
+    data = {
+        "email": email, "name": who, "company": company, "classification": classification, "content": snippet,
+        "channel": "email", "deal_id": str(deal.id), "prospect_id": str(prospect.id),
+    }
+    if new_deal:
+        events.append(("new_lead", data))
+    elif deal.stage is not before:
+        events.append(("stage_changed", {**data, "from": before.value, "to": deal.stage.value}))
 
     if severity is not None:
         db.add(
@@ -122,6 +140,7 @@ async def _sync(
                 alert_metadata={"source": SOURCE, "reply_id": str(reply_id), "prospect_id": str(prospect.id)},
             )
         )
+    return events
 
 
 async def on_reply(
@@ -131,10 +150,13 @@ async def on_reply(
     snippet = " ".join((body or "").split())[:160]
     try:
         async with db.begin_nested():  # a savepoint: only this sync is undone if it fails
-            await _sync(db, business_id, prospect, classification, snippet, reply_id)
+            events = await _sync(db, business_id, prospect, classification, snippet, reply_id)
         await db.commit()
     except Exception:  # noqa: BLE001 - CRM trouble must never lose a reply
         logger.warning("harvey: CRM sync failed for a reply; the reply itself is saved", exc_info=True)
+        return
+    for trigger, data in events:  # after the commit: an automation problem cannot undo the deal
+        await automation_hooks.fire(db, trigger, business_id, data)
 
 
 async def attribute_payment(db: AsyncSession, business_id: uuid.UUID, payer_email: str, amount: Any, currency: str = "ARS") -> bool:
@@ -150,7 +172,13 @@ async def attribute_payment(db: AsyncSession, business_id: uuid.UUID, payer_emai
             deal.close_reason = "Compró (pago acreditado)"
             deal.value = Decimal(str(amount)) if amount is not None else deal.value
             deal.currency = (currency or "ARS")[:3]
+            data = {
+                "email": (payer_email or "").strip().lower(), "name": deal.contact_name or "", "deal_id": str(deal.id),
+                "value": float(deal.value) if deal.value is not None else None, "currency": deal.currency,
+                "channel": "email",
+            }
         await db.commit()
+        await automation_hooks.fire(db, "revenue_event", business_id, data)
         return True
     except Exception:  # noqa: BLE001
         logger.warning("harvey: payment attribution failed", exc_info=True)
@@ -166,6 +194,7 @@ async def on_booking(db: AsyncSession, business_id: uuid.UUID, invitee_email: st
             deal = await find_deal(db, business_id, invitee_email)
             if deal is None or deal.stage in (LeadStage.CLOSED_WON, LeadStage.CLOSED_LOST):
                 return False
+            before = deal.stage
             deal.stage, deal.probability = LeadStage.NEGOTIATING, max(deal.probability or 0, 60)
             deal.priority = max(deal.priority or 0, 4)
             when = scheduled_at.astimezone(timezone.utc).strftime("%d/%m %H:%M UTC") if scheduled_at else "fecha a confirmar"
@@ -184,7 +213,13 @@ async def on_booking(db: AsyncSession, business_id: uuid.UUID, invitee_email: st
                     alert_metadata={"source": SOURCE, "kind": "meeting", "invitee_email": invitee_email},
                 )
             )
+            data = {
+                "email": invitee_email.strip().lower(), "name": deal.contact_name or "", "deal_id": str(deal.id),
+                "scheduled_at": scheduled_at.isoformat() if scheduled_at else None, "channel": "email",
+                "from": before.value, "to": deal.stage.value,
+            }
         await db.commit()
+        await automation_hooks.fire(db, "appointment_scheduled", business_id, data)
         return True
     except Exception:  # noqa: BLE001 - CRM trouble must never fail the booking webhook
         logger.warning("harvey: booking sync failed", exc_info=True)
