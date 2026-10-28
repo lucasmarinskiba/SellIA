@@ -103,6 +103,9 @@ class ConversationListResponse(ConversationResponse):
     platform: str | None = None
     last_direction: str | None = None  # "inbound" | "outbound" of the most recent message
     ai_responded: bool = False  # has the AI (an outbound message) ever replied in this thread
+    # "chat" for the connected messaging channels, "harvey" for prospecting emails mirrored into the inbox.
+    source: str = "chat"
+    awaiting_human: bool = False  # a person has to take this conversation over
 
 
 # Message schemas
