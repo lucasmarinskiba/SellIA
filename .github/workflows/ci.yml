@@ -111,6 +111,20 @@ jobs:
           git diff --exit-code -- frontend/src/data/brain-graph.json \
             || (echo "::error::brain-graph.json desactualizado — corré 'npm run gen:brain' y commiteá." && exit 1)
 
+  backend-py311-syntax:
+    name: Backend syntax (Python 3.11)
+    runs-on: ubuntu-24.04
+    # Production runs python:3.11 (backend/Dockerfile) while the other jobs run 3.12. Code that only parses on
+    # 3.12 (a backslash or the same quote inside an f-string {...}) passes CI and then silently drops a whole
+    # router at startup: that is how every Harvey route went missing from production on 2026-10-28.
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Compile backend/app on the production Python
+        run: python -m compileall -q backend/app
+
   backend-lint:
     name: Backend Lint
     runs-on: ubuntu-24.04
