@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import selectinload
 from datetime import datetime, timezone
 from uuid import UUID
@@ -42,6 +42,8 @@ async def list_conversations(
     business_id: UUID,
     status: ConversationStatus | None = None,
     platform: str | None = None,
+    needs_attention: bool = False,
+    source: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -72,6 +74,10 @@ async def list_conversations(
         query = query.where(Conversation.status == status)
     if platform:
         query = query.where(ChannelConnection.platform == platform)
+    if source == "harvey":
+        query = query.where(Conversation.lead_source == "harvey")
+    elif source == "chat":
+        query = query.where(or_(Conversation.lead_source.is_(None), Conversation.lead_source != "harvey"))
     query = query.order_by(Conversation.last_message_at.desc().nullslast())
     result = await db.execute(query)
     rows = result.all()
@@ -79,6 +85,10 @@ async def list_conversations(
     response = []
     for conv, channel in rows:
         msgs = conv.messages
+        is_harvey = conv.lead_source == "harvey"
+        awaiting_human = bool((conv.extra_data or {}).get("awaiting_human"))
+        if needs_attention and not awaiting_human:  # filtered here, not in SQL: the flag lives inside a JSONB blob
+            continue
         msg_count = len(msgs)
         last_preview = None
         last_direction = None
@@ -94,9 +104,11 @@ async def list_conversations(
             **ConversationResponse.model_validate(conv).model_dump(),
             message_count=msg_count,
             last_message_preview=last_preview,
-            platform=channel.platform.value if channel and channel.platform else None,
+            platform=channel.platform.value if channel and channel.platform else ("email" if is_harvey else None),
             last_direction=last_direction,
             ai_responded=ai_responded,
+            source="harvey" if is_harvey else "chat",
+            awaiting_human=awaiting_human,
         ))
     return response
 
@@ -188,6 +200,13 @@ async def send_message(
     conversation = result.scalar_one_or_none()
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversación no encontrada")
+    if conversation.lead_source == "harvey":
+        # Prospecting emails are answered where Harvey's controls apply (opt-out line, postal address, do-not-contact,
+        # approval); a generic send from here would skip all of them.
+        raise HTTPException(
+            status_code=409,
+            detail="Este hilo es de la prospección de Harvey: respondé desde Prospección → Respuestas.",
+        )
 
     now = datetime.now(timezone.utc)
     # Taken before anything can roll back. A rollback expires every loaded

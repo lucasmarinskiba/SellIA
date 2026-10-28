@@ -646,6 +646,10 @@ Respondé SOLO con JSON: {{"body": "..."}}"""
             )
         await self.db.commit()
         await self.db.refresh(item)
+        from app.domains.harvey import inbox_sync
+
+        await inbox_sync.on_sent(self.db, business.id, prospect, item)
+        await self.db.refresh(item)  # the mirror's savepoint may expire what the caller serializes
         return item
 
     async def send_approved(
@@ -1276,6 +1280,9 @@ Respondé SOLO con JSON: {{"body": "..."}}"""
         )
 
         await crm_sync.on_reply(self.db, business.id, prospect, reply.classification, body, reply.id)
+        from app.domains.harvey import inbox_sync
+
+        await inbox_sync.on_reply(self.db, business.id, prospect, reply)
         await self.db.refresh(reply)  # the sync's savepoint may expire what the caller is about to serialize
         return reply
 

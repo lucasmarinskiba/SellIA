@@ -33,6 +33,10 @@ export interface ConversationWithPreview extends Conversation {
   // AI bot (see Message.extra_data.generated_by) -- the concrete proof this
   // isn't just a manually-answered thread.
   ai_responded: boolean
+  // "harvey" = a prospecting email mirrored into the inbox (answered from Prospección, not here).
+  source?: 'chat' | 'harvey'
+  // A person has to take this conversation over.
+  awaiting_human?: boolean
 }
 
 export interface Message {
