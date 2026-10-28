@@ -72,9 +72,17 @@ async def suggest(raw_url: str, business_name: str, client: httpx.AsyncClient | 
 
     out = facts_only(site)
     if llm_available():
+        # Built outside the f-string: a backslash or the same quote inside {...} only parses on Python 3.12,
+        # and production runs 3.11.
+        headlines = "; ".join(site["headlines"])
+        fenced_site = fence(
+            "Título: " + site["title"] + "\nDescripción: " + site["description"]
+            + "\nTitulares: " + headlines + "\nTexto: " + site["text"],
+            "sitio del negocio",
+        )
         prompt = f"""Armá el perfil comercial de "{business_name}" a partir de su sitio web.
 
-{fence(f"Título: {site['title']}\nDescripción: {site['description']}\nTitulares: {'; '.join(site['headlines'])}\nTexto: {site['text']}", "sitio del negocio")}
+{fenced_site}
 
 {UNTRUSTED_RULE}
 

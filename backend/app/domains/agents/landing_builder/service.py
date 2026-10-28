@@ -169,6 +169,35 @@ def _build_nextjs_page(copy: Dict[str, Any], product_data: Dict[str, Any], varia
         for p in plans
     ) or ''
 
+    # Built before the page template: a nested triple-quoted f-string with the same quotes only parses on Python 3.12,
+    # and production runs 3.11. An empty list renders nothing, exactly as the old `x and f"..."` did.
+    testimonials_block = ""
+    if testimonials_html:
+        testimonials_block = f"""<section className="px-6 py-16">
+        <div className="max-w-6xl mx-auto grid gap-6 md:grid-cols-2">
+{testimonials_html}
+        </div>
+      </section>"""
+
+    pricing_block = ""
+    if plans_html:
+        pricing_block = f"""<section className="px-6 py-16">
+        <div className="max-w-4xl mx-auto text-center mb-10">
+          <h2 className="text-3xl font-bold">{pricing.get('headline', 'Precios')}</h2>
+        </div>
+        <div className="max-w-6xl mx-auto grid gap-6 md:grid-cols-3">
+{plans_html}
+        </div>
+      </section>"""
+
+    faq_block = ""
+    if faq_html:
+        faq_block = f"""<section className="px-6 py-16">
+        <div className="max-w-3xl mx-auto space-y-4">
+{faq_html}
+        </div>
+      </section>"""
+
     return f"""'use client';
 import React from 'react';
 
@@ -201,28 +230,13 @@ export default function LandingPage() {{
       </section>
 
       {{/* Social Proof */}}
-      {testimonials_html and f"""<section className="px-6 py-16">
-        <div className="max-w-6xl mx-auto grid gap-6 md:grid-cols-2">
-{testimonials_html}
-        </div>
-      </section>"""}
+      {testimonials_block}
 
       {{/* Pricing */}}
-      {plans_html and f"""<section className="px-6 py-16">
-        <div className="max-w-4xl mx-auto text-center mb-10">
-          <h2 className="text-3xl font-bold">{pricing.get('headline', 'Precios')}</h2>
-        </div>
-        <div className="max-w-6xl mx-auto grid gap-6 md:grid-cols-3">
-{plans_html}
-        </div>
-      </section>"""}
+      {pricing_block}
 
       {{/* FAQ */}}
-      {faq_html and f"""<section className="px-6 py-16">
-        <div className="max-w-3xl mx-auto space-y-4">
-{faq_html}
-        </div>
-      </section>"""}
+      {faq_block}
 
       {{/* CTA */}}
       <section className="px-6 py-20 text-center">
