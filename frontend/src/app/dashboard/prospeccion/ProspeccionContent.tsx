@@ -6,12 +6,13 @@ import { AlertTriangle, CheckCircle2, Loader2, XCircle } from 'lucide-react'
 import { businessApi } from '@/lib/business'
 import { errMsg, harvey, type HarveyProfile, type HarveyStatus } from '@/lib/api/harvey'
 import { ApprovalTab } from './ApprovalTab'
+import { CompetitorsTab } from './CompetitorsTab'
 import { ProspectsTab } from './ProspectsTab'
 import { RepliesTab } from './RepliesTab'
 import { SettingsTab } from './SettingsTab'
 import { card } from './ui'
 
-type TabKey = 'prospects' | 'approval' | 'replies' | 'settings'
+type TabKey = 'prospects' | 'approval' | 'replies' | 'competitors' | 'settings'
 
 const Check = ({ ok, children }: { ok: boolean; children: React.ReactNode }) => (
   <span className="inline-flex items-center gap-1.5 text-sm text-slate-700">
@@ -93,6 +94,7 @@ export function ProspeccionContent() {
     { key: 'approval', label: 'Aprobación', badge: (status.outbox.pending_review ?? 0) + (status.outbox.blocked ?? 0) },
     { key: 'prospects', label: 'Prospectos', badge: status.prospects.new ?? 0 },
     { key: 'replies', label: 'Respuestas', badge: status.replies },
+    { key: 'competitors', label: 'Competencia' },
     { key: 'settings', label: 'Configuración' },
   ]
 
@@ -161,6 +163,7 @@ export function ProspeccionContent() {
       {tab === 'approval' && <ApprovalTab bid={bid} onChange={reload} />}
       {tab === 'prospects' && <ProspectsTab bid={bid} status={status} onChange={reload} />}
       {tab === 'replies' && <RepliesTab bid={bid} onChange={reload} goToApproval={() => setTab('approval')} />}
+      {tab === 'competitors' && <CompetitorsTab bid={bid} />}
       {tab === 'settings' && (
         <SettingsTab
           bid={bid}

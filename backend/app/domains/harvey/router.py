@@ -15,7 +15,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.business_access import require_business_access
 from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.domains.harvey.competitors_service import CompetitorError, CompetitorService
 from app.domains.harvey.schemas import (
+    BriefResponse,
+    CompetitorIn,
+    CompetitorResponse,
     DiscoverIn,
     DiscoverResponse,
     DiscoveryKeysIn,
@@ -375,3 +379,87 @@ async def import_prospects_csv(
         return await service.import_csv(business, profile, await file.read(1_000_001))
     except HarveyError as e:
         raise _http(e) from e
+
+
+# ── competitor map ────────────────────────────────────────────────────────
+def _comp_http(e: CompetitorError) -> HTTPException:
+    return HTTPException(status_code=e.status_code, detail=str(e))
+
+
+@router.get("/competitors", response_model=list[CompetitorResponse])
+async def list_competitors(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    await require_business_access(db, business_id, current_user)
+    return await CompetitorService(db).list_all(business_id)
+
+
+@router.post("/competitors", response_model=CompetitorResponse, status_code=status.HTTP_201_CREATED)
+async def add_competitor(
+    business_id: UUID,
+    body: CompetitorIn,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    await require_business_access(db, business_id, current_user, manage=True)
+    try:
+        return await CompetitorService(db).add(business_id, body.url, body.kind, body.name)
+    except CompetitorError as e:
+        raise _comp_http(e) from e
+
+
+@router.get("/competitors/brief", response_model=BriefResponse)
+async def get_competitive_brief(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    await require_business_access(db, business_id, current_user)
+    row = await CompetitorService(db).get_brief(business_id)
+    return BriefResponse(brief=row.brief if row else {}, generated_at=row.generated_at if row else None)
+
+
+@router.post("/competitors/analyze", response_model=BriefResponse)
+async def analyze_competitors(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Re-read stale sites and compare them with the business's own offer; the result feeds Harvey's drafts."""
+    business = await require_business_access(db, business_id, current_user, manage=True)
+    try:
+        profile = await HarveyService(db).get_or_create_profile(business)
+        return await CompetitorService(db).analyze(business, profile)
+    except CompetitorError as e:
+        raise _comp_http(e) from e
+
+
+@router.post("/competitors/{competitor_id}/scan", response_model=CompetitorResponse)
+async def scan_competitor(
+    business_id: UUID,
+    competitor_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    await require_business_access(db, business_id, current_user, manage=True)
+    service = CompetitorService(db)
+    try:
+        return await service.scan_one(await service.get(business_id, competitor_id))
+    except CompetitorError as e:
+        raise _comp_http(e) from e
+
+
+@router.delete("/competitors/{competitor_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_competitor(
+    business_id: UUID,
+    competitor_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    await require_business_access(db, business_id, current_user, manage=True)
+    try:
+        await CompetitorService(db).remove(business_id, competitor_id)
+    except CompetitorError as e:
+        raise _comp_http(e) from e

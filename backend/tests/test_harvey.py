@@ -59,6 +59,8 @@ from app.domains.harvey.gate import (
     pre_send_check,
 )
 from app.domains.harvey.models import (
+    HarveyCompetitiveBrief,
+    HarveyCompetitor,
     HarveyOutboxItem,
     HarveyProfile,
     HarveyProspect,
@@ -67,7 +69,9 @@ from app.domains.harvey.models import (
 )
 from app.domains.harvey.service import HarveyError, HarveyService
 
-HARVEY_TABLES = [HarveyProfile, HarveyProspect, HarveyOutboxItem, HarveyReply, HarveySecrets]
+HARVEY_TABLES = [
+    HarveyProfile, HarveyProspect, HarveyOutboxItem, HarveyReply, HarveySecrets, HarveyCompetitor, HarveyCompetitiveBrief,
+]
 OPT_OUT = 'Respondé "no gracias" y no te escribo más.'
 
 
