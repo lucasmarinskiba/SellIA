@@ -45,7 +45,11 @@ PGJSONB.result_processor = lambda self, d, c: (
 )
 
 from app.core.database import Base
-from app.domains.channels.models import ChannelConnection, ChannelPlatform
+from app.domains.channels.models import (
+    ChannelConnection,
+    ChannelPlatform,
+    ChannelStatus,
+)
 from app.domains.harvey import mailer
 from app.domains.harvey import service as harvey_service
 from app.domains.harvey.gate import (
@@ -315,7 +319,8 @@ CREDS = {
 async def _connect_mailbox(db, biz):
     db.add(
         ChannelConnection(
-            business_id=biz.id, platform=ChannelPlatform.EMAIL, name="Gmail", credentials=dict(CREDS), settings={}
+            business_id=biz.id, platform=ChannelPlatform.EMAIL, name="Gmail", credentials=dict(CREDS), settings={},
+            status=ChannelStatus.CONNECTED,
         )
     )
     await db.commit()

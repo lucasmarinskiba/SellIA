@@ -540,6 +540,12 @@ export default function CanalesPage() {
           onSubmit={() => void handleCreate()}
           onOAuth={(p) => void handleOAuth(p)}
           onWhatsApp={() => void handleWhatsApp()}
+          businessId={businessId}
+          onEmailConnected={(address) => {
+            setModalOpen(false)
+            setNotice({ kind: 'ok', text: `Email ${address} conectado. Ya podés usarlo en Prospección.` })
+            void loadChannels(businessId)
+          }}
           saving={saving}
           connecting={connecting}
           error={modalError}

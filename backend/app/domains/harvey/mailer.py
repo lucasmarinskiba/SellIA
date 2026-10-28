@@ -27,7 +27,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.channels.models import ChannelConnection, ChannelPlatform
+from app.domains.channels.models import (
+    ChannelConnection,
+    ChannelPlatform,
+    ChannelStatus,
+)
 
 logger = get_logger(__name__)
 
@@ -102,6 +106,8 @@ async def get_email_account(db: AsyncSession, business_id: UUID) -> EmailAccount
                 ChannelConnection.business_id == business_id,
                 ChannelConnection.platform == ChannelPlatform.EMAIL,
                 ChannelConnection.is_active.is_(True),
+                # Only a mailbox whose owner confirmed it (code, or "Probar") may send in their name.
+                ChannelConnection.status == ChannelStatus.CONNECTED,
             )
         )
     ).scalars()
@@ -110,6 +116,53 @@ async def get_email_account(db: AsyncSession, business_id: UUID) -> EmailAccount
         if account is not None:
             return account
     return None
+
+
+@dataclass
+class LoginCheck:
+    ok: bool
+    kind: str = ""  # auth | connect | other (the first thing that failed)
+    host: str = ""
+
+
+def _imap_login_sync(account: EmailAccount) -> LoginCheck:
+    try:
+        conn = imaplib.IMAP4_SSL(account.imap_host, account.imap_port, timeout=IMAP_TIMEOUT)
+    except (TimeoutError, OSError):
+        return LoginCheck(False, "connect", account.imap_host)
+    try:
+        conn.login(account.imap_user, account.imap_password)
+    except imaplib.IMAP4.error:
+        return LoginCheck(False, "auth", account.imap_host)
+    except (TimeoutError, OSError):
+        return LoginCheck(False, "connect", account.imap_host)
+    finally:
+        try:
+            conn.logout()
+        except Exception:
+            pass
+    return LoginCheck(True)
+
+
+async def check_login(account: EmailAccount) -> LoginCheck:
+    """Log in to both servers (send and read) without sending anything. Never raises."""
+    implicit_tls = account.smtp_port == 465
+    smtp = aiosmtplib.SMTP(hostname=account.smtp_host, port=account.smtp_port, use_tls=implicit_tls, timeout=20)
+    try:
+        await smtp.connect(start_tls=not implicit_tls)
+        await smtp.login(account.smtp_user, account.smtp_password)
+    except aiosmtplib.SMTPAuthenticationError:
+        return LoginCheck(False, "auth", account.smtp_host)
+    except (OSError, asyncio.TimeoutError, aiosmtplib.SMTPConnectError, aiosmtplib.SMTPServerDisconnected):
+        return LoginCheck(False, "connect", account.smtp_host)
+    except aiosmtplib.SMTPException:
+        return LoginCheck(False, "other", account.smtp_host)
+    finally:
+        try:
+            await smtp.quit()
+        except Exception:
+            pass
+    return await asyncio.to_thread(_imap_login_sync, account)
 
 
 # ── outbound ──────────────────────────────────────────────────────────────
