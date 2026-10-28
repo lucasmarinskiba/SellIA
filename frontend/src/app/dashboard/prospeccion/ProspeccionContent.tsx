@@ -10,6 +10,7 @@ import { CompetitorsTab } from './CompetitorsTab'
 import { ProspectsTab } from './ProspectsTab'
 import { RepliesTab } from './RepliesTab'
 import { SettingsTab } from './SettingsTab'
+import { WeeklyCard } from './WeeklyCard'
 import { card } from './ui'
 
 type TabKey = 'prospects' | 'approval' | 'replies' | 'competitors' | 'settings'
@@ -138,6 +139,8 @@ export function ProspeccionContent() {
           </p>
         )}
       </section>
+
+      <WeeklyCard bid={bid} />
 
       <nav className="flex flex-wrap gap-2" role="tablist">
         {tabs.map((t) => (

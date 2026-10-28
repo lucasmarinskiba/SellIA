@@ -171,7 +171,21 @@ export interface DomainCheck {
   items: { key: string; status: 'ok' | 'warn' | 'bad' | 'unknown'; title: string; detail: string; fix: string }[]
 }
 
+export interface WeeklySummary {
+  since: string
+  sent: number
+  prospects_added: number
+  prospects_total: number
+  prospects_new: number
+  replies: { total: number; interested: number }
+  pending_review: number
+  needs_you: number
+  deals: { created: number; won: number; won_value: number }
+  next_steps: string[]
+}
+
 export const harvey = {
+  weeklySummary: (bid: string) => api.get<WeeklySummary>(`${base(bid)}/weekly-summary`).then((r) => r.data),
   suggestFromWebsite: (bid: string, url: string) =>
     api.post<ProfileSuggestion>(`${base(bid)}/profile/from-website`, { url }).then((r) => r.data),
   deliverability: (bid: string) => api.get<DomainCheck>(`${base(bid)}/deliverability`).then((r) => r.data),
