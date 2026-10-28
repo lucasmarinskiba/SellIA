@@ -1,11 +1,12 @@
 'use client'
 
 import { useEffect, useId, useRef, useState } from 'react'
-import { ChevronDown, ExternalLink, Eye, EyeOff, Info, Loader2, X } from 'lucide-react'
+import { ChevronDown, Eye, EyeOff, Loader2, X } from 'lucide-react'
 import type { ChannelPlatform } from '@/types/channels'
 import {
-  CATEGORIES, CREDENTIAL_FORMS, EMAIL_PRESETS, ONE_CLICK_PLATFORMS, PLATFORMS, platformMeta, type FieldDef,
+  CATEGORIES, CREDENTIAL_FORMS, ONE_CLICK_PLATFORMS, PLATFORMS, platformMeta, type FieldDef,
 } from '@/lib/channelCatalog'
+import { EmailWizard } from './EmailWizard'
 
 export interface ConnectDraft {
   platform: ChannelPlatform
@@ -20,6 +21,8 @@ interface Props {
   onSubmit: () => void
   onOAuth: (platform: ChannelPlatform) => void
   onWhatsApp: () => void
+  businessId: string
+  onEmailConnected: (email: string) => void
   saving: boolean
   connecting: boolean
   error: string | null
@@ -72,7 +75,7 @@ function Field({ def, value, onChange }: { def: FieldDef; value: string; onChang
   )
 }
 
-export function ConnectModal({ draft, onChange, onClose, onSubmit, onOAuth, onWhatsApp, saving, connecting, error }: Props) {
+export function ConnectModal({ draft, onChange, onClose, onSubmit, onOAuth, onWhatsApp, businessId, onEmailConnected, saving, connecting, error }: Props) {
   const titleId = useId()
   const firstRef = useRef<HTMLSelectElement>(null)
   const meta = platformMeta(draft.platform)
@@ -97,9 +100,32 @@ export function ConnectModal({ draft, onChange, onClose, onSubmit, onOAuth, onWh
   const pickPlatform = (platform: ChannelPlatform) =>
     onChange({
       platform,
-      credentials: platform === 'email' ? { smtp_host: 'smtp.gmail.com', smtp_port: '587' } : {},
+      credentials: {},
       name: platformMeta(platform).label,
     })
+
+  const platformSelect = (
+            <div>
+              <label htmlFor={`${titleId}-platform`} className="mb-1 block text-sm font-medium text-slate-700">Plataforma</label>
+              <select
+                id={`${titleId}-platform`}
+                ref={firstRef}
+                value={draft.platform}
+                onChange={(e) => pickPlatform(e.target.value as ChannelPlatform)}
+                className={inputCls}
+              >
+                {CATEGORIES.map((c) => (
+                  <optgroup key={c.key} label={c.label}>
+                    {Object.entries(PLATFORMS)
+                      .filter(([, p]) => p.category === c.key)
+                      .map(([key, p]) => (
+                        <option key={key} value={key}>{p.label}</option>
+                      ))}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
+  )
 
   const basic = (form?.fields ?? []).filter((f) => !f.advanced)
   const advanced = (form?.fields ?? []).filter((f) => f.advanced)
@@ -135,6 +161,12 @@ export function ConnectModal({ draft, onChange, onClose, onSubmit, onOAuth, onWh
           </button>
         </header>
 
+        {isEmail ? (
+          <>
+            <div className="border-b border-slate-100 px-5 pt-4 pb-4">{platformSelect}</div>
+            <EmailWizard businessId={businessId} onConnected={onEmailConnected} onClose={onClose} />
+          </>
+        ) : (
         <form
           onSubmit={(e) => {
             e.preventDefault()
@@ -142,26 +174,7 @@ export function ConnectModal({ draft, onChange, onClose, onSubmit, onOAuth, onWh
           }}
           className="flex-1 space-y-5 overflow-y-auto px-5 py-5"
         >
-          <div>
-            <label htmlFor={`${titleId}-platform`} className="mb-1 block text-sm font-medium text-slate-700">Plataforma</label>
-            <select
-              id={`${titleId}-platform`}
-              ref={firstRef}
-              value={draft.platform}
-              onChange={(e) => pickPlatform(e.target.value as ChannelPlatform)}
-              className={inputCls}
-            >
-              {CATEGORIES.map((c) => (
-                <optgroup key={c.key} label={c.label}>
-                  {Object.entries(PLATFORMS)
-                    .filter(([, p]) => p.category === c.key)
-                    .map(([key, p]) => (
-                      <option key={key} value={key}>{p.label}</option>
-                    ))}
-                </optgroup>
-              ))}
-            </select>
-          </div>
+          {platformSelect}
 
           {isWhatsApp ? (
             <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
@@ -173,62 +186,9 @@ export function ConnectModal({ draft, onChange, onClose, onSubmit, onOAuth, onWh
             </p>
           ) : (
             <>
-              {isEmail && (
-                <div className="space-y-3">
-                  <div>
-                    <p className="mb-2 text-sm font-medium text-slate-700">Proveedor</p>
-                    <div className="flex flex-wrap gap-2" role="group" aria-label="Proveedor de email">
-                      {EMAIL_PRESETS.map((p) => {
-                        const active = draft.credentials.smtp_host === p.smtp_host
-                        return (
-                          <button
-                            key={p.label}
-                            type="button"
-                            aria-pressed={active}
-                            onClick={() =>
-                              onChange({
-                                ...draft,
-                                credentials: {
-                                  ...draft.credentials,
-                                  smtp_host: p.smtp_host,
-                                  smtp_port: p.smtp_port,
-                                  imap_host: p.imap_host,
-                                },
-                              })
-                            }
-                            className={`h-10 rounded-full px-4 text-sm font-medium ring-1 ring-inset focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange ${
-                              active ? 'bg-brand-orange text-white ring-brand-orange' : 'bg-white text-slate-700 ring-slate-300 hover:bg-slate-50'
-                            }`}
-                          >
-                            {p.label}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                  <div className="flex gap-3 rounded-xl bg-blue-50 p-4 text-sm text-blue-900">
-                    <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                    <div className="space-y-1">
-                      <p>
-                        Gmail y Outlook piden una <strong>contraseña de aplicación</strong>, no tu contraseña normal. En Google:
-                        Cuenta → Seguridad → Verificación en 2 pasos → Contraseñas de aplicaciones.
-                      </p>
-                      <a
-                        href="https://myaccount.google.com/apppasswords"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 font-medium underline"
-                      >
-                        Crear contraseña de aplicación <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {basic.length > 0 ? (
                 <fieldset className="space-y-4">
-                  <legend className="mb-1 text-sm font-semibold text-slate-900">{isEmail ? 'Datos de tu casilla' : 'Credenciales'}</legend>
+                  <legend className="mb-1 text-sm font-semibold text-slate-900">Credenciales</legend>
                   {basic.map((def) => (
                     <Field key={def.key} def={def} value={draft.credentials[def.key] ?? ''} onChange={(v) => setCred(def.key, v)} />
                   ))}
@@ -293,6 +253,7 @@ export function ConnectModal({ draft, onChange, onClose, onSubmit, onOAuth, onWh
             )}
           </div>
         </form>
+        )}
       </div>
     </div>
   )
