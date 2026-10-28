@@ -1271,6 +1271,12 @@ Respondé SOLO con JSON: {{"body": "..."}}"""
         )
         await self.db.commit()
         await self.db.refresh(reply)
+        from app.domains.harvey import (
+            crm_sync,  # local: keeps the CRM/alerts models out of this module's imports
+        )
+
+        await crm_sync.on_reply(self.db, business.id, prospect, reply.classification, body, reply.id)
+        await self.db.refresh(reply)  # the sync's savepoint may expire what the caller is about to serialize
         return reply
 
     async def _classify(

@@ -15,8 +15,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.business_access import require_business_access
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.harvey import weekly
+from app.domains.harvey import deliverability, mailer, onboarding, weekly
 from app.domains.harvey.competitors_service import CompetitorError, CompetitorService
+from app.domains.harvey.discovery import DiscoveryError
 from app.domains.harvey.schemas import (
     BriefResponse,
     CompetitorIn,
@@ -24,10 +25,12 @@ from app.domains.harvey.schemas import (
     DiscoverIn,
     DiscoverResponse,
     DiscoveryKeysIn,
+    FromWebsiteIn,
     ImportCsvResponse,
     OutboxEdit,
     OutboxItemResponse,
     ProfileResponse,
+    ProfileSuggestion,
     ProfileUpdate,
     ProspectResponse,
     ProspectsCreate,
@@ -464,6 +467,37 @@ async def delete_competitor(
         await CompetitorService(db).remove(business_id, competitor_id)
     except CompetitorError as e:
         raise _comp_http(e) from e
+
+
+@router.post("/profile/from-website", response_model=ProfileSuggestion)
+async def suggest_profile_from_website(
+    business_id: UUID,
+    body: FromWebsiteIn,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """A suggested offer / benefits / ideal client read from the business's own site. Nothing is saved."""
+    business = await require_business_access(db, business_id, current_user, manage=True)
+    try:
+        return await onboarding.suggest(body.url, business.name)
+    except DiscoveryError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    except Exception as e:  # noqa: BLE001 - network trouble reads as "could not read it", not a 500
+        raise HTTPException(status_code=502, detail="No pudimos leer ese sitio. Revisá la dirección e intentá de nuevo.") from e
+
+
+@router.get("/deliverability")
+async def check_deliverability(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Will the connected mailbox's emails reach the inbox? Reads the sender domain's public DNS."""
+    await require_business_access(db, business_id, current_user)
+    account = await mailer.get_email_account(db, business_id)
+    if account is None:
+        raise HTTPException(status_code=409, detail="Conectá tu email primero para poder revisar tu dominio.")
+    return await deliverability.check_domain(account.from_address)
 
 
 @router.get("/weekly-summary")
