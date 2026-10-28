@@ -108,6 +108,11 @@ async def receive_booking_webhook(
     db.add(booking)
     await db.commit()
 
+    # A prospect Harvey wrote to just booked: advance their CRM deal (best-effort, never fails the webhook).
+    from app.domains.harvey.crm_sync import on_booking
+
+    await on_booking(db, business_id, str(invitee_email or ""), scheduled_at)
+
     return {"status": "recorded", "booking_id": str(booking.id)}
 
 

@@ -9,14 +9,17 @@ from sqlalchemy import select
 from test_harvey import _Biz, _fake_model, _setup, db  # noqa: F401 - db is a pytest fixture
 
 from app.domains.alerts.models import Alert
+from app.domains.channels.models import BookingEvent
 from app.domains.crm.models import Deal, LeadStage
-from app.domains.harvey import crm_sync
+from datetime import datetime, timezone
+
+from app.domains.harvey import crm_sync, weekly
 
 
 @pytest_asyncio.fixture
 async def crm(db):
     async with db.bind.begin() as conn:
-        for m in (Deal, Alert):
+        for m in (Deal, Alert, BookingEvent):
             await conn.run_sync(lambda c, m=m: m.__table__.create(bind=c, checkfirst=True))
     return db
 
@@ -116,3 +119,50 @@ async def test_a_later_reply_never_reopens_a_won_deal(crm, monkeypatch):
     await svc.record_reply(biz, profile, prospect, "Che, ¿y la garantía?")
     (deal,) = await _deals(crm, biz)
     assert deal.stage is LeadStage.CLOSED_WON
+
+
+@pytest.mark.asyncio
+async def test_a_booking_by_a_prospect_advances_the_deal_and_alerts(crm, monkeypatch):
+    svc, biz, profile, prospect = await _setup(crm)
+    _fake_model(monkeypatch, {"classification": "interested", "answer": "ok"})
+    await svc.record_reply(biz, profile, prospect, "Me interesa")
+
+    when = datetime(2026, 11, 3, 15, 0, tzinfo=timezone.utc)
+    assert await crm_sync.on_booking(crm, biz.id, "Ana@Cliente.com", when)
+    (deal,) = await _deals(crm, biz)
+    assert deal.stage is LeadStage.NEGOTIATING and deal.probability == 60 and deal.extra_data["meeting_at"]
+    alerts = [a for a in await _alerts(crm, biz) if a.alert_metadata.get("kind") == "meeting"]
+    assert len(alerts) == 1 and "03/11 15:00" in alerts[0].description
+
+
+@pytest.mark.asyncio
+async def test_a_booking_by_a_stranger_or_for_a_closed_deal_changes_nothing(crm, monkeypatch):
+    svc, biz, profile, prospect = await _setup(crm)
+    assert not await crm_sync.on_booking(crm, biz.id, "alguien@otro.com", None)
+    assert not await crm_sync.on_booking(crm, biz.id, "", None)
+    _fake_model(monkeypatch, {"classification": "interested", "answer": "ok"})
+    await svc.record_reply(biz, profile, prospect, "Me interesa")
+    await crm_sync.attribute_payment(crm, biz.id, "ana@cliente.com", 100)
+    assert not await crm_sync.on_booking(crm, biz.id, "ana@cliente.com", None)  # already won: stays won
+    (deal,) = await _deals(crm, biz)
+    assert deal.stage is LeadStage.CLOSED_WON
+
+
+@pytest.mark.asyncio
+async def test_a_booking_without_the_crm_never_raises(db):
+    svc, biz, profile, prospect = await _setup(db)  # no deals/alerts tables
+    assert not await crm_sync.on_booking(db, biz.id, "ana@cliente.com", None)
+
+
+@pytest.mark.asyncio
+async def test_the_weekly_summary_counts_meetings_booked_by_prospects(crm):
+    svc, biz, profile, prospect = await _setup(crm)
+    now = datetime.now(timezone.utc)
+    crm.add_all([
+        BookingEvent(business_id=biz.id, invitee_email="ANA@cliente.com", status="scheduled"),
+        BookingEvent(business_id=biz.id, invitee_email="otro@x.com", status="scheduled"),
+        BookingEvent(business_id=_Biz().id, invitee_email="ana@cliente.com", status="scheduled"),
+    ])
+    await crm.commit()
+    s = await weekly.weekly_summary(crm, biz.id, now)
+    assert s["meetings"] == 1 and any("reunión" in t for t in s["next_steps"])

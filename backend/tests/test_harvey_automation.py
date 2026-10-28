@@ -235,7 +235,7 @@ async def test_discovered_prospects_wait_for_a_person_to_verify_them(db, monkeyp
     svc, biz, profile, _ = await _setup(db)
     out = await svc.discover(biz, profile, urls=["lodemarta.com"], transport=_site_transport(PAGES))
     assert out["counts"]["created"] == 1 and out["sites"][0]["outcome"] == "added"
-    prospect = (await svc.list_prospects(biz.id))[0]
+    prospect = next(p for p in await svc.list_prospects(biz.id) if p.email == "hola@lodemarta.com")  # created_at can tie
     assert prospect.email == "hola@lodemarta.com" and prospect.source == "discovery"
     assert prospect.email_status == "scraped" and prospect.notes == "Viandas caseras"
 
