@@ -30,10 +30,11 @@ export function WeeklyCard({ bid }: { bid: string }) {
   return (
     <section className={`${card} space-y-3`} aria-label="Tu semana con Harvey">
       <h2 className="font-semibold text-slate-900">Tu semana</h2>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
         <Stat value={s.sent} label="emails enviados" />
         <Stat value={s.replies.total} label={`respuestas (${s.replies.interested} interesadas)`} />
         <Stat value={s.deals.created} label="oportunidades en el CRM" />
+        <Stat value={s.meetings ?? 0} label="reuniones agendadas" />
         <Stat value={s.deals.won} label="ventas de Harvey" />
       </div>
       {s.next_steps.length > 0 && (

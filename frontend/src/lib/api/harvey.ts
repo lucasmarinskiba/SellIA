@@ -181,6 +181,7 @@ export interface WeeklySummary {
   pending_review: number
   needs_you: number
   deals: { created: number; won: number; won_value: number }
+  meetings: number
   next_steps: string[]
 }
 
