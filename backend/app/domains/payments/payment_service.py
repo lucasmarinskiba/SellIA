@@ -128,7 +128,7 @@ class PaymentService:
             order_id=order_id,
             conversation_id=conversation_id,
             status=TransactionStatus.PROCESSING,
-            transaction_metadata={"items": items},
+            transaction_metadata={"items": items, "customer_email": customer_email},
         )
 
         db.add(transaction)
@@ -244,6 +244,18 @@ class PaymentService:
                 "amount": float(transaction.amount) if transaction.amount is not None else None,
                 "currency": getattr(transaction, "currency", None),
             })
+
+        if transaction.status == TransactionStatus.APPROVED:
+            # A buyer Harvey prospected closes that CRM deal as won (best-effort, never fails the webhook).
+            try:
+                from app.domains.harvey.crm_sync import attribute_payment
+
+                payer = ((data.get("payer") or {}).get("email")) or (transaction.transaction_metadata or {}).get(
+                    "customer_email"
+                )
+                await attribute_payment(db, business_id, str(payer or ""), transaction.amount, transaction.currency or "ARS")
+            except Exception as e:
+                logger.error(f"Harvey payment attribution failed for transaction {transaction.id}: {e}")
 
         logger.info(f"Transaction {transaction.id} updated to status: {transaction.status}")
 
