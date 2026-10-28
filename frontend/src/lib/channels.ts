@@ -35,7 +35,29 @@ export interface UpdateChannelData {
   is_active?: boolean
 }
 
+export interface EmailStartData {
+  email: string
+  password: string
+  smtp_host?: string
+  smtp_port?: number
+  imap_host?: string
+}
+
 export const channelsApi = {
+  startEmail: async (
+    businessId: string,
+    data: EmailStartData,
+  ): Promise<{ channel_id: string; email: string; provider: string; expires_in: number }> => {
+    const res = await api.post(`/businesses/${businessId}/channels/email/start`, data)
+    return res.data
+  },
+  confirmEmail: async (businessId: string, channelId: string, code: string): Promise<{ status: string; email: string }> => {
+    const res = await api.post(`/businesses/${businessId}/channels/${channelId}/email/confirm`, { code })
+    return res.data
+  },
+  resendEmail: async (businessId: string, channelId: string): Promise<void> => {
+    await api.post(`/businesses/${businessId}/channels/${channelId}/email/resend`)
+  },
   list: async (businessId: string): Promise<ChannelConnection[]> => {
     const res = await api.get(`/businesses/${businessId}/channels`)
     return res.data
