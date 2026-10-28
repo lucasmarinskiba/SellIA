@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Button from '@/components/ui/Button'
 import { harvey, type HarveyProfile, type HarveyStatus } from '@/lib/api/harvey'
+import { DeliverabilityCard } from './DeliverabilityCard'
 import { DiscoverySources } from './DiscoverySources'
 import { card, fmtDate, input, label, lines, Notice, useAction } from './ui'
 
@@ -41,6 +42,22 @@ export function SettingsTab({
     auto_discover: profile.auto_discover,
   })
   const { busy, notice, run } = useAction()
+  const [site, setSite] = useState('')
+  const fromSite = () =>
+    run('site', () => harvey.suggestFromWebsite(bid, site.trim()), (s) =>
+      s.source === 'model'
+        ? 'Listo: completamos los campos con lo que dice tu web. Revisalos y guardá.'
+        : 'Copiamos lo que dice tu web tal cual (sin IA). Revisalo y editalo antes de guardar.',
+    ).then((s) => {
+      if (!s) return
+      setF((prev) => ({
+        ...prev,
+        offer: s.offer || prev.offer,
+        benefits: s.benefits.length ? s.benefits.join('\n') : prev.benefits,
+        keywords: s.keywords.length ? s.keywords.join('\n') : prev.keywords,
+        locations: s.locations.length ? s.locations.join('\n') : prev.locations,
+      }))
+    })
   const set = <K extends keyof typeof f>(key: K, value: (typeof f)[K]) => setF((prev) => ({ ...prev, [key]: value }))
   const num = (key: 'max_daily_drafts' | 'max_daily_sends' | 'max_daily_discoveries' | 'send_window_start' | 'send_window_end') =>
     (e: React.ChangeEvent<HTMLInputElement>) => set(key, Number(e.target.value))
@@ -74,6 +91,21 @@ export function SettingsTab({
 
   return (
     <div className="space-y-5">
+      <section className={`${card} space-y-3`}>
+        <div>
+          <h2 className="font-semibold text-slate-900">Completar desde mi web</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Pegá la dirección de tu sitio y completamos qué ofrecés, tus beneficios y tu cliente ideal con lo que dice ahí.
+            Nada se guarda hasta que lo revises y toques Guardar.
+          </p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+          <input aria-label="Dirección de tu sitio" className={input} placeholder="www.minegocio.com" value={site}
+            onChange={(e) => setSite(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && site.trim() && void fromSite()} />
+          <Button isLoading={busy === 'site'} disabled={!site.trim()} onClick={() => void fromSite()}>Leer mi web</Button>
+        </div>
+      </section>
+
       <section className={`${card} space-y-3`}>
         <h2 className="font-semibold text-slate-900">Quién escribe y qué ofrece</h2>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -109,6 +141,8 @@ export function SettingsTab({
         <div><label className={label} htmlFor="p-dnc">No contactar (emails o dominios, uno por línea)</label>
           <textarea id="p-dnc" className={`${input} min-h-[70px]`} value={f.do_not_contact} onChange={(e) => set('do_not_contact', e.target.value)} /></div>
       </section>
+
+      <DeliverabilityCard bid={bid} />
 
       <DiscoverySources bid={bid} status={status} onChange={onChange} />
 
