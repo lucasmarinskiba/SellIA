@@ -164,6 +164,13 @@ export default function CompetenciaPage() {
     <div className="min-h-screen bg-[#060812]">
       <div className="max-w-7xl mx-auto px-6 py-10">
         {/* Header */}
+        <a
+          href="/dashboard/prospeccion"
+          className="mb-6 block rounded-xl border border-brand-orange/30 bg-brand-orange/10 px-4 py-3 text-sm text-white/80 hover:bg-brand-orange/15"
+        >
+          <strong className="text-white">Nuevo:</strong> Harvey también estudia tu mercado — precios, ofertas y mensajes de tu
+          competencia comparados con los tuyos, y usa esas diferencias para vender mejor. Verlo en Prospección → Competencia.
+        </a>
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <div className="p-3 rounded-xl bg-brand-orange/10">

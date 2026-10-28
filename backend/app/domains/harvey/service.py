@@ -369,6 +369,11 @@ Respondé SOLO con JSON: {{"body": "..."}}"""
             if prospect.is_company_inbox
             else ""
         )
+        from app.domains.harvey.competitors_service import (
+            CompetitorService,  # local: avoids an import cycle
+        )
+
+        inbox_rule += await CompetitorService(self.db).angles_for_prompt(business.id)
         prompt = self._step_prompt(step, prospect, previous, inbox_rule)
         result = await ask_json(_system_prompt(business, profile), prompt)
         # Follow-ups keep the first subject: same thread, no fake "Re:".
@@ -922,7 +927,7 @@ Respondé SOLO con JSON: {{"body": "..."}}"""
             return None
         keys = {"brave": row.brave_api_key, "google": row.google_places_api_key}
         chosen = (profile.icp or {}).get("search_provider")
-        if chosen in keys and keys[chosen]:
+        if keys.get(chosen):
             return chosen, keys[chosen]
         for name in discovery.SEARCH_PROVIDERS:
             if keys[name]:

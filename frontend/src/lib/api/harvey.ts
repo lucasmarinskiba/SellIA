@@ -138,7 +138,32 @@ export interface ImportCsvResult {
   rejected: { row: string; reason: string }[]
 }
 
+export type CompetitorKind = 'direct' | 'indirect' | 'own'
+
+export interface Competitor {
+  id: string
+  name: string
+  url: string
+  kind: CompetitorKind
+  snapshot: { prices?: string[]; offers?: string[]; headlines?: string[]; title?: string }
+  last_scanned_at: string | null
+  last_error: string
+}
+
+export interface CompetitiveBrief {
+  brief: { summary?: string; gaps?: string[]; opportunities?: string[]; angles?: string[]; icp_hints?: string[]; source?: string }
+  generated_at: string | null
+}
+
 export const harvey = {
+  competitors: (bid: string) => api.get<Competitor[]>(`${base(bid)}/competitors`).then((r) => r.data),
+  addCompetitor: (bid: string, body: { url: string; kind: CompetitorKind; name?: string }) =>
+    api.post<Competitor>(`${base(bid)}/competitors`, body).then((r) => r.data),
+  scanCompetitor: (bid: string, id: string) =>
+    api.post<Competitor>(`${base(bid)}/competitors/${id}/scan`).then((r) => r.data),
+  deleteCompetitor: (bid: string, id: string) => api.delete(`${base(bid)}/competitors/${id}`).then(() => undefined),
+  competitiveBrief: (bid: string) => api.get<CompetitiveBrief>(`${base(bid)}/competitors/brief`).then((r) => r.data),
+  analyzeCompetitors: (bid: string) => api.post<CompetitiveBrief>(`${base(bid)}/competitors/analyze`).then((r) => r.data),
   setDiscoveryKeys: (
     bid: string,
     body: { brave_api_key?: string; google_places_api_key?: string; search_provider?: 'brave' | 'google' },
