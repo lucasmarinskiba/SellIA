@@ -155,3 +155,37 @@ async def attribute_payment(db: AsyncSession, business_id: uuid.UUID, payer_emai
     except Exception:  # noqa: BLE001
         logger.warning("harvey: payment attribution failed", exc_info=True)
         return False
+
+
+async def on_booking(db: AsyncSession, business_id: uuid.UUID, invitee_email: str, scheduled_at: datetime | None) -> bool:
+    """Someone Harvey prospected booked a meeting: move their deal forward and alert a person. Never raises."""
+    if not invitee_email:
+        return False
+    try:
+        async with db.begin_nested():
+            deal = await find_deal(db, business_id, invitee_email)
+            if deal is None or deal.stage in (LeadStage.CLOSED_WON, LeadStage.CLOSED_LOST):
+                return False
+            deal.stage, deal.probability = LeadStage.NEGOTIATING, max(deal.probability or 0, 60)
+            deal.priority = max(deal.priority or 0, 4)
+            when = scheduled_at.astimezone(timezone.utc).strftime("%d/%m %H:%M UTC") if scheduled_at else "fecha a confirmar"
+            deal.extra_data = {**(deal.extra_data or {}), "meeting_at": scheduled_at.isoformat() if scheduled_at else None}
+            db.add(
+                Alert(
+                    business_id=business_id,
+                    deal_id=deal.id,
+                    title="Un prospecto de Harvey agendó una reunión",
+                    description=f"{deal.contact_name or invitee_email} agendó para {when}.",
+                    severity=AlertSeverity.CRITICAL,
+                    status=AlertStatus.UNREAD,
+                    entity_type="deal",
+                    entity_id=deal.id,
+                    recommended_action="Preparate para la reunión: mirá su respuesta en Prospección → Respuestas.",
+                    alert_metadata={"source": SOURCE, "kind": "meeting", "invitee_email": invitee_email},
+                )
+            )
+        await db.commit()
+        return True
+    except Exception:  # noqa: BLE001 - CRM trouble must never fail the booking webhook
+        logger.warning("harvey: booking sync failed", exc_info=True)
+        return False

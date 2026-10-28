@@ -46,12 +46,33 @@ async def _deals(db: AsyncSession, business_id: uuid.UUID, since: datetime) -> d
         return {"created": 0, "won": 0, "won_value": 0.0}
 
 
+async def _meetings(db: AsyncSession, business_id: uuid.UUID, since: datetime) -> int:
+    """Meetings booked this week by people Harvey prospected (matched by email)."""
+    try:
+        from app.domains.channels.models import BookingEvent
+
+        async with db.begin_nested():
+            known = select(func.lower(HarveyProspect.email)).where(HarveyProspect.business_id == business_id)
+            return await _count(
+                db,
+                select(func.count()).select_from(BookingEvent).where(
+                    BookingEvent.business_id == business_id,
+                    BookingEvent.created_at >= since,
+                    func.lower(BookingEvent.invitee_email).in_(known),
+                ),
+            )
+    except Exception:  # noqa: BLE001 - extra context must never break the summary
+        return 0
+
+
 def next_steps(s: dict[str, Any]) -> list[str]:
     steps: list[str] = []
     if s["pending_review"]:
         steps.append(f"Tenés {s['pending_review']} borrador(es) esperando tu aprobación en Prospección → Aprobación.")
     if s["needs_you"]:
         steps.append(f"{s['needs_you']} respuesta(s) necesitan que las atiendas vos: precio, contrato u otro tema que Harvey no decide.")
+    if s.get("meetings"):
+        steps.append(f"Tenés {s['meetings']} reunión(es) agendada(s) con prospectos de Harvey: preparate con su respuesta a mano.")
     if s["deals"]["won"]:
         steps.append(f"Cerraste {s['deals']['won']} venta(s) que vinieron de Harvey. Pedile a esos clientes una reseña o una recomendación.")
     if not s["prospects_total"]:
@@ -119,6 +140,7 @@ async def weekly_summary(db: AsyncSession, business_id: uuid.UUID, now: datetime
         "pending_review": pending_review,
         "needs_you": needs_you,
         "deals": await _deals(db, business_id, since),
+        "meetings": await _meetings(db, business_id, since),
     }
     summary["next_steps"] = next_steps(summary)
     return summary
@@ -132,6 +154,8 @@ def alert_text(s: dict[str, Any]) -> tuple[str, str]:
         f"{s['replies']['total']} respuesta(s) ({s['replies']['interested']} interesadas)",
         f"{s['prospects_added']} prospecto(s) nuevos",
     ]
+    if s.get("meetings"):
+        parts.append(f"{s['meetings']} reunión(es) agendada(s)")
     if s["deals"]["created"] or s["deals"]["won"]:
         parts.append(f"{s['deals']['created']} oportunidad(es) en el CRM, {s['deals']['won']} ganada(s)")
     body = "Esta semana: " + ", ".join(parts) + "."
