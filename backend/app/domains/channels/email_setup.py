@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import asyncio
 import secrets
 import time
 from dataclasses import dataclass
@@ -82,13 +83,51 @@ def detect_provider(email: str) -> Provider:
     )
 
 
+def _mx_hosts(domain: str) -> list[str]:
+    try:
+        import dns.resolver  # transitive dependency of email-validator
+
+        answers = dns.resolver.resolve(domain, "MX", lifetime=4)
+        return [str(r.exchange).rstrip(".").lower() for r in sorted(answers, key=lambda r: r.preference)]
+    except Exception:  # noqa: BLE001 - no DNS / no MX: fall back to guessing
+        return []
+
+
+async def detect_provider_async(email: str) -> Provider:
+    """Like ``detect_provider``, but a custom domain hosted at Google/Microsoft/Zoho gets that provider's settings."""
+    provider = detect_provider(email)
+    if not provider.guessed:
+        return provider
+    mx = await asyncio.to_thread(_mx_hosts, provider.name)
+    joined = " ".join(mx)
+    if "google.com" in joined or "googlemail.com" in joined:
+        return _GMAIL
+    if "outlook.com" in joined or "protection.outlook" in joined:
+        return _OUTLOOK
+    if "zoho." in joined:
+        return _ZOHO
+    return provider
+
+
+def server_candidates(provider: Provider) -> list[tuple[str, int]]:
+    """SMTP servers worth trying: the provider's own, or for a guessed domain the usual names."""
+    if not provider.guessed:
+        return [(provider.smtp_host, provider.smtp_port)]
+    domain = provider.name
+    return [(f"smtp.{domain}", 587), (f"mail.{domain}", 587), (f"smtp.{domain}", 465), (f"mail.{domain}", 465)]
+
+
 def explain_failure(provider: Provider, kind: str, host: str) -> str:
     """What to tell the person when the mailbox would not log in. ``kind``: auth | connect | other."""
     if kind == "auth":
         return f"{provider.name} no aceptó el usuario o la contraseña. {provider.password_help}"
     if kind == "connect":
-        extra = " Si tu casilla es de otro proveedor, abrí «Mi proveedor es otro» y revisá el servidor." if provider.guessed else ""
-        return f"No pudimos conectar con {host}.{extra}"
+        if provider.guessed:
+            return (
+                "No pudimos encontrar el servidor de tu correo automáticamente. Revisá que el email esté bien escrito; "
+                "si es de una empresa, pedile a quien administra tu correo los datos de conexión (configuración avanzada)."
+            )
+        return f"No pudimos conectar con {host}. Probá de nuevo en un momento."
     return "No pudimos verificar la casilla. Probá de nuevo en un momento."
 
 

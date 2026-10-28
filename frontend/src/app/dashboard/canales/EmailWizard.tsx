@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useId, useState } from 'react'
-import { ChevronDown, ExternalLink, Eye, EyeOff, Info, Loader2, MailCheck } from 'lucide-react'
+import { ExternalLink, Eye, EyeOff, Info, Loader2, MailCheck } from 'lucide-react'
 import { channelsApi } from '@/lib/channels'
 
 const inputCls =
@@ -67,7 +67,8 @@ export function EmailWizard({ businessId, onConnected, onClose }: Props) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [shown, setShown] = useState(false)
-  const [other, setOther] = useState({ smtp_host: '', smtp_port: '587', imap_host: '' })
+  const [advanced, setAdvanced] = useState(false)
+  const [other, setOther] = useState({ smtp_host: '', smtp_port: '587' })
   const [channelId, setChannelId] = useState('')
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
@@ -90,7 +91,6 @@ export function EmailWizard({ businessId, onConnected, onClose }: Props) {
         ? {
             smtp_host: other.smtp_host.trim(),
             smtp_port: Number(other.smtp_port) || 587,
-            ...(other.imap_host.trim() ? { imap_host: other.imap_host.trim() } : {}),
           }
         : {}
       const out = await channelsApi.startEmail(businessId, { email: email.trim(), password, ...custom })
@@ -193,7 +193,7 @@ export function EmailWizard({ businessId, onConnected, onClose }: Props) {
       className="flex-1 space-y-5 overflow-y-auto px-5 py-5"
     >
       <p className="text-sm text-slate-600">
-        Ponés tu email y su contraseña; nosotros detectamos el resto, probamos que funcione y te mandamos un código para confirmar.
+        Ponés tu email y su contraseña. Nosotros hacemos el resto y te mandamos un código para confirmar que es tuyo.
       </p>
       <div>
         <label htmlFor={`${uid}-email`} className="mb-1 block text-sm font-medium text-slate-700">Tu email</label>
@@ -211,7 +211,7 @@ export function EmailWizard({ businessId, onConnected, onClose }: Props) {
         />
       </div>
       <div>
-        <label htmlFor={`${uid}-pass`} className="mb-1 block text-sm font-medium text-slate-700">Contraseña</label>
+        <label htmlFor={`${uid}-pass`} className="mb-1 block text-sm font-medium text-slate-700">{help ? 'Contraseña de aplicación' : 'Contraseña'}</label>
         <div className="relative">
           <input
             id={`${uid}-pass`}
@@ -246,21 +246,23 @@ export function EmailWizard({ businessId, onConnected, onClose }: Props) {
         </div>
       )}
 
-      <details className="group rounded-xl border border-slate-200">
-        <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium text-slate-800">
-          Mi proveedor es otro — servidor manual
-          <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" aria-hidden="true" />
-        </summary>
-        <div className="space-y-3 border-t border-slate-200 p-4">
-          <p className="text-xs text-slate-500">Solo si tu casilla no es de Gmail, Outlook, Yahoo, iCloud ni de tu propio dominio.</p>
-          <input aria-label="Servidor de envío (SMTP)" placeholder="smtp.miproveedor.com" className={inputCls}
+      {error && !help && !advanced && (
+        <button type="button" onClick={() => setAdvanced(true)} className="text-sm font-medium text-slate-600 underline">
+          Mi correo es de una empresa y no se conecta
+        </button>
+      )}
+
+      {advanced && (
+        <div className="space-y-3 rounded-xl border border-slate-200 p-4">
+          <p className="text-sm text-slate-600">
+            Pedile a quien administra tu correo estos datos (o buscá «configuración SMTP» en la ayuda de tu proveedor):
+          </p>
+          <input aria-label="Servidor de salida" placeholder="Servidor de salida (ej.: smtp.miempresa.com)" className={inputCls}
             value={other.smtp_host} onChange={(e) => setOther({ ...other, smtp_host: e.target.value })} />
-          <input aria-label="Puerto de envío" inputMode="numeric" placeholder="587" className={inputCls}
+          <input aria-label="Puerto" inputMode="numeric" placeholder="Puerto (casi siempre 587)" className={inputCls}
             value={other.smtp_port} onChange={(e) => setOther({ ...other, smtp_port: e.target.value })} />
-          <input aria-label="Servidor de lectura (IMAP)" placeholder="imap.miproveedor.com (opcional)" className={inputCls}
-            value={other.imap_host} onChange={(e) => setOther({ ...other, imap_host: e.target.value })} />
         </div>
-      </details>
+      )}
 
       {errorBox}
       <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-4">

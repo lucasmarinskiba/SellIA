@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-import time
 from typing import Any
 from uuid import UUID
 
@@ -126,20 +125,29 @@ async def start_email_connection(
     if not EMAIL_RE.match(address):
         raise _http(422, "Ese email no parece válido. Revisá cómo está escrito.")
 
-    provider = email_setup.detect_provider(address)
-    smtp_host = (body.smtp_host or provider.smtp_host).strip()
-    smtp_port = body.smtp_port or provider.smtp_port
-    imap_host = (body.imap_host or (provider.imap_host if not body.smtp_host else mailer.derive_imap_host(smtp_host))).strip()
-    credentials: dict[str, Any] = {
-        "smtp_host": smtp_host, "smtp_port": smtp_port, "smtp_user": address, "smtp_password": body.password,
-        "from_address": address, "imap_host": imap_host, "imap_port": body.imap_port or provider.imap_port,
-    }
-    account = mailer.account_from_credentials(credentials)
-    assert account is not None  # user and password are present
+    manual = bool(body.smtp_host)
+    provider = email_setup.detect_provider(address) if manual else await email_setup.detect_provider_async(address)
+    if manual:
+        servers = [((body.smtp_host or "").strip(), body.smtp_port or provider.smtp_port)]
+    else:
+        servers = email_setup.server_candidates(provider)
 
-    check = await mailer.check_login(account)
+    credentials: dict[str, Any] = {}
+    check: mailer.LoginCheck | None = None
+    for host, port in servers:
+        imap_host = (body.imap_host or (mailer.derive_imap_host(host) if manual or provider.guessed else provider.imap_host)).strip()
+        credentials = {
+            "smtp_host": host, "smtp_port": port, "smtp_user": address, "smtp_password": body.password,
+            "from_address": address, "imap_host": imap_host, "imap_port": body.imap_port or provider.imap_port,
+        }
+        account = mailer.account_from_credentials(credentials)
+        assert account is not None  # user and password are present
+        check = await mailer.check_login(account)
+        if check.ok or check.kind != "connect":  # a wrong password is final; only unreachable servers try the next
+            break
+    assert check is not None
     if not check.ok:
-        raise _http(422, email_setup.explain_failure(provider, check.kind, check.host or smtp_host))
+        raise _http(422, email_setup.explain_failure(provider, check.kind, check.host or credentials["smtp_host"]))
 
     existing = (
         await db.execute(
@@ -237,4 +245,4 @@ async def resend_email_code(
     )
 
 
-__all__ = ["router", "time"]
+__all__ = ["router"]

@@ -35,7 +35,23 @@ def test_unknown_domain_is_guessed():
 def test_failure_message_is_specific_to_the_provider():
     gmail = email_setup.detect_provider("a@gmail.com")
     assert "contraseña de aplicación" in email_setup.explain_failure(gmail, "auth", "smtp.gmail.com")
-    assert "smtp.x.com" in email_setup.explain_failure(email_setup.detect_provider("a@x.com"), "connect", "smtp.x.com")
+    msg = email_setup.explain_failure(email_setup.detect_provider("a@x.com"), "connect", "smtp.x.com")
+    assert "automáticamente" in msg and "SMTP" not in msg and "puerto" not in msg.lower()
+
+
+@pytest.mark.asyncio
+async def test_custom_domain_hosted_at_google_or_microsoft_gets_their_settings(monkeypatch):
+    monkeypatch.setattr(email_setup, "_mx_hosts", lambda d: ["aspmx.l.google.com"])
+    assert (await email_setup.detect_provider_async("a@miempresa.com")).key == "gmail"
+    monkeypatch.setattr(email_setup, "_mx_hosts", lambda d: ["miempresa-com.mail.protection.outlook.com"])
+    assert (await email_setup.detect_provider_async("a@miempresa.com")).key == "outlook"
+    monkeypatch.setattr(email_setup, "_mx_hosts", lambda d: [])
+    assert (await email_setup.detect_provider_async("a@miempresa.com")).guessed
+
+
+def test_unknown_domain_tries_the_usual_servers_in_order():
+    tried = email_setup.server_candidates(email_setup.detect_provider("a@x.com"))
+    assert tried[0] == ("smtp.x.com", 587) and ("mail.x.com", 465) in tried
 
 
 def test_code_roundtrip_expiry_attempts_and_cooldown():
@@ -153,3 +169,37 @@ async def test_other_business_cannot_confirm_my_channel(db, wired):
             _Biz().id, out.channel_id, email_channel.ConfirmIn(code=_code_from(wired)), db, _User()
         )
     assert e.value.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_unreachable_server_falls_through_to_the_next_candidate(db, wired, monkeypatch):
+    monkeypatch.setattr(email_setup, "_mx_hosts", lambda d: [])
+    seen = []
+
+    async def login(account):
+        seen.append(account.smtp_host)
+        return mailer.LoginCheck(account.smtp_host == "mail.x.com", "connect", account.smtp_host)
+
+    monkeypatch.setattr(email_channel.mailer, "check_login", login)
+    out = await email_channel.start_email_connection(
+        _Biz().id, email_channel.StartIn(email="a@x.com", password="x"), db, _User()
+    )
+    assert seen == ["smtp.x.com", "mail.x.com"]
+    assert (await db.get(ChannelConnection, out.channel_id)).credentials["smtp_host"] == "mail.x.com"
+
+
+@pytest.mark.asyncio
+async def test_wrong_password_does_not_try_other_servers(db, wired, monkeypatch):
+    monkeypatch.setattr(email_setup, "_mx_hosts", lambda d: [])
+    seen = []
+
+    async def login(account):
+        seen.append(account.smtp_host)
+        return mailer.LoginCheck(False, "auth", account.smtp_host)
+
+    monkeypatch.setattr(email_channel.mailer, "check_login", login)
+    with pytest.raises(HTTPException):
+        await email_channel.start_email_connection(
+            _Biz().id, email_channel.StartIn(email="a@x.com", password="x"), db, _User()
+        )
+    assert seen == ["smtp.x.com"]
