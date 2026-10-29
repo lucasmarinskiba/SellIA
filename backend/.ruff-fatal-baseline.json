@@ -1,8 +1,1 @@
-[
- {
-  "file": "core/payments/mercadopago_processor.py",
-  "rule": "F821",
-  "name": "timedelta",
-  "count": 1
- }
-]
+[]
