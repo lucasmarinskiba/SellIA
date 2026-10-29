@@ -1,7 +1,7 @@
-# Pinned to bookworm (Debian 12): python:3.11-slim rolled forward to trixie
+# Pinned to bookworm (Debian 12): python:3.12-slim rolled forward to trixie
 # (Debian 13), which Playwright's `--with-deps` below doesn't recognize --
 # see /Dockerfile's comment for the exact failure this caused.
-FROM python:3.11-slim-bookworm
+FROM python:3.12-slim-bookworm
 
 WORKDIR /app
 

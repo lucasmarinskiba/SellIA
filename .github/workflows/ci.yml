@@ -111,17 +111,36 @@ jobs:
           git diff --exit-code -- frontend/src/data/brain-graph.json \
             || (echo "::error::brain-graph.json desactualizado — corré 'npm run gen:brain' y commiteá." && exit 1)
 
-  backend-py311-syntax:
-    name: Backend syntax (Python 3.11)
+  backend-python-parity:
+    name: Backend syntax (Python of the Docker image)
     runs-on: ubuntu-24.04
-    # Production runs python:3.11 (backend/Dockerfile) while the other jobs run 3.12. Code that only parses on
-    # 3.12 (a backslash or the same quote inside an f-string {...}) passes CI and then silently drops a whole
-    # router at startup: that is how every Harvey route went missing from production on 2026-10-28.
+    # CI and production must run the same Python. Code that only parses on a newer Python (a backslash or the same
+    # quote inside an f-string {...} needs 3.12) passes CI and then silently drops a whole router at start-up: that is
+    # how every Harvey route went missing from production on 2026-10-28, when CI ran 3.12 and the image ran 3.11.
+    # The version is read from backend/Dockerfile, so it cannot drift again.
     steps:
       - uses: actions/checkout@v5
+      - name: Python version of the production image
+        id: prod
+        run: |
+          v=$(grep -m1 -oE '^FROM python:[0-9]+\.[0-9]+' backend/Dockerfile | grep -oE '[0-9]+\.[0-9]+$')
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "Production image runs Python $v"
+      - name: Every runtime Dockerfile uses that same minor version
+        run: |
+          v='${{ steps.prod.outputs.version }}'
+          bad=$(grep -HoE '^FROM python:[0-9]+\.[0-9]+' Dockerfile Dockerfile.celery-beat Dockerfile.celery-worker backend/Dockerfile | grep -v "python:$v" || true)
+          if [ -n "$bad" ]; then echo "::error::Dockerfiles out of step with backend/Dockerfile (python $v):"; echo "$bad"; exit 1; fi
+      - name: CI tests run that same version
+        run: |
+          # the pytest jobs pin python-version in this file; they must match the image
+          if ! grep -qE "python-version: \"${{ steps.prod.outputs.version }}\"" .github/workflows/ci.yml; then
+            echo "::error::ci.yml has no job on Python ${{ steps.prod.outputs.version }}"; exit 1; fi
+          others=$(grep -E 'python-version:' .github/workflows/ci.yml | grep -v 'steps.prod' | grep -v "${{ steps.prod.outputs.version }}" || true)
+          if [ -n "$others" ]; then echo "::error::ci.yml jobs on a different Python than production:"; echo "$others"; exit 1; fi
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
+          python-version: ${{ steps.prod.outputs.version }}
       - name: Compile backend/app on the production Python
         run: python -m compileall -q backend/app
 
