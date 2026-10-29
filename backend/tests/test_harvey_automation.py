@@ -11,6 +11,7 @@ import httpx
 import pytest
 from test_harvey import (  # noqa: F401 - db and smtp are pytest fixtures
     OPT_OUT,
+    POSTAL,
     _approved,
     _connect_mailbox,
     _fake_inbox,
@@ -338,7 +339,7 @@ async def test_editing_reruns_the_gate_and_only_works_before_approval(db, monkey
 
     bad = await svc.edit_item(biz.id, profile, item.id, "pedidos", "Hola, sin línea de baja")
     assert bad.status == "blocked" and bad.gate_reasons
-    good = await svc.edit_item(biz.id, profile, item.id, "pedidos", f"Hola Ana, ¿pedidos?\n{OPT_OUT}")
+    good = await svc.edit_item(biz.id, profile, item.id, "pedidos", f"Hola Ana, ¿pedidos?\n{POSTAL}\n{OPT_OUT}")
     assert good.status == "pending_review" and not good.gate_reasons
 
     await svc.decide(biz.id, profile, item.id, uuid.uuid4(), approve=True)
