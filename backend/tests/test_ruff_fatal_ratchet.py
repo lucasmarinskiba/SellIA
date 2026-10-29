@@ -63,9 +63,31 @@ def test_fixing_a_finding_is_an_improvement_never_a_failure() -> None:
 
 def test_the_committed_baseline_is_well_formed() -> None:
     rows = json.loads(ratchet.BASELINE.read_text(encoding="utf-8"))
-    assert rows, "an empty baseline means the ratchet allows nothing; regenerate it or delete the gate"
+    # An empty baseline is the goal: zero known findings, so ANY new one fails the gate. (It used to be rejected as a
+    # sign of a broken baseline; the "ruff did not run" case is covered by test_a_failed_ruff_run_is_not_a_clean_pass.)
+    assert isinstance(rows, list)
     assert all(isinstance(r["count"], int) and r["count"] > 0 for r in rows)
     keys = [(r["file"], r["rule"], r["name"]) for r in rows]
     assert keys == sorted(keys), "keep the baseline sorted so diffs stay reviewable"
     assert len(set(keys)) == len(keys)
     assert isinstance(ratchet.load_baseline(), Counter)
+
+
+def test_a_failed_ruff_run_is_not_a_clean_pass(monkeypatch) -> None:
+    # With an empty baseline, "ruff crashed" must never read as "zero findings".
+    import types
+
+    monkeypatch.setattr(
+        ratchet.subprocess, "run", lambda *a, **k: types.SimpleNamespace(returncode=2, stdout="", stderr="boom")
+    )
+    try:
+        ratchet.run_ruff()
+    except SystemExit as e:
+        assert "ruff failed to run" in str(e)
+    else:
+        raise AssertionError("a crashed ruff must stop the gate, not return no findings")
+
+
+def test_with_an_empty_baseline_any_new_finding_fails() -> None:
+    worse, _ = ratchet.compare(ratchet.count([finding("a.py", "x")]), Counter())
+    assert worse == [("a.py", "F821", "x")]

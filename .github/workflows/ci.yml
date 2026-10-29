@@ -149,7 +149,7 @@ jobs:
     runs-on: ubuntu-24.04
     # Two tiers (see backend/scripts/ruff_fatal_ratchet.py):
     #  - BLOCKING ratchet on the ruff rules that flag code that crashes at runtime
-    #    (undefined names, syntax errors...). The 133 findings that existed on 2026-10-21 are
+    #    (undefined names, syntax errors...). The findings that existed on 2026-10-21 (133 then, none today) were
     #    baselined in backend/.ruff-fatal-baseline.json; only a NEW one fails the job.
     #  - ADVISORY full ruff run (~24k style findings) and black (~1330 files that do not
     #    match its formatting). They print their numbers but cannot fail the job, so a PR no
