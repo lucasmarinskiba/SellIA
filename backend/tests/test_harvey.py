@@ -73,6 +73,7 @@ HARVEY_TABLES = [
     HarveyProfile, HarveyProspect, HarveyOutboxItem, HarveyReply, HarveySecrets, HarveyCompetitor, HarveyCompetitiveBrief,
 ]
 OPT_OUT = 'Respondé "no gracias" y no te escribo más.'
+POSTAL = "Calle Falsa 123, Córdoba, Argentina"
 
 
 class _Biz:
@@ -106,7 +107,9 @@ async def _setup(db, biz=None, **profile_changes):
     biz = biz or _Biz()
     svc = HarveyService(db)
     profile = await svc.get_or_create_profile(biz)
-    profile = await svc.update_profile(biz, {"is_enabled": True, "opt_out_line": OPT_OUT, **profile_changes})
+    profile = await svc.update_profile(
+        biz, {"is_enabled": True, "opt_out_line": OPT_OUT, "postal_address": POSTAL, **profile_changes}
+    )
     created, _ = await svc.add_prospects(
         biz.id, profile, [{"email": "Ana@Cliente.com", "first_name": "Ana", "company": "Cliente SA"}]
     )
