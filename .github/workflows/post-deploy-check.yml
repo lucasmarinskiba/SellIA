@@ -1,0 +1,27 @@
+name: post-deploy-check
+
+# Runs right after Railway reports a successful production deployment (a GitHub "deployment_status" event) and
+# verifies that every group of API routes survived the start-up. A router that fails to import is skipped with only a
+# log line, and /api/health keeps answering "ok": on 2026-10-28 that took every Harvey route out of production for
+# ~3 hours with no alert. See backend/scripts/check_prod_routes.py.
+
+on:
+  deployment_status:
+
+jobs:
+  routes:
+    # Railway names its GitHub environment "<project> / <environment>" ("impartial-hope / production").
+    if: >-
+      github.event.deployment_status.state == 'success' &&
+      contains(github.event.deployment.environment, 'impartial-hope')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      API_URL: ${{ vars.API_URL || 'https://sellia-production.up.railway.app' }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.deployment.sha }}
+      # --wait: right after "success" the new instance can still be swapping in (502/503 for a minute or two).
+      - name: Deployed API exposes every route group
+        run: python3 backend/scripts/check_prod_routes.py --url "$API_URL" --wait 300

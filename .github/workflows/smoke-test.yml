@@ -34,6 +34,12 @@ jobs:
           fi
           echo "✓ api healthy"
 
+      # /api/health answers "ok" even when a router failed to import and was skipped at start-up (that is how every
+      # Harvey route disappeared on 2026-10-28). This compares the deployed route groups with a healthy snapshot.
+      - uses: actions/checkout@v5
+      - name: API routes (no router was skipped)
+        run: python3 backend/scripts/check_prod_routes.py --url "$API_URL" --wait 120
+
       - name: Frontend home
         run: |
           status=$(curl -sS -L -o /dev/null -w "%{http_code}" \
