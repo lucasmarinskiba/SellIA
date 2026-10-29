@@ -24,11 +24,11 @@ export function PreconnectBackend() {
     <>
       <link
         rel="preconnect"
-        href="https://selliaii-backend.onrender.com"
+        href="https://sellia-production.up.railway.app"
       />
       <link
         rel="dns-prefetch"
-        href="https://selliaii-backend.onrender.com"
+        href="https://sellia-production.up.railway.app"
       />
     </>
   )
