@@ -126,10 +126,17 @@ export function ProspeccionContent() {
           <Check ok={status.email_connected}>
             Email {status.email_connected ? 'conectado' : <Link href="/dashboard/canales" className="underline">sin conectar</Link>}
           </Check>
-          <Check ok={status.model_available}>Redactor IA</Check>
+          <Check ok={status.model_available && !status.ai_budget?.exceeded}>
+            {status.ai_budget?.exceeded ? 'IA del mes agotada' : 'Redactor IA'}
+          </Check>
           <Check ok={status.in_send_window}>{status.in_send_window ? 'En horario de envío' : 'Fuera del horario de envío'}</Check>
           <span className="text-sm text-slate-600">
             Enviados hoy: {status.sent_today}/{status.send_cap_today} · Borradores: {status.drafts_today}/{profile.max_daily_drafts}
+            {status.ai_budget && status.ai_budget.limit >= 0 && (
+              <span className={status.ai_budget.near_limit ? ' font-semibold text-amber-700' : ''}>
+                {' '}· IA del mes: {status.ai_budget.percent ?? 0}%
+              </span>
+            )}
           </span>
         </div>
         {missing.length > 0 && (
