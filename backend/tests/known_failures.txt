@@ -17,9 +17,8 @@
 #     and copy the FAILED/ERROR node ids.
 #   * Do NOT add a test here to make a regression go away.
 #
-# NOTE: test_security*.py / test_config_security.py entries deserve priority --
-# they cover auth/security behaviour and are quarantined only because they
-# currently cannot run, not because the behaviour is verified.
+# NOTE: the security tests (test_security.py, test_config_security.py) left the quarantine on 2026-10-29: they
+# now run and pass. Keep new security tests OUT of this file.
 #
 # NOTE: test_security_auth.py and test_e2e_sales_funnel.py drive a LIVE server: they are
 # skipped in the unit-test job and run, with no quarantine, by the E2E job against the
@@ -112,9 +111,6 @@ tests/test_computer_use_api.py::test_get_session
 tests/test_computer_use_api.py::test_list_sessions
 tests/test_computer_use_api.py::test_start_session_no_api_key
 
-# tests/test_config_security.py  (2)  e.g. pydantic_core._pydantic_core.ValidationError: 1 validation error for Settings
-tests/test_config_security.py::test_dev_assigns_temporary_secret_when_empty
-tests/test_config_security.py::test_production_default_db_password_rejected
 
 # tests/test_e2e_flow.py  (8)  e.g. ModuleNotFoundError: No module named 'backend'
 tests/test_e2e_flow.py::TestE2EFlow::test_amazon_order_sync
@@ -335,17 +331,6 @@ tests/test_phase_33_platform.py::TestSEOOptimizationEngine::test_research_amazon
 tests/test_phase_33_platform.py::TestSEOOptimizationEngine::test_research_ml_keywords
 tests/test_phase_33_platform.py::TestSEOOptimizationEngine::test_track_rankings
 
-# tests/test_security.py  (10)  e.g. ModuleNotFoundError: No module named 'app.core.database.security_models'; 'app.core.database' is not a package
-tests/test_security.py::test_api_key_expiration
-tests/test_security.py::test_api_key_generation
-tests/test_security.py::test_api_key_rotation
-tests/test_security.py::test_api_key_verification
-tests/test_security.py::test_audit_log_data_access
-tests/test_security.py::test_audit_log_login_success
-tests/test_security.py::test_audit_log_risk_flagging
-tests/test_security.py::test_totp_invalid_code
-tests/test_security.py::test_totp_setup
-tests/test_security.py::test_totp_verification
 
 
 # tests/test_trade_signals_api.py  (2)  e.g. RuntimeError: Event loop is closed
