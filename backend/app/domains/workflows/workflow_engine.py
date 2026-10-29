@@ -1,4 +1,9 @@
-"""Workflow automation engine."""
+"""Workflow automation engine (trigger_workflows).
+
+NOT the engine that runs the business's automations: its email/SMS/segment/task actions are not implemented and
+report ``not_implemented``. The real one, wired to channels, orders and Harvey, is
+``app.domains.automations.engine.WorkflowEngine`` (``/automations/workflows``).
+"""
 
 import logging
 from datetime import datetime, timezone
@@ -285,7 +290,7 @@ class WorkflowEngine:
 
         return {
             "execution_id": str(execution.id),
-            "status": "success",
+            "status": "success" if actions_failed == 0 else "partial_failure",
             "actions_executed": actions_executed,
             "actions_failed": actions_failed
         }
@@ -316,20 +321,25 @@ class WorkflowEngine:
         customer_id: UUID,
         trigger_data: dict,
     ) -> dict:
-        """Execute single workflow action."""
+        """Execute single workflow action.
+
+        This engine DOES NOT perform these actions yet. Until 2026-10-29 they returned ``"success"`` without doing
+        anything, so every execution looked fine while nothing was sent. They now report ``not_implemented``
+        (counted as a failed action) so the result tells the truth. The engine that really sends messages, creates
+        deals and notifies is ``app.domains.automations.engine.WorkflowEngine``.
+        """
         try:
-            if action_type == ActionType.SEND_EMAIL.value:
-                # Placeholder: send email via connector
-                return {"action_type": action_type, "status": "success"}
-            elif action_type == ActionType.SEND_SMS.value:
-                # Placeholder: send SMS
-                return {"action_type": action_type, "status": "success"}
-            elif action_type == ActionType.ADD_TO_SEGMENT.value:
-                # Placeholder: add customer to segment
-                return {"action_type": action_type, "status": "success"}
-            elif action_type == ActionType.CREATE_TASK.value:
-                # Placeholder: create task
-                return {"action_type": action_type, "status": "success"}
+            if action_type in (
+                ActionType.SEND_EMAIL.value,
+                ActionType.SEND_SMS.value,
+                ActionType.ADD_TO_SEGMENT.value,
+                ActionType.CREATE_TASK.value,
+            ):
+                return {
+                    "action_type": action_type,
+                    "status": "not_implemented",
+                    "detail": "Esta acción todavía no hace nada en este motor; usá las automatizaciones.",
+                }
             else:
                 return {"action_type": action_type, "status": "unknown_action"}
 
