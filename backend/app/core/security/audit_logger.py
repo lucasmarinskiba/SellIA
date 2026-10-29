@@ -81,10 +81,10 @@ class AuditLog(Base):
 
     __tablename__ = "audit_logs"
     __table_args__ = (
-        Index("idx_seller_id", "seller_id"),
-        Index("idx_event_type", "event_type"),
-        Index("idx_created_at", "created_at"),
-        Index("idx_seller_event_date", "seller_id", "event_type", "created_at"),
+        Index("idx_audit_seller_id", "seller_id"),
+        Index("idx_audit_event_type", "event_type"),
+        Index("idx_audit_created_at", "created_at"),
+        Index("idx_audit_seller_event_date", "seller_id", "event_type", "created_at"),
     )
 
     id = Column(String(50), primary_key=True)
