@@ -120,7 +120,6 @@ function applySecurityHeaders(response: NextResponse, request: NextRequest): voi
     apiUrl,
     backendUrl,
     'https://sellia-production.up.railway.app',
-    'https://selliaai-backend.onrender.com',
   ])).join(' ')
   response.headers.set(
     'Content-Security-Policy',
