@@ -479,7 +479,7 @@ async def suggest_profile_from_website(
     """A suggested offer / benefits / ideal client read from the business's own site. Nothing is saved."""
     business = await require_business_access(db, business_id, current_user, manage=True)
     try:
-        return await onboarding.suggest(body.url, business.name)
+        return await onboarding.suggest(body.url, business.name, db=db, business=business)
     except DiscoveryError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
     except Exception as e:  # noqa: BLE001 - network trouble reads as "could not read it", not a 500
