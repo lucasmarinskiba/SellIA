@@ -109,7 +109,7 @@ defusedxml==0.7.1                     # Safe XML parsing (amazon_shopify_automat
                                        # locally already but never pinned, same invisible-to-CI gap.
 
 # Testing
-pytest==7.4.3
+pytest==9.0.3
 pytest-asyncio==0.23.1
 pytest-cov==4.1.0
 
