@@ -1,6 +1,6 @@
 # SellIA Backend - Production Dockerfile
 
-# Pinned to bookworm (Debian 12) rather than the floating `python:3.11-slim`
+# Pinned to bookworm (Debian 12) rather than the floating `python:3.12-slim`
 # tag: that tag rolled forward to trixie (Debian 13) at some point, and
 # Playwright's `--with-deps` (below) doesn't recognize trixie -- it falls
 # back to an ubuntu20.04-x64 package list whose font package names
@@ -8,7 +8,7 @@
 # failing the whole build with "Package 'ttf-unifont' has no installation
 # candidate". bookworm is Debian's current stable release and one of
 # Playwright's officially supported base OSes.
-FROM python:3.11-slim-bookworm
+FROM python:3.12-slim-bookworm
 
 WORKDIR /app
 
