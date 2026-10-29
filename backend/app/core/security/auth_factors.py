@@ -29,8 +29,8 @@ class TOTP2FA(Base):
 
     __tablename__ = "totp_2fa"
     __table_args__ = (
-        Index("idx_seller_id", "seller_id"),
-        Index("idx_user_id", "user_id"),
+        Index("idx_totp_seller_id", "seller_id"),
+        Index("idx_totp_user_id", "user_id"),
     )
 
     id = Column(String(50), primary_key=True)
@@ -64,10 +64,10 @@ class APIKey(Base):
 
     __tablename__ = "api_keys"
     __table_args__ = (
-        Index("idx_seller_id", "seller_id"),
-        Index("idx_user_id", "user_id"),
-        Index("idx_key_hash", "key_hash"),
-        Index("idx_is_active", "is_active"),
+        Index("idx_apikey_seller_id", "seller_id"),
+        Index("idx_apikey_user_id", "user_id"),
+        Index("idx_apikey_key_hash", "key_hash"),
+        Index("idx_apikey_is_active", "is_active"),
     )
 
     id = Column(String(50), primary_key=True)
@@ -414,7 +414,12 @@ class APIKeyService:
         if not api_key.is_active:
             return None, "API key is revoked"
 
-        if api_key.expires_at < datetime.now(timezone.utc):
+        # The column is a plain DateTime: the database hands it back without a timezone (UTC), and comparing that
+        # with an aware "now" raised TypeError, so every key verification crashed.
+        expires_at = api_key.expires_at
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if expires_at < datetime.now(timezone.utc):
             return None, "API key has expired"
 
         # Update last used

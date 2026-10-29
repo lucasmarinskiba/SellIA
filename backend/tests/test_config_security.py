@@ -44,18 +44,21 @@ def test_missing_secret_in_production_rejected():
         _settings(SECRET_KEY="", ENVIRONMENT="production", SIDECAR_SHARED_SECRET="s")
 
 
-def test_dev_assigns_temporary_secret_when_empty():
-    # En development sin SECRET_KEY → asigna placeholder (no aborta).
-    s = _settings(SECRET_KEY="", ENVIRONMENT="development")
-    assert len(s.SECRET_KEY) >= 32
+@pytest.mark.parametrize("env", ["development", "production"])
+def test_missing_secret_is_rejected_in_every_environment(env):
+    # Antes development asignaba un secreto temporal; ahora SECRET_KEY es obligatoria en TODOS los entornos
+    # (un secreto autogenerado por arranque invalida las sesiones y esconde configuraciones incompletas).
+    with pytest.raises(ValueError, match="SECRET_KEY es requerido en TODOS"):
+        _settings(SECRET_KEY="", ENVIRONMENT=env, SIDECAR_SHARED_SECRET="s")
 
 
 # ── producción: defaults peligrosos ─────────────────────────────────────────
-def test_production_default_db_password_rejected():
-    with pytest.raises(ValueError, match="devpassword123"):
+@pytest.mark.parametrize("env", ["development", "production"])
+def test_default_db_password_rejected(env):
+    with pytest.raises(ValueError, match="credenciales débiles"):
         _settings(
             SECRET_KEY=_GOOD_SECRET,
-            ENVIRONMENT="production",
+            ENVIRONMENT=env,
             SIDECAR_SHARED_SECRET="s",
             DATABASE_URL="postgresql+asyncpg://u:devpassword123@db:5432/x",
         )

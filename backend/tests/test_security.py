@@ -409,10 +409,12 @@ def db_session():
 
     engine = create_engine("sqlite:///:memory:")
 
-    # Create tables
-    from app.core.database.security_models import Base
+    # Create the tables of the models the services actually use. Each service module declares its own Base
+    # (the old path, app.core.database.security_models, is a module that "app.core.database" shadows).
+    from app.core.security import audit_logger, auth_factors
 
-    Base.metadata.create_all(engine)
+    for module in (audit_logger, auth_factors):
+        module.Base.metadata.create_all(engine)
 
     Session = sessionmaker(bind=engine)
     session = Session()
