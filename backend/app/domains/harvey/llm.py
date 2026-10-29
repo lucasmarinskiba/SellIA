@@ -67,6 +67,13 @@ async def ask_json(system: str, prompt: str, *, max_tokens: int = 900) -> dict[s
             messages=[{"role": "user", "content": prompt}],
             timeout=_TIMEOUT,
         )
+        usage = getattr(msg, "usage", None)
+        if usage is not None:  # metered against the business's monthly AI cap (see ai_budget)
+            from app.domains.harvey import ai_budget
+
+            ai_budget.record_tokens(
+                int(getattr(usage, "input_tokens", 0) or 0) + int(getattr(usage, "output_tokens", 0) or 0)
+            )
         text = next((b.text for b in msg.content if getattr(b, "type", None) == "text"), "")
         return parse_json_object(text)
     except Exception as e:

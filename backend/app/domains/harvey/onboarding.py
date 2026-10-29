@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 
 import httpx
 
+from app.domains.harvey import ai_budget
 from app.domains.harvey import competitors as reader
 from app.domains.harvey import discovery
 from app.domains.harvey.competitors_service import clean_list
@@ -61,7 +62,15 @@ def facts_only(site: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-async def suggest(raw_url: str, business_name: str, client: httpx.AsyncClient | None = None) -> dict[str, Any]:
+async def suggest(
+    raw_url: str,
+    business_name: str,
+    client: httpx.AsyncClient | None = None,
+    *,
+    db: Any = None,
+    business: Any = None,
+) -> dict[str, Any]:
+    """``db`` and ``business`` put the model call under the owner's monthly AI cap (without them it is not metered)."""
     own = client is None
     client = client or discovery.make_client()
     try:
@@ -92,7 +101,15 @@ Respondé SOLO con JSON:
  "benefits": ["hasta 5 beneficios que el sitio afirma"],
  "keywords": ["hasta 5 palabras clave para encontrar clientes como los suyos"],
  "locations": ["zonas donde atiende, solo si el sitio las nombra"]}}"""
-        result = await ask_json("Sos un asistente comercial para pymes. Respondés SOLO con un objeto JSON.", prompt)
+        system = "Sos un asistente comercial para pymes. Respondés SOLO con un objeto JSON."
+        try:
+            if db is not None and business is not None:
+                async with ai_budget.metered(db, business):
+                    result = await ask_json(system, prompt)
+            else:
+                result = await ask_json(system, prompt)
+        except ai_budget.BudgetExceeded:
+            result = None  # no AI left this month: the site's own words, as without a model
         if result and str(result.get("offer") or "").strip():
             out = {
                 "offer": str(result["offer"]).strip()[:600],

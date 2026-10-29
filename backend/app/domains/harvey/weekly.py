@@ -13,6 +13,7 @@ from typing import Any
 from sqlalchemy import exists, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domains.harvey import ai_budget
 from app.domains.harvey.models import (
     HarveyOutboxItem,
     HarveyProspect,
@@ -65,8 +66,25 @@ async def _meetings(db: AsyncSession, business_id: uuid.UUID, since: datetime) -
         return 0
 
 
+async def _ai_budget(db: AsyncSession, business_id: uuid.UUID) -> dict[str, Any] | None:
+    """The owner's AI allowance this month, or None when it cannot be read (the summary still works)."""
+    try:
+        from app.domains.businesses.models import Business
+
+        async with db.begin_nested():
+            owner = (await db.execute(select(Business.user_id).where(Business.id == business_id))).scalar_one_or_none()
+        return await ai_budget.status(db, owner) if owner is not None else None
+    except Exception:  # noqa: BLE001 - extra context must never break the summary
+        return None
+
+
 def next_steps(s: dict[str, Any]) -> list[str]:
     steps: list[str] = []
+    budget = s.get("ai_budget")
+    if budget and budget.get("exceeded"):
+        steps.append("Se terminó la IA de tu plan este mes: Harvey no redacta hasta que se renueve o subas de plan.")
+    elif budget and budget.get("near_limit"):
+        steps.append(f"Ya usaste el {budget['percent']}% de la IA de tu plan este mes: cuidá los borradores que quedan.")
     if s["pending_review"]:
         steps.append(f"Tenés {s['pending_review']} borrador(es) esperando tu aprobación en Prospección → Aprobación.")
     if s["needs_you"]:
@@ -141,6 +159,7 @@ async def weekly_summary(db: AsyncSession, business_id: uuid.UUID, now: datetime
         "needs_you": needs_you,
         "deals": await _deals(db, business_id, since),
         "meetings": await _meetings(db, business_id, since),
+        "ai_budget": await _ai_budget(db, business_id),
     }
     summary["next_steps"] = next_steps(summary)
     return summary

@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
 from app.domains.businesses.models import Business
-from app.domains.harvey import discovery, mailer
+from app.domains.harvey import ai_budget, discovery, mailer
 from app.domains.harvey.gate import (
     DELIVERABLE_STATUSES,
     EMAIL_RE,
@@ -375,7 +375,11 @@ Respondé SOLO con JSON: {{"body": "..."}}"""
 
         inbox_rule += await CompetitorService(self.db).angles_for_prompt(business.id)
         prompt = self._step_prompt(step, prospect, previous, inbox_rule)
-        result = await ask_json(_system_prompt(business, profile), prompt)
+        try:
+            async with ai_budget.metered(self.db, business):
+                result = await ask_json(_system_prompt(business, profile), prompt)
+        except ai_budget.BudgetExceeded as e:
+            raise HarveyError(str(e), 429) from e
         # Follow-ups keep the first subject: same thread, no fake "Re:".
         subject = previous[0].subject if previous else str((result or {}).get("subject") or "").strip()[:120]
         body = str((result or {}).get("body") or "").strip()[:2000]
@@ -1119,6 +1123,9 @@ Respondé SOLO con JSON: {{"body": "..."}}"""
             "prospects": await grouped(HarveyProspect.status, HarveyProspect),
             "outbox": await grouped(HarveyOutboxItem.status, HarveyOutboxItem),
             "replies": int(replies),
+            "ai_budget": (
+                await ai_budget.status(self.db, business.user_id) if getattr(business, "user_id", None) else None
+            ),
         }
 
     # ── the automatic loop ────────────────────────────────────────────────
@@ -1304,7 +1311,11 @@ si corresponde, redactá una respuesta corta (menos de 60 palabras) que lleve la
 Clases: interested, objection, question, not_interested, handoff.
 Usá handoff si pide contrato, precios especiales, algo legal, o si no podés responder solo con los datos del negocio.
 Respondé SOLO con JSON: {{"classification": "...", "answer": "..."}}"""
-        result = await ask_json(_system_prompt(business, profile), prompt, max_tokens=500)
+        try:
+            async with ai_budget.metered(self.db, business):
+                result = await ask_json(_system_prompt(business, profile), prompt, max_tokens=500)
+        except ai_budget.BudgetExceeded:
+            return ReplyClass.HANDOFF, True, ""  # no AI left this month: a person reads it
         raw = str((result or {}).get("classification") or "").strip().lower()
         try:
             classification = ReplyClass(raw)

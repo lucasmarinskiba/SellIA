@@ -58,6 +58,7 @@ export interface HarveyStatus {
   prospects: Record<string, number>
   outbox: Record<string, number>
   replies: number
+  ai_budget?: { used: number; limit: number; remaining: number | null; percent: number | null; near_limit: boolean; exceeded: boolean } | null
 }
 
 export interface HarveyProspect {

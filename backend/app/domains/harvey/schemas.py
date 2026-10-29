@@ -196,6 +196,7 @@ class StatusResponse(BaseModel):
     prospects: dict[str, int]
     outbox: dict[str, int]
     replies: int
+    ai_budget: dict[str, Any] | None = None  # this month's AI allowance: used / limit / percent
 
 
 class DiscoveryKeysIn(BaseModel):

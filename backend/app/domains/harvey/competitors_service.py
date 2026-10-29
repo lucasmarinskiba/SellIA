@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
 from app.domains.businesses.models import Business
+from app.domains.harvey import ai_budget
 from app.domains.harvey import competitors as reader
 from app.domains.harvey import discovery
 from app.domains.harvey.discovery import DiscoveryError
@@ -216,9 +217,15 @@ Respondé SOLO con JSON:
  "opportunities": ["qué hacen los demás que el negocio podría hacer o decir"],
  "angles": ["hasta 3 ángulos de diferenciación para escribirle a un cliente, sin nombrar competidores"],
  "icp_hints": ["a qué tipo de cliente conviene apuntar según lo anterior"]}}"""
-            result = await ask_json(
-                "Sos un analista de mercado para una pyme. Respondés SOLO con un objeto JSON.", prompt, max_tokens=1200
-            )
+            try:
+                async with ai_budget.metered(self.db, business):
+                    result = await ask_json(
+                        "Sos un analista de mercado para una pyme. Respondés SOLO con un objeto JSON.",
+                        prompt,
+                        max_tokens=1200,
+                    )
+            except ai_budget.BudgetExceeded:
+                result = None  # no AI left this month: the brief falls back to the plain facts
             if result:
                 brief = {
                     "summary": str(result.get("summary") or "").strip()[:600],
