@@ -260,12 +260,21 @@ class HarveyService:
         return "\n".join(lines)
 
     @staticmethod
+    def _require_postal_address(profile: HarveyProfile) -> None:
+        """Say so up front instead of staging a draft that can never be approved."""
+        if not (profile.postal_address or "").strip():
+            raise HarveyError(
+                "Cargá la dirección postal de tu negocio en Configuración: va en el pie de cada email y es obligatoria.",
+                409,
+            )
+
+    @staticmethod
     def _footer(profile: HarveyProfile) -> str:
         parts = [p.strip() for p in (profile.postal_address, profile.opt_out_line) if p and p.strip()]
         return "\n\n" + "\n".join(parts) if parts else ""
 
     def _gate(self, profile: HarveyProfile, prospect: HarveyProspect, subject: str, body: str) -> GateResult:
-        return pre_send_check(
+        result = pre_send_check(
             prospect.email,
             subject,
             body,
@@ -275,6 +284,11 @@ class HarveyService:
             opt_out_line=profile.opt_out_line or "",
             postal_address=profile.postal_address or "",
         )
+        if not (profile.postal_address or "").strip():
+            # The pure gate only checks an address that is configured; a business with none must never send.
+            result.reasons.append("falta la dirección postal del negocio (cargala en Configuración)")
+            result.ok = False
+        return result
 
     async def _outbox_item(self, business_id: uuid.UUID, prospect_id: uuid.UUID, step: int) -> HarveyOutboxItem | None:
         return (
@@ -359,6 +373,7 @@ Respondé SOLO con JSON: {{"body": "..."}}"""
                 raise HarveyError(f"El email {n} todavía no se envió", 409)
             previous.append(prev)
 
+        self._require_postal_address(profile)
         if await self._drafts_today(business.id) >= profile.max_daily_drafts:
             raise HarveyError("Se alcanzó el máximo de borradores diarios de este negocio", 429)
         if not llm_available():
@@ -853,6 +868,7 @@ Respondé SOLO con JSON: {{"body": "..."}}"""
             return existing
         if reply.classification not in ANSWERABLE or not (reply.draft_answer or "").strip():
             raise HarveyError("Esta respuesta no tiene un borrador de contestación (la atiende una persona)", 409)
+        self._require_postal_address(profile)
         prospect = await self.get_prospect(business.id, reply.prospect_id)
         if prospect.status in (ProspectStatus.OPTED_OUT.value, ProspectStatus.BOUNCED.value):
             raise HarveyError(f"El prospecto está en estado '{prospect.status}'", 409)
