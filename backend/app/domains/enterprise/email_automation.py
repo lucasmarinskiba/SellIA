@@ -204,7 +204,7 @@ class ProposalGenerator:
             # Call Claude
             start_time = datetime.utcnow()
             message = self.claude.messages.create(
-                model="claude-opus",
+                model="claude-opus-5",
                 max_tokens=3000,
                 messages=[
                     {
@@ -382,7 +382,7 @@ class CompetitorDetector:
             """
 
             message = self.claude.messages.create(
-                model="claude-opus",
+                model="claude-opus-5",
                 max_tokens=300,
                 messages=[
                     {

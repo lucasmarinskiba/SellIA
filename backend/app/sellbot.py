@@ -491,7 +491,7 @@ async def _bootstrap_database() -> None:
         logger.warning(f"pipelines/deals migration: {str(e)[:120]}")
 
     # voice_calls + voice_configs (app.domains.voice.models): also
-    # confirmed MISSING from production despite VoiceCall/VoiceConfig
+    # confirmed MISSING from production despite AIAgentVoiceCall/VoiceConfig
     # being real, complete models -- same CoreBase gap as everywhere else
     # in this function. Used by app/domains/enterprise/voice_agent.py.
     try:

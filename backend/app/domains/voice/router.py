@@ -11,7 +11,7 @@ from sqlalchemy import select, desc
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.domains.users.models import User
-from app.domains.voice.models import VoiceCall, VoiceConfig
+from app.domains.voice.models import AIAgentVoiceCall, VoiceConfig
 from app.domains.voice.schemas import (
     VoiceCallCreate,
     VoiceCallResponse,
@@ -53,10 +53,10 @@ async def list_calls(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    query = select(VoiceCall).where(VoiceCall.business_id == business_id)
+    query = select(AIAgentVoiceCall).where(AIAgentVoiceCall.business_id == business_id)
     if status:
-        query = query.where(VoiceCall.status == status)
-    query = query.order_by(desc(VoiceCall.created_at))
+        query = query.where(AIAgentVoiceCall.status == status)
+    query = query.order_by(desc(AIAgentVoiceCall.created_at))
     result = await db.execute(query)
     return result.scalars().all()
 
@@ -67,7 +67,7 @@ async def get_call(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(select(VoiceCall).where(VoiceCall.id == call_id))
+    result = await db.execute(select(AIAgentVoiceCall).where(AIAgentVoiceCall.id == call_id))
     call = result.scalar_one_or_none()
     if not call:
         raise HTTPException(status_code=404, detail="Llamada no encontrada")
@@ -82,7 +82,7 @@ async def transcribe_call_audio(
     current_user: User = Depends(get_current_user),
 ):
     service = VoiceService(db)
-    result = await db.execute(select(VoiceCall).where(VoiceCall.id == call_id))
+    result = await db.execute(select(AIAgentVoiceCall).where(AIAgentVoiceCall.id == call_id))
     call = result.scalar_one_or_none()
     if not call:
         raise HTTPException(status_code=404, detail="Llamada no encontrada")
@@ -103,7 +103,7 @@ async def generate_call_speech(
     current_user: User = Depends(get_current_user),
 ):
     service = VoiceService(db)
-    result = await db.execute(select(VoiceCall).where(VoiceCall.id == call_id))
+    result = await db.execute(select(AIAgentVoiceCall).where(AIAgentVoiceCall.id == call_id))
     call = result.scalar_one_or_none()
     if not call:
         raise HTTPException(status_code=404, detail="Llamada no encontrada")
@@ -136,7 +136,7 @@ async def update_call(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(select(VoiceCall).where(VoiceCall.id == call_id))
+    result = await db.execute(select(AIAgentVoiceCall).where(AIAgentVoiceCall.id == call_id))
     call = result.scalar_one_or_none()
     if not call:
         raise HTTPException(status_code=404, detail="Llamada no encontrada")
