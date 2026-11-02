@@ -2,7 +2,6 @@
 SellIA Sellbot - Email Delivery + PostgreSQL Persistence
 Endpoints:
 - POST /api/v1/webhooks/sendgrid (Email tracking)
-- POST /api/v1/sequences/cold-email (Email generation)
 - POST /api/v1/knowledge/ingest (PDF knowledge)
 - GET /api/ping (Health check)
 - /api/v1/leads/* (Lead management + scoring)
@@ -1680,20 +1679,6 @@ SALES_SYSTEM_PROMPT = """Eres SellIA, un agente de ventas de IA con maestría en
 # ============================================================
 # MODELOS
 # ============================================================
-class LeadProfile(BaseModel):
-    name: str
-    email: str
-    company: str
-    title: str
-    pain_point: str
-    industry: str
-
-class EmailSequenceRequest(BaseModel):
-    lead: LeadProfile
-    offer: str
-    sender_name: str = "SellIA"
-    sender_email: str
-
 class KnowledgeIngestRequest(BaseModel):
     content: str
     source: str
@@ -1863,44 +1848,6 @@ async def queue_peek(count: int = 5):
     except Exception as e:
         logger.error(f"Queue peek error: {e}")
         return {"status": "error", "detail": str(e)}
-
-@app.post("/api/v1/sequences/cold-email")
-async def generate_cold_email_sequence(req: EmailSequenceRequest):
-    """Genera secuencia de 5 emails (Efti + Kennedy frameworks)."""
-    try:
-        prompt = f"""Genera una secuencia de 5 emails de prospecting para:
-
-LEAD:
-- Nombre: {req.lead.name}
-- Email: {req.lead.email}
-- Empresa: {req.lead.company}
-- Título: {req.lead.title}
-- Pain point: {req.lead.pain_point}
-- Industria: {req.lead.industry}
-
-OFFER: {req.offer}
-
-Usa Efti (cold email) + Kennedy (80/20 ROI).
-Retorna JSON array: [{"day": 1, "subject": "...", "body": "..."}, ...]
-SOLO JSON, sin markdown."""
-
-        response_json = await call_anthropic_api(
-            system_prompt="Eres un copywriter experto. Devuelve SOLO JSON válido.",
-            user_message=prompt,
-        )
-
-        emails = json.loads(response_json)
-        return {
-            "sequence_id": f"seq_{req.lead.email}",
-            "lead": req.lead,
-            "emails": emails,
-            "status": "generated",
-        }
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=500, detail="Failed to parse email sequence JSON")
-    except Exception as e:
-        logger.error(f"Email sequence error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/v1/knowledge/ingest")
 async def ingest_knowledge(req: KnowledgeIngestRequest):

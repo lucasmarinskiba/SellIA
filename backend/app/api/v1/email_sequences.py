@@ -1,12 +1,25 @@
 """
-Cold email sequence generation + sending.
+Cold email sequence generation.
 Uses Efti (cold email) + Kennedy (80/20 ROI) frameworks.
+
+Each call is a paid model call, so the route requires a logged-in owner with an active
+business, and its tokens count against that owner's monthly AI allowance (the same pool
+the Harvey features use; see app/domains/harvey/ai_budget.py).
 """
+import json
 import os
 import httpx
 from datetime import datetime
 from pydantic import BaseModel
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.database import get_db
+from app.core.deps import get_current_user
+from app.domains.businesses.models import Business
+from app.domains.harvey.ai_budget import BudgetExceeded, metered, record_tokens
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/sequences", tags=["email_sequences"])
 
@@ -66,8 +79,8 @@ KENNEDY 80/20:
 
 Generate JSON array with 5 emails:
 [
-  {"day": 1, "subject": "...", "body": "..."},
-  {"day": 3, "subject": "...", "body": "..."},
+  {{"day": 1, "subject": "...", "body": "..."}},
+  {{"day": 3, "subject": "...", "body": "..."}},
   ...
 ]
 
@@ -89,24 +102,50 @@ Return ONLY valid JSON array, no markdown."""
         resp.raise_for_status()
         data = resp.json()
 
+    usage = data.get("usage") or {}
+    record_tokens(int(usage.get("input_tokens", 0)) + int(usage.get("output_tokens", 0)))
+
     content = data["content"][0]["text"]
-    # Parse JSON from response
-    import json
     emails_data = json.loads(content)
     return [EmailInSequence(**e) for e in emails_data]
 
 
+async def _active_business(db: AsyncSession, user: User) -> Business:
+    business = (
+        await db.execute(
+            select(Business)
+            .where(Business.user_id == user.id, Business.is_active.is_(True))
+            .order_by(Business.name)
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    if business is None:
+        raise HTTPException(status_code=409, detail="Creá tu negocio antes de generar secuencias")
+    return business
+
+
 @router.post("/cold-email")
-async def create_cold_email_sequence(req: SequenceRequest) -> dict:
+async def create_cold_email_sequence(
+    req: SequenceRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
     """Generate cold email sequence for lead."""
+    business = await _active_business(db, current_user)
     try:
-        emails = await _generate_cold_email_sequence(req.lead, req.offer)
-        return {
-            "sequence_id": f"seq_{datetime.now().timestamp()}",
-            "lead": req.lead,
-            "emails": emails,
-            "status": "generated",
-            "created_at": datetime.now().isoformat(),
-        }
+        async with metered(db, business):
+            emails = await _generate_cold_email_sequence(req.lead, req.offer)
+    except BudgetExceeded as e:
+        raise HTTPException(status_code=429, detail=str(e))
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+    return {
+        "sequence_id": f"seq_{datetime.now().timestamp()}",
+        "lead": req.lead,
+        "emails": emails,
+        "status": "generated",
+        "created_at": datetime.now().isoformat(),
+    }
