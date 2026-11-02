@@ -14,16 +14,19 @@ from collections import Counter
 from datetime import datetime, timedelta, timezone
 from typing import Any, Literal
 
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.crm.models import Deal, LeadStage
+from app.domains.users.models import User
 
 TimeRange = Literal["today", "week", "month", "quarter", "year"]
 
 WINDOW_DAYS: dict[TimeRange, int] = {"today": 1, "week": 7, "month": 30, "quarter": 90, "year": 365}
 FORECAST_HORIZON_DAYS = 30
 DEFAULT_CURRENCY = "ARS"
+NO_CHANNEL = "sin origen"
 _CLOSED = {LeadStage.CLOSED_WON, LeadStage.CLOSED_LOST}
 
 
@@ -112,3 +115,67 @@ async def build_sales_dashboard(db: AsyncSession, business_id: uuid.UUID, time_r
         "agent_performance": [],  # no per-agent data source yet
         "segment_benchmarks": None,  # would need cross-tenant aggregates; not built
     }
+
+
+def assert_owner(raw_user_id: str, user: User) -> uuid.UUID:
+    """The id in the path must be the caller's own id; anything else is refused."""
+    try:
+        requested = uuid.UUID(raw_user_id)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="user_id inválido")
+    if requested != user.id:
+        raise HTTPException(status_code=403, detail="Solo podés ver tus propios datos")
+    return requested
+
+
+async def build_channel_ranking(db: AsyncSession, business_id: uuid.UUID, time_range: TimeRange) -> list[dict[str, Any]]:
+    """Channels ranked by sales from this business's deals (``source_channel``).
+
+    The channel is free text, so case and surrounding spaces are normalised. Deals with no
+    channel are grouped under ``NO_CHANNEL``. ``conversion`` is None when the channel has no
+    closed deals in the window, rather than a made-up rate.
+    """
+    now = datetime.now(timezone.utc)
+    since = now - timedelta(days=WINDOW_DAYS[time_range])
+
+    rows = (
+        await db.execute(
+            select(
+                Deal.source_channel,
+                Deal.value,
+                Deal.currency,
+                Deal.stage,
+                Deal.actual_close_date,
+            ).where(Deal.business_id == business_id, Deal.is_active.is_(True))
+        )
+    ).all()
+
+    currency = _main_currency(rows)
+    buckets: dict[str, dict[str, Any]] = {}
+    for r in rows:
+        if r.currency != currency:
+            continue
+        channel = (r.source_channel or "").strip().lower() or NO_CHANNEL
+        bucket = buckets.setdefault(channel, {"channel": channel, "deals": 0, "won": 0, "lost": 0, "revenue": 0.0})
+        bucket["deals"] += 1
+        if r.actual_close_date is None or _aware(r.actual_close_date) < since:
+            continue
+        if r.stage == LeadStage.CLOSED_WON:
+            bucket["won"] += 1
+            bucket["revenue"] += float(r.value or 0)
+        elif r.stage == LeadStage.CLOSED_LOST:
+            bucket["lost"] += 1
+
+    ranked = sorted(buckets.values(), key=lambda b: (-b["revenue"], -b["won"], b["channel"]))
+    return [
+        {
+            "rank": position,
+            "channel": b["channel"],
+            "deals": b["deals"],
+            "won": b["won"],
+            "revenue": round(b["revenue"], 2),
+            "conversion": round(b["won"] / (b["won"] + b["lost"]), 4) if b["won"] + b["lost"] else None,
+            "currency": currency,
+        }
+        for position, b in enumerate(ranked, start=1)
+    ]

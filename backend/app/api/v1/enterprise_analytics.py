@@ -4,14 +4,12 @@ Replaces the random-number engine that used to answer here. The numbers come fro
 ``app.domains.analytics.sales_dashboard``; only the owner can read their own dashboard.
 """
 
-import uuid
-
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user, resolve_business_id
-from app.domains.analytics.sales_dashboard import TimeRange, build_sales_dashboard
+from app.domains.analytics.sales_dashboard import TimeRange, assert_owner, build_sales_dashboard
 from app.domains.users.models import User
 
 router = APIRouter(tags=["analytics"])
@@ -25,12 +23,7 @@ async def get_sales_dashboard(
     db: AsyncSession = Depends(get_db),
 ):
     """The caller's own sales dashboard. Another account's id is refused."""
-    try:
-        requested = uuid.UUID(user_id)
-    except ValueError:
-        raise HTTPException(status_code=422, detail="user_id inválido")
-    if requested != current_user.id:
-        raise HTTPException(status_code=403, detail="Solo podés ver tu propio dashboard")
+    assert_owner(user_id, current_user)
 
     business_id = await resolve_business_id(db, current_user)
     data = await build_sales_dashboard(db, business_id, time_range)
