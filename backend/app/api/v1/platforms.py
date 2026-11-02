@@ -5,40 +5,6 @@ from fastapi import APIRouter, Query
 router = APIRouter(prefix="/platforms", tags=["platforms"])
 
 
-@router.get("/status")
-async def get_platforms_status(user_id: str = Query(...)):
-    """Get connection status for all platforms."""
-    return {
-        "user_id": user_id,
-        "platforms": [
-            {
-                "id": "mercado-libre",
-                "name": "Mercado Libre",
-                "connected": False,
-                "last_sync": None,
-                "listings_count": 0,
-                "orders_count": 0,
-            },
-            {
-                "id": "amazon",
-                "name": "Amazon",
-                "connected": False,
-                "last_sync": None,
-                "listings_count": 0,
-                "orders_count": 0,
-            },
-            {
-                "id": "hotmart",
-                "name": "Hotmart",
-                "connected": False,
-                "last_sync": None,
-                "listings_count": 0,
-                "orders_count": 0,
-            },
-        ]
-    }
-
-
 @router.get("/auth-url")
 async def get_auth_url(platform: str = Query(...), user_id: str = Query(...)):
     """Get OAuth authorization URL for a platform."""
