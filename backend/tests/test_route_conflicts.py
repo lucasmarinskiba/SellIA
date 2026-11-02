@@ -21,9 +21,6 @@ _PARAM = re.compile(r"\{[^}:]*(:[^}]*)?\}")
 # fix the new conflict instead (delete the dead handler, or give it its own path).
 # Value = what to know before cleaning it up; the first handler is the one answering.
 KNOWN_CONFLICTS: dict[tuple[str, str], str] = {
-    ("GET", "/api/v1/analytics/dashboard/{}"):
-        "advanced_automation.get_seller_dashboard answers; enterprise_analytics."
-        "get_performance_dashboard is shadowed",
     ("POST", "/api/v1/sequences/cold-email"):
         "sellbot.generate_cold_email_sequence answers; email_sequences."
         "create_cold_email_sequence is shadowed",

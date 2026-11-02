@@ -21,52 +21,6 @@ retention_engine = RetentionEngine()
 # ============================================================
 
 
-@router.get("/analytics/dashboard/{seller_id}")
-async def get_seller_dashboard(seller_id: str) -> Dict[str, Any]:
-    """Get complete seller analytics dashboard."""
-
-    try:
-        dashboard = analytics_engine.generate_dashboard(seller_id)
-
-        return {
-            "status": "success",
-            "seller_id": seller_id,
-            "metrics": {
-                "leads": dashboard.current_metrics.leads_generated,
-                "qualified": dashboard.current_metrics.leads_qualified,
-                "conversion_rate": f"{dashboard.current_metrics.conversion_rate * 100:.1f}%",
-                "deals_closed": dashboard.current_metrics.deals_closed,
-                "revenue": f"${dashboard.current_metrics.revenue_generated:,.2f}",
-                "avg_deal_size": f"${dashboard.current_metrics.avg_deal_size:,.2f}",
-                "customer_satisfaction": f"{dashboard.current_metrics.customer_satisfaction}/5"
-            },
-            "channel_performance": [
-                {
-                    "channel": ch.channel,
-                    "rank": ch.rank,
-                    "roi": f"{ch.roi:.1f}x",
-                    "conversion": f"{ch.conversion_rate * 100:.1f}%",
-                    "cost_per_lead": f"${ch.cost_per_lead:.2f}"
-                }
-                for ch in dashboard.channel_performance
-            ],
-            "daily_trend": dashboard.daily_trend[:7],
-            "top_products": dashboard.top_products,
-            "top_customers": dashboard.top_customers,
-            "revenue_forecast": {
-                "7_days": f"${dashboard.revenue_forecast['7_days']:,.0f}",
-                "30_days": f"${dashboard.revenue_forecast['30_days']:,.0f}",
-                "90_days": f"${dashboard.revenue_forecast['90_days']:,.0f}",
-                "annual": f"${dashboard.revenue_forecast['annual']:,.0f}"
-            },
-            "alerts": dashboard.alerts
-        }
-
-    except Exception as e:
-        logger.error(f"Dashboard generation failed: {e}")
-        raise
-
-
 @router.get("/analytics/channel-rankings/{seller_id}")
 async def get_channel_rankings(seller_id: str) -> Dict[str, Any]:
     """Get ranked channels by performance."""

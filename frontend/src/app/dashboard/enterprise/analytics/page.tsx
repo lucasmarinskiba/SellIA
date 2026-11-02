@@ -30,7 +30,7 @@ export default function AnalyticsPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
-      <AnalyticsDashboard userId={user.id} segment={user.segment || 'active'} />
+      <AnalyticsDashboard userId={user.id} />
     </div>
   )
 }
