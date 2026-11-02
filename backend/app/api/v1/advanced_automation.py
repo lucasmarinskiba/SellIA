@@ -1,17 +1,20 @@
 """Phases 14-17: Advanced analytics, automation, and retention."""
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict, Any
 import logging
 
-from app.domains.analytics.seller_analytics import SellerAnalyticsEngine
+from app.core.database import get_db
+from app.core.deps import get_current_user, resolve_business_id
+from app.domains.analytics.sales_dashboard import TimeRange, assert_owner, build_channel_ranking
 from app.domains.automation.performance_optimizer import PerformanceOptimizer
 from app.domains.retention.retention_engine import RetentionEngine
+from app.domains.users.models import User
 
 router = APIRouter(tags=["advanced-automation"])
 logger = logging.getLogger(__name__)
 
-analytics_engine = SellerAnalyticsEngine()
 optimizer = PerformanceOptimizer()
 retention_engine = RetentionEngine()
 
@@ -22,25 +25,19 @@ retention_engine = RetentionEngine()
 
 
 @router.get("/analytics/channel-rankings/{seller_id}")
-async def get_channel_rankings(seller_id: str) -> Dict[str, Any]:
-    """Get ranked channels by performance."""
+async def get_channel_rankings(
+    seller_id: str,
+    time_range: TimeRange = Query("month", description="today, week, month, quarter or year"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """Channels ranked by sales from the caller's own deals. Another account's id is refused."""
 
-    channels = analytics_engine.get_channel_performance(seller_id)
+    assert_owner(seller_id, current_user)
+    business_id = await resolve_business_id(db, current_user)
+    channels = await build_channel_ranking(db, business_id, time_range)
 
-    return {
-        "status": "success",
-        "channels": [
-            {
-                "rank": ch.rank,
-                "channel": ch.channel,
-                "roi": f"{ch.roi:.1f}x",
-                "leads": ch.leads_generated,
-                "conversion": f"{ch.conversion_rate * 100:.1f}%",
-                "recommendation": "Increase spend" if ch.rank <= 2 else "Maintain" if ch.rank <= 3 else "Reduce"
-            }
-            for ch in channels
-        ]
-    }
+    return {"status": "success", "seller_id": str(current_user.id), "time_range": time_range, "channels": channels}
 
 
 # ============================================================
