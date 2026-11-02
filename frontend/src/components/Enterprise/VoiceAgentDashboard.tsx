@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Phone, Mic, Volume2, Clock, Send } from 'lucide-react'
 import { Card } from '@/components/ui/card'
+import { api } from '@/lib/api'
 
 interface CallRecord {
   id: string
@@ -19,7 +20,7 @@ interface CallAnalytics {
   avg_duration_seconds: number
   completed_calls: number
   completion_rate: number
-  avg_sentiment_score: number
+  avg_sentiment_score: number | null
 }
 
 export default function VoiceAgentDashboard({ userId }: { userId: string }) {
@@ -29,7 +30,6 @@ export default function VoiceAgentDashboard({ userId }: { userId: string }) {
   const [isCallActive, setIsCallActive] = useState(false)
   const [callTranscript, setCallTranscript] = useState<string>('')
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
   useEffect(() => {
     fetchCalls()
@@ -38,11 +38,8 @@ export default function VoiceAgentDashboard({ userId }: { userId: string }) {
 
   const fetchCalls = async () => {
     try {
-      const res = await fetch(`${apiUrl}/api/v1/voice/calls/user/${userId}?limit=20`)
-      if (res.ok) {
-        const data = await res.json()
-        setCalls(data.calls || [])
-      }
+      const res = await api.get(`/voice/calls/user/${userId}`, { params: { limit: 20 } })
+      setCalls(res.data.calls || [])
     } catch (error) {
       console.error('Fetch calls error:', error)
     }
@@ -50,11 +47,8 @@ export default function VoiceAgentDashboard({ userId }: { userId: string }) {
 
   const fetchAnalytics = async () => {
     try {
-      const res = await fetch(`${apiUrl}/api/v1/voice/analytics/${userId}`)
-      if (res.ok) {
-        const data = await res.json()
-        setAnalytics(data.analytics)
-      }
+      const res = await api.get(`/voice/analytics/user/${userId}`)
+      setAnalytics(res.data.analytics)
     } catch (error) {
       console.error('Fetch analytics error:', error)
     } finally {
@@ -166,7 +160,7 @@ export default function VoiceAgentDashboard({ userId }: { userId: string }) {
         <Card className="p-4">
           <p className="text-slate-600 text-sm mb-2">Avg Sentiment</p>
           <p className="text-3xl font-bold text-blue-600">
-            {analytics ? (analytics.avg_sentiment_score * 100).toFixed(0) : 0}%
+            {analytics?.avg_sentiment_score != null ? `${(analytics.avg_sentiment_score * 100).toFixed(0)}%` : '—'}
           </p>
         </Card>
       </div>
