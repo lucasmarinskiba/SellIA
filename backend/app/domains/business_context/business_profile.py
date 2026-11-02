@@ -29,6 +29,7 @@ PROFILE_FIELDS = (
     "has_physical_location",
     "does_delivery",
     "does_pickup",
+    "contact_email",
 )
 
 

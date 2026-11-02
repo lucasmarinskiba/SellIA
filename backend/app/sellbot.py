@@ -1301,6 +1301,8 @@ async def _bootstrap_database() -> None:
         await ensure_leads_owner_column()
         from app.db.locations_bootstrap import ensure_location_timezone_column
         await ensure_location_timezone_column()
+        from app.db.business_context_bootstrap import ensure_business_contact_email_column
+        await ensure_business_contact_email_column()
         from app.db.catalog_bootstrap import ensure_catalog_item_columns
         await ensure_catalog_item_columns()
         from app.domains.seo_config.positioning_bootstrap import ensure_positioning_recommendation_columns

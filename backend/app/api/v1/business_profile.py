@@ -4,7 +4,7 @@ from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -47,6 +47,7 @@ class ProfileOut(BaseModel):
     value_proposition: str | None
     price_range: str | None
     primary_goal: str | None
+    contact_email: str | None
     has_physical_location: bool
     does_delivery: bool
     does_pickup: bool
@@ -66,6 +67,7 @@ class ProfileUpdate(BaseModel):
     value_proposition: str | None = Field(default=None, max_length=2000)
     price_range: Literal["low", "medium", "premium", "luxury"] | None = None
     primary_goal: Literal["more_sales", "more_leads", "more_traffic", "brand_awareness", "expansion"] | None = None
+    contact_email: EmailStr | None = None
     has_physical_location: bool | None = None
     does_delivery: bool | None = None
     does_pickup: bool | None = None
@@ -96,6 +98,7 @@ def _out(business, row, locations: ProfileLocations) -> ProfileOut:
         value_proposition=row.value_proposition,
         price_range=row.price_range,
         primary_goal=row.primary_goal,
+        contact_email=row.contact_email,
         has_physical_location=bool(row.has_physical_location),
         does_delivery=bool(row.does_delivery),
         does_pickup=bool(row.does_pickup),

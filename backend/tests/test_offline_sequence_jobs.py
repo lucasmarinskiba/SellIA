@@ -34,6 +34,7 @@ from app.core.database import Base, get_db
 from app.core.deps import get_current_user
 from app.db.schema_bootstrap import ensure_unique_index_names
 from app.domains.analytics.offline_models import OfflineConversion, VisitType
+from app.domains.business_context.models import BusinessContext
 from app.domains.businesses.location_models import Location
 from app.domains.businesses.models import Business
 from app.domains.businesses.team_models import BusinessMember
@@ -50,6 +51,8 @@ from app.domains.sequences.offline_sequence_models import (
     OfflineMessageOptOut,
     OfflineSequenceJob,
 )
+from app.domains.sequences.sending_domain_models import BusinessSendingDomain
+from app.domains.sequences.sending_identity import SenderIdentity
 
 
 @compiles(JSONB, "sqlite")
@@ -74,13 +77,15 @@ event.listen(Base, "refresh", _make_aware, propagate=True)
 
 MODELS = [
     Business, Location, BusinessMember, Conversation, Order, OfflineConversion,
-    OfflineSequenceJob, OfflineMessageOptOut,
+    OfflineSequenceJob, OfflineMessageOptOut, BusinessContext, BusinessSendingDomain,
 ]
 NOW = datetime(2026, 10, 22, 12, 0, tzinfo=timezone.utc)
 SECRET = "test-secret-key"
 BASE = "https://api.test"
 BUSINESS = "Panadería Sol"
 ANA = "ana@example.com"
+CONTACT = "contacto@panaderia.example"
+GLOBAL = "ventas@test.sellia.example"
 
 
 @pytest_asyncio.fixture
@@ -100,6 +105,7 @@ async def world(factory):
         biz = Business(user_id=owner, name=BUSINESS)
         s.add(biz)
         await s.flush()
+        s.add(BusinessContext(user_id=owner, business_id=biz.id, contact_email=CONTACT))
         loc = Location(business_id=biz.id, name="A1", address="x", city="BA", latitude=-34.6, longitude=-58.4)
         s.add(loc)
         await s.flush()
@@ -171,9 +177,12 @@ def _opt_out_params(business_id, email: str = ANA) -> dict[str, str]:
     return dict(parse_qsl(urlparse(url).query))
 
 
-async def _run(factory, *, sender, enabled: bool = True, base: str | None = BASE):
+async def _run(factory, *, sender, enabled: bool = True, base: str | None = BASE, allow_global: bool = True):
     async with factory() as s:
-        return await send_due_jobs(s, now=NOW, enabled=enabled, sender=sender, base_url=base, secret=SECRET)
+        return await send_due_jobs(
+            s, now=NOW, enabled=enabled, sender=sender, base_url=base, secret=SECRET,
+            allow_global_sender=allow_global, global_sender_email=GLOBAL,
+        )
 
 
 # ------------------------------------------------------------------ trigger
@@ -313,10 +322,10 @@ async def _job(factory, job_id) -> OfflineSequenceJob:
 
 
 def _sender(result=True, raises: Exception | None = None):
-    calls: list[tuple[str, str, str, str]] = []
+    calls: list[tuple[str, str, str, SenderIdentity]] = []
 
-    async def send(to: str, subject: str, html: str, from_name: str) -> bool:
-        calls.append((to, subject, html, from_name))
+    async def send(to: str, subject: str, html: str, identity: SenderIdentity) -> bool:
+        calls.append((to, subject, html, identity))
         if raises is not None:
             raise raises
         return result
@@ -330,8 +339,11 @@ async def test_a_due_job_is_sent_under_the_business_name_with_the_body_escaped(w
     counts = await _run(world.factory, sender=send)
 
     assert counts["sent"] == 1
-    to, subject, html, from_name = calls[0]
-    assert (to, subject, from_name) == (ANA, "Gracias", BUSINESS)
+    to, subject, html, identity = calls[0]
+    assert (to, subject) == (ANA, "Gracias")
+    assert identity.from_name == BUSINESS
+    assert identity.from_email == GLOBAL
+    assert identity.reply_to == CONTACT
     assert html.startswith("<p>&lt;b&gt;hola&lt;/b&gt; &amp; chau</p>")
     job = await _job(world.factory, job_id)
     assert job.status == "sent"
@@ -394,7 +406,7 @@ async def test_an_exception_from_the_sender_is_recorded_and_does_not_stop_the_ba
     ok = await _queue_job(world.factory, world.no_consent, due_at=NOW - timedelta(minutes=5))
     calls: list[str] = []
 
-    async def send(to: str, subject: str, html: str, from_name: str) -> bool:
+    async def send(to: str, subject: str, html: str, identity: SenderIdentity) -> bool:
         calls.append(to)
         if len(calls) == 1:
             raise RuntimeError("provider timeout")
@@ -402,7 +414,7 @@ async def test_an_exception_from_the_sender_is_recorded_and_does_not_stop_the_ba
 
     counts = await _run(world.factory, sender=send)
 
-    assert counts == {"sent": 1, "failed": 0, "skipped": 0, "retry": 1}
+    assert counts == {"sent": 1, "failed": 0, "skipped": 0, "retry": 1, "blocked": 0}
     assert (await _job(world.factory, failing)).last_error == "provider timeout"
     assert (await _job(world.factory, ok)).status == "sent"
 
@@ -411,7 +423,7 @@ async def test_nothing_is_sent_with_the_flag_off(world) -> None:
     job_id = await _queue_job(world.factory, world.reachable)
     send, calls = _sender(True)
     counts = await _run(world.factory, sender=send, enabled=False)
-    assert counts == {"sent": 0, "failed": 0, "skipped": 0, "retry": 0}
+    assert counts == {"sent": 0, "failed": 0, "skipped": 0, "retry": 0, "blocked": 0}
     assert calls == []
     assert (await _job(world.factory, job_id)).status == "pending"
 
@@ -421,7 +433,7 @@ async def test_nothing_is_sent_without_a_public_base_url(world) -> None:
     job_id = await _queue_job(world.factory, world.reachable)
     send, calls = _sender(True)
     counts = await _run(world.factory, sender=send, base=None)
-    assert counts == {"sent": 0, "failed": 0, "skipped": 0, "retry": 0}
+    assert counts == {"sent": 0, "failed": 0, "skipped": 0, "retry": 0, "blocked": 0}
     assert calls == []
     assert (await _job(world.factory, job_id)).status == "pending"
 
@@ -448,3 +460,41 @@ async def test_an_address_that_unsubscribes_after_queueing_is_skipped(world, mon
     assert counts["skipped"] == 1
     assert calls == []
     assert (await _job(world.factory, job_id)).last_error == "destinatario dado de baja"
+
+
+async def test_a_business_without_a_verified_domain_is_blocked_and_keeps_the_job(world) -> None:
+    job_id = await _queue_job(world.factory, world.reachable)
+    send, calls = _sender(True)
+    counts = await _run(world.factory, sender=send, allow_global=False)
+    assert counts == {"sent": 0, "failed": 0, "skipped": 0, "retry": 0, "blocked": 1}
+    assert calls == []
+    job = await _job(world.factory, job_id)
+    assert job.status == "pending"
+    assert job.attempts == 0
+    assert job.last_error == "falta verificar el dominio de envío del negocio"
+
+
+async def test_a_verified_domain_sends_from_the_business_and_replies_to_its_contact(world) -> None:
+    async with world.factory() as s:
+        s.add(BusinessSendingDomain(business_id=world.biz, domain="panaderia-sol.example",
+                                    local_part="ventas", status="verified"))
+        await s.commit()
+    await _queue_job(world.factory, world.reachable)
+    send, calls = _sender(True)
+    await _run(world.factory, sender=send, allow_global=False)  # global off: the verified domain alone is enough
+    identity = calls[0][3]
+    assert identity.from_email == "ventas@panaderia-sol.example"
+    assert identity.reply_to == CONTACT
+
+
+async def test_a_business_without_contact_email_is_blocked(world) -> None:
+    async with world.factory() as s:
+        ctx = (await s.execute(select(BusinessContext).where(BusinessContext.business_id == world.biz))).scalars().one()
+        ctx.contact_email = None
+        await s.commit()
+    job_id = await _queue_job(world.factory, world.reachable)
+    send, calls = _sender(True)
+    counts = await _run(world.factory, sender=send)
+    assert counts["blocked"] == 1
+    assert calls == []
+    assert "email de contacto" in (await _job(world.factory, job_id)).last_error
