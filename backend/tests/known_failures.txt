@@ -208,18 +208,6 @@ tests/test_phase_27_integration.py::TestEmailVerification::test_verify_expired_t
 tests/test_phase_27_integration.py::TestEmailVerification::test_verify_twice_fails
 tests/test_phase_27_integration.py::TestEmailVerification::test_verify_valid_token
 
-# tests/test_phase_29_voice.py  (11)  e.g. 
-tests/test_phase_29_voice.py::TestE2EVoiceWorkflow::test_full_voice_call_workflow
-tests/test_phase_29_voice.py::TestE2EVoiceWorkflow::test_playbook_usage_workflow
-tests/test_phase_29_voice.py::TestPlaybookExtractor::test_extract_playbooks_empty
-tests/test_phase_29_voice.py::TestPlaybookExtractor::test_extract_playbooks_from_calls
-tests/test_phase_29_voice.py::TestPlaybookExtractor::test_playbook_consolidation
-tests/test_phase_29_voice.py::TestPlaybookRecommender::test_recommend_playbook_by_industry
-tests/test_phase_29_voice.py::TestPlaybookRecommender::test_recommend_playbook_not_found
-tests/test_phase_29_voice.py::TestVoiceCallManager::test_end_call
-tests/test_phase_29_voice.py::TestVoiceCallManager::test_handle_call_input
-tests/test_phase_29_voice.py::TestVoiceCallManager::test_initiate_call
-tests/test_phase_29_voice.py::TestVoiceCallManager::test_multiple_turns_conversation
 
 # tests/test_phase_30_churn.py  (21)  e.g. AttributeError: 'AsyncEngine' object has no attribute '_run_ddl_visitor'
 tests/test_phase_30_churn.py::TestABMIntentScorer::test_demo_request_weight
@@ -244,39 +232,6 @@ tests/test_phase_30_churn.py::TestExpansionOpportunityDetector::test_find_seat_e
 tests/test_phase_30_churn.py::TestRetentionPlaybookGenerator::test_generate_playbook_competitor
 tests/test_phase_30_churn.py::TestRetentionPlaybookGenerator::test_generate_playbook_payment_issue
 
-# tests/test_phase_31_psychology.py  (32)  e.g. AttributeError: 'AsyncEngine' object has no attribute '_run_ddl_visitor'
-tests/test_phase_31_psychology.py::TestAPIEndpoints::test_close_endpoint
-tests/test_phase_31_psychology.py::TestAPIEndpoints::test_create_need_narrative_endpoint
-tests/test_phase_31_psychology.py::TestAPIEndpoints::test_discovery_questions_endpoint
-tests/test_phase_31_psychology.py::TestAPIEndpoints::test_handle_objection_endpoint
-tests/test_phase_31_psychology.py::TestAPIEndpoints::test_record_response_endpoint
-tests/test_phase_31_psychology.py::TestAPIEndpoints::test_urgency_triggers_endpoint
-tests/test_phase_31_psychology.py::TestAssumptiveCloseEngine::test_is_positive_response
-tests/test_phase_31_psychology.py::TestAssumptiveCloseEngine::test_step_1_small_yes
-tests/test_phase_31_psychology.py::TestAssumptiveCloseEngine::test_step_2_choice_between
-tests/test_phase_31_psychology.py::TestAssumptiveCloseEngine::test_step_3_pilot
-tests/test_phase_31_psychology.py::TestAssumptiveCloseEngine::test_step_4_upsell
-tests/test_phase_31_psychology.py::TestAssumptiveCloseEngine::test_step_5_full_commitment
-tests/test_phase_31_psychology.py::TestDiscoveryQuestionsEngine::test_extract_pain_points_from_response
-tests/test_phase_31_psychology.py::TestDiscoveryQuestionsEngine::test_generate_questions_impact_stage
-tests/test_phase_31_psychology.py::TestDiscoveryQuestionsEngine::test_generate_questions_problem_stage
-tests/test_phase_31_psychology.py::TestDiscoveryQuestionsEngine::test_generate_questions_rapport_stage
-tests/test_phase_31_psychology.py::TestDiscoveryQuestionsEngine::test_record_response
-tests/test_phase_31_psychology.py::TestIntegrationEndToEnd::test_deal_conversation_tracking
-tests/test_phase_31_psychology.py::TestIntegrationEndToEnd::test_full_discovery_to_close_flow
-tests/test_phase_31_psychology.py::TestIntegrationEndToEnd::test_rep_performance_metrics
-tests/test_phase_31_psychology.py::TestNeedCreationEngine::test_create_need_narrative
-tests/test_phase_31_psychology.py::TestNeedCreationEngine::test_financial_impact_calculation
-tests/test_phase_31_psychology.py::TestNeedCreationEngine::test_narrative_includes_gap_analysis
-tests/test_phase_31_psychology.py::TestPsychologyObjectionHandler::test_handle_authority_objection
-tests/test_phase_31_psychology.py::TestPsychologyObjectionHandler::test_handle_need_objection
-tests/test_phase_31_psychology.py::TestPsychologyObjectionHandler::test_handle_price_objection
-tests/test_phase_31_psychology.py::TestPsychologyObjectionHandler::test_handle_time_objection
-tests/test_phase_31_psychology.py::TestPsychologyObjectionHandler::test_objection_response_is_psychology_based
-tests/test_phase_31_psychology.py::TestUrgencyTriggerEngine::test_generate_price_increase_trigger
-tests/test_phase_31_psychology.py::TestUrgencyTriggerEngine::test_generate_social_proof_trigger
-tests/test_phase_31_psychology.py::TestUrgencyTriggerEngine::test_generate_supply_scarcity_trigger
-tests/test_phase_31_psychology.py::TestUrgencyTriggerEngine::test_triggers_include_psychology_rationale
 
 # tests/test_phase_32_monetization.py  (24)  e.g. ModuleNotFoundError: No module named 'backend'
 tests/test_phase_32_monetization.py::TestABTestOrchestrator::test_assign_variant_deterministic
