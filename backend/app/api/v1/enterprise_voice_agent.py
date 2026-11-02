@@ -1,15 +1,17 @@
-from uuid import UUID
+from datetime import datetime, timedelta, timezone
 from typing import Optional
+from uuid import UUID
 
-from fastapi import APIRouter, Query, WebSocket, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.businesses.models import Business
 from app.domains.enterprise.voice_agent import VoiceAgentManager
+from app.domains.users.models import User
+from app.domains.voice.models import AIAgentVoiceCall
 
 router = APIRouter()
 
@@ -249,6 +251,90 @@ async def get_call_analytics(
     """Get call analytics for this business."""
     await _get_business_for_user(business_id, current_user, db)
     analytics = await VoiceAgentManager.get_call_analytics(business_id, db, days)
+    return {"status": "ok", "analytics": analytics}
+
+
+def _own_user(user_id: UUID, current_user: User) -> None:
+    """The dashboard reads the calls of the signed-in user only, never someone else's."""
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Solo podés ver tus propias llamadas")
+
+
+def _call_record(call: AIAgentVoiceCall) -> dict:
+    """The shape the voice dashboard reads (its CallRecord type)."""
+    return {
+        "id": str(call.id),
+        "contact_number": call.phone_number,
+        "call_type": call.direction,
+        "status": call.status,
+        "duration_seconds": call.recording_duration or 0,
+        "sentiment": (call.extra_data or {}).get("sentiment"),
+        "created_at": call.created_at.isoformat() if call.created_at else None,
+    }
+
+
+_SENTIMENT_SCORE = {"positive": 1.0, "neutral": 0.0, "negative": -1.0}
+
+
+def _avg_sentiment(calls: list[AIAgentVoiceCall]) -> Optional[float]:
+    """Mean of the sentiment labels the calls carry. None when none has one: no data is not a zero."""
+    scores = []
+    for call in calls:
+        label = (call.extra_data or {}).get("sentiment")
+        if label in _SENTIMENT_SCORE:
+            scores.append(_SENTIMENT_SCORE[label])
+    return sum(scores) / len(scores) if scores else None
+
+
+async def _user_calls(db: AsyncSession, user_id: UUID, since: Optional[datetime] = None, limit: Optional[int] = None) -> list[AIAgentVoiceCall]:
+    """Calls across every business this user owns, newest first."""
+    query = (
+        select(AIAgentVoiceCall)
+        .join(Business, AIAgentVoiceCall.business_id == Business.id)
+        .where(Business.user_id == user_id)
+        .order_by(AIAgentVoiceCall.created_at.desc())
+    )
+    if since is not None:
+        query = query.where(AIAgentVoiceCall.created_at >= since)
+    if limit is not None:
+        query = query.limit(limit)
+    return list((await db.execute(query)).scalars().all())
+
+
+@router.get("/voice/calls/user/{user_id}")
+async def get_user_calls(
+    user_id: UUID,
+    limit: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Recent calls across the signed-in user's businesses (the voice dashboard's list)."""
+    _own_user(user_id, current_user)
+    calls = await _user_calls(db, user_id, limit=limit)
+    return {"status": "ok", "calls": [_call_record(c) for c in calls], "count": len(calls)}
+
+
+@router.get("/voice/analytics/user/{user_id}")
+async def get_user_call_analytics(
+    user_id: UUID,
+    days: int = Query(30, ge=1, le=365),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Call analytics across the signed-in user's businesses for the last `days` days."""
+    _own_user(user_id, current_user)
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    calls = await _user_calls(db, user_id, since=since)
+    total = len(calls)
+    completed = sum(1 for c in calls if c.status == "completed")
+    durations = [c.recording_duration for c in calls if c.recording_duration]
+    analytics = {
+        "total_calls": total,
+        "completed_calls": completed,
+        "completion_rate": completed / total if total else 0.0,
+        "avg_duration_seconds": sum(durations) / len(durations) if durations else 0.0,
+        "avg_sentiment_score": _avg_sentiment(calls),
+    }
     return {"status": "ok", "analytics": analytics}
 
 
