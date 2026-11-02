@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.logger import get_logger
-from app.domains.voice.models import VoiceCall, VoiceConfig
+from app.domains.voice.models import AIAgentVoiceCall, VoiceConfig
 
 logger = get_logger(__name__)
 
@@ -113,7 +113,7 @@ class VoiceService:
         audio_chunk: bytes,
     ) -> dict:
         """Process an audio segment: transcribe -> AI reply -> speech."""
-        result = await self.db.execute(select(VoiceCall).where(VoiceCall.id == call_id))
+        result = await self.db.execute(select(AIAgentVoiceCall).where(AIAgentVoiceCall.id == call_id))
         call = result.scalar_one_or_none()
         if not call:
             raise ValueError("Call not found")
@@ -203,9 +203,9 @@ class VoiceService:
         customer_id: uuid.UUID,
         phone_number: str,
         direction: str,
-    ) -> VoiceCall:
+    ) -> AIAgentVoiceCall:
         """Create a new voice call record."""
-        call = VoiceCall(
+        call = AIAgentVoiceCall(
             business_id=business_id,
             customer_id=customer_id,
             phone_number=phone_number,
@@ -222,9 +222,9 @@ class VoiceService:
         self,
         call_id: uuid.UUID,
         outcome: Optional[str] = None,
-    ) -> VoiceCall:
+    ) -> AIAgentVoiceCall:
         """End a voice call and set outcome."""
-        result = await self.db.execute(select(VoiceCall).where(VoiceCall.id == call_id))
+        result = await self.db.execute(select(AIAgentVoiceCall).where(AIAgentVoiceCall.id == call_id))
         call = result.scalar_one_or_none()
         if not call:
             raise ValueError("Call not found")
@@ -239,7 +239,7 @@ class VoiceService:
 
     async def get_call_transcript(self, call_id: uuid.UUID) -> Optional[str]:
         """Retrieve the transcript for a call."""
-        result = await self.db.execute(select(VoiceCall).where(VoiceCall.id == call_id))
+        result = await self.db.execute(select(AIAgentVoiceCall).where(AIAgentVoiceCall.id == call_id))
         call = result.scalar_one_or_none()
         return call.transcript if call else None
 

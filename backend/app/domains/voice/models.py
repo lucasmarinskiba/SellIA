@@ -9,14 +9,14 @@ from sqlalchemy.dialects.postgresql import UUID, JSONB
 from app.core.database import Base
 
 
-class VoiceCall(Base):
+class AIAgentVoiceCall(Base):
     """A voice call (inbound or outbound) handled by the AI agent."""
 
     # Namespaced (not plain 'voice_calls') -- app/models/voice_sales.py
     # ALSO declares a table literally named 'voice_calls' on this same
     # Base.metadata (a different concept: B2B sales-rep call tracking with
     # playbooks/scripts, already wired earlier this session). Both classes
-    # are even named `VoiceCall`, though that alone is harmless since
+    # are even named `AIAgentVoiceCall`, though that alone is harmless since
     # neither uses a string-based relationship() that would need to
     # resolve the class by name. This one is the customer-facing AI voice
     # agent's call log -- was completely unused until this fix, so
