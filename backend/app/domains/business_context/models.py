@@ -74,6 +74,7 @@ class BusinessContext(Base):
     state_province = Column(String(100), nullable=True)
     country = Column(String(100), nullable=True, default="Argentina")
     address = Column(Text, nullable=True)
+    contact_email = Column(String(255), nullable=True)  # where customers' replies go (reply_to of post-visit mail)
     has_physical_location = Column(Boolean, default=False)
     serves_home_office = Column(Boolean, default=False)
     does_delivery = Column(Boolean, default=False)
