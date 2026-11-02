@@ -24,6 +24,7 @@ async def send_email(
     body_text: Optional[str] = None,
     from_email: Optional[str] = None,
     from_name: Optional[str] = None,
+    reply_to: Optional[str] = None,
 ) -> bool:
     """Envía un email transaccional genérico.
 
@@ -53,6 +54,7 @@ async def send_email(
         body=body_html,
         from_email=from_email or "onboarding@resend.dev",
         from_name=from_name or SMTP_FROM_NAME,
+        reply_to=reply_to,
     )
     if result.get("status") == "sent":
         logger.info("Email enviado a %s vía %s: %s", to_email, result.get("provider"), subject)
