@@ -130,6 +130,9 @@ class Settings(BaseSettings):
     # Send the post-visit messages (app/domains/sequences/offline_sequence_jobs.py). Off by default: the copy
     # in api/v1/offline_sequences.py is placeholder text that nobody has approved for customers.
     OFFLINE_SEQUENCE_SEND_ENABLED: bool = False
+    # Public URL of this backend, used only to build the unsubscribe link of post-visit mail. Kept apart from
+    # TRACKING_BASE_URL on purpose: that one also feeds the MercadoPago notification URL in billing.
+    POST_VISIT_BASE_URL: str | None = None
     # Test environments only: post-visit mail from GLOBAL_SENDER_EMAIL for a business with no verified domain.
     # Production keeps it off: a shared sending domain carries every business's reputation.
     ALLOW_GLOBAL_SENDER_FOR_TESTING: bool = False
