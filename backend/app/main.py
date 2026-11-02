@@ -122,6 +122,8 @@ _try_include("app.api.v1.mobile_geofence.router", "", ["mobile-geofence"])
 _try_include("app.api.v1.seasonal_suggestions.router", "", ["seasonal-suggestions"])
 # Per-business profile (one BusinessContext row per business; read by members, edited by managers).
 _try_include("app.api.v1.business_profile.router", "", ["business-profile"])
+# Sending domain per business (Resend). Only a verified domain sends post-visit mail.
+_try_include("app.api.v1.sending_domains.router", "", ["sending-domains"])
 # Device tokens for the mobile SDKs (issue / list / revoke by owners and ADMIN members).
 _try_include("app.api.v1.mobile_device_tokens.router", "", ["mobile-device-tokens"])
 _try_include("app.api.v1.unified_dashboard.router", "", ["unified-dashboard"])

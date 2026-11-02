@@ -173,3 +173,15 @@ async def test_unknown_values_are_rejected(world) -> None:
     assert (await world.client.patch(_url(world.cafe), json={"business_type": "not_a_type"})).status_code == 422
     assert (await world.client.patch(_url(world.cafe), json={"price_range": "cheap"})).status_code == 422
     assert (await world.client.patch(_url(world.cafe), json={"industry": "x" * 101})).status_code == 422
+
+
+async def test_the_contact_email_is_stored_and_read_back(world) -> None:
+    body = (await world.client.patch(_url(world.cafe), json={"contact_email": "Hola@Cafe-Norte.com"})).json()
+    # The domain part is lowercased by EmailStr (domains are case-insensitive); the local part is kept as typed.
+    assert body["contact_email"] == "Hola@cafe-norte.com"
+    assert (await world.client.get(_url(world.cafe))).json()["contact_email"] == "Hola@cafe-norte.com"
+    assert (await world.client.get(_url(world.shop))).json()["contact_email"] is None
+
+
+async def test_a_malformed_contact_email_is_refused(world) -> None:
+    assert (await world.client.patch(_url(world.cafe), json={"contact_email": "no-es-mail"})).status_code == 422

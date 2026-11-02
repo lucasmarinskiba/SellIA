@@ -31,6 +31,7 @@ from app.domains.sequences.offline_sequence_models import (
     OfflineMessageOptOut,
     OfflineSequenceJob,
 )
+from app.domains.sequences.sending_identity import SenderIdentity, resolve_identity
 
 MAX_ATTEMPTS = 3
 RETRY_AFTER = timedelta(minutes=15)
@@ -38,8 +39,8 @@ SUPPORTED_LANGUAGES = ("es", "en")
 DEFAULT_LANGUAGE = "es"
 OPT_OUT_PATH = "/api/v1/offline-sequences/opt-out"
 
-# (to, subject, html, from_name) -> delivered
-Sender = Callable[[str, str, str, str], Awaitable[bool]]
+# (to, subject, html, identity) -> delivered
+Sender = Callable[[str, str, str, SenderIdentity], Awaitable[bool]]
 
 # Footer copy per language. {negocio} is the business name.
 _FOOTER: dict[str, tuple[str, str]] = {
@@ -201,6 +202,8 @@ async def send_due_jobs(
     sender: Sender,
     base_url: str | None,
     secret: str,
+    allow_global_sender: bool = False,
+    global_sender_email: str | None = None,
     limit: int = 50,
 ) -> dict[str, int]:
     """Send the due pending messages. Each job commits on its own, so one failure does not undo the others.
@@ -208,7 +211,7 @@ async def send_due_jobs(
     Nothing runs unless sending is enabled and a public base URL is set: without one there is no unsubscribe link,
     and a message without it is not sent. Jobs stay pending until the configuration is in place.
     """
-    counts = {"sent": 0, "failed": 0, "skipped": 0, "retry": 0}
+    counts = {"sent": 0, "failed": 0, "skipped": 0, "retry": 0, "blocked": 0}
     if not enabled or not base_url:
         return counts
 
@@ -236,6 +239,19 @@ async def send_due_jobs(
             await db.commit()
             continue
 
+        identity = await resolve_identity(
+            db,
+            business,
+            allow_global_sender=allow_global_sender,
+            global_sender_email=global_sender_email,
+        )
+        if isinstance(identity, str):
+            # Stays pending and no attempt is spent: the business has to finish its setup first.
+            job.last_error = identity
+            counts["blocked"] += 1
+            await db.commit()
+            continue
+
         job.attempts += 1
         error: str | None = None
         try:
@@ -246,7 +262,7 @@ async def send_due_jobs(
                 base_url=base_url,
                 secret=secret,
             )
-            delivered = await sender(job.recipient_email, job.subject, html, business.name)
+            delivered = await sender(job.recipient_email, job.subject, html, identity)
             if not delivered:
                 error = "el proveedor rechazó el envío"
         except Exception as e:  # noqa: BLE001 -- one bad send must not stop the batch

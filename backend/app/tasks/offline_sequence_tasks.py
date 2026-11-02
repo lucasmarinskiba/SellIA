@@ -14,6 +14,7 @@ def process_offline_sequence_jobs() -> dict[str, int]:
     from app.core.email_service import send_email
     from app.core.logger import get_logger
     from app.domains.sequences.offline_sequence_jobs import send_due_jobs
+    from app.domains.sequences.sending_identity import SenderIdentity
 
     settings = get_settings()
     if settings.OFFLINE_SEQUENCE_SEND_ENABLED and not settings.TRACKING_BASE_URL:
@@ -21,8 +22,15 @@ def process_offline_sequence_jobs() -> dict[str, int]:
             "Post-visit sending is enabled but TRACKING_BASE_URL is not set: messages stay pending until it is."
         )
 
-    async def _send(to: str, subject: str, html: str, from_name: str) -> bool:
-        return await send_email(to, subject, html, from_name=from_name)
+    async def _send(to: str, subject: str, html: str, identity: SenderIdentity) -> bool:
+        return await send_email(
+            to,
+            subject,
+            html,
+            from_email=identity.from_email,
+            from_name=identity.from_name,
+            reply_to=identity.reply_to,
+        )
 
     async def _run() -> dict[str, int]:
         async with AsyncSessionLocal() as db:
@@ -33,6 +41,8 @@ def process_offline_sequence_jobs() -> dict[str, int]:
                 sender=_send,
                 base_url=settings.TRACKING_BASE_URL,
                 secret=settings.SECRET_KEY,
+                allow_global_sender=settings.ALLOW_GLOBAL_SENDER_FOR_TESTING,
+                global_sender_email=settings.GLOBAL_SENDER_EMAIL,
             )
 
     return run_async(_run())
