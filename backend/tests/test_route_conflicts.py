@@ -24,9 +24,6 @@ KNOWN_CONFLICTS: dict[tuple[str, str], str] = {
     ("GET", "/api/v1/analytics/dashboard/{}"):
         "advanced_automation.get_seller_dashboard answers; enterprise_analytics."
         "get_performance_dashboard is shadowed",
-    ("GET", "/api/v1/platforms/status"):
-        "platforms_integration.platforms_status answers; platforms.get_platforms_status "
-        "is shadowed",
     ("POST", "/api/v1/sequences/cold-email"):
         "sellbot.generate_cold_email_sequence answers; email_sequences."
         "create_cold_email_sequence is shadowed",
