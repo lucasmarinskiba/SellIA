@@ -20,11 +20,7 @@ _PARAM = re.compile(r"\{[^}:]*(:[^}]*)?\}")
 # Conflicts that already existed when this test was added. Do not add to this list:
 # fix the new conflict instead (delete the dead handler, or give it its own path).
 # Value = what to know before cleaning it up; the first handler is the one answering.
-KNOWN_CONFLICTS: dict[tuple[str, str], str] = {
-    ("POST", "/api/v1/sequences/cold-email"):
-        "sellbot.generate_cold_email_sequence answers; email_sequences."
-        "create_cold_email_sequence is shadowed",
-}
+KNOWN_CONFLICTS: dict[tuple[str, str], str] = {}  # no known conflicts left
 
 
 def _route_table() -> dict[tuple[str, str], list[str]]:
