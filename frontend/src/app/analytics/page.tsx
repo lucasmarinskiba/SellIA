@@ -2,7 +2,7 @@
 
 /**
  * Analytics Dashboard - Phase 5
- * Real-time monitoring: SEO, marketing, A/B tests, anomalies, personalization
+ * Shows only sections whose data source is connected (the API answers 501 for the rest).
  */
 
 import React, { useEffect, useState } from 'react'
@@ -16,19 +16,25 @@ export default function AnalyticsDashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // A section without a connected data source answers 501: it stays hidden instead of showing invented numbers.
+    const getJson = async (url: string) => {
+      const res = await fetch(url)
+      return res.ok ? res.json() : null
+    }
+
     async function fetchData() {
       try {
-        const [funnelRes, vitalsRes, testsRes, anomaliesRes] = await Promise.all([
-          fetch('/api/v1/analytics/funnel/conversion'),
-          fetch('/api/v1/analytics/performance/core-web-vitals'),
-          fetch('/api/v1/analytics/ab-test/active'),
-          fetch('/api/v1/analytics/anomalies/seo'),
+        const [funnelData, vitalsData, testsData, anomaliesData] = await Promise.all([
+          getJson('/api/v1/analytics/funnel/conversion'),
+          getJson('/api/v1/analytics/performance/core-web-vitals'),
+          getJson('/api/v1/analytics/ab-test/active'),
+          getJson('/api/v1/analytics/anomalies/seo'),
         ])
 
-        setFunnel((await funnelRes.json()).stages ? (await funnelRes.json()) : null)
-        setVitals((await vitalsRes.json()).metrics)
-        setTests((await testsRes.json()).tests)
-        setAnomalies((await anomaliesRes.json()).anomalies)
+        setFunnel(funnelData?.stages ? funnelData : null)
+        setVitals(vitalsData?.metrics ?? null)
+        setTests(testsData?.tests ?? null)
+        setAnomalies(anomaliesData?.anomalies ?? null)
       } catch (error) {
         console.error('Failed to fetch analytics:', error)
       } finally {
@@ -56,7 +62,7 @@ export default function AnalyticsDashboard() {
           Analytics Dashboard
         </h1>
         <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.6)' }}>
-          Real-time monitoring: SEO, marketing, conversions, anomalies
+          Las secciones aparecen cuando tienen una fuente de datos conectada
         </p>
       </div>
 
