@@ -216,16 +216,22 @@ export function MetricCard({
 
 export function SEODashboard() {
   const [metrics, setMetrics] = useState<any>(null)
+  const [unavailable, setUnavailable] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function fetchMetrics() {
       try {
         const response = await fetch('/api/v1/analytics/dashboard/seo-metrics')
-        const data = await response.json()
-        setMetrics(data)
+        if (!response.ok) {
+          const body = await response.json().catch(() => null)
+          setUnavailable(body?.detail ?? 'Sin datos SEO todavía')
+          return
+        }
+        setMetrics(await response.json())
       } catch (error) {
         console.error('Failed to fetch SEO metrics:', error)
+        setUnavailable('No pudimos consultar las métricas SEO')
       } finally {
         setLoading(false)
       }
@@ -234,7 +240,8 @@ export function SEODashboard() {
     fetchMetrics()
   }, [])
 
-  if (loading || !metrics) return <div style={{ padding: '20px' }}>Loading SEO metrics...</div>
+  if (loading) return <div style={{ padding: '20px' }}>Loading SEO metrics...</div>
+  if (unavailable || !metrics) return <div style={{ padding: '20px' }}>{unavailable ?? 'Sin datos SEO todavía'}</div>
 
   const m = metrics.metrics
 
