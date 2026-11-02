@@ -1,0 +1,81 @@
+# Dependabot: actualizaciones de SEGURIDAD agrupadas (un PR por carpeta, no uno por paquete).
+#
+# Por qué existe: sin este archivo, Dependabot abría un PR por cada paquete vulnerable (11 en pocos días, 2026-10-29
+# a 2026-11-02). Acá se agrupan en un PR por carpeta, y las actualizaciones de VERSIÓN (que sin esto inundarían de PRs
+# por cualquier paquete desactualizado) quedan apagadas con `open-pull-requests-limit: 0`: las de seguridad no
+# dependen de ese límite y siguen funcionando.
+#
+# Qué NO hace: no mergea nada. Cada PR agrupado pasa por los mismos checks que cualquier otro y se revisa antes de
+# mergear. Los saltos de versión mayor en herramientas de test (pytest) se tratan aparte, junto con pytest-asyncio.
+#
+# Si se agrega una carpeta con dependencias, agregarla acá: tests/test_dependabot_config.py verifica que cada carpeta
+# listada exista y que cada manifiesto del repo esté cubierto.
+
+version: 2
+
+updates:
+  # ── Python ────────────────────────────────────────────────────────────────
+  - package-ecosystem: "pip"
+    directory: "/backend"          # el backend que corre en Railway (backend/Dockerfile)
+    schedule: { interval: "weekly", day: "monday", time: "09:00", timezone: "America/Argentina/Buenos_Aires" }
+    open-pull-requests-limit: 0
+    groups:
+      python-security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  - package-ecosystem: "pip"
+    directory: "/"                 # requirements.txt de la raíz
+    schedule: { interval: "weekly", day: "monday", time: "09:00", timezone: "America/Argentina/Buenos_Aires" }
+    open-pull-requests-limit: 0
+    groups:
+      python-security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  - package-ecosystem: "pip"
+    directory: "/sidecar"
+    schedule: { interval: "weekly", day: "monday", time: "09:00", timezone: "America/Argentina/Buenos_Aires" }
+    open-pull-requests-limit: 0
+    groups:
+      python-security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  - package-ecosystem: "pip"
+    directory: "/backend-mvp"
+    schedule: { interval: "weekly", day: "monday", time: "09:00", timezone: "America/Argentina/Buenos_Aires" }
+    open-pull-requests-limit: 0
+    groups:
+      python-security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  # ── JavaScript ────────────────────────────────────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/frontend"         # Next.js en Vercel
+    schedule: { interval: "weekly", day: "monday", time: "09:00", timezone: "America/Argentina/Buenos_Aires" }
+    open-pull-requests-limit: 0
+    groups:
+      npm-security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  - package-ecosystem: "npm"
+    directory: "/mobile"
+    schedule: { interval: "weekly", day: "monday", time: "09:00", timezone: "America/Argentina/Buenos_Aires" }
+    open-pull-requests-limit: 0
+    groups:
+      npm-security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  # ── CI ────────────────────────────────────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule: { interval: "weekly", day: "monday", time: "09:00", timezone: "America/Argentina/Buenos_Aires" }
+    open-pull-requests-limit: 0
+    groups:
+      actions-security:
+        applies-to: security-updates
+        patterns: ["*"]
