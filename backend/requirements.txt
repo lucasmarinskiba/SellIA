@@ -51,7 +51,7 @@ PyJWT==2.15.1
 # Security (2FA, encryption, rate limiting)
 pyotp==2.9.0                          # TOTP for 2FA
 qrcode==7.4.2                         # QR code generation
-cryptography==41.0.7                  # Encryption (Fernet)
+cryptography==50.0.2                  # Encryption (Fernet)
 slowapi==0.1.9                        # Rate limiting (FastAPI integration)
 redis==5.0.1
 celery==5.3.6                         # app/domains/enterprise/voice_sales.py (and celery_app.py at repo root)
