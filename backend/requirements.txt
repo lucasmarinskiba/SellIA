@@ -15,7 +15,7 @@ pydantic==2.7.4                       # Floor required by langchain-core>=0.3.78
                                        # bumping past ~2.9 breaks Security/OAuth2 dependency resolution
                                        # (auth.router fails: 'FieldInfo' object has no attribute 'in_').
 pydantic-settings==2.1.0
-python-multipart==0.0.6
+python-multipart==0.0.33
 email-validator==2.1.1
 
 # Database
@@ -38,7 +38,7 @@ circuitbreaker==1.4.0
 # Utils
 python-dotenv==1.2.2
 requests==2.31.0
-aiohttp==3.9.1
+aiohttp==3.14.5
 httpx==0.25.2
 
 # Logging
@@ -131,7 +131,7 @@ joblib==1.4.2
 # defensively (try/except) and falls back to pure-numpy models when absent,
 # so a wheel that fails to build on a platform degrades quality, not uptime.
 statsmodels==0.14.2
-lightgbm==4.5.0
+lightgbm==4.7.0
 holidays==0.57
 
 boto3==1.34.162                       # app/tasks/provisioning_tasks.py -- real AWS provisioning (ACM certs, S3
