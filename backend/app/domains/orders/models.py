@@ -145,3 +145,7 @@ class PaymentIntegration(Base):
 
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+
+# Queue sales/refunds for feedIA whenever an order's status moves. Imported last: capture.py needs Order defined.
+import app.domains.feedia_link.capture  # noqa: E402,F401

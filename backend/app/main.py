@@ -217,6 +217,7 @@ _try_include("app.domains.finance.router.router", "/api/v1/businesses", ["financ
 _try_include("app.domains.ledger.router.router", "/api/v1/businesses", ["ledger"])
 _try_include("app.domains.ad_budget.router.router", "/api/v1/businesses", ["ad-budget"])
 _try_include("app.domains.harvey.router.router", "/api/v1/businesses", ["harvey"])
+_try_include("app.domains.feedia_link.router.router", "/api/v1/feedia", ["feedia"])
 _try_include("app.domains.forecasting.router.router", "/api/v1/businesses", ["forecasting"])
 _try_include("app.domains.cashflow.router.router", "/api/v1/businesses", ["cashflow"])
 _try_include("app.domains.orchestrator.router.router", "/api/v1/businesses", ["orchestrator"])
