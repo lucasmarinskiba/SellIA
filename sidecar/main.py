@@ -18,7 +18,8 @@ from datetime import datetime, timezone
 
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
-from jose import jwt, JWTError
+import jwt
+from jwt import PyJWTError
 import redis
 
 # ---------------------------------------------------------------------------
@@ -104,8 +105,8 @@ def decode_token(token: str) -> dict | None:
     if not SECRET_KEY:
         return None
     try:
-        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    except JWTError:
+        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM], options={"require": ["exp"]})
+    except PyJWTError:
         return None
 
 
