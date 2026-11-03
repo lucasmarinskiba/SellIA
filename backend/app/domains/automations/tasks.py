@@ -70,7 +70,11 @@ async def send_toggle_notification(
             if rule.notify_via_webhook and rule.webhook_url:
                 try:
                     import httpx
-                    async with httpx.AsyncClient(timeout=5) as client:
+                    from app.domains.harvey.discovery import assert_public_url, normalize_url
+
+                    # Checked again here, not just when the rule was saved: DNS can change in between.
+                    await assert_public_url(normalize_url(rule.webhook_url))
+                    async with httpx.AsyncClient(timeout=5, follow_redirects=False) as client:
                         headers = {}
                         if rule.webhook_secret:
                             import hmac
