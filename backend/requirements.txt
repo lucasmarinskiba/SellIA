@@ -58,6 +58,10 @@ celery==5.3.6                         # app/domains/enterprise/voice_sales.py (a
                                        # import this directly -- was never in requirements.txt, so voice_sales.py's
                                        # router has been skipped in every production deploy ("No module named 'celery'"),
                                        # previously masked by an unrelated table-name collision fixed earlier this session
+# kombu is celery's broker layer and celery==5.3.6 lets it float (<6). 5.7.0 (2026-11) requires redis-py >= 6.1
+# and refuses to start with the redis==5.0.1 pinned above (VersionMismatch: beat and worker crash on boot), so
+# it is pinned to the last release that supports redis 5. Raise redis and kombu together.
+kombu==5.6.2
 bcrypt==4.1.2
 fastapi-limiter==0.1.6                          # Redis client (for rate limiting, sessions)
 google-auth==2.29.0                   # app/domains/computer_use/integrations/google_calendar_connector.py --
