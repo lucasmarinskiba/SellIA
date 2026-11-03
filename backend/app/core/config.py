@@ -125,6 +125,12 @@ class Settings(BaseSettings):
     # ReAct Orchestrator
     USE_REACT_ORCHESTRATOR: bool = True
 
+    # feedIA (content engine) receives this app's sales so it can plan content from real results
+    # (app/domains/feedia_link). Both must be set for anything to be delivered; with either missing the
+    # events stay queued. SELLIA_WEBHOOK_SECRET must equal the same variable on the feedIA service.
+    FEEDIA_BASE_URL: str | None = None  # e.g. https://web-production-fa7b5.up.railway.app
+    SELLIA_WEBHOOK_SECRET: str | None = None
+
     # Computer Use Agents
     COMPUTER_USE_ENABLED: bool = True
     # Send the post-visit messages (app/domains/sequences/offline_sequence_jobs.py). Off by default: the copy

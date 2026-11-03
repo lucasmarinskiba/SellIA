@@ -137,6 +137,7 @@ _modules = [
     "app.domains.training.tasks",
     "app.domains.seo_config.tasks",
     "app.tasks.mercadolibre_tasks",
+    "app.tasks.feedia_tasks",
 ]
 _includes = []
 for mod in _modules:
@@ -180,6 +181,10 @@ celery_app.conf.beat_schedule = {
     "weekly-authority-snapshot": {
         "task": "app.tasks.authority_tasks.weekly_authority_snapshot",
         "schedule": crontab(minute=0, hour=2, day_of_week="sun"),  # semanal: dom 02:00
+    },
+    "deliver-feedia-events": {
+        "task": "app.tasks.feedia_tasks.deliver_feedia_events",
+        "schedule": 60.0,  # envía a feedIA las ventas/reembolsos en cola; no hace nada sin FEEDIA_BASE_URL y el secreto
     },
     "check-pending-workflows": {
         "task": "app.tasks.workflow_tasks.check_pending_workflows",
