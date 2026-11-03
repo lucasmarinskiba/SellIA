@@ -9,6 +9,11 @@ from pathlib import Path
 import aiohttp
 from PIL import Image
 
+# These bytes come from third-party generation providers (download_url), so only the formats they actually
+# return are decoded. Pillow ships decoders for dozens of rarer ones (FPX, TIFF, ...) and most of its
+# image-parsing advisories are in those; Image.open raises UnidentifiedImageError for anything else.
+ACCEPTED_INPUT_FORMATS = ("JPEG", "PNG", "WEBP", "GIF")
+
 
 def hash_prompt(prompt: str) -> str:
     """Genera hash corto de un prompt."""
@@ -33,7 +38,7 @@ def compress_image(
     Returns:
         bytes de la imagen comprimida
     """
-    img = Image.open(io.BytesIO(image_bytes))
+    img = Image.open(io.BytesIO(image_bytes), formats=ACCEPTED_INPUT_FORMATS)
 
     # Redimensionar si excede dimensión máxima
     width, height = img.size
@@ -57,7 +62,7 @@ def compress_image(
 
 def get_image_dimensions(image_bytes: bytes) -> tuple[int, int]:
     """Obtiene dimensiones de una imagen sin cargarla completa."""
-    img = Image.open(io.BytesIO(image_bytes))
+    img = Image.open(io.BytesIO(image_bytes), formats=ACCEPTED_INPUT_FORMATS)
     return img.size
 
 
