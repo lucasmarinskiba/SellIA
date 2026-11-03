@@ -516,7 +516,7 @@ settings = Settings()
     def _backend_security_py(self) -> str:
         return '''from datetime import datetime, timedelta
 from passlib.context import CryptContext
-from jose import jwt
+import jwt
 from app.core.config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -729,7 +729,7 @@ asyncpg==0.29.0
 alembic==1.13.1
 pydantic==2.7.0
 pydantic-settings==2.2.0
-python-jose[cryptography]==3.3.0
+PyJWT==2.15.1
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.9
 '''

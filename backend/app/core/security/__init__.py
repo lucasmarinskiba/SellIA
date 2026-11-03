@@ -11,7 +11,8 @@ import re
 import bcrypt
 from datetime import datetime, timedelta, timezone
 from typing import Any
-from jose import jwt, JWTError
+import jwt
+from jwt import PyJWTError
 from app.core.config import get_settings as _get_settings
 
 _settings = _get_settings()
@@ -47,8 +48,15 @@ def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = 
 
 def decode_access_token(token: str) -> dict[str, Any] | None:
     try:
-        return jwt.decode(token, _settings.SECRET_KEY, algorithms=[_settings.ALGORITHM])
-    except JWTError:
+        # algorithms is an explicit allow-list (a token can never choose its own, e.g. "none"), and every token
+        # this app issues carries an expiry (create_access_token), so one without "exp" is not ours.
+        return jwt.decode(
+            token,
+            _settings.SECRET_KEY,
+            algorithms=[_settings.ALGORITHM],
+            options={"require": ["exp"]},
+        )
+    except PyJWTError:
         return None
 
 
