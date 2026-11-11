@@ -9,7 +9,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc, func, Integer, cast, and_
 
 from app.core.database import get_db
+from app.core.business_access import require_business_access
 from app.core.deps import get_current_active_user
+from app.domains.catalogs.models import CatalogItem
+from app.domains.channels.models import ChannelConnection
 from app.domains.users.models import User
 from app.domains.automations.models import (
     Workflow, EmailTemplate, EmailSequence, SequenceStep, ChatbotRule,
@@ -39,6 +42,63 @@ from app.domains.automations.seed import seed_automations
 router = APIRouter()
 
 
+# ========== Access control ==========
+# Every id below (a business_id, or the id of a row that belongs to one) comes from the client, and an id
+# only identifies: without a check any logged-in user could read or change any other business's
+# automations by editing it (an IDOR). See app/core/business_access.py (404 unknown, 403 not yours).
+#
+#   read, and the content pipeline (generate, approve, calendar)  -> the owner or any active member
+#   change how automations behave (workflows, templates, sequences, chatbot rules, toggles, schedules,
+#   notification rules, seeding, running a workflow)              -> the owner or an ADMIN member (manage=True)
+
+# Task kwargs the client must never set through generation_config.
+_RESERVED_TASK_KWARGS = {"business_id", "catalog_item_id"}
+
+
+async def _load(db: AsyncSession, model, row_id: UUID, user: User, *, manage: bool = False, not_found: str):
+    """Fetch a row by id and require access to the business it belongs to."""
+    row = await db.get(model, row_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail=not_found)
+    await require_business_access(db, row.business_id, user, manage=manage)
+    return row
+
+
+async def _belongs(db: AsyncSession, model, row_id: Optional[UUID], business_id: UUID, label: str) -> None:
+    """An id the client references (product, channel...) must belong to the same business."""
+    if row_id is None:
+        return
+    found = await db.execute(select(model.id).where(model.id == row_id, model.business_id == business_id))
+    if found.scalar_one_or_none() is None:
+        raise HTTPException(status_code=400, detail=f"{label} no existe en este negocio")
+
+
+_CALENDAR_REFS = {
+    "generated_content_id": (GeneratedContent, "El contenido"),
+    "catalog_item_id": (CatalogItem, "El producto"),
+    "channel_connection_id": (ChannelConnection, "El canal"),
+    "workflow_id": (Workflow, "El workflow"),
+}
+
+
+async def _check_calendar_refs(db: AsyncSession, business_id: UUID, values: dict) -> None:
+    for field, (model, label) in _CALENDAR_REFS.items():
+        await _belongs(db, model, values.get(field), business_id, label)
+
+
+async def _check_webhook_url(url: Optional[str]) -> None:
+    """The server POSTs to this URL later; refuse anything that is not a public http(s) address (SSRF)."""
+    if not url:
+        return
+    # Reuse the guard the Harvey crawler already tests (scheme, port 80/443, no credentials, no internal IPs).
+    from app.domains.harvey.discovery import DiscoveryError, assert_public_url, normalize_url
+
+    try:
+        await assert_public_url(normalize_url(url))
+    except DiscoveryError as e:
+        raise HTTPException(status_code=400, detail=f"webhook_url no válida: {e}")
+
+
 # ========== Workflows ==========
 
 @router.get("/workflows", response_model=list[WorkflowResponse])
@@ -47,6 +107,7 @@ async def list_workflows(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    await require_business_access(db, business_id, current_user)
     result = await db.execute(
         select(Workflow).where(
             Workflow.business_id == business_id,
@@ -62,6 +123,7 @@ async def create_workflow(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    await require_business_access(db, data.business_id, current_user, manage=True)
     wf = Workflow(**data.model_dump())
     db.add(wf)
     await db.commit()
@@ -76,10 +138,7 @@ async def update_workflow(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    result = await db.execute(select(Workflow).where(Workflow.id == workflow_id))
-    wf = result.scalar_one_or_none()
-    if not wf:
-        raise HTTPException(status_code=404, detail="Workflow no encontrado")
+    wf = await _load(db, Workflow, workflow_id, current_user, manage=True, not_found="Workflow no encontrado")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(wf, field, value)
     await db.commit()
@@ -93,10 +152,7 @@ async def delete_workflow(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    result = await db.execute(select(Workflow).where(Workflow.id == workflow_id))
-    wf = result.scalar_one_or_none()
-    if not wf:
-        raise HTTPException(status_code=404, detail="Workflow no encontrado")
+    wf = await _load(db, Workflow, workflow_id, current_user, manage=True, not_found="Workflow no encontrado")
     wf.is_active = False
     await db.commit()
     return {"message": "Workflow eliminado"}
@@ -111,6 +167,7 @@ async def list_templates(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    await require_business_access(db, business_id, current_user)
     query = select(EmailTemplate).where(
         EmailTemplate.business_id == business_id,
         EmailTemplate.is_active == True,
@@ -127,6 +184,7 @@ async def create_template(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    await require_business_access(db, data.business_id, current_user, manage=True)
     tmpl = EmailTemplate(**data.model_dump())
     db.add(tmpl)
     await db.commit()
@@ -141,10 +199,7 @@ async def update_template(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    result = await db.execute(select(EmailTemplate).where(EmailTemplate.id == template_id))
-    tmpl = result.scalar_one_or_none()
-    if not tmpl:
-        raise HTTPException(status_code=404, detail="Template no encontrado")
+    tmpl = await _load(db, EmailTemplate, template_id, current_user, manage=True, not_found="Template no encontrado")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(tmpl, field, value)
     await db.commit()
@@ -158,10 +213,7 @@ async def delete_template(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    result = await db.execute(select(EmailTemplate).where(EmailTemplate.id == template_id))
-    tmpl = result.scalar_one_or_none()
-    if not tmpl:
-        raise HTTPException(status_code=404, detail="Template no encontrado")
+    tmpl = await _load(db, EmailTemplate, template_id, current_user, manage=True, not_found="Template no encontrado")
     tmpl.is_active = False
     await db.commit()
     return {"message": "Template eliminado"}
@@ -175,6 +227,7 @@ async def list_sequences(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    await require_business_access(db, business_id, current_user)
     result = await db.execute(
         select(EmailSequence).where(
             EmailSequence.business_id == business_id,
@@ -190,6 +243,7 @@ async def create_sequence(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    await require_business_access(db, data.business_id, current_user, manage=True)
     seq_data = data.model_dump(exclude={"steps"})
     seq = EmailSequence(**seq_data)
     db.add(seq)
@@ -210,12 +264,7 @@ async def get_sequence(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    result = await db.execute(
-        select(EmailSequence).where(EmailSequence.id == sequence_id)
-    )
-    seq = result.scalar_one_or_none()
-    if not seq:
-        raise HTTPException(status_code=404, detail="Secuencia no encontrada")
+    seq = await _load(db, EmailSequence, sequence_id, current_user, not_found="Secuencia no encontrada")
     return seq
 
 
@@ -226,10 +275,7 @@ async def update_sequence(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    result = await db.execute(select(EmailSequence).where(EmailSequence.id == sequence_id))
-    seq = result.scalar_one_or_none()
-    if not seq:
-        raise HTTPException(status_code=404, detail="Secuencia no encontrada")
+    seq = await _load(db, EmailSequence, sequence_id, current_user, manage=True, not_found="Secuencia no encontrada")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(seq, field, value)
     await db.commit()
@@ -243,12 +289,7 @@ async def get_sequence_analytics(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    result = await db.execute(
-        select(EmailSequence).where(EmailSequence.id == sequence_id)
-    )
-    seq = result.scalar_one_or_none()
-    if not seq:
-        raise HTTPException(status_code=404, detail="Secuencia no encontrada")
+    seq = await _load(db, EmailSequence, sequence_id, current_user, not_found="Secuencia no encontrada")
 
     # Total subscribers
     sub_result = await db.execute(
@@ -311,10 +352,7 @@ async def delete_sequence(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    result = await db.execute(select(EmailSequence).where(EmailSequence.id == sequence_id))
-    seq = result.scalar_one_or_none()
-    if not seq:
-        raise HTTPException(status_code=404, detail="Secuencia no encontrada")
+    seq = await _load(db, EmailSequence, sequence_id, current_user, manage=True, not_found="Secuencia no encontrada")
     seq.is_active = False
     await db.commit()
     return {"message": "Secuencia eliminada"}
@@ -329,6 +367,7 @@ async def list_rules(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    await require_business_access(db, business_id, current_user)
     query = select(ChatbotRule).where(
         ChatbotRule.business_id == business_id,
         ChatbotRule.is_active == True,
@@ -345,6 +384,7 @@ async def create_rule(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    await require_business_access(db, data.business_id, current_user, manage=True)
     rule = ChatbotRule(**data.model_dump())
     db.add(rule)
     await db.commit()
@@ -359,10 +399,7 @@ async def update_rule(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    result = await db.execute(select(ChatbotRule).where(ChatbotRule.id == rule_id))
-    rule = result.scalar_one_or_none()
-    if not rule:
-        raise HTTPException(status_code=404, detail="Regla no encontrada")
+    rule = await _load(db, ChatbotRule, rule_id, current_user, manage=True, not_found="Regla no encontrada")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(rule, field, value)
     await db.commit()
@@ -376,10 +413,7 @@ async def delete_rule(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    result = await db.execute(select(ChatbotRule).where(ChatbotRule.id == rule_id))
-    rule = result.scalar_one_or_none()
-    if not rule:
-        raise HTTPException(status_code=404, detail="Regla no encontrada")
+    rule = await _load(db, ChatbotRule, rule_id, current_user, manage=True, not_found="Regla no encontrada")
     rule.is_active = False
     await db.commit()
     return {"message": "Regla eliminada"}
@@ -395,6 +429,7 @@ async def execute_workflow(
     current_user: User = Depends(get_current_active_user),
 ):
     """Manually trigger a workflow execution."""
+    await require_business_access(db, business_id, current_user, manage=True)
     from app.domains.automations.engine import WorkflowEngine
 
     result = await db.execute(
@@ -429,6 +464,7 @@ async def seed_business_automations(
     current_user: User = Depends(get_current_active_user),
 ):
     """Seed pre-built workflows, templates, sequences and chatbot rules for a business."""
+    await require_business_access(db, business_id, current_user, manage=True)
     try:
         await seed_automations(db, business_id)
         return {"message": "Automatizaciones predefinidas creadas correctamente"}
@@ -449,9 +485,7 @@ async def create_workflow_variant(
     current_user: User = Depends(get_current_active_user),
 ):
     """Create a new variant for A/B testing a workflow."""
-    workflow = await db.get(Workflow, workflow_id)
-    if not workflow:
-        raise HTTPException(status_code=404, detail="Workflow no encontrado")
+    workflow = await _load(db, Workflow, workflow_id, current_user, manage=True, not_found="Workflow no encontrado")
 
     variant = WorkflowVariant(
         workflow_id=workflow_id,
@@ -475,6 +509,7 @@ async def list_workflow_variants(
     current_user: User = Depends(get_current_active_user),
 ):
     """List all variants for a workflow."""
+    await _load(db, Workflow, workflow_id, current_user, not_found="Workflow no encontrado")
     result = await db.execute(
         select(WorkflowVariant)
         .where(WorkflowVariant.workflow_id == workflow_id)
@@ -495,6 +530,7 @@ async def update_workflow_variant(
     variant = await db.get(WorkflowVariant, variant_id)
     if not variant or variant.workflow_id != workflow_id:
         raise HTTPException(status_code=404, detail="Variante no encontrada")
+    await require_business_access(db, variant.business_id, current_user, manage=True)
 
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -516,6 +552,7 @@ async def delete_workflow_variant(
     variant = await db.get(WorkflowVariant, variant_id)
     if not variant or variant.workflow_id != workflow_id:
         raise HTTPException(status_code=404, detail="Variante no encontrada")
+    await require_business_access(db, variant.business_id, current_user, manage=True)
 
     if variant.is_control:
         others = await db.execute(
@@ -539,9 +576,7 @@ async def get_ab_test_results(
     current_user: User = Depends(get_current_active_user),
 ):
     """Compare variant performance: executions, conversions, and rates."""
-    workflow = await db.get(Workflow, workflow_id)
-    if not workflow:
-        raise HTTPException(status_code=404, detail="Workflow no encontrado")
+    workflow = await _load(db, Workflow, workflow_id, current_user, not_found="Workflow no encontrado")
 
     result = await db.execute(
         select(WorkflowVariant).where(WorkflowVariant.workflow_id == workflow_id)
@@ -603,6 +638,7 @@ async def generate_content(
     current_user: User = Depends(get_current_active_user),
 ):
     """Genera contenido con IA (imagen, video, copy, carousel, thumbnail)."""
+    await require_business_access(db, business_id, current_user)
     from app.tasks.content_tasks import (
         generate_product_images_task,
         generate_video_clips_task,
@@ -632,6 +668,7 @@ async def generate_content(
     }
 
     if data.catalog_item_id:
+        await _belongs(db, CatalogItem, data.catalog_item_id, business_id, "El producto")
         kwargs["catalog_item_id"] = str(data.catalog_item_id)
 
     if data.content_type in ["image", "video", "copy"]:
@@ -648,6 +685,8 @@ async def generate_content(
     if data.generation_config:
         # Merge specific configs
         for key, value in data.generation_config.items():
+            if key in _RESERVED_TASK_KWARGS:  # never let the client re-point the task at another business
+                continue
             kwargs[key] = value
 
     task = task_func.delay(**kwargs)
@@ -669,6 +708,7 @@ async def list_generated_content(
     current_user: User = Depends(get_current_active_user),
 ):
     """Lista contenido generado por IA para un negocio."""
+    await require_business_access(db, business_id, current_user)
     query = select(GeneratedContent).where(
         GeneratedContent.business_id == business_id
     ).order_by(desc(GeneratedContent.created_at))
@@ -684,19 +724,16 @@ async def list_generated_content(
     return result.scalars().all()
 
 
-@router.get("/content/{content_id}", response_model=GeneratedContentResponse)
+# `:uuid` so the static GET /content/tools, /content/pricing and /content/usage below are reachable;
+# without it this route matched them first and every call answered 422 (not a valid UUID).
+@router.get("/content/{content_id:uuid}", response_model=GeneratedContentResponse)
 async def get_generated_content(
     content_id: UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """Obtiene un contenido generado específico."""
-    result = await db.execute(
-        select(GeneratedContent).where(GeneratedContent.id == content_id)
-    )
-    content = result.scalar_one_or_none()
-    if not content:
-        raise HTTPException(status_code=404, detail="Contenido no encontrado")
+    content = await _load(db, GeneratedContent, content_id, current_user, not_found="Contenido no encontrado")
     return content
 
 
@@ -707,12 +744,7 @@ async def approve_content(
     current_user: User = Depends(get_current_active_user),
 ):
     """Aprueba contenido generado para publicación."""
-    result = await db.execute(
-        select(GeneratedContent).where(GeneratedContent.id == content_id)
-    )
-    content = result.scalar_one_or_none()
-    if not content:
-        raise HTTPException(status_code=404, detail="Contenido no encontrado")
+    content = await _load(db, GeneratedContent, content_id, current_user, not_found="Contenido no encontrado")
 
     content.approval_status = "approved"
     content.reviewed_by = current_user.id
@@ -731,12 +763,7 @@ async def reject_content(
     current_user: User = Depends(get_current_active_user),
 ):
     """Rechaza contenido generado con feedback."""
-    result = await db.execute(
-        select(GeneratedContent).where(GeneratedContent.id == content_id)
-    )
-    content = result.scalar_one_or_none()
-    if not content:
-        raise HTTPException(status_code=404, detail="Contenido no encontrado")
+    content = await _load(db, GeneratedContent, content_id, current_user, not_found="Contenido no encontrado")
 
     content.approval_status = "rejected"
     content.reviewed_by = current_user.id
@@ -760,6 +787,7 @@ async def list_calendar(
     current_user: User = Depends(get_current_active_user),
 ):
     """Lista publicaciones programadas en el calendario de contenido."""
+    await require_business_access(db, business_id, current_user)
     query = select(ContentCalendar).where(
         ContentCalendar.business_id == business_id
     ).order_by(desc(ContentCalendar.scheduled_at))
@@ -781,6 +809,8 @@ async def create_calendar_entry(
     current_user: User = Depends(get_current_active_user),
 ):
     """Crea una entrada en el calendario de contenido."""
+    await require_business_access(db, business_id, current_user)
+    await _check_calendar_refs(db, business_id, data.model_dump())
     entry = ContentCalendar(business_id=business_id, **data.model_dump())
     db.add(entry)
     await db.commit()
@@ -796,14 +826,11 @@ async def update_calendar_entry(
     current_user: User = Depends(get_current_active_user),
 ):
     """Actualiza una entrada del calendario."""
-    result = await db.execute(
-        select(ContentCalendar).where(ContentCalendar.id == entry_id)
-    )
-    entry = result.scalar_one_or_none()
-    if not entry:
-        raise HTTPException(status_code=404, detail="Entrada no encontrada")
+    entry = await _load(db, ContentCalendar, entry_id, current_user, not_found="Entrada no encontrada")
 
-    for field, value in data.model_dump(exclude_unset=True).items():
+    changes = data.model_dump(exclude_unset=True)
+    await _check_calendar_refs(db, entry.business_id, changes)
+    for field, value in changes.items():
         setattr(entry, field, value)
 
     await db.commit()
@@ -818,12 +845,7 @@ async def delete_calendar_entry(
     current_user: User = Depends(get_current_active_user),
 ):
     """Elimina una entrada del calendario."""
-    result = await db.execute(
-        select(ContentCalendar).where(ContentCalendar.id == entry_id)
-    )
-    entry = result.scalar_one_or_none()
-    if not entry:
-        raise HTTPException(status_code=404, detail="Entrada no encontrada")
+    entry = await _load(db, ContentCalendar, entry_id, current_user, not_found="Entrada no encontrada")
 
     entry.status = "cancelled"
     await db.commit()
@@ -837,12 +859,7 @@ async def publish_calendar_entry(
     current_user: User = Depends(get_current_active_user),
 ):
     """Publica manualmente una entrada del calendario."""
-    result = await db.execute(
-        select(ContentCalendar).where(ContentCalendar.id == entry_id)
-    )
-    entry = result.scalar_one_or_none()
-    if not entry:
-        raise HTTPException(status_code=404, detail="Entrada no encontrada")
+    entry = await _load(db, ContentCalendar, entry_id, current_user, not_found="Entrada no encontrada")
 
     # TODO: Integrar con APIs de plataforma
     entry.status = "published"
@@ -862,6 +879,7 @@ async def list_content_tools(
     current_user: User = Depends(get_current_active_user),
 ):
     """Lista herramientas de IA de contenido disponibles según el plan del negocio."""
+    await require_business_access(db, business_id, current_user)
     from app.integrations.content_generation.plan_tools import (
         get_tools_for_plan, TOOL_REGISTRY, get_plan_comparison
     )
@@ -910,6 +928,7 @@ async def get_tool_detail(
     current_user: User = Depends(get_current_active_user),
 ):
     """Obtiene detalle de una herramienta específica."""
+    await require_business_access(db, business_id, current_user)
     from app.integrations.content_generation.plan_tools import (
         TOOL_REGISTRY, get_plan_upgrade_message, is_tool_allowed
     )
@@ -951,6 +970,7 @@ async def get_content_pricing(
     current_user: User = Depends(get_current_active_user),
 ):
     """Tabla de precios de herramientas de contenido según plan."""
+    await require_business_access(db, business_id, current_user)
     from app.integrations.content_generation.plan_tools import get_plan_comparison
     from app.integrations.content_generation.router import ContentGenerationRouter
 
@@ -978,6 +998,7 @@ async def get_content_usage(
     current_user: User = Depends(get_current_active_user),
 ):
     """Reporte de uso mensual de generación de contenido."""
+    await require_business_access(db, business_id, current_user)
     from app.integrations.content_generation.budget import BudgetController
 
     controller = BudgetController()
@@ -1026,6 +1047,7 @@ async def list_toggles_by_business(
     current_user: User = Depends(get_current_active_user),
 ):
     """Lista todos los toggles del negocio, opcionalmente filtrados por categoría."""
+    await require_business_access(db, business_id, current_user)
     from sqlalchemy import and_
 
     query = select(AutomationToggle).where(AutomationToggle.business_id == business_id)
@@ -1049,6 +1071,7 @@ async def search_toggles_advanced(
     current_user: User = Depends(get_current_active_user),
 ):
     """Filtrado avanzado de toggles por categoría, uso, estado y fecha."""
+    await require_business_access(db, business_id, current_user)
     query = select(AutomationToggle).where(AutomationToggle.business_id == business_id)
 
     if categories:
@@ -1083,6 +1106,7 @@ async def create_toggle(
     current_user: User = Depends(get_current_active_user),
 ):
     """Crear un nuevo toggle (admin solo)."""
+    await require_business_access(db, business_id, current_user, manage=True)
     toggle = AutomationToggle(
         business_id=business_id,
         **data.model_dump(),
@@ -1101,10 +1125,7 @@ async def get_toggle(
     current_user: User = Depends(get_current_active_user),
 ):
     """Obtener un toggle específico."""
-    result = await db.execute(select(AutomationToggle).where(AutomationToggle.id == toggle_id))
-    toggle = result.scalar_one_or_none()
-    if not toggle:
-        raise HTTPException(status_code=404, detail="Toggle no encontrado")
+    toggle = await _load(db, AutomationToggle, toggle_id, current_user, not_found="Toggle no encontrado")
     return toggle
 
 
@@ -1117,10 +1138,7 @@ async def update_toggle(
     current_user: User = Depends(get_current_active_user),
 ):
     """Cambiar ON/OFF o límites de un toggle."""
-    result = await db.execute(select(AutomationToggle).where(AutomationToggle.id == toggle_id))
-    toggle = result.scalar_one_or_none()
-    if not toggle:
-        raise HTTPException(status_code=404, detail="Toggle no encontrado")
+    toggle = await _load(db, AutomationToggle, toggle_id, current_user, manage=True, not_found="Toggle no encontrado")
 
     # Capturar estado anterior para auditoría
     old_state = {
@@ -1179,6 +1197,7 @@ async def get_toggle_audit_history(
     current_user: User = Depends(get_current_active_user),
 ):
     """Historial completo de cambios del toggle."""
+    await _load(db, AutomationToggle, toggle_id, current_user, not_found="Toggle no encontrado")
     result = await db.execute(
         select(ToggleAuditLog)
         .where(ToggleAuditLog.toggle_id == toggle_id)
@@ -1194,10 +1213,7 @@ async def reset_toggle_usage(
     current_user: User = Depends(get_current_active_user),
 ):
     """Reset del contador de uso mensual."""
-    result = await db.execute(select(AutomationToggle).where(AutomationToggle.id == toggle_id))
-    toggle = result.scalar_one_or_none()
-    if not toggle:
-        raise HTTPException(status_code=404, detail="Toggle no encontrado")
+    toggle = await _load(db, AutomationToggle, toggle_id, current_user, manage=True, not_found="Toggle no encontrado")
 
     toggle.current_month_usage = 0
     from datetime import date
@@ -1214,6 +1230,7 @@ async def get_toggles_dashboard(
     current_user: User = Depends(get_current_active_user),
 ):
     """Dashboard consolidado de toggles por categoría."""
+    await require_business_access(db, business_id, current_user)
     result = await db.execute(
         select(
             AutomationToggle.category,
@@ -1248,6 +1265,7 @@ async def seed_toggles_endpoint(
     current_user: User = Depends(get_current_active_user),
 ):
     """Crear los toggles por defecto para un negocio nuevo."""
+    await require_business_access(db, business_id, current_user, manage=True)
     from app.domains.automations.seed_toggles import seed_toggles_for_business
 
     try:
@@ -1257,11 +1275,10 @@ async def seed_toggles_endpoint(
             "message": f"12 toggles creados para negocio {business_id}",
             "toggles_created": 12,
         }
-    except Exception as e:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Error al seed toggles: {str(e)}",
-        )
+    except Exception:
+        from app.core.logger import get_logger
+        get_logger(__name__).exception("Error seeding toggles")
+        raise HTTPException(status_code=400, detail="No se pudieron crear los toggles por defecto")
 
 
 # ========== Toggle Schedules (Tier 3) ==========
@@ -1276,10 +1293,7 @@ async def create_toggle_schedule(
     """Create schedule for toggle to turn on/off at specific time."""
     from app.domains.automations.models import ToggleSchedule
 
-    toggle_result = await db.execute(select(AutomationToggle).where(AutomationToggle.id == toggle_id))
-    toggle = toggle_result.scalar_one_or_none()
-    if not toggle:
-        raise HTTPException(status_code=404, detail="Toggle not found")
+    toggle = await _load(db, AutomationToggle, toggle_id, current_user, manage=True, not_found="Toggle not found")
 
     schedule = ToggleSchedule(
         business_id=toggle.business_id,
@@ -1306,6 +1320,7 @@ async def list_toggle_schedules(
     current_user: User = Depends(get_current_active_user),
 ):
     """List all schedules for toggle."""
+    await _load(db, AutomationToggle, toggle_id, current_user, not_found="Toggle no encontrado")
     from app.domains.automations.models import ToggleSchedule
 
     result = await db.execute(
@@ -1324,10 +1339,7 @@ async def update_toggle_schedule(
     """Update a toggle schedule; a new start_time reschedules the next execution."""
     from app.domains.automations.models import ToggleSchedule
 
-    result = await db.execute(select(ToggleSchedule).where(ToggleSchedule.id == schedule_id))
-    schedule = result.scalar_one_or_none()
-    if not schedule:
-        raise HTTPException(status_code=404, detail="Schedule not found")
+    schedule = await _load(db, ToggleSchedule, schedule_id, current_user, manage=True, not_found="Schedule not found")
 
     changes = schedule_in.model_dump(exclude_unset=True)
     for field, value in changes.items():
@@ -1349,10 +1361,7 @@ async def delete_toggle_schedule(
     """Delete a toggle schedule."""
     from app.domains.automations.models import ToggleSchedule
 
-    result = await db.execute(select(ToggleSchedule).where(ToggleSchedule.id == schedule_id))
-    schedule = result.scalar_one_or_none()
-    if not schedule:
-        raise HTTPException(status_code=404, detail="Schedule not found")
+    schedule = await _load(db, ToggleSchedule, schedule_id, current_user, manage=True, not_found="Schedule not found")
 
     await db.delete(schedule)
     await db.commit()
@@ -1370,10 +1379,9 @@ async def create_notification_rule(
     """Create notification rule for toggle event."""
     from app.domains.automations.models import ToggleNotificationRule
 
-    toggle_result = await db.execute(select(AutomationToggle).where(AutomationToggle.id == toggle_id))
-    toggle = toggle_result.scalar_one_or_none()
-    if not toggle:
-        raise HTTPException(status_code=404, detail="Toggle not found")
+    toggle = await _load(db, AutomationToggle, toggle_id, current_user, manage=True, not_found="Toggle not found")
+
+    await _check_webhook_url(rule_in.webhook_url)
 
     rule = ToggleNotificationRule(
         business_id=toggle.business_id,
@@ -1401,6 +1409,7 @@ async def list_notification_rules(
     current_user: User = Depends(get_current_active_user),
 ):
     """List all notification rules for toggle."""
+    await _load(db, AutomationToggle, toggle_id, current_user, manage=True, not_found="Toggle no encontrado")
     from app.domains.automations.models import ToggleNotificationRule
 
     result = await db.execute(
@@ -1418,10 +1427,7 @@ async def delete_notification_rule(
     """Delete notification rule."""
     from app.domains.automations.models import ToggleNotificationRule
 
-    result = await db.execute(select(ToggleNotificationRule).where(ToggleNotificationRule.id == rule_id))
-    rule = result.scalar_one_or_none()
-    if not rule:
-        raise HTTPException(status_code=404, detail="Rule not found")
+    rule = await _load(db, ToggleNotificationRule, rule_id, current_user, manage=True, not_found="Rule not found")
 
     await db.delete(rule)
     await db.commit()
@@ -1437,12 +1443,11 @@ async def update_notification_rule(
     """Update a notification rule."""
     from app.domains.automations.models import ToggleNotificationRule
 
-    result = await db.execute(select(ToggleNotificationRule).where(ToggleNotificationRule.id == rule_id))
-    rule = result.scalar_one_or_none()
-    if not rule:
-        raise HTTPException(status_code=404, detail="Rule not found")
+    rule = await _load(db, ToggleNotificationRule, rule_id, current_user, manage=True, not_found="Rule not found")
 
-    for field, value in rule_in.model_dump(exclude_unset=True).items():
+    changes = rule_in.model_dump(exclude_unset=True)
+    await _check_webhook_url(changes.get("webhook_url"))
+    for field, value in changes.items():
         setattr(rule, field, value)
 
     await db.commit()
@@ -1458,6 +1463,7 @@ async def list_notification_logs(
     current_user: User = Depends(get_current_active_user),
 ):
     """List notification send logs for toggle."""
+    await _load(db, AutomationToggle, toggle_id, current_user, not_found="Toggle no encontrado")
     from app.domains.automations.models import ToggleNotificationLog
 
     result = await db.execute(
