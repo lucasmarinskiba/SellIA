@@ -160,7 +160,7 @@ class VoiceCallManager:
                 response_text = "That sounds great. Can we schedule a brief call to discuss further?"
             else:
                 message = self.claude.messages.create(
-                    model="claude-opus",
+                    model="claude-opus-5",
                     max_tokens=300,
                     messages=[{"role": "user", "content": prompt}]
                 )
@@ -318,7 +318,7 @@ class VoiceCallManager:
 
         try:
             message = self.claude.messages.create(
-                model="claude-opus",
+                model="claude-opus-5",
                 max_tokens=500,
                 messages=[{"role": "user", "content": prompt}]
             )
@@ -400,7 +400,7 @@ class PlaybookExtractor:
 
         try:
             message = self.claude.messages.create(
-                model="claude-opus",
+                model="claude-opus-5",
                 max_tokens=1500,
                 messages=[{"role": "user", "content": prompt}]
             )
@@ -428,9 +428,12 @@ class PlaybookExtractor:
         """Create playbook from cluster."""
 
         try:
+            # No win_rate: nothing in the cluster measures one. A made-up number here would rank first
+            # in the recommender, so the field stays empty until real call outcomes fill it.
+            opening = str(cluster[0].get("opening") or "sin apertura")[:60]
             playbook = SalesPlaybook(
-                name=f"Extracted Playbook {datetime.utcnow().timestamp()}",
-                win_rate=0.75,  # Placeholder
+                name=f"Playbook extraído: {opening}",
+                win_rate=None,
                 usage_count=0,
                 extracted_from_calls=len(cluster),
                 created_at=datetime.utcnow(),
@@ -487,7 +490,7 @@ class PlaybookRecommender:
             # 1. Find matching playbooks (by industry/stage)
             candidates = (
                 await self.db.execute(
-                    select(SalesPlaybook).where(or_(*conditions)).order_by(SalesPlaybook.win_rate.desc()).limit(1)
+                    select(SalesPlaybook).where(or_(*conditions)).order_by(SalesPlaybook.win_rate.desc().nulls_last()).limit(1)
                 )
             ).scalars().first()
 
